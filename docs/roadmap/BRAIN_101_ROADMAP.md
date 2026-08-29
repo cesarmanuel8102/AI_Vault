@@ -1129,7 +1129,7 @@ R3_1_BASE_SHA: 5004cce535830fc3bf29ca6c1e9b3e88e0848a47
 R3_1_HEAD_SHA: 9f51cbe4b28fd297514c75625edb7e2ba5d14d49
 R3_1_MERGE_COMMIT: 282026fbdd28d31e53b24e5a7565c2c60cf81792
 R3_1_CLOSEOUT_EVIDENCE: docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX_CLOSEOUT.json
-R3_2_STATUS: AUTHORIZED_ACTIVE
+R3_2_STATUS: SUPERSEDED_SCOPE_INCIDENT
 R3_2_FRONT: BRAIN-101-R3-2-AGENT-V2-COGNITIVE-PIPELINE-CONTRACTS-01
 R3_2_EXECUTOR: codex_control_plane
 R3_2_WORK_BRANCH: control-plane/r3-2-agent-v2-cognitive-pipeline-contracts
@@ -1153,7 +1153,16 @@ R3_2_FORBIDDEN_PATHS:
   - tmp_agent/state/
   - scripts/
 R3_2_DEPLOYMENT_MODE: NO_DEPLOY
-NEXT_GATE: Execute R3.2 Agent V2 cognitive pipeline contract front with NO_DEPLOY
+R3_13_STATUS: AUTHORIZED_ACTIVE
+R3_13_FRONT: BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-01
+R3_13_EXECUTOR: codex_control_plane
+R3_13_WORK_BRANCH: control-plane/r3-13-r3-2-scope-incident-certification
+R3_13_RISK: MEDIUM
+R3_13_DOMAIN: testing_ci_recovery
+R3_13_ALLOWED_PATHS:
+  - docs/roadmap/evidence/BRAIN_101_R3_13_R3_2_SCOPE_INCIDENT_CERTIFICATION.md
+R3_13_DEPLOYMENT_MODE: NO_DEPLOY
+NEXT_GATE: Execute R3.13 replacement certification without treating PR #199 as R3.2 contract-compliant
 ```
 
 ## 13.20 Cierre runtime de R3.1
@@ -1163,3 +1172,11 @@ R3.1 quedó cerrado en runtime documental con la matriz de brechas de contrato y
 La evidencia de lifecycle parent se registra de forma inmutable y exacta: `parent_front_id` `BRAIN-101-R3-1-CONTRACT-E2E-GAP-MATRIX-01`, Issue #179, PR #180, decisión `ac64c4bc-68ca-40a9-9052-998358c66bac`, modo de autorización `POLICY_APPROVED`, base `5004cce535830fc3bf29ca6c1e9b3e88e0848a47`, closeout base `282026fbdd28d31e53b24e5a7565c2c60cf81792`, head `9f51cbe4b28fd297514c75625edb7e2ba5d14d49`, merge `282026fbdd28d31e53b24e5a7565c2c60cf81792`, builder session `builder-9d292625-892c-437c-91ef-eeeb17db3959`, y reviewer session `reviewer:opencode_ollama:ollama-cloud/deepseek-v4-flash:54ce13d2-8b77-44d1-8248-df11b24fb5e4`.
 
 El closeout machine-readable está en `docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX_CLOSEOUT.json`. R3.1 queda `CLOSED_RUNTIME_VERIFIED`, pero R3 no queda cerrado. Se autoriza exactamente un siguiente item: `R3.2`, `MEDIUM`, dominio `testing_ci_recovery`, ejecutor `codex_control_plane`, rama `control-plane/r3-2-agent-v2-cognitive-pipeline-contracts`, `NO_DEPLOY`, permitido para tests de contrato de intent router, planner, evaluator, tool gateway y runtime lifecycle, más el documento de evidencia asociado, con closeout completo predeclarado. Live trading, real money, canonical local sync, auto-merge y deploy siguen no autorizados.
+
+## 13.21 Incidente de scope R3.2 y replacement R3.13
+
+PR #199 fue fusionado en `749ada1458e3092614b6e8c72380e350cbd46514` con nueve archivos, mientras el contrato persistido de R3.2 autorizaba exactamente seis. Los tres archivos adicionales fueron `scripts/operator_proxy/autonomous_flow.ts`, `tests/contract/operator_proxy/autonomous_flow.test.ts` y `tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py`; el primero también estaba dentro de la ruta `scripts/` explícitamente prohibida. El runtime instalado rechazó correctamente la reconciliación con `blocked CI PR identity invalid`.
+
+R3.2 queda preservado como `SUPERSEDED_SCOPE_INCIDENT`; no se modifica ni se presenta su lifecycle histórico como contractualmente válido. La evidencia machine-readable está en `docs/roadmap/evidence/BRAIN_101_R3_2_SCOPE_INCIDENT.json`.
+
+Se autoriza exactamente un replacement: R3.13 `BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-01`. Este frente solo puede producir `docs/roadmap/evidence/BRAIN_101_R3_13_R3_2_SCOPE_INCIDENT_CERTIFICATION.md`, debe ejecutar las cinco suites canónicas R3.2 desde la base inmutable actual y no puede modificar runtime, tests, control plane, memoria, FAISS, trading, financial autonomy, CI, configuración ni estado local. Su closeout deberá mantener el incidente visible y autorizar R3.4 como el siguiente frente único.

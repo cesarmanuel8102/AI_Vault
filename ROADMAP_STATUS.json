@@ -194,7 +194,7 @@
     "reason": "R3.1 gap matrix closed; next governed item is Agent V2 cognitive pipeline contracts (intent router, planner, evaluator, tool gateway, runtime lifecycle)."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-08-12T00:00:00.000+00:00",
+  "last_updated": "2026-08-29T19:30:00.000+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -4795,9 +4795,9 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "R2_4_CLOSED_RUNTIME_VERIFIED_R2_5_AUTHORIZED_ACTIVE",
+    "status": "R3_2_SCOPE_INCIDENT_R3_13_AUTHORIZED_ACTIVE",
     "approval_status": "HUMAN_ADOPTED",
-    "current_phase": "R2",
+    "current_phase": "R3",
     "human_final_authority": true,
     "auto_merge": false,
     "canonical_local_sync": false,
@@ -4814,6 +4814,19 @@
       "resilience_bonus": 0,
       "auditability": "R0_EVIDENCE_BOUND_AND_ADOPTED"
     },
+    "r3_2_status": "SUPERSEDED_SCOPE_INCIDENT",
+    "r3_2_issue": 196,
+    "r3_2_pr": 199,
+    "r3_2_candidate_head": "28b2613adb5370865920ad0eae2b486e15f85f70",
+    "r3_2_merge_commit": "749ada1458e3092614b6e8c72380e350cbd46514",
+    "r3_2_incident_evidence": "docs/roadmap/evidence/BRAIN_101_R3_2_SCOPE_INCIDENT.json",
+    "r3_2_original_allowed_path_count": 6,
+    "r3_2_observed_path_count": 9,
+    "r3_13_status": "AUTHORIZED_ACTIVE",
+    "r3_13_front_id": "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-01",
+    "r3_13_executor": "codex_control_plane",
+    "r3_13_work_branch": "control-plane/r3-13-r3-2-scope-incident-certification",
+    "r3_13_deployment_mode": "NO_DEPLOY",
     "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
     "next_phase_after_adoption": "R1",
     "r1_1_status": "CLOSED_RUNTIME_VERIFIED",
@@ -5405,6 +5418,31 @@
       "R3 remains partially closed",
       "Exactly one next item authorized: R3.2 Agent V2 cognitive pipeline contracts",
       "Human final authority preserved; live trading, real money, canonical local sync, auto-merge remain disabled"
+    ]
+  },
+  "brain_101_r3_2_scope_incident": {
+    "status": "superseded_scope_incident",
+    "issue": 196,
+    "pr": 199,
+    "candidate_head_sha": "28b2613adb5370865920ad0eae2b486e15f85f70",
+    "merge_commit": "749ada1458e3092614b6e8c72380e350cbd46514",
+    "original_allowed_path_count": 6,
+    "observed_path_count": 9,
+    "out_of_contract_paths": [
+      "scripts/operator_proxy/autonomous_flow.ts",
+      "tests/contract/operator_proxy/autonomous_flow.test.ts",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+    ],
+    "historical_lifecycle_preserved": true,
+    "historical_pr_treated_as_compliant": false,
+    "incident_evidence_path": "docs/roadmap/evidence/BRAIN_101_R3_2_SCOPE_INCIDENT.json",
+    "replacement_item": "R3.13",
+    "replacement_front_id": "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-01",
+    "notes": [
+      "The installed runtime rejected PR #199 with blocked CI PR identity invalid",
+      "R3.2 remains visible as a scope incident",
+      "Exactly one replacement item R3.13 is authorized",
+      "Human final authority preserved; live trading, real money, canonical local sync, and auto-merge remain disabled"
     ]
   }
 }

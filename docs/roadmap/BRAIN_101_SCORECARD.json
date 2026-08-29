@@ -156,6 +156,21 @@
           "command": "documentation-only contract and E2E gap matrix plus governed closeout",
           "result": "Inventoried 48 contract tests and 7 E2E tests against 14 contract surfaces and 15 E2E flows; classified 7 critical, 23 high, 10 medium, and 1 low-severity gaps; R3.2 is the single authorized next item.",
           "observed_at_utc": "2026-08-12T00:00:00Z"
+        },
+        {
+          "claim": "R3.2 was superseded as a scope incident after PR #199 merged nine paths against an immutable six-path contract; R3.13 is the single replacement certification item.",
+          "classification": "GOVERNANCE_INCIDENT",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R3_2_SCOPE_INCIDENT.json"
+          ],
+          "symbols": [],
+          "commit": "749ada1458e3092614b6e8c72380e350cbd46514",
+          "issue": 196,
+          "pr": 199,
+          "workflow_run": null,
+          "command": "fail-closed post-merge scope reconciliation",
+          "result": "The historical lifecycle is preserved and PR #199 is not represented as contract-compliant. Exactly one NO_DEPLOY replacement certification front R3.13 is authorized.",
+          "observed_at_utc": "2026-08-29T19:30:00Z"
         }
       ]
     },
@@ -697,7 +712,7 @@
     {
       "id": "R2",
       "percent": 80,
-      "status": "PARTIALLY_CLOSED_R3_2_AUTHORIZED_ACTIVE",
+      "status": "PARTIALLY_CLOSED_R3_2_SCOPE_INCIDENT_R3_13_AUTHORIZED_ACTIVE",
       "evidence": [
         {
           "claim": "Auth/RBAC/signed approval contracts exist; complete constitutional adversarial coverage does not.",
@@ -854,6 +869,21 @@
           "command": "documentation-only contract and E2E gap matrix plus governed closeout",
           "result": "R3.1 concluded R3_CURRENT_STATUS=PARTIALLY_CLOSED, R3_CAN_CLOSE_NOW=false, next_authorized_item=R3.2. R3 remains partially closed; 48 contract tests and 7 E2E tests inventoried; 7 critical and 23 high-severity gaps remain.",
           "observed_at_utc": "2026-08-12T00:00:00Z"
+        },
+        {
+          "claim": "R3.2 is preserved as a merged scope incident and replaced by one bounded certification item R3.13.",
+          "classification": "GOVERNANCE_INCIDENT",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R3_2_SCOPE_INCIDENT.json"
+          ],
+          "symbols": [],
+          "commit": "749ada1458e3092614b6e8c72380e350cbd46514",
+          "issue": 196,
+          "pr": 199,
+          "workflow_run": null,
+          "command": "immutable incident classification and replacement routing",
+          "result": "Nine merged paths did not match the six-path R3.2 contract. R3.13 must verify the canonical contracts without runtime modification before R3.4 can be authorized.",
+          "observed_at_utc": "2026-08-29T19:30:00Z"
         }
       ]
     },
