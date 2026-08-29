@@ -37,6 +37,8 @@ export const INELIGIBLE_FALLBACK_FAILURES = new Set([
   "BUILDER_PROVENANCE_COMPLETED_WRITE_FAILED",
   "BUILDER_PROVENANCE_FAILED_WRITE_FAILED",
   "BUILDER_PROVENANCE_ROOT_UNUSABLE",
+  "RECOVERY_SYNC_CHAIN_INVALID",
+  "RECOVERY_SYNC_DEPTH_EXCEEDED",
 ]);
 
 export class BuilderBackendError extends Error {
@@ -112,6 +114,8 @@ export function isEligibleFallback(error: unknown): { eligible: boolean; failure
     [/review finding/i, "REVIEW_FINDING"], [/semantic build failure/i, "SEMANTIC_BUILD_FAILURE"], [/git conflict/i, "GIT_CONFLICT"],
     [/owner authority required/i, "OWNER_AUTHORITY_REQUIRED"], [/wrong base|base mismatch/i, "WRONG_BASE"],
     [/wrong head|head mismatch/i, "WRONG_HEAD"], [/dirty worktree/i, "DIRTY_WORKTREE"], [/builder produced no changes/i, "SCOPE_VIOLATION"],
+    [/recovered repair synchronization invalid|synchronization cycle detected/i, "RECOVERY_SYNC_CHAIN_INVALID"],
+    [/recovered repair synchronization depth exceeded/i, "RECOVERY_SYNC_DEPTH_EXCEEDED"],
   ];
   for (const [pattern, failureClass] of ineligible) if (pattern.test(message)) return { eligible: false, failure_class: failureClass, transient: false };
   return { eligible: false, failure_class: "UNKNOWN_BUILD_FAILURE", transient: false };
