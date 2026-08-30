@@ -294,6 +294,10 @@ export class ProductionEffects implements AutonomousEffects {
   ensureRuntimePilot(spec:ProxySpec,merge:string){return this.coordinator.pilot(spec,merge);}
   reconcileCloseoutState(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore){
     if(state.state==="BLOCKED"&&state.last_error==="CI_FAILED")return state.base_sha===spec.expected_base_sha?this.reconcileBlockedCiChecks(spec,state,store):this.reconcileBlockedCiBase(spec,state,store);
+    if(state.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(state.last_error??"")&&state.builder_retry_reason==="BUILDER_FAILURE"&&state.pr&&state.head_sha){
+      if(state.base_sha===spec.expected_base_sha)return this.reconcileBlockedBuilderCandidate(spec,state,store);
+      return this.reconcileBuilderFailureBase(spec,state,store);
+    }
     if(state.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(state.last_error??"")&&state.repair_cycles===0){
       if(state.base_sha===spec.expected_base_sha)return store.resumeInitialBuilderFailure(state);
       if(!this.bus.isAncestor(state.base_sha,spec.expected_base_sha))throw new Error("initial closeout builder failure base ancestry invalid");
@@ -313,6 +317,20 @@ export class ProductionEffects implements AutonomousEffects {
     if(state.state==="BUILDING")return this.reconcilePreBuildBase(spec,state,store);
     if(["MERGED","CLOSEOUT_PENDING","CLOSEOUT_MERGED","TERMINAL_COMPLETED"].includes(state.state))return store.rebindPostMergeBase(state,spec.expected_base_sha);
     throw new Error("closeout base reconciliation denied");
+  }
+  reconcileBlockedBuilderCandidate(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore){
+    const exact=state.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(state.last_error??"")&&state.builder_retry_reason==="BUILDER_FAILURE"&&state.base_sha===spec.expected_base_sha&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&Number.isInteger(state.repair_cycles)&&state.repair_cycles>0&&state.repair_cycles<=2&&!!state.head_sha&&!!state.builder_session&&!!state.reviewer_session&&!!state.decision_id&&validBlockedCiEffectChain(state);
+    const workBranch=spec.work_branch,oldHead=state.head_sha;
+    if(!exact||!workBranch||!oldHead)throw new Error("blocked builder candidate reconciliation denied");
+    const candidates=this.bus.prCandidatesByBranch(workBranch),trusted=candidates.filter((candidate:any)=>candidate?.author?.login===spec.repository.split("/",1)[0]&&candidate?.baseRefName===INTEGRATION_BRANCH&&candidate?.baseRefOid===state.base_sha&&candidate?.headRefName===workBranch&&candidate?.headRepository?.nameWithOwner===spec.repository&&candidate?.isCrossRepository===false&&candidate?.isDraft===true&&candidate?.state==="OPEN"&&Number.isInteger(Number(candidate?.number))&&/^[0-9a-f]{40}$/.test(String(candidate?.headRefOid??"")));
+    if(trusted.length!==1)throw new Error(`blocked builder trusted PR candidate count invalid: ${trusted.length}`);
+    const selected=trusted[0],prNumber=Number(selected.number),pr=this.bus.prIdentity(prNumber),candidateHead=String(selected.headRefOid),files=(pr.files??[]).map((entry:any)=>String(entry.path));
+    const identity=pr.author?.login===spec.repository.split("/",1)[0]&&pr.baseRefName===INTEGRATION_BRANCH&&pr.baseRefOid===state.base_sha&&pr.headRefName===workBranch&&pr.headRefOid===candidateHead&&pr.headRepository?.nameWithOwner===spec.repository&&pr.isCrossRepository===false&&pr.isDraft===true&&pr.state==="OPEN"&&["MERGEABLE","UNKNOWN"].includes(pr.mergeable)&&files.length>0&&files.every((path:string)=>pathAllowed(path,spec))&&this.bus.remoteBranchHead(workBranch)===candidateHead&&this.bus.isAncestor(oldHead,candidateHead);
+    if(!identity||this.inspectRouterBuilderReceipt(candidateHead,state.base_sha,spec.front_id!).status!=="VERIFIED")throw new Error("blocked builder candidate identity invalid");
+    const checks=evaluateChecks(this.bus,candidateHead,workBranch);if(!checks.terminal||!checks.green)throw new Error("blocked builder candidate CI not green");
+    const snapshot=this.bus.issueSnapshot(state.issue!),parsed=parseIssue(snapshot.body),expectedBody=boundIssueBody(spec,prNumber);
+    if(snapshot.state!=="OPEN"||snapshot.labels.length!==1||snapshot.labels[0]!=="operator:building"||parsed.pr!==prNumber||snapshot.body!==expectedBody)throw new Error("blocked builder candidate Issue identity invalid");
+    const updated=store.adoptBlockedBuilderCandidate(state,candidateHead,prNumber,`builder-recovered:${candidateHead}`);this.bindLifecycle(spec,updated);return updated;
   }
   inspectBridgeCandidate(spec:ProxySpec,state:LifecycleRecord):{nextBase:string;nextHead:string}|undefined{
     if(state.base_sha===spec.expected_base_sha)return undefined;
