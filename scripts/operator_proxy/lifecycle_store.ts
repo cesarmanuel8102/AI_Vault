@@ -133,6 +133,12 @@ export class LifecycleStore {
     const updated={...record,state:"BUILDING" as const,last_error:undefined,updated_utc:new Date().toISOString()};
     this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_recorded_builder_retry_resumed",front_id:record.front_id,issue:record.issue,pr:record.pr,head_sha:record.head_sha,decision_id:record.decision_id,repair_cycle:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
   }
+  adoptBlockedBuilderCandidate(record:LifecycleRecord,head:string,pr:number,builderSession:string):LifecycleRecord {
+    const exact=record.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(record.last_error??"")&&record.builder_retry_reason==="BUILDER_FAILURE"&&record.repair_cycles>0&&record.repair_cycles<=2&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&Number.isInteger(pr)&&pr>0&&!!record.head_sha&&!!record.builder_session&&!!record.reviewer_session&&!!record.decision_id&&validBlockedCiEffectChain(record);
+    if(!exact||!/^[0-9a-f]{40}$/.test(head)||head===record.head_sha||!/^builder-recovered:[0-9a-f]{40}$/.test(builderSession))throw new Error("blocked builder candidate adoption denied");
+    const updated={...record,state:"CI_PENDING" as const,pr,head_sha:head,builder_session:builderSession,reviewer_session:undefined,decision_id:undefined,last_error:undefined,last_error_detail:undefined,builder_retry_reason:undefined,completed_effects:[`issue:${record.issue}`,`build:${head}`],updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_blocked_builder_candidate_adopted",front_id:record.front_id,issue:record.issue,old_pr:record.pr,new_pr:pr,old_head_sha:record.head_sha,new_head_sha:head,repair_cycle:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
+  }
   resumeInitialBuilderFailure(record:LifecycleRecord):LifecycleRecord {
     const exact=record.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(record.last_error??"")&&record.repair_cycles===0&&Number.isInteger(record.issue)&&record.issue!>0&&!record.pr&&!record.head_sha&&!record.builder_session&&!record.reviewer_session&&!record.decision_id&&!record.builder_retry_reason&&record.completed_effects.length===1&&record.completed_effects[0]===`issue:${record.issue}`;
     if(!exact)throw new Error("initial builder failure resume denied");
