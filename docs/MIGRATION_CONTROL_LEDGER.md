@@ -9270,3 +9270,19 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Replacement item: exactly one `R3.13`, front `BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-01`, `MEDIUM`, `NO_DEPLOY`, allowed only to create `docs/roadmap/evidence/BRAIN_101_R3_13_R3_2_SCOPE_INCIDENT_CERTIFICATION.md` and run the canonical R3.2 contract suites.
 - Preserved controls: human final authority true; live trading, real money, canonical local sync, auto-merge, runtime deployment, memory/FAISS mutation, and trading remain disabled.
 - Next gate: execute R3.13 replacement certification and preserve R3.2 as an immutable scope incident.
+
+## BRAIN-101 R3.13 — R3.2 Scope Incident Certification Closeout (2026-08-29)
+
+- Front: `BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-CLOSEOUT-01`.
+- Parent certification front: `BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-01`.
+- Certification evidence path: `docs/roadmap/evidence/BRAIN_101_R3_13_R3_2_SCOPE_INCIDENT_CERTIFICATION.md`.
+- Scope incident evidence path: `docs/roadmap/evidence/BRAIN_101_R3_2_SCOPE_INCIDENT.json`.
+- Governed parent lifecycle: Issue #235 / PR #236, decision `2453de39-c7f3-4727-a69d-9507ae4e3695`, authorization mode `POLICY_APPROVED`, base `4e5fa1acad439491303d60bfc194fab6ceebb3aa`, closeout base `6f89252838854f8138442885f656b3ac8f8fc1a4`, head `07ce674e4173c1538bd978cfcc29f9170e6d50e5`, merge commit `6f89252838854f8138442885f656b3ac8f8fc1a4`.
+- Builder session: `builder-ce89a84f-f894-4d91-b981-2cf5300d9509`.
+- Reviewer session: `reviewer:opencode_ollama:ollama-cloud/deepseek-v4-pro:1b5dfa8f-ed24-4060-b50e-dfb668ee32bb`.
+- Certification result: the five canonical R3.2 Python contract suites (`tests/contract/test_brain_101_r3_2_intent_router_contract.py`, `tests/contract/test_brain_101_r3_2_planner_contract.py`, `tests/contract/test_brain_101_r3_2_evaluator_contract.py`, `tests/contract/test_brain_101_r3_2_tool_gateway_contract.py`, `tests/contract/test_brain_101_r3_2_runtime_lifecycle_contract.py`) were verified present and unmodified; all 86 contract tests passed with 0 failures.
+- Closeout evidence: `docs/roadmap/evidence/BRAIN_101_R3_13_R3_2_SCOPE_INCIDENT_CERTIFICATION_CLOSEOUT.json`.
+- Status: `R3.13` set to `CLOSED_RUNTIME_VERIFIED`; `R3.2` preserved as `SUPERSEDED_SCOPE_INCIDENT`; PR #199 is not represented as contract-compliant.
+- Authorized next item: exactly one `R3.4`, `LOW`, domain `agent_loop`, executor `agent_loop`, work branch `agent/roadmap-doc-brain-101-r3-4-cognitive-pipeline-e2e`, test profile `roadmap-doc`, max executor cycles `2`, `NO_DEPLOY`, allowed only to create `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md`, with complete closeout metadata.
+- Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched by closeout, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
+- Next gate: execute `R3.4` Agent V2 cognitive pipeline E2E as the single governed next R3 item with `NO_DEPLOY`.

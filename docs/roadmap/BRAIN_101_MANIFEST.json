@@ -820,7 +820,7 @@
     },
     "R3.13": {
       "title": "R3.2 scope-incident replacement certification",
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "dependencies": [
         "R3.1"
       ],
@@ -885,6 +885,80 @@
             "Set R3.13 to CLOSED_RUNTIME_VERIFIED only after all R3.2 contract suites pass",
             "Keep R3.2 as SUPERSEDED_SCOPE_INCIDENT and retain its immutable incident evidence",
             "Authorize exactly one next roadmap item R3.4 for the full cognitive pipeline E2E",
+            "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+          ],
+          "test_commands": [
+            "git diff --check"
+          ]
+        }
+      }
+    },
+    "R3.4": {
+      "title": "Agent V2 cognitive pipeline E2E",
+      "status": "AUTHORIZED_ACTIVE",
+      "dependencies": [
+        "R3.13"
+      ],
+      "automation": {
+        "front_id": "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-01",
+        "objective": "Run one isolated Agent Loop OpenCode Kimi E2E for the full Agent V2 cognitive pipeline after the R3.2 contract certification closeout",
+        "work_branch": "agent/roadmap-doc-brain-101-r3-4-cognitive-pipeline-e2e",
+        "executor": "agent_loop",
+        "risk": "LOW",
+        "domain": "agent_loop",
+        "test_profile": "roadmap-doc",
+        "max_executor_cycles": 2,
+        "allowed_paths": [
+          "docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "memory/semantic/",
+          "memory/rollback",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "tmp_agent/brain_v9/core/session.py",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Create one deterministic roadmap evidence document for the full cognitive pipeline E2E",
+          "Use the roadmap-doc profile only",
+          "Do not deploy, activate worker tasks, run live trading, use real money, perform canonical local sync, or auto-merge"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "closeout": {
+          "front_id": "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-CLOSEOUT-01",
+          "objective": "Record the R3.4 Agent V2 cognitive pipeline E2E evidence and close the synthetic certification item",
+          "work_branch": "control-plane/r3-4-agent-v2-cognitive-pipeline-e2e-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R3.4 Issue PR decision merge and Agent Loop evidence",
+            "Set R3.4 to CLOSED_RUNTIME_VERIFIED only after the E2E passes",
+            "Preserve exactly one authorized next roadmap item",
             "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
           ],
           "test_commands": [
@@ -1087,7 +1161,46 @@
     "closed_at_utc": "2026-08-03T21:28:44Z",
     "final_state": "R2_2_CLOSED_RUNTIME_VERIFIED_R2_3_AUTHORIZED_ACTIVE"
   },
-  "next_gate": "Execute R3.13 replacement certification and preserve R3.2 as an immutable scope incident",
+  "r3_13_r3_2_scope_incident_certification_closeout": {
+    "evidence_path": "docs/roadmap/evidence/BRAIN_101_R3_13_R3_2_SCOPE_INCIDENT_CERTIFICATION_CLOSEOUT.json",
+    "schema_version": 1,
+    "parent_front_id": "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-01",
+    "roadmap_id": "BRAIN-101",
+    "roadmap_item_id": "R3.13",
+    "issue": 235,
+    "pr": 236,
+    "decision_id": "2453de39-c7f3-4727-a69d-9507ae4e3695",
+    "authorization_mode": "POLICY_APPROVED",
+    "base_sha": "4e5fa1acad439491303d60bfc194fab6ceebb3aa",
+    "closeout_base_sha": "6f89252838854f8138442885f656b3ac8f8fc1a4",
+    "head_sha": "07ce674e4173c1538bd978cfcc29f9170e6d50e5",
+    "merge_commit": "6f89252838854f8138442885f656b3ac8f8fc1a4",
+    "builder_session": "builder-ce89a84f-f894-4d91-b981-2cf5300d9509",
+    "reviewer_session": "reviewer:opencode_ollama:ollama-cloud/deepseek-v4-pro:1b5dfa8f-ed24-4060-b50e-dfb668ee32bb",
+    "scope_incident_evidence_path": "docs/roadmap/evidence/BRAIN_101_R3_2_SCOPE_INCIDENT.json",
+    "certification_evidence_path": "docs/roadmap/evidence/BRAIN_101_R3_13_R3_2_SCOPE_INCIDENT_CERTIFICATION.md",
+    "r3_2_status_preserved": "SUPERSEDED_SCOPE_INCIDENT",
+    "r3_2_historical_pr_treated_as_compliant": false,
+    "r3_2_historical_lifecycle_preserved": true,
+    "r3_2_scope_incident_issue": 196,
+    "r3_2_scope_incident_pr": 199,
+    "r3_2_scope_incident_merge_commit": "749ada1458e3092614b6e8c72380e350cbd46514",
+    "canonical_contract_suites": [
+      "tests/contract/test_brain_101_r3_2_intent_router_contract.py",
+      "tests/contract/test_brain_101_r3_2_planner_contract.py",
+      "tests/contract/test_brain_101_r3_2_evaluator_contract.py",
+      "tests/contract/test_brain_101_r3_2_tool_gateway_contract.py",
+      "tests/contract/test_brain_101_r3_2_runtime_lifecycle_contract.py"
+    ],
+    "contract_suites_verified": true,
+    "contract_tests_passed": 86,
+    "contract_tests_failed": 0,
+    "next_authorized_item": "R3.4",
+    "next_authorized_front_id": "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-01",
+    "closed_at_utc": "2026-08-29T23:59:59Z",
+    "final_state": "R3_13_CLOSED_RUNTIME_VERIFIED_R3_4_AUTHORIZED_ACTIVE"
+  },
+  "next_gate": "Execute R3.4 Agent V2 cognitive pipeline E2E as the single governed next R3 item",
   "r2_3_constitutional_threat_model_closeout": {
     "evidence_path": "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json",
     "schema_version": 1,

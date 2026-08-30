@@ -2,7 +2,7 @@
   "schema_version": 1,
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-  "status": "R3_1_CLOSED_RUNTIME_VERIFIED_R3_2_AUTHORIZED_ACTIVE",
+  "status": "R3_13_CLOSED_RUNTIME_VERIFIED_R3_4_AUTHORIZED_ACTIVE",
   "audit_baseline_head": "759edfb",
   "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
@@ -710,9 +710,9 @@
       ]
     },
     {
-      "id": "R2",
-      "percent": 80,
-      "status": "PARTIALLY_CLOSED_R3_2_SCOPE_INCIDENT_R3_13_AUTHORIZED_ACTIVE",
+      "id": "R3",
+      "percent": 70,
+      "status": "PARTIALLY_CLOSED_R3_13_CLOSED_R3_4_AUTHORIZED_ACTIVE",
       "evidence": [
         {
           "claim": "Auth/RBAC/signed approval contracts exist; complete constitutional adversarial coverage does not.",
@@ -882,8 +882,26 @@
           "pr": 199,
           "workflow_run": null,
           "command": "immutable incident classification and replacement routing",
-          "result": "Nine merged paths did not match the six-path R3.2 contract. R3.13 must verify the canonical contracts without runtime modification before R3.4 can be authorized.",
+          "result": "The historical lifecycle is preserved and PR #199 is not represented as contract-compliant. Exactly one NO_DEPLOY replacement certification front R3.13 is authorized.",
           "observed_at_utc": "2026-08-29T19:30:00Z"
+        },
+        {
+          "claim": "R3.13 replacement certification closed runtime-verified after all five canonical R3.2 contract suites passed.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R3_13_R3_2_SCOPE_INCIDENT_CERTIFICATION.md",
+            "docs/roadmap/evidence/BRAIN_101_R3_13_R3_2_SCOPE_INCIDENT_CERTIFICATION_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "6f89252838854f8138442885f656b3ac8f8fc1a4",
+          "issue": 235,
+          "pr": 236,
+          "decision_id": "2453de39-c7f3-4727-a69d-9507ae4e3695",
+          "evidence_commit": "07ce674e4173c1538bd978cfcc29f9170e6d50e5",
+          "workflow_run": null,
+          "command": "python -m pytest tests/contract/test_brain_101_r3_2_*.py",
+          "result": "86 contract tests passed, 0 failed. R3.2 remains SUPERSEDED_SCOPE_INCIDENT with preserved immutable incident evidence. R3.4 is the single authorized next item.",
+          "observed_at_utc": "2026-08-29T23:59:59Z"
         }
       ]
     },
