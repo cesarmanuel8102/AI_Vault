@@ -2,7 +2,7 @@
   "current_head": "dd5468258692bae90e1830a94890e8ae533334aa",
   "current_remote_head": "pending_push",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "r3_4_agent_v2_cognitive_pipeline_e2e_closeout_ready",
+  "migration_status": "r3_5_supervisor_wake_loop_ready",
   "last_applied_checkpoint": "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-CLOSEOUT-01",
   "completed_fronts": [
     "BL-01",
@@ -175,7 +175,9 @@
     "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-CLOSEOUT-01",
     "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-CLOSEOUT-01"
   ],
-  "open_fronts": [],
+  "open_fronts": [
+    "BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01"
+  ],
   "blocked_fronts": [
     "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
     "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
@@ -191,11 +193,11 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": null,
-    "status": "no_authorized_next_item",
-    "reason": "R3.4 closed runtime-verified. No further roadmap item is authorized by this closeout front."
+    "name": "BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01",
+    "status": "AUTHORIZED_ACTIVE",
+    "reason": "R3.4 closed runtime-verified. R3.5 is the single canonical next item authorized by this closeout."
   },
-  "ready_for_next_front": false,
+  "ready_for_next_front": true,
   "last_updated": "2026-08-30T00:00:00.000+00:00",
   "phase0_security": {
     "status": "done",

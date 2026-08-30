@@ -9309,4 +9309,17 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - **Closeout evidence**: `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json`.
 - **Status**: `R3.4` set to `CLOSED_RUNTIME_VERIFIED`; R3 remains `PARTIALLY_CLOSED`; no next item is authorized by this closeout front.
 - **Preserved controls**: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
-- **Next gate**: no further roadmap item is authorized by this front.
+- **Next gate**: R3.5 is the single authorized next roadmap item.
+
+## BRAIN-101 R3.5 — Operator Proxy campaign supervisor wake loop authorization
+
+- **Front**: `BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01`.
+- **Roadmap item**: `R3.5`.
+- **Executor**: `codex_control_plane`.
+- **Risk / deployment**: `MEDIUM` / `NO_DEPLOY`.
+- **Dependency**: `R3.4` (`CLOSED_RUNTIME_VERIFIED`).
+- **Allowed paths**: `scripts/operator_proxy/campaign_supervisor.ts`, `tests/contract/operator_proxy/campaign_supervisor.test.ts`, and `docs/roadmap/evidence/BRAIN_101_R3_5_SUPERVISOR_WAKE_LOOP.md`.
+- **Contract source**: `docs/roadmap/BRAIN_101_CONTRACT_CATALOG.json`, item `R3.5`; its hard limits, forbidden paths, acceptance criteria, tests, gates, stops, and repair budget are authoritative.
+- **Status**: `AUTHORIZED_ACTIVE`; exactly one active roadmap item is preserved.
+- **Preserved controls**: human final authority true, live trading false, real money false, canonical local sync false, auto-merge false, and deployment disabled.
+- **Next gate**: execute the R3.5 supervisor wake-loop front under its declared contract.

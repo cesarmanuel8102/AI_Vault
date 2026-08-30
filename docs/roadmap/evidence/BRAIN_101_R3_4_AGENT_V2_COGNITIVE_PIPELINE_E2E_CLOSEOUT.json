@@ -22,9 +22,9 @@
   "e2e_evidence_path": "docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md",
   "r3_4_status": "CLOSED_RUNTIME_VERIFIED",
   "r3_can_close_now": false,
-  "r3_current_status": "PARTIALLY_CLOSED_R3_4_CLOSED",
-  "next_authorized_item": null,
-  "next_authorized_front_id": null,
-  "final_state": "R3_4_CLOSED_RUNTIME_VERIFIED_NO_NEXT_AUTHORIZED_ITEM",
+  "r3_current_status": "PARTIALLY_CLOSED_R3_4_CLOSED_R3_5_AUTHORIZED_ACTIVE",
+  "next_authorized_item": "R3.5",
+  "next_authorized_front_id": "BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01",
+  "final_state": "R3_4_CLOSED_RUNTIME_VERIFIED_R3_5_AUTHORIZED_ACTIVE",
   "closed_at_utc": "2026-08-30T00:00:00Z"
 }

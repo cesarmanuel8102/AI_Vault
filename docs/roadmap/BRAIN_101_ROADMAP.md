@@ -1204,7 +1204,13 @@ R3_4_FORBIDDEN_PATHS:
   - scripts/
 R3_4_DEPLOYMENT_MODE: NO_DEPLOY
 R3_4_CLOSEOUT_EVIDENCE: docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json
-NEXT_GATE: R3.4 closed; no further roadmap items are authorized by this front
+NEXT_GATE: R3.4 closed; R3.5 is the single authorized next roadmap item
+
+## 13.24 R3.5 — Operator Proxy campaign supervisor wake loop
+
+R3.5 is the single canonical next item authorized after the runtime-verified R3.4 closeout. It is a `MEDIUM` risk, `NO_DEPLOY`, `codex_control_plane` front with the exact front identifier `BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01`. Its scope is limited to the campaign supervisor implementation, its contract test, and the declared evidence document. The catalog remains the source of the complete acceptance, forbidden-path, hard-limit, repair-budget, and human-gate contract.
+
+R3.5 must enforce hard limits before each wake, classify and route incidents, bound self-repair, and advance terminal completion only through the governed phase helper. The controls remain unchanged: `HUMAN_FINAL_AUTHORITY=true`, `AUTO_MERGE=false`, `LIVE_TRADING=false`, `REAL_MONEY=false`, and `CANONICAL_LOCAL_SYNC=false`. No deployment, worker activation, trading, or canonical local synchronization is authorized.
 ```
 
 ## 13.20 Cierre runtime de R3.1
