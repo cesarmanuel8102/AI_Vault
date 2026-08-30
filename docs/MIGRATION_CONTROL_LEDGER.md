@@ -9286,3 +9286,27 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Authorized next item: exactly one `R3.4`, `LOW`, domain `agent_loop`, executor `agent_loop`, work branch `agent/roadmap-doc-brain-101-r3-4-cognitive-pipeline-e2e`, test profile `roadmap-doc`, max executor cycles `2`, `NO_DEPLOY`, allowed only to create `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md`, with complete closeout metadata.
 - Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched by closeout, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
 - Next gate: execute `R3.4` Agent V2 cognitive pipeline E2E as the single governed next R3 item with `NO_DEPLOY`.
+
+---
+
+## BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-CLOSEOUT-01 — Agent V2 Cognitive Pipeline E2E Closed
+- **Date (UTC)**: 2026-08-30T00:00:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local**: dd5468258692bae90e1830a94890e8ae533334aa
+- **HEAD remote**: pending_push
+- **Type**: GOVERNED DOCUMENTATION CLOSEOUT — E2E evidence recorded and R3.4 item closed.
+- **Closeout front**: `BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-CLOSEOUT-01`
+- **Parent front**: `BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-01`
+- **Roadmap item**: `R3.4`
+- **Objective**: Record the R3.4 Agent V2 cognitive pipeline E2E evidence and close the synthetic certification item.
+- **Allowed paths observed**: `docs/roadmap/BRAIN_101_MANIFEST.json`, `docs/roadmap/BRAIN_101_ROADMAP.md`, `docs/roadmap/BRAIN_101_SCORECARD.json`, `ROADMAP_STATUS.json`, `docs/MIGRATION_CONTROL_LEDGER.md`, `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json`.
+- **Forbidden paths observed**: none touched.
+- **Governed parent lifecycle**: Issue #246 / PR #247, decision `0e02a259-e59f-4b41-90aa-233905a193cf`, authorization mode `POLICY_APPROVED`, base `311513a6a9c1e5cfea25b915fc30bfd475c3261b`, closeout base `dd5468258692bae90e1830a94890e8ae533334aa`, head `91efbe2dcf41dc606953b190a624b607319de202`, merge commit `dd5468258692bae90e1830a94890e8ae533334aa`.
+- **Builder session**: `agent-loop-builder-91efbe2dcf41dc606953b190a624b607319de202`.
+- **Reviewer session**: `reviewer:opencode_ollama:ollama-cloud/deepseek-v4-pro:51274231-22fe-46ab-ad76-366eb5e6c2b2`.
+- **E2E evidence**: `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md` records the full cognitive pipeline stages (perception, reasoning, planning, action, reflection, memory), scope constraints, zero-trust workspace compliance, and trailing-whitespace verification.
+- **E2E verification**: `git diff --check` clean on the closeout branch.
+- **Closeout evidence**: `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json`.
+- **Status**: `R3.4` set to `CLOSED_RUNTIME_VERIFIED`; R3 remains `PARTIALLY_CLOSED`; no next item is authorized by this closeout front.
+- **Preserved controls**: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
+- **Next gate**: no further roadmap item is authorized by this front.

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-  "status": "R3_13_CLOSED_RUNTIME_VERIFIED_R3_4_AUTHORIZED_ACTIVE",
+  "status": "R3_4_CLOSED_RUNTIME_VERIFIED_NO_NEXT_AUTHORIZED_ITEM",
   "audit_baseline_head": "759edfb",
   "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
@@ -712,7 +712,7 @@
     {
       "id": "R3",
       "percent": 70,
-      "status": "PARTIALLY_CLOSED_R3_13_CLOSED_R3_4_AUTHORIZED_ACTIVE",
+      "status": "PARTIALLY_CLOSED_R3_4_CLOSED_NO_NEXT_AUTHORIZED_ITEM",
       "evidence": [
         {
           "claim": "Auth/RBAC/signed approval contracts exist; complete constitutional adversarial coverage does not.",
@@ -832,8 +832,8 @@
     },
     {
       "id": "R3",
-      "percent": 65,
-      "status": "PARTIALLY_CLOSED_R3_2_AUTHORIZED_ACTIVE",
+      "percent": 70,
+      "status": "PARTIALLY_CLOSED_R3_4_CLOSED_NO_NEXT_AUTHORIZED_ITEM",
       "evidence": [
         {
           "claim": "CI and recovery contracts exist; the required E2E matrix is incomplete.",
@@ -902,6 +902,32 @@
           "command": "python -m pytest tests/contract/test_brain_101_r3_2_*.py",
           "result": "86 contract tests passed, 0 failed. R3.2 remains SUPERSEDED_SCOPE_INCIDENT with preserved immutable incident evidence. R3.4 is the single authorized next item.",
           "observed_at_utc": "2026-08-29T23:59:59Z"
+        }
+      ]
+    },
+    {
+      "id": "R3.4",
+      "percent": 100,
+      "status": "CLOSED_RUNTIME_VERIFIED",
+      "evidence": [
+        {
+          "claim": "R3.4 Agent Loop OpenCode Kimi full cognitive pipeline E2E closed runtime-verified after the E2E evidence passed.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md",
+            "docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "dd5468258692bae90e1830a94890e8ae533334aa",
+          "issue": 246,
+          "pr": 247,
+          "decision_id": "0e02a259-e59f-4b41-90aa-233905a193cf",
+          "authorization_mode": "POLICY_APPROVED",
+          "evidence_commit": "91efbe2dcf41dc606953b190a624b607319de202",
+          "workflow_run": null,
+          "command": "Agent Loop roadmap-doc full cognitive pipeline E2E plus governed Operator Proxy merge",
+          "result": "Parent lifecycle evidence records base 311513a6a9c1e5cfea25b915fc30bfd475c3261b, head 91efbe2dcf41dc606953b190a624b607319de202, and merge dd5468258692bae90e1830a94890e8ae533334aa. The evidence document validates perception, reasoning, planning, action, reflection, and memory stages with scope, zero-trust, and whitespace constraints. R3.4 closed after the E2E evidence passed; no further roadmap item is authorized by this front. No live trading, real money, canonical local sync, auto-merge, deployment, or worker task activation was authorized.",
+          "observed_at_utc": "2026-08-30T00:00:00Z"
         }
       ]
     },
