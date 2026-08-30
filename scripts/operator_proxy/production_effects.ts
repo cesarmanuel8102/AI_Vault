@@ -282,6 +282,7 @@ export class ProductionEffects implements AutonomousEffects {
       if(!this.bus.isAncestor(state.base_sha,spec.expected_base_sha))throw new Error("initial closeout builder failure base ancestry invalid");
       return store.resumeInitialBuilderFailureAtAdvancedBase(state,spec.expected_base_sha);
     }
+    if(state.state==="BUILDING"&&state.repair_cycles===1&&state.builder_retry_reason==="BUILDER_FAILURE"&&!state.pr&&!state.head_sha)return this.reconcileInitialRetryPublishedCandidate(spec,state,store);
     if(state.base_sha===spec.expected_base_sha)return state;
     const ordinaryAncestry=this.bus.isAncestor(state.base_sha,spec.expected_base_sha);
     const bridge=!ordinaryAncestry?this.inspectBridgeCandidate(spec,state):undefined;
