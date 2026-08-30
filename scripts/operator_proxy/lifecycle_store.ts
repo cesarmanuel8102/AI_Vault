@@ -163,6 +163,18 @@ export class LifecycleStore {
     const updated={...record,state:"CI_PENDING" as const,last_error:undefined,updated_utc:new Date().toISOString()};
     this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_blocked_ci_checks_reopened",front_id:record.front_id,issue:record.issue,pr:record.pr,base_sha:record.base_sha,head_sha:record.head_sha,updated_utc:updated.updated_utc})}\n`);return updated;
   }
+  resumeBlockedCiRepair(record:LifecycleRecord,reviewerSession:string,decisionId:string):LifecycleRecord {
+    const exact=record.state==="BLOCKED"&&record.last_error==="CI_FAILED"&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&Number.isInteger(record.repair_cycles)&&record.repair_cycles>=0&&record.repair_cycles<2&&!!record.builder_session&&!record.reviewer_session&&!record.decision_id&&/^[0-9a-f]{40}$/.test(record.base_sha)&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&validBlockedCiEffectChain(record);
+    if(!exact||!/^reviewer:deterministic-ci:[0-9a-f]{40}$/.test(reviewerSession)||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(decisionId))throw new Error("blocked CI repair resume denied");
+    const updated={...record,state:"REPAIRING" as const,last_error:undefined,reviewer_session:reviewerSession,decision_id:decisionId,repair_cycles:record.repair_cycles+1,updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_blocked_ci_repair_resumed",front_id:record.front_id,issue:record.issue,pr:record.pr,base_sha:record.base_sha,head_sha:record.head_sha,decision_id:decisionId,repair_cycle:updated.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
+  }
+  exhaustBlockedCiRepair(record:LifecycleRecord):LifecycleRecord {
+    const exact=record.state==="BLOCKED"&&record.last_error==="CI_FAILED"&&record.repair_cycles===2&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&!!record.builder_session&&!record.reviewer_session&&!record.decision_id&&/^[0-9a-f]{40}$/.test(record.base_sha)&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&validBlockedCiEffectChain(record);
+    if(!exact)throw new Error("blocked CI repair exhaustion denied");
+    const updated={...record,last_error:"REPAIR_LIMIT_REACHED",updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_blocked_ci_repair_exhausted",front_id:record.front_id,issue:record.issue,pr:record.pr,base_sha:record.base_sha,head_sha:record.head_sha,repair_cycle:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
+  }
   adoptBridgeCandidate(record:LifecycleRecord,nextBase:string,nextHead:string):LifecycleRecord {
     // ProductionEffects owns remote PR/commit verification. This persistence
     // transition is one-shot and returns to CI_PENDING without review or policy.

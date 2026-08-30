@@ -163,8 +163,25 @@ export class ProductionEffects implements AutonomousEffects {
     if(spec.executor==="agent_loop")parseAgentLoopIssue(snapshot.body,spec);
     const pr=this.bus.prIdentity(state.pr!),files=(pr.files??[]).map((x:any)=>String(x.path));
     if(pr.author?.login!=="cesarmanuel8102"||pr.baseRefName!=="codex/own-capital-sustainable-return"||pr.baseRefOid!==state.base_sha||pr.headRefName!==spec.work_branch||pr.headRefOid!==state.head_sha||pr.headRepository?.nameWithOwner!=="cesarmanuel8102/AI_Vault"||pr.isCrossRepository!==false||pr.isDraft!==true||pr.state!=="OPEN"||pr.mergeable!=="MERGEABLE"||files.length===0||!files.every((path:string)=>pathAllowed(path,spec))||this.bus.remoteBranchHead(spec.work_branch!)!==state.head_sha)throw new Error("blocked CI check PR identity invalid");
-    if(this.ci(state.pr!,state.head_sha!)!=="PASS")throw new Error("blocked CI checks not green");
-    const updated=store.recoverBlockedCiChecks(state);this.bindLifecycle(spec,updated);return updated;
+    const ci=this.ci(state.pr!,state.head_sha!);
+    if(ci==="PENDING")throw new Error("blocked CI checks not terminal");
+    if(ci==="PASS"){const updated=store.recoverBlockedCiChecks(state);this.bindLifecycle(spec,updated);return updated;}
+    const evaluated=evaluateChecks(this.bus,state.head_sha!,spec.work_branch!);
+    if(!evaluated.terminal||evaluated.green)throw new Error("blocked CI failure evidence inconsistent");
+    if(state.repair_cycles>=2){const updated=store.exhaustBlockedCiRepair(state);this.bindLifecycle(spec,updated);return updated;}
+    const failed=evaluated.checks.filter((check:any)=>check.status==="COMPLETED"&&!(["SUCCESS","SKIPPED"].includes(check.conclusion))).map((check:any)=>String(check.name)).sort();
+    const evidence=failed.length?failed.join(", "):"required CI contract set incomplete";
+    const review:ReviewerOutput={verdict:"CHANGES_REQUESTED",head_sha:state.head_sha!,summary:"Deterministic CI requires a bounded candidate repair",findings:[{severity:"P1",title:"Governed CI contract failed",evidence,required_correction:"Repair only the failing deterministic contracts within the existing allowlist and publish a new candidate HEAD."}]};
+    const reviewerSession=`reviewer:deterministic-ci:${state.head_sha}`;
+    this.boundary.beginBlockedCiRepair(spec,state);
+    try {
+      const decision=this.policy(spec,state.issue!,state.pr!,state.head_sha!,review,state.builder_session!,reviewerSession,state.repair_cycles);
+      if(decision.outcome!=="REPAIR")throw new Error("blocked CI repair policy denied");
+      const marker=`decision_key=${decisionKey(spec,state.issue!,state.pr!,state.base_sha,state.head_sha!)}`;
+      this.boundary.assert("findings_publish",{issue:state.issue,pr:state.pr,expected_head:state.head_sha});this.boundary.assert("repair_request",{issue:state.issue,pr:state.pr,expected_head:state.head_sha});
+      this.bus.commentOnce("issue",state.issue!,marker,`[OPERATOR-PROXY][REPAIR]\n\n${marker}\ndecision_id=${decision.decision_id}\nhead=${state.head_sha}\nfindings=${safeJson(review.findings)}`);
+      const updated=store.resumeBlockedCiRepair(state,reviewerSession,decision.decision_id);this.bindLifecycle(spec,updated);return updated;
+    } finally {this.boundary.endBlockedCiRepair();}
   }
   reconcileExternallyMergedBuilderFailure(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
     if(state.base_sha===spec.expected_base_sha||state.state!=="BLOCKED"||!state.pr||!state.head_sha)return undefined;

@@ -19,9 +19,10 @@ const POST_MERGE=new Set(["MERGED","INSTALL_PENDING","INSTALLING","RUNTIME_PILOT
 export class ExternalEffectBoundary {
   private spec?:ProxySpec;private lifecycle?:LifecycleRecord;
   private blockedCiRecovery?:BlockedCiRecovery;
+  private blockedCiRepair=false;
   private privilegedInstallResume=false;
   constructor(readonly root:string,readonly bus:GitHubBus,readonly leaseOwned:()=>boolean){}
-  bind(spec:ProxySpec,lifecycle:LifecycleRecord){this.spec=spec;this.lifecycle=lifecycle;this.blockedCiRecovery=undefined;this.privilegedInstallResume=false;}
+  bind(spec:ProxySpec,lifecycle:LifecycleRecord){this.spec=spec;this.lifecycle=lifecycle;this.blockedCiRecovery=undefined;this.blockedCiRepair=false;this.privilegedInstallResume=false;}
   beginPrivilegedInstallResume(spec:ProxySpec,state:LifecycleRecord){
     const exact=state.state==="ESCALATED"&&state.last_error==="LOCAL_PRIVILEGE_REQUIRED"&&spec.install_target==="agent_loop_worker"&&["INSTALL_ONLY","INSTALL_AND_RUNTIME_PILOT"].includes(spec.deployment_mode??"")&&state.deployment_mode===spec.deployment_mode&&state.front_id===spec.front_id&&state.roadmap_item_id===spec.roadmap_item_id&&state.base_sha===spec.expected_base_sha&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&state.repair_cycles===0&&!!state.builder_session&&!!state.reviewer_session&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(state.decision_id??"")&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&validPrivilegedInstallEffectChain(state);
     if(!exact)throw new Error("privileged install receipt boundary denied");
@@ -43,6 +44,14 @@ export class ExternalEffectBoundary {
   }
   bindBlockedCiRecoveryHead(nextHead:string){if(!this.blockedCiRecovery||!/^[0-9a-f]{40}$/.test(nextHead)||nextHead===this.blockedCiRecovery.oldHead)throw new Error("blocked CI recovery head denied");this.blockedCiRecovery.nextHead=nextHead;}
   endBlockedCiRecovery(){this.blockedCiRecovery=undefined;}
+  beginBlockedCiRepair(spec:ProxySpec,state:LifecycleRecord){
+    const exact=state.state==="BLOCKED"&&state.last_error==="CI_FAILED"&&state.base_sha===spec.expected_base_sha&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&Number.isInteger(state.repair_cycles)&&state.repair_cycles>=0&&state.repair_cycles<2&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&validBlockedCiEffectChain(state);
+    if(!exact||state.front_id!==spec.front_id||state.roadmap_item_id!==spec.roadmap_item_id)throw new Error("blocked CI repair boundary denied");
+    if(this.bus.branchHead("codex/own-capital-sustainable-return")!==spec.expected_base_sha||this.bus.issuePaused(state.issue!))throw new Error("blocked CI repair identity changed");
+    const pr=this.bus.prIdentity(state.pr!);if(pr.headRefOid!==state.head_sha)throw new Error("blocked CI repair head changed");
+    this.bind(spec,state);this.blockedCiRepair=true;
+  }
+  endBlockedCiRepair(){this.blockedCiRepair=false;}
   bindPostMerge(merge:string){if(!this.lifecycle||!/^[0-9a-f]{40}$/.test(merge))throw new Error("post-merge boundary evidence invalid");this.lifecycle={...this.lifecycle,state:"MERGED",head_sha:merge};}
   assert(effect:ExternalEffect,context:EffectContext={}){
     if(!EXTERNAL_EFFECT_REGISTRY.includes(effect))throw new Error("external effect is not registered");
@@ -54,6 +63,13 @@ export class ExternalEffectBoundary {
       if(this.privilegedInstallResume&&state.state==="ESCALATED"&&state.last_error==="LOCAL_PRIVILEGE_REQUIRED"&&effect==="installation_receipt"){
         if(this.bus.branchHead("codex/own-capital-sustainable-return")!==spec.expected_base_sha)throw new Error("external effect base changed");
         if(state.issue&&this.bus.issuePaused(state.issue))throw new Error("external effect paused by GitHub label");
+        return;
+      }
+      if(this.blockedCiRepair&&state.state==="BLOCKED"&&state.last_error==="CI_FAILED"){
+        const allowed=new Set<ExternalEffect>(["decision_persist","findings_publish","repair_request","comment_publish","label_modify"]);
+        if(!allowed.has(effect)||(context.issue!==undefined&&context.issue!==state.issue)||(context.pr!==undefined&&context.pr!==state.pr)||(context.expected_head!==undefined&&context.expected_head!==state.head_sha))throw new Error("external effect denied by blocked CI repair");
+        if(this.bus.branchHead("codex/own-capital-sustainable-return")!==spec.expected_base_sha||state.issue&&this.bus.issuePaused(state.issue))throw new Error("blocked CI repair identity changed");
+        if(state.pr&&this.bus.prIdentity(state.pr).headRefOid!==state.head_sha)throw new Error("blocked CI repair head changed");
         return;
       }
       const recovery=this.blockedCiRecovery;
