@@ -262,6 +262,11 @@ export class ProductionEffects implements AutonomousEffects {
   ensureRuntimePilot(spec:ProxySpec,merge:string){return this.coordinator.pilot(spec,merge);}
   reconcileCloseoutState(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore){
     if(state.state==="BLOCKED"&&state.last_error==="CI_FAILED")return state.base_sha===spec.expected_base_sha?this.reconcileBlockedCiChecks(spec,state,store):this.reconcileBlockedCiBase(spec,state,store);
+    if(state.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(state.last_error??"")&&state.repair_cycles===0){
+      if(state.base_sha===spec.expected_base_sha)return store.resumeInitialBuilderFailure(state);
+      if(!this.bus.isAncestor(state.base_sha,spec.expected_base_sha))throw new Error("initial closeout builder failure base ancestry invalid");
+      return store.resumeInitialBuilderFailureAtAdvancedBase(state,spec.expected_base_sha);
+    }
     if(state.base_sha===spec.expected_base_sha)return state;
     const ordinaryAncestry=this.bus.isAncestor(state.base_sha,spec.expected_base_sha);
     const bridge=!ordinaryAncestry?this.inspectBridgeCandidate(spec,state):undefined;
