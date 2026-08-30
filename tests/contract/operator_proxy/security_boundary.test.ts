@@ -66,15 +66,25 @@ test("blocked CI recovery permits only the exact push then Issue update",()=>{
   boundary.endBlockedCiRecovery();currentBase=nextBase;assert.throws(()=>boundary.assert("issue_modify",{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);
 });
 
-test("blocked Agent Loop recovery permits only an exact observed descendant chain head",()=>{
+test("blocked recovery permits a control-plane observed descendant only after exact identity binding",()=>{
   const root=mkdtempSync(join(tmpdir(),"effect-chain-boundary-"));mkdirSync(join(root,"state"));const nextBase="c".repeat(40),observed="d".repeat(40),nextHead="e".repeat(40);let currentHead=observed,ancestor=true;
-  const nextSpec={...spec,executor:"agent_loop" as const,expected_base_sha:nextBase};const blocked:LifecycleRecord={...lifecycle,state:"BLOCKED",last_error:"CI_FAILED",base_sha:base,head_sha:head,builder_session:"builder-one",completed_effects:["issue:63",`build:${head}`]};
-  const bus:any={branchHead:()=>nextBase,issuePaused:()=>false,prIdentity:()=>({headRefOid:currentHead}),isAncestor:(older:string,newer:string)=>ancestor&&older===head&&newer===observed};const boundary=new ExternalEffectBoundary(root,bus,()=>true);boundary.beginBlockedCiRecovery(nextSpec,blocked);
+  const nextSpec={...spec,executor:"codex_control_plane" as const,expected_base_sha:nextBase,work_branch:"control-plane/security-boundary"};const blocked:LifecycleRecord={...lifecycle,state:"BLOCKED",last_error:"CI_FAILED",base_sha:base,head_sha:head,builder_session:"builder-one",completed_effects:["issue:63",`build:${head}`]};
+  const identity:any={author:{login:"cesarmanuel8102"},baseRefName:"codex/own-capital-sustainable-return",baseRefOid:base,headRefName:nextSpec.work_branch,headRefOid:currentHead,headRepository:{nameWithOwner:"cesarmanuel8102/AI_Vault"},isCrossRepository:false,isDraft:true,state:"OPEN",mergeable:"MERGEABLE",files:[{path:"docs/x.md"}]};
+  let remote=observed;const bus:any={branchHead:()=>nextBase,issuePaused:()=>false,prIdentity:()=>({...identity,headRefOid:currentHead}),remoteBranchHead:()=>remote,isAncestor:(older:string,newer:string)=>ancestor&&older===head&&newer===observed};const boundary=new ExternalEffectBoundary(root,bus,()=>true);boundary.beginBlockedCiRecovery(nextSpec,blocked);
   assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);
-  assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead,observed_head:"f".repeat(40)}),/lifecycle state/);
-  ancestor=false;assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead,observed_head:observed}),/lifecycle state/);ancestor=true;
+  assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead,observed_head:observed}),/lifecycle state/);
+  boundary.bindBlockedCiRecoveryObservedHead(observed);
   boundary.assert("push",{issue:63,pr:63,expected_head:nextHead,observed_head:observed});
-  boundary.beginBlockedCiRecovery({...nextSpec,executor:"codex_control_plane"},blocked);assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead,observed_head:observed}),/lifecycle state/);
+  currentHead="f".repeat(40);assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead,observed_head:observed}),/lifecycle state/);currentHead=observed;
+  for(const mutate of [(value:any)=>value.author.login="attacker",(value:any)=>value.baseRefOid="f".repeat(40),(value:any)=>value.headRefName="other",(value:any)=>value.headRepository.nameWithOwner="attacker/fork",(value:any)=>value.isCrossRepository=true,(value:any)=>value.isDraft=false,(value:any)=>value.state="CLOSED",(value:any)=>value.files=[{path:"scripts/evil.ts"}]]){const saved=JSON.parse(JSON.stringify(identity));mutate(identity);boundary.beginBlockedCiRecovery(nextSpec,blocked);assert.throws(()=>boundary.bindBlockedCiRecoveryObservedHead(observed),/identity invalid/);Object.assign(identity,saved);}
+  boundary.beginBlockedCiRecovery(nextSpec,blocked);remote="f".repeat(40);assert.throws(()=>boundary.bindBlockedCiRecoveryObservedHead(observed),/identity invalid/);remote=observed;ancestor=false;assert.throws(()=>boundary.bindBlockedCiRecoveryObservedHead(observed),/identity invalid/);
+});
+
+test("blocked Agent Loop recovery retains exact observed descendant compatibility",()=>{
+  const root=mkdtempSync(join(tmpdir(),"effect-agent-chain-boundary-"));mkdirSync(join(root,"state"));const nextBase="c".repeat(40),observed="d".repeat(40),nextHead="e".repeat(40);let ancestor=true;
+  const nextSpec={...spec,executor:"agent_loop" as const,expected_base_sha:nextBase};const blocked:LifecycleRecord={...lifecycle,state:"BLOCKED",last_error:"CI_FAILED",base_sha:base,head_sha:head,builder_session:"builder-one",completed_effects:["issue:63",`build:${head}`]};
+  const bus:any={branchHead:()=>nextBase,issuePaused:()=>false,prIdentity:()=>({headRefOid:observed}),isAncestor:(older:string,newer:string)=>ancestor&&older===head&&newer===observed};const boundary=new ExternalEffectBoundary(root,bus,()=>true);boundary.beginBlockedCiRecovery(nextSpec,blocked);
+  assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);ancestor=false;assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead,observed_head:observed}),/lifecycle state/);ancestor=true;boundary.assert("push",{issue:63,pr:63,expected_head:nextHead,observed_head:observed});
 });
 
 test("negated-risk escalation recovery permits only exact branch sync and Issue update",()=>{

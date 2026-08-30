@@ -56,6 +56,11 @@ export class ProductionEffects implements AutonomousEffects {
   private activeSpec?:ProxySpec;private activeState?:import("./types.js").LifecycleRecord;
   constructor(readonly bus:GitHubBus,readonly ledger:Ledger,readonly sourceRepo:string,readonly root:string,readonly boundary:ExternalEffectBoundary,readonly coordinator:LocalCoordinator=failClosedCoordinator){this.bus.setMutationGuard(this.boundary.assert.bind(this.boundary));this.builder=new GovernedBuilder(sourceRepo,join(root,"worktrees"),bus,this.boundary.assert.bind(this.boundary));this.agentLoopBuilder=new AgentLoopBuilderAdapter(bus);}
   bindLifecycle(spec:ProxySpec,state:import("./types.js").LifecycleRecord){this.activeSpec=spec;this.activeState=state;this.boundary.bind(spec,state);}
+  private bindObservedBlockedCiHead(spec:ProxySpec,state:LifecycleRecord){
+    if(spec.executor!=="codex_control_plane"||!state.pr||!state.head_sha)return;
+    const observed=String(this.bus.prIdentity(state.pr).headRefOid??"");
+    if(observed!==state.head_sha)this.boundary.bindBlockedCiRecoveryObservedHead(observed);
+  }
   private validHistoricalRoadmapBinding(current:ProxySpec,historical:ProxySpec,base:string){
     if(!exactSpecExceptHistoricalBinding(current,historical)||historical.expected_base_sha!==base||!/^[0-9a-f]{64}$/.test(historical.roadmap_sha256??"")||!/^[0-9a-f]{64}$/.test(historical.manifest_sha256??""))return false;
     const manifestText=this.bus.fileAt(MANIFEST_PATH,base),roadmapText=this.bus.fileAt(ROADMAP_PATH,base);
@@ -136,7 +141,7 @@ export class ProductionEffects implements AutonomousEffects {
     if(spec.executor==="agent_loop")parseAgentLoopIssue(snapshot.body,snapshot.body===oldBody?oldSpec:spec);
     const branchState={...state,state:"BLOCKED" as const,last_error:"CI_FAILED",repair_cycles:0,reviewer_session:undefined,decision_id:undefined};
     this.boundary.beginBlockedCiRecovery(spec,branchState);
-    try {const nextHead=this.builder.synchronizeBlockedCiBase(spec,branchState);this.boundary.bindBlockedCiRecoveryHead(nextHead);if(snapshot.body===oldBody)this.bus.replaceIssueBodyExact(state.issue!,oldBody,nextBody,nextHead);const updated=store.recoverBuilderFailureBase(state,spec.expected_base_sha,nextHead);this.bindLifecycle(spec,updated);return updated;}
+    try {this.bindObservedBlockedCiHead(spec,branchState);const nextHead=this.builder.synchronizeBlockedCiBase(spec,branchState);this.boundary.bindBlockedCiRecoveryHead(nextHead);if(snapshot.body===oldBody)this.bus.replaceIssueBodyExact(state.issue!,oldBody,nextBody,nextHead);const updated=store.recoverBuilderFailureBase(state,spec.expected_base_sha,nextHead);this.bindLifecycle(spec,updated);return updated;}
     finally {this.boundary.endBlockedCiRecovery();}
   }
   reconcileNegatedRiskEscalation(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
