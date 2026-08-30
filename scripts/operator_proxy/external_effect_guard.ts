@@ -11,7 +11,7 @@ export interface EffectContext {issue?:number;pr?:number;expected_head?:string;o
 export type EffectAssertion=(effect:ExternalEffect,context?:EffectContext)=>void;
 
 interface BlockedCiRecovery {
-  frontId:string;issue:number;pr:number;oldBase:string;newBase:string;oldHead:string;priorState:"BLOCKED"|"ESCALATED";nextHead?:string;
+  frontId:string;issue:number;pr:number;oldBase:string;newBase:string;oldHead:string;priorState:"BLOCKED"|"ESCALATED";observedHead?:string;nextHead?:string;
 }
 
 const POST_MERGE=new Set(["MERGED","INSTALL_PENDING","INSTALLING","RUNTIME_PILOT_PENDING","RUNTIME_PILOT_RUNNING","RUNTIME_VERIFIED","CLOSEOUT_PENDING","CLOSEOUT_MERGED","TERMINAL_COMPLETED"]);
@@ -41,6 +41,15 @@ export class ExternalEffectBoundary {
     const exact=state.state==="ESCALATED"&&state.last_error==="OWNER_AUTHORITY_REQUIRED"&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&state.repair_cycles===0&&!!state.builder_session&&!!state.reviewer_session&&!!state.decision_id&&/^[0-9a-f]{40}$/.test(state.base_sha)&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&state.base_sha!==spec.expected_base_sha&&validBlockedCiEffectChain(state);
     if(!exact||state.front_id!==spec.front_id||state.roadmap_item_id!==spec.roadmap_item_id)throw new Error("negated risk recovery boundary denied");
     this.bind(spec,state);this.blockedCiRecovery={frontId:state.front_id,issue:state.issue!,pr:state.pr!,oldBase:state.base_sha,newBase:spec.expected_base_sha,oldHead:state.head_sha!,priorState:"ESCALATED"};
+  }
+  bindBlockedCiRecoveryObservedHead(observedHead:string){
+    const recovery=this.blockedCiRecovery,spec=this.spec;
+    if(!recovery||!spec||!/^[0-9a-f]{40}$/.test(observedHead)||observedHead===recovery.oldHead||!spec.work_branch)throw new Error("blocked CI observed head denied");
+    const current=this.bus.prIdentity(recovery.pr),files=(current.files??[]).map((entry:any)=>String(entry.path));
+    const allowed=(path:string)=>spec.allowed_paths.some(prefix=>prefix.endsWith("/")?path.startsWith(prefix):path===prefix)&&!spec.forbidden_paths.some(prefix=>path===prefix||path.startsWith(prefix.endsWith("/")?prefix:`${prefix}/`));
+    const exact=current.author?.login===REPO.split("/",1)[0]&&current.baseRefName==="codex/own-capital-sustainable-return"&&[recovery.oldBase,recovery.newBase].includes(current.baseRefOid)&&current.headRefName===spec.work_branch&&current.headRefOid===observedHead&&current.headRepository?.nameWithOwner===REPO&&current.isCrossRepository===false&&current.isDraft===true&&current.state==="OPEN"&&["MERGEABLE","UNKNOWN"].includes(current.mergeable)&&files.length>0&&files.every(allowed)&&this.bus.remoteBranchHead(spec.work_branch)===observedHead&&this.bus.isAncestor(recovery.oldHead,observedHead);
+    if(!exact)throw new Error("blocked CI observed head identity invalid");
+    recovery.observedHead=observedHead;
   }
   bindBlockedCiRecoveryHead(nextHead:string){if(!this.blockedCiRecovery||!/^[0-9a-f]{40}$/.test(nextHead)||nextHead===this.blockedCiRecovery.oldHead)throw new Error("blocked CI recovery head denied");this.blockedCiRecovery.nextHead=nextHead;}
   endBlockedCiRecovery(){this.blockedCiRecovery=undefined;}
@@ -80,7 +89,8 @@ export class ExternalEffectBoundary {
       if(effect==="push"&&!recovery.nextHead&&/^[0-9a-f]{40}$/.test(context.expected_head??"")&&context.expected_head!==recovery.oldHead){
         if(current.headRefOid===recovery.oldHead&&!context.observed_head)return;
         const observed=context.observed_head;
-        if(spec.executor==="agent_loop"&&/^[0-9a-f]{40}$/.test(observed??"")&&observed!==context.expected_head&&current.headRefOid===observed&&this.bus.isAncestor(recovery.oldHead,observed!))return;
+        const observedAuthorized=spec.executor==="agent_loop"||recovery.observedHead===observed;
+        if(observedAuthorized&&/^[0-9a-f]{40}$/.test(observed??"")&&observed!==context.expected_head&&current.headRefOid===observed&&this.bus.isAncestor(recovery.oldHead,observed!))return;
       }
       if(effect==="issue_modify"&&recovery.nextHead&&context.expected_head===recovery.nextHead&&current.headRefOid===recovery.nextHead)return;
       throw new Error("external effect denied by lifecycle state");
