@@ -49,5 +49,9 @@ export interface LifecycleRecord {
     merge_commit_sha: string;
     reviewer_check: "review";
   };
+  // Control plane that last wrote this record. Absent on records persisted before
+  // the consolidation front and normalized to 1 on load. A writer-version change
+  // is an explicit modeled reconciliation input, never accidental reinterpretation.
+  state_writer_control_plane_version?: number;
   updated_utc: string;
 }

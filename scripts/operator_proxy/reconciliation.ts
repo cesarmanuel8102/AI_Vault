@@ -1,0 +1,297 @@
+import type {LifecycleRecord, ProxySpec, NormalizedDecision} from "./types.js";
+import {
+  type CanonicalLifecycleSnapshot, type CandidateLineage,
+  blockedCiEffectChain, expandableBlockedCiEffectChain, privilegedInstallEffectChain,
+  validBridgeAdoptionFacts, decisionBoundToLineage, deriveCandidateLineage,
+  deterministicCiRepairerSessionHead, deterministicBuilderProvenanceRepairSessionHead,
+  recoveredBuilderSessionHead, agentLoopBuilderSessionHead, SHA40,
+} from "./lineage.js";
+
+// ---------------------------------------------------------------------------
+// Reconciliation domain moves
+//
+// A small finite set of domain moves replaces the accumulated incident-shaped
+// recovery dispatchers. Move names describe domain semantics; historical
+// incident identifiers never appear here.
+// ---------------------------------------------------------------------------
+export type ReconciliationMove =
+  | "NOOP"
+  | "REBIND_UNSTARTED_BASE"
+  | "REBIND_PRE_BUILD_BASE"
+  | "REBIND_POST_MERGE_BASE"
+  | "RESUME_INITIAL_BUILD"
+  | "RESUME_RECORDED_BUILD"
+  | "ADOPT_PUBLISHED_INITIAL_CANDIDATE"
+  | "ADOPT_PUBLISHED_REPAIR_CANDIDATE"
+  | "ADOPT_VERIFIED_SYNCHRONIZED_CANDIDATE"
+  | "REVERT_INVALIDATED_ADOPTION"
+  | "SYNCHRONIZE_CANDIDATE"
+  | "REOPEN_CI"
+  | "REQUEST_DETERMINISTIC_REPAIR"
+  | "EXHAUST_REPAIR"
+  | "ADOPT_EXTERNAL_MERGE"
+  | "RECOVER_NEGATED_RISK_ESCALATION"
+  | "INVALIDATE_FAILED_MERGE"
+  | "ESCALATE_OWNER"
+  | "AMBIGUOUS";
+
+export interface ReconciliationPlan {
+  move: ReconciliationMove;
+  reason: string;
+  /** Immutable lineage the planner verified for candidate-affecting moves. */
+  lineage: CandidateLineage | undefined;
+}
+
+export interface PlannerPorts {
+  /** Verifies a synchronized candidate produces green terminal CI at its exact head. */
+  checksGreenAtHead(head: string): boolean;
+  /** Verifies the canonical branch tip is the authorized base. */
+  authorizedBaseIsCanonicalTip(): boolean;
+  /** Reads a recorded adoption event for the exact front/issue/pr/head. */
+  recordedAdoptionEvent(record: LifecycleRecord): any;
+  /** Loads the decision recorded before an adoption (provenance root of a synchronized candidate). */
+  loadDecision(id: string): NormalizedDecision | undefined;
+  /** Verifies builder provenance of receiptHead/receiptBase. */
+  verifyReceipt(receiptHead: string, receiptBase: string): boolean;
+  /** Verifies a fully attested neutralization bridge candidate against the authorized base. */
+  verifyBridgeCandidate(nextBase: string, nextHead: string): boolean;
+  /** Verifies the persisted repair decision authorized the current synchronized chain. */
+  decisionBoundToLineage(decision: NormalizedDecision): boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Invariant set
+//
+// validateInvariantSet() is the single safety gate a plan must pass before any
+// applier may mutate. Each invariant is a domain statement, not an incident.
+// ---------------------------------------------------------------------------
+export interface InvariantResult {violations: string[]}
+export function validateInvariantSet(snapshot: CanonicalLifecycleSnapshot, plan: ReconciliationPlan, ports: PlannerPorts): InvariantResult {
+  const violations: string[] = [];
+  const record = snapshot.record;
+  if (snapshot.classification.invalid) violations.push(snapshot.classification.invalid);
+  if (snapshot.spec.front_id !== undefined && record.front_id !== snapshot.spec.front_id) violations.push("FRONT_BINDING_MISMATCH");
+  if (snapshot.spec.roadmap_item_id !== undefined && record.roadmap_item_id !== snapshot.spec.roadmap_item_id) violations.push("FRONT_BINDING_MISMATCH");
+  if (plan.move === "NOOP") return {violations};
+  if (record.state === "BLOCKED" || record.state === "ESCALATED") {
+    if (!plan.lineage && !planRequiresNoLineage(plan.move)) violations.push("CANDIDATE_AFFECTING_MOVE_WITHOUT_LINEAGE");
+    if (plan.lineage && !lineageComplete(plan.lineage, ports)) violations.push("LINEAGE_UNPROVABLE");
+  }
+  // SAFETY: ambiguous or unauthorized identity never admits mutation.
+  if (plan.move !== "ESCALATE_OWNER" && plan.move !== "EXHAUST_REPAIR") {
+    if (snapshot.base.stale && !snapshot.base.advanced) violations.push("BASE_NOT_ANCESTRAL");
+    if (plan.lineage && plan.lineage.authorizedBaseSha !== snapshot.spec.expected_base_sha) violations.push("AUTHORIZED_BASE_MISMATCH");
+  }
+  // BOUNDEDNESS: no recovery move may exceed the persisted repair budget.
+  if (plan.move === "RESUME_INITIAL_BUILD" && record.repair_cycles !== 0) violations.push("INITIAL_RETRY_ALREADY_CONSUMED");
+  if (plan.move === "REQUEST_DETERMINISTIC_REPAIR" && record.repair_cycles >= 2) violations.push("REPAIR_LIMIT_REACHED");
+  return {violations};
+}
+const planRequiresNoLineage = (move: ReconciliationMove): boolean =>
+  ["NOOP", "REBIND_UNSTARTED_BASE", "REBIND_PRE_BUILD_BASE", "REBIND_POST_MERGE_BASE", "RESUME_INITIAL_BUILD",
+   "EXHAUST_REPAIR", "ESCALATE_OWNER", "INVALIDATE_FAILED_MERGE", "AMBIGUOUS", "RECOVER_NEGATED_RISK_ESCALATION",
+   "SYNCHRONIZE_CANDIDATE", "REOPEN_CI"].includes(move) ||
+  // Moves whose lineage is derived lazily by the applier after external reads.
+  (move === "REQUEST_DETERMINISTIC_REPAIR" || move === "RESUME_RECORDED_BUILD");
+function lineageComplete(lineage: CandidateLineage, ports: PlannerPorts): boolean {
+  if (!SHA40.test(lineage.builderReceiptHeadSha) || !SHA40.test(lineage.builderReceiptBaseSha)) return false;
+  if (!ports.verifyReceipt(lineage.builderReceiptHeadSha, lineage.builderReceiptBaseSha)) return false;
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// deriveReconciliationPlan
+//
+// Deterministic: the same normalized snapshot and the same external facts
+// always produce the same plan. The planner orders candidate-preserving moves
+// before base synchronization so a legitimate state is never invalidated
+// merely because the canonical base advanced.
+// ---------------------------------------------------------------------------
+export function deriveReconciliationPlan(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {
+  const record = snapshot.record;
+  if (snapshot.classification.invalid) return {move: "AMBIGUOUS", reason: snapshot.classification.invalid, lineage: undefined};
+  // Blocked and escalated states always need a recovery plan, even when the
+  // persisted base already matches: the lifecycle itself is stopped.
+  const blockedOrEscalated = record.state === "BLOCKED" || record.state === "ESCALATED";
+  if (!snapshot.base.stale && !blockedOrEscalated) return {move: "NOOP", reason: "persisted base matches authorized base", lineage: undefined};
+
+  if (snapshot.facts.privilegedInstall && privilegedInstallEffectChain(record)) return {move: "NOOP", reason: "privileged install waits at its own escalation path", lineage: undefined};
+  if (snapshot.facts.ownerEscalated && snapshot.facts.negatedRiskDecision) return recoverNegatedRisk(snapshot, ports);
+  if (snapshot.facts.builderFailure !== undefined && record.repair_cycles > 0 && record.pr !== undefined && record.head_sha !== undefined) {
+    const merged = safe(() => snapshot.observePr()?.identity.state === "MERGED");
+    if (merged) return adoptExternalMerge(snapshot, ports);
+  }
+
+  if (snapshot.facts.builderFailure !== undefined) return planBuilderFailure(snapshot, ports);
+  if (snapshot.facts.ciBlocked) return planBlockedCi(snapshot, ports);
+  if (record.state === "BUILDING") return planBuilding(snapshot, ports);
+  if (["MERGING"].includes(record.state)) return {move: "INVALIDATE_FAILED_MERGE", reason: "merge dispatch failed under an advanced base", lineage: undefined};
+  if (["DISCOVERED", "ADMITTED"].includes(record.state)) return {move: "REBIND_UNSTARTED_BASE", reason: "effect-free admission rebases to the authorized base", lineage: undefined};
+  if (postMergeStates.includes(record.state)) return {move: "REBIND_POST_MERGE_BASE", reason: "post-merge closeout records the canonical advance", lineage: undefined};
+  if (["CI_PENDING", "REVIEWING"].includes(record.state)) return planDecidedPostBuild(snapshot, ports);
+  if (snapshot.facts.ownerEscalated) return {move: "ESCALATE_OWNER", reason: "persisted owner escalation", lineage: undefined};
+  return {move: "AMBIGUOUS", reason: `no domain move for state ${record.state}`, lineage: undefined};
+}
+
+const postMergeStates = ["MERGED", "INSTALL_PENDING", "INSTALLING", "RUNTIME_PILOT_PENDING", "RUNTIME_PILOT_RUNNING", "RUNTIME_VERIFIED", "CLOSEOUT_PENDING", "CLOSEOUT_MERGED", "TERMINAL_COMPLETED"];
+
+function planBuilderFailure(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {
+  const record = snapshot.record;
+  // An initial builder failure with no candidate consumes one bounded re-run.
+  // The move applies at the matching base and across a verified advanced base.
+  if (record.repair_cycles === 0) {
+    if (snapshot.base.stale && !snapshot.base.advanced) return {move: "AMBIGUOUS", reason: "initial builder failure base is not ancestral", lineage: undefined};
+    return {move: "RESUME_INITIAL_BUILD", reason: "one bounded builder re-run after the initial failure", lineage: undefined};
+  }
+  const retryConsumable = record.repair_cycles > 0 && record.repair_cycles <= 2 && (record.builder_retry_reason === undefined || record.builder_retry_reason === "BUILDER_FAILURE");
+  if (retryConsumable && record.pr && record.head_sha && snapshot.facts.synchronizedCandidate && record.builder_session && record.reviewer_session && record.decision_id) return adoptVerifiedSynchronized(snapshot, ports);
+  if (retryConsumable && record.builder_retry_reason === "BUILDER_FAILURE" && !record.pr && !record.head_sha) return adoptPublishedInitialCandidate(snapshot, ports);
+  if (retryConsumable && record.builder_retry_reason === "BUILDER_FAILURE") return {move: "RESUME_RECORDED_BUILD", reason: "recorded builder retry resumes its bounded re-entry", lineage: undefined};
+  // At the matching base without a consumable retry reason, the builder
+  // failure waits for the governed retry to be recorded; re-entry happens
+  // through the normal BUILDING step, not recovery.
+  if (!snapshot.base.stale) return {move: "NOOP", reason: "builder failure waits at the matching base", lineage: undefined};
+  // A decided repair whose builder failed synchronizes across the advanced
+  // base while preserving its immutable decision evidence.
+  const decidedRepair = record.repair_cycles > 0 && record.repair_cycles <= 2 && record.pr && record.head_sha &&
+    record.builder_session && record.reviewer_session && record.decision_id && !record.builder_retry_reason &&
+    snapshot.base.stale;
+  if (decidedRepair) {
+    if (snapshot.decision.missing) return {move: "AMBIGUOUS", reason: "repair decision missing from the immutable ledger", lineage: undefined};
+    if (!snapshot.decision.loaded || !ports.decisionBoundToLineage(snapshot.decision.loaded)) return {move: "AMBIGUOUS", reason: "repair decision not bound to the candidate lineage", lineage: undefined};
+    if (!blockedCiEffectChain(record)) return {move: "AMBIGUOUS", reason: "builder failure effect chain invalid", lineage: undefined};
+    return {move: "SYNCHRONIZE_CANDIDATE", reason: "decided repair synchronizes across the advanced base after a builder failure", lineage: undefined};
+  }
+  return {move: "AMBIGUOUS", reason: "builder failure without a consumable retry", lineage: undefined};
+}
+
+function planBlockedCi(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {
+  const record = snapshot.record;
+  if (snapshot.base.stale && !snapshot.base.advanced) return {move: "AMBIGUOUS", reason: "blocked CI base is not ancestral", lineage: undefined};
+  if (!blockedCiEffectChain(record)) return {move: "AMBIGUOUS", reason: "blocked CI effect chain invalid", lineage: undefined};
+  if (!record.pr || !record.head_sha || !record.builder_session) return {move: "AMBIGUOUS", reason: "blocked CI candidate evidence missing", lineage: undefined};
+  // Green exact-head CI at the persisted base reopens the pipeline without any rebuild.
+  if (snapshot.base.persisted === snapshot.spec.expected_base_sha && ports.checksGreenAtHead(record.head_sha) && remoteMatchesSnapshot(snapshot)) {
+    return {move: "REOPEN_CI", reason: "green exact-head CI reopens the undecided candidate", lineage: undefined};
+  }
+  if (record.repair_cycles >= 2) return {move: "EXHAUST_REPAIR", reason: "bounded repair budget exhausted", lineage: undefined};
+  if (snapshot.base.stale) return {move: "SYNCHRONIZE_CANDIDATE", reason: "terminal failed CI synchronizes the trusted candidate across the advanced base", lineage: undefined};
+  return {move: "REQUEST_DETERMINISTIC_REPAIR", reason: "terminal failed CI consumes a bounded deterministic repair cycle", lineage: undefined};
+}
+
+function planBuilding(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {
+  const record = snapshot.record;
+  if (record.repair_cycles === 1 && record.builder_retry_reason === "BUILDER_FAILURE" && !record.pr && !record.head_sha) {
+    return adoptPublishedInitialCandidate(snapshot, ports);
+  }
+  if (record.repair_cycles > 0 && record.repair_cycles <= 2 && record.pr && record.head_sha && record.builder_session && record.reviewer_session && record.decision_id) {
+    if (snapshot.decision.missing) return {move: "AMBIGUOUS", reason: "repair decision missing from the immutable ledger", lineage: undefined};
+    if (!snapshot.decision.loaded || !ports.decisionBoundToLineage(snapshot.decision.loaded)) return {move: "AMBIGUOUS", reason: "repair decision not bound to the candidate lineage", lineage: undefined};
+    if (!blockedCiEffectChain(record)) return {move: "AMBIGUOUS", reason: "repair effect chain invalid", lineage: undefined};
+    return {move: "SYNCHRONIZE_CANDIDATE", reason: "decided repair candidate synchronizes across the advanced base", lineage: undefined};
+  }
+  const pristinePreBuild = record.repair_cycles === 0 && !record.pr && !record.head_sha && !record.builder_session &&
+    !record.reviewer_session && !record.decision_id &&
+    record.completed_effects.length === 1 && record.completed_effects[0] === `issue:${record.issue}`;
+  if (pristinePreBuild) {
+    return {move: "REBIND_PRE_BUILD_BASE", reason: "pristine pre-build Issue rebases to the authorized base", lineage: undefined};
+  }
+  return {move: "AMBIGUOUS", reason: "building state without a consumable reconciliation move", lineage: undefined};
+}
+
+function planDecidedPostBuild(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {
+  const record = snapshot.record;
+  if (validBridgeAdoptionFacts(record) && ports.verifyBridgeCandidate(snapshot.spec.expected_base_sha, record.head_sha!) && remoteMatchesSnapshot(snapshot)) {
+    return {move: "ADOPT_PUBLISHED_INITIAL_CANDIDATE", reason: "fully attested neutralization bridge adopted before ancestry fallback", lineage: undefined};
+  }
+  if (!snapshot.base.advanced) return {move: "AMBIGUOUS", reason: "decided post-build base is not ancestral", lineage: undefined};
+  return {move: "SYNCHRONIZE_CANDIDATE", reason: "undecided post-build candidate synchronizes across the advanced base", lineage: undefined};
+}
+
+function remoteMatchesSnapshot(snapshot: CanonicalLifecycleSnapshot): boolean {
+  return snapshot.observeRemoteHead() === snapshot.record.head_sha && snapshot.observePr()?.identity.headRefOid === snapshot.record.head_sha;
+}
+
+function adoptPublishedInitialCandidate(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {
+  const record = snapshot.record;
+  if (!snapshot.base.advanced) return {move: "AMBIGUOUS", reason: "published initial candidate base is not ancestral", lineage: undefined};
+  const trusted = snapshot.observePublishedCandidates().filter(candidate =>
+    candidate.trustedAuthor && candidate.base === record.base_sha &&
+    (candidate.identity.mergeable === "MERGEABLE" || candidate.identity.mergeable === "UNKNOWN" || candidate.identity.mergeable === undefined) &&
+    candidate.number !== record.pr);
+  if (trusted.length !== 1) return {move: "AMBIGUOUS", reason: `published candidate count invalid: ${trusted.length}`, lineage: undefined};
+  return {move: "ADOPT_PUBLISHED_INITIAL_CANDIDATE", reason: "one trusted published candidate adopted and synchronized", lineage: undefined};
+}
+
+function adoptVerifiedSynchronized(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {
+  const record = snapshot.record;
+  const chain = snapshot.effectChain;
+  const originAnchored = (!!chain && (chain.syncHeads.length > 0 || (record.builder_receipt_head_sha !== undefined && record.builder_receipt_base_sha !== undefined))) ||
+    (!!snapshot.adoptionEvent && Array.isArray(snapshot.adoptionEvent.prior_effects) && snapshot.adoptionEvent.prior_effects.some((effect: unknown) => typeof effect === "string" && effect.startsWith("base-sync:")));
+  if (!originAnchored || !record.issue || !record.pr || !record.head_sha) {
+    return {move: "AMBIGUOUS", reason: "synchronized candidate evidence incomplete", lineage: undefined};
+  }
+  // The builder-recovered:<head> session shape is produced by the adoption
+  // applier; a synchronized candidate may still carry its original session.
+  // The false-provenance repair family: the current decision is a deterministic
+  // provenance-recovery repair of the exact synchronized head. Its immutable
+  // adoption event names the prior governed repair decision that is the true
+  // provenance root. The generic role check replaces every incident predicate.
+  const provenanceRepairHead = deterministicBuilderProvenanceRepairSessionHead(record.reviewer_session);
+  if (provenanceRepairHead === record.head_sha) return revertInvalidatedAdoption(snapshot, ports);
+  const prior = snapshot.decision.loaded;
+  if (!prior || !ports.decisionBoundToLineage(prior)) return {move: "AMBIGUOUS", reason: "synchronized candidate has no decision bound to its lineage", lineage: undefined};
+  if (!ports.checksGreenAtHead(record.head_sha)) return {move: "AMBIGUOUS", reason: "synchronized candidate CI not green", lineage: undefined};
+  const lineage = deriveCandidateLineage(snapshot, prior);
+  if (!lineage) return {move: "AMBIGUOUS", reason: "synchronized candidate lineage underivable", lineage: undefined};
+  return {move: "ADOPT_VERIFIED_SYNCHRONIZED_CANDIDATE", reason: "verified synchronized candidate re-enters review with persisted provenance", lineage};
+}
+
+function revertInvalidatedAdoption(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {
+  const record = snapshot.record;
+  const adoption = safe(() => ports.recordedAdoptionEvent(record));
+  if (!adoption || !Number.isInteger(adoption.repair_cycle) || adoption.repair_cycle < 1) {
+    return {move: "AMBIGUOUS", reason: "adoption event missing for the invalidated provenance repair", lineage: undefined};
+  }
+  const prior = safe(() => adoption.prior_decision_id ? ports.loadDecision(String(adoption.prior_decision_id)) : undefined);
+  if (!prior) return {move: "AMBIGUOUS", reason: "prior repair decision missing from the immutable ledger", lineage: undefined};
+  const priorHeadRecorded = Array.isArray(adoption.prior_effects) && (adoption.prior_effects.includes(`build:${prior.head_sha}`) || adoption.prior_effects.includes(`base-sync:${prior.head_sha}`));
+  if (!ports.decisionBoundToLineage(prior) && !priorHeadRecorded) return {move: "AMBIGUOUS", reason: "prior repair decision not bound to the candidate lineage", lineage: undefined};
+  if (!ports.checksGreenAtHead(record.head_sha!)) return {move: "AMBIGUOUS", reason: "same-head CI not green", lineage: undefined};
+  const lineage = deriveCandidateLineage({...snapshot, decision: {id: prior.decision_id, loaded: prior, missing: false}}, prior);
+  if (!lineage) return {move: "AMBIGUOUS", reason: "invalidated adoption lineage underivable", lineage: undefined};
+  return {move: "REVERT_INVALIDATED_ADOPTION", reason: "false deterministic provenance repair reverted to its immutable prior adoption", lineage};
+}
+
+function adoptExternalMerge(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {
+  const record = snapshot.record;
+  const chain = snapshot.effectChain;
+  if (!chain || !record.pr || !record.head_sha || chain.mergeCommit !== undefined) return {move: "AMBIGUOUS", reason: "external merge evidence incomplete", lineage: undefined};
+  if (!ports.authorizedBaseIsCanonicalTip()) return {move: "AMBIGUOUS", reason: "authorized base is not the canonical tip", lineage: undefined};
+  return {move: "ADOPT_EXTERNAL_MERGE", reason: "externally merged candidate adopted after full identity and CI verification", lineage: undefined};
+}
+
+function recoverNegatedRisk(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {
+  const record = snapshot.record;
+  const decision = snapshot.decision.loaded;
+  if (!decision) return {move: "ESCALATE_OWNER", reason: "escalation decision missing", lineage: undefined};
+  // Semantic role: an escalation decision is generically recoverable when its
+  // recorded review outcome is internally consistent (PASS with no findings, or
+  // CHANGES_REQUESTED with findings). The exact enum combination of one
+  // historical incident is never the gate.
+  const findings = "review_findings_count" in decision ? decision.review_findings_count : undefined;
+  const consistent = "review_consistent" in decision ? decision.review_consistent === true : true;
+  const reviewRecoverable = consistent &&
+    (decision.codex_review === "PASS" ? findings === undefined || findings === 0 : false) ||
+    (decision.codex_review === "CHANGES_REQUESTED" ? findings !== undefined && findings > 0 : false);
+  if (!reviewRecoverable || !snapshot.base.advanced) return {move: "ESCALATE_OWNER", reason: "escalation decision is not recoverable generically", lineage: undefined};
+  if (!blockedCiEffectChain(record)) return {move: "AMBIGUOUS", reason: "negated-risk effect chain invalid", lineage: undefined};
+  return {move: "RECOVER_NEGATED_RISK_ESCALATION", reason: "risk classification negated on the authorized item; escalation recovered after base advance", lineage: undefined};
+}
+
+function safe<T>(operation: () => T): T | undefined {try {return operation();} catch {return undefined;}}
+
+// Deterministic-CI repair sessions are derived, never persisted ad hoc.
+export const deterministicRepairSession = (head: string) => `reviewer:deterministic-ci:${head}`;
+export const recoveredBuilderSession = (head: string) => `builder-recovered:${head}`;
+export {blockedCiEffectChain, expandableBlockedCiEffectChain, privilegedInstallEffectChain};
