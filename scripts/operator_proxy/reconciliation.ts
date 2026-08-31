@@ -89,7 +89,7 @@ export function validateInvariantSet(snapshot: CanonicalLifecycleSnapshot, plan:
 }
 const planRequiresNoLineage = (move: ReconciliationMove): boolean =>
   ["NOOP", "REBIND_UNSTARTED_BASE", "REBIND_PRE_BUILD_BASE", "REBIND_POST_MERGE_BASE", "RESUME_INITIAL_BUILD",
-   "ESHAUST_REPAIR", "ESCALATE_OWNER", "INVALIDATE_FAILED_MERGE", "AMBIGUOUS", "RECOVER_NEGATED_RISK_ESCALATION",
+   "EXHAUST_REPAIR", "ESCALATE_OWNER", "INVALIDATE_FAILED_MERGE", "AMBIGUOUS", "RECOVER_NEGATED_RISK_ESCALATION",
    "SYNCHRONIZE_CANDIDATE", "REOPEN_CI"].includes(move) ||
   // Moves whose lineage is derived lazily by the applier after external reads.
   (move === "REQUEST_DETERMINISTIC_REPAIR" || move === "RESUME_RECORDED_BUILD");

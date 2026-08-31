@@ -1,6 +1,7 @@
 import {appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync} from "node:fs";
 import {join} from "node:path";
 import type {LifecycleRecord, LifecycleState} from "./types.js";
+import {CONTROL_PLANE_VERSION} from "./lineage.js";
 import {transitionLifecycle} from "./state_machine.js";
 import {redactSensitiveData,safeJson} from "./redaction.js";
 
@@ -40,9 +41,10 @@ export class LifecycleStore {
   }
   save(record: LifecycleRecord) {
     record=redactSensitiveData(record);
-    const path=this.path(record.front_id); const tmp=`${path}.${process.pid}.tmp`;
-    writeFileSync(tmp,`${JSON.stringify(record,null,2)}\n`,{flag:"wx"}); renameSync(tmp,path);
-    appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_saved",front_id:record.front_id,state:record.state,updated_utc:record.updated_utc})}\n`);
+    const persisted={...record,state_writer_control_plane_version:CONTROL_PLANE_VERSION};
+    const path=this.path(persisted.front_id); const tmp=`${path}.${process.pid}.tmp`;
+    writeFileSync(tmp,`${JSON.stringify(persisted,null,2)}\n`,{flag:"wx"}); renameSync(tmp,path);
+    appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_saved",front_id:persisted.front_id,state:persisted.state,updated_utc:persisted.updated_utc})}\n`);
   }
   advance(record: LifecycleRecord, next: LifecycleState, patch: Partial<LifecycleRecord>={}): LifecycleRecord {
     const updated={...record,...patch,state:transitionLifecycle(record.state,next),updated_utc:new Date().toISOString()}; this.save(updated); return updated;
