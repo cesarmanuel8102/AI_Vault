@@ -226,7 +226,8 @@ function adoptPublishedInitialCandidate(snapshot: CanonicalLifecycleSnapshot, po
 function adoptVerifiedSynchronized(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {
   const record = snapshot.record;
   const chain = snapshot.effectChain;
-  const originAnchored = !!chain && (chain.syncHeads.length > 0 || (record.builder_receipt_head_sha !== undefined && record.builder_receipt_base_sha !== undefined));
+  const originAnchored = (!!chain && (chain.syncHeads.length > 0 || (record.builder_receipt_head_sha !== undefined && record.builder_receipt_base_sha !== undefined))) ||
+    (!!snapshot.adoptionEvent && Array.isArray(snapshot.adoptionEvent.prior_effects) && snapshot.adoptionEvent.prior_effects.some((effect: unknown) => typeof effect === "string" && effect.startsWith("base-sync:")));
   if (!originAnchored || !record.issue || !record.pr || !record.head_sha) {
     return {move: "AMBIGUOUS", reason: "synchronized candidate evidence incomplete", lineage: undefined};
   }

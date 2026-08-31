@@ -189,13 +189,20 @@ export class ProductionEffects implements AutonomousEffects {
       decisionBoundToLineage: decision => decisionBoundToLineageRole(decision, spec, state, this.bus),
     };
   }
+  private snapshotDeps(): Parameters<typeof normalizeObservedFacts>[2] {
+    return {
+      bus: this.bus,
+      loadDecision: id => safe(() => this.ledger.load(id)),
+      loadAdoption: record => new LifecycleStore(join(this.root, "lifecycle")).verifiedSynchronizedBuilderAdoption(record),
+    };
+  }
   derivePlan(spec: ProxySpec, state: LifecycleRecord): ReconciliationPlan {
-    const snapshot = normalizeObservedFacts(spec, state, {bus: this.bus, loadDecision: id => safe(() => this.ledger.load(id))});
+    const snapshot = normalizeObservedFacts(spec, state, this.snapshotDeps());
     return deriveReconciliationPlan(snapshot, this.plannerPorts(spec, state));
   }
   /** Non-mutating dry-run: outputs the normalized snapshot, lineage, invariants and plan. */
   dryRunReconciliation(spec: ProxySpec, state: LifecycleRecord) {
-    const snapshot = normalizeObservedFacts(spec, state, {bus: this.bus, loadDecision: id => safe(() => this.ledger.load(id))});
+    const snapshot = normalizeObservedFacts(spec, state, this.snapshotDeps());
     const plan = deriveReconciliationPlan(snapshot, this.plannerPorts(spec, state));
     const invariants = validateInvariantSet(snapshot, plan, this.plannerPorts(spec, state));
     return {snapshot, plan, invariants};

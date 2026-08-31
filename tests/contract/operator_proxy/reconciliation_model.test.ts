@@ -274,3 +274,28 @@ test("model-based: historical incident states #250-#257 replay through generic r
   const falsePlan = deriveReconciliationPlan(falseSnapshot, portsWithEvent);
   assert.equal(falsePlan.move, "REVERT_INVALIDATED_ADOPTION");
 });
+
+test("compacted false-provenance state derives lineage from its immutable adoption event", () => {
+  const world: World = {baseChain: [SHA(1), SHA(2)], heads: [SHA(3), SHA(4)], externalMerge: false, checksGreen: true, remoteHead: SHA(4)};
+  const bus = makeBus(world), prior = decision(SHA(3), SHA(1));
+  const record: any = {
+    ...produceLifecycle(["admit", "issue", "build", "ci-fail"]),
+    state: "BLOCKED", last_error: "BUILDER_FAILED:UNKNOWN_BUILD_FAILURE", last_error_detail: "UNCLASSIFIED",
+    repair_cycles: 2, builder_retry_reason: "BUILDER_FAILURE", pr: prNumber,
+    reviewer_session: `reviewer:builder-provenance-recovery:${SHA(4)}`,
+    decision_id: "22222222-2222-4222-8222-222222222222", head_sha: SHA(4),
+    completed_effects: [`issue:${issue}`, `build:${SHA(4)}`],
+  };
+  const adoption = {
+    event: "lifecycle_verified_synchronized_builder_candidate_adopted", front_id: spec.front_id,
+    issue, pr: prNumber, head_sha: SHA(4), repair_cycle: 1, prior_decision_id: prior.decision_id,
+    prior_effects: [`issue:${issue}`, `build:${SHA(3)}`, `base-sync:${SHA(4)}`],
+  };
+  const snapshot = normalizeObservedFacts(spec, record, {bus, loadDecision: () => prior, loadAdoption: () => adoption});
+  const plan = deriveReconciliationPlan(snapshot, {...ports(true), recordedAdoptionEvent: () => adoption, loadDecision: () => prior});
+  assert.equal(snapshot.effectChain?.syncHeads.length ?? 0, 0);
+  assert.equal(snapshot.facts.synchronizedCandidate, true);
+  assert.equal(plan.move, "REVERT_INVALIDATED_ADOPTION");
+  assert.deepEqual(plan.lineage?.synchronizationHeads, [SHA(4)]);
+  assert.equal(plan.lineage?.builderOriginHeadSha, SHA(3));
+});

@@ -137,6 +137,8 @@ export interface CanonicalLifecycleSnapshot {
   controlPlane: {writerVersion: number; runtimeVersion: number};
   base: {persisted: string; authorized: string; advanced: boolean; stale: boolean};
   effectChain: EffectChain | undefined;
+  /** Immutable adoption evidence survives lifecycle effect compaction. */
+  adoptionEvent: any | undefined;
   builder: {
     session: string | undefined;
     recoveredHead: string | undefined;
@@ -192,6 +194,8 @@ function observedPr(bus: SnapshotBus, spec: ProxySpec, number: number, head: str
 export interface SnapshotDeps {
   bus: SnapshotBus;
   loadDecision(id: string): NormalizedDecision | undefined;
+  /** Reads immutable adoption provenance for the false-repair recovery path. */
+  loadAdoption?(record: LifecycleRecord): unknown;
 }
 
 export function normalizeObservedFacts(spec: ProxySpec, record: LifecycleRecord, deps: SnapshotDeps): CanonicalLifecycleSnapshot {
@@ -204,6 +208,20 @@ export function normalizeObservedFacts(spec: ProxySpec, record: LifecycleRecord,
   }
   const builderFailure = builderFailureClass(record.last_error);
   const failure = record.state === "BLOCKED" && builderFailure !== undefined;
+  const provenanceRepairHead = deterministicBuilderProvenanceRepairSessionHead(record.reviewer_session);
+  let adoptionEvent: any;
+  let adoptionLookupFailed = false;
+  // Only the terminal provenance-repair shape may require journal adoption
+  // evidence. Ordinary builder retries must retain their historical path.
+  const needsAdoption = provenanceRepairHead === record.head_sha && record.repair_cycles === 2 &&
+    record.builder_retry_reason === "BUILDER_FAILURE" && !!record.pr && !!record.decision_id;
+  if (needsAdoption && deps.loadAdoption) {
+    try { adoptionEvent = deps.loadAdoption(record); } catch { adoptionLookupFailed = true; }
+  }
+  const adoptionValid = !!adoptionEvent && adoptionEvent.event === "lifecycle_verified_synchronized_builder_candidate_adopted" &&
+    adoptionEvent.front_id === record.front_id && adoptionEvent.issue === record.issue && adoptionEvent.pr === record.pr &&
+    adoptionEvent.head_sha === record.head_sha && Number.isInteger(adoptionEvent.repair_cycle) && adoptionEvent.repair_cycle > 0 &&
+    Array.isArray(adoptionEvent.prior_effects) && adoptionEvent.prior_effects.length > 0;
   return {
     spec,
     record,
@@ -215,6 +233,7 @@ export function normalizeObservedFacts(spec: ProxySpec, record: LifecycleRecord,
       stale: record.base_sha !== spec.expected_base_sha,
     },
     effectChain: decodeEffectChain(record),
+    adoptionEvent,
     builder: {
       session: record.builder_session,
       recoveredHead: recoveredBuilderSessionHead(record.builder_session),
@@ -232,9 +251,9 @@ export function normalizeObservedFacts(spec: ProxySpec, record: LifecycleRecord,
       negatedRiskDecision: decision !== undefined && decision.risk === "CRITICAL" && decision.deterministic_gate === "PASS" &&
         decision.policy_decision === "ESCALATE_TO_OWNER" && decision.allowed_action === "NONE" && classifyRisk(spec) !== "CRITICAL" && classifyRisk(spec) !== "HIGH",
       recordedRetry: record.builder_retry_reason === "BUILDER_FAILURE" && record.repair_cycles > 0 && record.repair_cycles <= 2,
-      synchronizedCandidate: blockedCiEffectChain(record) && ((decodeEffectChain(record)?.syncHeads.length ?? 0) > 0 || (record.builder_receipt_head_sha !== undefined && record.builder_receipt_base_sha !== undefined)),
+      synchronizedCandidate: blockedCiEffectChain(record) && ((decodeEffectChain(record)?.syncHeads.length ?? 0) > 0 || (record.builder_receipt_head_sha !== undefined && record.builder_receipt_base_sha !== undefined) || adoptionValid),
     },
-    classification: {},
+    classification: adoptionLookupFailed ? {invalid: "ADOPTION_EVIDENCE_UNAVAILABLE"} : {},
   };
 }
 function lazyObservations(bus: SnapshotBus, spec: ProxySpec, record: LifecycleRecord): Pick<CanonicalLifecycleSnapshot, "observeIssue" | "observePr" | "observeRemoteHead" | "observePublishedCandidates"> {
@@ -284,6 +303,7 @@ function invalid(spec: ProxySpec, record: LifecycleRecord, reason: string): Cano
     controlPlane: {writerVersion: writerVersion(record.state_writer_control_plane_version), runtimeVersion: CONTROL_PLANE_VERSION},
     base: {persisted: record.base_sha, authorized: spec.expected_base_sha, advanced: false, stale: record.base_sha !== spec.expected_base_sha},
     effectChain: undefined,
+    adoptionEvent: undefined,
     builder: {session: record.builder_session, recoveredHead: recoveredBuilderSessionHead(record.builder_session), receiptHead: record.builder_receipt_head_sha, receiptBase: record.builder_receipt_base_sha, retryPending: record.builder_retry_reason === "BUILDER_FAILURE"},
     decision: {id: record.decision_id, loaded: undefined, missing: record.decision_id !== undefined},
     ...lazyObservations({issueSnapshot: () => undefined, prIdentity: () => ({}), prCandidatesByBranch: () => [], remoteBranchHead: () => undefined, isAncestor: () => false, commitMessage: () => "", call: () => ""} as unknown as SnapshotBus, spec, record),
@@ -318,7 +338,11 @@ export interface CandidateLineage {
   mergeCommitSha: string | undefined;
 }
 export function deriveCandidateLineage(snapshot: CanonicalLifecycleSnapshot, decision: NormalizedDecision): CandidateLineage | undefined {
-  const chain = snapshot.effectChain;
+  // A compacted record can still decode its current `build` entry, but that
+  // is not the complete lineage. Prefer the immutable event whenever it
+  // carries the synchronization chain.
+  const eventChain = adoptionEffectChain(snapshot.adoptionEvent, snapshot.record);
+  const chain = eventChain ?? snapshot.effectChain;
   const record = snapshot.record;
   if (!chain || !record.issue || !record.pr || !record.head_sha) return undefined;
   return {
@@ -337,6 +361,19 @@ export function deriveCandidateLineage(snapshot: CanonicalLifecycleSnapshot, dec
     currentCandidateHeadSha: record.head_sha,
     mergeCommitSha: chain.mergeCommit,
   };
+}
+
+function adoptionEffectChain(adoption: any, record: LifecycleRecord): EffectChain | undefined {
+  if (!adoption || adoption.event !== "lifecycle_verified_synchronized_builder_candidate_adopted" ||
+      adoption.front_id !== record.front_id || adoption.issue !== record.issue || adoption.pr !== record.pr ||
+      adoption.head_sha !== record.head_sha || !Array.isArray(adoption.prior_effects)) return undefined;
+  const effects = adoption.prior_effects;
+  const issueEffect = `issue:${record.issue}`;
+  if (effects[0] !== issueEffect) return undefined;
+  const build = /^build:([0-9a-f]{40})$/.exec(effects.find((value: unknown) => typeof value === "string" && value.startsWith("build:")) ?? "");
+  const syncHeads = effects.filter((value: unknown): value is string => typeof value === "string" && /^base-sync:[0-9a-f]{40}$/.test(value)).map((value: string) => value.slice("base-sync:".length));
+  if (!build || syncHeads.at(-1) !== record.head_sha || new Set(effects).size !== effects.length) return undefined;
+  return {issueEffect, buildHead: build[1]!, syncHeads};
 }
 
 // A decision participates in the lineage by semantic role: it is a governed
