@@ -28,6 +28,8 @@ export interface LifecycleRecord {
   base_sha: string;
   head_sha?: string;
   builder_session?: string;
+  builder_receipt_head_sha?: string;
+  builder_receipt_base_sha?: string;
   reviewer_session?: string;
   decision_id?: string;
   repair_cycles: number;
