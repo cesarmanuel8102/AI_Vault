@@ -411,6 +411,7 @@ export class ProductionEffects implements AutonomousEffects {
     const branchState = {...recoveryState, state: "BLOCKED" as const, last_error: "CI_FAILED", repair_cycles: 0, reviewer_session: undefined, decision_id: undefined};
     this.boundary.beginBlockedCiRecovery(spec, branchState);
     try {
+      this.bindObservedBlockedCiHead(spec, branchState);
       const nextHead = this.builder.synchronizeBlockedCiBase(spec, branchState);
       this.boundary.bindBlockedCiRecoveryHead(nextHead);
       if (snapshot.body === oldBody) this.bus.replaceIssueBodyExact(state.issue!, oldBody, nextBody, nextHead);
