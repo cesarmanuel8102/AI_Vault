@@ -101,7 +101,6 @@ export class ProductionEffects implements AutonomousEffects {
     };
     const isControlledMetadataCommit=(sha:string,parent:string)=>{
       if(!/^fix\(control-plane\): /.test(firstLine(this.bus.commitMessage(sha))))return false;
-      if(!this.bus.isAncestor(baseSha,parent))return false;
       const parents=commitParents(sha),files=commitFiles(sha);
       const allowed=(path:string)=>path==="ROADMAP_STATUS.json"||path==="docs/MIGRATION_CONTROL_LEDGER.md"||path.startsWith("docs/roadmap/");
       return parents.length===1&&parents[0]===parent&&!!files&&files.every(allowed);
@@ -153,7 +152,7 @@ export class ProductionEffects implements AutonomousEffects {
       const message=this.bus.commitMessage(current);
       if(firstLine(message)===syncSubject){
         const parents=commitParents(current);
-        if(parents.length!==2||!this.bus.isAncestor(baseSha,parents[1]))return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
+        if(parents.length!==2||(parents[1]!==baseSha&&!this.bus.isAncestor(parents[1],baseSha)))return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
         current=parents[0];
         continue;
       }
