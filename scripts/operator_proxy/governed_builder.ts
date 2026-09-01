@@ -279,9 +279,11 @@ export class GovernedBuilder {
       return {pr:prNumber,head_sha:committedHead,session,recovered_clean:true as const};}
     if(repairCycle>0&&existing&&git(worktree,["show","-s","--format=%s",initialHead])===`chore(control-plane): synchronize ${spec.front_id} base`){
       try{synchronizedRepairReceipt(worktree,initialHead,spec.front_id);const files=committed(worktree,spec.expected_base_sha);validateFiles(files,spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${spec.expected_base_sha}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});validatePublishedPr(spec,existing,this.bus.prIdentity(existing.number),initialHead,files);this.bus.bindPrToIssue(issue,existing.number);return {pr:existing.number,head_sha:initialHead,session,recovered_repair:true as const};}
-      catch(error){if(!(error instanceof Error)||error.message!=="recovered builder receipt invalid")throw error;}
-      // A synchronized legacy candidate has no receipt by definition. Rebuild it rather
-      // than treating the missing provenance as a validated recovery.
+      catch(error){
+        if(!(error instanceof Error)||!new Set(["recovered builder receipt invalid","recovered builder commit subject mismatch"]).has(error.message))throw error;
+        // A synchronized candidate with an intervening metadata commit is not a
+        // validated receipt at its current head. Rebuild it rather than accepting it.
+      }
     }
     const requestedRepair=repairCycle>0?this.bus.repairPrompt(issue):"";
     const repair=requestedRepair||(retryReason==="BUILDER_FAILURE"&&repairCycle>0?"Previous builder execution failed before producing a candidate. Re-run the approved objective exactly; do not infer reviewer findings or broaden scope.":"");
