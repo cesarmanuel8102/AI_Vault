@@ -100,6 +100,13 @@ function neutralizationMessage(front:string,legacyHead:string,baseSha:string){re
 function legacyBridgeMessage(front:string,neutralizationHead:string,freshHead:string,baseSha:string){return `feat(control-plane): complete ${front}\n\n${LEGACY_REBUILD_TRAILER}=true\n${NEUTRALIZATION_HEAD_TRAILER}=${neutralizationHead}\n${FRESH_BUILDER_HEAD_TRAILER}=${freshHead}\n${RESET_BASE_TRAILER}=${baseSha}`;}
 function diffEmpty(repo:string,a:string,b:string):boolean{try{git(repo,["diff","--quiet",`${a}..${b}`]);return true;}catch{return false;}}
 const synchronizationMergeability=(value:unknown)=>value==="MERGEABLE"||value==="UNKNOWN";
+export function waitForRemoteBranchHead(bus:BuilderBus,branch:string,expected:string):void{
+  for(let attempt=0;attempt<5;attempt++){
+    if(bus.remoteBranchHead(branch)===expected)return;
+    if(attempt<4)Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,1000);
+  }
+  throw new Error("blocked CI branch push readback failed");
+}
 
 export class GovernedBuilder {
   constructor(readonly sourceRepo:string,readonly worktreeRoot:string,readonly bus:BuilderBus,readonly assertEffect:EffectAssertion,readonly codex=process.env.CODEX_PATH??"codex"){}
@@ -142,7 +149,7 @@ export class GovernedBuilder {
     const nextFiles=git(worktree,["diff","--name-only",`${spec.expected_base_sha}..${nextHead}`]).split(/\r?\n/).filter(Boolean).sort();validateFiles(nextFiles,spec);
     // Agent Loop must preserve the existing candidate bytes until its mandatory receipt repair creates a new head.
     if(spec.executor==="agent_loop"){if(JSON.stringify(nextFiles)!==JSON.stringify(files))throw new Error("blocked CI Agent Loop tree changed during synchronization");}else native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${spec.expected_base_sha}..${nextHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});
-    if(nextHead!==remote){this.assertEffect("push",{issue:state.issue,expected_head:nextHead,...(remote!==state.head_sha?{observed_head:remote}:{})});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`${nextHead}:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});if(this.bus.remoteBranchHead(spec.work_branch)!==nextHead)throw new Error("blocked CI branch push readback failed");}
+    if(nextHead!==remote){this.assertEffect("push",{issue:state.issue,expected_head:nextHead,...(remote!==state.head_sha?{observed_head:remote}:{})});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`${nextHead}:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});waitForRemoteBranchHead(this.bus,spec.work_branch,nextHead);}
     const localHead=git(worktree,["rev-parse","HEAD"]);if(localHead!==nextHead){try{git(worktree,["merge-base","--is-ancestor",localHead,nextHead]);}catch{throw new Error("blocked CI local branch drift");}native(process.env.GIT_PATH??"git",["-C",worktree,"merge","--ff-only",nextHead],{stdio:"inherit",timeout:120000,windowsHide:true});}
     if(git(worktree,["rev-parse","HEAD"])!==nextHead||git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("blocked CI worktree synchronization failed");return nextHead;
   }
@@ -318,7 +325,7 @@ export class GovernedBuilder {
     if(!diffEmpty(worktree,baseSha,n)||git(worktree,["rev-parse",`${n}^`])!==legacyHead)throw new Error("legacy neutralization commit invalid");
     this.assertEffect("push",{issue,expected_head:n,observed_head:legacyHead});
     native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`${n}:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
-    if(this.bus.remoteBranchHead(spec.work_branch)!==n)throw new Error("legacy neutralization push readback failed");
+    waitForRemoteBranchHead(this.bus,spec.work_branch,n);
 
     const tempWorktree=join(this.worktreeRoot,`${spec.front_id}-legacy-${randomUUID()}`);
     native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","--detach",tempWorktree,baseSha],{stdio:"inherit",timeout:120000,windowsHide:true});
@@ -338,7 +345,7 @@ export class GovernedBuilder {
       if(git(worktree,["rev-parse",`${m}^1`])!==n||git(worktree,["rev-parse",`${m}^2`])!==r)throw new Error("legacy bridge parents invalid");
       this.assertEffect("push",{issue,expected_head:m,observed_head:n});
       native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`${m}:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
-      if(this.bus.remoteBranchHead(spec.work_branch)!==m)throw new Error("legacy bridge push readback failed");
+      waitForRemoteBranchHead(this.bus,spec.work_branch,m);
       this.bus.bindPrToIssue(issue,existing.number);
       return {pr:existing.number,head_sha:m,session,recovered_legacy:true as const};
     }finally{
