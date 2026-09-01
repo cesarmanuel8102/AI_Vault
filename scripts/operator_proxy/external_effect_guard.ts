@@ -47,7 +47,9 @@ export class ExternalEffectBoundary {
     if(!recovery||!spec||!/^[0-9a-f]{40}$/.test(observedHead)||observedHead===recovery.oldHead||!spec.work_branch)throw new Error("blocked CI observed head denied");
     const current=this.bus.prIdentity(recovery.pr),files=(current.files??[]).map((entry:any)=>String(entry.path));
     const allowed=(path:string)=>spec.allowed_paths.some(prefix=>prefix.endsWith("/")?path.startsWith(prefix):path===prefix)&&!spec.forbidden_paths.some(prefix=>path===prefix||path.startsWith(prefix.endsWith("/")?prefix:`${prefix}/`));
-    const exact=current.author?.login===REPO.split("/",1)[0]&&current.baseRefName==="codex/own-capital-sustainable-return"&&[recovery.oldBase,recovery.newBase].includes(current.baseRefOid)&&current.headRefName===spec.work_branch&&current.headRefOid===observedHead&&current.headRepository?.nameWithOwner===REPO&&current.isCrossRepository===false&&current.isDraft===true&&current.state==="OPEN"&&["MERGEABLE","UNKNOWN"].includes(current.mergeable)&&files.length>0&&files.every(allowed)&&this.bus.remoteBranchHead(spec.work_branch)===observedHead&&this.bus.isAncestor(recovery.oldHead,observedHead);
+    const baseRef=String(current.baseRefOid??"");
+    const baseInRecoveryChain=baseRef===recovery.oldBase||baseRef===recovery.newBase||(/^[0-9a-f]{40}$/.test(baseRef)&&this.bus.isAncestor(recovery.oldBase,baseRef)&&this.bus.isAncestor(baseRef,recovery.newBase));
+    const exact=current.author?.login===REPO.split("/",1)[0]&&current.baseRefName==="codex/own-capital-sustainable-return"&&baseInRecoveryChain&&current.headRefName===spec.work_branch&&current.headRefOid===observedHead&&current.headRepository?.nameWithOwner===REPO&&current.isCrossRepository===false&&current.isDraft===true&&current.state==="OPEN"&&["MERGEABLE","UNKNOWN"].includes(current.mergeable)&&files.length>0&&files.every(allowed)&&this.bus.remoteBranchHead(spec.work_branch)===observedHead&&this.bus.isAncestor(recovery.oldHead,observedHead);
     if(!exact)throw new Error("blocked CI observed head identity invalid");
     recovery.observedHead=observedHead;
   }
