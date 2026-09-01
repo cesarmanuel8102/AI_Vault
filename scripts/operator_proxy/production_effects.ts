@@ -94,6 +94,18 @@ export class ProductionEffects implements AutonomousEffects {
       const commit=JSON.parse(this.bus.call(["api",`repos/${this.bus.repo}/git/commits/${sha}`]));
       return typeof commit?.tree?.sha==="string"&&/^[0-9a-f]{40}$/.test(commit.tree.sha)?commit.tree.sha:"";
     };
+    const commitFiles=(sha:string)=>{
+      const commit=JSON.parse(this.bus.call(["api",`repos/${this.bus.repo}/commits/${sha}`]));
+      return Array.isArray(commit?.files)&&commit.files.length>0&&commit.files.length<300&&commit.files.every((file:any)=>typeof file?.filename==="string")
+        ?commit.files.map((file:any)=>file.filename as string):undefined;
+    };
+    const isControlledMetadataCommit=(sha:string,parent:string)=>{
+      if(!/^fix\(control-plane\): /.test(firstLine(this.bus.commitMessage(sha))))return false;
+      if(!this.bus.isAncestor(baseSha,parent))return false;
+      const parents=commitParents(sha),files=commitFiles(sha);
+      const allowed=(path:string)=>path==="ROADMAP_STATUS.json"||path==="docs/MIGRATION_CONTROL_LEDGER.md"||path.startsWith("docs/roadmap/");
+      return parents.length===1&&parents[0]===parent&&!!files&&files.every(allowed);
+    };
     const trailer=(message:string,prefix:string)=>message.replace(/\r\n/g,"\n").split("\n").slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
     const firstLine=(message:string)=>message.replace(/\r\n/g,"\n").split("\n",1)[0];
 
@@ -145,10 +157,14 @@ export class ProductionEffects implements AutonomousEffects {
         current=parents[0];
         continue;
       }
+      const parents=commitParents(current);
+      if(parents.length===1&&isControlledMetadataCommit(current,parents[0])){
+        current=parents[0];
+        continue;
+      }
       const fresh=verifyFreshReceipt(current);
       if(!fresh)return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
       if(!candidate)candidate=fresh;
-      const parents=commitParents(current);
       if(parents.length===0)return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
       current=parents[0];
     }
