@@ -1,6 +1,7 @@
 import {appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync} from "node:fs";
 import {join} from "node:path";
 import type {LifecycleRecord, LifecycleState} from "./types.js";
+import {CONTROL_PLANE_VERSION} from "./lineage.js";
 import {transitionLifecycle} from "./state_machine.js";
 import {redactSensitiveData,safeJson} from "./redaction.js";
 
@@ -34,14 +35,16 @@ export class LifecycleStore {
   load(front: string): LifecycleRecord | undefined {
     const path=this.path(front); if(!existsSync(path)) return undefined;
     const record=JSON.parse(readFileSync(path,"utf8")) as LifecycleRecord;
-    if(record.schema_version!==1||record.front_id!==front||!Array.isArray(record.completed_effects)) throw new Error("lifecycle state invalid");
+    const receiptAnchors=[record.builder_receipt_head_sha,record.builder_receipt_base_sha];
+    if(record.schema_version!==1||record.front_id!==front||!Array.isArray(record.completed_effects)||receiptAnchors.some(value=>value!==undefined)&&!receiptAnchors.every(value=>typeof value==="string"&&/^[0-9a-f]{40}$/.test(value))) throw new Error("lifecycle state invalid");
     return record;
   }
   save(record: LifecycleRecord) {
     record=redactSensitiveData(record);
-    const path=this.path(record.front_id); const tmp=`${path}.${process.pid}.tmp`;
-    writeFileSync(tmp,`${JSON.stringify(record,null,2)}\n`,{flag:"wx"}); renameSync(tmp,path);
-    appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_saved",front_id:record.front_id,state:record.state,updated_utc:record.updated_utc})}\n`);
+    const persisted={...record,state_writer_control_plane_version:CONTROL_PLANE_VERSION};
+    const path=this.path(persisted.front_id); const tmp=`${path}.${process.pid}.tmp`;
+    writeFileSync(tmp,`${JSON.stringify(persisted,null,2)}\n`,{flag:"wx"}); renameSync(tmp,path);
+    appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_saved",front_id:persisted.front_id,state:persisted.state,updated_utc:persisted.updated_utc})}\n`);
   }
   advance(record: LifecycleRecord, next: LifecycleState, patch: Partial<LifecycleRecord>={}): LifecycleRecord {
     const updated={...record,...patch,state:transitionLifecycle(record.state,next),updated_utc:new Date().toISOString()}; this.save(updated); return updated;
@@ -136,15 +139,26 @@ export class LifecycleStore {
   adoptBlockedBuilderCandidate(record:LifecycleRecord,head:string,pr:number,builderSession:string):LifecycleRecord {
     const exact=record.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(record.last_error??"")&&record.builder_retry_reason==="BUILDER_FAILURE"&&record.repair_cycles>0&&record.repair_cycles<=2&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&Number.isInteger(pr)&&pr>0&&!!record.head_sha&&!!record.builder_session&&!!record.reviewer_session&&!!record.decision_id&&validBlockedCiEffectChain(record);
     if(!exact||!/^[0-9a-f]{40}$/.test(head)||head===record.head_sha||!/^builder-recovered:[0-9a-f]{40}$/.test(builderSession))throw new Error("blocked builder candidate adoption denied");
-    const updated={...record,state:"CI_PENDING" as const,pr,head_sha:head,builder_session:builderSession,reviewer_session:undefined,decision_id:undefined,last_error:undefined,last_error_detail:undefined,builder_retry_reason:undefined,completed_effects:[`issue:${record.issue}`,`build:${head}`],updated_utc:new Date().toISOString()};
+    const updated={...record,state:"CI_PENDING" as const,pr,head_sha:head,builder_session:builderSession,builder_receipt_head_sha:undefined,builder_receipt_base_sha:undefined,reviewer_session:undefined,decision_id:undefined,last_error:undefined,last_error_detail:undefined,builder_retry_reason:undefined,completed_effects:[`issue:${record.issue}`,`build:${head}`],updated_utc:new Date().toISOString()};
     this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_blocked_builder_candidate_adopted",front_id:record.front_id,issue:record.issue,old_pr:record.pr,new_pr:pr,old_head_sha:record.head_sha,new_head_sha:head,repair_cycle:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
   }
-  adoptVerifiedSynchronizedBuilderCandidate(record:LifecycleRecord,builderSession:string):LifecycleRecord {
+  adoptVerifiedSynchronizedBuilderCandidate(record:LifecycleRecord,builderSession:string,receiptHead:string,receiptBase:string):LifecycleRecord {
     const blocked=record.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(record.last_error??"")&&(record.builder_retry_reason===undefined||record.builder_retry_reason==="BUILDER_FAILURE"),advanced=record.state==="BUILDING"&&record.last_error===undefined&&record.builder_retry_reason==="BUILDER_FAILURE";
     const exact=(blocked||advanced)&&record.repair_cycles>0&&record.repair_cycles<=2&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&!!record.head_sha&&!!record.builder_session&&!!record.reviewer_session&&!!record.decision_id&&record.completed_effects.length>=3&&record.completed_effects.at(-1)===`base-sync:${record.head_sha}`&&validBlockedCiEffectChain(record);
-    if(!exact||builderSession!==`builder-recovered:${record.head_sha}`)throw new Error("verified synchronized builder candidate adoption denied");
-    const updated={...record,state:"CI_PENDING" as const,builder_session:builderSession,reviewer_session:undefined,decision_id:undefined,last_error:undefined,last_error_detail:undefined,builder_retry_reason:undefined,completed_effects:[`issue:${record.issue}`,`build:${record.head_sha}`],updated_utc:new Date().toISOString()};
-    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_verified_synchronized_builder_candidate_adopted",front_id:record.front_id,issue:record.issue,pr:record.pr,head_sha:record.head_sha,repair_cycle:record.repair_cycles,prior_decision_id:record.decision_id,prior_effects:record.completed_effects,updated_utc:updated.updated_utc})}\n`);return updated;
+    if(!exact||builderSession!==`builder-recovered:${record.head_sha}`||!/^[0-9a-f]{40}$/.test(receiptHead)||!/^[0-9a-f]{40}$/.test(receiptBase))throw new Error("verified synchronized builder candidate adoption denied");
+    const updated={...record,state:"CI_PENDING" as const,builder_session:builderSession,builder_receipt_head_sha:receiptHead,builder_receipt_base_sha:receiptBase,reviewer_session:undefined,decision_id:undefined,last_error:undefined,last_error_detail:undefined,builder_retry_reason:undefined,completed_effects:[`issue:${record.issue}`,`build:${record.head_sha}`],updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_verified_synchronized_builder_candidate_adopted",front_id:record.front_id,issue:record.issue,pr:record.pr,head_sha:record.head_sha,receipt_head_sha:receiptHead,receipt_base_sha:receiptBase,repair_cycle:record.repair_cycles,prior_decision_id:record.decision_id,prior_effects:record.completed_effects,updated_utc:updated.updated_utc})}\n`);return updated;
+  }
+  verifiedSynchronizedBuilderAdoption(record:LifecycleRecord):any {
+    const path=join(this.root,"events.jsonl");if(!existsSync(path))throw new Error("verified synchronized builder adoption event missing");
+    const matches=readFileSync(path,"utf8").split(/\r?\n/).filter(Boolean).map(line=>{try{return JSON.parse(line);}catch{throw new Error("lifecycle event ledger corrupt");}}).filter(value=>value?.event==="lifecycle_verified_synchronized_builder_candidate_adopted"&&value.front_id===record.front_id&&value.issue===record.issue&&value.pr===record.pr&&value.head_sha===record.head_sha);
+    if(matches.length!==1)throw new Error("verified synchronized builder adoption event missing or duplicate");return matches[0];
+  }
+  recoverFalseBuilderProvenanceRepair(record:LifecycleRecord,adoption:any,receiptHead:string,receiptBase:string):LifecycleRecord {
+    const exact=record.state==="BLOCKED"&&record.last_error==="BUILDER_FAILED:UNKNOWN_BUILD_FAILURE"&&record.last_error_detail==="UNCLASSIFIED"&&record.builder_retry_reason==="BUILDER_FAILURE"&&record.repair_cycles===adoption.repair_cycle+1&&record.repair_cycles<=2&&record.reviewer_session===`reviewer:builder-provenance-recovery:${record.head_sha}`&&record.decision_id&&record.completed_effects.length===2&&validBlockedCiEffectChain(record)&&adoption.prior_decision_id&&Array.isArray(adoption.prior_effects)&&adoption.prior_effects[0]===`issue:${record.issue}`&&adoption.prior_effects.at(-1)===`base-sync:${record.head_sha}`;
+    if(!exact||!/^[0-9a-f]{40}$/.test(receiptHead)||!/^[0-9a-f]{40}$/.test(receiptBase)||adoption.receipt_head_sha&&adoption.receipt_head_sha!==receiptHead||adoption.receipt_base_sha&&adoption.receipt_base_sha!==receiptBase)throw new Error("false builder provenance repair recovery denied");
+    const updated={...record,state:"CI_PENDING" as const,repair_cycles:adoption.repair_cycle,builder_receipt_head_sha:receiptHead,builder_receipt_base_sha:receiptBase,reviewer_session:undefined,decision_id:undefined,last_error:undefined,last_error_detail:undefined,builder_retry_reason:undefined,updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_false_builder_provenance_repair_recovered",front_id:record.front_id,issue:record.issue,pr:record.pr,base_sha:record.base_sha,head_sha:record.head_sha,receipt_head_sha:receiptHead,receipt_base_sha:receiptBase,invalidated_decision_id:record.decision_id,restored_repair_cycle:updated.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
   }
   resumeInitialBuilderFailure(record:LifecycleRecord):LifecycleRecord {
     const exact=record.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(record.last_error??"")&&record.repair_cycles===0&&Number.isInteger(record.issue)&&record.issue!>0&&!record.pr&&!record.head_sha&&!record.builder_session&&!record.reviewer_session&&!record.decision_id&&!record.builder_retry_reason&&record.completed_effects.length===1&&record.completed_effects[0]===`issue:${record.issue}`;

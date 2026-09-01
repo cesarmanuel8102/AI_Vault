@@ -28,6 +28,8 @@ export interface LifecycleRecord {
   base_sha: string;
   head_sha?: string;
   builder_session?: string;
+  builder_receipt_head_sha?: string;
+  builder_receipt_base_sha?: string;
   reviewer_session?: string;
   decision_id?: string;
   repair_cycles: number;
@@ -47,5 +49,9 @@ export interface LifecycleRecord {
     merge_commit_sha: string;
     reviewer_check: "review";
   };
+  // Control plane that last wrote this record. Absent on records persisted before
+  // the consolidation front and normalized to 1 on load. A writer-version change
+  // is an explicit modeled reconciliation input, never accidental reinterpretation.
+  state_writer_control_plane_version?: number;
   updated_utc: string;
 }

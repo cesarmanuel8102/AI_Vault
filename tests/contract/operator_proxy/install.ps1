@@ -35,7 +35,7 @@ New-Item $install -ItemType Directory -Force|Out-Null
 $old=[Text.Encoding]::UTF8.GetBytes('old-runtime')
 [IO.File]::WriteAllBytes((Join-Path $install 'operator_proxy.ts'),$old)
 $taskState=Join-Path $tmp 'task-state.txt';[IO.File]::WriteAllText($taskState,'Disabled')
-$validateStage={param($stage) foreach($required in @('operator_proxy.ts','external_effect_guard.ts','redaction.ts','review_contract.ts','builder_backend.ts','builder_config.ts','builder_router.ts','opencode_builder.ts')){if(!(Test-Path (Join-Path $stage $required))){throw "staging missing $required"}};New-Item (Join-Path $stage 'node_modules\.bin') -ItemType Directory -Force|Out-Null;[IO.File]::WriteAllText((Join-Path $stage 'node_modules\.bin\tsx.cmd'),'@echo off')}
+$validateStage={param($stage) foreach($required in @('operator_proxy.ts','external_effect_guard.ts','redaction.ts','review_contract.ts','builder_backend.ts','builder_config.ts','builder_router.ts','opencode_builder.ts','lineage.ts','reconciliation.ts')){if(!(Test-Path (Join-Path $stage $required))){throw "staging missing $required"}};New-Item (Join-Path $stage 'node_modules\.bin') -ItemType Directory -Force|Out-Null;[IO.File]::WriteAllText((Join-Path $stage 'node_modules\.bin\tsx.cmd'),'@echo off')}
 try {
     $compiledInstall=Join-Path $tmp 'compiled-install'
     $compiledOutput=@(Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $compiledInstall -ApprovedCommit $syntheticHead)
