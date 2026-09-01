@@ -44,13 +44,65 @@ export function reconcilePersistedRoadmapState(bus:GitHubBus,effects:ProductionE
   if(persisted.state==="ESCALATED"&&persisted.last_error==="LOCAL_PRIVILEGE_REQUIRED")return persisted;
   // Effect-free admission is a pure local rebind: no external state is involved.
   if(["DISCOVERED","ADMITTED"].includes(persisted.state)&&!persisted.issue&&!persisted.pr&&!persisted.head_sha&&!persisted.builder_session&&!persisted.reviewer_session&&!persisted.decision_id&&persisted.completed_effects.length===0)return store.rebindUnstartedBase(persisted,spec.expected_base_sha);
-  return effects.reconcile(spec,persisted,store);
+  return reconcileUntilStable(effects,store,spec,persisted).state;
+}
+
+export type ReconciliationClosureStatus="FLOW_ENTERABLE"|"WAIT_EXTERNAL"|"TERMINAL";
+export type ReconciliationClosure={state:LifecycleRecord,status:ReconciliationClosureStatus,moves:string[]};
+
+function flowEnterable(spec:ProxySpec,state:LifecycleRecord){
+  return state.roadmap_item_id===spec.roadmap_item_id&&state.base_sha===spec.expected_base_sha;
+}
+
+function closureSignature(state:LifecycleRecord,plan:any){
+  const {updated_utc,state_writer_control_plane_version,...durable}=state as any;
+  return JSON.stringify({durable,move:plan?.plan?.move??plan?.move});
+}
+
+function durableSignature(state:LifecycleRecord){
+  const {updated_utc,state_writer_control_plane_version,...durable}=state as any;
+  return JSON.stringify(durable);
+}
+
+function closureStatus(state:LifecycleRecord):ReconciliationClosureStatus|undefined{
+  if(state.state==="TERMINAL_COMPLETED")return "TERMINAL";
+  return undefined;
+}
+
+/** Close chained durable recovery moves before handing a state to the flow. */
+export function reconcileUntilStable(effects:any,store:LifecycleStore,spec:ProxySpec,persisted:LifecycleRecord,budget=4):ReconciliationClosure{
+  let state=persisted;const moves:string[]=[];const seen=new Set<string>();
+  for(let iteration=0;iteration<budget;iteration++){
+    const terminal=closureStatus(state);if(terminal)return {state,status:terminal,moves};
+    if(flowEnterable(spec,state))return {state,status:"FLOW_ENTERABLE",moves};
+    if(!spec.front_id||!spec.roadmap_item_id){
+      const updated=effects.reconcile(spec,state,store);return {state:updated,status:closureStatus(updated)??"WAIT_EXTERNAL",moves};
+    }
+    const previewFn=typeof effects.dryRun==="function"?effects.dryRun.bind(effects):typeof effects.dryRunReconciliation==="function"?effects.dryRunReconciliation.bind(effects):undefined;
+    if(!previewFn){
+      const updated=effects.reconcile(spec,state,store);return {state:updated,status:flowEnterable(spec,updated)?"FLOW_ENTERABLE":closureStatus(updated)??"WAIT_EXTERNAL",moves};
+    }
+    const preview=previewFn(spec,state);
+    if(preview?.invariants?.violations?.length)throw new Error("reconciliation invariants violated: "+preview.invariants.violations.join(", "));
+    const plan=preview?.plan;if(!plan?.move)throw new Error("reconciliation plan missing");
+    const signature=closureSignature(state,plan);if(seen.has(signature))throw new Error("reconciliation made no progress");seen.add(signature);
+    moves.push(plan.move);
+    const beforeState=durableSignature(state);
+    const returned=effects.reconcile(spec,state,store);
+    const reloaded=spec.front_id?store.load(spec.front_id)??returned:returned;
+    if(!reloaded)throw new Error("reconciliation state missing after apply");
+    if(spec.front_id&&durableSignature(reloaded)===beforeState)throw new Error("reconciliation made no progress");
+    if(!spec.front_id||!spec.roadmap_item_id)return {state:reloaded,status:closureStatus(reloaded)??"WAIT_EXTERNAL",moves};
+    state=reloaded;
+  }
+  if(flowEnterable(spec,state))return {state,status:"FLOW_ENTERABLE",moves};
+  throw new Error("reconciliation budget exhausted");
 }
 
 export async function runAutonomousRoadmapTick(bus:GitHubBus,root:string,reviewerRepo:string,boundary:ExternalEffectBoundary){
   const sequenced=sequenceRoadmap(bus);const store=new LifecycleStore(join(root,"lifecycle"));const ledgerRoot=join(root,"decisions");const coordinator=new RequestCoordinator(join(root,"coordination"),boundary.assert.bind(boundary));
   const effects=new ProductionEffects(bus,new Ledger(ledgerRoot),reviewerRepo,root,boundary,coordinator);const flow=new AutonomousFlow(store,effects);let persisted=store.load(sequenced.spec.front_id!);
-  persisted=reconcilePersistedRoadmapState(bus,effects,store,sequenced.spec,persisted);
+  if(persisted)persisted=reconcilePersistedRoadmapState(bus,effects,store,sequenced.spec,persisted);
   if(persisted?.state==="ESCALATED"&&persisted.last_error==="LOCAL_PRIVILEGE_REQUIRED")persisted=resumePrivilegedInstall(bus,boundary,coordinator,flow,sequenced.spec,persisted);
   let state=await flow.step(sequenced.spec);for(let i=0;i<24;i++){if(["CI_PENDING","BUILDING","RUNTIME_PILOT_RUNNING","CLOSEOUT_PENDING","BLOCKED","ESCALATED","TERMINAL_COMPLETED"].includes(state.state))break;state=await flow.step(sequenced.spec);}
   return state;
