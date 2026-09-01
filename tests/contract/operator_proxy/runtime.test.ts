@@ -76,6 +76,24 @@ test("persisted builder receipt anchors bind review to the original governed tra
   for(const patch of [{builder_receipt_base_sha:undefined},{builder_session:"builder-wrong"},{builder_receipt_head_sha:"e".repeat(40)}])assert.throws(()=>effects.anchoredRouterBuilderReceipt({...state,...patch},head,"ANCHOR-FRONT"),/anchor invalid/);
 });
 
+test("persisted builder receipt anchors accept a later synchronized head bound to the recorded build",()=>{
+  const root=mkdtempSync(join(tmpdir(),"builder-anchor-sync-review-")),head="b".repeat(40),buildHead="e".repeat(40),receiptHead="a".repeat(40),base="c".repeat(40),receiptBase="d".repeat(40),calls:any[]=[];
+  const effects:any=new ProductionEffects({setMutationGuard:()=>{},isAncestor:(older:string,newer:string)=>(older===receiptHead&&newer===head)||(older===receiptBase&&newer===base)||(older===buildHead&&newer===head)} as any,{} as any,root,root,{assert:()=>{},bind:()=>{}} as any);
+  effects.inspectRouterBuilderReceipt=(h:string,b:string,f:string)=>{calls.push([h,b,f]);return {model:"ollama-cloud/kimi-k2.7-code",headCommit:h,status:"VERIFIED"};};
+  const state:any={base_sha:base,head_sha:head,builder_session:`builder-recovered:${buildHead}`,builder_receipt_head_sha:receiptHead,builder_receipt_base_sha:receiptBase,completed_effects:["issue:248",`build:${buildHead}`,`base-sync:${head}`]};
+  assert.equal(effects.anchoredRouterBuilderReceipt(state,head,"SYNC-FRONT").status,"VERIFIED");
+  assert.deepEqual(calls,[[receiptHead,receiptBase,"SYNC-FRONT"]]);
+  assert.throws(()=>effects.anchoredRouterBuilderReceipt({...state,builder_session:`builder-recovered:${"f".repeat(40)}`},head,"SYNC-FRONT"),/anchor invalid/);
+});
+
+test("persisted builder receipt anchors reject an unrelated recorded build head",()=>{
+  const root=mkdtempSync(join(tmpdir(),"builder-anchor-unrelated-review-")),head="b".repeat(40),buildHead="e".repeat(40),receiptHead="a".repeat(40),base="c".repeat(40),receiptBase="d".repeat(40);
+  const effects:any=new ProductionEffects({setMutationGuard:()=>{},isAncestor:(older:string,newer:string)=>(older===receiptHead&&newer===head)||(older===receiptBase&&newer===base)} as any,{} as any,root,root,{assert:()=>{},bind:()=>{}} as any);
+  effects.inspectRouterBuilderReceipt=()=>({model:"ollama-cloud/kimi-k2.7-code",headCommit:receiptHead,status:"VERIFIED"});
+  const state:any={base_sha:base,head_sha:head,builder_session:`builder-recovered:${buildHead}`,builder_receipt_head_sha:receiptHead,builder_receipt_base_sha:receiptBase,completed_effects:["issue:248",`build:${buildHead}`,`base-sync:${head}`]};
+  assert.throws(()=>effects.anchoredRouterBuilderReceipt(state,head,"UNRELATED-FRONT"),/anchor invalid/);
+});
+
 test("false synchronized-head provenance repair is reversed once from its immutable adoption event",()=>{
   const root=mkdtempSync(join(tmpdir(),"false-provenance-store-")),store=new LifecycleStore(root),receiptHead="a".repeat(40),head="b".repeat(40),receiptBase="c".repeat(40),base="d".repeat(40),priorDecision=crypto.randomUUID(),falseDecision=crypto.randomUUID();
   const before:any={schema_version:1,front_id:"FALSE-PROVENANCE-RECOVERY",roadmap_item_id:"R3.4",state:"BLOCKED",last_error:"BUILDER_FAILED:UNKNOWN_BUILD_FAILURE",base_sha:base,head_sha:head,issue:248,pr:249,builder_session:"builder-old",reviewer_session:"reviewer-old",decision_id:priorDecision,repair_cycles:1,builder_retry_reason:"BUILDER_FAILURE",deployment_mode:"NO_DEPLOY",completed_effects:["issue:248",`build:${receiptHead}`,`base-sync:${head}`],updated_utc:new Date().toISOString()};
