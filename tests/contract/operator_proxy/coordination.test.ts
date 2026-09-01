@@ -52,6 +52,16 @@ test("control-plane receipt does not skip a metadata-looking commit that touches
   assert.deepEqual(result,{model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"});
 });
 
+test("control-plane receipt traverses real multi-base synchronization ancestry",()=>{
+  const base="1".repeat(40),oldBase="2".repeat(40),receipt="3".repeat(40),metadata="4".repeat(40),priorSync="5".repeat(40),head="6".repeat(40),subject=`feat(control-plane): complete ${spec.front_id}`;
+  const messages={[head]:`chore(control-plane): synchronize ${spec.front_id} base`,[priorSync]:`chore(control-plane): synchronize ${spec.front_id} base`,[metadata]:"fix(control-plane): bind roadmap hash to authorization",[receipt]:`${subject}\n\nBUILDER_BACKEND=opencode_ollama\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}\nPROVIDER_SESSION=kimi-1`};
+  const parents={[head]:[priorSync,base],[priorSync]:[metadata,oldBase],[metadata]:[receipt],[receipt]:[oldBase]};
+  const ancestors=new Map<string,string[]>([[head,[priorSync,base]],[priorSync,[metadata,oldBase]],[metadata,[receipt]],[receipt,[oldBase]],[base,[oldBase]],[oldBase,[]]]);
+  const root=mkdtempSync(join(tmpdir(),"router-real-chain-")),bus:any=guarded({repo:spec.repository,isAncestor:(older:string,newer:string)=>{if(older===newer)return false;const seen=new Set<string>(),queue=[...(ancestors.get(newer)??[])];while(queue.length){const candidate=queue.shift()!;if(candidate===older)return true;if(!seen.has(candidate)){seen.add(candidate);queue.push(...(ancestors.get(candidate)??[]));}}return false;},commitMessage:(sha:string)=>messages[sha]??"unrelated",call:(args:string[])=>{const sha=args[1].split("/").at(-1)!;return JSON.stringify({tree:{sha:"0".repeat(40)},parents:(parents[sha]??[]).map(value=>({sha:value})),files:(sha===metadata?[{filename:"docs/roadmap/BRAIN_101_MANIFEST.json"}]:[])});},prIdentity:()=>({files:[{path:"docs/x.md"}]})}),effects=new ProductionEffects(bus,new Ledger(join(root,"decisions")),".",root,boundary);
+  const result=(effects as any).inspectRouterBuilderReceipt(head,base,spec.front_id);
+  assert.deepEqual(result,{model:REVIEWER_MODELS.kimi,headCommit:receipt,status:"VERIFIED"});
+});
+
 test("control-plane receipt classifies recovery when missing, ambiguous, malformed, or outside bound history",()=>{
   const base="1".repeat(40),candidate="2".repeat(40),head="3".repeat(40),subject=`feat(control-plane): complete ${spec.front_id}`;
   for(const message of ["unrelated",`${subject}\n\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}\nBUILDER_MODEL=${REVIEWER_MODELS.qwen}`,`${subject}\n\nBUILDER_MODEL=NOT SAFE`]){const {effects}=controlPlaneReceiptFixture({[head]:message},{[head]:[candidate],[candidate]:[base]},head,base);const receipt=(effects as any).inspectRouterBuilderReceipt(head,base,spec.front_id);assert.deepEqual(receipt,{model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"});}
