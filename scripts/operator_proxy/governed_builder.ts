@@ -119,7 +119,10 @@ export class GovernedBuilder {
     const remote=this.bus.remoteBranchHead(spec.work_branch);if(!remote||!/^[a-f0-9]{40}$/.test(remote)||pr.headRefOid!==remote)throw new Error("blocked CI remote branch missing or inconsistent");
     mkdirSync(this.worktreeRoot,{recursive:true});const root=realpathSync(this.worktreeRoot),historicalWorktree=resolve(root,spec.front_id!);if(!historicalWorktree.startsWith(`${root}\\`)&&!historicalWorktree.startsWith(`${root}/`))throw new Error("blocked CI worktree identity invalid");
     native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"fetch","origin","codex/own-capital-sustainable-return",spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});
-    const syncBases=spec.executor==="agent_loop"?validateAgentSyncChain(this.sourceRepo,state.head_sha,remote,spec.expected_base_sha,files,spec.front_id!):[];if(!([state.base_sha,spec.expected_base_sha,...syncBases].includes(pr.baseRefOid)))throw new Error("blocked CI PR base identity invalid");
+    // A signed synchronization chain is executor-neutral evidence. Only the
+    // exact synchronization receipt activates this path; ordinary candidates
+    // retain the direct base contract and are never interpreted as a chain.
+    const syncBases=git(this.sourceRepo,["show","-s","--format=%s",remote])===`chore(control-plane): synchronize ${spec.front_id!} base`?validateAgentSyncChain(this.sourceRepo,state.head_sha,remote,spec.expected_base_sha,files,spec.front_id!):[];if(!([state.base_sha,spec.expected_base_sha,...syncBases].includes(pr.baseRefOid)))throw new Error("blocked CI PR base identity invalid");
     // Never clean or move a historical worktree. A dirty one is forensic state, so recovery uses
     // a deterministic detached workspace keyed by the immutable remote candidate.
     let worktree=historicalWorktree;
