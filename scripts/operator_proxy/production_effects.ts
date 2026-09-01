@@ -161,7 +161,8 @@ export class ProductionEffects implements AutonomousEffects {
   const receiptHead=state.builder_receipt_head_sha,receiptBase=state.builder_receipt_base_sha;
     const effects=Array.isArray(state.completed_effects)?state.completed_effects:[];
     const buildHead=effects.find(effect=>/^build:[0-9a-f]{40}$/.test(effect))?.slice("build:".length);
-    const sessionBound=state.builder_session===`builder-recovered:${head}`||(!!buildHead&&state.builder_session===`builder-recovered:${buildHead}`);
+    const buildHeadIsAncestor=!!buildHead&&this.bus.isAncestor(buildHead,head);
+    const sessionBound=state.builder_session===`builder-recovered:${head}`||(!!buildHead&&buildHeadIsAncestor&&state.builder_session===`builder-recovered:${buildHead}`);
     if(!receiptHead||!receiptBase||!sessionBound||!this.bus.isAncestor(receiptHead,head)||!this.bus.isAncestor(receiptBase,state.base_sha))throw new Error("persisted builder receipt anchor invalid");
     return this.inspectRouterBuilderReceipt(receiptHead,receiptBase,front);
   }
