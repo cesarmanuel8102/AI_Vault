@@ -33,20 +33,39 @@ jobs:
           set -euo pipefail
           test "$AUTHORIZATION_ID" = 'CESAR-BRAIN-101-OPERATOR-PROXY-20260722-01'
           gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json baseRefName,baseRefOid,headRefName,headRefOid,isDraft,state,mergeable,statusCheckRollup > "$RUNNER_TEMP/pr.json"
-          python - "$RUNNER_TEMP/pr.json" "$EXPECTED_BASE" "$EXPECTED_HEAD" <<'PY'
+          gh run list --repo "$GITHUB_REPOSITORY" --workflow brain-agent-v2-hygiene.yml --commit "$EXPECTED_HEAD" --event workflow_dispatch --limit 20 --json headSha,workflowName,event,status,conclusion > "$RUNNER_TEMP/hygiene-runs.json"
+          python - "$RUNNER_TEMP/pr.json" "$EXPECTED_BASE" "$EXPECTED_HEAD" "$RUNNER_TEMP/hygiene-runs.json" <<'PY'
           import json, sys
           p=json.load(open(sys.argv[1],encoding='utf-8'))
           if p.get('baseRefOid')!=sys.argv[2] or p.get('headRefOid')!=sys.argv[3] or p.get('state')!='OPEN' or p.get('isDraft') is not True or p.get('mergeable')!='MERGEABLE':
               raise SystemExit('PR identity mismatch')
-          required={'Phase 1 baseline (Windows)','Brain Agent V2 Hygiene Baseline','Security Smoke Tests','Dashboard / Trace Tests','Memory / Retrieval Regression','Roadmap / Policy Regression','Agent V2 Boundary Contracts','Financial Autonomy Dry-Run Contract','Hygiene Guard'}
+          required={'Phase 1 baseline (Windows)','Security Smoke Tests','Dashboard / Trace Tests','Memory / Retrieval Regression','Roadmap / Policy Regression','Agent V2 Boundary Contracts','Financial Autonomy Dry-Run Contract','Hygiene Guard'}
           checks=p.get('statusCheckRollup') or []
           by_name={c.get('name'):c for c in checks}
           if any(by_name.get(n,{}).get('conclusion')!='SUCCESS' for n in required):
               raise SystemExit('required checks not successful')
+          hygiene=by_name.get('Brain Agent V2 Hygiene Baseline')
+          hygiene_ok=False
+          if hygiene and hygiene.get('conclusion')=='SUCCESS':
+              hygiene_ok=True
+          else:
+              if hygiene and hygiene.get('conclusion') not in (None,'SKIPPED'):
+                  raise SystemExit('hygiene check failed')
+              runs=json.load(open(sys.argv[4],encoding='utf-8'))
+              exact=[r for r in runs if r.get('headSha')==sys.argv[3]]
+              if not exact:
+                  raise SystemExit('exact-head hygiene evidence missing')
+              latest=exact[0]
+              if latest.get('workflowName')!='Brain Agent V2 Hygiene' or latest.get('event')!='workflow_dispatch' or latest.get('status')!='completed' or latest.get('conclusion')!='success':
+                  raise SystemExit('exact-head hygiene run not successful')
+              hygiene_ok=True
+          if not hygiene_ok:
+              raise SystemExit('hygiene evidence invalid')
           allowed_skips={'deterministic','codex','publish'} if not p.get('headRefName','').startswith('agent/pilot-') else set()
           for c in checks:
               if c.get('status')!='COMPLETED': raise SystemExit('check not terminal')
               if c.get('conclusion')=='SUCCESS': continue
+              if c.get('name')=='Brain Agent V2 Hygiene Baseline' and c.get('conclusion')=='SKIPPED' and hygiene_ok: continue
               if c.get('name') in allowed_skips and c.get('conclusion')=='SKIPPED': continue
               raise SystemExit(f"non-success check: {c.get('name')}")
           PY
