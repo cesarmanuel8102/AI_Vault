@@ -3,7 +3,7 @@
   "current_remote_head": "c26db83815c186730c7ce0672a0f28bfd271d416",
   "r3_4_closeout_merge_commit": "dd5468258692bae90e1830a94890e8ae533334aa",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "r3_5_supervisor_wake_loop_ready",
+  "migration_status": "r3_5_pending_sequencing",
   "last_applied_checkpoint": "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-CLOSEOUT-01",
   "completed_fronts": [
     "BL-01",
@@ -176,9 +176,7 @@
     "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-CLOSEOUT-01",
     "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-CLOSEOUT-01"
   ],
-  "open_fronts": [
-    "BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01"
-  ],
+  "open_fronts": [],
   "blocked_fronts": [
     "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
     "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
@@ -195,8 +193,8 @@
   ],
   "recommended_next_front": {
     "name": "BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01",
-    "status": "AUTHORIZED_ACTIVE",
-    "reason": "R3.4 closed runtime-verified. R3.5 activation is sequencer-derived from the human-adopted manifest; its governed issue/PR/decision are created at sequencing time."
+    "status": "PENDING_SEQUENCING",
+    "reason": "R3.4 closed runtime-verified. R3.5 is the single planned next item, pending independent authorization (decision_id/issue/PR) and operator-proxy sequencing."
   },
   "ready_for_next_front": true,
   "last_updated": "2026-08-30T00:00:00.000+00:00",

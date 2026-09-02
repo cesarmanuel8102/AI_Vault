@@ -2,7 +2,7 @@
   "schema_version": 1,
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-  "status": "R3_4_CLOSED_RUNTIME_VERIFIED_R3_5_AUTHORIZED_ACTIVE",
+  "status": "R3_4_CLOSED_RUNTIME_VERIFIED_R3_5_PENDING_SEQUENCING",
   "audit_baseline_head": "759edfb",
   "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
@@ -833,7 +833,7 @@
     {
       "id": "R3",
       "percent": 70,
-      "status": "PARTIALLY_CLOSED_R3_4_CLOSED_R3_5_AUTHORIZED_ACTIVE",
+      "status": "PARTIALLY_CLOSED_R3_4_CLOSED_R3_5_PENDING_SEQUENCING",
       "evidence": [
         {
           "claim": "CI and recovery contracts exist; the required E2E matrix is incomplete.",
@@ -934,11 +934,11 @@
     {
       "id": "R3.5",
       "percent": 0,
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "PENDING_SEQUENCING",
       "evidence": [
         {
-          "claim": "R3.5 Operator Proxy campaign supervisor wake loop is the single authorized next item after R3.4; activation is sequencer-derived from the human-adopted manifest.",
-          "classification": "AUTHORIZED_ACTIVE",
+          "claim": "R3.5 Operator Proxy campaign supervisor wake loop is the single planned next item after R3.4; it is pending independent authorization and sequencer activation.",
+          "classification": "PENDING_SEQUENCING",
           "paths": [
             "scripts/operator_proxy/campaign_supervisor.ts",
             "tests/contract/operator_proxy/campaign_supervisor.test.ts",
@@ -951,8 +951,8 @@
           "issue": null,
           "pr": null,
           "workflow_run": null,
-          "command": "npm run typecheck; npx tsx --test tests/contract/operator_proxy/campaign_supervisor.test.ts",
-          "result": "Canonical catalog item is predeclared with NO_DEPLOY, bounded repair, hard-limit, and human-gate contracts.",
+          "command": null,
+          "result": "Canonical catalog item is predeclared with NO_DEPLOY, bounded repair, hard-limit, and human-gate contracts, but it has no independent authorization record (decision_id/issue/PR) yet and therefore is not AUTHORIZED_ACTIVE.",
           "observed_at_utc": "2026-08-30T00:00:00Z"
         }
       ]

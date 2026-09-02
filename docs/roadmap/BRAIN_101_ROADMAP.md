@@ -1208,7 +1208,7 @@ NEXT_GATE: R3.4 closed; R3.5 is the single authorized next roadmap item
 
 ## 13.24 R3.5 — Operator Proxy campaign supervisor wake loop
 
-R3.5 is the single canonical next item authorized after the runtime-verified R3.4 closeout. It is a `MEDIUM` risk, `NO_DEPLOY`, `codex_control_plane` front with the exact front identifier `BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01`. Its scope is limited to the campaign supervisor implementation, its contract test, and the declared evidence document. The catalog remains the source of the complete acceptance, forbidden-path, hard-limit, repair-budget, and human-gate contract.
+R3.5 is the single canonical next item planned after the runtime-verified R3.4 closeout. It is a `MEDIUM` risk, `NO_DEPLOY`, `codex_control_plane` front with the exact front identifier `BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01`. Its scope is limited to the campaign supervisor implementation, its contract test, and the declared evidence document. The catalog remains the source of the complete acceptance, forbidden-path, hard-limit, repair-budget, and human-gate contract. R3.5 is not `AUTHORIZED_ACTIVE` in this closeout because it has no independent authorization record (decision_id/issue/PR); it is pending sequencing by the operator proxy once a governed front is created.
 
 R3.5 must enforce hard limits before each wake, classify and route incidents, bound self-repair, and advance terminal completion only through the governed phase helper. The controls remain unchanged: `HUMAN_FINAL_AUTHORITY=true`, `AUTO_MERGE=false`, `LIVE_TRADING=false`, `REAL_MONEY=false`, and `CANONICAL_LOCAL_SYNC=false`. No deployment, worker activation, trading, or canonical local synchronization is authorized.
 ```

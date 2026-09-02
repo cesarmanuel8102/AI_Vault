@@ -9307,13 +9307,13 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - **E2E evidence**: `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md` (introduced by parent front head `91efbe2dcf41dc606953b190a624b607319de202`, already present at this branch's base; unchanged by this closeout) records the full cognitive pipeline stages (perception, reasoning, planning, action, reflection, memory), scope constraints, zero-trust workspace compliance, and trailing-whitespace verification.
 - **E2E verification**: `git diff --check` clean on the closeout branch.
 - **Closeout evidence**: `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json`.
-- **Status**: `R3.4` set to `CLOSED_RUNTIME_VERIFIED`; R3 remains `PARTIALLY_CLOSED`; this closeout front authorizes no next item and records no decision_id, issue, or PR for R3.5. R3.5 activation is sequencer-derived from the human-adopted manifest (`docs/roadmap/BRAIN_101_MANIFEST.json`, `approval_status=HUMAN_ADOPTED`); its governed issue/PR/decision are created when the operator proxy sequences its front.
+- **Status**: `R3.4` set to `CLOSED_RUNTIME_VERIFIED`; R3 remains `PARTIALLY_CLOSED`; this closeout front records no decision_id, issue, or PR for R3.5 and therefore does not mark R3.5 `AUTHORIZED_ACTIVE`. R3.5 is recorded as `PENDING_SEQUENCING`: the single planned next item, to be sequenced by the operator proxy after an independent governed authorization (issue, PR, decision) is created.
 - **Preserved controls**: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
-- **Next gate**: R3.5 is the single authorized next roadmap item.
+- **Next gate**: R3.5 is the single planned next roadmap item pending independent authorization and sequencing.
 
-## BRAIN-101 R3.5 — Operator Proxy campaign supervisor wake loop (sequencer-derived activation)
+## BRAIN-101 R3.5 — Operator Proxy campaign supervisor wake loop (pending sequencing)
 
-This section records the next gate the sequencer derives after this closeout merges. It is NOT an authorization record: R3.5 has no decision_id, issue, or PR in this entry. Its `AUTHORIZED_ACTIVE` status derives from the human-adopted manifest; the governed front (issue, PR, decision) is created by the operator proxy at sequencing time.
+This section records the next gate the sequencer derives after this closeout merges. It is NOT an authorization record: R3.5 has no decision_id, issue, or PR in this entry and is therefore not `AUTHORIZED_ACTIVE`. Its planned-next status is derived from the human-adopted manifest (`docs/roadmap/BRAIN_101_MANIFEST.json`, `approval_status=HUMAN_ADOPTED`); the governed front (issue, PR, decision) is created by the operator proxy at sequencing time, and only then may the item transition to `AUTHORIZED_ACTIVE`.
 
 - **Front (planned)**: `BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01`.
 - **Roadmap item**: `R3.5`.
@@ -9322,6 +9322,19 @@ This section records the next gate the sequencer derives after this closeout mer
 - **Dependency**: `R3.4` (`CLOSED_RUNTIME_VERIFIED`).
 - **Allowed paths**: `scripts/operator_proxy/campaign_supervisor.ts`, `tests/contract/operator_proxy/campaign_supervisor.test.ts`, and `docs/roadmap/evidence/BRAIN_101_R3_5_SUPERVISOR_WAKE_LOOP.md`.
 - **Contract source**: `docs/roadmap/BRAIN_101_CONTRACT_CATALOG.json`, item `R3.5`; its hard limits, forbidden paths, acceptance criteria, tests, gates, stops, and repair budget are authoritative.
-- **Status**: `AUTHORIZED_ACTIVE` (sequencer-derived from the human-adopted manifest; the exactly-one-active-item rule is enforced by the sequencer, which creates the governed issue/PR/decision at sequencing time).
+- **Status**: `PENDING_SEQUENCING` (not `AUTHORIZED_ACTIVE`).
 - **Preserved controls**: human final authority true, live trading false, real money false, canonical local sync false, auto-merge false, and deployment disabled.
-- **Next gate**: execute the R3.5 supervisor wake-loop front under its declared contract.
+- **Next gate**: execute the R3.5 supervisor wake-loop front under its declared contract only after independent authorization is recorded.
+
+## Repair cycle 2 — independent-review findings
+
+### P1 — R3.5 AUTHORIZED_ACTIVE lacked an independent authorization record
+
+- **Finding**: R3.5 was marked `AUTHORIZED_ACTIVE` in `docs/roadmap/BRAIN_101_MANIFEST.json` and `docs/roadmap/BRAIN_101_SCORECARD.json` with authorization described as `SEQUENCER_DERIVED_FROM_HUMAN_ADOPTED_MANIFEST; no closeout decision_id/issue/pr claimed`. The manifest that supposedly authorized R3.5 was itself being authored in the same change, creating a circular authorization.
+- **Required correction applied**: R3.5 status changed from `AUTHORIZED_ACTIVE` to `PENDING_SEQUENCING` in `BRAIN_101_MANIFEST.json`, `BRAIN_101_SCORECARD.json`, `ROADMAP_STATUS.json`, and `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json`. The self-referential `authorization` field was removed from the manifest. R3.5 remains the single planned next item, to become `AUTHORIZED_ACTIVE` only after the operator proxy creates an independent governed issue/PR/decision at sequencing time.
+
+### P2 — Scorecard phase id R3->R2
+
+- **Finding**: A scorecard phase entry's `id` was reported as changed from `R3` to `R2` (percent 70, status `PARTIALLY_CLOSED`) while its first evidence claim (`Auth/RBAC/signed approval contracts exist; complete constitutional adversarial coverage does not.`) was unchanged. This change was not documented in the ledger/closeout evidence.
+- **Verification applied**: The `phases` array in `docs/roadmap/BRAIN_101_SCORECARD.json` was reviewed. The entry with `"id": "R2"` (lines ~713-831) contains exclusively R2 evidence: R2 baseline contract evidence, R2.1, R2.2, R2.3, R2.4, and the historical R2.5 `AUTHORIZED_ACTIVE` record. The entry with `"id": "R3"` (lines ~833-907) contains exclusively R3 evidence: R3.1, R3.2 scope incident, R3.13 replacement certification, and R3.4 closeout. No duplicate `R2` entry exists in the scorecard phases array. The R2 entry content matches the `id`; if a historical R3->R2 rename occurred, it has been corrected and verified in this repair cycle.
+- **Documentation**: This ledger entry records the verification and closes the finding.
