@@ -148,3 +148,36 @@ test("historical replay: lifecycle recovery churn alone never exhausts the paylo
   assert.equal(resumed.state, "REPAIRING");
   assert.equal(resumed.repair_cycles, 1);
 });
+
+test("undecided post-build record adopts its advanced same-PR payload head", () => {
+  const store = new LifecycleStore(mkdtempSync(join(tmpdir(), "semantic-adopt-")));
+  const NEW = "f".repeat(40);
+  const undecided: LifecycleRecord = {...newLifecycle(spec), state: "REVIEWING", issue: 248, pr: 249, head_sha: HEAD, base_sha: BASE, builder_session: `builder-recovered:${HEAD}`, repair_cycles: 1, completed_effects: ["issue:248", `build:${HEAD}`, `base-sync:${HEAD}`]};
+  store.save(undecided);
+  const updated = store.adoptAdvancedPayload(undecided, NEW);
+  assert.equal(updated.state, "CI_PENDING");
+  assert.equal(updated.head_sha, NEW);
+  assert.equal(updated.builder_session, undefined);
+  assert.ok(updated.completed_effects.includes(`base-sync:${NEW}`));
+  assert.throws(() => store.adoptAdvancedPayload({...undecided, decision_id: "162a4456-dd13-4c7f-9dc0-5380f82caa85"}, NEW), /denied/);
+  assert.throws(() => store.adoptAdvancedPayload({...undecided, reviewer_session: "r"}, NEW), /denied/);
+  assert.throws(() => store.adoptAdvancedPayload(undecided, HEAD), /denied/);
+  assert.throws(() => store.adoptAdvancedPayload({...undecided, state: "BLOCKED" as const}, NEW), /denied/);
+});
+
+test("planner derives ADOPT_ADVANCED_PAYLOAD only for the trusted same-PR advance", () => {
+  const undecided: LifecycleRecord = {...newLifecycle(spec), state: "REVIEWING", issue: 248, pr: 249, head_sha: HEAD, base_sha: BASE, builder_session: `builder-recovered:${HEAD}`, repair_cycles: 1, completed_effects: ["issue:248", `build:${HEAD}`, `base-sync:${HEAD}`]};
+  const advancedBus = {...stubBus(), remoteBranchHead: () => "f".repeat(40), prIdentity: () => ({author: {login: "cesarmanuel8102"}, baseRefName: "codex/own-capital-sustainable-return", baseRefOid: BASE, headRefName: spec.work_branch, headRefOid: "f".repeat(40), headRepository: {nameWithOwner: spec.repository}, isCrossRepository: false, isDraft: true, state: "OPEN", mergeable: "MERGEABLE", files: [{path: "docs/roadmap/x.json"}]})} as any;
+  const view = normalizeObservedFacts(spec, undecided, {bus: advancedBus, loadDecision: () => undefined});
+  assert.equal(deriveReconciliationPlan(view, ports(0)).move, "ADOPT_ADVANCED_PAYLOAD");
+  assert.equal(validateInvariantSet(view, {move: "ADOPT_ADVANCED_PAYLOAD", reason: "x", lineage: undefined}, ports(0)).violations.length, 0);
+  const sameBus = {...stubBus(), remoteBranchHead: () => HEAD, prIdentity: () => ({headRefOid: HEAD})} as any;
+  const sameView = normalizeObservedFacts(spec, undecided, {bus: sameBus, loadDecision: () => undefined});
+  assert.notEqual(deriveReconciliationPlan(sameView, ports(0)).move, "ADOPT_ADVANCED_PAYLOAD");
+  const forkBus = {...stubBus(), remoteBranchHead: () => "f".repeat(40), prIdentity: () => ({author: {login: "stranger"}, baseRefOid: BASE, headRefOid: "f".repeat(40), files: [{path: "docs/roadmap/x.json"}]})} as any;
+  const forkView = normalizeObservedFacts(spec, undecided, {bus: forkBus, loadDecision: () => undefined});
+  assert.notEqual(deriveReconciliationPlan(forkView, ports(0)).move, "ADOPT_ADVANCED_PAYLOAD");
+  const scopeBus = {...stubBus(), remoteBranchHead: () => "f".repeat(40), prIdentity: () => ({author: {login: "cesarmanuel8102"}, baseRefOid: BASE, headRefOid: "f".repeat(40), files: [{path: "trading/x.py"}]})} as any;
+  const scopeView = normalizeObservedFacts(spec, undecided, {bus: scopeBus, loadDecision: () => undefined});
+  assert.notEqual(deriveReconciliationPlan(scopeView, ports(0)).move, "ADOPT_ADVANCED_PAYLOAD");
+});

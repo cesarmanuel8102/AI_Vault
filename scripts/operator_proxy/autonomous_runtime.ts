@@ -39,6 +39,12 @@ export function resumePrivilegedInstall(bus:GitHubBus,boundary:ExternalEffectBou
 // snapshot -> lineage -> invariants -> plan pipeline in ProductionEffects.
 export function reconcilePersistedRoadmapState(bus:GitHubBus,effects:ProductionEffects,store:LifecycleStore,spec:ProxySpec,persisted?:LifecycleRecord){
   if(!persisted)return persisted;
+  // An undecided post-build record whose same-PR payload advanced at the
+  // matching base re-enters the pipeline at the new published head.
+  if(persisted.base_sha===spec.expected_base_sha&&["CI_PENDING","REVIEWING"].includes(persisted.state)&&persisted.pr&&!persisted.reviewer_session&&!persisted.decision_id&&persisted.head_sha){
+    const remoteHead=spec.work_branch?safeRemoteHead(()=>bus.remoteBranchHead(spec.work_branch!)):undefined;
+    if(remoteHead&&remoteHead!==persisted.head_sha)return reconcileUntilStable(effects,store,spec,persisted).state;
+  }
   // Blocked and escalated lifecycles still need recovery at a matching base.
   if(persisted.base_sha===spec.expected_base_sha&&persisted.state!=="BLOCKED"&&persisted.state!=="ESCALATED")return persisted;
   if(persisted.state==="ESCALATED"&&persisted.last_error==="LOCAL_PRIVILEGE_REQUIRED")return persisted;
@@ -55,6 +61,7 @@ export function reconcilePersistedRoadmapState(bus:GitHubBus,effects:ProductionE
 }
 
 function safePlan<T>(operation:()=>T):T|undefined{try{return operation();}catch{return undefined;}}
+function safeRemoteHead<T>(operation:()=>T):T|undefined{try{return operation();}catch{return undefined;}}
 
 export type ReconciliationClosureStatus="FLOW_ENTERABLE"|"WAIT_EXTERNAL"|"TERMINAL";
 export type ReconciliationClosure={state:LifecycleRecord,status:ReconciliationClosureStatus,moves:string[]};
