@@ -712,7 +712,7 @@
     {
       "id": "R2",
       "percent": 70,
-      "status": "PARTIALLY_CLOSED_R3_4_CLOSED_R3_5_AUTHORIZED_ACTIVE",
+      "status": "PARTIALLY_CLOSED",
       "evidence": [
         {
           "claim": "Auth/RBAC/signed approval contracts exist; complete constitutional adversarial coverage does not.",
