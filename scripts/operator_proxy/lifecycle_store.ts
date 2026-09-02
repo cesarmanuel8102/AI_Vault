@@ -226,6 +226,18 @@ export class LifecycleStore {
     const updated={...record,state:"REPAIRING" as const,last_error:undefined,repair_cycles:consummated+1,updated_utc:new Date().toISOString()};
     this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_unconsummated_repair_resumed",front_id:record.front_id,issue:record.issue,pr:record.pr,base_sha:record.base_sha,head_sha:record.head_sha,decision_id:record.decision_id,prior_lifecycle_repair_cycles:record.repair_cycles,consummated_payload_repairs:consummated,repair_cycle:updated.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
   }
+  /**
+   * Converts an unconsummated policy-blocked repair into the undecided
+   * blocked-CI candidate shape so the generic base synchronization path can
+   * carry it across an advanced base. The immutable BLOCK decision remains in
+   * the ledger untouched; only the mutable lifecycle pointer is re-shaped.
+   */
+  beginUnconsummatedRepairSync(record:LifecycleRecord):LifecycleRecord {
+    const exact=record.state==="BLOCKED"&&record.last_error==="POLICY_BLOCK"&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&!!record.builder_session&&!!record.reviewer_session&&!!record.decision_id&&/^[0-9a-f]{40}$/.test(record.base_sha)&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&validBlockedCiEffectChain(record);
+    if(!exact)throw new Error("unconsummated repair synchronization denied");
+    const updated={...record,last_error:"CI_FAILED",reviewer_session:undefined,decision_id:undefined,updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_unconsummated_repair_synchronizing",front_id:record.front_id,issue:record.issue,pr:record.pr,base_sha:record.base_sha,head_sha:record.head_sha,decision_id:record.decision_id,repair_cycles:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
+  }
   exhaustBlockedCiRepair(record:LifecycleRecord):LifecycleRecord {
     const exact=record.state==="BLOCKED"&&record.last_error==="CI_FAILED"&&record.repair_cycles===2&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&!!record.builder_session&&!record.reviewer_session&&!record.decision_id&&/^[0-9a-f]{40}$/.test(record.base_sha)&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&validBlockedCiEffectChain(record);
     if(!exact)throw new Error("blocked CI repair exhaustion denied");

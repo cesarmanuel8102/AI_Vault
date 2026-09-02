@@ -267,6 +267,12 @@ export class ProductionEffects implements AutonomousEffects {
         if (state.state === "BUILDING" && state.reviewer_session && state.decision_id) {
           return this.synchronizeRepairDecided(spec, state, store);
         }
+        // An unconsummated policy-blocked repair re-enters as an undecided
+        // candidate: the immutable BLOCK decision stays in the ledger while
+        // the synchronized head is re-decided fresh at the authorized base.
+        if (state.state === "BLOCKED" && state.last_error === "POLICY_BLOCK" && state.reviewer_session && state.decision_id) {
+          return this.synchronizeCandidate(spec, store.beginUnconsummatedRepairSync(state), store);
+        }
         return this.synchronizeCandidate(spec, state, store);
       }
       case "REOPEN_CI": return store.recoverBlockedCiChecks(state);
