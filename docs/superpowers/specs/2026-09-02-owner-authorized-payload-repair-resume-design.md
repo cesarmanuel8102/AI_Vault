@@ -122,7 +122,7 @@ OwnerAuthorizedPayloadRepairGrant {
   failed_head_sha: SHA40
   eligible_failure_class: "CI_FAILED"
   max_extra_builds: 1
-  correction_payload: canonical structured payload
+  correction_payload: CorrectionPayloadV1
   correction_payload_sha256: SHA256
   comment_id: immutable GitHub comment identifier
   authorization_body_sha256: SHA256
@@ -130,15 +130,53 @@ OwnerAuthorizedPayloadRepairGrant {
 }
 ```
 
-`owner_principal` is resolved from the existing campaign or repository
-authorization source of truth. It is not a hard-coded account name. The
-verifier requires the GitHub comment author to equal that resolved principal.
+### Owner Principal Resolver
+
+`resolveOwnerPrincipal(spec)` has deterministic precedence and never treats a
+GitHub comment as an authority source:
+
+1. Load the exact canonical `CampaignAuthorization` record keyed by
+   `spec.authorization_id` and `spec.repository`. If present, it must contain
+   exactly one valid `owner_principal`.
+2. If and only if no campaign record exists, load the exact canonical
+   `RepositoryAuthorization` record keyed by `spec.repository`. It must contain
+   exactly one valid `owner_principal`.
+3. If both records exist, they must resolve to the same principal. A missing,
+   malformed, multiple, or disagreeing record fails closed; there is no
+   default principal and no fallback to comment data.
+
+The verifier requires the GitHub comment author to equal this resolved
+principal. The current replay fixture may resolve a particular account, but no
+account name is a production constant.
+
+### CorrectionPayloadV1
+
+The builder receives only this verified, versioned object:
+
+```text
+CorrectionPayloadV1 {
+  schema_version: 1
+  requirements: ordered non-empty array of {
+    requirement_id: stable unique string
+    instruction: non-empty bounded string
+  }
+  preserved_invariants: ordered non-empty array of stable invariant IDs
+  evidence_references?: ordered array of typed immutable references
+}
+```
+
+Unknown fields, duplicate IDs, empty arrays, invalid reference types, and
+non-canonical string encodings are rejected. Canonical serialization is UTF-8
+JSON with lexicographically ordered object keys, preserved array order, no
+insignificant whitespace, and exactly one trailing newline. The SHA-256 is
+computed over those exact bytes. `correction_payload_sha256` binds that object
+into the grant and receipt.
 
 The builder receives the typed `correction_payload` from the verified grant,
 not a selected comment body. Its prompt and receipt include `authorization_id`,
-`grant_key`, and the immutable receipt hash. Builder provenance for the new
-head must include the same values so the candidate can be correlated to the
-consumed authorization cryptographically.
+`grant_key`, receipt-event hash, and `build_attempt_id`. Builder provenance
+for the new head must include the same values so the candidate can be
+correlated to the consumed authorization cryptographically.
 
 ## Owner Authorization Evidence
 
@@ -154,8 +192,9 @@ It must be parsed canonically, with no inferred defaults. Validation requires:
 - Authorization body and correction payload hashes match their canonical forms.
 - Current PR is open, draft, same-repository, same expected branch, same base,
   same failed head, and its files remain inside the existing allowlist.
-- Existing constitutional safety flags explicitly preserve no auto-merge, no
-  canonical sync, no live trading, and no real-money operation.
+- Hard-limit lines in Owner evidence are assertions only. They must exactly
+  match canonical runtime and constitutional configuration; the comment cannot
+  set or redefine them.
 
 The verifier may read GitHub evidence but performs no mutation while deciding
 whether a grant is valid. A missing, duplicate, stale, ambiguous, or malformed
@@ -167,36 +206,62 @@ The Owner receipt ledger is separate from the policy decision ledger. It is
 append-only and keyed by `grant_key`, using the same lock plus exclusive-create
 and atomic-write discipline as other durable receipts.
 
-Receipt states are monotonic:
+Each phase is a new immutable `OwnerGrantReceiptEvent`, not an update of a
+mutable receipt status. Every event contains `grant_key`, a contiguous sequence
+number beginning at zero, `predecessor_event_sha256`, canonical event bytes,
+and its own `event_sha256`. Sequence zero has the fixed genesis predecessor.
+The deterministic receipt view is derived by validating the entire chain and
+selecting its final phase. Missing sequence numbers, duplicate sequence
+numbers, incorrect predecessor hashes, forks, reordering, or conflicting
+events fail closed.
+
+The derived phases are monotonic:
 
 ```text
 VERIFIED -> CONSUMED -> BUILD_DISPATCHED -> HEAD_BOUND -> TERMINAL
 ```
 
-The receipt contains every grant identity field, its immutable body and payload
-hashes, lifecycle state/head before consumption, receipt hash, timestamps, and
-the eventual new head when known. No state can be reversed, deleted, or
-replaced by a new grant.
+The `VERIFIED` event binds every grant identity field, immutable authorization
+body and payload hashes, lifecycle state/head before consumption, and time.
+`CONSUMED` allocates and persists:
 
-The authorization is consumed before dispatch. Therefore a crash cannot make a
-grant reusable. The receipt's `grant_key` is also indexed by `front_id`, and
-the ledger denies another grant for that front lifetime even if base or failed
-head later changes.
+```text
+build_attempt_id = SHA256(
+  "owner-payload-repair-build-attempt-v1" || grant_key || front_id || failed_head_sha
+)
+```
+
+This ID is the single logical build idempotency key. It is persisted before any
+builder dispatch and is copied into every later receipt event, builder request,
+builder receipt, commit provenance, and adoption proof. `BUILD_DISPATCHED`
+records dispatch of that exact attempt. `HEAD_BOUND` records the verified fresh
+head. `TERMINAL` records a post-consumption failure without authorizing another
+attempt.
+
+The authorization is consumed before dispatch. Transport is at-least-once but
+the logical build is exactly-once: after `CONSUMED`, the controller never
+allocates another `build_attempt_id` and never starts an independent build. A
+retry may invoke only the same idempotency key, and the builder adapter must
+deduplicate it to the same logical attempt. The receipt's `grant_key` is also
+indexed by `front_id`, and the ledger denies another grant for that front
+lifetime even if base or failed head later changes.
 
 ## Crash and Reconciliation Protocol
 
 | Boundary | Durable facts required on restart | Permitted result |
 | --- | --- | --- |
 | Before receipt creation | No receipt exists | Verify the same Owner evidence again; no build has occurred. |
-| After receipt creation, before lifecycle transition | `CONSUMED`, lifecycle still blocked | Revalidate exact identity and advance only to `OWNER_REPAIR_AUTHORIZED`; never create another receipt. |
-| After lifecycle transition, before dispatch | `CONSUMED`, authorized state | Dispatch exactly the receipt-bound attempt once, then mark `BUILD_DISPATCHED`. |
-| After dispatch, before new-head persistence | `BUILD_DISPATCHED` | Reconcile remote branch and builder provenance. Resume the same attempt only; do not dispatch again unless the builder's own idempotent receipt proves no dispatch occurred. |
-| After push, before adoption | `BUILD_DISPATCHED`, remote new head | Adopt only a fresh head whose provenance binds the same grant and receipt hashes, then mark `HEAD_BOUND`. |
+| After `VERIFIED`, before `CONSUMED` / attempt-id persistence | Verified event only | Revalidate exact identity, append the sole `CONSUMED` event with the deterministic attempt ID, and never branch the event chain. |
+| After `CONSUMED`, before lifecycle transition | `CONSUMED`, lifecycle still blocked | Revalidate exact identity and advance only to `OWNER_REPAIR_AUTHORIZED`; reuse the persisted attempt ID. |
+| After lifecycle transition, before dispatch | `CONSUMED`, authorized state | Dispatch only the receipt-bound attempt ID, then append `BUILD_DISPATCHED`. |
+| After dispatch, before new-head persistence | `BUILD_DISPATCHED` | Reconcile or redeliver only the same idempotency key; never allocate or issue an independent second build. |
+| After push, before adoption | `BUILD_DISPATCHED`, remote new head | Adopt only a fresh ancestral head whose provenance binds the same grant, receipt-event hash, and attempt ID, then append `HEAD_BOUND`. |
 | After adoption, before CI persistence | `HEAD_BOUND` | Persist the standard post-build state idempotently and enter ordinary CI. |
 
 At every boundary, a different authorization, different head, changed base,
 changed PR identity, missing provenance, or duplicate receipt is terminal. A
-new authorization cannot substitute for an in-flight receipt.
+new authorization cannot substitute for an in-flight receipt. The existing
+grant can resume only its same logical attempt.
 
 ## Reconciliation and Invariants
 
@@ -217,8 +282,28 @@ consummated_normal_payload_repairs <= 2
 consumed_owner_exceptional_payload_builds(front_id) <= 1
 repair_cycles == 2 before and after authorization
 new_head_sha != failed_head_sha
+failed_head_sha is an ancestor of new_head_sha
 ordinary repair budget remains exhausted after the owner build
 ```
+
+### New-Head Adoption Lineage
+
+Head inequality is insufficient. Adoption requires all of the following:
+
+- `failed_head_sha` is an ancestor of `new_head_sha`.
+- The remote PR head equals `new_head_sha` at adoption.
+- The PR head branch equals the exact bound `work_branch`.
+- The canonical branch still equals the bound `canonical_base_sha`.
+- The PR is open, draft, same-repository, non-fork, and has exact Issue/PR
+  identity.
+- Builder provenance binds `authorization_id`, `grant_key`, receipt-event hash,
+  and `build_attempt_id` exactly.
+- Changed paths remain within the front's existing allowlist.
+
+A non-ancestral head, force-pushed branch, unrelated head, changed canonical
+base, ambiguous remote identity, or any provenance mismatch fails closed and
+appends only a terminal receipt event. It never adopts the head or issues a new
+build.
 
 After a grant-backed head is adopted, any CI failure, review
 `CHANGES_REQUESTED`, policy block, or invalid provenance is terminal. Neither
@@ -239,8 +324,9 @@ ordinary Issue/PR lifecycle update
 It requires the same lease, pause, repository, PR, branch, base, head,
 allowlist, and identity assertions as the normal path. It does not modify the
 conditions of normal `repairPush`, normal policy repair, merge, labels, or
-comments. After head binding, the dedicated guard mode ends and only ordinary
-CI/review/policy effects are available.
+comments. Its dispatch and push assertions also require the exact persisted
+`build_attempt_id`. After head binding, the dedicated guard mode ends and only
+ordinary CI/review/policy effects are available.
 
 ## Policy and Review Semantics
 
@@ -276,20 +362,29 @@ canonical sync, or privileged deployment.
 Positive tests:
 
 - Exact eligible exhausted CI failure with a valid configured Owner grant.
-- Crash/restart at every receipt boundary in the table above.
-- Same grant replay resumes only the same attempt.
-- New fresh head carries matching authorization and receipt provenance.
+- Crash/restart immediately before and after attempt-id persistence, and at
+  every remaining receipt boundary in the table above.
+- Same grant replay resumes only the same `build_attempt_id`.
+- A remote push after controller crash reconciles through the same attempt ID.
+- New fresh ancestral head carries matching authorization, receipt, and attempt
+  provenance.
 - Fresh head runs ordinary CI, review, policy, and governed merge gates.
 
 Negative tests:
 
 - Hard-coded or incorrect Owner identity.
+- Missing or ambiguous canonical Owner-principal source.
 - Missing, duplicate, malformed, or stale authorization comment.
 - Wrong repository, front, Issue, PR, branch, base, failed head, or payload hash.
+- Malformed or unknown `CorrectionPayloadV1` field.
 - Any unsupported failure class.
 - Prior grant already consumed for the front.
 - Changed base, PR identity, fork, non-draft PR, or allowlist violation.
-- Same old head, missing builder provenance, or wrong grant/receipt hash.
+- Same old head, non-ancestral head, unrelated head, force-pushed branch, or
+  missing builder provenance.
+- Correct provenance with a wrong `build_attempt_id`, grant key, or receipt hash.
+- Conflicting append-only receipt transitions or a duplicate
+  `BUILD_DISPATCHED` event.
 - CI failure, review findings, policy block, or builder failure after consumption.
 - Any attempt to reset `repair_cycles`, rewrite a normal repair event, or plan a
   second exceptional build.
