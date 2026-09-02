@@ -135,19 +135,26 @@ OwnerAuthorizedPayloadRepairGrant {
 `resolveOwnerPrincipal(spec)` has deterministic precedence and never treats a
 GitHub comment as an authority source:
 
-1. Load the exact canonical `CampaignAuthorization` record keyed by
-   `spec.authorization_id` and `spec.repository`. If present, it must contain
-   exactly one valid `owner_principal`.
-2. If and only if no campaign record exists, load the exact canonical
-   `RepositoryAuthorization` record keyed by `spec.repository`. It must contain
-   exactly one valid `owner_principal`.
-3. If both records exist, they must resolve to the same principal. A missing,
-   malformed, multiple, or disagreeing record fails closed; there is no
-   default principal and no fallback to comment data.
+1. Inspect the exact canonical `CampaignAuthorization` candidate keyed by
+   `spec.authorization_id` and `spec.repository`, and independently inspect
+   the exact canonical `RepositoryAuthorization` candidate keyed by
+   `spec.repository`.
+2. Validate each candidate independently when present: there must be exactly
+   one candidate and it must contain exactly one valid `owner_principal`.
+3. When `CampaignAuthorization` exists, it is authoritative. If
+   `RepositoryAuthorization` also exists, its principal must equal the campaign
+   principal or resolution fails closed.
+4. When `CampaignAuthorization` is absent, one valid
+   `RepositoryAuthorization` may supply the principal.
+5. If neither source exists, either source is malformed or multiple, or both
+   sources disagree, resolution fails closed. There is no default principal and
+   no fallback to comment data.
 
 The verifier requires the GitHub comment author to equal this resolved
-principal. The current replay fixture may resolve a particular account, but no
-account name is a production constant.
+principal. This is a pure deterministic resolver with explicit candidate
+inputs, so precedence and failure behavior are directly unit-testable. The
+current replay fixture may resolve a particular account, but no account name is
+a production constant.
 
 ### CorrectionPayloadV1
 
@@ -173,10 +180,19 @@ computed over those exact bytes. `correction_payload_sha256` binds that object
 into the grant and receipt.
 
 The builder receives the typed `correction_payload` from the verified grant,
-not a selected comment body. Its prompt and receipt include `authorization_id`,
-`grant_key`, receipt-event hash, and `build_attempt_id`. Builder provenance
-for the new head must include the same values so the candidate can be
-correlated to the consumed authorization cryptographically.
+not a selected comment body. Its request, receipt, and commit provenance bind
+exactly these four pre-dispatch anchors:
+
+```text
+authorization_id
+grant_key
+build_attempt_id
+consumed_event_sha256
+```
+
+`consumed_event_sha256` is the hash of the immutable `CONSUMED`
+`OwnerGrantReceiptEvent`. It is the only receipt anchor provided to the
+builder. The builder is never required to know future event hashes.
 
 ## Owner Authorization Evidence
 
@@ -231,12 +247,17 @@ build_attempt_id = SHA256(
 )
 ```
 
+The `CONSUMED` event binds `authorization_id`, `grant_key`, `front_id`,
+`failed_head_sha`, and `build_attempt_id`; its event hash is named
+`consumed_event_sha256`.
+
 This ID is the single logical build idempotency key. It is persisted before any
 builder dispatch and is copied into every later receipt event, builder request,
 builder receipt, commit provenance, and adoption proof. `BUILD_DISPATCHED`
-records dispatch of that exact attempt. `HEAD_BOUND` records the verified fresh
-head. `TERMINAL` records a post-consumption failure without authorizing another
-attempt.
+records dispatch of that exact attempt and has
+`predecessor_event_sha256 = consumed_event_sha256`. `HEAD_BOUND` records the
+verified fresh head and chains from `BUILD_DISPATCHED`. `TERMINAL` records a
+post-consumption failure without authorizing another attempt.
 
 The authorization is consumed before dispatch. Transport is at-least-once but
 the logical build is exactly-once: after `CONSUMED`, the controller never
@@ -255,7 +276,7 @@ lifetime even if base or failed head later changes.
 | After `CONSUMED`, before lifecycle transition | `CONSUMED`, lifecycle still blocked | Revalidate exact identity and advance only to `OWNER_REPAIR_AUTHORIZED`; reuse the persisted attempt ID. |
 | After lifecycle transition, before dispatch | `CONSUMED`, authorized state | Dispatch only the receipt-bound attempt ID, then append `BUILD_DISPATCHED`. |
 | After dispatch, before new-head persistence | `BUILD_DISPATCHED` | Reconcile or redeliver only the same idempotency key; never allocate or issue an independent second build. |
-| After push, before adoption | `BUILD_DISPATCHED`, remote new head | Adopt only a fresh ancestral head whose provenance binds the same grant, receipt-event hash, and attempt ID, then append `HEAD_BOUND`. |
+| After push, before adoption | `BUILD_DISPATCHED`, remote new head | Adopt only a fresh ancestral head whose provenance binds the four pre-dispatch anchors, then append `HEAD_BOUND` chained from `BUILD_DISPATCHED`. |
 | After adoption, before CI persistence | `HEAD_BOUND` | Persist the standard post-build state idempotently and enter ordinary CI. |
 
 At every boundary, a different authorization, different head, changed base,
@@ -296,8 +317,8 @@ Head inequality is insufficient. Adoption requires all of the following:
 - The canonical branch still equals the bound `canonical_base_sha`.
 - The PR is open, draft, same-repository, non-fork, and has exact Issue/PR
   identity.
-- Builder provenance binds `authorization_id`, `grant_key`, receipt-event hash,
-  and `build_attempt_id` exactly.
+- Builder provenance binds exactly `authorization_id`, `grant_key`,
+  `build_attempt_id`, and `consumed_event_sha256`.
 - Changed paths remain within the front's existing allowlist.
 
 A non-ancestral head, force-pushed branch, unrelated head, changed canonical
@@ -382,7 +403,12 @@ Negative tests:
 - Changed base, PR identity, fork, non-draft PR, or allowlist violation.
 - Same old head, non-ancestral head, unrelated head, force-pushed branch, or
   missing builder provenance.
-- Correct provenance with a wrong `build_attempt_id`, grant key, or receipt hash.
+- Correct four-anchor provenance succeeds.
+- Correct provenance with a wrong `build_attempt_id`, `grant_key`, or
+  `consumed_event_sha256`.
+- A `VERIFIED` event hash substituted for `consumed_event_sha256` fails.
+- A future `BUILD_DISPATCHED` or `HEAD_BOUND` event hash supplied as builder
+  provenance fails.
 - Conflicting append-only receipt transitions or a duplicate
   `BUILD_DISPATCHED` event.
 - CI failure, review findings, policy block, or builder failure after consumption.
