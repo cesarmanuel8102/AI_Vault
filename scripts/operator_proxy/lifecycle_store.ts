@@ -130,6 +130,19 @@ export class LifecycleStore {
     const updated={...record,state:"BUILDING" as const,base_sha:nextBase,head_sha:nextHead,last_error:undefined,builder_retry_reason:"BUILDER_FAILURE" as const,completed_effects:[...record.completed_effects,`base-sync:${nextHead}`],updated_utc:new Date().toISOString()};
     this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_builder_failure_base_recovered",front_id:record.front_id,issue:record.issue,pr:record.pr,old_base_sha:record.base_sha,new_base_sha:nextBase,old_head_sha:record.head_sha,new_head_sha:nextHead,decision_id:record.decision_id,repair_cycle:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
   }
+  /**
+   * Consumes the published authorized repair payload for a BLOCKED
+   * builder-failure repair: the payload head replaces the recorded head as a
+   * consummated repair build and the record re-enters CI_PENDING with the
+   * payload's verified builder session. The immutable decision stays in the
+   * ledger; review restarts fresh at the new head.
+   */
+  consumePublishedRepair(record:LifecycleRecord,nextHead:string,decisionId:string):LifecycleRecord {
+    const exact=record.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(record.last_error??"")&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&record.repair_cycles>0&&record.repair_cycles<=2&&!!record.head_sha&&!!record.builder_session&&!!record.reviewer_session&&record.decision_id===decisionId&&validBlockedCiEffectChain(record);
+    if(!exact||!/^[0-9a-f]{40}$/.test(nextHead)||nextHead===record.head_sha)throw new Error("published repair consumption denied");
+    const updated={...record,state:"CI_PENDING" as const,head_sha:nextHead,builder_session:`builder-recovered:${nextHead}`,builder_receipt_head_sha:undefined,builder_receipt_base_sha:undefined,reviewer_session:undefined,decision_id:undefined,last_error:undefined,last_error_detail:undefined,builder_retry_reason:undefined,completed_effects:[`issue:${record.issue}`,`build:${nextHead}`],updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_repair_build_replaced",front_id:record.front_id,issue:record.issue,pr:record.pr,old_head_sha:record.head_sha,new_head_sha:nextHead,decision_id:decisionId,repair_cycle:record.repair_cycles,consummated_via:"published_authorized_payload",updated_utc:updated.updated_utc})}\n`);return updated;
+  }
   resumeRecordedBuilderRetry(record:LifecycleRecord):LifecycleRecord {
     const exact=record.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(record.last_error??"")&&record.builder_retry_reason==="BUILDER_FAILURE"&&record.repair_cycles>0&&record.repair_cycles<=2&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&!!record.head_sha&&!!record.builder_session&&!!record.reviewer_session&&!!record.decision_id&&validBlockedCiEffectChain(record);
     if(!exact)throw new Error("recorded builder retry resume denied");
