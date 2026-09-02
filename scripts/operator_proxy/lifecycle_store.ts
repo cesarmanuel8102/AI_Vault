@@ -196,6 +196,48 @@ export class LifecycleStore {
     const updated={...record,state:"REPAIRING" as const,last_error:undefined,reviewer_session:reviewerSession,decision_id:decisionId,repair_cycles:record.repair_cycles+1,updated_utc:new Date().toISOString()};
     this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_blocked_ci_repair_resumed",front_id:record.front_id,issue:record.issue,pr:record.pr,base_sha:record.base_sha,head_sha:record.head_sha,decision_id:decisionId,repair_cycle:updated.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
   }
+  /**
+   * CONSUMMATED payload-review repairs only: a repair is consummated exactly
+   * when a governed repair build replaced the candidate payload head
+   * (lifecycle_repair_build_replaced). Lifecycle/system recovery churn
+   * (base-sync, builder-failure recovery, control-plane reconciliation)
+   * never counts toward the payload repair budget.
+   */
+  consummatedPayloadRepairs(issue:number,pr:number):number {
+    if(!Number.isInteger(issue)||issue<=0||!Number.isInteger(pr)||pr<=0)throw new Error("payload repair accounting identity invalid");
+    const path=join(this.root,"events.jsonl");if(!existsSync(path))return 0;
+    const decisions=new Set<string>();
+    for(const line of readFileSync(path,"utf8").split(/\r?\n/).filter(Boolean)){
+      let value:any;try{value=JSON.parse(line);}catch{throw new Error("lifecycle event ledger corrupt");}
+      if(value?.event==="lifecycle_repair_build_replaced"&&value.issue===issue&&value.pr===pr&&typeof value.decision_id==="string"&&value.decision_id)decisions.add(value.decision_id);
+    }
+    return decisions.size;
+  }
+  /**
+   * Governed resume of an UNCONSUMMATED payload repair. The prior review
+   * requested changes, policy recorded an immutable BLOCK on the same head,
+   * no new payload head was consummated, and the payload budget remains.
+   * The immutable decision is never rewritten; a new candidate head is
+   * produced by the ordinary REPAIRING -> BUILDING repair path.
+   */
+  resumeUnconsummatedRepair(record:LifecycleRecord,consummated:number):LifecycleRecord {
+    const exact=record.state==="BLOCKED"&&record.last_error==="POLICY_BLOCK"&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&!!record.builder_session&&!!record.reviewer_session&&!!record.decision_id&&/^[0-9a-f]{40}$/.test(record.base_sha)&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&validBlockedCiEffectChain(record);
+    if(!exact||!Number.isInteger(consummated)||consummated<0||consummated>=2||this.consummatedPayloadRepairs(record.issue!,record.pr!)!==consummated)throw new Error("unconsummated repair resume denied");
+    const updated={...record,state:"REPAIRING" as const,last_error:undefined,repair_cycles:consummated+1,updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_unconsummated_repair_resumed",front_id:record.front_id,issue:record.issue,pr:record.pr,base_sha:record.base_sha,head_sha:record.head_sha,decision_id:record.decision_id,prior_lifecycle_repair_cycles:record.repair_cycles,consummated_payload_repairs:consummated,repair_cycle:updated.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
+  }
+  /**
+   * Converts an unconsummated policy-blocked repair into the undecided
+   * blocked-CI candidate shape so the generic base synchronization path can
+   * carry it across an advanced base. The immutable BLOCK decision remains in
+   * the ledger untouched; only the mutable lifecycle pointer is re-shaped.
+   */
+  beginUnconsummatedRepairSync(record:LifecycleRecord):LifecycleRecord {
+    const exact=record.state==="BLOCKED"&&record.last_error==="POLICY_BLOCK"&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&!!record.builder_session&&!!record.reviewer_session&&!!record.decision_id&&/^[0-9a-f]{40}$/.test(record.base_sha)&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&validBlockedCiEffectChain(record);
+    if(!exact)throw new Error("unconsummated repair synchronization denied");
+    const updated={...record,last_error:"CI_FAILED",reviewer_session:undefined,decision_id:undefined,updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_unconsummated_repair_synchronizing",front_id:record.front_id,issue:record.issue,pr:record.pr,base_sha:record.base_sha,head_sha:record.head_sha,decision_id:record.decision_id,repair_cycles:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
+  }
   exhaustBlockedCiRepair(record:LifecycleRecord):LifecycleRecord {
     const exact=record.state==="BLOCKED"&&record.last_error==="CI_FAILED"&&record.repair_cycles===2&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&!!record.builder_session&&!record.reviewer_session&&!record.decision_id&&/^[0-9a-f]{40}$/.test(record.base_sha)&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&validBlockedCiEffectChain(record);
     if(!exact)throw new Error("blocked CI repair exhaustion denied");
