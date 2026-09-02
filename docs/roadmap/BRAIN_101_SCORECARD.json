@@ -712,7 +712,7 @@
     {
       "id": "R3",
       "percent": 70,
-      "status": "PARTIALLY_CLOSED_R3_4_CLOSED_NO_NEXT_AUTHORIZED_ITEM",
+      "status": "PARTIALLY_CLOSED_R3_4_CLOSED_R3_5_AUTHORIZED_ACTIVE",
       "evidence": [
         {
           "claim": "Auth/RBAC/signed approval contracts exist; complete constitutional adversarial coverage does not.",
@@ -833,7 +833,7 @@
     {
       "id": "R3",
       "percent": 70,
-      "status": "PARTIALLY_CLOSED_R3_4_CLOSED_NO_NEXT_AUTHORIZED_ITEM",
+      "status": "PARTIALLY_CLOSED_R3_4_CLOSED_R3_5_AUTHORIZED_ACTIVE",
       "evidence": [
         {
           "claim": "CI and recovery contracts exist; the required E2E matrix is incomplete.",

@@ -9307,7 +9307,7 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - **E2E evidence**: `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md` records the full cognitive pipeline stages (perception, reasoning, planning, action, reflection, memory), scope constraints, zero-trust workspace compliance, and trailing-whitespace verification.
 - **E2E verification**: `git diff --check` clean on the closeout branch.
 - **Closeout evidence**: `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json`.
-- **Status**: `R3.4` set to `CLOSED_RUNTIME_VERIFIED`; R3 remains `PARTIALLY_CLOSED`; no next item is authorized by this closeout front.
+- **Status**: `R3.4` set to `CLOSED_RUNTIME_VERIFIED`; R3 remains `PARTIALLY_CLOSED`; the R3.4 closeout front itself authorizes no item, while R3.5 is separately authorized as the single next roadmap item.
 - **Preserved controls**: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
 - **Next gate**: R3.5 is the single authorized next roadmap item.
 

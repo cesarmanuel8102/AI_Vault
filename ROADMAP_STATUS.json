@@ -1,6 +1,7 @@
 {
-  "current_head": "dd5468258692bae90e1830a94890e8ae533334aa",
-  "current_remote_head": "pending_push",
+  "current_head": "c26db83815c186730c7ce0672a0f28bfd271d416",
+  "current_remote_head": "c26db83815c186730c7ce0672a0f28bfd271d416",
+  "r3_4_closeout_merge_commit": "dd5468258692bae90e1830a94890e8ae533334aa",
   "branch": "codex/own-capital-sustainable-return",
   "migration_status": "r3_5_supervisor_wake_loop_ready",
   "last_applied_checkpoint": "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-CLOSEOUT-01",
