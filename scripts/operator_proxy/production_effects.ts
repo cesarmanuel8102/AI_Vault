@@ -181,7 +181,13 @@ export class ProductionEffects implements AutonomousEffects {
     return this.inspectRouterBuilderReceipt(receiptHead,receiptBase,front);
   }
   review(pr:number,head:string,session:string) {const spec=this.activeSpec,state=this.activeState;if(!spec||!state?.issue||state.pr!==pr||state.head_sha!==head||!state.builder_session||!spec.front_id)throw new Error("review lifecycle binding missing");const policyKey=decisionKey(spec,state.issue,pr,state.base_sha,head),identity=this.bus.prIdentity(pr),files=(identity.files??[]).map((x:any)=>String(x.path)),reportPath="docs/agent_loop/pilot/EXECUTOR_REPORT.json",report=spec.executor==="agent_loop"&&files.includes(reportPath)?JSON.parse(this.bus.fileAt(reportPath,head)):undefined,receipt=spec.executor==="agent_loop"?inspectAgentLoopCommitModel(this.agentLoopReceiptMessage(spec,state,head),spec.front_id,report?.model):undefined,routerReceipt=spec.executor==="codex_control_plane"?this.anchoredRouterBuilderReceipt(state,head,spec.front_id):undefined,builderModel=receipt?.model??(routerReceipt?.status==="VERIFIED"?routerReceipt.model:undefined)??verifiedBuilderModel(spec.executor),reviewKey=reviewEvidenceKey(policyKey,state.builder_session,builderModel);if(receipt?.status==="MISSING")return {session:`reviewer:deterministic-receipt-repair:${head}`,output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"Agent Loop commit evidence requires bounded regeneration",findings:[{severity:"P1",title:"Executor model receipt missing",evidence:"The exact Agent Loop candidate commit subject is valid, but the required AGENT_LOOP_EXECUTOR_MODEL trailer is absent.",required_correction:"Regenerate the candidate with the installed governed Agent Loop worker so the commit records exactly one configured executor model receipt."}]}};if(spec.executor==="codex_control_plane"&&routerReceipt?.status==="PROVENANCE_RECOVERY_REQUIRED")return {session:`reviewer:builder-provenance-recovery:${head}`,output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"Builder model provenance requires a governed fresh rebuild",findings:[{severity:"P1",title:"Builder model receipt missing or invalid",evidence:"The control-plane candidate does not contain a valid BUILDER_MODEL receipt from a governed builder transaction. This may be an unattested legacy candidate or the provenance was lost.",required_correction:"Trigger BUILDER_PROVENANCE_RECOVERY_REQUIRED: run a fresh governed builder transaction from a verified clean baseline and produce a new HEAD containing a real BUILDER_BACKEND/BUILDER_MODEL/PROVIDER_SESSION receipt before review resumes."}]}};const input={repository:spec.repository,repositoryRoot:this.sourceRepo,pr,baseSha:state.base_sha,headSha:head,risk:spec.risk,changedFiles:files,builderSession:state.builder_session,builderModel},expected={issue:state.issue,pr,base_sha:state.base_sha,head_sha:head,front_id:spec.front_id,builder_session:state.builder_session,builder_model:builderModel};const cached=this.ledger.loadOrCreateReview(reviewKey,()=>{this.boundary.assert("reviewer_execute",{issue:state.issue,pr,expected_head:head});const run=new ReviewerRouter(join(this.root,"reviewer-router")).review(input);return {schema_version:1,...expected,requested_session:session,session:run.session,router_run:run,result:run.output};},value=>{validateReviewerEnvelope(value,expected,input);}).review as any;return {output:cached.result,session:cached.session};}
-  policy(spec:ProxySpec,issue:number,pr:number,head:string,review:ReviewerOutput,builderSession:string,reviewerSession:string,repairCycles:number):PolicyResult {review=normalizeReviewerOutput(review,head);const key=decisionKey(spec,issue,pr,spec.expected_base_sha,head),evidence=collect(this.bus,issue,pr,reviewerSession,review,spec);evidence.builder_session=builderSession;evidence.review_session=reviewerSession;evidence.repair_cycles=repairCycles;const candidate=decide(spec,evidence),prior=this.ledger.findByKey(key)??this.ledger.findByHead(head);if(prior){if(!decisionMatchesCandidate(prior,candidate))throw new Error("DECISION_IDENTITY_CONFLICT");return {outcome:prior.policy_decision,decision_id:prior.decision_id};}this.boundary.assert("decision_persist",{issue,pr,expected_head:head});const decision=this.ledger.recordOrLoad(candidate).decision;if(decision.policy_decision==="REPAIR"){this.boundary.assert("findings_publish",{issue,pr,expected_head:head});this.boundary.assert("repair_request",{issue,pr,expected_head:head});const marker=`decision_key=${decision.decision_key}`;this.bus.commentOnce("issue",issue,marker,`[OPERATOR-PROXY][REPAIR]\n\n${marker}\ndecision_id=${decision.decision_id}\nhead=${head}\nfindings=${safeJson(review.findings)}`);if(spec.executor==="agent_loop"){this.bus.reconcileLabel("issue",issue,"loop:repairing",["operator:repairing","loop:ci"]);this.bus.reconcileLabel("pr",pr,"loop:repairing",["operator:repairing","loop:ci"]);}}return {outcome:decision.policy_decision,decision_id:decision.decision_id};}
+  /**
+   * Semantic payload-repair accounting. Policy evidence carries only
+   * CONSUMMATED payload-review repairs. Lifecycle repair_cycles (which also
+   * counts lifecycle/system recovery churn) never reaches policy evidence.
+   */
+  private consummatedPayloadRepairs(issue:number,pr:number){return new LifecycleStore(join(this.root,"lifecycle")).consummatedPayloadRepairs(issue,pr);}
+  policy(spec:ProxySpec,issue:number,pr:number,head:string,review:ReviewerOutput,builderSession:string,reviewerSession:string,repairCycles:number):PolicyResult {review=normalizeReviewerOutput(review,head);const key=decisionKey(spec,issue,pr,spec.expected_base_sha,head),evidence=collect(this.bus,issue,pr,reviewerSession,review,spec);evidence.builder_session=builderSession;evidence.review_session=reviewerSession;evidence.repair_cycles=this.consummatedPayloadRepairs(issue,pr);const consummatedPayloadRepairs=evidence.repair_cycles;const candidate=decide(spec,evidence),prior=this.ledger.findByKey(key)??this.ledger.findByHead(head);if(prior){if(!decisionMatchesCandidate(prior,candidate))throw new Error("DECISION_IDENTITY_CONFLICT");return {outcome:prior.policy_decision,decision_id:prior.decision_id,consummated_payload_repairs:consummatedPayloadRepairs};}this.boundary.assert("decision_persist",{issue,pr,expected_head:head});const decision=this.ledger.recordOrLoad(candidate).decision;if(decision.policy_decision==="REPAIR"){this.boundary.assert("findings_publish",{issue,pr,expected_head:head});this.boundary.assert("repair_request",{issue,pr,expected_head:head});const marker=`decision_key=${decision.decision_key}`;this.bus.commentOnce("issue",issue,marker,`[OPERATOR-PROXY][REPAIR]\n\n${marker}\ndecision_id=${decision.decision_id}\nhead=${head}\nfindings=${safeJson(review.findings)}`);if(spec.executor==="agent_loop"){this.bus.reconcileLabel("issue",issue,"loop:repairing",["operator:repairing","loop:ci"]);this.bus.reconcileLabel("pr",pr,"loop:repairing",["operator:repairing","loop:ci"]);}}return {outcome:decision.policy_decision,decision_id:decision.decision_id,consummated_payload_repairs:consummatedPayloadRepairs};}
   ensureMerge(pr:number,head:string,base:string,decisionId:string){const spec=this.activeSpec,state=this.activeState;if(!spec||!state?.issue||state.pr!==pr||state.head_sha!==head||state.base_sha!==base||state.decision_id!==decisionId||!state.builder_session||!state.reviewer_session)throw new Error("merge lifecycle binding missing");const decision=this.ledger.load(decisionId);if(decision.pr!==pr||decision.head_sha!==head||decision.base_sha!==base)throw new Error("merge decision binding mismatch");const alreadyMerged=this.ledger.hasHead(head)||this.bus.prIdentity(pr).state==="MERGED";if(!alreadyMerged){const reviewed=this.review(pr,head,state.reviewer_session),recomputed=this.policy(spec,state.issue,pr,head,reviewed.output,state.builder_session,reviewed.session,state.repair_cycles);if(recomputed.outcome!=="APPROVE"||recomputed.decision_id!==decisionId)throw new Error("merge decision revalidation failed");}const merge=execute(this.bus,this.ledger,decision,false);if(!merge)throw new Error("governed merge not completed");this.boundary.bindPostMerge(merge);reconcileAuthorizationComment(this.bus,decision);return merge;}
   ensureInstall(spec:ProxySpec,merge:string){const path=installArtifactPath(spec);if(!path)throw new Error("install artifact target invalid");const artifactSha256=createHash("sha256").update(Buffer.from(this.bus.fileAt(path,merge),"utf8")).digest("hex");return this.coordinator.install(spec,merge,artifactSha256);}
   ensureRuntimePilot(spec:ProxySpec,merge:string){return this.coordinator.pilot(spec,merge);}
@@ -205,6 +211,7 @@ export class ProductionEffects implements AutonomousEffects {
       verifyReceipt: (receiptHead, receiptBase) => this.inspectRouterBuilderReceipt(receiptHead, receiptBase, frontId).status === "VERIFIED",
       verifyBridgeCandidate: (nextBase, nextHead) => safe(() => this.inspectBridgeCandidate(spec, {...state, base_sha: nextBase, head_sha: nextHead})) !== undefined,
       decisionBoundToLineage: decision => decisionBoundToLineageRole(decision, spec, state, this.bus),
+      consummatedPayloadRepairs: (issue, pr) => this.consummatedPayloadRepairs(issue, pr),
     };
   }
   private snapshotDeps(): Parameters<typeof normalizeObservedFacts>[2] {
@@ -264,6 +271,7 @@ export class ProductionEffects implements AutonomousEffects {
       }
       case "REOPEN_CI": return store.recoverBlockedCiChecks(state);
       case "REQUEST_DETERMINISTIC_REPAIR": return this.requestDeterministicRepair(spec, state, store);
+      case "RESUME_UNCONSUMMATED_REPAIR": return this.resumeUnconsummatedRepair(spec, state, store);
       case "EXHAUST_REPAIR": return store.exhaustBlockedCiRepair(state);
       case "ADOPT_EXTERNAL_MERGE": return this.adoptExternalMerge(spec, state, store) ?? (() => {throw new Error("external merge adoption denied");})();
       case "RECOVER_NEGATED_RISK_ESCALATION": return this.recoverNegatedRiskEscalationApplier(spec, state, store);
@@ -487,6 +495,47 @@ export class ProductionEffects implements AutonomousEffects {
       this.bindLifecycle(spec, updated);
       return updated;
     } finally { this.boundary.endBlockedCiRepair(); }
+  }
+  private resumeUnconsummatedRepair(spec: ProxySpec, state: LifecycleRecord, store: LifecycleStore) {
+    // Semantic gate: the immutable BLOCK decision recorded a consistent
+    // CHANGES_REQUESTED review with findings on this exact head, on an
+    // admissible LOW/MEDIUM candidate, and no payload repair was consummated.
+    const decision = this.ledger.load(state.decision_id!);
+    const semantic = decision.policy_decision === "BLOCK" && decision.codex_review === "CHANGES_REQUESTED" &&
+      "review_findings_count" in decision && decision.review_findings_count > 0 &&
+      "review_consistent" in decision && decision.review_consistent === true &&
+      decision.deterministic_gate === "PASS" && ["LOW", "MEDIUM"].includes(decision.risk) &&
+      decision.authorization_id === spec.authorization_id && decision.repository === spec.repository &&
+      decision.policy_sha256 === POLICY_SHA256 && decision.issue === state.issue && decision.pr === state.pr &&
+      decision.base_sha === state.base_sha && decision.head_sha === state.head_sha &&
+      decision.roadmap_id === spec.roadmap_id && decision.roadmap_item_id === spec.roadmap_item_id &&
+      state.base_sha === spec.expected_base_sha && !this.ledger.hasHead(state.head_sha!);
+    if (!semantic) throw new Error("unconsummated repair resume semantics denied");
+    // Repair authorization evidence: a governed repair request was published
+    // for this issue during the campaign.
+    if (this.bus.repairCount(state.issue!) < 1) throw new Error("unconsummated repair was never authorized");
+    // Payload budget: only CONSUMMATED payload repairs consume it.
+    const consummated = this.consummatedPayloadRepairs(state.issue!, state.pr!);
+    if (consummated >= 2) throw new Error("consummated payload repair budget exhausted");
+    // Candidate/PR identity remains exactly the blocked head.
+    const pr = this.bus.prIdentity(state.pr!);
+    const files = (pr.files ?? []).map((x: any) => String(x.path));
+    if (pr.author?.login !== "cesarmanuel8102" || pr.baseRefName !== "codex/own-capital-sustainable-return" || pr.baseRefOid !== state.base_sha || pr.headRefName !== spec.work_branch || pr.headRefOid !== state.head_sha || pr.headRepository?.nameWithOwner !== "cesarmanuel8102/AI_Vault" || pr.isCrossRepository !== false || pr.isDraft !== true || pr.state !== "OPEN" || pr.mergeable !== "MERGEABLE" || files.length === 0 || !files.every((path: string) => pathAllowed(path, spec)) || this.bus.remoteBranchHead(spec.work_branch!) !== state.head_sha) throw new Error("unconsummated repair PR identity invalid");
+    this.boundary.beginUnconsummatedRepairResume(spec, state);
+    try {
+      // Deterministic replay of the recorded review receipt for this head.
+      this.bindLifecycle(spec, state);
+      const reviewed = this.review(state.pr!, state.head_sha!, state.reviewer_session!);
+      const review = normalizeReviewerOutput(reviewed.output, state.head_sha!);
+      if (review.verdict !== "CHANGES_REQUESTED" || review.head_sha !== state.head_sha || review.findings.length !== decision.review_findings_count || review.findings.some(f => f.severity === "P0")) throw new Error("unconsummated repair review evidence invalid");
+      const marker = `unconsummated_repair decision_key=${decision.decision_key}`;
+      this.boundary.assert("findings_publish", {issue: state.issue, pr: state.pr, expected_head: state.head_sha});
+      this.boundary.assert("repair_request", {issue: state.issue, pr: state.pr, expected_head: state.head_sha});
+      this.bus.commentOnce("issue", state.issue!, marker, `[OPERATOR-PROXY][REPAIR]\n\n${marker}\ndecision_id=${decision.decision_id}\nhead=${state.head_sha}\nfindings=${safeJson(review.findings)}`);
+      const updated = store.resumeUnconsummatedRepair(state, consummated);
+      this.bindLifecycle(spec, updated);
+      return updated;
+    } finally { this.boundary.endUnconsummatedRepairResume(); }
   }
   private adoptExternalMerge(spec: ProxySpec, state: LifecycleRecord, store: LifecycleStore) {
     if (!state.pr) return undefined;
