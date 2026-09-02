@@ -382,9 +382,45 @@ export class ProductionEffects implements AutonomousEffects {
     this.bindLifecycle(spec, updated);
     return updated;
   }
+  /**
+   * Consumes the published authorized repair payload as the repair build:
+   * the payload's verified builder receipt provides the new builder session;
+   * review and decision restart fresh at the new head. Journals the
+   * consummated payload repair (repair-build replacement).
+   */
+  private consumePublishedRepair(spec: ProxySpec, state: LifecycleRecord, store: LifecycleStore, publishedHead: string) {
+    if (!state.issue || !state.pr || !state.head_sha || !state.decision_id || state.state !== "BLOCKED" || !/^BUILDER_FAILED:[A-Z_]+$/.test(state.last_error ?? "")) throw new Error("published repair consumption denied");
+    if (!this.bus.isAncestor(state.base_sha, publishedHead)) throw new Error("published repair ancestry invalid");
+    const receipt = this.inspectRouterBuilderReceipt(publishedHead, state.base_sha, spec.front_id!);
+    if (receipt.status !== "VERIFIED") throw new Error("published repair builder receipt invalid");
+    const issue = this.bus.issueSnapshot(state.issue);
+    if (issue.state !== "OPEN") throw new Error("published repair Issue state invalid");
+    const updated = store.consumePublishedRepair(state, publishedHead, state.decision_id);
+    this.bindLifecycle(spec, updated);
+    return updated;
+  }
   private adoptVerifiedSynchronizedCandidate(spec: ProxySpec, state: LifecycleRecord, store: LifecycleStore) {
     const decision = state.decision_id ? this.ledger.load(state.decision_id) : undefined;
     if (!decision) throw new Error("synchronized candidate decision missing");
+    // A decided repair whose authorized payload was already published on the
+    // work branch is consumed as the repair build (repair-build replacement +
+    // consummated payload accounting) instead of failing on the drifted head.
+    const publishedHead = spec.work_branch ? safe(() => this.bus.remoteBranchHead(spec.work_branch!)) : undefined;
+    if (publishedHead && publishedHead !== state.head_sha && state.head_sha && this.bus.isAncestor(state.head_sha, publishedHead) && state.issue && state.pr) {
+      const pr = this.bus.prIdentity(state.pr);
+      const files = (pr.files ?? []).map((x: any) => String(x.path));
+      const trusted = pr.author?.login === "cesarmanuel8102" && pr.baseRefName === INTEGRATION_BRANCH && pr.baseRefOid === state.base_sha &&
+        pr.headRefName === spec.work_branch && pr.headRefOid === publishedHead && pr.headRepository?.nameWithOwner === spec.repository &&
+        pr.isCrossRepository === false && pr.isDraft === true && pr.state === "OPEN" && pr.mergeable === "MERGEABLE" &&
+        files.length > 0 && files.every((path: string) => pathAllowed(path, spec));
+      const authorized = decision.policy_decision === "REPAIR" && decision.codex_review === "CHANGES_REQUESTED" &&
+        "review_findings_count" in decision && decision.review_findings_count > 0 &&
+        "review_consistent" in decision && decision.review_consistent === true &&
+        decision.base_sha === state.base_sha && decision.head_sha === state.head_sha &&
+        decision.issue === state.issue && decision.pr === state.pr &&
+        store.consummatedPayloadRepairs(state.issue, state.pr) < 2;
+      if (trusted && authorized) return this.consumePublishedRepair(spec, state, store, publishedHead);
+    }
     const snapshot = this.bus.issueSnapshot(state.issue!);
     const expectedBody = boundIssueBody({...spec, expected_base_sha: state.base_sha}, state.pr!);
     const pr = this.bus.prIdentity(state.pr!);
@@ -741,6 +777,6 @@ export class ProductionEffects implements AutonomousEffects {
     if(!common||!policyApproved&&!ownerAuthorized)throw new Error("closeout parent decision evidence mismatch");
     return {schema_version:1,parent_front_id:state.front_id,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id,issue:state.issue,pr:state.pr,decision_id:decision.decision_id,authorization_mode:ownerAuthorized?"OWNER_CONSTITUTIONAL":"POLICY_APPROVED",base_sha:decision.base_sha,closeout_base_sha:merge,head_sha:decision.head_sha,merge_commit:merge,builder_session:state.builder_session,reviewer_session:state.reviewer_session};
   }
-  async ensureCloseout(spec:ProxySpec,merge:string){this.boundary.assert("closeout_create",{issue:undefined});if(!spec.closeout)return this.coordinator.closeout(spec,merge);const c=spec.closeout,parentEvidence=safeJson(this.closeoutParentEvidence(spec,merge)),evidenceInstruction=`Record this immutable parent lifecycle evidence exactly; do not infer, omit, or replace known values with null: ${parentEvidence}`;const closeout:ProxySpec={...spec,executor:c.executor,risk:c.risk,allowed_paths:c.allowed_paths,forbidden_paths:c.forbidden_paths,acceptance:[...c.acceptance,evidenceInstruction],test_commands:c.test_commands,objective:`${c.objective.trim()}\n\nPARENT_LIFECYCLE_EVIDENCE_JSON=${parentEvidence}`,work_branch:c.work_branch,deployment_mode:"NO_DEPLOY",install_target:undefined,front_id:c.front_id,test_profile:c.test_profile,max_executor_cycles:c.max_executor_cycles,closeout:undefined,closeout_only:true};const store=new LifecycleStore(join(this.root,"lifecycle"));const prior=store.load(closeout.front_id!);if(prior)this.reconcile(closeout,prior,store);const flow=new AutonomousFlow(store,this);let state=await flow.step(closeout);for(let i=0;i<20;i++){if(["CI_PENDING","BLOCKED","ESCALATED","TERMINAL_COMPLETED"].includes(state.state))break;state=await flow.step(closeout);}if(state.state==="BLOCKED"||state.state==="ESCALATED")throw new Error(`closeout ${state.state}: ${state.last_error??"unknown"}`);return state.state==="TERMINAL_COMPLETED"?"PASS":"PENDING";}
+  async ensureCloseout(spec:ProxySpec,merge:string){this.boundary.assert("closeout_create",{issue:undefined});if(!spec.closeout)return this.coordinator.closeout(spec,merge);const c=spec.closeout,parentEvidence=safeJson(this.closeoutParentEvidence(spec,merge)),evidenceInstruction=`Record this immutable parent lifecycle evidence exactly; do not infer, omit, or replace known values with null: ${parentEvidence}`;const closeout:ProxySpec={...spec,executor:c.executor,risk:c.risk,allowed_paths:c.allowed_paths,forbidden_paths:c.forbidden_paths,acceptance:[...c.acceptance,evidenceInstruction],test_commands:c.test_commands,objective:`${c.objective.trim()}\n\nPARENT_LIFECYCLE_EVIDENCE_JSON=${parentEvidence}`,work_branch:c.work_branch,deployment_mode:"NO_DEPLOY",install_target:undefined,front_id:c.front_id,test_profile:c.test_profile,max_executor_cycles:c.max_executor_cycles,closeout:undefined,closeout_only:true};const store=new LifecycleStore(join(this.root,"lifecycle"));const enterable=()=>{const current=store.load(closeout.front_id!);if(current&&current.base_sha!==closeout.expected_base_sha)this.reconcile(closeout,current,store);return store.load(closeout.front_id!);};const prior=enterable();const flow=new AutonomousFlow(store,this);let state=await flow.step(closeout);for(let i=0;i<20;i++){if(["CI_PENDING","BLOCKED","ESCALATED","TERMINAL_COMPLETED"].includes(state.state))break;enterable();state=await flow.step(closeout);}if(state.state==="BLOCKED"||state.state==="ESCALATED")throw new Error(`closeout ${state.state}: ${state.last_error??"unknown"}`);return state.state==="TERMINAL_COMPLETED"?"PASS":"PENDING";}
   discoverNext(item:string){this.coordinator.discoverNext(item);}
 }
