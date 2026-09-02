@@ -4,6 +4,8 @@ import {containsSensitiveData} from "./redaction.js";
 
 const validStrings=(value:unknown)=>Array.isArray(value)&&value.every(x=>typeof x==="string"&&x.length>0)&&new Set(value).size===value.length;
 const invalidPath=(path:string)=>path.includes("\\")||path.startsWith("/")||/^[A-Za-z]:/.test(path)||path.split("/").includes("..")||path.includes("//");
+const authorityDirectory="scripts/operator_proxy/authority";
+const protectedGovernancePath=(path:string)=>path===authorityDirectory||path.startsWith(`${authorityDirectory}/`);
 const agentBranchPrefix=(profile:ProxySpec["test_profile"])=>profile==="pilot"?"agent/pilot-":profile==="roadmap-doc"?"agent/roadmap-doc-":profile==="test-only"?"agent/test-only-":"";
 function validWorkBranch(spec:Pick<ProxySpec,"executor"|"test_profile"|"work_branch">){if(!spec.work_branch||spec.work_branch.includes("..")||spec.work_branch.includes("//"))return false;const prefix=spec.executor==="codex_control_plane"?"control-plane/":agentBranchPrefix(spec.test_profile);return !!prefix&&spec.work_branch.startsWith(prefix)&&/^[a-z0-9][a-z0-9._/-]{5,160}$/.test(spec.work_branch);}
 
@@ -14,6 +16,7 @@ export function validateSpec(spec:ProxySpec,requireAutomation=false):ProxySpec {
   if(spec.schema_version!==1||spec.authorization_id!==AUTH||spec.repository!==REPO||spec.roadmap_id!=="BRAIN-101"||!/^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$/i.test(spec.roadmap_version)||!/^R\d+(?:\.\d+)?$/.test(spec.roadmap_item_id)||!/^[0-9a-f]{40}$/.test(spec.expected_base_sha)||!["agent_loop","codex_control_plane"].includes(spec.executor)||!["LOW","MEDIUM","HIGH","CRITICAL"].includes(spec.risk)||spec.deployment_allowed!==false||!validArrays)throw new Error("operator proxy spec invalid");
   if(spec.dependencies){if(!Array.isArray(spec.dependencies)||!spec.dependencies.every(x=>/^R\d+(?:\.\d+)?$/.test(x))||new Set(spec.dependencies).size!==spec.dependencies.length)throw new Error("operator proxy dependencies invalid");}
   if([...spec.allowed_paths,...spec.forbidden_paths].some(invalidPath))throw new Error("operator proxy path invalid");
+  if(spec.allowed_paths.some(protectedGovernancePath))throw new Error("operator proxy protected governance path");
   if(requireAutomation&&(!spec.front_id||!spec.work_branch||!spec.objective||!spec.deployment_mode))throw new Error("operator proxy automation metadata missing");
   const installs=spec.deployment_mode==="INSTALL_ONLY"||spec.deployment_mode==="INSTALL_AND_RUNTIME_PILOT";
   if(installs!==!!spec.install_target||spec.install_target&&spec.install_target!=="agent_loop_worker")throw new Error("operator proxy install target invalid");
