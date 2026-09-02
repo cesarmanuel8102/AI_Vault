@@ -1,4 +1,5 @@
 import type {LifecycleRecord, ProxySpec, NormalizedDecision} from "./types.js";
+const pathAllowed=(path:string,spec:ProxySpec)=>spec.allowed_paths.some(p=>p.endsWith("/")?path.startsWith(p):path===p)&&!spec.forbidden_paths.some(p=>path===p||path.startsWith(p.endsWith("/")?p:`${p}/`));
 import {
   type CanonicalLifecycleSnapshot, type CandidateLineage,
   blockedCiEffectChain, expandableBlockedCiEffectChain, privilegedInstallEffectChain,
@@ -24,6 +25,7 @@ export type ReconciliationMove =
   | "ADOPT_PUBLISHED_INITIAL_CANDIDATE"
   | "ADOPT_PUBLISHED_REPAIR_CANDIDATE"
   | "ADOPT_VERIFIED_SYNCHRONIZED_CANDIDATE"
+  | "ADOPT_ADVANCED_PAYLOAD"
   | "REVERT_INVALIDATED_ADOPTION"
   | "SYNCHRONIZE_CANDIDATE"
   | "REOPEN_CI"
@@ -94,7 +96,7 @@ export function validateInvariantSet(snapshot: CanonicalLifecycleSnapshot, plan:
 const planRequiresNoLineage = (move: ReconciliationMove): boolean =>
   ["NOOP", "REBIND_UNSTARTED_BASE", "REBIND_PRE_BUILD_BASE", "REBIND_POST_MERGE_BASE", "RESUME_INITIAL_BUILD",
    "EXHAUST_REPAIR", "ESCALATE_OWNER", "INVALIDATE_FAILED_MERGE", "AMBIGUOUS", "RECOVER_NEGATED_RISK_ESCALATION",
-   "SYNCHRONIZE_CANDIDATE", "REOPEN_CI"].includes(move) ||
+   "SYNCHRONIZE_CANDIDATE", "REOPEN_CI", "ADOPT_ADVANCED_PAYLOAD"].includes(move) ||
   // Moves whose lineage is derived lazily by the applier after external reads.
   (move === "REQUEST_DETERMINISTIC_REPAIR" || move === "RESUME_RECORDED_BUILD" || move === "RESUME_UNCONSUMMATED_REPAIR");
 function lineageComplete(lineage: CandidateLineage, ports: PlannerPorts): boolean {
@@ -117,7 +119,11 @@ export function deriveReconciliationPlan(snapshot: CanonicalLifecycleSnapshot, p
   // Blocked and escalated states always need a recovery plan, even when the
   // persisted base already matches: the lifecycle itself is stopped.
   const blockedOrEscalated = record.state === "BLOCKED" || record.state === "ESCALATED";
-  if (!snapshot.base.stale && !blockedOrEscalated) return {move: "NOOP", reason: "persisted base matches authorized base", lineage: undefined};
+  // An undecided post-build record whose same-PR payload advanced is itself
+  // stopped at a stale head: it plans even at the matching base.
+  const payloadAdvanced = !blockedOrEscalated && ["CI_PENDING", "REVIEWING"].includes(record.state) &&
+    !record.reviewer_session && !record.decision_id && samePrPayloadAdvanced(snapshot);
+  if (!snapshot.base.stale && !blockedOrEscalated && !payloadAdvanced) return {move: "NOOP", reason: "persisted base matches authorized base", lineage: undefined};
 
   if (snapshot.facts.privilegedInstall && privilegedInstallEffectChain(record)) return {move: "NOOP", reason: "privileged install waits at its own escalation path", lineage: undefined};
   if (snapshot.facts.ownerEscalated && snapshot.facts.negatedRiskDecision) return recoverNegatedRisk(snapshot, ports);
@@ -241,8 +247,30 @@ function planDecidedPostBuild(snapshot: CanonicalLifecycleSnapshot, ports: Plann
   if (validBridgeAdoptionFacts(record) && ports.verifyBridgeCandidate(snapshot.spec.expected_base_sha, record.head_sha!) && remoteMatchesSnapshot(snapshot)) {
     return {move: "ADOPT_PUBLISHED_INITIAL_CANDIDATE", reason: "fully attested neutralization bridge adopted before ancestry fallback", lineage: undefined};
   }
+  // An undecided post-build record whose same-PR payload advanced at the
+  // matching base re-enters the pipeline at the new published head: the
+  // trusted repair payload replaces the stale candidate identity.
+  if (!snapshot.base.stale && !record.reviewer_session && !record.decision_id && samePrPayloadAdvanced(snapshot)) {
+    return {move: "ADOPT_ADVANCED_PAYLOAD", reason: "undecided candidate adopts the advanced same-PR payload head at the matching base", lineage: undefined};
+  }
   if (!snapshot.base.advanced) return {move: "AMBIGUOUS", reason: "decided post-build base is not ancestral", lineage: undefined};
   return {move: "SYNCHRONIZE_CANDIDATE", reason: "undecided post-build candidate synchronizes across the advanced base", lineage: undefined};
+}
+
+function samePrPayloadAdvanced(snapshot: CanonicalLifecycleSnapshot): boolean {
+  const record = snapshot.record, spec = snapshot.spec;
+  if (!record.pr || !record.head_sha || !spec.work_branch) return false;
+  let remoteHead: string | undefined;
+  try { remoteHead = snapshot.observeRemoteHead(); } catch { return false; }
+  const pr = safe(() => snapshot.observePr());
+  if (!remoteHead || remoteHead === record.head_sha || pr?.identity.headRefOid !== remoteHead) return false;
+  if (pr.identity.author?.login !== spec.repository.split("/", 1)[0] || pr.identity.baseRefName !== "codex/own-capital-sustainable-return" ||
+    pr.identity.baseRefOid !== record.base_sha || pr.identity.headRefName !== spec.work_branch ||
+    pr.identity.headRepository?.nameWithOwner !== spec.repository || pr.identity.isCrossRepository !== false ||
+    pr.identity.isDraft !== true || pr.identity.state !== "OPEN" || pr.identity.mergeable !== "MERGEABLE") return false;
+  const files = (pr.identity.files ?? []).map((entry: any) => String(entry.path));
+  if (files.length === 0 || !files.every((path: string) => pathAllowed(path, spec))) return false;
+  return true;
 }
 
 function remoteMatchesSnapshot(snapshot: CanonicalLifecycleSnapshot): boolean {

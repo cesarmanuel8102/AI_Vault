@@ -251,6 +251,7 @@ export class ProductionEffects implements AutonomousEffects {
         return this.adoptPublishedInitialCandidate(spec, state, store);
       }
       case "ADOPT_PUBLISHED_REPAIR_CANDIDATE": return this.adoptBlockedBuilderCandidate(spec, state, store);
+      case "ADOPT_ADVANCED_PAYLOAD": return this.adoptAdvancedPayload(spec, state, store);
       case "ADOPT_VERIFIED_SYNCHRONIZED_CANDIDATE": return this.adoptVerifiedSynchronizedCandidate(spec, state, store);
       case "REVERT_INVALIDATED_ADOPTION": return this.revertInvalidatedAdoption(spec, state, store);
       case "SYNCHRONIZE_CANDIDATE": {
@@ -356,6 +357,28 @@ export class ProductionEffects implements AutonomousEffects {
     const expectedBody = boundIssueBody(spec, prNumber);
     if (snapshot.state !== "OPEN" || snapshot.labels.length !== 1 || snapshot.labels[0] !== "operator:building" || parsed.pr !== prNumber || snapshot.body !== expectedBody) throw new Error("blocked builder candidate Issue identity invalid");
     const updated = store.adoptBlockedBuilderCandidate(state, candidateHead, prNumber, `builder-recovered:${candidateHead}`);
+    this.bindLifecycle(spec, updated);
+    return updated;
+  }
+  /**
+   * Adopts the record's own PR advanced payload head at the matching base.
+   * The new head must be published on the work branch, bound to the same PR
+   * with a fully trusted identity, in scope, and descend from the stale head.
+   */
+  private adoptAdvancedPayload(spec: ProxySpec, state: LifecycleRecord, store: LifecycleStore) {
+    if (!spec.work_branch || !state.pr || !state.head_sha || state.reviewer_session || state.decision_id) throw new Error("advanced payload adoption denied");
+    const nextHead = this.bus.remoteBranchHead(spec.work_branch);
+    if (!nextHead || nextHead === state.head_sha) throw new Error("advanced payload head missing");
+    const pr = this.bus.prIdentity(state.pr);
+    const files = (pr.files ?? []).map((x: any) => String(x.path));
+    const trusted = pr.author?.login === "cesarmanuel8102" && pr.baseRefName === INTEGRATION_BRANCH && pr.baseRefOid === state.base_sha &&
+      pr.headRefName === spec.work_branch && pr.headRefOid === nextHead && pr.headRepository?.nameWithOwner === spec.repository &&
+      pr.isCrossRepository === false && pr.isDraft === true && pr.state === "OPEN" && pr.mergeable === "MERGEABLE" &&
+      files.length > 0 && files.every((path: string) => pathAllowed(path, spec));
+    if (!trusted || !this.bus.isAncestor(state.head_sha, nextHead) || !this.bus.isAncestor(state.base_sha, nextHead)) throw new Error("advanced payload identity invalid");
+    const snapshot = this.bus.issueSnapshot(state.issue!);
+    if (snapshot.state !== "OPEN") throw new Error("advanced payload Issue state invalid");
+    const updated = store.adoptAdvancedPayload(state, nextHead);
     this.bindLifecycle(spec, updated);
     return updated;
   }

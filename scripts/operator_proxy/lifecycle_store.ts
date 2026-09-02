@@ -232,6 +232,17 @@ export class LifecycleStore {
    * carry it across an advanced base. The immutable BLOCK decision remains in
    * the ledger untouched; only the mutable lifecycle pointer is re-shaped.
    */
+  /**
+   * An undecided post-build record adopts its own PR's advanced payload head
+   * at the matching base: the trusted repair payload replaces the stale
+   * candidate identity and re-enters CI from scratch.
+   */
+  adoptAdvancedPayload(record:LifecycleRecord,nextHead:string):LifecycleRecord {
+    const exact=["CI_PENDING","REVIEWING"].includes(record.state)&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&Number.isInteger(record.repair_cycles)&&record.repair_cycles>=0&&record.repair_cycles<=2&&!!record.builder_session&&!record.reviewer_session&&!record.decision_id&&/^[0-9a-f]{40}$/.test(record.base_sha)&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&validBlockedCiEffectChain(record);
+    if(!exact||!/^[0-9a-f]{40}$/.test(nextHead)||nextHead===record.head_sha)throw new Error("advanced payload adoption denied");
+    const updated={...record,state:"CI_PENDING" as const,head_sha:nextHead,builder_session:undefined,completed_effects:[...record.completed_effects,`base-sync:${nextHead}`],updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_advanced_payload_adopted",front_id:record.front_id,issue:record.issue,pr:record.pr,base_sha:record.base_sha,old_head_sha:record.head_sha,new_head_sha:nextHead,repair_cycles:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
+  }
   beginUnconsummatedRepairSync(record:LifecycleRecord):LifecycleRecord {
     const exact=record.state==="BLOCKED"&&record.last_error==="POLICY_BLOCK"&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&!!record.builder_session&&!!record.reviewer_session&&!!record.decision_id&&/^[0-9a-f]{40}$/.test(record.base_sha)&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&validBlockedCiEffectChain(record);
     if(!exact)throw new Error("unconsummated repair synchronization denied");
