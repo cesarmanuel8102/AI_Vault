@@ -195,8 +195,8 @@
   ],
   "recommended_next_front": {
     "name": "BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01",
-    "status": "PENDING_SEQUENCER_ACTIVATION",
-    "reason": "R3.4 closed runtime-verified. R3.5 is the sequencer's pending next gate; it becomes AUTHORIZED_ACTIVE only when its own governed front is sequenced."
+    "status": "AUTHORIZED_ACTIVE",
+    "reason": "R3.4 closed runtime-verified. R3.5 activation is sequencer-derived from the human-adopted manifest; its governed issue/PR/decision are created at sequencing time."
   },
   "ready_for_next_front": true,
   "last_updated": "2026-08-30T00:00:00.000+00:00",

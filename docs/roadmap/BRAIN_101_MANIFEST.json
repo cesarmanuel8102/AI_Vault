@@ -969,7 +969,8 @@
     },
     "R3.5": {
       "title": "Operator Proxy campaign supervisor wake loop",
-      "status": "PENDING_SEQUENCER_ACTIVATION",
+      "status": "AUTHORIZED_ACTIVE",
+      "authorization": "SEQUENCER_DERIVED_FROM_HUMAN_ADOPTED_MANIFEST; no closeout decision_id/issue/pr claimed; front governance begins at sequencing",
       "dependencies": [
         "R3.4"
       ],

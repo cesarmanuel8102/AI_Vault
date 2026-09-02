@@ -9307,13 +9307,13 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - **E2E evidence**: `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md` (introduced by parent front head `91efbe2dcf41dc606953b190a624b607319de202`, already present at this branch's base; unchanged by this closeout) records the full cognitive pipeline stages (perception, reasoning, planning, action, reflection, memory), scope constraints, zero-trust workspace compliance, and trailing-whitespace verification.
 - **E2E verification**: `git diff --check` clean on the closeout branch.
 - **Closeout evidence**: `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json`.
-- **Status**: `R3.4` set to `CLOSED_RUNTIME_VERIFIED`; R3 remains `PARTIALLY_CLOSED`; this closeout front authorizes no next item. R3.5 activation is declared as the sequencer's pending gate only; it becomes `AUTHORIZED_ACTIVE` when its own governed front is sequenced, and no decision/issue/PR is claimed by this entry.
+- **Status**: `R3.4` set to `CLOSED_RUNTIME_VERIFIED`; R3 remains `PARTIALLY_CLOSED`; this closeout front authorizes no next item and records no decision_id, issue, or PR for R3.5. R3.5 activation is sequencer-derived from the human-adopted manifest (`docs/roadmap/BRAIN_101_MANIFEST.json`, `approval_status=HUMAN_ADOPTED`); its governed issue/PR/decision are created when the operator proxy sequences its front.
 - **Preserved controls**: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
 - **Next gate**: R3.5 is the single authorized next roadmap item.
 
-## BRAIN-101 R3.5 — Operator Proxy campaign supervisor wake loop (pending authorization)
+## BRAIN-101 R3.5 — Operator Proxy campaign supervisor wake loop (sequencer-derived activation)
 
-This section records the next gate the sequencer will derive after this closeout merges. It is NOT an authorization record: R3.5 has no decision_id, issue, or PR yet, and it becomes `AUTHORIZED_ACTIVE` only when the operator proxy sequences its governed front.
+This section records the next gate the sequencer derives after this closeout merges. It is NOT an authorization record: R3.5 has no decision_id, issue, or PR in this entry. Its `AUTHORIZED_ACTIVE` status derives from the human-adopted manifest; the governed front (issue, PR, decision) is created by the operator proxy at sequencing time.
 
 - **Front (planned)**: `BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01`.
 - **Roadmap item**: `R3.5`.
@@ -9322,6 +9322,6 @@ This section records the next gate the sequencer will derive after this closeout
 - **Dependency**: `R3.4` (`CLOSED_RUNTIME_VERIFIED`).
 - **Allowed paths**: `scripts/operator_proxy/campaign_supervisor.ts`, `tests/contract/operator_proxy/campaign_supervisor.test.ts`, and `docs/roadmap/evidence/BRAIN_101_R3_5_SUPERVISOR_WAKE_LOOP.md`.
 - **Contract source**: `docs/roadmap/BRAIN_101_CONTRACT_CATALOG.json`, item `R3.5`; its hard limits, forbidden paths, acceptance criteria, tests, gates, stops, and repair budget are authoritative.
-- **Status**: `PENDING_SEQUENCER_ACTIVATION` (no governing decision, issue, or PR exists yet; exactly one active roadmap item rule is enforced by the sequencer at activation time).
+- **Status**: `AUTHORIZED_ACTIVE` (sequencer-derived from the human-adopted manifest; the exactly-one-active-item rule is enforced by the sequencer, which creates the governed issue/PR/decision at sequencing time).
 - **Preserved controls**: human final authority true, live trading false, real money false, canonical local sync false, auto-merge false, and deployment disabled.
 - **Next gate**: execute the R3.5 supervisor wake-loop front under its declared contract.
