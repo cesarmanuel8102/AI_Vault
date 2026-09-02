@@ -155,6 +155,7 @@ export interface CanonicalLifecycleSnapshot {
   facts: {
     builderFailure: string | undefined;
     ciBlocked: boolean;
+    policyBlocked: boolean;
     ownerEscalated: boolean;
     privilegedInstall: boolean;
     negatedRiskDecision: boolean;
@@ -246,6 +247,7 @@ export function normalizeObservedFacts(spec: ProxySpec, record: LifecycleRecord,
     facts: {
       builderFailure,
       ciBlocked: record.state === "BLOCKED" && record.last_error === "CI_FAILED",
+      policyBlocked: record.state === "BLOCKED" && record.last_error === "POLICY_BLOCK",
       ownerEscalated: record.state === "ESCALATED" && record.last_error === "OWNER_AUTHORITY_REQUIRED",
       privilegedInstall: record.state === "ESCALATED" && record.last_error === "LOCAL_PRIVILEGE_REQUIRED",
       negatedRiskDecision: decision !== undefined && decision.risk === "CRITICAL" && decision.deterministic_gate === "PASS" &&
@@ -307,7 +309,7 @@ function invalid(spec: ProxySpec, record: LifecycleRecord, reason: string): Cano
     builder: {session: record.builder_session, recoveredHead: recoveredBuilderSessionHead(record.builder_session), receiptHead: record.builder_receipt_head_sha, receiptBase: record.builder_receipt_base_sha, retryPending: record.builder_retry_reason === "BUILDER_FAILURE"},
     decision: {id: record.decision_id, loaded: undefined, missing: record.decision_id !== undefined},
     ...lazyObservations({issueSnapshot: () => undefined, prIdentity: () => ({}), prCandidatesByBranch: () => [], remoteBranchHead: () => undefined, isAncestor: () => false, commitMessage: () => "", call: () => ""} as unknown as SnapshotBus, spec, record),
-    facts: {builderFailure: builderFailureClass(record.last_error), ciBlocked: false, ownerEscalated: false, privilegedInstall: false, negatedRiskDecision: false, recordedRetry: false, synchronizedCandidate: false},
+    facts: {builderFailure: builderFailureClass(record.last_error), ciBlocked: false, policyBlocked: false, ownerEscalated: false, privilegedInstall: false, negatedRiskDecision: false, recordedRetry: false, synchronizedCandidate: false},
     classification: {invalid: reason},
   };
 }

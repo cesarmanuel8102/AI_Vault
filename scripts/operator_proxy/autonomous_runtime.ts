@@ -44,8 +44,17 @@ export function reconcilePersistedRoadmapState(bus:GitHubBus,effects:ProductionE
   if(persisted.state==="ESCALATED"&&persisted.last_error==="LOCAL_PRIVILEGE_REQUIRED")return persisted;
   // Effect-free admission is a pure local rebind: no external state is involved.
   if(["DISCOVERED","ADMITTED"].includes(persisted.state)&&!persisted.issue&&!persisted.pr&&!persisted.head_sha&&!persisted.builder_session&&!persisted.reviewer_session&&!persisted.decision_id&&persisted.completed_effects.length===0)return store.rebindUnstartedBase(persisted,spec.expected_base_sha);
+  // A policy BLOCK with an unconsummated payload repair resumes through the
+  // generic plan pipeline; any inadmissible shape fails closed and stays BLOCKED.
+  if(persisted.state==="BLOCKED"&&persisted.last_error==="POLICY_BLOCK"&&persisted.base_sha===spec.expected_base_sha){
+    const plan=typeof (effects as any).derivePlan==="function"?safePlan(()=> (effects as any).derivePlan(spec,persisted)):undefined;
+    if(plan?.move!=="RESUME_UNCONSUMMATED_REPAIR")return persisted;
+    return safePlan(()=>effects.reconcile(spec,persisted!,store))??persisted;
+  }
   return reconcileUntilStable(effects,store,spec,persisted).state;
 }
+
+function safePlan<T>(operation:()=>T):T|undefined{try{return operation();}catch{return undefined;}}
 
 export type ReconciliationClosureStatus="FLOW_ENTERABLE"|"WAIT_EXTERNAL"|"TERMINAL";
 export type ReconciliationClosure={state:LifecycleRecord,status:ReconciliationClosureStatus,moves:string[]};

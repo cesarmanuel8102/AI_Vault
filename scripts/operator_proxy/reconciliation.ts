@@ -28,6 +28,7 @@ export type ReconciliationMove =
   | "SYNCHRONIZE_CANDIDATE"
   | "REOPEN_CI"
   | "REQUEST_DETERMINISTIC_REPAIR"
+  | "RESUME_UNCONSUMMATED_REPAIR"
   | "EXHAUST_REPAIR"
   | "ADOPT_EXTERNAL_MERGE"
   | "RECOVER_NEGATED_RISK_ESCALATION"
@@ -57,6 +58,8 @@ export interface PlannerPorts {
   verifyBridgeCandidate(nextBase: string, nextHead: string): boolean;
   /** Verifies the persisted repair decision authorized the current synchronized chain. */
   decisionBoundToLineage(decision: NormalizedDecision): boolean;
+  /** Counts CONSUMMATED payload-review repairs (a repair decision followed by a replaced payload head). Lifecycle/system recovery churn never counts. */
+  consummatedPayloadRepairs(issue: number, pr: number): number;
 }
 
 // ---------------------------------------------------------------------------
@@ -85,6 +88,7 @@ export function validateInvariantSet(snapshot: CanonicalLifecycleSnapshot, plan:
   // BOUNDEDNESS: no recovery move may exceed the persisted repair budget.
   if (plan.move === "RESUME_INITIAL_BUILD" && record.repair_cycles !== 0) violations.push("INITIAL_RETRY_ALREADY_CONSUMED");
   if (plan.move === "REQUEST_DETERMINISTIC_REPAIR" && record.repair_cycles >= 2) violations.push("REPAIR_LIMIT_REACHED");
+  if (plan.move === "RESUME_UNCONSUMMATED_REPAIR" && (!record.issue || !record.pr || ports.consummatedPayloadRepairs(record.issue, record.pr) >= 2)) violations.push("PAYLOAD_REPAIR_BUDGET_EXHAUSTED");
   return {violations};
 }
 const planRequiresNoLineage = (move: ReconciliationMove): boolean =>
@@ -92,7 +96,7 @@ const planRequiresNoLineage = (move: ReconciliationMove): boolean =>
    "EXHAUST_REPAIR", "ESCALATE_OWNER", "INVALIDATE_FAILED_MERGE", "AMBIGUOUS", "RECOVER_NEGATED_RISK_ESCALATION",
    "SYNCHRONIZE_CANDIDATE", "REOPEN_CI"].includes(move) ||
   // Moves whose lineage is derived lazily by the applier after external reads.
-  (move === "REQUEST_DETERMINISTIC_REPAIR" || move === "RESUME_RECORDED_BUILD");
+  (move === "REQUEST_DETERMINISTIC_REPAIR" || move === "RESUME_RECORDED_BUILD" || move === "RESUME_UNCONSUMMATED_REPAIR");
 function lineageComplete(lineage: CandidateLineage, ports: PlannerPorts): boolean {
   if (!SHA40.test(lineage.builderReceiptHeadSha) || !SHA40.test(lineage.builderReceiptBaseSha)) return false;
   if (!ports.verifyReceipt(lineage.builderReceiptHeadSha, lineage.builderReceiptBaseSha)) return false;
@@ -124,6 +128,7 @@ export function deriveReconciliationPlan(snapshot: CanonicalLifecycleSnapshot, p
 
   if (snapshot.facts.builderFailure !== undefined) return planBuilderFailure(snapshot, ports);
   if (snapshot.facts.ciBlocked) return planBlockedCi(snapshot, ports);
+  if (snapshot.facts.policyBlocked) return planPolicyBlocked(snapshot, ports);
   if (record.state === "BUILDING") return planBuilding(snapshot, ports);
   if (["MERGING"].includes(record.state)) return {move: "INVALIDATE_FAILED_MERGE", reason: "merge dispatch failed under an advanced base", lineage: undefined};
   if (["DISCOVERED", "ADMITTED"].includes(record.state)) return {move: "REBIND_UNSTARTED_BASE", reason: "effect-free admission rebases to the authorized base", lineage: undefined};
@@ -177,6 +182,33 @@ function planBlockedCi(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts
   if (record.repair_cycles >= 2) return {move: "EXHAUST_REPAIR", reason: "bounded repair budget exhausted", lineage: undefined};
   if (snapshot.base.stale) return {move: "SYNCHRONIZE_CANDIDATE", reason: "terminal failed CI synchronizes the trusted candidate across the advanced base", lineage: undefined};
   return {move: "REQUEST_DETERMINISTIC_REPAIR", reason: "terminal failed CI consumes a bounded deterministic repair cycle", lineage: undefined};
+}
+
+// A policy BLOCK is terminal for its decided head. It is resumable only as an
+// UNCONSUMMATED payload repair: the recorded review requested changes, a repair
+// was authorized, no new payload head was ever consummated, the payload repair
+// budget remains, and every identity/admissibility gate still holds. Semantic
+// evidence, never lifecycle recovery accounting, is the gate.
+function planPolicyBlocked(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {
+  const record = snapshot.record;
+  const terminal: ReconciliationPlan = {move: "ESCALATE_OWNER", reason: "policy block is not resumable as an unconsummated repair", lineage: undefined};
+  if (snapshot.base.stale) return terminal;
+  if (!record.issue || !record.pr || !record.head_sha || !record.builder_session || !record.reviewer_session || !record.decision_id) return terminal;
+  if (!blockedCiEffectChain(record)) return {move: "AMBIGUOUS", reason: "policy-blocked effect chain invalid", lineage: undefined};
+  const decision = snapshot.decision.loaded;
+  if (snapshot.decision.missing || !decision) return {move: "AMBIGUOUS", reason: "policy block decision missing from the immutable ledger", lineage: undefined};
+  const findings = "review_findings_count" in decision ? decision.review_findings_count : undefined;
+  const consistent = "review_consistent" in decision ? decision.review_consistent === true : false;
+  const semantic = decision.policy_decision === "BLOCK" && decision.codex_review === "CHANGES_REQUESTED" &&
+    findings !== undefined && findings > 0 && consistent && decision.deterministic_gate === "PASS" &&
+    ["LOW", "MEDIUM"].includes(decision.risk) && decision.issue === record.issue && decision.pr === record.pr &&
+    decision.base_sha === record.base_sha && decision.head_sha === record.head_sha &&
+    decision.roadmap_id === snapshot.spec.roadmap_id && decision.roadmap_item_id === snapshot.spec.roadmap_item_id &&
+    decision.authorization_id === snapshot.spec.authorization_id && decision.repository === snapshot.spec.repository;
+  if (!semantic) return terminal;
+  if (ports.consummatedPayloadRepairs(record.issue, record.pr) >= 2) return {move: "ESCALATE_OWNER", reason: "consummated payload repair budget exhausted", lineage: undefined};
+  if (snapshot.observeRemoteHead() !== record.head_sha || snapshot.observePr()?.identity.headRefOid !== record.head_sha) return terminal;
+  return {move: "RESUME_UNCONSUMMATED_REPAIR", reason: "changes-requested review never consummated a payload repair; governed resume within the payload budget", lineage: undefined};
 }
 
 function planBuilding(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {

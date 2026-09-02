@@ -66,6 +66,7 @@ const ports = (green: boolean): PlannerPorts => ({
   verifyReceipt: () => true,
   verifyBridgeCandidate: () => true,
   decisionBoundToLineage: () => true,
+  consummatedPayloadRepairs: () => 0,
 });
 
 // A legal lifecycle produced by driving the domain transitions.
