@@ -140,8 +140,12 @@ export class GovernedBuilder {
     let unpublishedRepair:string|undefined;
     if(localHeadBefore===state.head_sha){const priorFiles=committed(worktree,state.base_sha);validateFiles(priorFiles,spec);if(spec.executor==="agent_loop"&&JSON.stringify(priorFiles)!==JSON.stringify(files))throw new Error("blocked CI Agent Loop candidate files inconsistent");}
     else if(localHeadBefore!==remote){
-      try{git(worktree,["merge-base","--is-ancestor",remote,localHeadBefore]);}catch{throw new Error("blocked CI local branch drift");}
-      validateBuilderReceipt(worktree,localHeadBefore,spec.front_id!);const repairFiles=committed(worktree,remote);validateFiles(repairFiles,spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${remote}..${localHeadBefore}`],{stdio:"inherit",timeout:120000,windowsHide:true});unpublishedRepair=localHeadBefore;
+      let localAhead=false;try{git(worktree,["merge-base","--is-ancestor",remote,localHeadBefore]);localAhead=true;}catch{}
+      // A local head strictly behind the remote branch is not drift: the
+      // published candidate advanced and the worktree fast-forwards later.
+      if(!localAhead){let remoteAhead=false;try{git(worktree,["merge-base","--is-ancestor",localHeadBefore,remote]);remoteAhead=true;}catch{}
+        if(!remoteAhead)throw new Error("blocked CI local branch drift");}
+      else{validateBuilderReceipt(worktree,localHeadBefore,spec.front_id!);const repairFiles=committed(worktree,remote);validateFiles(repairFiles,spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${remote}..${localHeadBefore}`],{stdio:"inherit",timeout:120000,windowsHide:true});unpublishedRepair=localHeadBefore;}
     }
     let nextHead=remote;const remoteParents=remote===state.head_sha?[]:git(worktree,["rev-list","--parents","-n","1",remote]).split(/\s+/);
     if(unpublishedRepair||remote===state.head_sha||remoteParents[2]!==spec.expected_base_sha){
