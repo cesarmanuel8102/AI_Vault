@@ -1,6 +1,6 @@
 # Owner-Authorized Payload Repair Resume Design
 
-**Status:** Approved architecture; implementation not authorized
+**Status:** Approved architecture; Owner-authorized implementation on canonical Operator Proxy base
 
 **Baseline:** `65b5d4c40e1f9a12348b5b2d2421be7ba66651a4`
 
@@ -155,6 +155,39 @@ principal. This is a pure deterministic resolver with explicit candidate
 inputs, so precedence and failure behavior are directly unit-testable. The
 current replay fixture may resolve a particular account, but no account name is
 a production constant.
+
+### Canonical RepositoryAuthorization V1
+
+The prior source-gap is resolved by one Owner-authorized constitutional
+artifact: `scripts/operator_proxy/authority/repository_authorization.v1.json`.
+It is a repository-tracked, versioned, generic configuration read only by the
+runtime. Its V1 schema has exactly these fields:
+
+```text
+RepositoryAuthorizationV1 {
+  schema_version: 1
+  repository: non-empty repository name
+  owner_principal: non-empty principal
+}
+```
+
+The file is not a runtime-writable store. It is changed only by governed source
+control, parsed with unknown-field rejection, and must contain exactly one
+valid record for `spec.repository`; missing, malformed, duplicate, or
+repository-mismatched records fail closed. For this repository the tracked
+data configures `cesarmanuel8102/AI_Vault` and principal `cesarmanuel8102`;
+TypeScript contains neither as an Owner-identity constant.
+
+`resolveOwnerPrincipal` receives this record through a read-only adapter. A
+future canonical `CampaignAuthorization` may be added only through a separate
+governed design; if present it takes precedence and must agree with this
+repository record exactly. GitHub comments remain evidence only.
+
+The authority artifact is a protected governance path. `validateSpec`, builder
+adoption, and external-effect path checks reject any ordinary payload or build
+whose allowed paths include it, its parent authority directory, or an alias to
+that path. The exceptional correction payload cannot write it either. No
+runtime API exposes a write operation for this file.
 
 ### CorrectionPayloadV1
 
@@ -425,13 +458,14 @@ and base synchronization cannot change either count.
 - This does not reopen terminal policy blocks or builder failures in v1.
 - This does not authorize merging, deployment, or any financial operation.
 - This does not alter historical lifecycle records or replay fixtures.
-- This does not change Owner authority itself; it resolves that authority from
-  the existing authorization source of truth.
+- This does not provide runtime mutation of Owner authority; it resolves
+  authority from the tracked, governed `RepositoryAuthorizationV1` artifact.
 
 ## Architectural Risks
 
-- The existing authorization source must expose one canonical Owner principal;
-  if it is ambiguous, the verifier must fail closed.
+- `RepositoryAuthorizationV1` must expose exactly one canonical Owner
+  principal; if it is absent, malformed, duplicated, or ambiguous, the
+  verifier must fail closed.
 - Remote comment reads and local receipt writes form a distributed transaction;
   the monotonic receipt protocol is required to prevent duplicate dispatch.
 - Builder provenance must be extended in a backward-compatible way while
@@ -441,5 +475,6 @@ and base synchronization cannot change either count.
 
 ## Approval Gate
 
-This document is architecture only. Implementation requires a separate approved
-implementation plan and must preserve every invariant above.
+The Owner has approved the companion implementation plan and the V1 tracked
+repository-authority artifact. Implementation must preserve every invariant
+above.
