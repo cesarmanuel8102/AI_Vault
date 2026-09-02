@@ -9292,8 +9292,7 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 ## BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-CLOSEOUT-01 — Agent V2 Cognitive Pipeline E2E Closed
 - **Date (UTC)**: 2026-08-30T00:00:00Z
 - **Branch**: codex/own-capital-sustainable-return
-- **HEAD local**: dd5468258692bae90e1830a94890e8ae533334aa
-- **HEAD remote**: pending_push
+- **HEAD local/remoto**: dd5468258692bae90e1830a94890e8ae533334aa merged to the canonical branch; recorded in `ROADMAP_STATUS.json` as `r3_4_closeout_merge_commit`. The canonical `current_head`/`current_remote_head` (`c26db83815c186730c7ce0672a0f28bfd271d416`) advanced after the R3.4 merge through the independently governed PR #269 metadata-receipt-recovery front.
 - **Type**: GOVERNED DOCUMENTATION CLOSEOUT — E2E evidence recorded and R3.4 item closed.
 - **Closeout front**: `BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-CLOSEOUT-01`
 - **Parent front**: `BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-01`
@@ -9301,25 +9300,28 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - **Objective**: Record the R3.4 Agent V2 cognitive pipeline E2E evidence and close the synthetic certification item.
 - **Allowed paths observed**: `docs/roadmap/BRAIN_101_MANIFEST.json`, `docs/roadmap/BRAIN_101_ROADMAP.md`, `docs/roadmap/BRAIN_101_SCORECARD.json`, `ROADMAP_STATUS.json`, `docs/MIGRATION_CONTROL_LEDGER.md`, `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json`.
 - **Forbidden paths observed**: none touched.
-- **Governed parent lifecycle**: Issue #246 / PR #247, decision `0e02a259-e59f-4b41-90aa-233905a193cf`, authorization mode `POLICY_APPROVED`, base `311513a6a9c1e5cfea25b915fc30bfd475c3261b`, closeout base `dd5468258692bae90e1830a94890e8ae533334aa`, head `91efbe2dcf41dc606953b190a624b607319de202`, merge commit `dd5468258692bae90e1830a94890e8ae533334aa`.
+- **Governed parent lifecycle**: Issue #246 / PR #247, decision `0e02a259-e59f-4b41-90aa-233905a193cf`, authorization mode `POLICY_APPROVED`, base `311513a6a9c1e5cfea25b915fc30bfd475c3261b`, closeout base `c26db83815c186730c7ce0672a0f28bfd271d416`, head `91efbe2dcf41dc606953b190a624b607319de202`, merge commit `dd5468258692bae90e1830a94890e8ae533334aa`.
+- **Closeout branch head at authoring time**: `21f84edf6466d5b381c20968068da3d07921787f` (this branch's head; `ROADMAP_STATUS.json` records the canonical base `c26db83815c186730c7ce0672a0f28bfd271d416` as `current_head`/`current_remote_head` and the R3.4 parent merge as `r3_4_closeout_merge_commit=dd5468258692bae90e1830a94890e8ae533334aa`).
 - **Builder session**: `agent-loop-builder-91efbe2dcf41dc606953b190a624b607319de202`.
 - **Reviewer session**: `reviewer:opencode_ollama:ollama-cloud/deepseek-v4-pro:51274231-22fe-46ab-ad76-366eb5e6c2b2`.
-- **E2E evidence**: `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md` records the full cognitive pipeline stages (perception, reasoning, planning, action, reflection, memory), scope constraints, zero-trust workspace compliance, and trailing-whitespace verification.
+- **E2E evidence**: `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md` (introduced by parent front head `91efbe2dcf41dc606953b190a624b607319de202`, already present at this branch's base; unchanged by this closeout) records the full cognitive pipeline stages (perception, reasoning, planning, action, reflection, memory), scope constraints, zero-trust workspace compliance, and trailing-whitespace verification.
 - **E2E verification**: `git diff --check` clean on the closeout branch.
 - **Closeout evidence**: `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json`.
-- **Status**: `R3.4` set to `CLOSED_RUNTIME_VERIFIED`; R3 remains `PARTIALLY_CLOSED`; the R3.4 closeout front itself authorizes no item, while R3.5 is separately authorized as the single next roadmap item.
+- **Status**: `R3.4` set to `CLOSED_RUNTIME_VERIFIED`; R3 remains `PARTIALLY_CLOSED`; this closeout front authorizes no next item. R3.5 activation is declared as the sequencer's pending gate only; it becomes `AUTHORIZED_ACTIVE` when its own governed front is sequenced, and no decision/issue/PR is claimed by this entry.
 - **Preserved controls**: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
 - **Next gate**: R3.5 is the single authorized next roadmap item.
 
-## BRAIN-101 R3.5 — Operator Proxy campaign supervisor wake loop authorization
+## BRAIN-101 R3.5 — Operator Proxy campaign supervisor wake loop (pending authorization)
 
-- **Front**: `BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01`.
+This section records the next gate the sequencer will derive after this closeout merges. It is NOT an authorization record: R3.5 has no decision_id, issue, or PR yet, and it becomes `AUTHORIZED_ACTIVE` only when the operator proxy sequences its governed front.
+
+- **Front (planned)**: `BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01`.
 - **Roadmap item**: `R3.5`.
 - **Executor**: `codex_control_plane`.
 - **Risk / deployment**: `MEDIUM` / `NO_DEPLOY`.
 - **Dependency**: `R3.4` (`CLOSED_RUNTIME_VERIFIED`).
 - **Allowed paths**: `scripts/operator_proxy/campaign_supervisor.ts`, `tests/contract/operator_proxy/campaign_supervisor.test.ts`, and `docs/roadmap/evidence/BRAIN_101_R3_5_SUPERVISOR_WAKE_LOOP.md`.
 - **Contract source**: `docs/roadmap/BRAIN_101_CONTRACT_CATALOG.json`, item `R3.5`; its hard limits, forbidden paths, acceptance criteria, tests, gates, stops, and repair budget are authoritative.
-- **Status**: `AUTHORIZED_ACTIVE`; exactly one active roadmap item is preserved.
+- **Status**: `PENDING_SEQUENCER_ACTIVATION` (no governing decision, issue, or PR exists yet; exactly one active roadmap item rule is enforced by the sequencer at activation time).
 - **Preserved controls**: human final authority true, live trading false, real money false, canonical local sync false, auto-merge false, and deployment disabled.
 - **Next gate**: execute the R3.5 supervisor wake-loop front under its declared contract.

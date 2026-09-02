@@ -2,7 +2,7 @@
   "schema_version": 1,
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-  "status": "R3_4_CLOSED_RUNTIME_VERIFIED_R3_5_AUTHORIZED_ACTIVE",
+  "status": "R3_4_CLOSED_RUNTIME_VERIFIED_R3_5_PENDING_SEQUENCER_ACTIVATION",
   "audit_baseline_head": "759edfb",
   "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
@@ -710,9 +710,9 @@
       ]
     },
     {
-      "id": "R3",
+      "id": "R2",
       "percent": 70,
-      "status": "PARTIALLY_CLOSED_R3_4_CLOSED_R3_5_AUTHORIZED_ACTIVE",
+      "status": "PARTIALLY_CLOSED_R3_4_CLOSED_R3_5_PENDING_SEQUENCER_ACTIVATION",
       "evidence": [
         {
           "claim": "Auth/RBAC/signed approval contracts exist; complete constitutional adversarial coverage does not.",
@@ -833,7 +833,7 @@
     {
       "id": "R3",
       "percent": 70,
-      "status": "PARTIALLY_CLOSED_R3_4_CLOSED_R3_5_AUTHORIZED_ACTIVE",
+      "status": "PARTIALLY_CLOSED_R3_4_CLOSED_R3_5_PENDING_SEQUENCER_ACTIVATION",
       "evidence": [
         {
           "claim": "CI and recovery contracts exist; the required E2E matrix is incomplete.",
@@ -937,7 +937,7 @@
       "status": "AUTHORIZED_ACTIVE",
       "evidence": [
         {
-          "claim": "R3.5 Operator Proxy campaign supervisor wake loop is the single authorized next item after R3.4.",
+          "claim": "R3.5 Operator Proxy campaign supervisor wake loop is the sequencer's pending next gate after R3.4; activation awaits its own governed front.",
           "classification": "AUTHORIZED_ACTIVE",
           "paths": [
             "scripts/operator_proxy/campaign_supervisor.ts",

@@ -969,7 +969,7 @@
     },
     "R3.5": {
       "title": "Operator Proxy campaign supervisor wake loop",
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "PENDING_SEQUENCER_ACTIVATION",
       "dependencies": [
         "R3.4"
       ],
