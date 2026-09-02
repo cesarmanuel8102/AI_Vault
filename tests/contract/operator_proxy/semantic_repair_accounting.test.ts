@@ -109,6 +109,29 @@ test("planner refuses the resume for every non-semantic block", () => {
   assert.notEqual(deriveReconciliationPlan(snapshot({...record, reviewer_session: undefined}, blockDecision()), ports(0)).move, "RESUME_UNCONSUMMATED_REPAIR");
 });
 
+test("advanced base routes the unconsummated repair through candidate synchronization", () => {
+  const record = {...blockedPolicyRecord(), base_sha: "9".repeat(40)};
+  const advancedBus = {...stubBus(), isAncestor: (a: string, b: string) => a === "9".repeat(40) && b === BASE};
+  const view = normalizeObservedFacts(spec, record, {bus: advancedBus, loadDecision: () => blockDecision({base_sha: "9".repeat(40)})});
+  assert.equal(deriveReconciliationPlan(view, ports(0)).move, "SYNCHRONIZE_CANDIDATE");
+  // Budget exhaustion still escalates even across the advance.
+  assert.equal(deriveReconciliationPlan(view, ports(2)).move, "ESCALATE_OWNER");
+});
+
+test("beginUnconsummatedRepairSync reshapes the record for generic base recovery", () => {
+  const store = new LifecycleStore(mkdtempSync(join(tmpdir(), "semantic-sync-")));
+  const record = blockedPolicyRecord();
+  store.save(record);
+  const updated = store.beginUnconsummatedRepairSync(record);
+  assert.equal(updated.state, "BLOCKED");
+  assert.equal(updated.last_error, "CI_FAILED");
+  assert.equal(updated.reviewer_session, undefined);
+  assert.equal(updated.decision_id, undefined);
+  assert.deepEqual(updated.completed_effects, record.completed_effects);
+  assert.throws(() => store.beginUnconsummatedRepairSync({...record, last_error: "CI_FAILED"}), /denied/);
+  assert.throws(() => store.beginUnconsummatedRepairSync({...record, decision_id: undefined}), /denied/);
+});
+
 test("historical replay: lifecycle recovery churn alone never exhausts the payload budget", () => {
   // Replays the empirical R3.4 history: lifecycle repair_cycles reached 2 through
   // builder-failure recovery and base synchronization, while only zero or one

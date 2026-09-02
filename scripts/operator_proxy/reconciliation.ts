@@ -192,7 +192,7 @@ function planBlockedCi(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts
 function planPolicyBlocked(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {
   const record = snapshot.record;
   const terminal: ReconciliationPlan = {move: "ESCALATE_OWNER", reason: "policy block is not resumable as an unconsummated repair", lineage: undefined};
-  if (snapshot.base.stale) return terminal;
+  if (snapshot.base.stale && !snapshot.base.advanced) return {move: "AMBIGUOUS", reason: "policy-blocked base is not ancestral", lineage: undefined};
   if (!record.issue || !record.pr || !record.head_sha || !record.builder_session || !record.reviewer_session || !record.decision_id) return terminal;
   if (!blockedCiEffectChain(record)) return {move: "AMBIGUOUS", reason: "policy-blocked effect chain invalid", lineage: undefined};
   const decision = snapshot.decision.loaded;
@@ -207,6 +207,11 @@ function planPolicyBlocked(snapshot: CanonicalLifecycleSnapshot, ports: PlannerP
     decision.authorization_id === snapshot.spec.authorization_id && decision.repository === snapshot.spec.repository;
   if (!semantic) return terminal;
   if (ports.consummatedPayloadRepairs(record.issue, record.pr) >= 2) return {move: "ESCALATE_OWNER", reason: "consummated payload repair budget exhausted", lineage: undefined};
+  // Across an advanced base the unconsummated repair synchronizes exactly like
+  // a blocked-CI candidate: the trusted candidate (including a governed repair
+  // candidate already published on the work branch) re-enters the pipeline at
+  // the authorized base and is re-decided at its new head.
+  if (snapshot.base.stale) return {move: "SYNCHRONIZE_CANDIDATE", reason: "unconsummated policy-blocked repair synchronizes across the advanced base", lineage: undefined};
   if (snapshot.observeRemoteHead() !== record.head_sha || snapshot.observePr()?.identity.headRefOid !== record.head_sha) return terminal;
   return {move: "RESUME_UNCONSUMMATED_REPAIR", reason: "changes-requested review never consummated a payload repair; governed resume within the payload budget", lineage: undefined};
 }
