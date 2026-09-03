@@ -4,7 +4,7 @@ import {execFileSync} from "node:child_process";
 import {existsSync,mkdirSync,mkdtempSync,readFileSync,rmSync,writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join,resolve} from "node:path";
-import {routeControlPlaneBuild,listBuilderBackendHealth} from "../../../scripts/operator_proxy/builder_router.js";
+import {routeControlPlaneBuild,routePreparedCandidateBuild,listBuilderBackendHealth} from "../../../scripts/operator_proxy/builder_router.js";
 import {isEligibleFallback,isEqualOrDescendantPath} from "../../../scripts/operator_proxy/builder_backend.js";
 import {buildTimeoutMs,parseOpenCodeOutput,runOpenCodeBuilder} from "../../../scripts/operator_proxy/opencode_builder.js";
 import {parseCodexOutput} from "../../../scripts/operator_proxy/codex_builder.js";
@@ -93,6 +93,32 @@ test("OpenCode builder derives the committed head from Git when model stdout has
   writeFileSync(entry,`const fs=require("fs"),{execFileSync}=require("child_process"),a=process.argv,w=a[a.indexOf("--dir")+1];fs.writeFileSync(w+"/README.md","changed\\n");execFileSync("git",["-C",w,"add","README.md"]);execFileSync("git",["-C",w,"commit","-m","builder change"]);`);
   const result=await runOpenCodeBuilder({worktree,session:"builder-git-head",provider_correlation_id:"provider-git-head",base_sha:base,work_branch:"control-plane/test",prompt:"test"} as any,{transport:"opencode_ollama",model:"ollama-cloud/test-model",executable:entry,maxRetries:0},{...process.env,GIT_PATH:"git"});
   assert.notEqual(result.head_sha,base);assert.equal(result.provider_session,"provider-git-head");
+});
+
+test("provider transport receives a logical attempt binding without an ordinary repair cycle",async()=>{
+  const root=mkdtempSync(join(tmpdir(),"opencode-logical-attempt-")),worktree=join(root,"worktree"),entry=join(root,"attempt.js");
+  mkdirSync(worktree);execFileSync("git",["init",worktree]);execFileSync("git",["-C",worktree,"config","user.email","builder@test.invalid"]);execFileSync("git",["-C",worktree,"config","user.name","Builder Test"]);writeFileSync(join(worktree,"README.md"),"base\n");execFileSync("git",["-C",worktree,"add","README.md"]);execFileSync("git",["-C",worktree,"commit","-m","base"]);
+  const base=currentHead(worktree),attempt="a".repeat(64);
+  writeFileSync(entry,`if(process.env.OPERATOR_PROXY_BUILD_ATTEMPT_ID!==${JSON.stringify(attempt)})process.exit(9);console.log("PROVIDER_SESSION="+process.env.OPERATOR_PROXY_PROVIDER_CORRELATION_ID);`);
+  const input:any={repository:"cesarmanuel8102/AI_Vault",worktree,front_id:spec.front_id,issue:90,base_sha:base,work_branch:spec.work_branch,allowed_paths:spec.allowed_paths,forbidden_paths:spec.forbidden_paths,acceptance:[],test_commands:["git diff --check"],risk:"LOW",deployment_mode:"NO_DEPLOY",prompt:"x",session:"neutral-session",provider_correlation_id:"neutral-correlation",logical_attempt_id:attempt};
+  assert.equal(Object.hasOwn(input,"repair_cycle"),false);
+  const result=await runOpenCodeBuilder(input,{transport:"opencode_ollama",model:"ollama-cloud/test-model",executable:entry,maxRetries:0},{...process.env,GIT_PATH:"git"});
+  assert.equal(result.provider_session,"neutral-correlation");
+});
+
+test("neutral router publishes a provider candidate without ordinary repair provenance",async()=>{
+  const r=builderRepo(),entry=join(r.source,"neutral-router.js"),attempt="b".repeat(64),root=mkdtempSync(join(tmpdir(),"neutral-router-root-"));
+  const prior={open:process.env.OPEN_CODE_OLLAMA_PATH,model:process.env.OPERATOR_PROXY_OLLAMA_BUILDER_MODEL,preferred:process.env.OPERATOR_PROXY_PREFERRED_BUILDER_BACKEND,root:process.env.OPERATOR_PROXY_ROOT};
+  writeFileSync(entry,`${fakeBackendScript("neutral",0)}\n`);
+  Object.assign(process.env,{OPEN_CODE_OLLAMA_PATH:entry,OPERATOR_PROXY_OLLAMA_BUILDER_MODEL:"ollama-cloud/test-model",OPERATOR_PROXY_PREFERRED_BUILDER_BACKEND:"opencode_ollama",OPERATOR_PROXY_ROOT:root});
+  const input:any={repository:spec.repository,worktree:r.worktree,front_id:spec.front_id,issue:90,base_sha:r.base,work_branch:spec.work_branch,allowed_paths:spec.allowed_paths,forbidden_paths:spec.forbidden_paths,acceptance:spec.acceptance,test_commands:spec.test_commands,risk:"LOW",deployment_mode:"NO_DEPLOY",prompt:"neutral provider request",session:"owner-attempt",logical_attempt_id:attempt};
+  try {
+    assert.equal(Object.hasOwn(input,"repair_cycle"),false);
+    const result=await routePreparedCandidateBuild(input,{forceBackend:"opencode_ollama"});
+    assert.equal(result.builder_backend,"opencode_ollama");
+    assert.equal(result.base_sha,r.base);
+    assert.equal(existsSync(join(root,"state","builder-attempts")),false);
+  } finally {for(const [key,value] of Object.entries(prior)){const envKey={open:"OPEN_CODE_OLLAMA_PATH",model:"OPERATOR_PROXY_OLLAMA_BUILDER_MODEL",preferred:"OPERATOR_PROXY_PREFERRED_BUILDER_BACKEND",root:"OPERATOR_PROXY_ROOT"}[key]!;if(value===undefined)delete process.env[envKey];else process.env[envKey]=value;}}
 });
 
 test("OpenCode build timeout is bounded but permits a governed contract suite",()=>{

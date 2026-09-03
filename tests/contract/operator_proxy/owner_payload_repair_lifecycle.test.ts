@@ -35,3 +35,11 @@ test("owner lifecycle transition rejects a non-consumed receipt and any non-exha
   assert.throws(()=>store.authorizeOwnerPayloadRepair(blocked(),new OwnerRepairReceiptLedger(join(root,"other-receipts")),consumed),/owner payload repair.*denied/);
   assert.throws(()=>store.authorizeOwnerPayloadRepair({...blocked(),front_id:"OTHER-FRONT-01"},receipts,{...consumed,front_id:"OTHER-FRONT-01"}),/owner payload repair.*denied/);
 });
+
+test("owner adoption preserves the exhausted repair budget without an ordinary repair replacement event",()=>{
+  const root=mkdtempSync(join(tmpdir(),"owner-lifecycle-adopt-")),store=new LifecycleStore(join(root,"lifecycle")),receipts=new OwnerRepairReceiptLedger(join(root,"receipts"));
+  receipts.appendVerified(grant);const consumed=receipts.consume(grant.grant_key);const authorized=store.authorizeOwnerPayloadRepair(blocked(),receipts,consumed),building=store.beginOwnerPayloadRepairBuild(authorized,consumed);
+  const adopted=store.adoptOwnerPayloadRepairCandidate(building,{pr:grant.pr,head_sha:"f".repeat(40),builder_session:"owner-build-session",grant_key:grant.grant_key,build_attempt_id:consumed.build_attempt_id!,consumed_event_sha256:consumed.event_sha256});
+  assert.equal(adopted.state,"CI_PENDING");assert.equal(adopted.repair_cycles,2);assert.deepEqual(adopted.completed_effects,[`issue:${grant.issue}`,`build:${"f".repeat(40)}`]);
+  const events=readFileSync(join(root,"lifecycle","events.jsonl"),"utf8");assert.match(events,/lifecycle_owner_payload_repair_candidate_adopted/);assert.doesNotMatch(events,/lifecycle_repair_build_replaced/);
+});

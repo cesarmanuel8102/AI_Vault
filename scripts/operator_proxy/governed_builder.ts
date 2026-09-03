@@ -4,9 +4,9 @@ import {join,posix,resolve,sep} from "node:path";
 import {randomUUID} from "node:crypto";
 import type {LifecycleRecord,ProxySpec,OwnerAuthorizedPayloadRepairGrant,CorrectionPayloadV1} from "./types.js";
 import {BuilderBackendError,ELIGIBLE_FALLBACK_FAILURES,type BuilderInput,type BuilderResult} from "./builder_backend.js";
-import type {EffectAssertion} from "./external_effect_guard.js";
+import type {EffectAssertion,OwnerPayloadRepairTransportCapability} from "./external_effect_guard.js";
 import {redactedError} from "./redaction.js";
-import {routeControlPlaneBuild} from "./builder_router.js";
+import {routeControlPlaneBuild,routePreparedCandidateBuild} from "./builder_router.js";
 import {BuilderAttemptProvenance,LEGACY_NEUTRALIZATION_TRAILER,PRIOR_UNATTESTED_HEAD_TRAILER,RESET_BASE_TRAILER,LEGACY_REBUILD_TRAILER,NEUTRALIZATION_HEAD_TRAILER,FRESH_BUILDER_HEAD_TRAILER} from "./builder_attempt_provenance.js";
 import {canonicalCorrectionPayloadBytes,parseCorrectionPayloadV1} from "./correction_payload.js";
 import {CandidateExecutionKernel,type CandidateExecutionAdapter,type CandidatePublicationResult,type PreparedCandidateAttempt} from "./candidate_execution.js";
@@ -168,6 +168,37 @@ export function waitForRemoteBranchHead(bus:BuilderBus,branch:string,expected:st
 
 export class GovernedBuilder {
   constructor(readonly sourceRepo:string,readonly worktreeRoot:string,readonly bus:BuilderBus,readonly assertEffect:EffectAssertion,readonly codex=process.env.CODEX_PATH??"codex"){}
+  /**
+   * Builds the transport adapter for the single Owner-authorized attempt.
+   * The caller owns receipt/lifecycle semantics; this adapter only publishes.
+   */
+  ownerPayloadRepairPublicationAdapter(spec:ProxySpec, grant:OwnerAuthorizedPayloadRepairGrant, capability:OwnerPayloadRepairTransportCapability, assertCapability:()=>void):CandidateExecutionAdapter {
+    if(!spec.front_id||!spec.work_branch||grant.front_id!==spec.front_id||grant.work_branch!==spec.work_branch||grant.canonical_base_sha!==spec.expected_base_sha||grant.issue<1||grant.pr<1)throw new Error("owner repair publication identity invalid");
+    ensureCommit(this.sourceRepo,spec.expected_base_sha);
+    mkdirSync(this.worktreeRoot,{recursive:true});const root=realpathSync(this.worktreeRoot);
+    if(lstatSync(root).isSymbolicLink())throw new Error("owner repair worktree root symlink denied");
+    const worktree=resolve(root,`${spec.front_id}-owner-${capability.build_attempt_id.slice(0,12)}`);
+    if(!worktree.startsWith(`${root}\\`)&&!worktree.startsWith(`${root}/`))throw new Error("owner repair worktree escaped root");
+    if(!existsSync(worktree)){
+      assertCapability();this.assertEffect("branch_create",{issue:grant.issue});
+      native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","--detach",worktree,spec.expected_base_sha],{stdio:"inherit",timeout:120000,windowsHide:true});
+    }
+    if(realpathSync(worktree).toLowerCase()!==worktree.toLowerCase()||git(worktree,["branch","--show-current"])!==""||git(worktree,["rev-parse","HEAD"])!==spec.expected_base_sha||git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("owner repair worktree state invalid");
+    const assert = (effect:"builder_execute"|"commit_create"|"push"|"issue_modify") => {assertCapability();this.assertEffect(effect,{issue:grant.issue,pr:grant.pr});};
+    return {
+      prepare:()=>({worktree,starting_head:spec.expected_base_sha}),
+      invokeProvider:async request=>{assert("builder_execute");return routePreparedCandidateBuild({repository:spec.repository,worktree,front_id:spec.front_id!,issue:grant.issue,base_sha:spec.expected_base_sha,work_branch:spec.work_branch!,allowed_paths:spec.allowed_paths,forbidden_paths:spec.forbidden_paths,acceptance:spec.acceptance,test_commands:spec.test_commands,risk:spec.risk,deployment_mode:spec.deployment_mode??"NO_DEPLOY",prompt:request.prompt,session:`owner-${capability.build_attempt_id}`,logical_attempt_id:capability.build_attempt_id});},
+      changedPaths:(_prepared,base,head)=>head===base?changed(worktree):committed(worktree,base),
+      runDeclaredTests:()=>runDeclaredTests(worktree,spec.test_commands),
+      diffCheck:(_prepared,base,head)=>native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",...(head===base?[]:[`${base}..${head}`])],{stdio:"inherit",timeout:120000,windowsHide:true}),
+      commit:(_prepared,receipt,paths,provider)=>{assert("commit_create");if(provider.head_sha!==spec.expected_base_sha)native(process.env.GIT_PATH??"git",["-C",worktree,"commit","--allow-empty","-m",receipt],{stdio:"inherit",timeout:120000,windowsHide:true});else{native(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...paths],{stdio:"inherit",timeout:120000,windowsHide:true});native(process.env.GIT_PATH??"git",["-C",worktree,"commit","-m",receipt],{stdio:"inherit",timeout:120000,windowsHide:true});}const head=git(worktree,["rev-parse","HEAD"]);if(head===spec.expected_base_sha)throw new Error("owner repair produced no changes");return head;},
+      push:(_attempt,head)=>{assert("push");native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});},
+      remoteHead:branch=>this.readPublishedBranchHead(worktree,branch),
+      existingDraftPr:(_attempt,head,paths)=>{const identity=this.bus.prIdentity(grant.pr),files=(identity.files??[]).map((file:any)=>String(file.path));return {number:grant.pr,repository:spec.repository,issue:grant.issue,work_branch:spec.work_branch!,base_sha:spec.expected_base_sha,head_sha:head,is_draft:identity.isDraft===true,is_open:identity.state==="OPEN",same_repository:identity.headRepository?.nameWithOwner===spec.repository,non_fork:identity.isCrossRepository===false,changed_paths:files};},
+      createDraftPr:()=>{throw new Error("owner repair requires existing Draft PR");},
+      bindPrToIssue:(issue,pr)=>{if(issue!==grant.issue||pr!==grant.pr)throw new Error("owner repair Issue binding invalid");assert("issue_modify");this.bus.bindPrToIssue(issue,pr);},
+    };
+  }
   synchronizeBlockedCiBase(spec:ProxySpec,state:LifecycleRecord){
     if(state.state!=="BLOCKED"||state.last_error!=="CI_FAILED"||!state.issue||!state.pr||!state.head_sha||!state.builder_session||!Number.isInteger(state.repair_cycles)||state.repair_cycles<0||state.repair_cycles>2||state.reviewer_session||state.decision_id||!spec.work_branch||state.base_sha===spec.expected_base_sha)throw new Error("blocked CI branch synchronization denied");
     const pr=this.bus.prIdentity(state.pr),files=(pr.files??[]).map((x:any)=>String(x.path)).sort();

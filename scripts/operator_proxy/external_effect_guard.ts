@@ -90,6 +90,15 @@ export class ExternalEffectBoundary {
     if(!this.leaseOwned())throw new Error("external effect lease lost");
     if(existsSync(join(this.root,"state","PAUSE")))throw new Error("external effect paused locally");
     if(spec.authorization_id!==AUTH||spec.repository!==REPO||state.front_id!==spec.front_id||state.roadmap_item_id!==spec.roadmap_item_id)throw new Error("external effect authorization invalid");
+    const ownerTransport=this.ownerPayloadRepairTransport;
+    if(ownerTransport){
+      const binding=state.owner_payload_repair;
+      const allowed=new Set<ExternalEffect>(["branch_create","builder_execute","commit_create","push","issue_modify"]);
+      const exact=state.state==="BUILDING"&&state.repair_cycles===2&&!!binding&&binding.grant_key===ownerTransport.grant_key&&binding.build_attempt_id===ownerTransport.build_attempt_id&&context.issue===state.issue&&(context.pr===undefined||context.pr===state.pr)&&allowed.has(effect)&&state.base_sha===spec.expected_base_sha&&this.bus.branchHead("codex/own-capital-sustainable-return")===spec.expected_base_sha;
+      if(!exact)throw new Error("external effect denied by owner payload repair");
+      if(state.issue&&this.bus.issuePaused(state.issue))throw new Error("external effect paused by GitHub label");
+      return;
+    }
     if(state.state==="BLOCKED"||state.state==="ESCALATED"){
       if(this.privilegedInstallResume&&state.state==="ESCALATED"&&state.last_error==="LOCAL_PRIVILEGE_REQUIRED"&&effect==="installation_receipt"){
         if(this.bus.branchHead("codex/own-capital-sustainable-return")!==spec.expected_base_sha)throw new Error("external effect base changed");

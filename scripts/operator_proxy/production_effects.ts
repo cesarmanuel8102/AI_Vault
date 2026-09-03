@@ -1,9 +1,9 @@
 import {createHash,randomUUID} from "node:crypto";
 import {join} from "node:path";
-import type {LifecycleRecord,ProxySpec,ReviewerOutput} from "./types.js";
+import type {LifecycleRecord,ProxySpec,ReviewerOutput,OwnerAuthorizedPayloadRepairGrant} from "./types.js";
 import type {AutonomousEffects,CiResult,PolicyResult} from "./autonomous_flow.js";
 import {GitHubBus} from "./github_bus.js";
-import {GovernedBuilder} from "./governed_builder.js";
+import {GovernedBuilder,dispatchOwnerAuthorizedPayloadRepair} from "./governed_builder.js";
 import {Ledger} from "./decision_ledger.js";
 import {collect,evaluateChecks} from "./evidence_collector.js";
 import {decide,decisionKey,decisionMatchesCandidate,POLICY_SHA256} from "./policy_engine.js";
@@ -20,8 +20,12 @@ import {safeJson} from "./redaction.js";
 import {AgentLoopBuilderAdapter} from "./agent_loop_builder_adapter.js";
 import {classify} from "./risk_classifier.js";
 import {INTEGRATION_BRANCH,MANIFEST_PATH,ROADMAP_PATH} from "./roadmap_sequencer.js";
-import {commitAccessFromBus,verifyBuilderProvenance,decisionBoundToLineage as decisionBoundToLineageRole,normalizeObservedFacts,type CanonicalLifecycleSnapshot} from "./lineage.js";
+import {commitAccessFromBus,verifyBuilderProvenance,verifyOwnerPayloadRepairAdoption,decisionBoundToLineage as decisionBoundToLineageRole,normalizeObservedFacts,type CanonicalLifecycleSnapshot} from "./lineage.js";
 import {deriveReconciliationPlan,validateInvariantSet,type PlannerPorts,type ReconciliationPlan} from "./reconciliation.js";
+import {discoverOwnerAuthorizedPayloadRepairGrant} from "./owner_payload_repair_grant.js";
+import {loadRepositoryAuthorization} from "./owner_principal_resolver.js";
+import {OwnerRepairReceiptLedger,type OwnerGrantReceiptEvent} from "./owner_repair_receipt_ledger.js";
+import {OwnerPayloadRepairOrchestrator} from "./owner_payload_repair_orchestrator.js";
 
 const FRESH_SUBJECT=(front:string)=>`feat(control-plane): complete ${front}`;
 const NEUTRALIZATION_SUBJECT=(front:string)=>`chore(control-plane): neutralize ${front} legacy baseline`;
@@ -75,6 +79,31 @@ export class ProductionEffects implements AutonomousEffects {
   }
   ensureIssue(spec:ProxySpec){const existing=this.bus.findOpenFront(spec.front_id!);if(spec.executor==="agent_loop")return this.agentLoopBuilder.ensureIssue(spec,existing);if(existing.length>1)throw new Error("duplicate governed Issues");if(existing.length===1){const persisted=parseIssue(this.bus.issueBody(existing[0])).spec;if(JSON.stringify(persisted)!==JSON.stringify(spec))throw new Error("existing governed Issue spec mismatch");return existing[0];}return this.bus.createGovernedIssue(`feat(control-plane): ${spec.objective}`,issueBody(spec),"operator:building");}
   async ensureBuild(spec:ProxySpec,issue:number,session:string,repairCycle:number,previousHead?:string,retryReason?:"BUILDER_FAILURE"){return spec.executor==="agent_loop"?await this.agentLoopBuilder.observe(spec,issue,repairCycle,previousHead):await this.builder.build(spec,issue,session,repairCycle,retryReason);}
+  async resumeOwnerPayloadRepair(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore):Promise<LifecycleRecord|"PENDING"> {
+    if(!state.issue||!state.pr||!state.head_sha||spec.executor!=="codex_control_plane")throw new Error("owner payload repair lifecycle identity invalid");
+    const authority=loadRepositoryAuthorization(join(this.sourceRepo,"scripts","operator_proxy","authority","repository_authorization.v1.json"),spec.repository);
+    const grantFor=(record:LifecycleRecord):OwnerAuthorizedPayloadRepairGrant=>discoverOwnerAuthorizedPayloadRepairGrant({spec,issue:record.issue!,pr:record.pr!,failed_head_sha:record.head_sha!,failure_class:record.state==="BLOCKED"?record.last_error??"": "CI_FAILED",ordinary_payload_repairs:store.consummatedPayloadRepairs(record.issue!,record.pr!),sources:{campaign_candidates:[],repository_candidates:[authority]},comments:this.bus.issueComments(record.issue!)});
+    const receipts=new OwnerRepairReceiptLedger(join(this.root,"owner-repair-receipts"));let current=state;let grant:OwnerAuthorizedPayloadRepairGrant|undefined;let published:Awaited<ReturnType<typeof dispatchOwnerAuthorizedPayloadRepair>>|undefined;
+    const coordinator=new OwnerPayloadRepairOrchestrator({
+      verify:record=>{grant=grantFor(record as LifecycleRecord);return grant;},
+      receipt:{
+        view:key=>{try{return receipts.deriveReceiptView(key) as any;}catch(error){if(error instanceof Error&&error.message==="owner receipt missing")return undefined;throw error;}},
+        verified:value=>receipts.appendVerified(value as OwnerAuthorizedPayloadRepairGrant) as any,
+        consumed:key=>receipts.consume(key) as any,
+        dispatched:key=>receipts.markBuildDispatched(key) as any,
+        headBound:(key,head)=>{receipts.bindHead(key,head);},
+      },
+      lifecycle:{
+        authorize:(record,receipt)=>{current=store.authorizeOwnerPayloadRepair(record as LifecycleRecord,receipts,receipt as OwnerGrantReceiptEvent);this.bindLifecycle(spec,current);return current as any;},
+        begin:(record,receipt)=>{current=store.beginOwnerPayloadRepairBuild(record as LifecycleRecord,receipt as OwnerGrantReceiptEvent);this.bindLifecycle(spec,current);return current as any;},
+        adopt:(record,candidate)=>{if(!published)throw new Error("owner payload repair publication missing");current=store.adoptOwnerPayloadRepairCandidate(record as LifecycleRecord,{pr:published.candidate.pr,head_sha:candidate.new_head_sha,builder_session:`owner-${published.candidate.builder_session}`,grant_key:candidate.provenance.grant_key,build_attempt_id:candidate.provenance.build_attempt_id,consumed_event_sha256:candidate.provenance.consumed_event_sha256});this.bindLifecycle(spec,current);return current as any;},
+      },
+      authorizeTransport:receipt=>{if(!grant)throw new Error("owner payload repair grant missing");return this.boundary.authorizeOwnerPayloadRepairTransport({spec,state:current,grant,consumed_event_sha256:receipt.predecessor_event_sha256,build_attempt_id:receipt.build_attempt_id,build_dispatched_event_sha256:receipt.event_sha256},receipt as OwnerGrantReceiptEvent);},
+      dispatch:async capability=>{if(!grant)throw new Error("owner payload repair grant missing");const transport=capability as import("./external_effect_guard.js").OwnerPayloadRepairTransportCapability;const publication=this.builder.ownerPayloadRepairPublicationAdapter(spec,grant,transport,()=>this.boundary.assertOwnerPayloadRepairTransport(transport));published=await dispatchOwnerAuthorizedPayloadRepair({spec,grant,issue:grant.issue,build_attempt_id:capability.build_attempt_id,consumed_event_sha256:current.owner_payload_repair!.consumed_event_sha256,correction_payload:grant.correction_payload,publication});return {new_head_sha:published.candidate.head_sha,provenance:published.provenance};},
+      verifyLineage:candidate=>{if(!grant||!published)return false;const identity=this.bus.prIdentity(published.candidate.pr);return verifyOwnerPayloadRepairAdoption({spec,grant,new_head_sha:candidate.new_head_sha,remote_branch_head:this.bus.remoteBranchHead(spec.work_branch!),pr:{number:published.candidate.pr,head:candidate.new_head_sha,base:spec.expected_base_sha,identity,trustedAuthor:true,pathsInScope:true},provenance:candidate.provenance,build_attempt_id:candidate.provenance.build_attempt_id,consumed_event_sha256:candidate.provenance.consumed_event_sha256,isAncestor:(older,newer)=>this.bus.isAncestor(older,newer)});},
+    });
+    return await coordinator.resume(current as any) as LifecycleRecord;
+  }
   ci(pr:number,head:string):CiResult {const p=this.bus.json(["pr","view",String(pr),"--json","headRefOid,headRefName"]);if(p.headRefOid!==head)throw new Error("CI head changed");const result=evaluateChecks(this.bus,head,String(p.headRefName));return !result.terminal?"PENDING":result.green?"PASS":"FAIL";}
   private agentLoopReceiptMessage(spec:ProxySpec,state:import("./types.js").LifecycleRecord,head:string){const current=this.bus.commitMessage(head),syncSubject=`chore(control-plane): synchronize ${spec.front_id} base`;if(current.split("\n",1)[0]!==syncSubject)return current;const builds=state.completed_effects.filter(value=>/^build:[0-9a-f]{40}$/.test(value)),candidate=builds.length===1?builds[0].slice(6):undefined;if(!candidate||state.repair_cycles!==0||state.builder_session!==`agent-loop-builder-${candidate}`||!state.completed_effects.includes(`base-sync:${head}`)||!this.bus.isAncestor(candidate,head))throw new Error("Agent Loop synchronized receipt evidence invalid");return this.bus.commitMessage(candidate);}
   private inspectRouterBuilderReceipt(head:string,baseSha:string,frontId:string):{model:string;headCommit:string;status:"VERIFIED"|"PROVENANCE_RECOVERY_REQUIRED"}{

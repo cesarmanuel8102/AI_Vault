@@ -61,8 +61,14 @@ export class LifecycleStore {
   beginOwnerPayloadRepairBuild(record:LifecycleRecord,receipt:OwnerGrantReceiptEvent):LifecycleRecord {
     const binding=record.owner_payload_repair,exact=record.state==="OWNER_REPAIR_AUTHORIZED"&&record.repair_cycles===2&&!!binding&&receipt.phase==="CONSUMED"&&binding.grant_key===receipt.grant_key&&binding.consumed_event_sha256===receipt.event_sha256&&binding.build_attempt_id===receipt.build_attempt_id&&receipt.front_id===record.front_id&&receipt.failed_head_sha===record.head_sha;
     if(!exact)throw new Error("owner payload repair build denied");
-    const updated={...record,state:transitionLifecycle(record.state,"BUILDING"),updated_utc:new Date().toISOString()};
+    const updated={...record,state:transitionLifecycle(record.state,"BUILDING"),last_error:undefined,updated_utc:new Date().toISOString()};
     this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_owner_payload_repair_build_started",front_id:record.front_id,grant_key:binding.grant_key,consumed_event_sha256:binding.consumed_event_sha256,build_attempt_id:binding.build_attempt_id,repair_cycles:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
+  }
+  adoptOwnerPayloadRepairCandidate(record:LifecycleRecord,candidate:{pr:number;head_sha:string;builder_session:string;grant_key:string;build_attempt_id:string;consumed_event_sha256:string}):LifecycleRecord {
+    const binding=record.owner_payload_repair,exact=record.state==="BUILDING"&&record.last_error===undefined&&record.repair_cycles===2&&!!binding&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&candidate.pr===record.pr&&/^[0-9a-f]{40}$/.test(candidate.head_sha)&&candidate.head_sha!==record.head_sha&&!!candidate.builder_session&&binding.grant_key===candidate.grant_key&&binding.build_attempt_id===candidate.build_attempt_id&&binding.consumed_event_sha256===candidate.consumed_event_sha256;
+    if(!exact)throw new Error("owner payload repair candidate adoption denied");
+    const updated={...record,state:transitionLifecycle(record.state,"PR_CREATED"),head_sha:candidate.head_sha,builder_session:candidate.builder_session,builder_receipt_head_sha:undefined,builder_receipt_base_sha:undefined,reviewer_session:undefined,decision_id:undefined,last_error:undefined,last_error_detail:undefined,builder_retry_reason:undefined,completed_effects:[`issue:${record.issue}`,`build:${candidate.head_sha}`],updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_owner_payload_repair_candidate_adopted",front_id:record.front_id,issue:record.issue,pr:record.pr,old_head_sha:record.head_sha,new_head_sha:candidate.head_sha,grant_key:binding.grant_key,build_attempt_id:binding.build_attempt_id,repair_cycles:updated.repair_cycles,updated_utc:updated.updated_utc})}\n`);return this.advance(updated,"CI_PENDING");
   }
   effect(record: LifecycleRecord, key: string): LifecycleRecord {
     if(!/^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/.test(key)) throw new Error("effect key invalid");

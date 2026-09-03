@@ -1,5 +1,5 @@
 import type {ProxySpec} from "./types.js";
-import type {BuilderInput, BuilderResult, BuilderTransport} from "./builder_backend.js";
+import type {BuilderInput, BuilderResult, BuilderTransport, BuilderTransportInput} from "./builder_backend.js";
 import { isEligibleFallback, isEqualOrDescendantPath, validateWorktree, scopeViolations, ELIGIBLE_FALLBACK_FAILURES, INELIGIBLE_FALLBACK_FAILURES, BuilderBackendError } from "./builder_backend.js";
 import { resolveCodexConfig, resolveCopilotConfig, resolveOllamaConfig, type BackendConfig } from "./builder_config.js";
 import { runCodexBuilder } from "./codex_builder.js";
@@ -89,7 +89,7 @@ function validateWorktreeIdentity(worktree: string, env: NodeJS.ProcessEnv) {
   }
 }
 
-function specFromInput(input: BuilderInput): ProxySpec {
+function specFromInput(input: BuilderTransportInput): ProxySpec {
   return {
     schema_version: 1,
     authorization_id: "",
@@ -110,7 +110,7 @@ function specFromInput(input: BuilderInput): ProxySpec {
   };
 }
 
-async function validateBuilderOutput(input: BuilderInput, result: BuilderResult, env: NodeJS.ProcessEnv): Promise<void> {
+async function validateBuilderOutput(input: BuilderTransportInput, result: BuilderResult, env: NodeJS.ProcessEnv): Promise<void> {
   validateWorktreeIdentity(input.worktree, env);
   const head = execFileSync(env.GIT_PATH ?? "git", ["-C", input.worktree, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 30000 }).trim();
   if (head !== result.head_sha) throw new Error("builder result head mismatch");
@@ -241,18 +241,28 @@ function collectChangedFiles(worktree: string, baseSha: string, env: NodeJS.Proc
   return [...new Set([...committedFiles, ...workingTreeFiles])];
 }
 
-export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, prompt: string, repairCycle: number, options: RouteOptions = {}, worktree?: string): Promise<BuilderResult> {
+interface TransportAttemptMetadata {backend: BuilderTransport; model: string; attemptNumber: number; providerCorrelationId: string;}
+interface TransportAttemptHooks {
+  onStart?(input: BuilderTransportInput, metadata: TransportAttemptMetadata): AttemptStartedReceipt | undefined;
+  onCompleted?(started: AttemptStartedReceipt, input: BuilderTransportInput, result: BuilderResult, files: string[]): void;
+  onFailed?(started: AttemptStartedReceipt, input: BuilderTransportInput, failureClass: string): void;
+}
+
+function classifyProvenanceWriteError(error: unknown): ControlPlaneDefectClass {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes("OPERATOR_PROXY_ROOT is not a usable directory") || message.includes("BUILDER_PROVENANCE_ROOT_UNUSABLE")) return "BUILDER_PROVENANCE_ROOT_UNUSABLE";
+  return "BUILDER_PROVENANCE_COMPLETED_WRITE_FAILED";
+}
+
+/**
+ * Provider routing only. Semantic callers own provenance, lifecycle, and
+ * authorization through optional hooks; this core has no repair-cycle input.
+ */
+async function routeBuilderTransportCore(input: BuilderTransportInput, options: RouterOptions = {}, hooks?: TransportAttemptHooks): Promise<BuilderResult> {
   const env = options.env ?? process.env;
-  const provenanceRequired = isProvenanceRequired(spec, options);
   const root = operatorProxyRoot(env);
-  if (provenanceRequired && !root) {
-    throw new BuilderBackendError("BUILDER_PROVENANCE_START_WRITE_FAILED: OPERATOR_PROXY_ROOT required in campaign mode", "BUILDER_PROVENANCE_START_WRITE_FAILED", false);
-  }
-  const session = `builder-${randomUUID()}`;
-  const input = buildInputFromSpec(spec, issue, session, repairCycle, prompt, env, worktree, options.baseSha);
+  const session = input.session;
   const healthDir = root ? join(root, "state", "builder-health") : undefined;
-  const provenance = options.provenance ?? new BuilderAttemptProvenance(env);
-  if (options.baseSha) validateBaseOverride(worktree ?? input.worktree, options.baseSha, env);
   validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
 
   const forceBackend = resolveForceBackend(env, options.forceBackend);
@@ -263,35 +273,21 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
     const backendId = attemptOrder[index];
     const backendSession = `${session}-${backendId}`;
     const providerCorrelationId = `${backendId}-${randomUUID()}`;
-    const backendInput: BuilderInput = { ...input, session: backendSession, provider_correlation_id: providerCorrelationId };
+    const backendInput: BuilderTransportInput = { ...input, session: backendSession, provider_correlation_id: providerCorrelationId };
     let cfg: BackendConfig;
-    let buildFn: (i: BuilderInput) => Promise<BuilderResult>;
+    let buildFn: (i: BuilderTransportInput) => Promise<BuilderResult>;
     if (backendId === "codex_cli_openai") {
       cfg = resolveCodexConfig(env);
       buildFn = (i) => runCodexBuilder(i, cfg, env);
     } else if (backendId === "opencode_github_copilot") {
-      cfg = resolveCopilotConfig(spec.risk, env);
+      cfg = resolveCopilotConfig(input.risk, env);
       buildFn = (i) => runOpenCodeBuilder(i, cfg, env);
     } else {
       cfg = resolveOllamaConfig(env);
       buildFn = (i) => runOpenCodeBuilder(i, cfg, env);
     }
 
-    let startedReceipt: AttemptStartedReceipt | undefined;
-    let startWriteError: Error | undefined;
-    try {
-      startedReceipt = provenance.recordAttemptStart(backendInput, {backend: backendId, model: cfg.model, attemptNumber: index + 1, providerCorrelationId});
-    } catch (error) {
-      startWriteError = error instanceof Error ? error : new Error(String(error));
-      if (!provenance.isConfigured()) throw error;
-    }
-    if (provenanceRequired && !startedReceipt) {
-      throw new BuilderBackendError(
-        `BUILDER_PROVENANCE_START_WRITE_FAILED: ${startWriteError?.message ?? "unknown"}`,
-        "BUILDER_PROVENANCE_START_WRITE_FAILED",
-        false,
-      );
-    }
+    const startedReceipt = hooks?.onStart?.(backendInput, {backend: backendId, model: cfg.model, attemptNumber: index + 1, providerCorrelationId});
 
     const invokeBackend = async (attemptSession: string, attemptCorrelationId: string): Promise<BuilderResult> => {
       const result = await buildFn({ ...backendInput, session: attemptSession, provider_correlation_id: attemptCorrelationId });
@@ -304,47 +300,19 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
       return result;
     };
 
-    function classifyProvenanceWriteError(error: unknown): ControlPlaneDefectClass {
-      const message = error instanceof Error ? error.message : String(error);
-      if (message.includes("OPERATOR_PROXY_ROOT is not a usable directory") || message.includes("BUILDER_PROVENANCE_ROOT_UNUSABLE")) return "BUILDER_PROVENANCE_ROOT_UNUSABLE";
-      return "BUILDER_PROVENANCE_COMPLETED_WRITE_FAILED";
-    }
-
     const attemptIgnoredBaseline = ignoredSnapshot(input.worktree, env);
     try {
       const result = await invokeBackend(backendSession, providerCorrelationId);
       const files = collectChangedFiles(input.worktree, input.base_sha, env);
-      if (startedReceipt) {
-        try {
-          provenance.recordAttemptCompleted(startedReceipt.receipt_id, input.front_id, result.head_sha, files, result.provider_session, result.native_provider_session);
-        } catch (completedError) {
-          const defectClass = classifyProvenanceWriteError(completedError);
-          provenance.recordQuarantine({ ...backendInput, session: backendSession, provider_correlation_id: providerCorrelationId }, result.head_sha, input.base_sha, "BUILDER_PROVENANCE_RECOVERY_REQUIRED");
-          throw new BuilderBackendError(
-            `${defectClass}: ${(completedError instanceof Error ? completedError.message : String(completedError))}; head=${result.head_sha}`,
-            defectClass,
-            false,
-          );
-        }
-      }
+      if (startedReceipt) hooks?.onCompleted?.(startedReceipt, backendInput, result, files);
       return result;
     } catch (error) {
       const { eligible, failure_class, transient } = isEligibleFallback(error);
-      if (startedReceipt) {
-        try {
-          provenance.recordAttemptFailed(startedReceipt.receipt_id, input.front_id, failure_class);
-        } catch (failedWriteError) {
-          throw new BuilderBackendError(
-            `BUILDER_PROVENANCE_FAILED_WRITE_FAILED: original=${failure_class}; write_error=${failedWriteError instanceof Error ? failedWriteError.message : String(failedWriteError)}`,
-            "BUILDER_PROVENANCE_FAILED_WRITE_FAILED",
-            false,
-          );
-        }
-      }
-      // Finalize provenance before cleanup. A failed reset must never strand STARTED.
+      if (startedReceipt) hooks?.onFailed?.(startedReceipt, backendInput, failure_class);
+      // Caller-owned attempt state is finalized before cleanup.
       restoreWorktreeBaseline(input.worktree, input.base_sha, attemptIgnoredBaseline, env);
       validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
-      if (healthDir) recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class, attempt: index + 1, front_id: spec.front_id!, base_sha: input.base_sha, created_utc: new Date().toISOString() });
+      if (healthDir) recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class, attempt: index + 1, front_id: input.front_id, base_sha: input.base_sha, created_utc: new Date().toISOString() });
 
       if (!eligible) throw new Error(redactString(String(error instanceof Error ? error.message : error)));
       if (index === attemptOrder.length - 1) {
@@ -356,56 +324,21 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
         await new Promise(resolve => setTimeout(resolve, backoffMs));
         const retryCorrelationId = `${backendId}-retry-${randomUUID()}`;
         const retrySession = `${backendSession}-retry`;
-        const retryInput: BuilderInput = { ...input, session: retrySession, provider_correlation_id: retryCorrelationId };
-        let retryReceipt: AttemptStartedReceipt | undefined;
-        let retryStartError: Error | undefined;
-        try {
-          retryReceipt = provenance.recordAttemptStart(retryInput, {backend: backendId, model: cfg.model, attemptNumber: index + 1, providerCorrelationId: retryCorrelationId});
-        } catch (error) {
-          retryStartError = error instanceof Error ? error : new Error(String(error));
-        }
-        if (provenanceRequired && !retryReceipt) {
-          throw new BuilderBackendError(
-            `BUILDER_PROVENANCE_START_WRITE_FAILED: ${retryStartError?.message ?? "unknown"}`,
-            "BUILDER_PROVENANCE_START_WRITE_FAILED",
-            false,
-          );
-        }
+        const retryInput: BuilderTransportInput = { ...input, session: retrySession, provider_correlation_id: retryCorrelationId };
+        const retryReceipt = hooks?.onStart?.(retryInput, {backend: backendId, model: cfg.model, attemptNumber: index + 1, providerCorrelationId: retryCorrelationId});
         const retryIgnoredBaseline = ignoredSnapshot(input.worktree, env);
         try {
           const result = await invokeBackend(retrySession, retryCorrelationId);
           const files = collectChangedFiles(input.worktree, input.base_sha, env);
-          if (retryReceipt) {
-            try {
-              provenance.recordAttemptCompleted(retryReceipt.receipt_id, input.front_id, result.head_sha, files, result.provider_session, result.native_provider_session);
-            } catch (completedError) {
-              const defectClass = classifyProvenanceWriteError(completedError);
-              provenance.recordQuarantine({ ...retryInput, session: retrySession, provider_correlation_id: retryCorrelationId }, result.head_sha, input.base_sha, "BUILDER_PROVENANCE_RECOVERY_REQUIRED");
-              throw new BuilderBackendError(
-                `${defectClass}: ${(completedError instanceof Error ? completedError.message : String(completedError))}; head=${result.head_sha}`,
-                defectClass,
-                false,
-              );
-            }
-          }
+          if (retryReceipt) hooks?.onCompleted?.(retryReceipt, retryInput, result, files);
           return result;
         } catch (retryError) {
           const { eligible: retryEligible, failure_class: retryClass } = isEligibleFallback(retryError);
-          if (retryReceipt) {
-            try {
-              provenance.recordAttemptFailed(retryReceipt.receipt_id, input.front_id, retryClass);
-            } catch (failedWriteError) {
-              throw new BuilderBackendError(
-                `BUILDER_PROVENANCE_FAILED_WRITE_FAILED: original=${retryClass}; write_error=${failedWriteError instanceof Error ? failedWriteError.message : String(failedWriteError)}`,
-                "BUILDER_PROVENANCE_FAILED_WRITE_FAILED",
-                false,
-              );
-            }
-          }
+          if (retryReceipt) hooks?.onFailed?.(retryReceipt, retryInput, retryClass);
           // The retry receives the same terminal-receipt guarantee as its first attempt.
           restoreWorktreeBaseline(input.worktree, input.base_sha, retryIgnoredBaseline, env);
           validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
-          if (healthDir) recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class: `retry:${retryClass}`, attempt: index + 1, front_id: spec.front_id!, base_sha: input.base_sha, created_utc: new Date().toISOString() });
+          if (healthDir) recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class: `retry:${retryClass}`, attempt: index + 1, front_id: input.front_id, base_sha: input.base_sha, created_utc: new Date().toISOString() });
           if (!retryEligible) throw new Error(redactString(String(retryError instanceof Error ? retryError.message : retryError)));
         }
       }
@@ -414,6 +347,56 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
     }
   }
   throw new Error("BUILDER_ROUTER_BLOCKED: all backends exhausted");
+}
+
+/** Neutral entry for a pre-authorized candidate transport. */
+export async function routePreparedCandidateBuild(input: BuilderTransportInput, options: RouterOptions = {}): Promise<BuilderResult> {
+  if (Object.hasOwn(input as object, "repair_cycle") || Object.hasOwn(input as object, "previous_head")) throw new Error("neutral builder transport contains ordinary repair semantics");
+  if (input.logical_attempt_id !== undefined && !/^[0-9a-f]{64}$/.test(input.logical_attempt_id)) throw new Error("neutral builder logical attempt invalid");
+  return routeBuilderTransportCore(input, options);
+}
+
+/** Ordinary wrapper: it alone owns repair-cycle and provenance semantics. */
+export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, prompt: string, repairCycle: number, options: RouteOptions = {}, worktree?: string): Promise<BuilderResult> {
+  const env = options.env ?? process.env;
+  const provenanceRequired = isProvenanceRequired(spec, options);
+  const root = operatorProxyRoot(env);
+  if (provenanceRequired && !root) {
+    throw new BuilderBackendError("BUILDER_PROVENANCE_START_WRITE_FAILED: OPERATOR_PROXY_ROOT required in campaign mode", "BUILDER_PROVENANCE_START_WRITE_FAILED", false);
+  }
+  const input = buildInputFromSpec(spec, issue, `builder-${randomUUID()}`, repairCycle, prompt, env, worktree, options.baseSha);
+  if (options.baseSha) validateBaseOverride(worktree ?? input.worktree, options.baseSha, env);
+  const provenance = options.provenance ?? new BuilderAttemptProvenance(env);
+  const hooks: TransportAttemptHooks = {
+    onStart: (attempt, metadata) => {
+      try {
+        const receipt = provenance.recordAttemptStart(attempt as BuilderInput, metadata);
+        if (provenanceRequired && !receipt) throw new BuilderBackendError("BUILDER_PROVENANCE_START_WRITE_FAILED: unknown", "BUILDER_PROVENANCE_START_WRITE_FAILED", false);
+        return receipt;
+      } catch (error) {
+        if (!provenance.isConfigured()) throw error;
+        const message = error instanceof Error ? error.message : String(error);
+        throw new BuilderBackendError(`BUILDER_PROVENANCE_START_WRITE_FAILED: ${message}`, "BUILDER_PROVENANCE_START_WRITE_FAILED", false);
+      }
+    },
+    onCompleted: (receipt, attempt, result, files) => {
+      try {
+        provenance.recordAttemptCompleted(receipt.receipt_id, attempt.front_id, result.head_sha, files, result.provider_session, result.native_provider_session);
+      } catch (error) {
+        const defectClass = classifyProvenanceWriteError(error);
+        provenance.recordQuarantine(attempt as BuilderInput, result.head_sha, attempt.base_sha, "BUILDER_PROVENANCE_RECOVERY_REQUIRED");
+        throw new BuilderBackendError(`${defectClass}: ${error instanceof Error ? error.message : String(error)}; head=${result.head_sha}`, defectClass, false);
+      }
+    },
+    onFailed: (receipt, attempt, failureClass) => {
+      try {
+        provenance.recordAttemptFailed(receipt.receipt_id, attempt.front_id, failureClass);
+      } catch (error) {
+        throw new BuilderBackendError(`BUILDER_PROVENANCE_FAILED_WRITE_FAILED: original=${failureClass}; write_error=${error instanceof Error ? error.message : String(error)}`, "BUILDER_PROVENANCE_FAILED_WRITE_FAILED", false);
+      }
+    },
+  };
+  return routeBuilderTransportCore(input, {env, forceBackend: options.forceBackend}, hooks);
 }
 
 export function listBuilderBackendHealth(healthDir?: string, env: NodeJS.ProcessEnv = process.env) {
