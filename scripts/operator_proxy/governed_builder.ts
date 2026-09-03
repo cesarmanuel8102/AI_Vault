@@ -8,6 +8,7 @@ import type {EffectAssertion} from "./external_effect_guard.js";
 import {redactedError} from "./redaction.js";
 import {routeControlPlaneBuild} from "./builder_router.js";
 import {BuilderAttemptProvenance,LEGACY_NEUTRALIZATION_TRAILER,PRIOR_UNATTESTED_HEAD_TRAILER,RESET_BASE_TRAILER,LEGACY_REBUILD_TRAILER,NEUTRALIZATION_HEAD_TRAILER,FRESH_BUILDER_HEAD_TRAILER} from "./builder_attempt_provenance.js";
+import {canonicalCorrectionPayloadBytes,parseCorrectionPayloadV1} from "./correction_payload.js";
 
 export interface BuilderBus {
   findPrByBranch(branch:string):{number:number;head_sha:string}|undefined;
@@ -18,10 +19,55 @@ export interface BuilderBus {
   prIdentity(pr:number):any;
 }
 export interface OwnerPayloadRepairBuilderInput {front_id:string;work_branch:string;failed_head_sha:string;correction_payload:CorrectionPayloadV1;provenance:{authorization_id:string;grant_key:string;build_attempt_id:string;consumed_event_sha256:string}}
+export interface OwnerPayloadRepairTransportRequest extends OwnerPayloadRepairBuilderInput {repository:string;roadmap_id:string;roadmap_item_id:string;issue:number;pr:number;canonical_base_sha:string;idempotency_key:string;prompt:string}
+export interface OwnerPayloadRepairDispatchContext {spec:ProxySpec;grant:OwnerAuthorizedPayloadRepairGrant;issue:number;build_attempt_id:string;consumed_event_sha256:string;correction_payload:CorrectionPayloadV1;transport:(request:OwnerPayloadRepairTransportRequest)=>Promise<BuilderResult>}
+export interface OwnerPayloadRepairCandidate {candidate:BuilderResult;provenance:OwnerPayloadRepairBuilderInput["provenance"]}
+
+function exact64(value:string){return /^[0-9a-f]{64}$/.test(value);}
+function exceptionalPathDenied(path:string){return path==="scripts/operator_proxy"||path.startsWith("scripts/operator_proxy/")||path===".github"||path.startsWith(".github/");}
+function validateOwnerPayloadRepairDispatch(context:OwnerPayloadRepairDispatchContext):OwnerPayloadRepairBuilderInput {
+  const {spec,grant,issue,build_attempt_id,consumed_event_sha256,correction_payload}=context;
+  if(issue!==grant.issue)throw new Error("owner repair issue invalid");
+  if(!spec.front_id||!spec.work_branch||spec.repository!==grant.repository||spec.authorization_id!==grant.authorization_id||spec.roadmap_id!==grant.roadmap_id||spec.roadmap_item_id!==grant.roadmap_item_id||spec.front_id!==grant.front_id||spec.work_branch!==grant.work_branch||spec.expected_base_sha!==grant.canonical_base_sha||!exact64(grant.grant_key)||!exact64(build_attempt_id)||!exact64(consumed_event_sha256))throw new Error("owner repair dispatch identity invalid");
+  if(spec.allowed_paths.some(exceptionalPathDenied)||spec.forbidden_paths.some(path=>path==="scripts/operator_proxy/authority"||path.startsWith("scripts/operator_proxy/authority/")))throw new Error("owner repair path scope invalid");
+  const parsed=parseCorrectionPayloadV1(correction_payload);
+  if(parsed.sha256!==grant.correction_payload_sha256)throw new Error("owner repair correction payload invalid");
+  return ownerPayloadRepairBuilderInput(grant,{build_attempt_id,consumed_event_sha256,correction_payload:parsed.payload});
+}
+function ownerPayloadRepairPrompt(request:OwnerPayloadRepairTransportRequest):string {
+  return [
+    "Execute one governed owner-authorized payload repair.",
+    `REPOSITORY=${request.repository}`,
+    `ROADMAP_ID=${request.roadmap_id}`,
+    `ROADMAP_ITEM_ID=${request.roadmap_item_id}`,
+    `FRONT_ID=${request.front_id}`,
+    `ISSUE=${request.issue}`,
+    `PR=${request.pr}`,
+    `WORK_BRANCH=${request.work_branch}`,
+    `CANONICAL_BASE_SHA=${request.canonical_base_sha}`,
+    `FAILED_HEAD_SHA=${request.failed_head_sha}`,
+    `AUTHORIZATION_ID=${request.provenance.authorization_id}`,
+    `GRANT_KEY=${request.provenance.grant_key}`,
+    `BUILD_ATTEMPT_ID=${request.provenance.build_attempt_id}`,
+    `CONSUMED_EVENT_SHA256=${request.provenance.consumed_event_sha256}`,
+    "Apply only this typed correction payload and preserve its invariants:",
+    canonicalCorrectionPayloadBytes(request.correction_payload).trimEnd(),
+  ].join("\n");
+}
+/** Dispatches the one logical exceptional attempt. Receipt and lifecycle mutations are owned by Tasks 6/8. */
+export async function dispatchOwnerAuthorizedPayloadRepair(context:OwnerPayloadRepairDispatchContext):Promise<OwnerPayloadRepairCandidate> {
+  const input=validateOwnerPayloadRepairDispatch(context);
+  const request:OwnerPayloadRepairTransportRequest={...input,repository:context.grant.repository,roadmap_id:context.grant.roadmap_id,roadmap_item_id:context.grant.roadmap_item_id,issue:context.grant.issue,pr:context.grant.pr,canonical_base_sha:context.grant.canonical_base_sha,idempotency_key:input.provenance.build_attempt_id,prompt:""};
+  request.prompt=ownerPayloadRepairPrompt(request);
+  const candidate=await context.transport(Object.freeze(request));
+  if(candidate.executor_role!=="codex_control_plane"||candidate.base_sha!==request.canonical_base_sha||candidate.branch!==request.work_branch||! /^[0-9a-f]{40}$/.test(candidate.head_sha)||candidate.head_sha===request.failed_head_sha)throw new Error("owner repair candidate invalid");
+  return {candidate,provenance:input.provenance};
+}
 /** Constructs the only exceptional-builder payload; raw owner comment text is never accepted. */
 export function ownerPayloadRepairBuilderInput(grant:OwnerAuthorizedPayloadRepairGrant,input:{build_attempt_id:string;consumed_event_sha256:string;correction_payload:CorrectionPayloadV1}):OwnerPayloadRepairBuilderInput {
-  if(!/^[0-9a-f]{64}$/.test(input.build_attempt_id)||!/^[0-9a-f]{64}$/.test(input.consumed_event_sha256)||input.correction_payload!==grant.correction_payload)throw new Error("owner repair consumed provenance invalid");
-  return {front_id:grant.front_id,work_branch:grant.work_branch,failed_head_sha:grant.failed_head_sha,correction_payload:grant.correction_payload,provenance:{authorization_id:grant.authorization_id,grant_key:grant.grant_key,build_attempt_id:input.build_attempt_id,consumed_event_sha256:input.consumed_event_sha256}};
+  const parsed=parseCorrectionPayloadV1(input.correction_payload);
+  if(!exact64(input.build_attempt_id)||!exact64(input.consumed_event_sha256)||parsed.sha256!==grant.correction_payload_sha256)throw new Error("owner repair consumed provenance invalid");
+  return {front_id:grant.front_id,work_branch:grant.work_branch,failed_head_sha:grant.failed_head_sha,correction_payload:parsed.payload,provenance:{authorization_id:grant.authorization_id,grant_key:grant.grant_key,build_attempt_id:input.build_attempt_id,consumed_event_sha256:input.consumed_event_sha256}};
 }
 
 function native(file:string,args:string[],options:any={}){try{return rawExecFileSync(file,args,{...options,encoding:"utf8",stdio:"pipe"});}catch(error){throw new Error(redactedError(error));}}
