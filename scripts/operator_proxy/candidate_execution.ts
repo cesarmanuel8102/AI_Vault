@@ -1,3 +1,5 @@
+import type {BuilderTransport} from "./builder_backend.js";
+
 const SHA40=/^[0-9a-f]{40}$/;
 
 export interface CandidateProviderRequest {
@@ -7,10 +9,11 @@ export interface CandidateProviderRequest {
 
 export interface CandidateProviderResult {
   executor_role:"codex_control_plane"|"agent_loop";
-  builder_backend:string;
+  builder_backend:BuilderTransport;
   builder_model:string;
   builder_session:string;
   provider_session:string;
+  fallback_reason?:string;
   base_sha:string;
   head_sha:string;
   branch:string;

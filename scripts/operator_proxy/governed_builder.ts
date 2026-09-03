@@ -9,6 +9,7 @@ import {redactedError} from "./redaction.js";
 import {routeControlPlaneBuild} from "./builder_router.js";
 import {BuilderAttemptProvenance,LEGACY_NEUTRALIZATION_TRAILER,PRIOR_UNATTESTED_HEAD_TRAILER,RESET_BASE_TRAILER,LEGACY_REBUILD_TRAILER,NEUTRALIZATION_HEAD_TRAILER,FRESH_BUILDER_HEAD_TRAILER} from "./builder_attempt_provenance.js";
 import {canonicalCorrectionPayloadBytes,parseCorrectionPayloadV1} from "./correction_payload.js";
+import {CandidateExecutionKernel,type CandidateExecutionAdapter,type PreparedCandidateAttempt} from "./candidate_execution.js";
 
 export interface BuilderBus {
   findPrByBranch(branch:string):{number:number;head_sha:string}|undefined;
@@ -82,7 +83,7 @@ const allowed=(path:string,spec:ProxySpec)=>spec.allowed_paths.some(p=>p.endsWit
 function changed(repo:string){const tracked=git(repo,["diff","--name-only","HEAD"]);const staged=git(repo,["diff","--cached","--name-only"]);const untracked=git(repo,["ls-files","--others","--exclude-standard"]);return [...new Set([tracked,staged,untracked].flatMap(x=>x?x.split(/\r?\n/):[]).filter(Boolean))].sort();}
 function committed(repo:string,base:string){const output=git(repo,["diff","--name-only",`${base}..HEAD`]);return output?output.split(/\r?\n/).filter(Boolean).sort():[];}
 function validateFiles(files:string[],spec:ProxySpec){if(files.length===0)throw new Error("builder produced no changes");if(!files.every(path=>allowed(path,spec)))throw new Error("builder changed path outside scope");}
-function builderReceiptMessage(front:string,result:BuilderResult){return `feat(control-plane): complete ${front}\n\nBUILDER_BACKEND=${result.builder_backend}\nBUILDER_MODEL=${result.builder_model}\nPROVIDER_SESSION=${result.provider_session}${result.fallback_reason?`\nFALLBACK_REASON=${result.fallback_reason}`:""}`;}
+function builderReceiptMessage(front:string,result:Pick<BuilderResult,"builder_backend"|"builder_model"|"provider_session"|"fallback_reason">){return `feat(control-plane): complete ${front}\n\nBUILDER_BACKEND=${result.builder_backend}\nBUILDER_MODEL=${result.builder_model}\nPROVIDER_SESSION=${result.provider_session}${result.fallback_reason?`\nFALLBACK_REASON=${result.fallback_reason}`:""}`;}
 function validateBuilderReceipt(repo:string,head:string,front:string){
   const lines=git(repo,["show","-s","--format=%B",head]).replace(/\r\n/g,"\n").trimEnd().split("\n");
   if(lines[0]!==`feat(control-plane): complete ${front}`)throw new Error("recovered builder commit subject mismatch");
@@ -225,6 +226,37 @@ export class GovernedBuilder {
     if(remaining)throw new Error("governed baseline restore left unexpected files");
   }
 
+  private readPublishedBranchHead(worktree:string,branch:string):string|undefined{
+    const observed=this.bus.remoteBranchHead(branch);
+    if(observed!==undefined)return observed;
+    const line=git(worktree,["ls-remote","--heads","origin",`refs/heads/${branch}`]).split(/\s+/)[0]??"";
+    return /^[0-9a-f]{40}$/.test(line)?line:undefined;
+  }
+
+  private async publishOrdinaryCleanCandidate(spec:ProxySpec,issue:number,session:string,repairCycle:number,retryReason:"BUILDER_FAILURE"|undefined,worktree:string,baseSha:string,observedHead:string,existing:{number:number;head_sha:string}|undefined){
+    if(!spec.front_id||!spec.work_branch)throw new Error("builder metadata missing");
+    const requestedRepair=repairCycle>0?this.bus.repairPrompt(issue):"";
+    const repair=requestedRepair||(retryReason==="BUILDER_FAILURE"&&repairCycle>0?"Previous builder execution failed before producing a candidate. Re-run the approved objective exactly; do not infer reviewer findings or broaden scope.":"");
+    if(repairCycle>0&&!repair)throw new Error("repair findings missing");
+    const prompt=builderPrompt(spec,repairCycle,repair);
+    const adapter:CandidateExecutionAdapter={
+      prepare:()=>({worktree,starting_head:baseSha}),
+      invokeProvider:async request=>{this.assertEffect("builder_execute",{issue});return await routeControlPlaneBuild(spec,issue,request.prompt,repairCycle,{baseSha},worktree);},
+      changedPaths:(_prepared,_base,providerHead)=>providerHead===baseSha?changed(worktree):committed(worktree,baseSha),
+      runDeclaredTests:()=>runDeclaredTests(worktree,spec.test_commands),
+      diffCheck:(_prepared,_base,providerHead)=>native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",...(providerHead===baseSha?[]:[`${baseSha}..${providerHead}`])],{stdio:"inherit",timeout:120000,windowsHide:true}),
+      commit:(_prepared,receipt,paths,provider)=>{this.assertEffect("commit_create",{issue});if(provider.head_sha!==baseSha)native(process.env.GIT_PATH??"git",["-C",worktree,"commit","--allow-empty","-m",receipt],{stdio:"inherit",timeout:120000,windowsHide:true});else{native(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...paths],{stdio:"inherit",timeout:120000,windowsHide:true});native(process.env.GIT_PATH??"git",["-C",worktree,"commit","-m",receipt],{stdio:"inherit",timeout:120000,windowsHide:true});}const head=git(worktree,["rev-parse","HEAD"]);validateBuilderReceipt(worktree,head,spec.front_id!);return head;},
+      push:(_attempt,head)=>{this.assertEffect("push",{issue,expected_head:head,...(repairCycle>0?{observed_head:observedHead}:{})});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});},
+      remoteHead:branch=>this.readPublishedBranchHead(worktree,branch),
+      existingDraftPr:()=>undefined,
+      createDraftPr:()=>this.bus.createDraftPr(spec.work_branch!,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`),
+      bindPrToIssue:(boundIssue,pr)=>this.bus.bindPrToIssue(boundIssue,pr),
+    };
+    const attempt:PreparedCandidateAttempt={repository:spec.repository,front_id:spec.front_id,roadmap_item_id:spec.roadmap_item_id,issue,work_branch:spec.work_branch,expected_base_sha:baseSha,observed_head_sha:observedHead,allowed_paths:spec.allowed_paths,forbidden_paths:spec.forbidden_paths,test_commands:spec.test_commands,provider_request:{prompt,executor_role:"codex_control_plane"},publication_receipt:{kind:"ORDINARY",render:provider=>builderReceiptMessage(spec.front_id!,provider)},...(existing?{existing_pr:existing.number}: {})};
+    const result=await new CandidateExecutionKernel(adapter).publish(attempt);
+    return {pr:result.pr,head_sha:result.head_sha,session};
+  }
+
   async build(spec:ProxySpec,issue:number,session:string,repairCycle:number,retryReason?:"BUILDER_FAILURE"){
     if(!spec.front_id||!spec.work_branch||!spec.objective)throw new Error("builder metadata missing");
     const existing=this.bus.findPrByBranch(spec.work_branch),orphanHead=!existing&&repairCycle===0?this.bus.remoteBranchHead(spec.work_branch):undefined,publishedHead=repairCycle===0?(existing?.head_sha??orphanHead):undefined;
@@ -341,30 +373,10 @@ export class GovernedBuilder {
         // validated receipt at its current head. Rebuild it rather than accepting it.
       }
     }
-    const requestedRepair=repairCycle>0?this.bus.repairPrompt(issue):"";
-    const repair=requestedRepair||(retryReason==="BUILDER_FAILURE"&&repairCycle>0?"Previous builder execution failed before producing a candidate. Re-run the approved objective exactly; do not infer reviewer findings or broaden scope.":"");
-    if(repairCycle>0&&!repair)throw new Error("repair findings missing");
-    const prompt=builderPrompt(spec,repairCycle,repair);
     if(!initialStatus){
       if(spec.executor==="codex_control_plane"){
-        this.assertEffect("builder_execute",{issue});
         const useRouter=process.env.OPERATOR_PROXY_BUILDER_ROUTER!=="disabled";
-        if(useRouter){
-          const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha:initialHead},worktree);
-          if(result.executor_role!=="codex_control_plane"||!result.builder_backend||!result.builder_model||!result.builder_session||!result.provider_session||result.base_sha!==initialHead||!/^[0-9a-f]{40}$/.test(result.head_sha))throw new Error("builder router result contract invalid");
-          const head=result.head_sha,currentHead=git(worktree,["rev-parse","HEAD"]);if(currentHead!==head)throw new Error("builder router head mismatch");
-          const backendCommitted=head!==initialHead,files=backendCommitted?committed(worktree,initialHead):changed(worktree);validateFiles(files,spec);
-          if(backendCommitted&&git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("builder committed head left dirty worktree");
-          runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",...(backendCommitted?[`${initialHead}..${head}`]:[])],{stdio:"inherit",timeout:120000,windowsHide:true});
-          this.assertEffect("commit_create",{issue});
-          if(backendCommitted)native(process.env.GIT_PATH??"git",["-C",worktree,"commit","--allow-empty","-m",builderReceiptMessage(spec.front_id,result)],{stdio:"inherit",timeout:120000,windowsHide:true});
-          else {native(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...files],{stdio:"inherit",timeout:120000,windowsHide:true});native(process.env.GIT_PATH??"git",["-C",worktree,"commit","-m",builderReceiptMessage(spec.front_id,result)],{stdio:"inherit",timeout:120000,windowsHide:true});}
-          const committedHead=git(worktree,["rev-parse","HEAD"]);
-          if(committedHead===initialHead)throw new Error("builder produced no changes");
-          validateBuilderReceipt(worktree,committedHead,spec.front_id);
-           this.assertEffect("push",{issue,expected_head:committedHead,...(repairCycle>0?{observed_head:initialHead}:{})});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
-          const prNumber=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,prNumber);return {pr:prNumber,head_sha:committedHead,session};
-        }
+        if(useRouter)return await this.publishOrdinaryCleanCandidate(spec,issue,session,repairCycle,retryReason,worktree,initialHead,initialHead,existing);
         throw new Error("codex builder direct mode disabled; use router");
       } else throw new Error("agent_loop builder adapter unavailable");
     }
