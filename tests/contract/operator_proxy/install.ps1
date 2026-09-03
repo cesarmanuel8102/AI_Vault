@@ -13,6 +13,9 @@ function Test-SameContractPath {
 }
 $root=(Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 Import-Module (Join-Path $root 'scripts\operator_proxy\Repair-OperatorProxy.psm1') -Force
+$ownerRepairModules=@('authority','candidate_execution.ts','correction_payload.ts','owner_payload_repair_grant.ts','owner_payload_repair_orchestrator.ts','owner_principal_resolver.ts','owner_repair_receipt_ledger.ts')
+$managed=@(Get-ManagedOperatorProxyFiles)
+foreach($required in $ownerRepairModules){if($managed -notcontains $required){throw "managed install missing owner repair module $required"}}
 $tmp=Join-Path $env:TEMP ('operator-proxy-'+[guid]::NewGuid())
 $driveRoot=[IO.Path]::GetPathRoot($tmp)
 $rootChild=Join-Path $driveRoot 'AI_VAULT_OPERATOR_PROXY_INSTALL_ROOT_TEST'
