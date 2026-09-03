@@ -276,9 +276,9 @@ export class GovernedBuilder {
 
   private readPublishedBranchHead(worktree:string,branch:string):string|undefined{
     const observed=this.bus.remoteBranchHead(branch);
-    if(observed!==undefined)return observed;
     const line=git(worktree,["ls-remote","--heads","origin",`refs/heads/${branch}`]).split(/\s+/)[0]??"";
-    return /^[0-9a-f]{40}$/.test(line)?line:undefined;
+    if(/^[0-9a-f]{40}$/.test(line))return line;
+    return observed;
   }
 
   private async publishOrdinaryCleanCandidate(spec:ProxySpec,issue:number,session:string,repairCycle:number,retryReason:"BUILDER_FAILURE"|undefined,worktree:string,baseSha:string,observedHead:string,existing:{number:number;head_sha:string}|undefined){
