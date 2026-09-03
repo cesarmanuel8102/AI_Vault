@@ -4,9 +4,10 @@ import {verifyOwnerPayloadRepairAdoption} from "../../../scripts/operator_proxy/
 import {dispatchOwnerAuthorizedPayloadRepair,ownerPayloadRepairBuilderInput} from "../../../scripts/operator_proxy/governed_builder.js";
 import {parseCorrectionPayloadV1} from "../../../scripts/operator_proxy/correction_payload.js";
 import type {OwnerAuthorizedPayloadRepairGrant,ProxySpec} from "../../../scripts/operator_proxy/types.js";
+import type {CandidateExecutionAdapter} from "../../../scripts/operator_proxy/candidate_execution.js";
 
 const base="a".repeat(40),failed="b".repeat(40),head="c".repeat(40);
-const spec:ProxySpec={schema_version:1,authorization_id:"AUTH-01",repository:"cesarmanuel8102/AI_Vault",roadmap_id:"BRAIN-101",roadmap_version:"1",roadmap_item_id:"R3.5",expected_base_sha:base,executor:"codex_control_plane",risk:"MEDIUM",allowed_paths:["docs/"],forbidden_paths:["trading/"],acceptance:[],test_commands:[],deployment_allowed:false,work_branch:"control-plane/owner-repair",front_id:"BRAIN-101-R3-OWNER-01",deployment_mode:"NO_DEPLOY"};
+const spec:ProxySpec={schema_version:1,authorization_id:"AUTH-01",repository:"cesarmanuel8102/AI_Vault",roadmap_id:"BRAIN-101",roadmap_version:"1",roadmap_item_id:"R3.5",expected_base_sha:base,executor:"codex_control_plane",risk:"MEDIUM",allowed_paths:["docs/"],forbidden_paths:["trading/"],acceptance:[],test_commands:["git diff --check"],deployment_allowed:false,work_branch:"control-plane/owner-repair",front_id:"BRAIN-101-R3-OWNER-01",deployment_mode:"NO_DEPLOY"};
 const payload={schema_version:1 as const,requirements:[{requirement_id:"r",instruction:"fix"}],preserved_invariants:["HUMAN_FINAL_AUTHORITY"]};
 const parsedPayload=parseCorrectionPayloadV1(payload);
 const grant:OwnerAuthorizedPayloadRepairGrant={schema_version:1,authorization_id:"AUTH-01",grant_key:"d".repeat(64),owner_principal:"cesarmanuel8102",repository:spec.repository,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id,front_id:spec.front_id!,issue:1,pr:2,work_branch:spec.work_branch!,canonical_base_sha:base,failed_head_sha:failed,eligible_failure_class:"CI_FAILED",max_extra_builds:1,correction_payload:parsedPayload.payload,correction_payload_sha256:parsedPayload.sha256,owner_comment_id:"1",authorization_body_sha256:"f".repeat(64)};
@@ -29,12 +30,9 @@ test("exceptional builder input is typed, anchored, and contains no free-form ow
 });
 
 test("dedicated owner dispatcher sends one typed logical attempt without ordinary repair semantics",async()=>{
-  const seen:any[]=[];
-  const transport=async(request:any)=>{
-    seen.push(request);
-    return {executor_role:"codex_control_plane",builder_backend:"opencode_ollama",builder_model:"ollama-cloud/kimi-k2.7-code",builder_session:"provider-session",provider_session:"provider-correlation",base_sha:base,head_sha:head,branch:spec.work_branch!,commit:"",pr:0,started_utc:"2026-09-02T00:00:00.000Z",completed_utc:"2026-09-02T00:00:01.000Z"};
-  };
-  const context={spec,grant,issue:grant.issue,build_attempt_id:"1".repeat(64),consumed_event_sha256:"2".repeat(64),correction_payload:parsedPayload.payload,transport:transport as any,owner_comment:"untrusted free-form instruction"} as any;
+  const seen:any[]=[],receipts:string[]=[];
+  const publication:CandidateExecutionAdapter={prepare:()=>({worktree:"C:/owner",starting_head:base}),invokeProvider:async request=>{seen.push(request);return {executor_role:"codex_control_plane",builder_backend:"opencode_ollama",builder_model:"ollama-cloud/kimi-k2.7-code",builder_session:"provider-session",provider_session:"provider-correlation",base_sha:base,head_sha:head,branch:spec.work_branch!};},changedPaths:()=>["docs/x.md"],runDeclaredTests:()=>{},diffCheck:()=>{},commit:(_worktree,receipt)=>{receipts.push(receipt);return head;},push:()=>{},remoteHead:()=>head,existingDraftPr:()=>({number:grant.pr,repository:grant.repository,issue:grant.issue,work_branch:grant.work_branch,base_sha:base,head_sha:head,is_draft:true,is_open:true,same_repository:true,non_fork:true,changed_paths:["docs/x.md"]}),createDraftPr:()=>{throw new Error("unexpected PR");},bindPrToIssue:()=>{}};
+  const context={spec,grant,issue:grant.issue,build_attempt_id:"1".repeat(64),consumed_event_sha256:"2".repeat(64),correction_payload:parsedPayload.payload,publication,owner_comment:"untrusted free-form instruction"} as any;
   const first=await dispatchOwnerAuthorizedPayloadRepair(context);
   const retry=await dispatchOwnerAuthorizedPayloadRepair(context);
   assert.equal(seen.length,2);
@@ -43,14 +41,15 @@ test("dedicated owner dispatcher sends one typed logical attempt without ordinar
   assert.equal(seen[0].repair_cycle,undefined);
   assert.equal(seen[0].prompt.includes("owner_comment"),false);
   assert.equal(seen[0].prompt.includes(context.owner_comment),false);
+  for(const anchor of ["OWNER_AUTHORIZATION_ID=AUTH-01",`OWNER_GRANT_KEY=${grant.grant_key}`,`OWNER_BUILD_ATTEMPT_ID=${context.build_attempt_id}`,`OWNER_CONSUMED_EVENT_SHA256=${context.consumed_event_sha256}`])assert.match(receipts[0],new RegExp(anchor));
   assert.deepEqual(first.provenance,retry.provenance);
   assert.deepEqual(first.provenance,{authorization_id:grant.authorization_id,grant_key:grant.grant_key,build_attempt_id:context.build_attempt_id,consumed_event_sha256:context.consumed_event_sha256});
 });
 
 test("dedicated owner dispatcher rejects mismatched grant identity and protected control paths before transport",async()=>{
   let calls=0;
-  const transport=async()=>{calls++;throw new Error("must not run");};
-  const context:any={spec,grant,issue:grant.issue,build_attempt_id:"1".repeat(64),consumed_event_sha256:"2".repeat(64),correction_payload:parsedPayload.payload,transport};
+  const publication:any={invokeProvider:async()=>{calls++;throw new Error("must not run");}};
+  const context:any={spec,grant,issue:grant.issue,build_attempt_id:"1".repeat(64),consumed_event_sha256:"2".repeat(64),correction_payload:parsedPayload.payload,publication};
   await assert.rejects(()=>dispatchOwnerAuthorizedPayloadRepair({...context,issue:99}),/issue/);
   await assert.rejects(()=>dispatchOwnerAuthorizedPayloadRepair({...context,spec:{...spec,allowed_paths:["scripts\/operator_proxy\/authority\/"]}}),/owner repair path/);
   await assert.rejects(()=>dispatchOwnerAuthorizedPayloadRepair({...context,correction_payload:{...parsedPayload.payload,requirements:[{requirement_id:"r",instruction:"other"}]}}),/correction payload/);
@@ -59,8 +58,8 @@ test("dedicated owner dispatcher rejects mismatched grant identity and protected
 
 test("dedicated owner dispatcher rejects every mismatched provenance anchor before transport",async()=>{
   let calls=0;
-  const transport=async()=>{calls++;throw new Error("must not run");};
-  const context:any={spec,grant,issue:grant.issue,build_attempt_id:"1".repeat(64),consumed_event_sha256:"2".repeat(64),correction_payload:parsedPayload.payload,transport};
+  const publication:any={invokeProvider:async()=>{calls++;throw new Error("must not run");}};
+  const context:any={spec,grant,issue:grant.issue,build_attempt_id:"1".repeat(64),consumed_event_sha256:"2".repeat(64),correction_payload:parsedPayload.payload,publication};
   const cases=[
     {...context,spec:{...spec,authorization_id:"OTHER"}},
     {...context,spec:{...spec,work_branch:"control-plane/other"}},

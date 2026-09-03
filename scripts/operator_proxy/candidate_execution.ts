@@ -38,12 +38,26 @@ export interface PreparedCandidateAttempt {
   provider_request:CandidateProviderRequest;
   provider_idempotency_key?:string;
   publication_receipt:CandidatePublicationReceipt;
-  existing_pr?:number;
+  require_existing_draft_pr?:boolean;
 }
 
 export interface PreparedCandidateWorktree {
   worktree:string;
   starting_head:string;
+}
+
+export interface CandidateExistingDraftPr {
+  number:number;
+  repository:string;
+  issue:number;
+  work_branch:string;
+  base_sha:string;
+  head_sha:string;
+  is_draft:boolean;
+  is_open:boolean;
+  same_repository:boolean;
+  non_fork:boolean;
+  changed_paths:readonly string[];
 }
 
 export interface CandidateExecutionAdapter {
@@ -55,7 +69,7 @@ export interface CandidateExecutionAdapter {
   commit(worktree:PreparedCandidateWorktree,receipt:string,paths:readonly string[],provider:CandidateProviderResult):string;
   push(attempt:PreparedCandidateAttempt,head_sha:string):void;
   remoteHead(branch:string):string|undefined;
-  existingDraftPr(attempt:PreparedCandidateAttempt,head_sha:string,paths:readonly string[]):number|undefined;
+  existingDraftPr(attempt:PreparedCandidateAttempt,head_sha:string,paths:readonly string[]):number|CandidateExistingDraftPr|undefined;
   createDraftPr(attempt:PreparedCandidateAttempt,head_sha:string):number;
   bindPrToIssue(issue:number,pr:number):void;
 }
@@ -88,6 +102,13 @@ function validateProvider(attempt:PreparedCandidateAttempt,worktree:PreparedCand
   if(!worktree.worktree||worktree.starting_head!==attempt.expected_base_sha||provider.executor_role!==attempt.provider_request.executor_role||provider.base_sha!==attempt.expected_base_sha||provider.branch!==attempt.work_branch||!SHA40.test(provider.head_sha)||!provider.builder_backend||!provider.builder_model||!provider.builder_session||!provider.provider_session)throw new Error("candidate provider result invalid");
 }
 
+function validatedExistingPr(attempt:PreparedCandidateAttempt,head:string,paths:readonly string[],existing:number|CandidateExistingDraftPr|undefined):number|undefined {
+  if(existing===undefined)return undefined;
+  if(typeof existing==="number"){if(attempt.require_existing_draft_pr)throw new Error("candidate existing Draft PR identity invalid");return existing;}
+  if(!Number.isInteger(existing.number)||existing.number<1||existing.repository!==attempt.repository||existing.issue!==attempt.issue||existing.work_branch!==attempt.work_branch||existing.base_sha!==attempt.expected_base_sha||existing.head_sha!==head||existing.is_draft!==true||existing.is_open!==true||existing.same_repository!==true||existing.non_fork!==true||JSON.stringify([...existing.changed_paths].sort())!==JSON.stringify([...paths].sort()))throw new Error("candidate existing Draft PR identity invalid");
+  return existing.number;
+}
+
 export class CandidateExecutionKernel {
   constructor(private readonly adapter:CandidateExecutionAdapter){}
 
@@ -106,7 +127,8 @@ export class CandidateExecutionKernel {
     if(!SHA40.test(head)||head===attempt.expected_base_sha)throw new Error("candidate commit invalid");
     this.adapter.push(attempt,head);
     if(this.adapter.remoteHead(attempt.work_branch)!==head)throw new Error("candidate remote head mismatch");
-    const pr=attempt.existing_pr??this.adapter.existingDraftPr(attempt,head,paths)??this.adapter.createDraftPr(attempt,head);
+    let pr=validatedExistingPr(attempt,head,paths,this.adapter.existingDraftPr(attempt,head,paths));
+    if(pr===undefined){if(attempt.require_existing_draft_pr)throw new Error("candidate existing Draft PR missing");pr=this.adapter.createDraftPr(attempt,head);}
     if(!Number.isInteger(pr)||pr<1)throw new Error("candidate Draft PR invalid");
     this.adapter.bindPrToIssue(attempt.issue,pr);
     return {pr,head_sha:head,base_sha:attempt.expected_base_sha,work_branch:attempt.work_branch,changed_paths:paths,builder_backend:provider.builder_backend,builder_model:provider.builder_model,builder_session:provider.builder_session,provider_session:provider.provider_session,...(attempt.provider_idempotency_key?{provider_idempotency_key:attempt.provider_idempotency_key}:{})};

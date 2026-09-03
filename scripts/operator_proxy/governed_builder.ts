@@ -9,7 +9,7 @@ import {redactedError} from "./redaction.js";
 import {routeControlPlaneBuild} from "./builder_router.js";
 import {BuilderAttemptProvenance,LEGACY_NEUTRALIZATION_TRAILER,PRIOR_UNATTESTED_HEAD_TRAILER,RESET_BASE_TRAILER,LEGACY_REBUILD_TRAILER,NEUTRALIZATION_HEAD_TRAILER,FRESH_BUILDER_HEAD_TRAILER} from "./builder_attempt_provenance.js";
 import {canonicalCorrectionPayloadBytes,parseCorrectionPayloadV1} from "./correction_payload.js";
-import {CandidateExecutionKernel,type CandidateExecutionAdapter,type PreparedCandidateAttempt} from "./candidate_execution.js";
+import {CandidateExecutionKernel,type CandidateExecutionAdapter,type CandidatePublicationResult,type PreparedCandidateAttempt} from "./candidate_execution.js";
 
 export interface BuilderBus {
   findPrByBranch(branch:string):{number:number;head_sha:string}|undefined;
@@ -21,8 +21,8 @@ export interface BuilderBus {
 }
 export interface OwnerPayloadRepairBuilderInput {front_id:string;work_branch:string;failed_head_sha:string;correction_payload:CorrectionPayloadV1;provenance:{authorization_id:string;grant_key:string;build_attempt_id:string;consumed_event_sha256:string}}
 export interface OwnerPayloadRepairTransportRequest extends OwnerPayloadRepairBuilderInput {repository:string;roadmap_id:string;roadmap_item_id:string;issue:number;pr:number;canonical_base_sha:string;idempotency_key:string;prompt:string}
-export interface OwnerPayloadRepairDispatchContext {spec:ProxySpec;grant:OwnerAuthorizedPayloadRepairGrant;issue:number;build_attempt_id:string;consumed_event_sha256:string;correction_payload:CorrectionPayloadV1;transport:(request:OwnerPayloadRepairTransportRequest)=>Promise<BuilderResult>}
-export interface OwnerPayloadRepairCandidate {candidate:BuilderResult;provenance:OwnerPayloadRepairBuilderInput["provenance"]}
+export interface OwnerPayloadRepairDispatchContext {spec:ProxySpec;grant:OwnerAuthorizedPayloadRepairGrant;issue:number;build_attempt_id:string;consumed_event_sha256:string;correction_payload:CorrectionPayloadV1;publication:CandidateExecutionAdapter}
+export interface OwnerPayloadRepairCandidate {candidate:CandidatePublicationResult;provenance:OwnerPayloadRepairBuilderInput["provenance"]}
 
 function exact64(value:string){return /^[0-9a-f]{64}$/.test(value);}
 function exceptionalPathDenied(path:string){return path==="scripts/operator_proxy"||path.startsWith("scripts/operator_proxy/")||path===".github"||path.startsWith(".github/");}
@@ -55,13 +55,18 @@ function ownerPayloadRepairPrompt(request:OwnerPayloadRepairTransportRequest):st
     canonicalCorrectionPayloadBytes(request.correction_payload).trimEnd(),
   ].join("\n");
 }
+
+function ownerPayloadRepairReceipt(request:OwnerPayloadRepairTransportRequest,provider:{builder_backend:string;builder_model:string;provider_session:string;fallback_reason?:string}):string {
+  return [`fix(control-plane): owner payload repair ${request.front_id}`,"",`OWNER_AUTHORIZATION_ID=${request.provenance.authorization_id}`,`OWNER_GRANT_KEY=${request.provenance.grant_key}`,`OWNER_BUILD_ATTEMPT_ID=${request.provenance.build_attempt_id}`,`OWNER_CONSUMED_EVENT_SHA256=${request.provenance.consumed_event_sha256}`,`BUILDER_BACKEND=${provider.builder_backend}`,`BUILDER_MODEL=${provider.builder_model}`,`PROVIDER_SESSION=${provider.provider_session}`,...(provider.fallback_reason?[`FALLBACK_REASON=${provider.fallback_reason}`]:[])].join("\n");
+}
 /** Dispatches the one logical exceptional attempt. Receipt and lifecycle mutations are owned by Tasks 6/8. */
 export async function dispatchOwnerAuthorizedPayloadRepair(context:OwnerPayloadRepairDispatchContext):Promise<OwnerPayloadRepairCandidate> {
   const input=validateOwnerPayloadRepairDispatch(context);
   const request:OwnerPayloadRepairTransportRequest={...input,repository:context.grant.repository,roadmap_id:context.grant.roadmap_id,roadmap_item_id:context.grant.roadmap_item_id,issue:context.grant.issue,pr:context.grant.pr,canonical_base_sha:context.grant.canonical_base_sha,idempotency_key:input.provenance.build_attempt_id,prompt:""};
   request.prompt=ownerPayloadRepairPrompt(request);
-  const candidate=await context.transport(Object.freeze(request));
-  if(candidate.executor_role!=="codex_control_plane"||candidate.base_sha!==request.canonical_base_sha||candidate.branch!==request.work_branch||! /^[0-9a-f]{40}$/.test(candidate.head_sha)||candidate.head_sha===request.failed_head_sha)throw new Error("owner repair candidate invalid");
+  if(context.spec.executor!=="codex_control_plane")throw new Error("owner repair executor invalid");
+  const candidate=await new CandidateExecutionKernel(context.publication).publish({repository:request.repository,front_id:request.front_id,roadmap_item_id:request.roadmap_item_id,issue:request.issue,work_branch:request.work_branch,expected_base_sha:request.canonical_base_sha,observed_head_sha:request.failed_head_sha,allowed_paths:context.spec.allowed_paths,forbidden_paths:context.spec.forbidden_paths,test_commands:context.spec.test_commands,provider_request:{prompt:request.prompt,executor_role:"codex_control_plane"},provider_idempotency_key:request.idempotency_key,publication_receipt:{kind:"OWNER_AUTHORIZED_PAYLOAD_REPAIR",render:provider=>ownerPayloadRepairReceipt(request,provider)},require_existing_draft_pr:true});
+  if(candidate.base_sha!==request.canonical_base_sha||candidate.work_branch!==request.work_branch||! /^[0-9a-f]{40}$/.test(candidate.head_sha)||candidate.head_sha===request.failed_head_sha)throw new Error("owner repair candidate invalid");
   return {candidate,provenance:input.provenance};
 }
 /** Constructs the only exceptional-builder payload; raw owner comment text is never accepted. */
@@ -248,11 +253,11 @@ export class GovernedBuilder {
       commit:(_prepared,receipt,paths,provider)=>{this.assertEffect("commit_create",{issue});if(provider.head_sha!==baseSha)native(process.env.GIT_PATH??"git",["-C",worktree,"commit","--allow-empty","-m",receipt],{stdio:"inherit",timeout:120000,windowsHide:true});else{native(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...paths],{stdio:"inherit",timeout:120000,windowsHide:true});native(process.env.GIT_PATH??"git",["-C",worktree,"commit","-m",receipt],{stdio:"inherit",timeout:120000,windowsHide:true});}const head=git(worktree,["rev-parse","HEAD"]);validateBuilderReceipt(worktree,head,spec.front_id!);return head;},
       push:(_attempt,head)=>{this.assertEffect("push",{issue,expected_head:head,...(repairCycle>0?{observed_head:observedHead}:{})});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});},
       remoteHead:branch=>this.readPublishedBranchHead(worktree,branch),
-      existingDraftPr:()=>undefined,
+      existingDraftPr:()=>existing?.number,
       createDraftPr:()=>this.bus.createDraftPr(spec.work_branch!,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`),
       bindPrToIssue:(boundIssue,pr)=>this.bus.bindPrToIssue(boundIssue,pr),
     };
-    const attempt:PreparedCandidateAttempt={repository:spec.repository,front_id:spec.front_id,roadmap_item_id:spec.roadmap_item_id,issue,work_branch:spec.work_branch,expected_base_sha:baseSha,observed_head_sha:observedHead,allowed_paths:spec.allowed_paths,forbidden_paths:spec.forbidden_paths,test_commands:spec.test_commands,provider_request:{prompt,executor_role:"codex_control_plane"},publication_receipt:{kind:"ORDINARY",render:provider=>builderReceiptMessage(spec.front_id!,provider)},...(existing?{existing_pr:existing.number}: {})};
+    const attempt:PreparedCandidateAttempt={repository:spec.repository,front_id:spec.front_id,roadmap_item_id:spec.roadmap_item_id,issue,work_branch:spec.work_branch,expected_base_sha:baseSha,observed_head_sha:observedHead,allowed_paths:spec.allowed_paths,forbidden_paths:spec.forbidden_paths,test_commands:spec.test_commands,provider_request:{prompt,executor_role:"codex_control_plane"},publication_receipt:{kind:"ORDINARY",render:provider=>builderReceiptMessage(spec.front_id!,provider)}};
     const result=await new CandidateExecutionKernel(adapter).publish(attempt);
     return {pr:result.pr,head_sha:result.head_sha,session};
   }
