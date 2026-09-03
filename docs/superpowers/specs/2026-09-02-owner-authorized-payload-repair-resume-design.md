@@ -67,6 +67,78 @@ Direct mutation from `BLOCKED` to `REPAIRING`, a boolean override, reuse of a
 policy decision, reuse of `repairPrompt()`, or use of comment free text as the
 builder input are prohibited.
 
+## Shared Candidate Execution/Publication Boundary
+
+### Owner-Approved Option A
+
+`GovernedBuilder.build()` currently combines ordinary repair semantics with
+the mechanics that construct and publish a governed candidate. It therefore
+cannot be reused by the Owner exception: doing so would import `repairPrompt`,
+`repairCycle`, ordinary receipt semantics, and normal repair accounting into a
+single-use exceptional authorization.
+
+The Human Owner selected Option A. The implementation extracts a semantically
+neutral `CandidateExecutionKernel` from the eligible clean candidate path and
+keeps two separate semantic wrappers:
+
+```text
+ordinary objective + repairPrompt + repairCycle
+  -> GovernedBuilder.build()
+  -> PreparedCandidateAttempt
+  -> CandidateExecutionKernel
+
+verified CorrectionPayloadV1 + four Owner anchors
+  -> dispatchOwnerAuthorizedPayloadRepair()
+  -> PreparedCandidateAttempt
+  -> CandidateExecutionKernel
+```
+
+The neutral prepared input contains repository/front/roadmap/Issue/work-branch
+identity, expected base and observed head, allowlisted and forbidden paths,
+acceptance and declared-test commands, a preconstructed provider request, an
+optional provider idempotency key, a typed publication receipt, and an optional
+already-validated Draft PR. It must not contain `repair_cycle`, a repair prompt,
+Owner comment text or principal, authorization-policy commands, receipt-ledger
+mutation commands, or lifecycle-mutation commands. A mode flag, boolean owner
+switch, or special case inside ordinary repair semantics is prohibited.
+
+### Kernel and Publication Contract
+
+The kernel knows only how to prepare or reuse a clean isolated worktree,
+invoke its supplied provider request, validate the candidate HEAD and changed
+paths, run declared tests and `git diff --check`, create the supplied governed
+receipt/commit, perform a caller-authorized non-force push, read back the exact
+remote branch HEAD, create or reuse an exact open same-repository non-fork Draft
+PR, bind that PR to the Issue, and return a machine-verifiable publication
+result. It validates an exact start base/head, a valid changed SHA, non-empty
+changed paths, allowed-path membership, forbidden-path exclusion, passing
+declared tests, and exact local/remote candidate-head equality.
+
+The kernel does not call `repairPrompt()`, construct Owner instructions,
+interpret `CorrectionPayloadV1`, choose a receipt type, append `HEAD_BOUND`,
+change lifecycle, approve lineage, or decide why a build exists. Historical
+special recovery branches remain in the existing builder until a shared
+primitive is explicitly required; the extraction is limited to the normal
+clean construction/publication path.
+
+`CandidatePublicationReceipt` is a typed caller-supplied union. Ordinary
+receipts retain their existing backend/model/session trailers. Owner receipts
+add deterministic non-colliding trailers for `OWNER_AUTHORIZATION_ID`,
+`OWNER_GRANT_KEY`, `OWNER_BUILD_ATTEMPT_ID`, and
+`OWNER_CONSUMED_EVENT_SHA256`, together with provider/session evidence. The
+kernel serializes this receipt but never selects or mutates its semantics.
+
+`CandidatePublicationResult` returns the PR identity, local and remote
+head/base/work-branch, changed paths, backend/model/session evidence, and the
+optional provider idempotency key. Publication is not adoption. Only the
+Task-5 lineage validator can accept this result and only that successful
+validation may append `HEAD_BOUND` and enter ordinary CI.
+
+For the Owner exception, `provider_idempotency_key` is exactly the persisted
+`build_attempt_id`. The kernel preserves it unchanged to every provider retry;
+it never allocates a second attempt. Ordinary attempts retain their current
+idempotency behavior and do not inherit the Owner exception's accounting.
+
 ## Lifecycle Semantics
 
 The legal successful path is:

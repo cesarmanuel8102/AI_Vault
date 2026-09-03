@@ -203,7 +203,73 @@ export interface OwnerPayloadRepairBuildContext {
 - [ ] **7.4 Re-run focused tests.** Expected: valid typed request succeeds; free-form correction payload, missing anchors, or future hash all fail closed before transport.
 - [ ] **7.5 Commit typed builder wiring.** Stage Task 7 files and commit `feat(operator-proxy): bind owner repair builder provenance`.
 
-## Task 8: Flow and Production-Effects Wiring
+## Task 8A: Lock Ordinary Candidate-Publication Regression Behavior
+
+**Files:**
+- Modify: `tests/contract/operator_proxy/builder_contract.test.ts`
+
+**Interfaces:**
+- Consumes: current `GovernedBuilder.build(spec, issue, session, repairCycle)`.
+- Produces: regression fixtures for the ordinary prompt, repair prompt, repair-cycle, publication, path, test, and remote-readback contracts.
+
+- [ ] **8A.1 Write failing regression cases.** Add one test each proving a clean ordinary build receives the ordinary prompt, a repair build receives `repairPrompt()`, the supplied `repairCycle` is retained, publication commits/pushes and creates or reuses its Draft PR, an invalid path rejects before publication, a declared-test failure prevents publication, and a remote-head readback mismatch rejects.
+- [ ] **8A.2 Run the focused regression suite.** Run `npx --prefix scripts/operator_proxy tsx --test ../../tests/contract/operator_proxy/builder_contract.test.ts`; expected before extraction: PASS, establishing the behavior to preserve.
+- [ ] **8A.3 Commit the regression lock.** Stage only the builder contract test and commit `test(operator-proxy): lock candidate publication behavior`.
+
+## Task 8B: Extract Neutral Candidate Execution and Publication
+
+**Files:**
+- Create: `scripts/operator_proxy/candidate_execution.ts`
+- Modify: `scripts/operator_proxy/governed_builder.ts`
+- Modify: `tests/contract/operator_proxy/builder_contract.test.ts`
+- Create: `tests/contract/operator_proxy/candidate_execution.test.ts`
+
+**Interfaces:**
+- Produces: `PreparedCandidateAttempt`, `CandidatePublicationReceipt`, `CandidateExecutionKernel`, and `CandidatePublicationResult`.
+- `PreparedCandidateAttempt` contains exact repository/front/roadmap/Issue/work-branch/base/head/path/test/provider/publication identity and never contains repair or Owner authorization semantics.
+- `CandidateExecutionKernel.publish(attempt, capability)` returns `CandidatePublicationResult` without lifecycle mutation or lineage adoption.
+
+- [ ] **8B.1 Write RED neutral-kernel tests.** Require the new kernel to preserve a supplied provider idempotency key, reject dirty or wrong-base worktrees, reject empty/forbidden/out-of-allowlist changed paths, stop before push when a declared test or diff check fails, reject remote readback mismatch, reuse only a validated exact Draft PR, and never append `HEAD_BOUND` or mutate lifecycle.
+- [ ] **8B.2 Run the RED tests.** Run `npx --prefix scripts/operator_proxy tsx --test ../../tests/contract/operator_proxy/candidate_execution.test.ts`; expected: imports or kernel symbols are absent.
+- [ ] **8B.3 Implement the minimum extraction.** Move only clean candidate worktree/provider/validation/commit/non-force-push/readback/Draft-PR publication mechanics into `candidate_execution.ts`. The caller supplies the typed provider request, typed receipt, and existing effect capability. Do not move legacy synchronization, blocked-CI recovery, neutralization, dirty forensic handling, or lifecycle adoption.
+- [ ] **8B.4 Run kernel and ordinary tests.** Run `npx --prefix scripts/operator_proxy tsx --test ../../tests/contract/operator_proxy/candidate_execution.test.ts ../../tests/contract/operator_proxy/builder_contract.test.ts`; expected: PASS and ordinary behavior remains unchanged.
+- [ ] **8B.5 Commit the extraction.** Stage the four Task 8B files explicitly and commit `refactor(operator-proxy): extract candidate execution kernel`.
+
+## Task 8C: Route the Eligible Ordinary Clean Path Through the Kernel
+
+**Files:**
+- Modify: `scripts/operator_proxy/governed_builder.ts`
+- Modify: `tests/contract/operator_proxy/builder_contract.test.ts`
+
+**Interfaces:**
+- Consumes: `CandidateExecutionKernel.publish()` and the ordinary semantic inputs.
+- Produces: an ordinary `PreparedCandidateAttempt` built from `builderPrompt`, `repairPrompt`, and `repairCycle` before kernel invocation.
+
+- [ ] **8C.1 Write RED delegation tests.** Require the eligible clean ordinary path to prepare the provider request before entering the kernel and prove the kernel itself never calls `repairPrompt()`. Retain separate assertions for normal `BuilderAttemptProvenance`, fallback handling, and ordinary receipt trailers.
+- [ ] **8C.2 Run the RED tests.** Run `npx --prefix scripts/operator_proxy tsx --test ../../tests/contract/operator_proxy/builder_contract.test.ts`; expected: direct monolithic path still owns publication.
+- [ ] **8C.3 Adapt only the eligible clean path.** Have `GovernedBuilder.build()` retain all ordinary semantic preparation, then create an ordinary prepared attempt and delegate publication to the kernel. Keep legacy and specialized recovery branches on their existing implementation paths.
+- [ ] **8C.4 Run focused regressions.** Run `npx --prefix scripts/operator_proxy tsx --test ../../tests/contract/operator_proxy/builder_contract.test.ts ../../tests/contract/operator_proxy/candidate_execution.test.ts ../../tests/contract/operator_proxy/semantic_repair_accounting.test.ts`; expected: PASS.
+- [ ] **8C.5 Commit ordinary delegation.** Stage only the Task 8C files and commit `refactor(operator-proxy): route ordinary clean builds through candidate kernel`.
+
+## Task 8D: Publish the Typed Owner Candidate Through the Kernel
+
+**Files:**
+- Modify: `scripts/operator_proxy/governed_builder.ts`
+- Modify: `scripts/operator_proxy/candidate_execution.ts`
+- Modify: `tests/contract/operator_proxy/owner_payload_repair_provenance.test.ts`
+- Modify: `tests/contract/operator_proxy/owner_payload_repair_effect_guard.test.ts`
+
+**Interfaces:**
+- Consumes: `OwnerAuthorizedPayloadRepairGrant`, `CorrectionPayloadV1`, the four immutable provenance anchors, and the Task-6 capability.
+- Produces: `dispatchOwnerAuthorizedPayloadRepair()` publication result with exact Owner receipt trailers and `provider_idempotency_key === build_attempt_id`.
+
+- [ ] **8D.1 Write RED exceptional-publication tests.** Require the dispatcher not to invoke `GovernedBuilder.build()`, not to call or accept `repairPrompt`/`repairCycle`, to supply a typed deterministic provider request, preserve `build_attempt_id` as its transport idempotency key, commit all four Owner anchors, reject authority or non-allowlisted paths, stop before push on test failure or readback mismatch, reject a wrong existing PR, and return publication without `HEAD_BOUND`.
+- [ ] **8D.2 Run the RED exceptional tests.** Run `npx --prefix scripts/operator_proxy tsx --test ../../tests/contract/operator_proxy/owner_payload_repair_provenance.test.ts ../../tests/contract/operator_proxy/owner_payload_repair_effect_guard.test.ts`; expected: current injected transport boundary cannot publish a governed candidate.
+- [ ] **8D.3 Connect the dedicated wrapper.** Build the exceptional provider request from only canonical `CorrectionPayloadV1` bytes and the four anchors, supply an Owner typed receipt, require the Task-6 capability for push, and invoke the neutral kernel. The dispatcher must not allocate an attempt, write receipt events, or mutate lifecycle.
+- [ ] **8D.4 Run exceptional and ordinary suites.** Run `npx --prefix scripts/operator_proxy tsx --test ../../tests/contract/operator_proxy/owner_payload_repair_provenance.test.ts ../../tests/contract/operator_proxy/owner_payload_repair_effect_guard.test.ts ../../tests/contract/operator_proxy/builder_contract.test.ts`; expected: PASS.
+- [ ] **8D.5 Commit Owner publication.** Stage the Task 8D files explicitly and commit `feat(operator-proxy): publish owner candidate through shared kernel`.
+
+## Task 8E: Wire Durable Owner Publication, Lineage, and Ordinary CI
 
 **Files:**
 - Modify: `scripts/operator_proxy/autonomous_flow.ts`
@@ -212,11 +278,15 @@ export interface OwnerPayloadRepairBuildContext {
 - Create: `tests/contract/operator_proxy/owner_payload_repair_flow.test.ts`
 - Modify: `tests/contract/operator_proxy/autonomous_flow.test.ts`
 
-- [ ] **8.1 Write failing flow tests.** Exercise a valid owner grant from `CI_FAILED`/two ordinary repairs through verified receipt, consumed receipt, guarded dispatch, typed build, candidate observation, HEAD binding, and existing CI/reviewer/policy pipeline. Assert no auto-merge, no canonical sync, no schedule/task change, and no ordinary `repairPrompt`. Add a test proving later failures preserve `builder_retry_reason` and do not create a second build attempt.
-- [ ] **8.2 Run focused flow tests.** Run `npx --prefix scripts/operator_proxy tsx --test ../../tests/contract/operator_proxy/owner_payload_repair_flow.test.ts ../../tests/contract/operator_proxy/autonomous_flow.test.ts`; expected: owner move not wired.
-- [ ] **8.3 Implement explicit flow branches with durable dispatch ordering.** Add a single `AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME` branch in `AutonomousEffects`/`ProductionEffects`. It must derive `CONSUMED`, append `BUILD_DISPATCHED`, derive the validated post-append view, obtain the narrow transport capability, then call the typed builder method. A crash after commitment but before transport is a reconciliation case for the same ID. Existing review/policy/merge effects process the adopted new head normally; none may reuse the failed head's decision/review/CI receipt.
-- [ ] **8.4 Re-run flow and ordinary regression tests.** Expected: owner flow uses one attempt and ordinary flow output is unchanged.
-- [ ] **8.5 Commit production flow wiring.** Stage only Task 8 files and commit `feat(operator-proxy): wire owner repair resume flow`.
+**Interfaces:**
+- Consumes: strict Owner envelope discovery, canonical principal resolution, grant verifier, receipt ledger, lifecycle operation, Task-6 capability, Task-8D publication result, and Task-5 lineage verifier.
+- Produces: the sole receipt-first Owner flow from eligible exhausted `CI_FAILED` to ordinary `CI_PENDING` only after exact lineage adoption.
+
+- [ ] **8E.1 Write the failing end-to-end fake-effects test.** Exercise `BLOCKED/CI_FAILED/repair_cycles=2` through one strict envelope, verified grant, `VERIFIED`, `CONSUMED`, `OWNER_REPAIR_AUTHORIZED`, `BUILDING`, `BUILD_DISPATCHED`, guard capability, shared publication, exact Draft PR/head, Task-5 lineage, `HEAD_BOUND`, and ordinary CI. Assert no repair-cycle change, normal repair event, `repairPrompt`, raw Owner comment, second attempt, real external effect, auto-merge, canonical sync, schedule change, live trading, or real money.
+- [ ] **8E.2 Run the RED flow suite.** Run `npx --prefix scripts/operator_proxy tsx --test ../../tests/contract/operator_proxy/owner_payload_repair_flow.test.ts ../../tests/contract/operator_proxy/autonomous_flow.test.ts`; expected: Owner publication flow is not wired.
+- [ ] **8E.3 Implement receipt-first orchestration.** In `ProductionEffects`, discover exactly one strict envelope, resolve the canonical principal, verify the grant, append/derive `VERIFIED` and `CONSUMED`, use the dedicated lifecycle operation, append/derive `BUILD_DISPATCHED`, obtain the guard capability, dispatch the same build attempt through Task 8D, then run Task-5 lineage validation. Only successful lineage appends `HEAD_BOUND` and enters ordinary CI. Later failures preserve `builder_retry_reason` and never create another attempt.
+- [ ] **8E.4 Run flow and ordinary regressions.** Run `npx --prefix scripts/operator_proxy tsx --test ../../tests/contract/operator_proxy/owner_payload_repair_flow.test.ts ../../tests/contract/operator_proxy/autonomous_flow.test.ts ../../tests/contract/operator_proxy/semantic_repair_accounting.test.ts`; expected: PASS.
+- [ ] **8E.5 Commit the wiring.** Stage only the Task 8E files and commit `feat(operator-proxy): wire owner repair publication flow`.
 
 ## Task 9: Crash-Boundary Reconciliation
 
