@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import {parseCorrectionPayloadV1} from "../../../scripts/operator_proxy/correction_payload.js";
-import {parseOwnerGrantEvidenceV1,verifyOwnerAuthorizedPayloadRepairGrant} from "../../../scripts/operator_proxy/owner_payload_repair_grant.js";
+import {discoverOwnerAuthorizedPayloadRepairGrant,parseOwnerGrantEvidenceV1,parseOwnerPayloadRepairAuthorizationEnvelopeV1,verifyOwnerAuthorizedPayloadRepairGrant} from "../../../scripts/operator_proxy/owner_payload_repair_grant.js";
 import {GitHubBus} from "../../../scripts/operator_proxy/github_bus.js";
 import type {ProxySpec} from "../../../scripts/operator_proxy/types.js";
 
@@ -77,4 +77,31 @@ test("GitHubBus exposes Issue comments as read-only evidence and rejects incompl
   assert.deepEqual(bus.issueComments(248),[{id:1,body:"evidence"}]);
   (bus as any).json=()=>({comments:{}});
   assert.throws(()=>bus.issueComments(248),/comments response invalid/);
+});
+
+const envelope=(authorization=evidence(),correction_payload=payload)=>`BRAIN_OWNER_PAYLOAD_REPAIR_V1\n${JSON.stringify({schema_version:1,kind:"OWNER_AUTHORIZED_PAYLOAD_REPAIR",authorization,correction_payload})}\nEND_BRAIN_OWNER_PAYLOAD_REPAIR_V1`;
+test("Owner payload repair envelope accepts exactly one strict machine-only typed object",()=>{
+  const parsed=parseOwnerPayloadRepairAuthorizationEnvelopeV1(envelope());
+  assert.deepEqual(parsed.authorization,evidence());
+  assert.deepEqual(parsed.correction_payload,payload);
+});
+test("Owner payload repair envelope rejects prose, duplicate keys, multiple blocks, and invalid typed content",()=>{
+  const valid=envelope();
+  const cases=[
+    `prose\n${valid}`,
+    `${valid}\nprose`,
+    `${valid}\n${valid}`,
+    "BRAIN_OWNER_PAYLOAD_REPAIR_V1\n{\"schema_version\":1,\"schema_version\":1}\nEND_BRAIN_OWNER_PAYLOAD_REPAIR_V1",
+    envelope({...evidence(),repository:"other/repo"}),
+    envelope(evidence(),{...payload,unknown:true} as any),
+  ];
+  for(const body of cases)assert.throws(()=>parseOwnerPayloadRepairAuthorizationEnvelopeV1(body),/owner payload repair envelope/i);
+});
+test("Owner payload repair discovery accepts one exact owner envelope and rejects competing claimed envelopes",()=>{
+  const baseInput=input();
+  const comments=[{id:5000000001,author:{login:owner},body:envelope()}];
+  const grant=discoverOwnerAuthorizedPayloadRepairGrant({...baseInput,comments});
+  assert.equal(grant.grant_key,grantKey);
+  assert.throws(()=>discoverOwnerAuthorizedPayloadRepairGrant({...baseInput,comments:[...comments,{id:5000000002,author:{login:owner},body:envelope()}]}),/owner payload repair envelope/i);
+  assert.throws(()=>discoverOwnerAuthorizedPayloadRepairGrant({...baseInput,comments:[{id:5000000001,author:{login:"attacker"},body:envelope()}]}),/owner grant/i);
 });
