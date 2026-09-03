@@ -1,7 +1,8 @@
 import {existsSync} from "node:fs";
 import {join} from "node:path";
-import type {LifecycleRecord,ProxySpec} from "./types.js";
+import type {LifecycleRecord,ProxySpec,OwnerAuthorizedPayloadRepairGrant} from "./types.js";
 import type {GitHubBus} from "./github_bus.js";
+import type {OwnerGrantReceiptEvent} from "./owner_repair_receipt_ledger.js";
 import {AUTH,REPO} from "./policy_engine.js";
 import {validBlockedCiEffectChain,validPrivilegedInstallEffectChain} from "./lifecycle_store.js";
 
@@ -9,6 +10,8 @@ export const EXTERNAL_EFFECT_REGISTRY=["issue_create","issue_modify","label_modi
 export type ExternalEffect=typeof EXTERNAL_EFFECT_REGISTRY[number];
 export interface EffectContext {issue?:number;pr?:number;expected_head?:string;observed_head?:string}
 export type EffectAssertion=(effect:ExternalEffect,context?:EffectContext)=>void;
+export interface OwnerPayloadRepairTransportContext {spec:ProxySpec;state:LifecycleRecord;grant:OwnerAuthorizedPayloadRepairGrant;consumed_event_sha256:string;build_attempt_id:string;build_dispatched_event_sha256:string;}
+export interface OwnerPayloadRepairTransportCapability {readonly front_id:string;readonly grant_key:string;readonly build_attempt_id:string;readonly dispatch_event_sha256:string;}
 
 interface BlockedCiRecovery {
   frontId:string;issue:number;pr:number;oldBase:string;newBase:string;oldHead:string;priorState:"BLOCKED"|"ESCALATED";observedHead?:string;nextHead?:string;
@@ -22,8 +25,16 @@ export class ExternalEffectBoundary {
   private blockedCiRepair=false;
   private unconsummatedRepairResume=false;
   private privilegedInstallResume=false;
+  private ownerPayloadRepairTransport?:OwnerPayloadRepairTransportCapability;
   constructor(readonly root:string,readonly bus:GitHubBus,readonly leaseOwned:()=>boolean){}
   bind(spec:ProxySpec,lifecycle:LifecycleRecord){this.spec=spec;this.lifecycle=lifecycle;this.blockedCiRecovery=undefined;this.blockedCiRepair=false;this.unconsummatedRepairResume=false;this.privilegedInstallResume=false;}
+  authorizeOwnerPayloadRepairTransport(context:OwnerPayloadRepairTransportContext,receipt:OwnerGrantReceiptEvent):OwnerPayloadRepairTransportCapability {
+    const {spec,state,grant}=context,binding=state.owner_payload_repair;
+    const exact=state.state==="BUILDING"&&state.repair_cycles===2&&!!binding&&spec.front_id===state.front_id&&spec.roadmap_item_id===state.roadmap_item_id&&state.base_sha===spec.expected_base_sha&&grant.repository===spec.repository&&grant.roadmap_id===spec.roadmap_id&&grant.roadmap_item_id===spec.roadmap_item_id&&grant.front_id===state.front_id&&grant.issue===state.issue&&grant.pr===state.pr&&grant.work_branch===spec.work_branch&&grant.canonical_base_sha===spec.expected_base_sha&&grant.failed_head_sha===state.head_sha&&grant.authorization_id===spec.authorization_id&&grant.eligible_failure_class==="CI_FAILED"&&grant.max_extra_builds===1&&binding.grant_key===grant.grant_key&&binding.build_attempt_id===context.build_attempt_id&&binding.consumed_event_sha256===context.consumed_event_sha256&&receipt.phase==="BUILD_DISPATCHED"&&receipt.grant_key===grant.grant_key&&receipt.front_id===state.front_id&&receipt.authorization_id===grant.authorization_id&&receipt.failed_head_sha===state.head_sha&&receipt.build_attempt_id===context.build_attempt_id&&receipt.predecessor_event_sha256===context.consumed_event_sha256&&receipt.event_sha256===context.build_dispatched_event_sha256&&/^[0-9a-f]{64}$/.test(receipt.event_sha256);
+    if(!exact)throw new Error("owner payload repair transport denied");
+    const capability=Object.freeze({front_id:state.front_id,grant_key:grant.grant_key,build_attempt_id:context.build_attempt_id,dispatch_event_sha256:receipt.event_sha256});this.ownerPayloadRepairTransport=capability;return capability;
+  }
+  assertOwnerPayloadRepairTransport(capability:OwnerPayloadRepairTransportCapability):void {if(!this.ownerPayloadRepairTransport||capability!==this.ownerPayloadRepairTransport)throw new Error("owner payload repair transport denied");}
   beginPrivilegedInstallResume(spec:ProxySpec,state:LifecycleRecord){
     const exact=state.state==="ESCALATED"&&state.last_error==="LOCAL_PRIVILEGE_REQUIRED"&&spec.install_target==="agent_loop_worker"&&["INSTALL_ONLY","INSTALL_AND_RUNTIME_PILOT"].includes(spec.deployment_mode??"")&&state.deployment_mode===spec.deployment_mode&&state.front_id===spec.front_id&&state.roadmap_item_id===spec.roadmap_item_id&&state.base_sha===spec.expected_base_sha&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&state.repair_cycles===0&&!!state.builder_session&&!!state.reviewer_session&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(state.decision_id??"")&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&validPrivilegedInstallEffectChain(state);
     if(!exact)throw new Error("privileged install receipt boundary denied");
