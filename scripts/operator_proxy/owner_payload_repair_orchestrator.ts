@@ -8,12 +8,14 @@ export interface OwnerRepairState {
   repair_cycles: number;
   head_sha?: string;
   base_sha: string;
+  owner_payload_repair?: {grant_key:string;consumed_event_sha256:string;build_attempt_id:string};
 }
 
 type Grant = {grant_key:string; authorization_id:string; front_id:string; failed_head_sha:string};
 type Consumed = {phase:"CONSUMED"; event_sha256:string; build_attempt_id:string};
 type Dispatched = {phase:"BUILD_DISPATCHED"; event_sha256:string; predecessor_event_sha256:string; build_attempt_id:string};
-type ReceiptView = {phase:"VERIFIED"}|Consumed|Dispatched|{phase:"HEAD_BOUND"; build_attempt_id:string};
+type HeadBound = {phase:"HEAD_BOUND"; event_sha256:string; predecessor_event_sha256:string; build_attempt_id:string; new_head_sha:string};
+type ReceiptView = {phase:"VERIFIED"}|Consumed|Dispatched|HeadBound;
 type Candidate = {new_head_sha:string; provenance:{authorization_id:string;grant_key:string;build_attempt_id:string;consumed_event_sha256:string}};
 
 export interface OwnerPayloadRepairOrchestrationPorts {
@@ -31,8 +33,12 @@ export interface OwnerPayloadRepairOrchestrationPorts {
     adopt(state:OwnerRepairState,candidate:Candidate): OwnerRepairState;
   };
   authorizeTransport(receipt:Dispatched): {build_attempt_id:string};
+  /** Finds an already-published exact candidate before any at-least-once redelivery. */
+  findPublishedCandidate?(state:OwnerRepairState,receipt:Dispatched): Promise<Candidate|undefined>|Candidate|undefined;
   dispatch(capability:{build_attempt_id:string}): Promise<Candidate>|Candidate;
   verifyLineage(candidate:Candidate): boolean;
+  /** Reconciles a durably published head without re-delivering the provider call. */
+  reconcileHeadBound?(state:OwnerRepairState,receipt:HeadBound): Promise<OwnerRepairState>|OwnerRepairState;
 }
 
 export class OwnerPayloadRepairOrchestrator {
@@ -49,7 +55,12 @@ export class OwnerPayloadRepairOrchestrator {
     let view = this.ports.receipt.view(grant.grant_key);
     if (!view) view = this.ports.receipt.verified(grant);
     if (view.phase === "VERIFIED") view = this.ports.receipt.consumed(grant.grant_key);
-    if (view.phase === "HEAD_BOUND") return state;
+    if (view.phase === "HEAD_BOUND") {
+      if (!this.ports.reconcileHeadBound) throw new Error("owner repair head-bound recovery unavailable");
+      const recovered=await this.ports.reconcileHeadBound(state,view);
+      if(recovered.state!=="CI_PENDING"||recovered.repair_cycles!==2||recovered.head_sha!==view.new_head_sha)throw new Error("owner repair head-bound recovery invalid");
+      return recovered;
+    }
     if (view.phase !== "CONSUMED" && view.phase !== "BUILD_DISPATCHED") throw new Error("owner repair receipt phase invalid");
     const consumed = view.phase === "CONSUMED" ? view : {phase:"CONSUMED" as const,event_sha256:view.predecessor_event_sha256,build_attempt_id:view.build_attempt_id};
 
@@ -58,9 +69,12 @@ export class OwnerPayloadRepairOrchestrator {
     const dispatched = view.phase === "BUILD_DISPATCHED" ? view : this.ports.receipt.dispatched(grant.grant_key);
     if (dispatched.predecessor_event_sha256 !== consumed.event_sha256 || dispatched.build_attempt_id !== consumed.build_attempt_id) throw new Error("owner repair receipt chain invalid");
 
-    const capability = this.ports.authorizeTransport(dispatched);
-    if (capability.build_attempt_id !== consumed.build_attempt_id) throw new Error("owner repair transport capability invalid");
-    const candidate = await this.ports.dispatch(capability);
+    let candidate=await this.ports.findPublishedCandidate?.(state,dispatched);
+    if(!candidate){
+      const capability = this.ports.authorizeTransport(dispatched);
+      if (capability.build_attempt_id !== consumed.build_attempt_id) throw new Error("owner repair transport capability invalid");
+      candidate = await this.ports.dispatch(capability);
+    }
     if (candidate.provenance.authorization_id !== grant.authorization_id || candidate.provenance.grant_key !== grant.grant_key || candidate.provenance.build_attempt_id !== consumed.build_attempt_id || candidate.provenance.consumed_event_sha256 !== consumed.event_sha256) throw new Error("owner repair provenance invalid");
     if (!this.ports.verifyLineage(candidate)) throw new Error("owner repair lineage denied");
     this.ports.receipt.headBound(grant.grant_key,candidate.new_head_sha);

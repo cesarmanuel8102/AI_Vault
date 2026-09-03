@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {verifyOwnerPayloadRepairAdoption} from "../../../scripts/operator_proxy/lineage.js";
-import {dispatchOwnerAuthorizedPayloadRepair,ownerPayloadRepairBuilderInput} from "../../../scripts/operator_proxy/governed_builder.js";
+import {dispatchOwnerAuthorizedPayloadRepair,ownerPayloadRepairBuilderInput,parseOwnerPayloadRepairCommitReceipt} from "../../../scripts/operator_proxy/governed_builder.js";
 import {parseCorrectionPayloadV1} from "../../../scripts/operator_proxy/correction_payload.js";
 import type {OwnerAuthorizedPayloadRepairGrant,ProxySpec} from "../../../scripts/operator_proxy/types.js";
 import type {CandidateExecutionAdapter} from "../../../scripts/operator_proxy/candidate_execution.js";
@@ -44,6 +44,13 @@ test("dedicated owner dispatcher sends one typed logical attempt without ordinar
   for(const anchor of ["OWNER_AUTHORIZATION_ID=AUTH-01",`OWNER_GRANT_KEY=${grant.grant_key}`,`OWNER_BUILD_ATTEMPT_ID=${context.build_attempt_id}`,`OWNER_CONSUMED_EVENT_SHA256=${context.consumed_event_sha256}`])assert.match(receipts[0],new RegExp(anchor));
   assert.deepEqual(first.provenance,retry.provenance);
   assert.deepEqual(first.provenance,{authorization_id:grant.authorization_id,grant_key:grant.grant_key,build_attempt_id:context.build_attempt_id,consumed_event_sha256:context.consumed_event_sha256});
+});
+
+test("owner recovery parses only an exact immutable publication receipt",()=>{
+  const message=[`fix(control-plane): owner payload repair ${spec.front_id}`,"",`OWNER_AUTHORIZATION_ID=${grant.authorization_id}`,`OWNER_GRANT_KEY=${grant.grant_key}`,`OWNER_BUILD_ATTEMPT_ID=${"1".repeat(64)}`,`OWNER_CONSUMED_EVENT_SHA256=${"2".repeat(64)}`,"BUILDER_BACKEND=opencode_ollama","BUILDER_MODEL=ollama-cloud/kimi-k2.7-code","PROVIDER_SESSION=provider-session"].join("\n");
+  assert.deepEqual(parseOwnerPayloadRepairCommitReceipt(message,spec.front_id!),{provenance:{authorization_id:grant.authorization_id,grant_key:grant.grant_key,build_attempt_id:"1".repeat(64),consumed_event_sha256:"2".repeat(64)},builder_session:"provider-session",builder_model:"ollama-cloud/kimi-k2.7-code"});
+  assert.throws(()=>parseOwnerPayloadRepairCommitReceipt(message.replace("PROVIDER_SESSION=provider-session","PROVIDER_SESSION=provider-session\nPROVIDER_SESSION=other"),spec.front_id!),/owner repair commit receipt invalid/);
+  assert.throws(()=>parseOwnerPayloadRepairCommitReceipt(message.replace(`OWNER_GRANT_KEY=${grant.grant_key}`,"OWNER_GRANT_KEY=not-a-sha"),spec.front_id!),/owner repair commit receipt invalid/);
 });
 
 test("dedicated owner dispatcher rejects mismatched grant identity and protected control paths before transport",async()=>{

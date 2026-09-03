@@ -59,6 +59,18 @@ function ownerPayloadRepairPrompt(request:OwnerPayloadRepairTransportRequest):st
 function ownerPayloadRepairReceipt(request:OwnerPayloadRepairTransportRequest,provider:{builder_backend:string;builder_model:string;provider_session:string;fallback_reason?:string}):string {
   return [`fix(control-plane): owner payload repair ${request.front_id}`,"",`OWNER_AUTHORIZATION_ID=${request.provenance.authorization_id}`,`OWNER_GRANT_KEY=${request.provenance.grant_key}`,`OWNER_BUILD_ATTEMPT_ID=${request.provenance.build_attempt_id}`,`OWNER_CONSUMED_EVENT_SHA256=${request.provenance.consumed_event_sha256}`,`BUILDER_BACKEND=${provider.builder_backend}`,`BUILDER_MODEL=${provider.builder_model}`,`PROVIDER_SESSION=${provider.provider_session}`,...(provider.fallback_reason?[`FALLBACK_REASON=${provider.fallback_reason}`]:[])].join("\n");
 }
+
+/** Validates the immutable receipt written by the exceptional publication path. */
+export function parseOwnerPayloadRepairCommitReceipt(message:string,frontId:string):{provenance:OwnerPayloadRepairBuilderInput["provenance"];builder_session:string;builder_model:string}{
+  const lines=message.replace(/\r\n/g,"\n").trimEnd().split("\n");
+  if(lines[0]!==`fix(control-plane): owner payload repair ${frontId}`)throw new Error("owner repair commit receipt invalid");
+  const value=(name:string)=>{const values=lines.filter(line=>line.startsWith(`${name}=`)).map(line=>line.slice(name.length+1));if(values.length!==1)return undefined;return values[0];};
+  const authorization_id=value("OWNER_AUTHORIZATION_ID"),grant_key=value("OWNER_GRANT_KEY"),build_attempt_id=value("OWNER_BUILD_ATTEMPT_ID"),consumed_event_sha256=value("OWNER_CONSUMED_EVENT_SHA256"),builder_backend=value("BUILDER_BACKEND"),builder_model=value("BUILDER_MODEL"),provider_session=value("PROVIDER_SESSION"),fallback=lines.filter(line=>line.startsWith("FALLBACK_REASON="));
+  const allowedLines=new Set([lines[0],"",`OWNER_AUTHORIZATION_ID=${authorization_id}`,`OWNER_GRANT_KEY=${grant_key}`,`OWNER_BUILD_ATTEMPT_ID=${build_attempt_id}`,`OWNER_CONSUMED_EVENT_SHA256=${consumed_event_sha256}`,`BUILDER_BACKEND=${builder_backend}`,`BUILDER_MODEL=${builder_model}`,`PROVIDER_SESSION=${provider_session}`,...fallback]);
+  const allowedBackends=new Set(["codex_cli_openai","opencode_github_copilot","opencode_ollama"]);
+  if(!authorization_id||!exact64(grant_key??"")||!exact64(build_attempt_id??"")||!exact64(consumed_event_sha256??"")||!builder_backend||!allowedBackends.has(builder_backend)||!builder_model||!/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(builder_model)||!provider_session||!/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(provider_session)||fallback.length>1||fallback.length===1&&!ELIGIBLE_FALLBACK_FAILURES.has(fallback[0]!.slice("FALLBACK_REASON=".length))||!lines.every(line=>allowedLines.has(line)))throw new Error("owner repair commit receipt invalid");
+  return {provenance:{authorization_id,grant_key:grant_key!,build_attempt_id:build_attempt_id!,consumed_event_sha256:consumed_event_sha256!},builder_session:provider_session,builder_model:builder_model!};
+}
 /** Dispatches the one logical exceptional attempt. Receipt and lifecycle mutations are owned by Tasks 6/8. */
 export async function dispatchOwnerAuthorizedPayloadRepair(context:OwnerPayloadRepairDispatchContext):Promise<OwnerPayloadRepairCandidate> {
   const input=validateOwnerPayloadRepairDispatch(context);
