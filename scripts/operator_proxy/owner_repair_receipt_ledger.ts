@@ -43,6 +43,12 @@ export class OwnerRepairReceiptLedger {
     }finally{if(descriptor!==undefined){closeSync(descriptor);unlinkSync(lock);}}
   }
   deriveReceiptView(grant_key:string):OwnerGrantReceiptEvent {const all=this.events();this.validate(all);const list=all.filter(event=>event.grant_key===grant_key);if(!list.length)throw new Error("owner receipt missing");return list.at(-1)!;}
+  assertCurrentConsumedReceipt(receipt:OwnerGrantReceiptEvent):void {
+    const all=this.events();this.validate(all);
+    const current=all.filter(event=>event.grant_key===receipt.grant_key).at(-1);
+    const consumed=all.filter(event=>event.front_id===receipt.front_id&&event.phase==="CONSUMED");
+    if(receipt.phase!=="CONSUMED"||!current||hash(withoutHash(current))!==hash(withoutHash(receipt))||current.event_sha256!==receipt.event_sha256||current.phase!=="CONSUMED"||consumed.length!==1||consumed[0]!.event_sha256!==receipt.event_sha256)throw new Error("owner receipt consumed view invalid");
+  }
   appendVerified(grant:OwnerAuthorizedPayloadRepairGrant):OwnerGrantReceiptEvent {const all=this.events();this.validate(all);if(all.some(event=>event.grant_key===grant.grant_key))throw new Error("owner receipt already exists");return this.append({schema_version:1,grant_key:grant.grant_key,sequence:0,phase:"VERIFIED",predecessor_event_sha256:null,authorization_id:grant.authorization_id,front_id:grant.front_id,failed_head_sha:grant.failed_head_sha,immutable_grant_snapshot_sha256:hash(grant),immutable_grant_snapshot:grant,created_at:new Date().toISOString()});}
   private next(grant_key:string,phase:Exclude<Phase,"VERIFIED">,patch:Partial<OwnerGrantReceiptEvent>={}):OwnerGrantReceiptEvent {const prior=this.deriveReceiptView(grant_key);if(!phases[prior.phase].includes(phase))throw new Error("owner receipt transition invalid");return this.append({schema_version:1,grant_key,sequence:prior.sequence+1,phase,predecessor_event_sha256:prior.event_sha256,authorization_id:prior.authorization_id,front_id:prior.front_id,failed_head_sha:prior.failed_head_sha,immutable_grant_snapshot_sha256:prior.immutable_grant_snapshot_sha256,build_attempt_id:prior.build_attempt_id,...patch,created_at:new Date().toISOString()});}
   hasConsumedOwnerException(front_id:string):boolean {const all=this.events();this.validate(all);return all.some(event=>event.front_id===front_id&&["CONSUMED","BUILD_DISPATCHED","HEAD_BOUND","TERMINAL"].includes(event.phase));}

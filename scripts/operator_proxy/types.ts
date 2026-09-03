@@ -7,7 +7,7 @@ export type LifecycleState =
   | "CI_PENDING" | "REVIEWING" | "REPAIRING" | "READY_TO_MERGE" | "MERGING"
   | "MERGED" | "INSTALL_PENDING" | "INSTALLING" | "RUNTIME_PILOT_PENDING"
   | "RUNTIME_PILOT_RUNNING" | "RUNTIME_VERIFIED" | "CLOSEOUT_PENDING"
-  | "CLOSEOUT_MERGED" | "TERMINAL_COMPLETED" | "BLOCKED" | "ESCALATED";
+  | "CLOSEOUT_MERGED" | "TERMINAL_COMPLETED" | "BLOCKED" | "OWNER_REPAIR_AUTHORIZED" | "ESCALATED";
 export interface ReviewerOutput {verdict:Review;head_sha:string;summary:string;findings:{severity:"P0"|"P1"|"P2";title:string;evidence:string;required_correction:string}[]}
 export type PolicyDecision = "APPROVE"|"REPAIR"|"BLOCK"|"ESCALATE_TO_OWNER";
 export interface CampaignAuthorization {authorization_id:string;repository:string;owner_principal:string}
@@ -44,6 +44,7 @@ export interface LifecycleRecord {
   // Redacted, bounded evidence for diagnosis only; never used for lifecycle control.
   last_error_detail?: string;
   builder_retry_reason?: "BUILDER_FAILURE";
+  owner_payload_repair?: {grant_key:string;consumed_event_sha256:string;build_attempt_id:string};
   merge_reconciliation?: {
     source: "GITHUB_EXTERNALLY_MERGED_PR";
     issue: number;

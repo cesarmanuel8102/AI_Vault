@@ -4,6 +4,7 @@ import type {LifecycleRecord, LifecycleState} from "./types.js";
 import {CONTROL_PLANE_VERSION} from "./lineage.js";
 import {transitionLifecycle} from "./state_machine.js";
 import {redactSensitiveData,safeJson} from "./redaction.js";
+import {OwnerRepairReceiptLedger,type OwnerGrantReceiptEvent} from "./owner_repair_receipt_ledger.js";
 
 const safeFront = (front: string) => {
   if (!/^[A-Z0-9][A-Z0-9._-]{5,127}$/.test(front)) throw new Error("front id invalid");
@@ -47,7 +48,21 @@ export class LifecycleStore {
     appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_saved",front_id:persisted.front_id,state:persisted.state,updated_utc:persisted.updated_utc})}\n`);
   }
   advance(record: LifecycleRecord, next: LifecycleState, patch: Partial<LifecycleRecord>={}): LifecycleRecord {
+    if(record.state==="OWNER_REPAIR_AUTHORIZED"||next==="OWNER_REPAIR_AUTHORIZED")throw new Error("owner payload repair transition requires dedicated operation");
     const updated={...record,...patch,state:transitionLifecycle(record.state,next),updated_utc:new Date().toISOString()}; this.save(updated); return updated;
+  }
+  authorizeOwnerPayloadRepair(record:LifecycleRecord,ledger:OwnerRepairReceiptLedger,receipt:OwnerGrantReceiptEvent):LifecycleRecord {
+    const exact=record.state==="BLOCKED"&&record.last_error==="CI_FAILED"&&record.repair_cycles===2&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&!!record.head_sha&&record.completed_effects.length>=2&&receipt.phase==="CONSUMED"&&receipt.front_id===record.front_id&&receipt.failed_head_sha===record.head_sha&&!!receipt.build_attempt_id&&!record.owner_payload_repair;
+    if(!exact)throw new Error("owner payload repair authorization denied");
+    try{ledger.assertCurrentConsumedReceipt(receipt);}catch{throw new Error("owner payload repair authorization denied");}
+    const updated={...record,state:transitionLifecycle(record.state,"OWNER_REPAIR_AUTHORIZED"),owner_payload_repair:{grant_key:receipt.grant_key,consumed_event_sha256:receipt.event_sha256,build_attempt_id:receipt.build_attempt_id!},updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_owner_payload_repair_authorized",front_id:record.front_id,grant_key:receipt.grant_key,consumed_event_sha256:receipt.event_sha256,build_attempt_id:receipt.build_attempt_id,repair_cycles:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
+  }
+  beginOwnerPayloadRepairBuild(record:LifecycleRecord,receipt:OwnerGrantReceiptEvent):LifecycleRecord {
+    const binding=record.owner_payload_repair,exact=record.state==="OWNER_REPAIR_AUTHORIZED"&&record.repair_cycles===2&&!!binding&&receipt.phase==="CONSUMED"&&binding.grant_key===receipt.grant_key&&binding.consumed_event_sha256===receipt.event_sha256&&binding.build_attempt_id===receipt.build_attempt_id&&receipt.front_id===record.front_id&&receipt.failed_head_sha===record.head_sha;
+    if(!exact)throw new Error("owner payload repair build denied");
+    const updated={...record,state:transitionLifecycle(record.state,"BUILDING"),updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_owner_payload_repair_build_started",front_id:record.front_id,grant_key:binding.grant_key,consumed_event_sha256:binding.consumed_event_sha256,build_attempt_id:binding.build_attempt_id,repair_cycles:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
   }
   effect(record: LifecycleRecord, key: string): LifecycleRecord {
     if(!/^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/.test(key)) throw new Error("effect key invalid");
