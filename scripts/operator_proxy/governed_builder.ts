@@ -2,7 +2,7 @@ import {execFileSync as rawExecFileSync} from "node:child_process";
 import {existsSync,lstatSync,mkdirSync,readFileSync,readdirSync,realpathSync,rmSync} from "node:fs";
 import {join,posix,resolve,sep} from "node:path";
 import {randomUUID} from "node:crypto";
-import type {LifecycleRecord,ProxySpec} from "./types.js";
+import type {LifecycleRecord,ProxySpec,OwnerAuthorizedPayloadRepairGrant,CorrectionPayloadV1} from "./types.js";
 import {BuilderBackendError,ELIGIBLE_FALLBACK_FAILURES,type BuilderInput,type BuilderResult} from "./builder_backend.js";
 import type {EffectAssertion} from "./external_effect_guard.js";
 import {redactedError} from "./redaction.js";
@@ -16,6 +16,12 @@ export interface BuilderBus {
   bindPrToIssue(issue:number,pr:number):void;
   repairPrompt(issue:number):string;
   prIdentity(pr:number):any;
+}
+export interface OwnerPayloadRepairBuilderInput {front_id:string;work_branch:string;failed_head_sha:string;correction_payload:CorrectionPayloadV1;provenance:{authorization_id:string;grant_key:string;build_attempt_id:string;consumed_event_sha256:string}}
+/** Constructs the only exceptional-builder payload; raw owner comment text is never accepted. */
+export function ownerPayloadRepairBuilderInput(grant:OwnerAuthorizedPayloadRepairGrant,input:{build_attempt_id:string;consumed_event_sha256:string;correction_payload:CorrectionPayloadV1}):OwnerPayloadRepairBuilderInput {
+  if(!/^[0-9a-f]{64}$/.test(input.build_attempt_id)||!/^[0-9a-f]{64}$/.test(input.consumed_event_sha256)||input.correction_payload!==grant.correction_payload)throw new Error("owner repair consumed provenance invalid");
+  return {front_id:grant.front_id,work_branch:grant.work_branch,failed_head_sha:grant.failed_head_sha,correction_payload:grant.correction_payload,provenance:{authorization_id:grant.authorization_id,grant_key:grant.grant_key,build_attempt_id:input.build_attempt_id,consumed_event_sha256:input.consumed_event_sha256}};
 }
 
 function native(file:string,args:string[],options:any={}){try{return rawExecFileSync(file,args,{...options,encoding:"utf8",stdio:"pipe"});}catch(error){throw new Error(redactedError(error));}}

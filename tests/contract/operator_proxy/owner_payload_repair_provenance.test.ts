@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {verifyOwnerPayloadRepairAdoption} from "../../../scripts/operator_proxy/lineage.js";
+import {ownerPayloadRepairBuilderInput} from "../../../scripts/operator_proxy/governed_builder.js";
 import type {OwnerAuthorizedPayloadRepairGrant,ProxySpec} from "../../../scripts/operator_proxy/types.js";
 
 const base="a".repeat(40),failed="b".repeat(40),head="c".repeat(40);
@@ -15,4 +16,11 @@ test("owner adoption requires exact descendant head, PR identity, paths, and all
     (x:any)=>x.pr.identity.headRefOid=failed,(x:any)=>x.remote_branch_head=failed,(x:any)=>x.pr.identity.headRefName="other",(x:any)=>x.pr.identity.baseRefOid=failed,(x:any)=>x.pr.identity.files=[{path:"trading/x.py"}],
     (x:any)=>x.isAncestor=()=>false,(x:any)=>x.provenance.consumed_event_sha256="3".repeat(64),
   ]) {const value=observed();mutate(value);assert.equal(verifyOwnerPayloadRepairAdoption(value),false);}
+});
+
+test("exceptional builder input is typed, anchored, and contains no free-form owner body",()=>{
+  const input=ownerPayloadRepairBuilderInput(grant,{build_attempt_id:"1".repeat(64),consumed_event_sha256:"2".repeat(64),correction_payload:grant.correction_payload});
+  assert.deepEqual(input.provenance,{authorization_id:grant.authorization_id,grant_key:grant.grant_key,build_attempt_id:"1".repeat(64),consumed_event_sha256:"2".repeat(64)});
+  assert.equal(JSON.stringify(input).includes("owner_comment"),false);
+  assert.throws(()=>ownerPayloadRepairBuilderInput(grant,{build_attempt_id:"1".repeat(64),consumed_event_sha256:"future",correction_payload:grant.correction_payload}),/consumed/);
 });
