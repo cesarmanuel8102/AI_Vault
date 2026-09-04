@@ -71,11 +71,20 @@ test("Owner grant evidence requires the exact canonical authorization body hash"
   assert.throws(()=>parseOwnerGrantEvidenceV1({...valid,authorization_body_sha256:"0".repeat(64)}),/authorization body hash/i);
 });
 
-test("GitHubBus exposes Issue comments as read-only evidence and rejects incomplete responses",()=>{
+test("GitHubBus reads paginated REST Issue comments with decimal IDs for Owner evidence",()=>{
   const bus=new GitHubBus("gh",repository);
-  (bus as any).json=()=>({comments:[{id:1,body:"evidence"}]});
-  assert.deepEqual(bus.issueComments(248),[{id:1,body:"evidence"}]);
-  (bus as any).json=()=>({comments:{}});
+  let received:string[]=[];
+  (bus as any).call=(args:string[])=>{
+    received=args;
+    return JSON.stringify([[{id:5546754722,body:"evidence",user:{login:owner}}]]);
+  };
+  assert.deepEqual(bus.issueComments(248),[{id:"5546754722",body:"evidence",author:{login:owner}}]);
+  assert.deepEqual(received,["api","--paginate","--slurp",`repos/${repository}/issues/248/comments?per_page=100`]);
+});
+
+test("GitHubBus rejects incomplete REST Issue comment evidence",()=>{
+  const bus=new GitHubBus("gh",repository);
+  (bus as any).call=()=>JSON.stringify([[{id:"IC_kwDOR1Esic8AAAABSpzCog",body:"evidence",user:{login:owner}}]]);
   assert.throws(()=>bus.issueComments(248),/comments response invalid/);
 });
 
