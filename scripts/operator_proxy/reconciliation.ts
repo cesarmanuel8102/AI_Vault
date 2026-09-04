@@ -201,7 +201,7 @@ function planBlockedCi(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts
 
 function eligibleOwnerPayloadRepair(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): boolean {
   const record=snapshot.record,grant=ports.verifiedOwnerPayloadRepairGrant?.(record);
-  if(!grant||!record.pr||!record.head_sha||grant.authorization_id!==snapshot.spec.authorization_id||grant.repository!==snapshot.spec.repository||grant.roadmap_id!==snapshot.spec.roadmap_id||grant.roadmap_item_id!==snapshot.spec.roadmap_item_id||grant.front_id!==record.front_id||grant.issue!==record.issue||grant.pr!==record.pr||grant.work_branch!==snapshot.spec.work_branch||grant.canonical_base_sha!==snapshot.spec.expected_base_sha||grant.failed_head_sha!==record.head_sha||grant.eligible_failure_class!=="CI_FAILED"||grant.max_extra_builds!==1)return false;
+  if(!grant||!record.pr||!record.head_sha||record.base_sha!==snapshot.spec.expected_base_sha||!remoteMatchesSnapshot(snapshot)||grant.authorization_id!==snapshot.spec.authorization_id||grant.repository!==snapshot.spec.repository||grant.roadmap_id!==snapshot.spec.roadmap_id||grant.roadmap_item_id!==snapshot.spec.roadmap_item_id||grant.front_id!==record.front_id||grant.issue!==record.issue||grant.pr!==record.pr||grant.work_branch!==snapshot.spec.work_branch||grant.canonical_base_sha!==snapshot.spec.expected_base_sha||grant.failed_head_sha!==record.head_sha||grant.eligible_failure_class!=="CI_FAILED"||grant.max_extra_builds!==1)return false;
   const receipt=ports.ownerPayloadRepairReceipt?.(grant.grant_key);
   return receipt?.phase==="CONSUMED"&&receipt.grant_key===grant.grant_key&&receipt.front_id===record.front_id&&receipt.failed_head_sha===record.head_sha&&typeof receipt.build_attempt_id==="string"&&/^[0-9a-f]{64}$/.test(receipt.build_attempt_id);
 }
@@ -290,7 +290,10 @@ function samePrPayloadAdvanced(snapshot: CanonicalLifecycleSnapshot): boolean {
 }
 
 function remoteMatchesSnapshot(snapshot: CanonicalLifecycleSnapshot): boolean {
-  return snapshot.observeRemoteHead() === snapshot.record.head_sha && snapshot.observePr()?.identity.headRefOid === snapshot.record.head_sha;
+  const expected = snapshot.record.head_sha;
+  const observations = [safe(() => snapshot.observeRemoteHead()), safe(() => snapshot.observePr())?.identity.headRefOid]
+    .filter((head): head is string => typeof head === "string");
+  return observations.length > 0 && observations.every(head => head === expected);
 }
 
 function adoptPublishedInitialCandidate(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {

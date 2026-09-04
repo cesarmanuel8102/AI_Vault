@@ -20,6 +20,8 @@ type Candidate = {new_head_sha:string; provenance:{authorization_id:string;grant
 
 export interface OwnerPayloadRepairOrchestrationPorts {
   verify(state:OwnerRepairState): Grant;
+  /** Idempotent reconciliation gate that must pass before consuming or resuming a BLOCKED owner repair. */
+  preflight?(state:OwnerRepairState,grant:Grant):void;
   receipt: {
     view(grantKey:string): ReceiptView|undefined;
     verified(grant:Grant): {phase:"VERIFIED"};
@@ -53,6 +55,7 @@ export class OwnerPayloadRepairOrchestrator {
     const grant = this.ports.verify(state);
     if (grant.failed_head_sha !== state.head_sha) throw new Error("owner repair grant head mismatch");
     let view = this.ports.receipt.view(grant.grant_key);
+    if(state.state==="BLOCKED")this.ports.preflight?.(state,grant);
     if (!view) view = this.ports.receipt.verified(grant);
     if (view.phase === "VERIFIED") view = this.ports.receipt.consumed(grant.grant_key);
     if (view.phase === "HEAD_BOUND") {

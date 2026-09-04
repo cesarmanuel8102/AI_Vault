@@ -17,3 +17,9 @@ test("owner transport capability requires the exact durable BUILD_DISPATCHED rec
   for(const [name,mutate] of [["consumed",(x:any)=>x.phase="CONSUMED"],["head-bound",(x:any)=>x.phase="HEAD_BOUND"],["event",(x:any)=>x.event_sha256="0".repeat(64)],["predecessor",(x:any)=>x.predecessor_event_sha256="0".repeat(64)],["front",(x:any)=>x.front_id="OTHER"],["grant",(x:any)=>x.grant_key="0".repeat(64)],["authorization",(x:any)=>x.authorization_id="OTHER"],["attempt",(x:any)=>x.build_attempt_id="0".repeat(64)],["failed-head",(x:any)=>x.failed_head_sha="0".repeat(40)]] as const){const value=receipt();mutate(value);assert.throws(()=>guard().authorizeOwnerPayloadRepairTransport(context,value),/denied/,name);}
   assert.throws(()=>boundary.assertOwnerPayloadRepairTransport({...cap}),/denied/);
 });
+
+test("owner transport capability is cleared when lifecycle leaves the exceptional build",()=>{
+  const boundary=guard(),cap=boundary.authorizeOwnerPayloadRepairTransport({spec,state,grant,build_attempt_id:attempt,consumed_event_sha256:consumed,build_dispatched_event_sha256:dispatch},receipt());
+  boundary.bind(spec,{...state,state:"CI_PENDING",head_sha:"0".repeat(40),owner_payload_repair:undefined});
+  assert.throws(()=>boundary.assertOwnerPayloadRepairTransport(cap),/owner payload repair transport denied/);
+});

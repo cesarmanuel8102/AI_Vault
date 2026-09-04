@@ -45,3 +45,16 @@ test("owner repair does not bind a head when lineage rejects the published candi
   assert.equal(dispatched, 1);
   assert.equal(bound, 0);
 });
+
+test("owner authorization preflight blocks before any receipt is consumed",async()=>{
+  let consumed=0,dispatched=0;
+  const orchestrator=new OwnerPayloadRepairOrchestrator({
+    verify:()=>({grant_key:"d".repeat(64),authorization_id:"AUTH",front_id:"BRAIN-101-R3-OWNER-01",failed_head_sha:failed}),
+    receipt:{view:()=>undefined,verified:()=>({phase:"VERIFIED" as const}),consumed:()=>{consumed++;return {phase:"CONSUMED" as const,event_sha256:"e".repeat(64),build_attempt_id:"f".repeat(64)};},dispatched:()=>{dispatched++;throw new Error("unexpected");},headBound:()=>{throw new Error("unexpected");}},
+    lifecycle:{authorize:()=>{throw new Error("unexpected");},begin:()=>{throw new Error("unexpected");},adopt:()=>{throw new Error("unexpected");}},
+    authorizeTransport:()=>{throw new Error("unexpected");},dispatch:()=>{throw new Error("unexpected");},verifyLineage:()=>false,
+    preflight:()=>{throw new Error("owner authorization reconciliation denied");},
+  } as any);
+  await assert.rejects(()=>orchestrator.resume({state:"BLOCKED",last_error:"CI_FAILED",repair_cycles:2,head_sha:failed,base_sha:base}),/reconciliation denied/);
+  assert.equal(consumed,0);assert.equal(dispatched,0);
+});

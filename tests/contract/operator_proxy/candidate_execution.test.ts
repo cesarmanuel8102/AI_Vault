@@ -71,6 +71,21 @@ test("neutral kernel accepts an uncommitted provider candidate only after receip
   assert.deepEqual(fixture.calls,["provider:attempt-immutable-1","tests","diff-check","push","bind"]);
 });
 
+test("owner-style attempt separates the canonical adoption base from the builder starting head",async()=>{
+  const canonical=sha("a"),failed=sha("d"),fixture=adapter({
+    prepare:()=>({worktree:"C:/synthetic",starting_head:failed}),
+    invokeProvider:async request=>{
+      fixture.calls.push(`provider:${request.idempotency_key??"none"}`);
+      return {executor_role:"codex_control_plane",builder_backend:"codex_cli_openai",builder_model:"gpt-5.6-sol",builder_session:"builder-1",provider_session:"provider-1",base_sha:failed,head_sha:fixture.candidateHead,branch:"control-plane/synthetic-candidate"};
+    },
+    changedPaths:(_worktree,base)=>{fixture.calls.push(`paths:${base}`);return ["docs/result.md"];},
+    diffCheck:(_worktree,base)=>fixture.calls.push(`diff:${base}`),
+  });
+  const result=await new CandidateExecutionKernel(fixture.adapter).publish({...attempt({expected_base_sha:canonical}) as any,starting_head_sha:failed});
+  assert.equal(result.base_sha,canonical);
+  assert.deepEqual(fixture.calls,["provider:attempt-immutable-1",`paths:${failed}`,"tests",`diff:${failed}`,"push","bind"]);
+});
+
 test("neutral kernel rejects remote readback mismatch after the guarded push",async()=>{
   const fixture=adapter({remoteHead:()=>sha("c")});
   await assert.rejects(new CandidateExecutionKernel(fixture.adapter).publish(attempt()),/candidate remote head mismatch/);

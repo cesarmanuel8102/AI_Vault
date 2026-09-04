@@ -44,6 +44,44 @@ test("restart after a remote publish adopts the exact candidate before redeliver
   assert.equal(result.state,"CI_PENDING");assert.equal(discoveries,1);assert.equal(dispatches,0);assert.equal(bound,1);
 });
 
+test("restart from a durable dispatched owner build does not rerun fresh authorization preflight",async()=>{
+  let preflight=0,dispatches=0;
+  const result=await new OwnerPayloadRepairOrchestrator({
+    verify:()=>({grant_key:grant,authorization_id:"AUTH",front_id:"BRAIN-101-R3-CRASH-01",failed_head_sha:failed}),
+    preflight:()=>{preflight++;throw new Error("must not reauthorize a consumed grant");},
+    receipt:{view:()=>({phase:"BUILD_DISPATCHED" as const,event_sha256:dispatched,predecessor_event_sha256:consumed,build_attempt_id:attempt}),verified:()=>{throw new Error("unexpected");},consumed:()=>{throw new Error("unexpected");},dispatched:()=>{throw new Error("unexpected");},headBound:()=>{}},
+    lifecycle:{authorize:()=>{throw new Error("unexpected");},begin:()=>{throw new Error("unexpected");},adopt:(state:any)=>({...state,state:"CI_PENDING" as const,head_sha:head,repair_cycles:2})},
+    findPublishedCandidate:()=>({new_head_sha:head,provenance:{authorization_id:"AUTH",grant_key:grant,build_attempt_id:attempt,consumed_event_sha256:consumed}}),
+    authorizeTransport:()=>{throw new Error("unexpected");},dispatch:()=>{dispatches++;throw new Error("unexpected");},verifyLineage:()=>true,
+  } as any).resume({state:"BUILDING",repair_cycles:2,head_sha:failed,base_sha:base});
+  assert.equal(result.state,"CI_PENDING");assert.equal(preflight,0);assert.equal(dispatches,0);
+});
+
+test("restart after a consumed receipt revalidates identity without consuming a new grant",async()=>{
+  let preflight=0,dispatches=0;
+  const result=await new OwnerPayloadRepairOrchestrator({
+    verify:()=>({grant_key:grant,authorization_id:"AUTH",front_id:"BRAIN-101-R3-CRASH-01",failed_head_sha:failed}),
+    preflight:()=>{preflight++;},
+    receipt:{view:()=>({phase:"CONSUMED" as const,event_sha256:consumed,build_attempt_id:attempt}),verified:()=>{throw new Error("unexpected");},consumed:()=>{throw new Error("unexpected");},dispatched:()=>({phase:"BUILD_DISPATCHED" as const,event_sha256:dispatched,predecessor_event_sha256:consumed,build_attempt_id:attempt}),headBound:()=>{}},
+    lifecycle:{authorize:(state:any)=>({...state,state:"OWNER_REPAIR_AUTHORIZED" as const}),begin:(state:any)=>({...state,state:"BUILDING" as const}),adopt:(state:any)=>({...state,state:"CI_PENDING" as const,head_sha:head,repair_cycles:2})},
+    authorizeTransport:()=>({build_attempt_id:attempt}),dispatch:()=>{dispatches++;return {new_head_sha:head,provenance:{authorization_id:"AUTH",grant_key:grant,build_attempt_id:attempt,consumed_event_sha256:consumed}};},verifyLineage:()=>true,
+  } as any).resume({state:"BLOCKED",last_error:"CI_FAILED",repair_cycles:2,head_sha:failed,base_sha:base});
+  assert.equal(result.state,"CI_PENDING");assert.equal(preflight,1);assert.equal(dispatches,1);
+});
+
+test("consumed receipt fails closed before dispatch when blocked-state identity revalidation fails",async()=>{
+  let preflight=0,dispatches=0;
+  const ports:any={
+    verify:()=>({grant_key:grant,authorization_id:"AUTH",front_id:"BRAIN-101-R3-CRASH-01",failed_head_sha:failed}),
+    preflight:()=>{preflight++;throw new Error("owner authorization reconciliation denied");},
+    receipt:{view:()=>({phase:"CONSUMED" as const,event_sha256:consumed,build_attempt_id:attempt}),verified:()=>{throw new Error("unexpected");},consumed:()=>{throw new Error("unexpected");},dispatched:()=>{throw new Error("unexpected");},headBound:()=>{throw new Error("unexpected");}},
+    lifecycle:{authorize:()=>{throw new Error("unexpected");},begin:()=>{throw new Error("unexpected");},adopt:()=>{throw new Error("unexpected");}},
+    authorizeTransport:()=>{throw new Error("unexpected");},dispatch:()=>{dispatches++;throw new Error("unexpected");},verifyLineage:()=>false,
+  };
+  await assert.rejects(()=>new OwnerPayloadRepairOrchestrator(ports).resume({state:"BLOCKED",last_error:"CI_FAILED",repair_cycles:2,head_sha:failed,base_sha:base}),/owner authorization reconciliation denied/);
+  assert.equal(preflight,1);assert.equal(dispatches,0);
+});
+
 test("every durable pre-head boundary preserves the single owner attempt and repair budget",async()=>{
   const cases:[string,any,undefined|"VERIFIED"|"CONSUMED"|"BUILD_DISPATCHED"][]=[
     ["before verified",{state:"BLOCKED",last_error:"CI_FAILED",repair_cycles:2,head_sha:failed,base_sha:base},undefined],
