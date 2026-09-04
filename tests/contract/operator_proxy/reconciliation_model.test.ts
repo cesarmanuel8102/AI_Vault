@@ -196,6 +196,9 @@ test("model-based: only a verified consumed owner grant can authorize one exhaus
   const authorized:any = {...ports(false), verifiedOwnerPayloadRepairGrant: () => grant, ownerPayloadRepairReceipt: () => receipt};
   assert.deepEqual([record.issue,record.pr,record.head_sha,record.front_id,snapshot.spec.expected_base_sha],[issue,prNumber,SHA(3),spec.front_id,SHA(2)]);
   assert.equal(deriveReconciliationPlan(snapshot, authorized).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
+  const exhausted = normalizeObservedFacts({...spec, expected_base_sha: SHA(2)}, {...record, last_error: "REPAIR_LIMIT_REACHED"}, {bus: makeBus(world), loadDecision: () => undefined});
+  assert.equal(deriveReconciliationPlan(exhausted, authorized).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
+  assert.notEqual(deriveReconciliationPlan(exhausted, {...authorized, ownerPayloadRepairReceipt: () => ({...receipt, phase: "VERIFIED"})}).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
   const staleBase = normalizeObservedFacts({...spec, expected_base_sha: SHA(2)}, {...record, base_sha: SHA(1)}, {bus: makeBus(world), loadDecision: () => undefined});
   assert.notEqual(deriveReconciliationPlan(staleBase, authorized).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
   const staleRemote:any={...snapshot,observeRemoteHead:()=>SHA(4),observePr:()=>snapshot.observePr()};

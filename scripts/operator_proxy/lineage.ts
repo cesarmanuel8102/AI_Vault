@@ -246,7 +246,9 @@ export function normalizeObservedFacts(spec: ProxySpec, record: LifecycleRecord,
     ...lazyObservations(bus, spec, record),
     facts: {
       builderFailure,
-      ciBlocked: record.state === "BLOCKED" && record.last_error === "CI_FAILED",
+      // Exhaustion is the terminal form of the same failed-CI candidate. An
+      // exceptional build still requires the planner to validate a consumed Owner grant.
+      ciBlocked: record.state === "BLOCKED" && ["CI_FAILED", "REPAIR_LIMIT_REACHED"].includes(record.last_error ?? ""),
       policyBlocked: record.state === "BLOCKED" && record.last_error === "POLICY_BLOCK",
       ownerEscalated: record.state === "ESCALATED" && record.last_error === "OWNER_AUTHORITY_REQUIRED",
       privilegedInstall: record.state === "ESCALATED" && record.last_error === "LOCAL_PRIVILEGE_REQUIRED",
