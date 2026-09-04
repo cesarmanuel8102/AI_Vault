@@ -64,6 +64,10 @@ export class OwnerCriticalMergeReceiptLedger {
     const all=this.events();this.validate(all);const current=all.filter(event=>event.critical_merge_key===receipt.critical_merge_key).at(-1);
     if(receipt.phase!=="MERGE_DISPATCHED"||!current||current.event_sha256!==receipt.event_sha256||current.phase!=="MERGE_DISPATCHED"||!sameIdentity(current,receipt))throw new Error("critical merge receipt dispatched view invalid");
   }
+  assertMergedBoundToConsumedReceipt(critical_merge_key:string,consumed_event_sha256:string,merge_commit_sha:string):void {
+    const all=this.events();this.validate(all);const chain=all.filter(event=>event.critical_merge_key===critical_merge_key);
+    if(chain.length!==4||chain[0]?.phase!=="VERIFIED"||chain[1]?.phase!=="CONSUMED"||chain[1]?.event_sha256!==consumed_event_sha256||chain[2]?.phase!=="MERGE_DISPATCHED"||chain[3]?.phase!=="MERGED_BOUND"||chain[3]?.merge_commit_sha!==merge_commit_sha)throw new Error("critical merge receipt bound chain invalid");
+  }
   appendVerified(authorization:OwnerAuthorizedCriticalMerge):OwnerCriticalMergeReceiptEvent {
     const snapshot=hash(authorization);
     return this.append({schema_version:1,critical_merge_key:authorization.critical_merge_key,sequence:0,phase:"VERIFIED",predecessor_event_sha256:null,authorization_id:authorization.authorization_id,repository:authorization.repository,issue:authorization.issue,front_id:authorization.front_id,pr:authorization.pr,base_branch:authorization.base_branch,base_sha:authorization.base_sha,head_branch:authorization.head_branch,head_sha:authorization.head_sha,policy_decision_id:authorization.policy_decision_id,policy_decision_key:authorization.policy_decision_key,immutable_authorization_snapshot_sha256:snapshot,immutable_authorization_snapshot:authorization,created_at:new Date().toISOString()},events=>{if(events.some(event=>event.critical_merge_key===authorization.critical_merge_key||event.authorization_id===authorization.authorization_id))throw new Error("critical merge receipt already exists");});

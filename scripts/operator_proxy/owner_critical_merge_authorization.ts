@@ -7,6 +7,8 @@ export interface OwnerCriticalMergeEvidenceV1 {schema_version:1;marker:"OWNER_AU
 export interface CriticalMergeCiEvidence {evidence_id:string;evidence_sha256:string;head_sha:string}
 export interface CriticalMergeReviewReceipt {receipt_id:string;receipt_sha256:string;head_sha:string;model:string;verdict:Review;findings_count:number}
 export interface OwnerCriticalMergeVerificationInput {authorization:{comment_id:string;author_login:string;evidence:unknown};sources:OwnerAuthoritySources;decision:NormalizedDecision;ci:CriticalMergeCiEvidence;review:CriticalMergeReviewReceipt;base_branch:string;head_branch:string}
+export interface OwnerCriticalMergeComment {id:unknown;author?:{login?:unknown};body?:unknown}
+export interface OwnerCriticalMergeDiscoveryInput extends Omit<OwnerCriticalMergeVerificationInput,"authorization"> {comments:readonly OwnerCriticalMergeComment[]}
 
 const plain=(value:unknown):value is Record<string,unknown>=>!!value&&typeof value==="object"&&!Array.isArray(value)&&Object.getPrototypeOf(value)===Object.prototype;
 const exactKeys=(value:Record<string,unknown>,keys:readonly string[])=>Object.keys(value).length===keys.length&&keys.every(key=>Object.hasOwn(value,key));
@@ -38,4 +40,15 @@ export function verifyOwnerAuthorizedCriticalMerge(input:OwnerCriticalMergeVerif
   if(evidence.authorization_id!==decision.authorization_id||evidence.repository!==decision.repository||evidence.issue!==decision.issue||evidence.pr!==decision.pr||evidence.base_sha!==decision.base_sha||evidence.head_sha!==decision.head_sha||evidence.base_branch!==input.base_branch||evidence.head_branch!==input.head_branch||evidence.policy_decision_id!==decision.decision_id||evidence.policy_decision_key!==decision.decision_key||evidence.policy_sha256!==decision.policy_sha256||evidence.ci_evidence_id!==ci.evidence_id||evidence.ci_evidence_sha256!==ci.evidence_sha256||evidence.head_sha!==ci.head_sha||evidence.review_receipt_id!==review.receipt_id||evidence.review_receipt_sha256!==review.receipt_sha256||evidence.reviewer_model!==review.model||evidence.review_verdict!==review.verdict||evidence.review_findings_count!==review.findings_count||evidence.head_sha!==review.head_sha)throw new Error("owner critical merge invalid");
   const critical_merge_key=canonicalSha({authorization_body_sha256:evidence.authorization_body_sha256,owner_comment_id:input.authorization.comment_id,owner_principal});
   return {schema_version:1,authorization_id:evidence.authorization_id,critical_merge_key,owner_principal,owner_comment_id:input.authorization.comment_id,repository:evidence.repository,issue:evidence.issue,front_id:evidence.front_id,pr:evidence.pr,base_branch:evidence.base_branch,base_sha:evidence.base_sha,head_branch:evidence.head_branch,head_sha:evidence.head_sha,policy_decision_id:evidence.policy_decision_id,policy_decision_key:evidence.policy_decision_key,policy_sha256:evidence.policy_sha256,policy_outcome:"ESCALATE_TO_OWNER",ci_evidence_id:evidence.ci_evidence_id,ci_evidence_sha256:evidence.ci_evidence_sha256,review_receipt_id:evidence.review_receipt_id,review_receipt_sha256:evidence.review_receipt_sha256,reviewer_model:evidence.reviewer_model,review_verdict:"PASS",review_findings_count:0,risk:"CRITICAL",action:"OWNER_AUTHORIZED_CRITICAL_MERGE",max_uses:1,authorization_body_sha256:evidence.authorization_body_sha256};
+}
+
+export function discoverOwnerAuthorizedCriticalMerge(input:OwnerCriticalMergeDiscoveryInput):OwnerAuthorizedCriticalMerge {
+  const marker="OWNER_AUTHORIZED_CRITICAL_MERGE_V1";
+  const candidates=input.comments.filter(comment=>typeof comment?.body==="string"&&comment.body.includes(marker));
+  if(candidates.length!==1)throw new Error("owner critical merge authorization evidence missing or ambiguous");
+  const comment=candidates[0]!,body=String(comment.body).replace(/\r\n/g,"\n"),match=/^BEGIN_OWNER_AUTHORIZED_CRITICAL_MERGE_V1\n(\{.*\})\nEND_OWNER_AUTHORIZED_CRITICAL_MERGE_V1$/.exec(body);
+  const id=typeof comment.id==="number"?String(comment.id):comment.id;
+  if(!match||typeof id!=="string"||!/^\d+$/.test(id)||typeof comment.author?.login!=="string")throw new Error("owner critical merge authorization evidence invalid");
+  let evidence:unknown;try{evidence=JSON.parse(match[1]!);}catch{throw new Error("owner critical merge authorization evidence invalid");}
+  return verifyOwnerAuthorizedCriticalMerge({...input,authorization:{comment_id:id,author_login:comment.author.login,evidence}});
 }

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
-import {parseOwnerCriticalMergeEvidenceV1,verifyOwnerAuthorizedCriticalMerge} from "../../../scripts/operator_proxy/owner_critical_merge_authorization.js";
+import {discoverOwnerAuthorizedCriticalMerge,parseOwnerCriticalMergeEvidenceV1,verifyOwnerAuthorizedCriticalMerge} from "../../../scripts/operator_proxy/owner_critical_merge_authorization.js";
 import type {Decision,OwnerAuthoritySources} from "../../../scripts/operator_proxy/types.js";
 
 const repository="cesarmanuel8102/AI_Vault",owner="cesarmanuel8102",base="a".repeat(40),head="b".repeat(40);
@@ -46,4 +46,11 @@ test("Owner critical merge evidence rejects unknown fields and a noncanonical bo
   assert.deepEqual(parseOwnerCriticalMergeEvidenceV1(valid),valid);
   assert.throws(()=>parseOwnerCriticalMergeEvidenceV1({...valid,unknown:true}),/owner critical merge evidence/i);
   assert.throws(()=>parseOwnerCriticalMergeEvidenceV1({...valid,authorization_body_sha256:"0".repeat(64)}),/authorization body hash/i);
+});
+
+test("Owner critical merge discovery accepts exactly one framed canonical Owner envelope",()=>{
+  const valid=evidence(),comments=[{id:5000002771,author:{login:owner},body:`BEGIN_OWNER_AUTHORIZED_CRITICAL_MERGE_V1\n${JSON.stringify(valid)}\nEND_OWNER_AUTHORIZED_CRITICAL_MERGE_V1`}];
+  const authorization=discoverOwnerAuthorizedCriticalMerge({comments,sources,decision,ci,review,base_branch:"codex/own-capital-sustainable-return",head_branch:"control-plane/owner-authorized-payload-repair-resume-v1"});
+  assert.equal(authorization.critical_merge_key,verifyOwnerAuthorizedCriticalMerge(input()).critical_merge_key);
+  assert.throws(()=>discoverOwnerAuthorizedCriticalMerge({comments:[...comments,comments[0]],sources,decision,ci,review,base_branch:"codex/own-capital-sustainable-return",head_branch:"control-plane/owner-authorized-payload-repair-resume-v1"}),/owner critical merge authorization evidence missing or ambiguous/);
 });

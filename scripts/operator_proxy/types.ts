@@ -46,6 +46,7 @@ export interface LifecycleRecord {
   last_error_detail?: string;
   builder_retry_reason?: "BUILDER_FAILURE";
   owner_payload_repair?: {grant_key:string;consumed_event_sha256:string;build_attempt_id:string};
+  owner_critical_merge?: {critical_merge_key:string;consumed_event_sha256:string};
   merge_reconciliation?: {
     source: "GITHUB_EXTERNALLY_MERGED_PR";
     issue: number;

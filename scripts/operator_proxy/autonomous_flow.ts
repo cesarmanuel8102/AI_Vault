@@ -14,6 +14,8 @@ export interface AutonomousEffects {
   ensureBuild(spec:ProxySpec,issue:number,session:string,repairCycle:number,previousHead?:string,retryReason?:"BUILDER_FAILURE"):Promise<BuildResult|"PENDING">;
   /** Dedicated Owner path; ordinary BUILDING never calls this operation. */
   resumeOwnerPayloadRepair?(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore):Promise<LifecycleRecord|"PENDING">;
+  /** Dedicated Owner path; ordinary policy execution never calls this operation. */
+  resumeOwnerCriticalMerge?(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore):Promise<LifecycleRecord|"PENDING">;
   ci(pr:number,head:string):CiResult;
   review(pr:number,head:string,session:string):ReviewResult;
   policy(spec:ProxySpec,issue:number,pr:number,head:string,review:ReviewerOutput,builderSession:string,reviewerSession:string,repairCycles:number):PolicyResult;
@@ -76,6 +78,11 @@ export class AutonomousFlow {
       case "OWNER_REPAIR_AUTHORIZED": {
         if(!this.effects.resumeOwnerPayloadRepair)throw new Error("owner payload repair effect unavailable");
         const resumed=await this.effects.resumeOwnerPayloadRepair(spec,state,this.store);
+        return resumed==="PENDING"?state:resumed;
+      }
+      case "ESCALATED": {
+        if(state.last_error!=="OWNER_AUTHORITY_REQUIRED"||!this.effects.resumeOwnerCriticalMerge)return state;
+        const resumed=await this.effects.resumeOwnerCriticalMerge(spec,state,this.store);
         return resumed==="PENDING"?state:resumed;
       }
       case "BUILDING": {if(state.owner_payload_repair){if(!this.effects.resumeOwnerPayloadRepair)throw new Error("owner payload repair effect unavailable");const resumed=await this.effects.resumeOwnerPayloadRepair(spec,state,this.store);return resumed==="PENDING"?state:resumed;}if(!state.issue)throw new Error("lifecycle issue missing");const session=`builder-${randomUUID()}`;let built:BuildResult|"PENDING";try{built=await this.effects.ensureBuild(spec,state.issue,session,state.repair_cycles,state.head_sha,state.builder_retry_reason);}catch(error){const {failure_class}=isEligibleFallback(error);return this.store.advance(state,"BLOCKED",{last_error:`BUILDER_FAILED:${failure_class}`,last_error_detail:builderFailureDetail(error),builder_retry_reason:state.repair_cycles>0&&state.builder_retry_reason===undefined?"BUILDER_FAILURE":undefined});}if(built==="PENDING")return state;const sameRepairHead=state.repair_cycles>0&&built.head_sha===state.head_sha;if(typeof built!=="object"||!built.session||!/^[0-9a-f]{40}$/.test(built.head_sha)||sameRepairHead&&built.recovered_repair!==true||!sameRepairHead&&built.recovered_repair===true)throw new Error("builder evidence invalid");if(!sameRepairHead)state=state.repair_cycles>0&&!!state.head_sha?this.store.repairBuild(state,built.head_sha):this.store.effect(state,`build:${built.head_sha}`);return this.store.advance(state,"PR_CREATED",{pr:built.pr,head_sha:built.head_sha,builder_session:built.session,builder_receipt_head_sha:undefined,builder_receipt_base_sha:undefined,decision_id:undefined,reviewer_session:undefined,builder_retry_reason:undefined,last_error_detail:undefined});}

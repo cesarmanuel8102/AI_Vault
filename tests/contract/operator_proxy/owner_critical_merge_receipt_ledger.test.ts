@@ -22,6 +22,8 @@ test("critical merge receipt ledger derives the only legal append-only phase cha
   assert.equal(dispatched.predecessor_event_sha256,consumed.event_sha256);
   assert.equal(bound.predecessor_event_sha256,dispatched.event_sha256);
   assert.equal(bound.merge_commit_sha,"3".repeat(40));
+  assert.doesNotThrow(()=>store.assertMergedBoundToConsumedReceipt(grant.critical_merge_key,consumed.event_sha256,"3".repeat(40)));
+  assert.throws(()=>store.assertMergedBoundToConsumedReceipt(grant.critical_merge_key,verified.event_sha256,"3".repeat(40)),/critical merge receipt/i);
 });
 
 test("critical merge receipt ledger rejects replay, duplicate phase, conflicting predecessor, and changed identity",()=>{
