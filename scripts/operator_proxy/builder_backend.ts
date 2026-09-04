@@ -45,7 +45,8 @@ export class BuilderBackendError extends Error {
   constructor(message: string, readonly failureClass: string, readonly transient = false) { super(message); }
 }
 
-export interface BuilderInput {
+/** Provider-only contract. It intentionally has no lifecycle repair semantics. */
+export interface BuilderTransportInput {
   repository: string;
   worktree: string;
   front_id: string;
@@ -56,13 +57,18 @@ export interface BuilderInput {
   forbidden_paths: string[];
   acceptance: string[];
   test_commands: string[];
-  repair_cycle: number;
-  previous_head?: string;
   risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   deployment_mode: "NO_DEPLOY" | "INSTALL_ONLY" | "INSTALL_AND_RUNTIME_PILOT" | "DOCUMENTATION_CLOSEOUT";
   prompt: string;
   session: string;
   provider_correlation_id?: string;
+  logical_attempt_id?: string;
+}
+
+/** Ordinary wrapper input. Owner-authorized transport never constructs this type. */
+export interface BuilderInput extends BuilderTransportInput {
+  repair_cycle: number;
+  previous_head?: string;
 }
 
 export interface BuilderResult {

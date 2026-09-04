@@ -2,7 +2,7 @@ import {execFileSync} from "node:child_process";
 import {existsSync} from "node:fs";
 import {isAbsolute} from "node:path";
 import type {BackendConfig} from "./builder_config.js";
-import type {BuilderInput, BuilderResult} from "./builder_backend.js";
+import type {BuilderInput, BuilderTransportInput, BuilderResult} from "./builder_backend.js";
 import {BuilderBackendError} from "./builder_backend.js";
 import {redactedError, redactString} from "./redaction.js";
 
@@ -57,7 +57,7 @@ export function parseOpenCodeOutput(output: string): { headSha?: string; provide
   return { headSha: headMatch, providerSession, nativeProviderSession };
 }
 
-export async function runOpenCodeBuilder(input: BuilderInput, config: BackendConfig, env: NodeJS.ProcessEnv = process.env, fallbackReason?: string): Promise<BuilderResult> {
+export async function runOpenCodeBuilder(input: BuilderTransportInput|BuilderInput, config: BackendConfig, env: NodeJS.ProcessEnv = process.env, fallbackReason?: string): Promise<BuilderResult> {
   const started = new Date().toISOString();
   let executable = config.executable ?? resolveOpenCodeExecutable(env);
   const agent = env.OPEN_CODE_AGENT;
@@ -70,7 +70,7 @@ export async function runOpenCodeBuilder(input: BuilderInput, config: BackendCon
   try {
     stdout = redactString(execFileSync(executable, args, {
       encoding: "utf8",
-      env: { ...env, OPERATOR_PROXY_SESSION: input.session, OPERATOR_PROXY_PROVIDER_CORRELATION_ID: input.provider_correlation_id },
+      env: { ...env, OPERATOR_PROXY_SESSION: input.session, OPERATOR_PROXY_PROVIDER_CORRELATION_ID: input.provider_correlation_id, ...(input.logical_attempt_id?{OPERATOR_PROXY_BUILD_ATTEMPT_ID:input.logical_attempt_id}:{}) },
       timeout: buildTimeoutMs(env),
       windowsHide: true,
       maxBuffer: 32 * 1024 * 1024,

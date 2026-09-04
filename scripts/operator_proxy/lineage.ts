@@ -1,4 +1,4 @@
-import type {LifecycleRecord, ProxySpec, NormalizedDecision} from "./types.js";
+import type {LifecycleRecord, ProxySpec, NormalizedDecision, OwnerAuthorizedPayloadRepairGrant} from "./types.js";
 import {LEGACY_NEUTRALIZATION_TRAILER,LEGACY_REBUILD_TRAILER,PRIOR_UNATTESTED_HEAD_TRAILER,RESET_BASE_TRAILER,NEUTRALIZATION_HEAD_TRAILER,FRESH_BUILDER_HEAD_TRAILER} from "./builder_attempt_provenance.js";
 
 // ---------------------------------------------------------------------------
@@ -338,6 +338,29 @@ export interface CandidateLineage {
   synchronizationHeads: string[];
   currentCandidateHeadSha: string;
   mergeCommitSha: string | undefined;
+}
+
+export interface OwnerPayloadRepairAdoptionContext {
+  spec: ProxySpec;
+  grant: OwnerAuthorizedPayloadRepairGrant;
+  new_head_sha: string;
+  remote_branch_head: string | undefined;
+  pr: ObservedPr;
+  provenance: {authorization_id:string;grant_key:string;build_attempt_id:string;consumed_event_sha256:string};
+  build_attempt_id: string;
+  consumed_event_sha256: string;
+  isAncestor(older:string,newer:string): boolean;
+}
+
+/** Validates only the exact, owner-bound exceptional candidate adoption. */
+export function verifyOwnerPayloadRepairAdoption(context: OwnerPayloadRepairAdoptionContext): boolean {
+  const {spec,grant,pr,provenance,new_head_sha}=context, identity=pr.identity;
+  if(!SHA40.test(new_head_sha)||grant.repository!==spec.repository||grant.authorization_id!==spec.authorization_id||grant.roadmap_id!==spec.roadmap_id||grant.roadmap_item_id!==spec.roadmap_item_id||grant.front_id!==spec.front_id||grant.work_branch!==spec.work_branch||grant.canonical_base_sha!==spec.expected_base_sha||grant.max_extra_builds!==1)return false;
+  if(context.remote_branch_head!==new_head_sha||pr.head!==new_head_sha||identity.headRefOid!==new_head_sha||identity.baseRefOid!==grant.canonical_base_sha||identity.baseRefName!=="codex/own-capital-sustainable-return"||identity.headRefName!==grant.work_branch||identity.headRepository?.nameWithOwner!==grant.repository||identity.author?.login!==grant.owner_principal||identity.isCrossRepository!==false||identity.isDraft!==true||identity.state!=="OPEN")return false;
+  if(!context.isAncestor(grant.failed_head_sha,new_head_sha)||!context.isAncestor(grant.canonical_base_sha,new_head_sha))return false;
+  const files=(identity.files??[]).map(file=>String(file.path));
+  if(!files.length||!files.every(path=>pathAllowed(path,spec)))return false;
+  return provenance.authorization_id===grant.authorization_id&&provenance.grant_key===grant.grant_key&&provenance.build_attempt_id===context.build_attempt_id&&provenance.consumed_event_sha256===context.consumed_event_sha256&&/^[0-9a-f]{64}$/.test(context.build_attempt_id)&&/^[0-9a-f]{64}$/.test(context.consumed_event_sha256);
 }
 export function deriveCandidateLineage(snapshot: CanonicalLifecycleSnapshot, decision: NormalizedDecision): CandidateLineage | undefined {
   // A compacted record can still decode its current `build` entry, but that

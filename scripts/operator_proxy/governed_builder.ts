@@ -2,12 +2,14 @@ import {execFileSync as rawExecFileSync} from "node:child_process";
 import {existsSync,lstatSync,mkdirSync,readFileSync,readdirSync,realpathSync,rmSync} from "node:fs";
 import {join,posix,resolve,sep} from "node:path";
 import {randomUUID} from "node:crypto";
-import type {LifecycleRecord,ProxySpec} from "./types.js";
+import type {LifecycleRecord,ProxySpec,OwnerAuthorizedPayloadRepairGrant,CorrectionPayloadV1} from "./types.js";
 import {BuilderBackendError,ELIGIBLE_FALLBACK_FAILURES,type BuilderInput,type BuilderResult} from "./builder_backend.js";
-import type {EffectAssertion} from "./external_effect_guard.js";
+import type {EffectAssertion,OwnerPayloadRepairTransportCapability} from "./external_effect_guard.js";
 import {redactedError} from "./redaction.js";
-import {routeControlPlaneBuild} from "./builder_router.js";
-import {BuilderAttemptProvenance,LEGACY_NEUTRALIZATION_TRAILER,PRIOR_UNATTESTED_HEAD_TRAILER,RESET_BASE_TRAILER,LEGACY_REBUILD_TRAILER,NEUTRALIZATION_HEAD_TRAILER,FRESH_BUILDER_HEAD_TRAILER} from "./builder_attempt_provenance.js";
+import {routeControlPlaneBuild,routePreparedCandidateBuild} from "./builder_router.js";
+import {BuilderAttemptProvenance,resolveCompletedBuilderSession,resolveCompletedBuilderSessionForSynchronizedLineage,LEGACY_NEUTRALIZATION_TRAILER,PRIOR_UNATTESTED_HEAD_TRAILER,RESET_BASE_TRAILER,LEGACY_REBUILD_TRAILER,NEUTRALIZATION_HEAD_TRAILER,FRESH_BUILDER_HEAD_TRAILER} from "./builder_attempt_provenance.js";
+import {canonicalCorrectionPayloadBytes,parseCorrectionPayloadV1} from "./correction_payload.js";
+import {CandidateExecutionKernel,type CandidateExecutionAdapter,type CandidatePublicationResult,type PreparedCandidateAttempt} from "./candidate_execution.js";
 
 export interface BuilderBus {
   findPrByBranch(branch:string):{number:number;head_sha:string}|undefined;
@@ -16,6 +18,74 @@ export interface BuilderBus {
   bindPrToIssue(issue:number,pr:number):void;
   repairPrompt(issue:number):string;
   prIdentity(pr:number):any;
+}
+export interface OwnerPayloadRepairBuilderInput {front_id:string;work_branch:string;failed_head_sha:string;correction_payload:CorrectionPayloadV1;provenance:{authorization_id:string;grant_key:string;build_attempt_id:string;consumed_event_sha256:string}}
+export interface OwnerPayloadRepairTransportRequest extends OwnerPayloadRepairBuilderInput {repository:string;roadmap_id:string;roadmap_item_id:string;issue:number;pr:number;canonical_base_sha:string;idempotency_key:string;prompt:string}
+export interface OwnerPayloadRepairDispatchContext {spec:ProxySpec;grant:OwnerAuthorizedPayloadRepairGrant;issue:number;build_attempt_id:string;consumed_event_sha256:string;correction_payload:CorrectionPayloadV1;publication:CandidateExecutionAdapter}
+export interface OwnerPayloadRepairCandidate {candidate:CandidatePublicationResult;provenance:OwnerPayloadRepairBuilderInput["provenance"]}
+
+function exact64(value:string){return /^[0-9a-f]{64}$/.test(value);}
+function exceptionalPathDenied(path:string){return path==="scripts/operator_proxy"||path.startsWith("scripts/operator_proxy/")||path.endsWith("/")&&("scripts/operator_proxy".startsWith(path)||".github".startsWith(path))||path===".github"||path.startsWith(".github/");}
+function validateOwnerPayloadRepairDispatch(context:OwnerPayloadRepairDispatchContext):OwnerPayloadRepairBuilderInput {
+  const {spec,grant,issue,build_attempt_id,consumed_event_sha256,correction_payload}=context;
+  if(issue!==grant.issue)throw new Error("owner repair issue invalid");
+  if(!spec.front_id||!spec.work_branch||spec.repository!==grant.repository||spec.authorization_id!==grant.authorization_id||spec.roadmap_id!==grant.roadmap_id||spec.roadmap_item_id!==grant.roadmap_item_id||spec.front_id!==grant.front_id||spec.work_branch!==grant.work_branch||spec.expected_base_sha!==grant.canonical_base_sha||!exact64(grant.grant_key)||!exact64(build_attempt_id)||!exact64(consumed_event_sha256))throw new Error("owner repair dispatch identity invalid");
+  if(spec.allowed_paths.some(exceptionalPathDenied)||spec.forbidden_paths.some(path=>path==="scripts/operator_proxy/authority"||path.startsWith("scripts/operator_proxy/authority/")))throw new Error("owner repair path scope invalid");
+  const parsed=parseCorrectionPayloadV1(correction_payload);
+  if(parsed.sha256!==grant.correction_payload_sha256)throw new Error("owner repair correction payload invalid");
+  return ownerPayloadRepairBuilderInput(grant,{build_attempt_id,consumed_event_sha256,correction_payload:parsed.payload});
+}
+function ownerPayloadRepairPrompt(request:OwnerPayloadRepairTransportRequest):string {
+  return [
+    "Execute one governed owner-authorized payload repair.",
+    `REPOSITORY=${request.repository}`,
+    `ROADMAP_ID=${request.roadmap_id}`,
+    `ROADMAP_ITEM_ID=${request.roadmap_item_id}`,
+    `FRONT_ID=${request.front_id}`,
+    `ISSUE=${request.issue}`,
+    `PR=${request.pr}`,
+    `WORK_BRANCH=${request.work_branch}`,
+    `CANONICAL_BASE_SHA=${request.canonical_base_sha}`,
+    `FAILED_HEAD_SHA=${request.failed_head_sha}`,
+    `AUTHORIZATION_ID=${request.provenance.authorization_id}`,
+    `GRANT_KEY=${request.provenance.grant_key}`,
+    `BUILD_ATTEMPT_ID=${request.provenance.build_attempt_id}`,
+    `CONSUMED_EVENT_SHA256=${request.provenance.consumed_event_sha256}`,
+    "Apply only this typed correction payload and preserve its invariants:",
+    canonicalCorrectionPayloadBytes(request.correction_payload).trimEnd(),
+  ].join("\n");
+}
+
+function ownerPayloadRepairReceipt(request:OwnerPayloadRepairTransportRequest,provider:{builder_backend:string;builder_model:string;provider_session:string;fallback_reason?:string}):string {
+  return [`fix(control-plane): owner payload repair ${request.front_id}`,"",`OWNER_AUTHORIZATION_ID=${request.provenance.authorization_id}`,`OWNER_GRANT_KEY=${request.provenance.grant_key}`,`OWNER_BUILD_ATTEMPT_ID=${request.provenance.build_attempt_id}`,`OWNER_CONSUMED_EVENT_SHA256=${request.provenance.consumed_event_sha256}`,`BUILDER_BACKEND=${provider.builder_backend}`,`BUILDER_MODEL=${provider.builder_model}`,`PROVIDER_SESSION=${provider.provider_session}`,...(provider.fallback_reason?[`FALLBACK_REASON=${provider.fallback_reason}`]:[])].join("\n");
+}
+
+/** Validates the immutable receipt written by the exceptional publication path. */
+export function parseOwnerPayloadRepairCommitReceipt(message:string,frontId:string):{provenance:OwnerPayloadRepairBuilderInput["provenance"];builder_session:string;builder_model:string}{
+  const lines=message.replace(/\r\n/g,"\n").trimEnd().split("\n");
+  if(lines[0]!==`fix(control-plane): owner payload repair ${frontId}`)throw new Error("owner repair commit receipt invalid");
+  const value=(name:string)=>{const values=lines.filter(line=>line.startsWith(`${name}=`)).map(line=>line.slice(name.length+1));if(values.length!==1)return undefined;return values[0];};
+  const authorization_id=value("OWNER_AUTHORIZATION_ID"),grant_key=value("OWNER_GRANT_KEY"),build_attempt_id=value("OWNER_BUILD_ATTEMPT_ID"),consumed_event_sha256=value("OWNER_CONSUMED_EVENT_SHA256"),builder_backend=value("BUILDER_BACKEND"),builder_model=value("BUILDER_MODEL"),provider_session=value("PROVIDER_SESSION"),fallback=lines.filter(line=>line.startsWith("FALLBACK_REASON="));
+  const allowedLines=new Set([lines[0],"",`OWNER_AUTHORIZATION_ID=${authorization_id}`,`OWNER_GRANT_KEY=${grant_key}`,`OWNER_BUILD_ATTEMPT_ID=${build_attempt_id}`,`OWNER_CONSUMED_EVENT_SHA256=${consumed_event_sha256}`,`BUILDER_BACKEND=${builder_backend}`,`BUILDER_MODEL=${builder_model}`,`PROVIDER_SESSION=${provider_session}`,...fallback]);
+  const allowedBackends=new Set(["codex_cli_openai","opencode_github_copilot","opencode_ollama"]);
+  if(!authorization_id||!exact64(grant_key??"")||!exact64(build_attempt_id??"")||!exact64(consumed_event_sha256??"")||!builder_backend||!allowedBackends.has(builder_backend)||!builder_model||!/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(builder_model)||!provider_session||!/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(provider_session)||fallback.length>1||fallback.length===1&&!ELIGIBLE_FALLBACK_FAILURES.has(fallback[0]!.slice("FALLBACK_REASON=".length))||!lines.every(line=>allowedLines.has(line)))throw new Error("owner repair commit receipt invalid");
+  return {provenance:{authorization_id,grant_key:grant_key!,build_attempt_id:build_attempt_id!,consumed_event_sha256:consumed_event_sha256!},builder_session:provider_session,builder_model:builder_model!};
+}
+/** Dispatches the one logical exceptional attempt. Receipt and lifecycle mutations are owned by Tasks 6/8. */
+export async function dispatchOwnerAuthorizedPayloadRepair(context:OwnerPayloadRepairDispatchContext):Promise<OwnerPayloadRepairCandidate> {
+  const input=validateOwnerPayloadRepairDispatch(context);
+  const request:OwnerPayloadRepairTransportRequest={...input,repository:context.grant.repository,roadmap_id:context.grant.roadmap_id,roadmap_item_id:context.grant.roadmap_item_id,issue:context.grant.issue,pr:context.grant.pr,canonical_base_sha:context.grant.canonical_base_sha,idempotency_key:input.provenance.build_attempt_id,prompt:""};
+  request.prompt=ownerPayloadRepairPrompt(request);
+  if(context.spec.executor!=="codex_control_plane")throw new Error("owner repair executor invalid");
+  const candidate=await new CandidateExecutionKernel(context.publication).publish({repository:request.repository,front_id:request.front_id,roadmap_item_id:request.roadmap_item_id,issue:request.issue,work_branch:request.work_branch,expected_base_sha:request.canonical_base_sha,starting_head_sha:request.failed_head_sha,observed_head_sha:request.failed_head_sha,allowed_paths:context.spec.allowed_paths,forbidden_paths:context.spec.forbidden_paths,test_commands:context.spec.test_commands,provider_request:{prompt:request.prompt,executor_role:"codex_control_plane"},provider_idempotency_key:request.idempotency_key,publication_receipt:{kind:"OWNER_AUTHORIZED_PAYLOAD_REPAIR",render:provider=>ownerPayloadRepairReceipt(request,provider)},require_existing_draft_pr:true});
+  if(candidate.base_sha!==request.canonical_base_sha||candidate.work_branch!==request.work_branch||! /^[0-9a-f]{40}$/.test(candidate.head_sha)||candidate.head_sha===request.failed_head_sha)throw new Error("owner repair candidate invalid");
+  return {candidate,provenance:input.provenance};
+}
+/** Constructs the only exceptional-builder payload; raw owner comment text is never accepted. */
+export function ownerPayloadRepairBuilderInput(grant:OwnerAuthorizedPayloadRepairGrant,input:{build_attempt_id:string;consumed_event_sha256:string;correction_payload:CorrectionPayloadV1}):OwnerPayloadRepairBuilderInput {
+  const parsed=parseCorrectionPayloadV1(input.correction_payload);
+  if(!exact64(input.build_attempt_id)||!exact64(input.consumed_event_sha256)||parsed.sha256!==grant.correction_payload_sha256)throw new Error("owner repair consumed provenance invalid");
+  return {front_id:grant.front_id,work_branch:grant.work_branch,failed_head_sha:grant.failed_head_sha,correction_payload:parsed.payload,provenance:{authorization_id:grant.authorization_id,grant_key:grant.grant_key,build_attempt_id:input.build_attempt_id,consumed_event_sha256:input.consumed_event_sha256}};
 }
 
 function native(file:string,args:string[],options:any={}){try{return rawExecFileSync(file,args,{...options,encoding:"utf8",stdio:"pipe"});}catch(error){throw new Error(redactedError(error));}}
@@ -30,7 +100,7 @@ const allowed=(path:string,spec:ProxySpec)=>spec.allowed_paths.some(p=>p.endsWit
 function changed(repo:string){const tracked=git(repo,["diff","--name-only","HEAD"]);const staged=git(repo,["diff","--cached","--name-only"]);const untracked=git(repo,["ls-files","--others","--exclude-standard"]);return [...new Set([tracked,staged,untracked].flatMap(x=>x?x.split(/\r?\n/):[]).filter(Boolean))].sort();}
 function committed(repo:string,base:string){const output=git(repo,["diff","--name-only",`${base}..HEAD`]);return output?output.split(/\r?\n/).filter(Boolean).sort():[];}
 function validateFiles(files:string[],spec:ProxySpec){if(files.length===0)throw new Error("builder produced no changes");if(!files.every(path=>allowed(path,spec)))throw new Error("builder changed path outside scope");}
-function builderReceiptMessage(front:string,result:BuilderResult){return `feat(control-plane): complete ${front}\n\nBUILDER_BACKEND=${result.builder_backend}\nBUILDER_MODEL=${result.builder_model}\nPROVIDER_SESSION=${result.provider_session}${result.fallback_reason?`\nFALLBACK_REASON=${result.fallback_reason}`:""}`;}
+function builderReceiptMessage(front:string,result:Pick<BuilderResult,"builder_backend"|"builder_model"|"provider_session"|"fallback_reason">){return `feat(control-plane): complete ${front}\n\nBUILDER_BACKEND=${result.builder_backend}\nBUILDER_MODEL=${result.builder_model}\nPROVIDER_SESSION=${result.provider_session}${result.fallback_reason?`\nFALLBACK_REASON=${result.fallback_reason}`:""}`;}
 function validateBuilderReceipt(repo:string,head:string,front:string){
   const lines=git(repo,["show","-s","--format=%B",head]).replace(/\r\n/g,"\n").trimEnd().split("\n");
   if(lines[0]!==`feat(control-plane): complete ${front}`)throw new Error("recovered builder commit subject mismatch");
@@ -110,6 +180,39 @@ export function waitForRemoteBranchHead(bus:BuilderBus,branch:string,expected:st
 
 export class GovernedBuilder {
   constructor(readonly sourceRepo:string,readonly worktreeRoot:string,readonly bus:BuilderBus,readonly assertEffect:EffectAssertion,readonly codex=process.env.CODEX_PATH??"codex"){}
+  /**
+   * Builds the transport adapter for the single Owner-authorized attempt.
+   * The caller owns receipt/lifecycle semantics; this adapter only publishes.
+   */
+  ownerPayloadRepairPublicationAdapter(spec:ProxySpec, grant:OwnerAuthorizedPayloadRepairGrant, capability:OwnerPayloadRepairTransportCapability, assertCapability:()=>void):CandidateExecutionAdapter {
+    if(!spec.front_id||!spec.work_branch||grant.front_id!==spec.front_id||grant.work_branch!==spec.work_branch||grant.canonical_base_sha!==spec.expected_base_sha||grant.issue<1||grant.pr<1)throw new Error("owner repair publication identity invalid");
+    ensureCommit(this.sourceRepo,spec.expected_base_sha);ensureCommit(this.sourceRepo,grant.failed_head_sha);
+    try{git(this.sourceRepo,["merge-base","--is-ancestor",spec.expected_base_sha,grant.failed_head_sha]);}catch{throw new Error("owner repair failed head lineage invalid");}
+    mkdirSync(this.worktreeRoot,{recursive:true});const root=realpathSync(this.worktreeRoot);
+    if(lstatSync(root).isSymbolicLink())throw new Error("owner repair worktree root symlink denied");
+    const worktree=resolve(root,`${spec.front_id}-owner-${capability.build_attempt_id.slice(0,12)}`);
+    if(!worktree.startsWith(`${root}\\`)&&!worktree.startsWith(`${root}/`))throw new Error("owner repair worktree escaped root");
+    if(!existsSync(worktree)){
+      assertCapability();this.assertEffect("branch_create",{issue:grant.issue});
+      native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","--detach",worktree,grant.failed_head_sha],{stdio:"inherit",timeout:120000,windowsHide:true});
+    }
+    if(realpathSync(worktree).toLowerCase()!==worktree.toLowerCase()||git(worktree,["branch","--show-current"])!==""||git(worktree,["rev-parse","HEAD"])!==grant.failed_head_sha||git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("owner repair worktree state invalid");
+    const assert = (effect:"builder_execute"|"commit_create"|"push"|"issue_modify") => {assertCapability();this.assertEffect(effect,{issue:grant.issue,pr:grant.pr});};
+    return {
+      prepare:()=>({worktree,starting_head:grant.failed_head_sha}),
+      validateExistingDraftPr:()=>{const identity=this.bus.prIdentity(grant.pr),files=(identity.files??[]).map((file:any)=>String(file.path));if(identity.author?.login!==spec.repository.split("/",1)[0]||identity.baseRefName!=="codex/own-capital-sustainable-return"||identity.baseRefOid!==grant.canonical_base_sha||identity.headRefName!==spec.work_branch||identity.headRefOid!==grant.failed_head_sha||identity.headRepository?.nameWithOwner!==spec.repository||identity.isCrossRepository!==false||identity.isDraft!==true||identity.state!=="OPEN"||files.length===0||!files.every((path:string)=>allowed(path,spec))||this.bus.remoteBranchHead(spec.work_branch!)!==grant.failed_head_sha)throw new Error("owner repair existing Draft PR identity invalid");},
+      invokeProvider:async request=>{assert("builder_execute");return routePreparedCandidateBuild({repository:spec.repository,worktree,front_id:spec.front_id!,issue:grant.issue,base_sha:grant.failed_head_sha,work_branch:spec.work_branch!,allowed_paths:spec.allowed_paths,forbidden_paths:spec.forbidden_paths,acceptance:spec.acceptance,test_commands:spec.test_commands,risk:spec.risk,deployment_mode:spec.deployment_mode??"NO_DEPLOY",prompt:request.prompt,session:`owner-${capability.build_attempt_id}`,logical_attempt_id:capability.build_attempt_id});},
+      changedPaths:(_prepared,base,head)=>head===base?changed(worktree):committed(worktree,base),
+      runDeclaredTests:()=>runDeclaredTests(worktree,spec.test_commands),
+      diffCheck:(_prepared,base,head)=>native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",...(head===base?[]:[`${base}..${head}`])],{stdio:"inherit",timeout:120000,windowsHide:true}),
+      commit:(_prepared,receipt,paths,provider)=>{assert("commit_create");if(provider.head_sha!==grant.failed_head_sha)native(process.env.GIT_PATH??"git",["-C",worktree,"commit","--allow-empty","-m",receipt],{stdio:"inherit",timeout:120000,windowsHide:true});else{native(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...paths],{stdio:"inherit",timeout:120000,windowsHide:true});native(process.env.GIT_PATH??"git",["-C",worktree,"commit","-m",receipt],{stdio:"inherit",timeout:120000,windowsHide:true});}const head=git(worktree,["rev-parse","HEAD"]);if(head===grant.failed_head_sha)throw new Error("owner repair produced no changes");return head;},
+      push:(_attempt,head)=>{assert("push");native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});},
+      remoteHead:branch=>this.readPublishedBranchHead(worktree,branch),
+      existingDraftPr:(_attempt,_head,_paths)=>{const identity=this.bus.prIdentity(grant.pr),files=(identity.files??[]).map((file:any)=>String(file.path));return {number:grant.pr,repository:identity.headRepository?.nameWithOwner,issue:grant.issue,work_branch:identity.headRefName,base_sha:identity.baseRefOid,head_sha:identity.headRefOid,is_draft:identity.isDraft===true,is_open:identity.state==="OPEN",same_repository:identity.headRepository?.nameWithOwner===spec.repository,non_fork:identity.isCrossRepository===false,author_login:identity.author?.login,base_ref_name:identity.baseRefName,base_ref_oid:identity.baseRefOid,head_ref_name:identity.headRefName,head_ref_oid:identity.headRefOid,changed_paths:files};},
+      createDraftPr:()=>{throw new Error("owner repair requires existing Draft PR");},
+      bindPrToIssue:(issue,pr)=>{if(issue!==grant.issue||pr!==grant.pr)throw new Error("owner repair Issue binding invalid");assert("issue_modify");this.bus.bindPrToIssue(issue,pr);},
+    };
+  }
   synchronizeBlockedCiBase(spec:ProxySpec,state:LifecycleRecord){
     if(state.state!=="BLOCKED"||state.last_error!=="CI_FAILED"||!state.issue||!state.pr||!state.head_sha||!state.builder_session||!Number.isInteger(state.repair_cycles)||state.repair_cycles<0||state.repair_cycles>2||state.reviewer_session||state.decision_id||!spec.work_branch||state.base_sha===spec.expected_base_sha)throw new Error("blocked CI branch synchronization denied");
     const pr=this.bus.prIdentity(state.pr),files=(pr.files??[]).map((x:any)=>String(x.path)).sort();
@@ -173,6 +276,52 @@ export class GovernedBuilder {
     if(remaining)throw new Error("governed baseline restore left unexpected files");
   }
 
+  private readPublishedBranchHead(worktree:string,branch:string):string|undefined{
+    let observed:string|undefined;try{observed=this.bus.remoteBranchHead(branch);}catch{}
+    if(observed!==undefined&&!/^[0-9a-f]{40}$/.test(observed))return undefined;
+    let line="";try{line=git(worktree,["ls-remote","--heads","origin",`refs/heads/${branch}`]).split(/\s+/)[0]??"";}catch{return observed;}
+    if(/^[0-9a-f]{40}$/.test(line))return observed===undefined||observed===line?line:undefined;
+    return observed;
+  }
+
+  private requireCompletedBuilderSession(spec:ProxySpec,issue:number,worktree:string,baseSha:string,candidateHead:string):string{
+    if(!spec.front_id||!spec.work_branch)throw new Error("builder metadata missing");
+    const session=resolveCompletedBuilderSession({front_id:spec.front_id,issue,base_sha:baseSha,canonical_worktree:worktree,work_branch:spec.work_branch,candidate_head_sha:candidateHead,isAncestor:(older,newer)=>{try{git(worktree,["merge-base","--is-ancestor",older,newer]);return true;}catch{return false;}}});
+    if(!session)throw new Error("BUILDER_PROVENANCE_RECOVERY_REQUIRED: durable completed builder session missing");
+    return session;
+  }
+
+  private requireCompletedBuilderSessionForValidatedSync(spec:ProxySpec,issue:number,worktree:string,validatedBuilderReceiptHead:string):string{
+    if(!spec.front_id||!spec.work_branch)throw new Error("builder metadata missing");
+    const session=resolveCompletedBuilderSessionForSynchronizedLineage({front_id:spec.front_id,issue,canonical_worktree:worktree,work_branch:spec.work_branch,validated_builder_receipt_head_sha:validatedBuilderReceiptHead,isAncestor:(older,newer)=>{try{git(worktree,["merge-base","--is-ancestor",older,newer]);return true;}catch{return false;}}});
+    if(!session)throw new Error("BUILDER_PROVENANCE_RECOVERY_REQUIRED: durable completed builder session missing");
+    return session;
+  }
+
+  private async publishOrdinaryCleanCandidate(spec:ProxySpec,issue:number,session:string,repairCycle:number,retryReason:"BUILDER_FAILURE"|undefined,worktree:string,baseSha:string,observedHead:string,existing:{number:number;head_sha:string}|undefined){
+    if(!spec.front_id||!spec.work_branch)throw new Error("builder metadata missing");
+    const requestedRepair=repairCycle>0?this.bus.repairPrompt(issue):"";
+    const repair=requestedRepair||(retryReason==="BUILDER_FAILURE"&&repairCycle>0?"Previous builder execution failed before producing a candidate. Re-run the approved objective exactly; do not infer reviewer findings or broaden scope.":"");
+    if(repairCycle>0&&!repair)throw new Error("repair findings missing");
+    const prompt=builderPrompt(spec,repairCycle,repair);
+    const adapter:CandidateExecutionAdapter={
+      prepare:()=>({worktree,starting_head:baseSha}),
+      invokeProvider:async request=>{this.assertEffect("builder_execute",{issue});return await routeControlPlaneBuild(spec,issue,request.prompt,repairCycle,{baseSha,session},worktree);},
+      changedPaths:(_prepared,_base,providerHead)=>providerHead===baseSha?changed(worktree):committed(worktree,baseSha),
+      runDeclaredTests:()=>runDeclaredTests(worktree,spec.test_commands),
+      diffCheck:(_prepared,_base,providerHead)=>native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",...(providerHead===baseSha?[]:[`${baseSha}..${providerHead}`])],{stdio:"inherit",timeout:120000,windowsHide:true}),
+      commit:(_prepared,receipt,paths,provider)=>{this.assertEffect("commit_create",{issue});if(provider.head_sha!==baseSha)native(process.env.GIT_PATH??"git",["-C",worktree,"commit","--allow-empty","-m",receipt],{stdio:"inherit",timeout:120000,windowsHide:true});else{native(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...paths],{stdio:"inherit",timeout:120000,windowsHide:true});native(process.env.GIT_PATH??"git",["-C",worktree,"commit","-m",receipt],{stdio:"inherit",timeout:120000,windowsHide:true});}const head=git(worktree,["rev-parse","HEAD"]);validateBuilderReceipt(worktree,head,spec.front_id!);return head;},
+      push:(_attempt,head)=>{this.assertEffect("push",{issue,expected_head:head,...(repairCycle>0?{observed_head:observedHead}:{})});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});},
+      remoteHead:branch=>this.readPublishedBranchHead(worktree,branch),
+      existingDraftPr:()=>existing?.number,
+      createDraftPr:()=>this.bus.createDraftPr(spec.work_branch!,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`),
+      bindPrToIssue:(boundIssue,pr)=>this.bus.bindPrToIssue(boundIssue,pr),
+    };
+    const attempt:PreparedCandidateAttempt={repository:spec.repository,front_id:spec.front_id,roadmap_item_id:spec.roadmap_item_id,issue,work_branch:spec.work_branch,expected_base_sha:baseSha,observed_head_sha:observedHead,allowed_paths:spec.allowed_paths,forbidden_paths:spec.forbidden_paths,test_commands:spec.test_commands,provider_request:{prompt,executor_role:"codex_control_plane"},publication_receipt:{kind:"ORDINARY",render:provider=>builderReceiptMessage(spec.front_id!,provider)}};
+    const result=await new CandidateExecutionKernel(adapter).publish(attempt);
+    return {pr:result.pr,head_sha:result.head_sha,session:result.builder_session};
+  }
+
   async build(spec:ProxySpec,issue:number,session:string,repairCycle:number,retryReason?:"BUILDER_FAILURE"){
     if(!spec.front_id||!spec.work_branch||!spec.objective)throw new Error("builder metadata missing");
     const existing=this.bus.findPrByBranch(spec.work_branch),orphanHead=!existing&&repairCycle===0?this.bus.remoteBranchHead(spec.work_branch):undefined,publishedHead=repairCycle===0?(existing?.head_sha??orphanHead):undefined;
@@ -199,8 +348,9 @@ export class GovernedBuilder {
       const remote=this.bus.remoteBranchHead(spec.work_branch);if(remote!==publishedHead||initialHead!==publishedHead||initialStatus)throw new Error("published builder branch identity invalid");
       try{git(worktree,["merge-base","--is-ancestor",spec.expected_base_sha,publishedHead]);}catch{throw new Error("published builder ancestry invalid");}
       validateBuilderReceipt(worktree,publishedHead,spec.front_id);const files=committed(worktree,spec.expected_base_sha);validateFiles(files,spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${spec.expected_base_sha}..${publishedHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});
-      if(existing)validatePublishedPr(spec,existing,this.bus.prIdentity(existing.number),publishedHead,files);
-      const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered published builder branch.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:publishedHead,session};
+       if(existing)validatePublishedPr(spec,existing,this.bus.prIdentity(existing.number),publishedHead,files);
+       const durableSession=this.requireCompletedBuilderSession(spec,issue,worktree,spec.expected_base_sha,publishedHead);
+       const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered published builder branch.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:publishedHead,session:durableSession};
     }
     if(spec.executor==="codex_control_plane"&&initialStatus){
       const provenance=new BuilderAttemptProvenance(process.env);
@@ -223,7 +373,7 @@ export class GovernedBuilder {
           const prNumber:number=(existing as any)?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${receipt.builder_session}\n\nNo auto-merge.`);
           this.bus.bindPrToIssue(issue,prNumber);
           provenance.recordAttemptCompleted(receipt.receipt_id,spec.front_id,head,files,syntheticResult.provider_session);
-          return {pr:prNumber,head_sha:head,session,recovered_dirty:true as const};
+           return {pr:prNumber,head_sha:head,session:receipt.builder_session,recovered_dirty:true as const};
         }
         provenance.recordQuarantine(attemptInput,initialHead,expectedHead,"BUILDER_PROVENANCE_RECOVERY_REQUIRED");
         this.governedBaselineRestore(worktree,expectedHead,provenance,attemptInput);
@@ -234,7 +384,7 @@ export class GovernedBuilder {
       const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
       const prompt=builderPrompt(spec,repairCycle,repair);
       this.assertEffect("builder_execute",{issue});
-      const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha:expectedHead},worktree);
+      const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha:expectedHead,session},worktree);
       if(result.executor_role!=="codex_control_plane"||!result.builder_backend||!result.builder_model||!result.builder_session||!result.provider_session||result.base_sha!==expectedHead||!/^[0-9a-f]{40}$/.test(result.head_sha))throw new Error("builder router result contract invalid");
       const head=result.head_sha,currentHead=git(worktree,["rev-parse","HEAD"]);if(currentHead!==head)throw new Error("builder router head mismatch");
       const backendCommitted=head!==expectedHead,files=backendCommitted?committed(worktree,expectedHead):changed(worktree);validateFiles(files,spec);
@@ -247,13 +397,13 @@ export class GovernedBuilder {
       if(committedHead===expectedHead)throw new Error("builder produced no changes");
       validateBuilderReceipt(worktree,committedHead,spec.front_id);
       this.assertEffect("push",{issue,expected_head:committedHead,observed_head:initialHead});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
-      const prNumber=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,prNumber);
-      return {pr:prNumber,head_sha:committedHead,session,recovered_clean:true as const};
+      const prNumber=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${result.builder_session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,prNumber);
+      return {pr:prNumber,head_sha:committedHead,session:result.builder_session,recovered_clean:true as const};
     }
     if(!existing&&initialHead!==expectedHead&&!initialStatus){let canFastForward=false;try{git(worktree,["merge-base","--is-ancestor",initialHead,expectedHead]);canFastForward=true;}catch{}if(canFastForward){native(process.env.GIT_PATH??"git",["-C",worktree,"merge","--ff-only",expectedHead],{stdio:"inherit",timeout:120000,windowsHide:true});initialHead=git(worktree,["rev-parse","HEAD"]);initialStatus=git(worktree,["status","--porcelain","--untracked-files=all"]);if(initialHead!==expectedHead||initialStatus)throw new Error("builder worktree base fast-forward failed");}}
     if(initialHead!==expectedHead){if(initialStatus)throw new Error("advanced builder worktree is dirty");try{git(worktree,["merge-base","--is-ancestor",expectedHead,initialHead]);}catch{throw new Error("builder worktree head is not a descendant of expected head");}
       let receiptValid=false;try{validateBuilderReceipt(worktree,initialHead,spec.front_id);receiptValid=true;}catch{receiptValid=false;}
-      if(receiptValid){validateFiles(committed(worktree,expectedHead),spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${expectedHead}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});this.assertEffect("push",{issue,expected_head:initialHead,...(repairCycle>0?{observed_head:expectedHead}:{})});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered local builder commit.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:initialHead,session};}
+      if(receiptValid){validateFiles(committed(worktree,expectedHead),spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${expectedHead}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});const durableSession=this.requireCompletedBuilderSession(spec,issue,worktree,expectedHead,initialHead);this.assertEffect("push",{issue,expected_head:initialHead,...(repairCycle>0?{observed_head:expectedHead}:{})});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered local builder commit.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:initialHead,session:durableSession};}
       const provenance=new BuilderAttemptProvenance(process.env);
       const attemptInput={repository:spec.repository,worktree,front_id:spec.front_id,issue,base_sha:expectedHead,work_branch:spec.work_branch,allowed_paths:spec.allowed_paths,forbidden_paths:spec.forbidden_paths,acceptance:spec.acceptance,test_commands:spec.test_commands,repair_cycle:repairCycle,risk:spec.risk,deployment_mode:spec.deployment_mode??"NO_DEPLOY",prompt:"",session};
       if(provenance.isConfigured()){
@@ -266,7 +416,7 @@ export class GovernedBuilder {
       const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
       const prompt=builderPrompt(spec,repairCycle,repair);
       this.assertEffect("builder_execute",{issue});
-      const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha:expectedHead},worktree);
+      const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha:expectedHead,session},worktree);
       if(result.executor_role!=="codex_control_plane"||!result.builder_backend||!result.builder_model||!result.builder_session||!result.provider_session||result.base_sha!==expectedHead||!/^[0-9a-f]{40}$/.test(result.head_sha))throw new Error("builder router result contract invalid");
       const head=result.head_sha,currentHead=git(worktree,["rev-parse","HEAD"]);if(currentHead!==head)throw new Error("builder router head mismatch");
       const backendCommitted=head!==expectedHead,files=backendCommitted?committed(worktree,expectedHead):changed(worktree);validateFiles(files,spec);
@@ -279,40 +429,20 @@ export class GovernedBuilder {
       if(committedHead===expectedHead)throw new Error("builder produced no changes");
       validateBuilderReceipt(worktree,committedHead,spec.front_id);
       this.assertEffect("push",{issue,expected_head:committedHead,observed_head:initialHead});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
-      const prNumber=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,prNumber);
-      return {pr:prNumber,head_sha:committedHead,session,recovered_clean:true as const};}
+      const prNumber=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${result.builder_session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,prNumber);
+      return {pr:prNumber,head_sha:committedHead,session:result.builder_session,recovered_clean:true as const};}
     if(repairCycle>0&&existing&&git(worktree,["show","-s","--format=%s",initialHead])===`chore(control-plane): synchronize ${spec.front_id} base`){
-      try{synchronizedRepairReceipt(worktree,initialHead,spec.front_id);const files=committed(worktree,spec.expected_base_sha);validateFiles(files,spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${spec.expected_base_sha}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});validatePublishedPr(spec,existing,this.bus.prIdentity(existing.number),initialHead,files);this.bus.bindPrToIssue(issue,existing.number);return {pr:existing.number,head_sha:initialHead,session,recovered_repair:true as const};}
+      try{const validatedBuilderReceiptHead=synchronizedRepairReceipt(worktree,initialHead,spec.front_id);const files=committed(worktree,spec.expected_base_sha);validateFiles(files,spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${spec.expected_base_sha}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});const durableSession=this.requireCompletedBuilderSessionForValidatedSync(spec,issue,worktree,validatedBuilderReceiptHead);validatePublishedPr(spec,existing,this.bus.prIdentity(existing.number),initialHead,files);this.bus.bindPrToIssue(issue,existing.number);return {pr:existing.number,head_sha:initialHead,session:durableSession,recovered_repair:true as const};}
       catch(error){
         if(!(error instanceof Error)||!new Set(["recovered builder receipt invalid","recovered builder commit subject mismatch"]).has(error.message))throw error;
         // A synchronized candidate with an intervening metadata commit is not a
         // validated receipt at its current head. Rebuild it rather than accepting it.
       }
     }
-    const requestedRepair=repairCycle>0?this.bus.repairPrompt(issue):"";
-    const repair=requestedRepair||(retryReason==="BUILDER_FAILURE"&&repairCycle>0?"Previous builder execution failed before producing a candidate. Re-run the approved objective exactly; do not infer reviewer findings or broaden scope.":"");
-    if(repairCycle>0&&!repair)throw new Error("repair findings missing");
-    const prompt=builderPrompt(spec,repairCycle,repair);
     if(!initialStatus){
       if(spec.executor==="codex_control_plane"){
-        this.assertEffect("builder_execute",{issue});
         const useRouter=process.env.OPERATOR_PROXY_BUILDER_ROUTER!=="disabled";
-        if(useRouter){
-          const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha:initialHead},worktree);
-          if(result.executor_role!=="codex_control_plane"||!result.builder_backend||!result.builder_model||!result.builder_session||!result.provider_session||result.base_sha!==initialHead||!/^[0-9a-f]{40}$/.test(result.head_sha))throw new Error("builder router result contract invalid");
-          const head=result.head_sha,currentHead=git(worktree,["rev-parse","HEAD"]);if(currentHead!==head)throw new Error("builder router head mismatch");
-          const backendCommitted=head!==initialHead,files=backendCommitted?committed(worktree,initialHead):changed(worktree);validateFiles(files,spec);
-          if(backendCommitted&&git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("builder committed head left dirty worktree");
-          runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",...(backendCommitted?[`${initialHead}..${head}`]:[])],{stdio:"inherit",timeout:120000,windowsHide:true});
-          this.assertEffect("commit_create",{issue});
-          if(backendCommitted)native(process.env.GIT_PATH??"git",["-C",worktree,"commit","--allow-empty","-m",builderReceiptMessage(spec.front_id,result)],{stdio:"inherit",timeout:120000,windowsHide:true});
-          else {native(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...files],{stdio:"inherit",timeout:120000,windowsHide:true});native(process.env.GIT_PATH??"git",["-C",worktree,"commit","-m",builderReceiptMessage(spec.front_id,result)],{stdio:"inherit",timeout:120000,windowsHide:true});}
-          const committedHead=git(worktree,["rev-parse","HEAD"]);
-          if(committedHead===initialHead)throw new Error("builder produced no changes");
-          validateBuilderReceipt(worktree,committedHead,spec.front_id);
-           this.assertEffect("push",{issue,expected_head:committedHead,...(repairCycle>0?{observed_head:initialHead}:{})});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
-          const prNumber=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,prNumber);return {pr:prNumber,head_sha:committedHead,session};
-        }
+        if(useRouter)return await this.publishOrdinaryCleanCandidate(spec,issue,session,repairCycle,retryReason,worktree,initialHead,initialHead,existing);
         throw new Error("codex builder direct mode disabled; use router");
       } else throw new Error("agent_loop builder adapter unavailable");
     }
@@ -342,7 +472,7 @@ export class GovernedBuilder {
       const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
       const prompt=builderPrompt(spec,repairCycle,repair);
       this.assertEffect("builder_execute",{issue});
-      const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha},tempWorktree);
+      const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha,session},tempWorktree);
       if(result.executor_role!=="codex_control_plane"||!result.builder_backend||!result.builder_model||!result.builder_session||!result.provider_session||result.base_sha!==baseSha||!/^[0-9a-f]{40}$/.test(result.head_sha))throw new Error("legacy builder router result contract invalid");
       const r=result.head_sha;
       const freshReceipt=git(tempWorktree,["show","-s","--format=%B",r]);
@@ -356,7 +486,7 @@ export class GovernedBuilder {
       native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`${m}:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
       waitForRemoteBranchHead(this.bus,spec.work_branch,m);
       this.bus.bindPrToIssue(issue,existing.number);
-      return {pr:existing.number,head_sha:m,session,recovered_legacy:true as const};
+      return {pr:existing.number,head_sha:m,session:result.builder_session,recovered_legacy:true as const};
     }finally{
       native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","remove",tempWorktree],{stdio:"inherit",timeout:120000,windowsHide:true});
     }

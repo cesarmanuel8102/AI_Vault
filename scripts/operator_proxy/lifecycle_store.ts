@@ -1,9 +1,11 @@
 import {appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync} from "node:fs";
 import {join} from "node:path";
-import type {LifecycleRecord, LifecycleState} from "./types.js";
+import type {LifecycleRecord, LifecycleState, OwnerAuthorizedCriticalMerge} from "./types.js";
 import {CONTROL_PLANE_VERSION} from "./lineage.js";
 import {transitionLifecycle} from "./state_machine.js";
 import {redactSensitiveData,safeJson} from "./redaction.js";
+import {OwnerRepairReceiptLedger,type OwnerGrantReceiptEvent} from "./owner_repair_receipt_ledger.js";
+import {OwnerCriticalMergeReceiptLedger,type OwnerCriticalMergeReceiptEvent} from "./owner_critical_merge_receipt_ledger.js";
 
 const safeFront = (front: string) => {
   if (!/^[A-Z0-9][A-Z0-9._-]{5,127}$/.test(front)) throw new Error("front id invalid");
@@ -47,7 +49,35 @@ export class LifecycleStore {
     appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_saved",front_id:persisted.front_id,state:persisted.state,updated_utc:persisted.updated_utc})}\n`);
   }
   advance(record: LifecycleRecord, next: LifecycleState, patch: Partial<LifecycleRecord>={}): LifecycleRecord {
+    if(record.state==="OWNER_REPAIR_AUTHORIZED"||next==="OWNER_REPAIR_AUTHORIZED")throw new Error("owner payload repair transition requires dedicated operation");
+    if(record.state==="ESCALATED"&&next==="MERGING")throw new Error("owner critical merge transition requires dedicated operation");
     const updated={...record,...patch,state:transitionLifecycle(record.state,next),updated_utc:new Date().toISOString()}; this.save(updated); return updated;
+  }
+  beginOwnerCriticalMerge(record:LifecycleRecord,ledger:OwnerCriticalMergeReceiptLedger,authorization:OwnerAuthorizedCriticalMerge,receipt:OwnerCriticalMergeReceiptEvent):LifecycleRecord {
+    const exact=record.state==="ESCALATED"&&record.last_error==="OWNER_AUTHORITY_REQUIRED"&&Number.isInteger(record.repair_cycles)&&record.repair_cycles>=0&&record.repair_cycles<=2&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&record.issue===authorization.issue&&record.pr===authorization.pr&&record.front_id===authorization.front_id&&record.base_sha===authorization.base_sha&&record.head_sha===authorization.head_sha&&record.decision_id===authorization.policy_decision_id&&!record.owner_critical_merge&&receipt.phase==="CONSUMED"&&receipt.critical_merge_key===authorization.critical_merge_key&&receipt.authorization_id===authorization.authorization_id&&receipt.repository===authorization.repository&&receipt.issue===authorization.issue&&receipt.front_id===authorization.front_id&&receipt.pr===authorization.pr&&receipt.base_branch===authorization.base_branch&&receipt.base_sha===authorization.base_sha&&receipt.head_branch===authorization.head_branch&&receipt.head_sha===authorization.head_sha&&receipt.policy_decision_id===authorization.policy_decision_id&&receipt.policy_decision_key===authorization.policy_decision_key;
+    if(!exact)throw new Error("owner critical merge lifecycle authorization denied");
+    try{ledger.assertCurrentConsumedReceipt(receipt);}catch{throw new Error("owner critical merge lifecycle authorization denied");}
+    const updated={...record,state:transitionLifecycle(record.state,"MERGING"),owner_critical_merge:{critical_merge_key:receipt.critical_merge_key,consumed_event_sha256:receipt.event_sha256},updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_owner_critical_merge_authorized",front_id:record.front_id,issue:record.issue,pr:record.pr,critical_merge_key:receipt.critical_merge_key,consumed_event_sha256:receipt.event_sha256,repair_cycles:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
+  }
+  authorizeOwnerPayloadRepair(record:LifecycleRecord,ledger:OwnerRepairReceiptLedger,receipt:OwnerGrantReceiptEvent):LifecycleRecord {
+    const exact=record.state==="BLOCKED"&&record.last_error==="CI_FAILED"&&record.repair_cycles===2&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&!!record.head_sha&&record.completed_effects.length>=2&&receipt.phase==="CONSUMED"&&receipt.front_id===record.front_id&&receipt.failed_head_sha===record.head_sha&&!!receipt.build_attempt_id&&!record.owner_payload_repair;
+    if(!exact)throw new Error("owner payload repair authorization denied");
+    try{ledger.assertCurrentConsumedReceipt(receipt);}catch{throw new Error("owner payload repair authorization denied");}
+    const updated={...record,state:transitionLifecycle(record.state,"OWNER_REPAIR_AUTHORIZED"),owner_payload_repair:{grant_key:receipt.grant_key,consumed_event_sha256:receipt.event_sha256,build_attempt_id:receipt.build_attempt_id!},updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_owner_payload_repair_authorized",front_id:record.front_id,grant_key:receipt.grant_key,consumed_event_sha256:receipt.event_sha256,build_attempt_id:receipt.build_attempt_id,repair_cycles:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
+  }
+  beginOwnerPayloadRepairBuild(record:LifecycleRecord,receipt:OwnerGrantReceiptEvent):LifecycleRecord {
+    const binding=record.owner_payload_repair,exact=record.state==="OWNER_REPAIR_AUTHORIZED"&&record.repair_cycles===2&&!!binding&&receipt.phase==="CONSUMED"&&binding.grant_key===receipt.grant_key&&binding.consumed_event_sha256===receipt.event_sha256&&binding.build_attempt_id===receipt.build_attempt_id&&receipt.front_id===record.front_id&&receipt.failed_head_sha===record.head_sha;
+    if(!exact)throw new Error("owner payload repair build denied");
+    const updated={...record,state:transitionLifecycle(record.state,"BUILDING"),last_error:undefined,updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_owner_payload_repair_build_started",front_id:record.front_id,grant_key:binding.grant_key,consumed_event_sha256:binding.consumed_event_sha256,build_attempt_id:binding.build_attempt_id,repair_cycles:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
+  }
+  adoptOwnerPayloadRepairCandidate(record:LifecycleRecord,candidate:{pr:number;head_sha:string;builder_session:string;grant_key:string;build_attempt_id:string;consumed_event_sha256:string}):LifecycleRecord {
+    const binding=record.owner_payload_repair,exact=record.state==="BUILDING"&&record.last_error===undefined&&record.repair_cycles===2&&!!binding&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&candidate.pr===record.pr&&/^[0-9a-f]{40}$/.test(candidate.head_sha)&&candidate.head_sha!==record.head_sha&&!!candidate.builder_session&&binding.grant_key===candidate.grant_key&&binding.build_attempt_id===candidate.build_attempt_id&&binding.consumed_event_sha256===candidate.consumed_event_sha256;
+    if(!exact)throw new Error("owner payload repair candidate adoption denied");
+    const updated={...record,state:transitionLifecycle(record.state,"PR_CREATED"),head_sha:candidate.head_sha,builder_session:candidate.builder_session,builder_receipt_head_sha:undefined,builder_receipt_base_sha:undefined,reviewer_session:undefined,decision_id:undefined,last_error:undefined,last_error_detail:undefined,builder_retry_reason:undefined,completed_effects:[`issue:${record.issue}`,`build:${candidate.head_sha}`],updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_owner_payload_repair_candidate_adopted",front_id:record.front_id,issue:record.issue,pr:record.pr,old_head_sha:record.head_sha,new_head_sha:candidate.head_sha,grant_key:binding.grant_key,build_attempt_id:binding.build_attempt_id,repair_cycles:updated.repair_cycles,updated_utc:updated.updated_utc})}\n`);return this.advance(updated,"CI_PENDING");
   }
   effect(record: LifecycleRecord, key: string): LifecycleRecord {
     if(!/^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/.test(key)) throw new Error("effect key invalid");

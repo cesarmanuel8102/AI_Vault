@@ -1,7 +1,9 @@
 import {existsSync} from "node:fs";
 import {join} from "node:path";
-import type {LifecycleRecord,ProxySpec} from "./types.js";
+import type {LifecycleRecord,ProxySpec,OwnerAuthorizedCriticalMerge,OwnerAuthorizedPayloadRepairGrant} from "./types.js";
 import type {GitHubBus} from "./github_bus.js";
+import type {OwnerGrantReceiptEvent} from "./owner_repair_receipt_ledger.js";
+import type {OwnerCriticalMergeReceiptEvent} from "./owner_critical_merge_receipt_ledger.js";
 import {AUTH,REPO} from "./policy_engine.js";
 import {validBlockedCiEffectChain,validPrivilegedInstallEffectChain} from "./lifecycle_store.js";
 
@@ -9,6 +11,10 @@ export const EXTERNAL_EFFECT_REGISTRY=["issue_create","issue_modify","label_modi
 export type ExternalEffect=typeof EXTERNAL_EFFECT_REGISTRY[number];
 export interface EffectContext {issue?:number;pr?:number;expected_head?:string;observed_head?:string}
 export type EffectAssertion=(effect:ExternalEffect,context?:EffectContext)=>void;
+export interface OwnerPayloadRepairTransportContext {spec:ProxySpec;state:LifecycleRecord;grant:OwnerAuthorizedPayloadRepairGrant;consumed_event_sha256:string;build_attempt_id:string;build_dispatched_event_sha256:string;}
+export interface OwnerPayloadRepairTransportCapability {readonly front_id:string;readonly grant_key:string;readonly build_attempt_id:string;readonly dispatch_event_sha256:string;}
+export interface OwnerCriticalMergeContext {spec:ProxySpec;state:LifecycleRecord;authorization:OwnerAuthorizedCriticalMerge;}
+export interface OwnerCriticalMergeCapability {readonly critical_merge_key:string;readonly pr:number;readonly base_sha:string;readonly head_sha:string;readonly dispatch_event_sha256:string;}
 
 interface BlockedCiRecovery {
   frontId:string;issue:number;pr:number;oldBase:string;newBase:string;oldHead:string;priorState:"BLOCKED"|"ESCALATED";observedHead?:string;nextHead?:string;
@@ -22,8 +28,24 @@ export class ExternalEffectBoundary {
   private blockedCiRepair=false;
   private unconsummatedRepairResume=false;
   private privilegedInstallResume=false;
+  private ownerPayloadRepairTransport?:OwnerPayloadRepairTransportCapability;
+  private ownerCriticalMerge?:OwnerCriticalMergeCapability;
   constructor(readonly root:string,readonly bus:GitHubBus,readonly leaseOwned:()=>boolean){}
-  bind(spec:ProxySpec,lifecycle:LifecycleRecord){this.spec=spec;this.lifecycle=lifecycle;this.blockedCiRecovery=undefined;this.blockedCiRepair=false;this.unconsummatedRepairResume=false;this.privilegedInstallResume=false;}
+  bind(spec:ProxySpec,lifecycle:LifecycleRecord){this.spec=spec;this.lifecycle=lifecycle;this.blockedCiRecovery=undefined;this.blockedCiRepair=false;this.unconsummatedRepairResume=false;this.privilegedInstallResume=false;this.ownerPayloadRepairTransport=undefined;this.ownerCriticalMerge=undefined;}
+  authorizeOwnerCriticalMerge(context:OwnerCriticalMergeContext,receipt:OwnerCriticalMergeReceiptEvent):OwnerCriticalMergeCapability {
+    const {spec,state,authorization}=context,identity=this.bus.prIdentity(authorization.pr),binding=state.owner_critical_merge;
+    const exact=spec.risk==="CRITICAL"&&spec.authorization_id===authorization.authorization_id&&spec.repository===authorization.repository&&spec.expected_base_sha===authorization.base_sha&&spec.front_id===authorization.front_id&&state.state==="MERGING"&&!!binding&&binding.critical_merge_key===authorization.critical_merge_key&&binding.consumed_event_sha256===receipt.predecessor_event_sha256&&state.front_id===authorization.front_id&&state.issue===authorization.issue&&state.pr===authorization.pr&&state.base_sha===authorization.base_sha&&state.head_sha===authorization.head_sha&&state.decision_id===authorization.policy_decision_id&&receipt.phase==="MERGE_DISPATCHED"&&receipt.critical_merge_key===authorization.critical_merge_key&&receipt.authorization_id===authorization.authorization_id&&receipt.repository===authorization.repository&&receipt.issue===authorization.issue&&receipt.front_id===authorization.front_id&&receipt.pr===authorization.pr&&receipt.base_branch===authorization.base_branch&&receipt.base_sha===authorization.base_sha&&receipt.head_branch===authorization.head_branch&&receipt.head_sha===authorization.head_sha&&receipt.policy_decision_id===authorization.policy_decision_id&&receipt.policy_decision_key===authorization.policy_decision_key&&/^[0-9a-f]{64}$/.test(receipt.event_sha256)&&identity.author?.login===REPO.split("/",1)[0]&&identity.baseRefName===authorization.base_branch&&identity.baseRefOid===authorization.base_sha&&identity.headRefName===authorization.head_branch&&identity.headRefOid===authorization.head_sha&&identity.headRepository?.nameWithOwner===authorization.repository&&identity.isCrossRepository===false&&identity.isDraft===true&&identity.state==="OPEN"&&identity.mergeable==="MERGEABLE"&&this.bus.branchHead(authorization.base_branch)===authorization.base_sha&&!this.bus.issuePaused(authorization.issue);
+    if(!exact)throw new Error("owner critical merge denied");
+    const capability=Object.freeze({critical_merge_key:authorization.critical_merge_key,pr:authorization.pr,base_sha:authorization.base_sha,head_sha:authorization.head_sha,dispatch_event_sha256:receipt.event_sha256});this.ownerCriticalMerge=capability;return capability;
+  }
+  assertOwnerCriticalMerge(capability:OwnerCriticalMergeCapability):void {if(!this.ownerCriticalMerge||capability!==this.ownerCriticalMerge)throw new Error("owner critical merge denied");}
+  authorizeOwnerPayloadRepairTransport(context:OwnerPayloadRepairTransportContext,receipt:OwnerGrantReceiptEvent):OwnerPayloadRepairTransportCapability {
+    const {spec,state,grant}=context,binding=state.owner_payload_repair;
+    const exact=state.state==="BUILDING"&&state.repair_cycles===2&&!!binding&&spec.front_id===state.front_id&&spec.roadmap_item_id===state.roadmap_item_id&&state.base_sha===spec.expected_base_sha&&grant.repository===spec.repository&&grant.roadmap_id===spec.roadmap_id&&grant.roadmap_item_id===spec.roadmap_item_id&&grant.front_id===state.front_id&&grant.issue===state.issue&&grant.pr===state.pr&&grant.work_branch===spec.work_branch&&grant.canonical_base_sha===spec.expected_base_sha&&grant.failed_head_sha===state.head_sha&&grant.authorization_id===spec.authorization_id&&grant.eligible_failure_class==="CI_FAILED"&&grant.max_extra_builds===1&&binding.grant_key===grant.grant_key&&binding.build_attempt_id===context.build_attempt_id&&binding.consumed_event_sha256===context.consumed_event_sha256&&receipt.phase==="BUILD_DISPATCHED"&&receipt.grant_key===grant.grant_key&&receipt.front_id===state.front_id&&receipt.authorization_id===grant.authorization_id&&receipt.failed_head_sha===state.head_sha&&receipt.build_attempt_id===context.build_attempt_id&&receipt.predecessor_event_sha256===context.consumed_event_sha256&&receipt.event_sha256===context.build_dispatched_event_sha256&&/^[0-9a-f]{64}$/.test(receipt.event_sha256);
+    if(!exact)throw new Error("owner payload repair transport denied");
+    const capability=Object.freeze({front_id:state.front_id,grant_key:grant.grant_key,build_attempt_id:context.build_attempt_id,dispatch_event_sha256:receipt.event_sha256});this.ownerPayloadRepairTransport=capability;return capability;
+  }
+  assertOwnerPayloadRepairTransport(capability:OwnerPayloadRepairTransportCapability):void {if(!this.ownerPayloadRepairTransport||capability!==this.ownerPayloadRepairTransport)throw new Error("owner payload repair transport denied");}
   beginPrivilegedInstallResume(spec:ProxySpec,state:LifecycleRecord){
     const exact=state.state==="ESCALATED"&&state.last_error==="LOCAL_PRIVILEGE_REQUIRED"&&spec.install_target==="agent_loop_worker"&&["INSTALL_ONLY","INSTALL_AND_RUNTIME_PILOT"].includes(spec.deployment_mode??"")&&state.deployment_mode===spec.deployment_mode&&state.front_id===spec.front_id&&state.roadmap_item_id===spec.roadmap_item_id&&state.base_sha===spec.expected_base_sha&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&state.repair_cycles===0&&!!state.builder_session&&!!state.reviewer_session&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(state.decision_id??"")&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&validPrivilegedInstallEffectChain(state);
     if(!exact)throw new Error("privileged install receipt boundary denied");
@@ -79,6 +101,21 @@ export class ExternalEffectBoundary {
     if(!this.leaseOwned())throw new Error("external effect lease lost");
     if(existsSync(join(this.root,"state","PAUSE")))throw new Error("external effect paused locally");
     if(spec.authorization_id!==AUTH||spec.repository!==REPO||state.front_id!==spec.front_id||state.roadmap_item_id!==spec.roadmap_item_id)throw new Error("external effect authorization invalid");
+    const criticalMerge=this.ownerCriticalMerge;
+    if(criticalMerge){
+      const identity=this.bus.prIdentity(criticalMerge.pr),binding=state.owner_critical_merge,exact=new Set<ExternalEffect>(["workflow_dispatch","merge"]).has(effect)&&context.issue===state.issue&&context.pr===criticalMerge.pr&&context.expected_head===criticalMerge.head_sha&&state.state==="MERGING"&&!!binding&&binding.critical_merge_key===criticalMerge.critical_merge_key&&state.pr===criticalMerge.pr&&state.base_sha===criticalMerge.base_sha&&state.head_sha===criticalMerge.head_sha&&this.bus.branchHead("codex/own-capital-sustainable-return")===criticalMerge.base_sha&&!this.bus.issuePaused(state.issue!)&&identity.author?.login===REPO.split("/",1)[0]&&identity.baseRefName==="codex/own-capital-sustainable-return"&&identity.baseRefOid===criticalMerge.base_sha&&identity.headRefOid===criticalMerge.head_sha&&identity.headRepository?.nameWithOwner===spec.repository&&identity.isCrossRepository===false&&identity.isDraft===true&&identity.state==="OPEN"&&identity.mergeable==="MERGEABLE";
+      if(!exact)throw new Error("owner critical merge denied");
+      return;
+    }
+    const ownerTransport=this.ownerPayloadRepairTransport;
+    if(ownerTransport){
+      const binding=state.owner_payload_repair;
+      const allowed=new Set<ExternalEffect>(["branch_create","builder_execute","commit_create","push","issue_modify"]);
+      const exact=state.state==="BUILDING"&&state.repair_cycles===2&&!!binding&&binding.grant_key===ownerTransport.grant_key&&binding.build_attempt_id===ownerTransport.build_attempt_id&&context.issue===state.issue&&(context.pr===undefined||context.pr===state.pr)&&allowed.has(effect)&&state.base_sha===spec.expected_base_sha&&this.bus.branchHead("codex/own-capital-sustainable-return")===spec.expected_base_sha;
+      if(!exact)throw new Error("external effect denied by owner payload repair");
+      if(state.issue&&this.bus.issuePaused(state.issue))throw new Error("external effect paused by GitHub label");
+      return;
+    }
     if(state.state==="BLOCKED"||state.state==="ESCALATED"){
       if(this.privilegedInstallResume&&state.state==="ESCALATED"&&state.last_error==="LOCAL_PRIVILEGE_REQUIRED"&&effect==="installation_receipt"){
         if(this.bus.branchHead("codex/own-capital-sustainable-return")!==spec.expected_base_sha)throw new Error("external effect base changed");

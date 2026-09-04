@@ -110,7 +110,8 @@ test("privileged install resume permits only the exact receipt under the persist
 
 test("GitHub mutation families invoke the central guard immediately before mutation",()=>{
   let mutations=0;const bus=new GitHubBus("gh");bus.setMutationGuard(()=>{throw new Error("external effect paused by GitHub label");});(bus as any).call=()=>{mutations++;return "https://github.test/1";};(bus as any).json=(args:string[])=>args[0]==="issue"?{body:"governed"}:args[0]==="run"?[]:{baseRefName:"codex/own-capital-sustainable-return",baseRefOid:base,headRefOid:head,isDraft:true,state:"OPEN",mergeable:"MERGEABLE"};
-  const actions=[()=>bus.createGovernedIssue("t","b"),()=>bus.createDraftPr("control-plane/x","codex/own-capital-sustainable-return","t","b"),()=>bus.bindPrToIssue(63,63),()=>bus.comment(63,"x"),()=>bus.prComment(63,"x"),()=>bus.label("issue",63,"operator:building"),()=>bus.merge(63,head,base,"decision")];
+  const critical:any={authorization_id:"CESAR-BRAIN-101-OPERATOR-PROXY-20260722-01",repository:"cesarmanuel8102/AI_Vault",critical_merge_key:"a".repeat(64),pr:63,base_branch:"codex/own-capital-sustainable-return",base_sha:base,head_sha:head,policy_decision_id:"critical-decision",policy_outcome:"ESCALATE_TO_OWNER",risk:"CRITICAL",action:"OWNER_AUTHORIZED_CRITICAL_MERGE",max_uses:1};
+  const actions=[()=>bus.createGovernedIssue("t","b"),()=>bus.createDraftPr("control-plane/x","codex/own-capital-sustainable-return","t","b"),()=>bus.bindPrToIssue(63,63),()=>bus.comment(63,"x"),()=>bus.prComment(63,"x"),()=>bus.label("issue",63,"operator:building"),()=>bus.merge(63,head,base,"decision"),()=>bus.mergeOwnerAuthorizedCritical(critical)];
   for(const action of actions)assert.throws(action,/paused/);assert.equal(mutations,0);
 });
 

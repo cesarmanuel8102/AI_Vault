@@ -1,7 +1,7 @@
 import {execFileSync} from "node:child_process";
 import {existsSync} from "node:fs";
 import {isAbsolute} from "node:path";
-import type {BuilderInput, BuilderResult} from "./builder_backend.js";
+import type {BuilderInput, BuilderTransportInput, BuilderResult} from "./builder_backend.js";
 import type {BackendConfig} from "./builder_config.js";
 import {redactedError, redactString} from "./redaction.js";
 
@@ -24,7 +24,7 @@ export function parseCodexOutput(output: string): { headSha?: string; providerSe
   return { headSha: headMatch?.[1], providerSession, nativeProviderSession };
 }
 
-export async function runCodexBuilder(input: BuilderInput, config: BackendConfig, env: NodeJS.ProcessEnv = process.env): Promise<BuilderResult> {
+export async function runCodexBuilder(input: BuilderTransportInput|BuilderInput, config: BackendConfig, env: NodeJS.ProcessEnv = process.env): Promise<BuilderResult> {
   if (config.transport !== "codex_cli_openai" || !/^[a-z0-9][a-z0-9._/-]{2,127}$/.test(config.model)) throw new Error("Codex builder configuration invalid");
   const codex = env.CODEX_PATH ?? (env.CODEX_ENTRYPOINT ? process.execPath : "codex");
   const invocation = builderInvocation(codex, env.CODEX_ENTRYPOINT);
@@ -33,7 +33,7 @@ export async function runCodexBuilder(input: BuilderInput, config: BackendConfig
   try {
     stdout = redactString(execFileSync(invocation.file, [...invocation.prefix, "--model", config.model, "exec", "--full-auto", "-C", input.worktree, input.prompt], {
       encoding: "utf8",
-      env: { ...env, OPERATOR_PROXY_SESSION: input.session, OPERATOR_PROXY_PROVIDER_CORRELATION_ID: input.provider_correlation_id },
+      env: { ...env, OPERATOR_PROXY_SESSION: input.session, OPERATOR_PROXY_PROVIDER_CORRELATION_ID: input.provider_correlation_id, ...(input.logical_attempt_id?{OPERATOR_PROXY_BUILD_ATTEMPT_ID:input.logical_attempt_id}:{}) },
       timeout: 900000,
       windowsHide: true,
       maxBuffer: 32 * 1024 * 1024,

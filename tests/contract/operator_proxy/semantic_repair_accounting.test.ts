@@ -61,6 +61,16 @@ test("resumeUnconsummatedRepair transitions POLICY_BLOCK to REPAIRING within the
   assert.equal(reloaded.state, "REPAIRING");
 });
 
+test("ordinary repair accounting remains capped at two and cannot use the owner authorization state", () => {
+  const store = new LifecycleStore(mkdtempSync(join(tmpdir(), "semantic-ordinary-cap-")));
+  const record = blockedPolicyRecord();
+  store.save(record);
+  assert.throws(() => store.resumeUnconsummatedRepair(record, 2), /denied/);
+  assert.throws(() => store.advance(record, "OWNER_REPAIR_AUTHORIZED"), /requires dedicated operation/);
+  assert.equal(record.repair_cycles, 2);
+  assert.equal(store.consummatedPayloadRepairs(record.issue!, record.pr!), 0);
+});
+
 test("resumeUnconsummatedRepair fails closed on every inadmissible shape", () => {
   const store = new LifecycleStore(mkdtempSync(join(tmpdir(), "semantic-deny-")));
   const record = blockedPolicyRecord();

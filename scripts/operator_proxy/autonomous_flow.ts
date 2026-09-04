@@ -12,6 +12,10 @@ export interface AutonomousEffects {
   bindLifecycle(spec:ProxySpec,state:LifecycleRecord):void;
   ensureIssue(spec:ProxySpec):number;
   ensureBuild(spec:ProxySpec,issue:number,session:string,repairCycle:number,previousHead?:string,retryReason?:"BUILDER_FAILURE"):Promise<BuildResult|"PENDING">;
+  /** Dedicated Owner path; ordinary BUILDING never calls this operation. */
+  resumeOwnerPayloadRepair?(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore):Promise<LifecycleRecord|"PENDING">;
+  /** Dedicated Owner path; ordinary policy execution never calls this operation. */
+  resumeOwnerCriticalMerge?(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore):Promise<LifecycleRecord|"PENDING">;
   ci(pr:number,head:string):CiResult;
   review(pr:number,head:string,session:string):ReviewResult;
   policy(spec:ProxySpec,issue:number,pr:number,head:string,review:ReviewerOutput,builderSession:string,reviewerSession:string,repairCycles:number):PolicyResult;
@@ -64,7 +68,24 @@ export class AutonomousFlow {
       case "ADMITTED": {const issue=this.effects.ensureIssue(spec); state=this.store.effect(state,`issue:${issue}`); return this.store.advance(state,"ISSUE_CREATED",{issue});}
       case "ISSUE_CREATED":
       case "REPAIRING": return this.store.advance(state,"BUILDING");
-      case "BUILDING": {if(!state.issue)throw new Error("lifecycle issue missing");const session=`builder-${randomUUID()}`;let built:BuildResult|"PENDING";try{built=await this.effects.ensureBuild(spec,state.issue,session,state.repair_cycles,state.head_sha,state.builder_retry_reason);}catch(error){const {failure_class}=isEligibleFallback(error);return this.store.advance(state,"BLOCKED",{last_error:`BUILDER_FAILED:${failure_class}`,last_error_detail:builderFailureDetail(error),builder_retry_reason:state.repair_cycles>0&&state.builder_retry_reason===undefined?"BUILDER_FAILURE":undefined});}if(built==="PENDING")return state;const sameRepairHead=state.repair_cycles>0&&built.head_sha===state.head_sha;if(typeof built!=="object"||!built.session||!/^[0-9a-f]{40}$/.test(built.head_sha)||sameRepairHead&&built.recovered_repair!==true||!sameRepairHead&&built.recovered_repair===true)throw new Error("builder evidence invalid");if(!sameRepairHead)state=state.repair_cycles>0&&!!state.head_sha?this.store.repairBuild(state,built.head_sha):this.store.effect(state,`build:${built.head_sha}`);return this.store.advance(state,"PR_CREATED",{pr:built.pr,head_sha:built.head_sha,builder_session:built.session,builder_receipt_head_sha:undefined,builder_receipt_base_sha:undefined,decision_id:undefined,reviewer_session:undefined,builder_retry_reason:undefined,last_error_detail:undefined});}
+      case "BLOCKED": {
+        if(state.last_error==="CI_FAILED"&&state.repair_cycles===2&&this.effects.resumeOwnerPayloadRepair){
+          const resumed=await this.effects.resumeOwnerPayloadRepair(spec,state,this.store);
+          return resumed==="PENDING"?state:resumed;
+        }
+        return state;
+      }
+      case "OWNER_REPAIR_AUTHORIZED": {
+        if(!this.effects.resumeOwnerPayloadRepair)throw new Error("owner payload repair effect unavailable");
+        const resumed=await this.effects.resumeOwnerPayloadRepair(spec,state,this.store);
+        return resumed==="PENDING"?state:resumed;
+      }
+      case "ESCALATED": {
+        if(state.last_error!=="OWNER_AUTHORITY_REQUIRED"||!this.effects.resumeOwnerCriticalMerge)return state;
+        const resumed=await this.effects.resumeOwnerCriticalMerge(spec,state,this.store);
+        return resumed==="PENDING"?state:resumed;
+      }
+      case "BUILDING": {if(state.owner_payload_repair){if(!this.effects.resumeOwnerPayloadRepair)throw new Error("owner payload repair effect unavailable");const resumed=await this.effects.resumeOwnerPayloadRepair(spec,state,this.store);return resumed==="PENDING"?state:resumed;}if(!state.issue)throw new Error("lifecycle issue missing");const session=`builder-${randomUUID()}`;let built:BuildResult|"PENDING";try{built=await this.effects.ensureBuild(spec,state.issue,session,state.repair_cycles,state.head_sha,state.builder_retry_reason);}catch(error){const {failure_class}=isEligibleFallback(error);return this.store.advance(state,"BLOCKED",{last_error:`BUILDER_FAILED:${failure_class}`,last_error_detail:builderFailureDetail(error),builder_retry_reason:state.repair_cycles>0&&state.builder_retry_reason===undefined?"BUILDER_FAILURE":undefined});}if(built==="PENDING")return state;const sameRepairHead=state.repair_cycles>0&&built.head_sha===state.head_sha;if(typeof built!=="object"||!built.session||!/^[0-9a-f]{40}$/.test(built.head_sha)||sameRepairHead&&built.recovered_repair!==true||!sameRepairHead&&built.recovered_repair===true)throw new Error("builder evidence invalid");if(!sameRepairHead)state=state.repair_cycles>0&&!!state.head_sha?this.store.repairBuild(state,built.head_sha):this.store.effect(state,`build:${built.head_sha}`);return this.store.advance(state,"PR_CREATED",{pr:built.pr,head_sha:built.head_sha,builder_session:built.session,builder_receipt_head_sha:undefined,builder_receipt_base_sha:undefined,decision_id:undefined,reviewer_session:undefined,builder_retry_reason:undefined,last_error_detail:undefined});}
       case "PR_CREATED": return this.store.advance(state,"CI_PENDING");
       case "CI_PENDING": {if(!state.pr||!state.head_sha)throw new Error("PR evidence missing");const ci=this.effects.ci(state.pr,state.head_sha);if(ci==="PENDING")return state;if(ci==="FAIL")return this.store.advance(state,"BLOCKED",{last_error:"CI_FAILED"});return this.store.advance(state,"REVIEWING");}
       case "REVIEWING": {if(!state.pr||!state.head_sha||!state.builder_session)throw new Error("review evidence missing");const requested=`reviewer-${randomUUID()}`;if(requested===state.builder_session)throw new Error("actor separation failed");const reviewed=this.effects.review(state.pr,state.head_sha,requested),review=reviewed.output,reviewer=reviewed.session;if(!reviewer||reviewer===state.builder_session)throw new Error("actor separation failed");if(review.head_sha!==state.head_sha)throw new Error("review head mismatch");const decision=this.effects.policy(spec,state.issue!,state.pr,state.head_sha,review,state.builder_session,reviewer,state.repair_cycles);if(!/^[0-9a-f-]{36}$/.test(decision.decision_id))throw new Error("policy decision id invalid");state={...state,reviewer_session:reviewer,decision_id:decision.decision_id};if(decision.outcome==="REPAIR"){const consummated=decision.consummated_payload_repairs;const nextCycle=Number.isInteger(consummated)&&consummated!>=0&&consummated!<2?consummated!+1:state.repair_cycles+1;return this.store.advance(state,"REPAIRING",{repair_cycles:nextCycle});}if(decision.outcome==="BLOCK")return this.store.advance(state,"BLOCKED",{last_error:"POLICY_BLOCK"});if(decision.outcome==="ESCALATE_TO_OWNER")return this.store.advance(state,"ESCALATED",{last_error:"OWNER_AUTHORITY_REQUIRED"});return this.store.advance(state,"READY_TO_MERGE");}

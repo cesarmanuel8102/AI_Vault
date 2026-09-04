@@ -186,6 +186,51 @@ test("model-based: boundedness — no plan can exceed the persisted repair budge
   }
 });
 
+test("model-based: only a verified consumed owner grant can authorize one exhausted CI repair", () => {
+  const world: World = {baseChain: [SHA(1), SHA(2)], heads: [SHA(3)], externalMerge: false, checksGreen: false, remoteHead: SHA(3)};
+  const record = produceLifecycle(["admit", "issue", "build", "ci-fail"]);
+  record.repair_cycles = 2; record.base_sha = SHA(2);
+  const snapshot = normalizeObservedFacts({...spec, expected_base_sha: SHA(2)}, record, {bus: makeBus(world), loadDecision: () => undefined});
+  const grant = {authorization_id: spec.authorization_id, grant_key: "a".repeat(64), repository: spec.repository, roadmap_id: spec.roadmap_id, roadmap_item_id: spec.roadmap_item_id, front_id: spec.front_id, issue, pr: prNumber, work_branch: spec.work_branch, canonical_base_sha: SHA(2), failed_head_sha: SHA(3), eligible_failure_class: "CI_FAILED", max_extra_builds: 1};
+  const receipt = {phase: "CONSUMED", grant_key: "a".repeat(64), front_id: spec.front_id, failed_head_sha: SHA(3), build_attempt_id: "b".repeat(64)};
+  const authorized:any = {...ports(false), verifiedOwnerPayloadRepairGrant: () => grant, ownerPayloadRepairReceipt: () => receipt};
+  assert.deepEqual([record.issue,record.pr,record.head_sha,record.front_id,snapshot.spec.expected_base_sha],[issue,prNumber,SHA(3),spec.front_id,SHA(2)]);
+  assert.equal(deriveReconciliationPlan(snapshot, authorized).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
+  const staleBase = normalizeObservedFacts({...spec, expected_base_sha: SHA(2)}, {...record, base_sha: SHA(1)}, {bus: makeBus(world), loadDecision: () => undefined});
+  assert.notEqual(deriveReconciliationPlan(staleBase, authorized).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
+  const staleRemote:any={...snapshot,observeRemoteHead:()=>SHA(4),observePr:()=>snapshot.observePr()};
+  assert.notEqual(deriveReconciliationPlan(staleRemote, authorized).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
+  const gitUnavailable:any={...snapshot,observeRemoteHead:()=>{throw new Error("git unavailable");},observePr:()=>snapshot.observePr()};
+  assert.notEqual(deriveReconciliationPlan(gitUnavailable, authorized).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
+  const githubUnavailable:any={...snapshot,observeRemoteHead:()=>SHA(3),observePr:()=>undefined};
+  assert.notEqual(deriveReconciliationPlan(githubUnavailable, authorized).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
+  const bothUnavailable:any={...snapshot,observeRemoteHead:()=>{throw new Error("git unavailable");},observePr:()=>undefined};
+  assert.notEqual(deriveReconciliationPlan(bothUnavailable, authorized).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
+  for(const mutate of [
+    (identity:any)=>identity.author.login="attacker",
+    (identity:any)=>identity.baseRefOid=SHA(1),
+    (identity:any)=>identity.headRefName="control-plane/other",
+    (identity:any)=>identity.isDraft=false,
+    (identity:any)=>identity.state="CLOSED",
+    (identity:any)=>identity.isCrossRepository=true,
+    (identity:any)=>identity.files=[{path:"scripts/operator_proxy/authority/owner.ts"}],
+  ]) {const changed:any={...snapshot,observePr:()=>{const pr=snapshot.observePr()!;const identity={...pr.identity,author:{...pr.identity.author},files:[...(pr.identity.files??[])]};mutate(identity);return {...pr,identity};}};assert.notEqual(deriveReconciliationPlan(changed, authorized).move,"AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");}
+  assert.notEqual(deriveReconciliationPlan(snapshot, {...authorized, ownerPayloadRepairReceipt: () => ({...receipt, phase: "VERIFIED"})}).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
+  assert.notEqual(deriveReconciliationPlan(snapshot, {...authorized, verifiedOwnerPayloadRepairGrant: () => ({...grant, failed_head_sha: SHA(4)})}).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
+});
+
+test("ordinary exact-head CI reopening requires both remote branch and PR identity observations", () => {
+  const world: World = {baseChain: [SHA(1), SHA(2)], heads: [SHA(3)], externalMerge: false, checksGreen: true, remoteHead: SHA(3)};
+  const record = produceLifecycle(["admit", "issue", "build", "ci-fail"]);
+  record.base_sha = SHA(2);
+  const snapshot = normalizeObservedFacts({...spec, expected_base_sha: SHA(2)}, record, {bus: makeBus(world), loadDecision: () => undefined});
+  assert.equal(deriveReconciliationPlan(snapshot, ports(true)).move, "REOPEN_CI");
+  const missingPr: any = {...snapshot, observePr: () => undefined};
+  assert.notEqual(deriveReconciliationPlan(missingPr, ports(true)).move, "REOPEN_CI");
+  const missingRemote: any = {...snapshot, observeRemoteHead: () => {throw new Error("git unavailable");}};
+  assert.notEqual(deriveReconciliationPlan(missingRemote, ports(true)).move, "REOPEN_CI");
+});
+
 test("model-based: monotonicity — completed irreversible effects never regress", () => {
   const world: World = {baseChain: [SHA(1), SHA(2)], heads: [SHA(3), SHA(4)], externalMerge: false, checksGreen: true, remoteHead: SHA(4)};
   const bus = makeBus(world);

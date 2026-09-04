@@ -33,6 +33,13 @@ test("cached review receipt is validated before reuse",()=>{
   let factoryCalls=0;assert.throws(()=>ledger.loadOrCreateReview(key,()=>{factoryCalls++;return {head_sha:head,verdict:"PASS"};},value=>{if(value.head_sha!==base)throw new Error("cached review binding mismatch");}),/cached review binding mismatch/);assert.equal(factoryCalls,0);
 });
 
+test("loadReview reads a persisted review without creating or executing one",()=>{
+  const root=mkdtempSync(join(tmpdir(),"review-read-only-")),ledger=new Ledger(root),readKey="d".repeat(64);
+  ledger.loadOrCreateReview(readKey,()=>({head_sha:head,verdict:"PASS"}));
+  assert.deepEqual(ledger.loadReview<{head_sha:string;verdict:string}>(readKey),{head_sha:head,verdict:"PASS"});
+  assert.throws(()=>ledger.loadReview(readKey.slice(0,63)+"e"),/review receipt missing/);
+});
+
 test("legacy empty and crashed review claims recover through append-only epochs",async()=>{
   const legacyRoot=mkdtempSync(join(tmpdir(),"review-legacy-"));mkdirSync(join(legacyRoot,`claim-review-${key}`));let legacyCalls=0;
   const legacy=new Ledger(legacyRoot).loadOrCreateReview(key,()=>{legacyCalls++;return {issue:63,pr:63,base_sha:base,head_sha:head,verdict:"PASS"};});

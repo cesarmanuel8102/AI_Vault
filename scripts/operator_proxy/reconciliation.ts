@@ -1,4 +1,5 @@
-import type {LifecycleRecord, ProxySpec, NormalizedDecision} from "./types.js";
+import type {LifecycleRecord, ProxySpec, NormalizedDecision, OwnerAuthorizedPayloadRepairGrant} from "./types.js";
+import type {OwnerGrantReceiptEvent} from "./owner_repair_receipt_ledger.js";
 const pathAllowed=(path:string,spec:ProxySpec)=>spec.allowed_paths.some(p=>p.endsWith("/")?path.startsWith(p):path===p)&&!spec.forbidden_paths.some(p=>path===p||path.startsWith(p.endsWith("/")?p:`${p}/`));
 import {
   type CanonicalLifecycleSnapshot, type CandidateLineage,
@@ -31,6 +32,7 @@ export type ReconciliationMove =
   | "REOPEN_CI"
   | "REQUEST_DETERMINISTIC_REPAIR"
   | "RESUME_UNCONSUMMATED_REPAIR"
+  | "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME"
   | "EXHAUST_REPAIR"
   | "ADOPT_EXTERNAL_MERGE"
   | "RECOVER_NEGATED_RISK_ESCALATION"
@@ -62,6 +64,10 @@ export interface PlannerPorts {
   decisionBoundToLineage(decision: NormalizedDecision): boolean;
   /** Counts CONSUMMATED payload-review repairs (a repair decision followed by a replaced payload head). Lifecycle/system recovery churn never counts. */
   consummatedPayloadRepairs(issue: number, pr: number): number;
+  /** Returns only a grant already verified against canonical authority and Owner evidence. */
+  verifiedOwnerPayloadRepairGrant?(record: LifecycleRecord): OwnerAuthorizedPayloadRepairGrant | undefined;
+  /** Returns only the validated append-only receipt view for the grant key. */
+  ownerPayloadRepairReceipt?(grantKey: string): OwnerGrantReceiptEvent | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -96,7 +102,7 @@ export function validateInvariantSet(snapshot: CanonicalLifecycleSnapshot, plan:
 const planRequiresNoLineage = (move: ReconciliationMove): boolean =>
   ["NOOP", "REBIND_UNSTARTED_BASE", "REBIND_PRE_BUILD_BASE", "REBIND_POST_MERGE_BASE", "RESUME_INITIAL_BUILD",
    "EXHAUST_REPAIR", "ESCALATE_OWNER", "INVALIDATE_FAILED_MERGE", "AMBIGUOUS", "RECOVER_NEGATED_RISK_ESCALATION",
-   "SYNCHRONIZE_CANDIDATE", "REOPEN_CI", "ADOPT_ADVANCED_PAYLOAD"].includes(move) ||
+   "SYNCHRONIZE_CANDIDATE", "REOPEN_CI", "ADOPT_ADVANCED_PAYLOAD", "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME"].includes(move) ||
   // Moves whose lineage is derived lazily by the applier after external reads.
   (move === "REQUEST_DETERMINISTIC_REPAIR" || move === "RESUME_RECORDED_BUILD" || move === "RESUME_UNCONSUMMATED_REPAIR");
 function lineageComplete(lineage: CandidateLineage, ports: PlannerPorts): boolean {
@@ -185,9 +191,31 @@ function planBlockedCi(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts
   if (snapshot.base.persisted === snapshot.spec.expected_base_sha && ports.checksGreenAtHead(record.head_sha) && remoteMatchesSnapshot(snapshot)) {
     return {move: "REOPEN_CI", reason: "green exact-head CI reopens the undecided candidate", lineage: undefined};
   }
-  if (record.repair_cycles >= 2) return {move: "EXHAUST_REPAIR", reason: "bounded repair budget exhausted", lineage: undefined};
+  if (record.repair_cycles >= 2) {
+    if (eligibleOwnerPayloadRepair(snapshot, ports)) return {move: "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME", reason: "verified consumed Owner grant authorizes the one exceptional build", lineage: undefined};
+    return {move: "EXHAUST_REPAIR", reason: "bounded repair budget exhausted", lineage: undefined};
+  }
   if (snapshot.base.stale) return {move: "SYNCHRONIZE_CANDIDATE", reason: "terminal failed CI synchronizes the trusted candidate across the advanced base", lineage: undefined};
   return {move: "REQUEST_DETERMINISTIC_REPAIR", reason: "terminal failed CI consumes a bounded deterministic repair cycle", lineage: undefined};
+}
+
+function eligibleOwnerPayloadRepair(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): boolean {
+  const record=snapshot.record,grant=ports.verifiedOwnerPayloadRepairGrant?.(record);
+  if(!grant||!record.pr||!record.head_sha||record.base_sha!==snapshot.spec.expected_base_sha||!ownerRepairPrIdentityMatches(snapshot)||grant.authorization_id!==snapshot.spec.authorization_id||grant.repository!==snapshot.spec.repository||grant.roadmap_id!==snapshot.spec.roadmap_id||grant.roadmap_item_id!==snapshot.spec.roadmap_item_id||grant.front_id!==record.front_id||grant.issue!==record.issue||grant.pr!==record.pr||grant.work_branch!==snapshot.spec.work_branch||grant.canonical_base_sha!==snapshot.spec.expected_base_sha||grant.failed_head_sha!==record.head_sha||grant.eligible_failure_class!=="CI_FAILED"||grant.max_extra_builds!==1)return false;
+  const receipt=ports.ownerPayloadRepairReceipt?.(grant.grant_key);
+  return receipt?.phase==="CONSUMED"&&receipt.grant_key===grant.grant_key&&receipt.front_id===record.front_id&&receipt.failed_head_sha===record.head_sha&&typeof receipt.build_attempt_id==="string"&&/^[0-9a-f]{64}$/.test(receipt.build_attempt_id);
+}
+
+function ownerRepairPrIdentityMatches(snapshot: CanonicalLifecycleSnapshot): boolean {
+  const {record,spec}=snapshot;
+  if(!record.pr||!record.head_sha||!spec.work_branch)return false;
+  const remote=safe(()=>snapshot.observeRemoteHead()),pr=safe(()=>snapshot.observePr()),identity=pr?.identity;
+  const files=(identity?.files??[]).map((entry:any)=>String(entry.path));
+  return remote===record.head_sha&&identity?.headRefOid===record.head_sha&&
+    identity.author?.login===spec.repository.split("/",1)[0]&&identity.baseRefName==="codex/own-capital-sustainable-return"&&
+    identity.baseRefOid===spec.expected_base_sha&&identity.headRefName===spec.work_branch&&
+    identity.headRepository?.nameWithOwner===spec.repository&&identity.isCrossRepository===false&&
+    identity.isDraft===true&&identity.state==="OPEN"&&files.length>0&&files.every(path=>pathAllowed(path,spec));
 }
 
 // A policy BLOCK is terminal for its decided head. It is resumable only as an
@@ -274,7 +302,7 @@ function samePrPayloadAdvanced(snapshot: CanonicalLifecycleSnapshot): boolean {
 }
 
 function remoteMatchesSnapshot(snapshot: CanonicalLifecycleSnapshot): boolean {
-  return snapshot.observeRemoteHead() === snapshot.record.head_sha && snapshot.observePr()?.identity.headRefOid === snapshot.record.head_sha;
+  try{return snapshot.observeRemoteHead() === snapshot.record.head_sha && snapshot.observePr()?.identity.headRefOid === snapshot.record.head_sha;}catch{return false;}
 }
 
 function adoptPublishedInitialCandidate(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {
