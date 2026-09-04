@@ -6,6 +6,7 @@ import {join} from "node:path";
 import {AutonomousFlow,newLifecycle} from "../../../scripts/operator_proxy/autonomous_flow.js";
 import {LifecycleStore} from "../../../scripts/operator_proxy/lifecycle_store.js";
 import {OwnerPayloadRepairOrchestrator} from "../../../scripts/operator_proxy/owner_payload_repair_orchestrator.js";
+import {ProductionEffects} from "../../../scripts/operator_proxy/production_effects.js";
 import type {ProxySpec} from "../../../scripts/operator_proxy/types.js";
 
 const base="a".repeat(40),failed="b".repeat(40),head="c".repeat(40),attempt="d".repeat(64),consumed="e".repeat(64),grant="f".repeat(64);
@@ -25,4 +26,15 @@ test("exhausted CI failure reaches ordinary CI through one owner attempt without
   const effects:any={bindLifecycle:()=>{},ensureIssue:()=>{throw new Error("unexpected")},ensureBuild:()=>{ordinaryBuilds++;throw new Error("unexpected")},resumeOwnerPayloadRepair:resume,ci:()=>"PENDING",review:()=>{throw new Error("unexpected")},policy:()=>{throw new Error("unexpected")},ensureMerge:()=>{throw new Error("unexpected")},ensureInstall:()=>"PASS",ensureRuntimePilot:()=>"PASS",ensureCloseout:async()=>"PASS",discoverNext:()=>{}};
   const result=await new AutonomousFlow(store,effects).step(spec);
   assert.equal(result.state,"CI_PENDING");assert.equal(result.repair_cycles,2);assert.equal(ordinaryBuilds,0);assert.equal(rawComments,0);assert.equal(ordinaryRepairEvents,0);assert.deepEqual(events,["BUILD_DISPATCHED",`provider:${attempt}`,`lineage:${head}`,"HEAD_BOUND"]);
+});
+
+test("exhausted CI failure without an Owner envelope remains terminal blocked",async()=>{
+  const root=mkdtempSync(join(tmpdir(),"owner-flow-no-grant-")),store=new LifecycleStore(join(root,"lifecycle"));
+  const blocked:any={...newLifecycle(spec),state:"BLOCKED",last_error:"CI_FAILED",issue:248,pr:249,head_sha:failed,builder_session:"ordinary-builder",repair_cycles:2,completed_effects:["issue:248",`build:${failed}`]};store.save(blocked);
+  const bus:any={setMutationGuard:()=>{},issueComments:()=>[]};
+  const boundary:any={assert:()=>{},bind:()=>{}};
+  const effects=new ProductionEffects(bus,{} as any,join(process.cwd(),"..",".."),root,boundary);
+  assert.equal(await effects.resumeOwnerPayloadRepair(spec,blocked,store),"PENDING");
+  const persisted=store.load(spec.front_id!)!;
+  assert.equal(persisted.state,"BLOCKED");assert.equal(persisted.repair_cycles,2);assert.equal(persisted.head_sha,failed);assert.equal(persisted.owner_payload_repair,undefined);
 });

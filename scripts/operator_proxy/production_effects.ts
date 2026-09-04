@@ -90,7 +90,13 @@ export class ProductionEffects implements AutonomousEffects {
   async resumeOwnerPayloadRepair(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore):Promise<LifecycleRecord|"PENDING"> {
     if(!state.issue||!state.pr||!state.head_sha||spec.executor!=="codex_control_plane")throw new Error("owner payload repair lifecycle identity invalid");
     const authority=loadRepositoryAuthorization(join(this.sourceRepo,"scripts","operator_proxy","authority","repository_authorization.v1.json"),spec.repository);
-    const grantFor=(record:LifecycleRecord):OwnerAuthorizedPayloadRepairGrant=>discoverOwnerAuthorizedPayloadRepairGrant({spec,issue:record.issue!,pr:record.pr!,failed_head_sha:record.head_sha!,failure_class:record.state==="BLOCKED"?record.last_error??"": "CI_FAILED",ordinary_payload_repairs:store.consummatedPayloadRepairs(record.issue!,record.pr!),sources:{campaign_candidates:[],repository_candidates:[authority]},comments:this.bus.issueComments(record.issue!)});
+    const comments=this.bus.issueComments(state.issue!),ownerEnvelopes=comments.filter(comment=>{
+      const body=comment&&typeof comment==="object"?String((comment as Record<string,unknown>).body??""):"";
+      return body.includes("BRAIN_OWNER_PAYLOAD_REPAIR_V1")||body.includes("END_BRAIN_OWNER_PAYLOAD_REPAIR_V1");
+    });
+    // No Owner evidence is a terminal wait, while malformed or ambiguous evidence fails closed below.
+    if(ownerEnvelopes.length===0)return "PENDING";
+    const grantFor=(record:LifecycleRecord):OwnerAuthorizedPayloadRepairGrant=>discoverOwnerAuthorizedPayloadRepairGrant({spec,issue:record.issue!,pr:record.pr!,failed_head_sha:record.head_sha!,failure_class:record.state==="BLOCKED"?record.last_error??"": "CI_FAILED",ordinary_payload_repairs:store.consummatedPayloadRepairs(record.issue!,record.pr!),sources:{campaign_candidates:[],repository_candidates:[authority]},comments});
     const receipts=new OwnerRepairReceiptLedger(join(this.root,"owner-repair-receipts"));let current=state;let grant:OwnerAuthorizedPayloadRepairGrant|undefined;
     const coordinator=new OwnerPayloadRepairOrchestrator({
       verify:record=>{grant=grantFor(record as LifecycleRecord);return grant;},

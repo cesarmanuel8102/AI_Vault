@@ -42,6 +42,9 @@ const MAX_FINDING_TITLE=200;
 const MAX_FINDING_EVIDENCE=1000;
 const MAX_FINDING_CORRECTION=500;
 const MAX_FINDING_COUNT=6;
+// OpenCode truncates individual file attachments at 50 KiB. Keep each immutable
+// diff fragment below that provider boundary while retaining a bounded full diff.
+const MAX_REVIEW_ATTACHMENT_SIZE=48*1024;
 // Bound each attempt while allowing large immutable diffs to complete before failover.
 const REVIEWER_TRANSPORT_TIMEOUT_MS=120_000;
 
@@ -124,7 +127,7 @@ export function projectPanelEvidence(evidence:unknown):{projection:string;sha256
   if(Buffer.byteLength(projection,"utf8")>MAX_EVIDENCE_PROJECTION_SIZE)throw new ReviewerBackendError("panel evidence projection overflow","REVIEWER_INVALID_INPUT");
   return {projection,sha256};
 }
-function reviewPrompt(input:ReviewerInput,diff:string){
+function reviewManifest(input:ReviewerInput,diff:string){
   const staticLines:string[]=[
     "You are an independent read-only code reviewer. Return exactly one bare JSON object with keys verdict, head_sha, summary, findings.",
     "verdict must be exactly PASS only if findings=[]; CHANGES_REQUESTED only for repairable P1/P2; BLOCKED for P0, uncertainty, or invalid input.",
@@ -144,10 +147,32 @@ function reviewPrompt(input:ReviewerInput,diff:string){
   const staticPart=staticLines.join("\n");
   const parts=[staticPart];
   if(projectionLine)parts.push(projectionLine);
-  parts.push("BEGIN_COMPLETE_DIFF",diff,"END_COMPLETE_DIFF");
-  const prompt=parts.join("\n");
-  if(Buffer.byteLength(prompt,"utf8")>MAX_PROMPT_SIZE)throw new ReviewerBackendError("review prompt exceeds bounded budget","REVIEWER_INVALID_INPUT");
-  return prompt;
+  parts.push(`COMPLETE_DIFF_SHA256=${hashString(diff)}`,"The complete immutable diff is supplied in the attached complete-diff chunks, in numeric filename order. Concatenate every chunk exactly once before reviewing.");
+  const manifest=parts.join("\n");
+  if(Buffer.byteLength(`${manifest}\n${diff}`,"utf8")>MAX_PROMPT_SIZE)throw new ReviewerBackendError("review prompt exceeds bounded budget","REVIEWER_INVALID_INPUT");
+  return manifest;
+}
+
+function splitUtf8(value:string,maxBytes:number){
+  const chunks:string[]=[];let chunk="",size=0;
+  for(const character of value){
+    const characterSize=Buffer.byteLength(character,"utf8");
+    if(size&&size+characterSize>maxBytes){chunks.push(chunk);chunk="";size=0;}
+    chunk+=character;size+=characterSize;
+  }
+  if(chunk||chunks.length===0)chunks.push(chunk);
+  return chunks;
+}
+
+function writeReviewAttachments(temp:string,input:ReviewerInput,diff:string){
+  const chunks=splitUtf8(diff,MAX_REVIEW_ATTACHMENT_SIZE),manifest=reviewManifest(input,diff),manifestPath=join(temp,"review-manifest.txt");
+  writeFileSync(manifestPath,manifest,"utf8");
+  const paths=[manifestPath];
+  for(const [index,chunk] of chunks.entries()){
+    const path=join(temp,`complete-diff-${String(index+1).padStart(4,"0")}.patch`);
+    writeFileSync(path,chunk,"utf8");paths.push(path);
+  }
+  return paths;
 }
 export function parseJsonl(stdout:string,head:string,_workspace:string){
   const texts:string[]=[],sessions=new Set<string>();
@@ -204,11 +229,11 @@ export class OpenCodeReviewerBackend implements ReviewerBackend {
         }},
       };
       writeFileSync(configPath,JSON.stringify(config));
-      const promptPath=join(temp,"review-prompt.txt");writeFileSync(promptPath,reviewPrompt(input,diff),"utf8");
+      const attachments=writeReviewAttachments(temp,input,diff);
       const env:NodeJS.ProcessEnv={...process.env,OPENCODE_CONFIG:configPath};delete env.OPENAI_API_KEY;delete env.GH_TOKEN;delete env.GITHUB_TOKEN;
       let stdout:string;
       const finalInstruction=`Return exactly one bare JSON object: {"verdict":"PASS|CHANGES_REQUESTED|BLOCKED","head_sha":"${input.headSha}","summary":"1-500 characters","findings":[{"severity":"P0|P1|P2","title":"max 200 chars","evidence":"max 1000 chars","required_correction":"max 500 chars"}]}. Preserve head_sha byte-for-byte. Use at most 6 findings and no other finding keys. PASS requires findings=[]. Do not call tools.`;
-      try{stdout=this.runner(runtime.node,[runtime.entrypoint,"run","--dir",workspace,"--model",this.model,"--agent","brain-opencode-reviewer","--format","json","--title",session,"--thinking","false",finalInstruction,"--file",promptPath],{cwd:workspace,env,timeout:REVIEWER_TRANSPORT_TIMEOUT_MS,maxBuffer:64*1024*1024});}
+      try{stdout=this.runner(runtime.node,[runtime.entrypoint,"run","--dir",workspace,"--model",this.model,"--agent","brain-opencode-reviewer","--format","json","--title",session,"--thinking","false",finalInstruction,...attachments.flatMap(path=>["--file",path])],{cwd:workspace,env,timeout:REVIEWER_TRANSPORT_TIMEOUT_MS,maxBuffer:64*1024*1024});}
       catch(error){throw new ReviewerBackendError(redactedError(error),"REVIEWER_TRANSPORT_FAILURE",true);}
       assertImmutable(this.runner,workspace,input);
       const parsed=parseJsonl(stdout,input.headSha,workspace);return {output:parsed.output,providerSession:parsed.providerSession,backend:"opencode_ollama",model:this.model,session,startedUtc,completedUtc:new Date().toISOString()};

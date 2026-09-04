@@ -219,6 +219,18 @@ test("model-based: only a verified consumed owner grant can authorize one exhaus
   assert.notEqual(deriveReconciliationPlan(snapshot, {...authorized, verifiedOwnerPayloadRepairGrant: () => ({...grant, failed_head_sha: SHA(4)})}).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
 });
 
+test("ordinary exact-head CI reopening requires both remote branch and PR identity observations", () => {
+  const world: World = {baseChain: [SHA(1), SHA(2)], heads: [SHA(3)], externalMerge: false, checksGreen: true, remoteHead: SHA(3)};
+  const record = produceLifecycle(["admit", "issue", "build", "ci-fail"]);
+  record.base_sha = SHA(2);
+  const snapshot = normalizeObservedFacts({...spec, expected_base_sha: SHA(2)}, record, {bus: makeBus(world), loadDecision: () => undefined});
+  assert.equal(deriveReconciliationPlan(snapshot, ports(true)).move, "REOPEN_CI");
+  const missingPr: any = {...snapshot, observePr: () => undefined};
+  assert.notEqual(deriveReconciliationPlan(missingPr, ports(true)).move, "REOPEN_CI");
+  const missingRemote: any = {...snapshot, observeRemoteHead: () => {throw new Error("git unavailable");}};
+  assert.notEqual(deriveReconciliationPlan(missingRemote, ports(true)).move, "REOPEN_CI");
+});
+
 test("model-based: monotonicity — completed irreversible effects never regress", () => {
   const world: World = {baseChain: [SHA(1), SHA(2)], heads: [SHA(3), SHA(4)], externalMerge: false, checksGreen: true, remoteHead: SHA(4)};
   const bus = makeBus(world);

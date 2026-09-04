@@ -302,10 +302,7 @@ function samePrPayloadAdvanced(snapshot: CanonicalLifecycleSnapshot): boolean {
 }
 
 function remoteMatchesSnapshot(snapshot: CanonicalLifecycleSnapshot): boolean {
-  const expected = snapshot.record.head_sha;
-  const observations = [safe(() => snapshot.observeRemoteHead()), safe(() => snapshot.observePr())?.identity.headRefOid]
-    .filter((head): head is string => typeof head === "string");
-  return observations.length > 0 && observations.every(head => head === expected);
+  try{return snapshot.observeRemoteHead() === snapshot.record.head_sha && snapshot.observePr()?.identity.headRefOid === snapshot.record.head_sha;}catch{return false;}
 }
 
 function adoptPublishedInitialCandidate(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): ReconciliationPlan {

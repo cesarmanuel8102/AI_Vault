@@ -45,6 +45,16 @@ test("receipt ledger persists the deterministic attempt before dispatch and deni
   assert.match(readFileSync(join(store.root,"owner-repair-receipts.jsonl"),"utf8"),/BUILD_DISPATCHED|CONSUMED/);
 });
 
+test("consume rechecks the per-front exception invariant inside the append lock",()=>{
+  const first=ledger(),one=grant(),two=grant(one.front_id,sha("f"));
+  first.appendVerified(one);first.appendVerified(two);const second=new OwnerRepairReceiptLedger(first.root);
+  let injected=false;
+  (first as any).hasConsumedOwnerException=()=>{if(!injected){injected=true;second.consume(two.grant_key);}return false;};
+  assert.throws(()=>first.consume(one.grant_key),/owner exception.*consumed/);
+  const events=readFileSync(join(first.root,"owner-repair-receipts.jsonl"),"utf8").trim().split("\n").map(line=>JSON.parse(line));
+  assert.equal(events.filter(event=>event.front_id===one.front_id&&event.phase==="CONSUMED").length,1);
+});
+
 test("receipt ledger fails closed while another process owns the append transaction",()=>{
   const store=ledger();
   writeFileSync(join(store.root,"owner-repair-receipts.lock"),"held");
