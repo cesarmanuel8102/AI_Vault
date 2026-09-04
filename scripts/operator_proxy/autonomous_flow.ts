@@ -69,7 +69,7 @@ export class AutonomousFlow {
       case "ISSUE_CREATED":
       case "REPAIRING": return this.store.advance(state,"BUILDING");
       case "BLOCKED": {
-        if(state.last_error==="CI_FAILED"&&state.repair_cycles===2&&this.effects.resumeOwnerPayloadRepair){
+        if(["CI_FAILED","REPAIR_LIMIT_REACHED"].includes(state.last_error??"")&&state.repair_cycles===2&&this.effects.resumeOwnerPayloadRepair){
           const resumed=await this.effects.resumeOwnerPayloadRepair(spec,state,this.store);
           return resumed==="PENDING"?state:resumed;
         }
