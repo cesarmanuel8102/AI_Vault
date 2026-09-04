@@ -368,6 +368,19 @@ test("repair build uses the exact clean candidate HEAD as its effective base",as
   finally {if(prior.entry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=prior.entry;if(prior.path===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=prior.path;if(prior.root===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=prior.root;}
 });
 
+test("control-plane router preserves the caller-bound builder session in durable provenance",async()=>{
+  const r=builderRepo(),entry=join(r.source,"bound-session-builder.js"),boundSession="builder-authoritative-session-01";
+  const prior={entry:process.env.CODEX_ENTRYPOINT,path:process.env.CODEX_PATH,root:process.env.OPERATOR_PROXY_ROOT};
+  writeFileSync(entry,fakeBackendScript("bound session",0));
+  process.env.CODEX_ENTRYPOINT=entry;process.env.CODEX_PATH=process.execPath;process.env.OPERATOR_PROXY_ROOT=mkdtempSync(join(tmpdir(),"builder-bound-session-"));
+  try {
+    const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"bound session",0,{forceBackend:"codex_cli_openai",session:boundSession} as any,r.worktree);
+    assert.equal(result.builder_session,boundSession);
+    const events=attemptStates(process.env.OPERATOR_PROXY_ROOT!);
+    assert.equal((events as any[]).find(event=>event.state==="STARTED")?.builder_session,boundSession);
+  } finally {if(prior.entry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=prior.entry;if(prior.path===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=prior.path;if(prior.root===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=prior.root;}
+});
+
 test("base override mismatch or dirty entry fails before backend execution",async()=>{
   for(const dirty of [false,true]){
     const r=builderRepo(),candidate=advanceWorktree(r.worktree,"candidate\n"),called=join(r.source,"called.txt"),entry=join(r.source,"must-not-run.js"),prior={entry:process.env.CODEX_ENTRYPOINT,path:process.env.CODEX_PATH,root:process.env.OPERATOR_PROXY_ROOT};

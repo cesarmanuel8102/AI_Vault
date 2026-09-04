@@ -7,7 +7,7 @@ import {BuilderBackendError,ELIGIBLE_FALLBACK_FAILURES,type BuilderInput,type Bu
 import type {EffectAssertion,OwnerPayloadRepairTransportCapability} from "./external_effect_guard.js";
 import {redactedError} from "./redaction.js";
 import {routeControlPlaneBuild,routePreparedCandidateBuild} from "./builder_router.js";
-import {BuilderAttemptProvenance,LEGACY_NEUTRALIZATION_TRAILER,PRIOR_UNATTESTED_HEAD_TRAILER,RESET_BASE_TRAILER,LEGACY_REBUILD_TRAILER,NEUTRALIZATION_HEAD_TRAILER,FRESH_BUILDER_HEAD_TRAILER} from "./builder_attempt_provenance.js";
+import {BuilderAttemptProvenance,resolveCompletedBuilderSession,resolveCompletedBuilderSessionForSynchronizedLineage,LEGACY_NEUTRALIZATION_TRAILER,PRIOR_UNATTESTED_HEAD_TRAILER,RESET_BASE_TRAILER,LEGACY_REBUILD_TRAILER,NEUTRALIZATION_HEAD_TRAILER,FRESH_BUILDER_HEAD_TRAILER} from "./builder_attempt_provenance.js";
 import {canonicalCorrectionPayloadBytes,parseCorrectionPayloadV1} from "./correction_payload.js";
 import {CandidateExecutionKernel,type CandidateExecutionAdapter,type CandidatePublicationResult,type PreparedCandidateAttempt} from "./candidate_execution.js";
 
@@ -284,6 +284,20 @@ export class GovernedBuilder {
     return observed;
   }
 
+  private requireCompletedBuilderSession(spec:ProxySpec,issue:number,worktree:string,baseSha:string,candidateHead:string):string{
+    if(!spec.front_id||!spec.work_branch)throw new Error("builder metadata missing");
+    const session=resolveCompletedBuilderSession({front_id:spec.front_id,issue,base_sha:baseSha,canonical_worktree:worktree,work_branch:spec.work_branch,candidate_head_sha:candidateHead,isAncestor:(older,newer)=>{try{git(worktree,["merge-base","--is-ancestor",older,newer]);return true;}catch{return false;}}});
+    if(!session)throw new Error("BUILDER_PROVENANCE_RECOVERY_REQUIRED: durable completed builder session missing");
+    return session;
+  }
+
+  private requireCompletedBuilderSessionForValidatedSync(spec:ProxySpec,issue:number,worktree:string,validatedBuilderReceiptHead:string):string{
+    if(!spec.front_id||!spec.work_branch)throw new Error("builder metadata missing");
+    const session=resolveCompletedBuilderSessionForSynchronizedLineage({front_id:spec.front_id,issue,canonical_worktree:worktree,work_branch:spec.work_branch,validated_builder_receipt_head_sha:validatedBuilderReceiptHead,isAncestor:(older,newer)=>{try{git(worktree,["merge-base","--is-ancestor",older,newer]);return true;}catch{return false;}}});
+    if(!session)throw new Error("BUILDER_PROVENANCE_RECOVERY_REQUIRED: durable completed builder session missing");
+    return session;
+  }
+
   private async publishOrdinaryCleanCandidate(spec:ProxySpec,issue:number,session:string,repairCycle:number,retryReason:"BUILDER_FAILURE"|undefined,worktree:string,baseSha:string,observedHead:string,existing:{number:number;head_sha:string}|undefined){
     if(!spec.front_id||!spec.work_branch)throw new Error("builder metadata missing");
     const requestedRepair=repairCycle>0?this.bus.repairPrompt(issue):"";
@@ -292,7 +306,7 @@ export class GovernedBuilder {
     const prompt=builderPrompt(spec,repairCycle,repair);
     const adapter:CandidateExecutionAdapter={
       prepare:()=>({worktree,starting_head:baseSha}),
-      invokeProvider:async request=>{this.assertEffect("builder_execute",{issue});return await routeControlPlaneBuild(spec,issue,request.prompt,repairCycle,{baseSha},worktree);},
+      invokeProvider:async request=>{this.assertEffect("builder_execute",{issue});return await routeControlPlaneBuild(spec,issue,request.prompt,repairCycle,{baseSha,session},worktree);},
       changedPaths:(_prepared,_base,providerHead)=>providerHead===baseSha?changed(worktree):committed(worktree,baseSha),
       runDeclaredTests:()=>runDeclaredTests(worktree,spec.test_commands),
       diffCheck:(_prepared,_base,providerHead)=>native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",...(providerHead===baseSha?[]:[`${baseSha}..${providerHead}`])],{stdio:"inherit",timeout:120000,windowsHide:true}),
@@ -305,7 +319,7 @@ export class GovernedBuilder {
     };
     const attempt:PreparedCandidateAttempt={repository:spec.repository,front_id:spec.front_id,roadmap_item_id:spec.roadmap_item_id,issue,work_branch:spec.work_branch,expected_base_sha:baseSha,observed_head_sha:observedHead,allowed_paths:spec.allowed_paths,forbidden_paths:spec.forbidden_paths,test_commands:spec.test_commands,provider_request:{prompt,executor_role:"codex_control_plane"},publication_receipt:{kind:"ORDINARY",render:provider=>builderReceiptMessage(spec.front_id!,provider)}};
     const result=await new CandidateExecutionKernel(adapter).publish(attempt);
-    return {pr:result.pr,head_sha:result.head_sha,session};
+    return {pr:result.pr,head_sha:result.head_sha,session:result.builder_session};
   }
 
   async build(spec:ProxySpec,issue:number,session:string,repairCycle:number,retryReason?:"BUILDER_FAILURE"){
@@ -334,8 +348,9 @@ export class GovernedBuilder {
       const remote=this.bus.remoteBranchHead(spec.work_branch);if(remote!==publishedHead||initialHead!==publishedHead||initialStatus)throw new Error("published builder branch identity invalid");
       try{git(worktree,["merge-base","--is-ancestor",spec.expected_base_sha,publishedHead]);}catch{throw new Error("published builder ancestry invalid");}
       validateBuilderReceipt(worktree,publishedHead,spec.front_id);const files=committed(worktree,spec.expected_base_sha);validateFiles(files,spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${spec.expected_base_sha}..${publishedHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});
-      if(existing)validatePublishedPr(spec,existing,this.bus.prIdentity(existing.number),publishedHead,files);
-      const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered published builder branch.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:publishedHead,session};
+       if(existing)validatePublishedPr(spec,existing,this.bus.prIdentity(existing.number),publishedHead,files);
+       const durableSession=this.requireCompletedBuilderSession(spec,issue,worktree,spec.expected_base_sha,publishedHead);
+       const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered published builder branch.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:publishedHead,session:durableSession};
     }
     if(spec.executor==="codex_control_plane"&&initialStatus){
       const provenance=new BuilderAttemptProvenance(process.env);
@@ -358,7 +373,7 @@ export class GovernedBuilder {
           const prNumber:number=(existing as any)?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${receipt.builder_session}\n\nNo auto-merge.`);
           this.bus.bindPrToIssue(issue,prNumber);
           provenance.recordAttemptCompleted(receipt.receipt_id,spec.front_id,head,files,syntheticResult.provider_session);
-          return {pr:prNumber,head_sha:head,session,recovered_dirty:true as const};
+           return {pr:prNumber,head_sha:head,session:receipt.builder_session,recovered_dirty:true as const};
         }
         provenance.recordQuarantine(attemptInput,initialHead,expectedHead,"BUILDER_PROVENANCE_RECOVERY_REQUIRED");
         this.governedBaselineRestore(worktree,expectedHead,provenance,attemptInput);
@@ -369,7 +384,7 @@ export class GovernedBuilder {
       const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
       const prompt=builderPrompt(spec,repairCycle,repair);
       this.assertEffect("builder_execute",{issue});
-      const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha:expectedHead},worktree);
+      const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha:expectedHead,session},worktree);
       if(result.executor_role!=="codex_control_plane"||!result.builder_backend||!result.builder_model||!result.builder_session||!result.provider_session||result.base_sha!==expectedHead||!/^[0-9a-f]{40}$/.test(result.head_sha))throw new Error("builder router result contract invalid");
       const head=result.head_sha,currentHead=git(worktree,["rev-parse","HEAD"]);if(currentHead!==head)throw new Error("builder router head mismatch");
       const backendCommitted=head!==expectedHead,files=backendCommitted?committed(worktree,expectedHead):changed(worktree);validateFiles(files,spec);
@@ -382,13 +397,13 @@ export class GovernedBuilder {
       if(committedHead===expectedHead)throw new Error("builder produced no changes");
       validateBuilderReceipt(worktree,committedHead,spec.front_id);
       this.assertEffect("push",{issue,expected_head:committedHead,observed_head:initialHead});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
-      const prNumber=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,prNumber);
-      return {pr:prNumber,head_sha:committedHead,session,recovered_clean:true as const};
+      const prNumber=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${result.builder_session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,prNumber);
+      return {pr:prNumber,head_sha:committedHead,session:result.builder_session,recovered_clean:true as const};
     }
     if(!existing&&initialHead!==expectedHead&&!initialStatus){let canFastForward=false;try{git(worktree,["merge-base","--is-ancestor",initialHead,expectedHead]);canFastForward=true;}catch{}if(canFastForward){native(process.env.GIT_PATH??"git",["-C",worktree,"merge","--ff-only",expectedHead],{stdio:"inherit",timeout:120000,windowsHide:true});initialHead=git(worktree,["rev-parse","HEAD"]);initialStatus=git(worktree,["status","--porcelain","--untracked-files=all"]);if(initialHead!==expectedHead||initialStatus)throw new Error("builder worktree base fast-forward failed");}}
     if(initialHead!==expectedHead){if(initialStatus)throw new Error("advanced builder worktree is dirty");try{git(worktree,["merge-base","--is-ancestor",expectedHead,initialHead]);}catch{throw new Error("builder worktree head is not a descendant of expected head");}
       let receiptValid=false;try{validateBuilderReceipt(worktree,initialHead,spec.front_id);receiptValid=true;}catch{receiptValid=false;}
-      if(receiptValid){validateFiles(committed(worktree,expectedHead),spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${expectedHead}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});this.assertEffect("push",{issue,expected_head:initialHead,...(repairCycle>0?{observed_head:expectedHead}:{})});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered local builder commit.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:initialHead,session};}
+      if(receiptValid){validateFiles(committed(worktree,expectedHead),spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${expectedHead}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});const durableSession=this.requireCompletedBuilderSession(spec,issue,worktree,expectedHead,initialHead);this.assertEffect("push",{issue,expected_head:initialHead,...(repairCycle>0?{observed_head:expectedHead}:{})});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered local builder commit.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:initialHead,session:durableSession};}
       const provenance=new BuilderAttemptProvenance(process.env);
       const attemptInput={repository:spec.repository,worktree,front_id:spec.front_id,issue,base_sha:expectedHead,work_branch:spec.work_branch,allowed_paths:spec.allowed_paths,forbidden_paths:spec.forbidden_paths,acceptance:spec.acceptance,test_commands:spec.test_commands,repair_cycle:repairCycle,risk:spec.risk,deployment_mode:spec.deployment_mode??"NO_DEPLOY",prompt:"",session};
       if(provenance.isConfigured()){
@@ -401,7 +416,7 @@ export class GovernedBuilder {
       const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
       const prompt=builderPrompt(spec,repairCycle,repair);
       this.assertEffect("builder_execute",{issue});
-      const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha:expectedHead},worktree);
+      const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha:expectedHead,session},worktree);
       if(result.executor_role!=="codex_control_plane"||!result.builder_backend||!result.builder_model||!result.builder_session||!result.provider_session||result.base_sha!==expectedHead||!/^[0-9a-f]{40}$/.test(result.head_sha))throw new Error("builder router result contract invalid");
       const head=result.head_sha,currentHead=git(worktree,["rev-parse","HEAD"]);if(currentHead!==head)throw new Error("builder router head mismatch");
       const backendCommitted=head!==expectedHead,files=backendCommitted?committed(worktree,expectedHead):changed(worktree);validateFiles(files,spec);
@@ -414,10 +429,10 @@ export class GovernedBuilder {
       if(committedHead===expectedHead)throw new Error("builder produced no changes");
       validateBuilderReceipt(worktree,committedHead,spec.front_id);
       this.assertEffect("push",{issue,expected_head:committedHead,observed_head:initialHead});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
-      const prNumber=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,prNumber);
-      return {pr:prNumber,head_sha:committedHead,session,recovered_clean:true as const};}
+      const prNumber=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${result.builder_session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,prNumber);
+      return {pr:prNumber,head_sha:committedHead,session:result.builder_session,recovered_clean:true as const};}
     if(repairCycle>0&&existing&&git(worktree,["show","-s","--format=%s",initialHead])===`chore(control-plane): synchronize ${spec.front_id} base`){
-      try{synchronizedRepairReceipt(worktree,initialHead,spec.front_id);const files=committed(worktree,spec.expected_base_sha);validateFiles(files,spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${spec.expected_base_sha}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});validatePublishedPr(spec,existing,this.bus.prIdentity(existing.number),initialHead,files);this.bus.bindPrToIssue(issue,existing.number);return {pr:existing.number,head_sha:initialHead,session,recovered_repair:true as const};}
+      try{const validatedBuilderReceiptHead=synchronizedRepairReceipt(worktree,initialHead,spec.front_id);const files=committed(worktree,spec.expected_base_sha);validateFiles(files,spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${spec.expected_base_sha}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});const durableSession=this.requireCompletedBuilderSessionForValidatedSync(spec,issue,worktree,validatedBuilderReceiptHead);validatePublishedPr(spec,existing,this.bus.prIdentity(existing.number),initialHead,files);this.bus.bindPrToIssue(issue,existing.number);return {pr:existing.number,head_sha:initialHead,session:durableSession,recovered_repair:true as const};}
       catch(error){
         if(!(error instanceof Error)||!new Set(["recovered builder receipt invalid","recovered builder commit subject mismatch"]).has(error.message))throw error;
         // A synchronized candidate with an intervening metadata commit is not a
@@ -457,7 +472,7 @@ export class GovernedBuilder {
       const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
       const prompt=builderPrompt(spec,repairCycle,repair);
       this.assertEffect("builder_execute",{issue});
-      const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha},tempWorktree);
+      const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha,session},tempWorktree);
       if(result.executor_role!=="codex_control_plane"||!result.builder_backend||!result.builder_model||!result.builder_session||!result.provider_session||result.base_sha!==baseSha||!/^[0-9a-f]{40}$/.test(result.head_sha))throw new Error("legacy builder router result contract invalid");
       const r=result.head_sha;
       const freshReceipt=git(tempWorktree,["show","-s","--format=%B",r]);
@@ -471,7 +486,7 @@ export class GovernedBuilder {
       native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`${m}:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
       waitForRemoteBranchHead(this.bus,spec.work_branch,m);
       this.bus.bindPrToIssue(issue,existing.number);
-      return {pr:existing.number,head_sha:m,session,recovered_legacy:true as const};
+      return {pr:existing.number,head_sha:m,session:result.builder_session,recovered_legacy:true as const};
     }finally{
       native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","remove",tempWorktree],{stdio:"inherit",timeout:120000,windowsHide:true});
     }
