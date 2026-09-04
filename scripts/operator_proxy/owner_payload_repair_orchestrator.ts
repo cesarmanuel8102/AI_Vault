@@ -52,7 +52,7 @@ export class OwnerPayloadRepairOrchestrator {
     if (state.repair_cycles !== 2) throw new Error("owner repair lifecycle denied");
     if (state.state === "CI_PENDING") return state;
     if (!state.head_sha) throw new Error("owner repair lifecycle denied");
-    if (state.state === "BLOCKED" && state.last_error !== "CI_FAILED") throw new Error("owner repair lifecycle denied");
+    if (state.state === "BLOCKED" && !["CI_FAILED", "REPAIR_LIMIT_REACHED"].includes(state.last_error ?? "")) throw new Error("owner repair lifecycle denied");
 
     const recovered = this.ports.recover?.(state);
     const grant = recovered ?? this.ports.verify(state);

@@ -46,6 +46,20 @@ test("owner repair does not bind a head when lineage rejects the published candi
   assert.equal(bound, 0);
 });
 
+test("repair-limit exhaustion resumes only through the existing Owner receipt chain",async()=>{
+  const orchestrator=new OwnerPayloadRepairOrchestrator({
+    verify:()=>({grant_key:"d".repeat(64),authorization_id:"AUTH",front_id:"BRAIN-101-R3-OWNER-01",failed_head_sha:failed}),
+    receipt:{view:()=>undefined,verified:()=>({phase:"VERIFIED" as const}),consumed:()=>({phase:"CONSUMED" as const,event_sha256:"e".repeat(64),build_attempt_id:"f".repeat(64)}),dispatched:()=>({phase:"BUILD_DISPATCHED" as const,event_sha256:"1".repeat(64),predecessor_event_sha256:"e".repeat(64),build_attempt_id:"f".repeat(64)}),headBound:()=>{}},
+    lifecycle:{authorize:state=>({...state,state:"OWNER_REPAIR_AUTHORIZED" as const}),begin:state=>({...state,state:"BUILDING" as const}),adopt:()=>({state:"CI_PENDING" as const,repair_cycles:2,head_sha:head,base_sha:base})},
+    authorizeTransport:()=>({build_attempt_id:"f".repeat(64)}),
+    dispatch:()=>({new_head_sha:head,provenance:{authorization_id:"AUTH",grant_key:"d".repeat(64),build_attempt_id:"f".repeat(64),consumed_event_sha256:"e".repeat(64)}}),
+    verifyLineage:()=>true,
+  });
+  const result=await orchestrator.resume({state:"BLOCKED",last_error:"REPAIR_LIMIT_REACHED",repair_cycles:2,head_sha:failed,base_sha:base});
+  assert.equal(result.state,"CI_PENDING");
+  assert.equal(result.repair_cycles,2);
+});
+
 test("owner authorization preflight blocks before any receipt is consumed",async()=>{
   let consumed=0,dispatched=0;
   const orchestrator=new OwnerPayloadRepairOrchestrator({
