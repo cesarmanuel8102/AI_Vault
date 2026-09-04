@@ -1,19 +1,11 @@
 import {existsSync,mkdirSync} from "node:fs";
 import {join} from "node:path";
-import {randomUUID} from "node:crypto";
 import {lock} from "./single_instance_lock.js";
-import {Ledger} from "./decision_ledger.js";
 import {GitHubBus} from "./github_bus.js";
-import {collect} from "./evidence_collector.js";
-import {decide,decisionKey,decisionMatchesCandidate,POLICY_SHA256} from "./policy_engine.js";
 import {resolveReviewerRepository} from "./codex_reviewer.js";
-import {ReviewerRouter,validateReviewerEnvelope} from "./reviewer_router.js";
-import {verifiedAgentLoopCommitModel,verifiedBuilderModel} from "./reviewer_config.js";
-import {execute,reconcileAuthorizationComment} from "./action_executor.js";
 import {parseIssue} from "./spec_contract.js";
 import {runAutonomousRoadmapTick} from "./autonomous_runtime.js";
 import {ExternalEffectBoundary} from "./external_effect_guard.js";
-import {newLifecycle} from "./autonomous_flow.js";
 import {redactString,safeJson} from "./redaction.js";
 
 const args=new Set(process.argv.slice(2));
@@ -28,17 +20,15 @@ if(args.has("--doctor")){
 const reviewerRepo=resolveReviewerRepository();mkdirSync(join(root,"state"),{recursive:true});const release=lock(join(root,"state","operator-proxy.lock"));
 try {
   if(existsSync(join(root,"state","PAUSE"))){console.log(JSON.stringify({status:"PAUSED"}));process.exit(0);}
-  const bus=new GitHubBus(process.env.GH_PATH??"gh");const boundary=new ExternalEffectBoundary(root,bus,release.owns);const ledger=new Ledger(join(root,"decisions"));let autonomous:any={status:"SKIPPED_DRY_RUN"};
+  const bus=new GitHubBus(process.env.GH_PATH??"gh");const boundary=new ExternalEffectBoundary(root,bus,release.owns);let autonomous:any={status:"SKIPPED_DRY_RUN"};
   if(!dry){try{autonomous={status:"PASS",state:await runAutonomousRoadmapTick(bus,root,reviewerRepo,boundary)};}catch(error){autonomous={status:"BLOCKED",error:redactString(error instanceof Error?error.message:String(error))};}}
   const queued=bus.queued();const results=[];
   for(const issue of queued){
     try {
       if((issue.labels??[]).some((x:any)=>x.name==="operator:pause")){results.push({issue:issue.number,status:"PAUSED"});continue;}
       const {spec,pr}=parseIssue(issue.body);if(!pr){results.push({issue:issue.number,status:"AWAITING_AUTONOMOUS_BUILDER"});continue;}
-      const initial=bus.json(["pr","view",String(pr),"--json","baseRefOid,headRefOid,files"]),files=(initial.files??[]).map((x:any)=>String(x.path)),reportPath="docs/agent_loop/pilot/EXECUTOR_REPORT.json",report=spec.executor==="agent_loop"&&files.includes(reportPath)?JSON.parse(bus.fileAt(reportPath,initial.headRefOid)):undefined,builderModel=spec.executor==="agent_loop"?verifiedAgentLoopCommitModel(bus.commitMessage(initial.headRefOid),spec.front_id!,report?.model):verifiedBuilderModel(spec.executor);const lifecycle={...newLifecycle({...spec,front_id:spec.front_id??`LEGACY-${issue.number}`,deployment_mode:spec.deployment_mode??"NO_DEPLOY"}),state:"REVIEWING" as const,issue:issue.number,pr,head_sha:initial.headRefOid};boundary.bind(spec,lifecycle);bus.setMutationGuard(boundary.assert.bind(boundary));const key=decisionKey(spec,issue.number,pr,initial.baseRefOid,initial.headRefOid);let existing=ledger.findByKey(key)??ledger.findByHead(initial.headRefOid);const builderSession=`legacy-builder-${issue.number}-${initial.headRefOid}`,frontId=spec.front_id??`LEGACY-${issue.number}`,input={repository:spec.repository,repositoryRoot:reviewerRepo,pr,baseSha:initial.baseRefOid,headSha:initial.headRefOid,risk:spec.risk,changedFiles:files,builderSession,builderModel},expected={issue:issue.number,pr,base_sha:initial.baseRefOid,head_sha:initial.headRefOid,front_id:frontId,builder_session:builderSession,builder_model:builderModel};const cached=dry?{session:`dry-reviewer-${randomUUID()}`,result:{verdict:"BLOCKED" as const,head_sha:initial.headRefOid,summary:"dry run",findings:[]}}:ledger.loadOrCreateReview(key,()=>{if(existing)throw new Error("cached review receipt missing");boundary.assert("reviewer_execute",{issue:issue.number,pr,expected_head:initial.headRefOid});const run=new ReviewerRouter(join(root,"reviewer-router")).review(input);return {schema_version:1,...expected,session:run.session,router_run:run,result:run.output};},value=>{validateReviewerEnvelope(value,expected,input);}).review as any;const evidence=collect(bus,issue.number,pr,cached.session,cached.result,spec);evidence.builder_session=builderSession;evidence.review_session=cached.session;const candidate=decide(spec,evidence);if(existing){if(!decisionMatchesCandidate(existing,candidate))throw new Error("DECISION_IDENTITY_CONFLICT");}else{boundary.assert("decision_persist",{issue:issue.number,pr,expected_head:initial.headRefOid});existing=ledger.recordOrLoad(candidate).decision;}const decision=existing;
-      if(("review_consistent" in decision&&decision.decision_key!==key)||decision.authorization_id!==spec.authorization_id||decision.repository!==spec.repository||decision.issue!==issue.number||decision.pr!==pr||decision.base_sha!==initial.baseRefOid||decision.head_sha!==initial.headRefOid||decision.roadmap_id!==spec.roadmap_id||decision.roadmap_item_id!==spec.roadmap_item_id||decision.policy_sha256!==POLICY_SHA256)throw new Error("DECISION_IDENTITY_CONFLICT");
-      if(!dry){const merge=execute(bus,ledger,decision,false);if(merge){boundary.bindPostMerge(merge);reconcileAuthorizationComment(bus,decision);}const marker=`decision_key=${decision.decision_key}`;bus.commentOnce("pr",pr,marker,`[OPERATOR-PROXY][DECISION]\n\n${marker}\ndecision_id=${decision.decision_id}\npolicy_decision=${decision.policy_decision}\nhead=${decision.head_sha}`);const label=decision.policy_decision==="APPROVE"?"operator:completed":decision.policy_decision==="REPAIR"?"operator:repairing":decision.policy_decision==="ESCALATE_TO_OWNER"?"operator:escalated":"operator:blocked";bus.reconcileLabel("issue",issue.number,label,["operator:queued","operator:building","operator:reviewing"]);}
-      results.push({issue:issue.number,pr,decision});
+      // A linked legacy PR has no lifecycle/provenance binding. It cannot enter review or policy.
+      results.push({issue:issue.number,pr,status:"PROVENANCE_GAP"});
     } catch(error){results.push({issue:issue.number,status:"BLOCKED",error:redactString(error instanceof Error?error.message:String(error))});}
   }
   const status=autonomous.status==="BLOCKED"?"BLOCKED":"PASS";console.log(safeJson({status,dry_run:dry,autonomous,queued:queued.length,results}));if(status==="BLOCKED")process.exitCode=1;

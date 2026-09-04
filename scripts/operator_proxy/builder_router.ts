@@ -14,6 +14,8 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 export interface RouteOptions extends RouterOptions {
   provenanceRequired?: boolean;
   provenance?: BuilderAttemptProvenance;
+  /** Stable lifecycle identity supplied before the durable STARTED receipt. */
+  session?: string;
 }
 
 function forbiddenWorktreeRoots(env = process.env): string[] {
@@ -273,7 +275,10 @@ async function routeBuilderTransportCore(input: BuilderTransportInput, options: 
     const backendId = attemptOrder[index];
     const backendSession = `${session}-${backendId}`;
     const providerCorrelationId = `${backendId}-${randomUUID()}`;
-    const backendInput: BuilderTransportInput = { ...input, session: backendSession, provider_correlation_id: providerCorrelationId };
+    // Durable provenance owns the logical builder session. Backend-specific
+    // sessions are transport details and must not replace lifecycle identity.
+    const receiptInput: BuilderTransportInput = { ...input, provider_correlation_id: providerCorrelationId };
+    const backendInput: BuilderTransportInput = { ...receiptInput, session: backendSession };
     let cfg: BackendConfig;
     let buildFn: (i: BuilderTransportInput) => Promise<BuilderResult>;
     if (backendId === "codex_cli_openai") {
@@ -287,7 +292,7 @@ async function routeBuilderTransportCore(input: BuilderTransportInput, options: 
       buildFn = (i) => runOpenCodeBuilder(i, cfg, env);
     }
 
-    const startedReceipt = hooks?.onStart?.(backendInput, {backend: backendId, model: cfg.model, attemptNumber: index + 1, providerCorrelationId});
+    const startedReceipt = hooks?.onStart?.(receiptInput, {backend: backendId, model: cfg.model, attemptNumber: index + 1, providerCorrelationId});
 
     const invokeBackend = async (attemptSession: string, attemptCorrelationId: string): Promise<BuilderResult> => {
       const result = await buildFn({ ...backendInput, session: attemptSession, provider_correlation_id: attemptCorrelationId });
@@ -304,11 +309,11 @@ async function routeBuilderTransportCore(input: BuilderTransportInput, options: 
     try {
       const result = await invokeBackend(backendSession, providerCorrelationId);
       const files = collectChangedFiles(input.worktree, input.base_sha, env);
-      if (startedReceipt) hooks?.onCompleted?.(startedReceipt, backendInput, result, files);
+      if (startedReceipt) hooks?.onCompleted?.(startedReceipt, receiptInput, result, files);
       return result;
     } catch (error) {
       const { eligible, failure_class, transient } = isEligibleFallback(error);
-      if (startedReceipt) hooks?.onFailed?.(startedReceipt, backendInput, failure_class);
+      if (startedReceipt) hooks?.onFailed?.(startedReceipt, receiptInput, failure_class);
       // Caller-owned attempt state is finalized before cleanup.
       restoreWorktreeBaseline(input.worktree, input.base_sha, attemptIgnoredBaseline, env);
       validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
@@ -324,7 +329,7 @@ async function routeBuilderTransportCore(input: BuilderTransportInput, options: 
         await new Promise(resolve => setTimeout(resolve, backoffMs));
         const retryCorrelationId = `${backendId}-retry-${randomUUID()}`;
         const retrySession = `${backendSession}-retry`;
-        const retryInput: BuilderTransportInput = { ...input, session: retrySession, provider_correlation_id: retryCorrelationId };
+        const retryInput: BuilderTransportInput = { ...input, provider_correlation_id: retryCorrelationId };
         const retryReceipt = hooks?.onStart?.(retryInput, {backend: backendId, model: cfg.model, attemptNumber: index + 1, providerCorrelationId: retryCorrelationId});
         const retryIgnoredBaseline = ignoredSnapshot(input.worktree, env);
         try {
@@ -364,7 +369,9 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
   if (provenanceRequired && !root) {
     throw new BuilderBackendError("BUILDER_PROVENANCE_START_WRITE_FAILED: OPERATOR_PROXY_ROOT required in campaign mode", "BUILDER_PROVENANCE_START_WRITE_FAILED", false);
   }
-  const input = buildInputFromSpec(spec, issue, `builder-${randomUUID()}`, repairCycle, prompt, env, worktree, options.baseSha);
+  const session = options.session ?? `builder-${randomUUID()}`;
+  if (!/^[a-z0-9][a-z0-9._:/-]{2,127}$/i.test(session)) throw new Error("builder session identity invalid");
+  const input = buildInputFromSpec(spec, issue, session, repairCycle, prompt, env, worktree, options.baseSha);
   if (options.baseSha) validateBaseOverride(worktree ?? input.worktree, options.baseSha, env);
   const provenance = options.provenance ?? new BuilderAttemptProvenance(env);
   const hooks: TransportAttemptHooks = {
