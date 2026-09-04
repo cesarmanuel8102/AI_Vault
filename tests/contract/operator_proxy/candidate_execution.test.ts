@@ -83,7 +83,20 @@ test("owner-style attempt separates the canonical adoption base from the builder
   });
   const result=await new CandidateExecutionKernel(fixture.adapter).publish({...attempt({expected_base_sha:canonical}) as any,starting_head_sha:failed});
   assert.equal(result.base_sha,canonical);
-  assert.deepEqual(fixture.calls,["provider:attempt-immutable-1",`paths:${failed}`,"tests",`diff:${failed}`,"push","bind"]);
+  assert.deepEqual(fixture.calls,["provider:attempt-immutable-1",`paths:${failed}`,"tests",`diff:${failed}`,"push",`paths:${canonical}`,"bind"]);
+});
+
+test("owner-style candidate validates the complete PR diff from canonical base",async()=>{
+  const canonical=sha("a"),failed=sha("d"),fixture=adapter({
+    prepare:()=>({worktree:"C:/synthetic",starting_head:failed}),
+    invokeProvider:async()=>({executor_role:"codex_control_plane",builder_backend:"codex_cli_openai",builder_model:"gpt-5.6-sol",builder_session:"builder-1",provider_session:"provider-1",base_sha:failed,head_sha:fixture.candidateHead,branch:"control-plane/synthetic-candidate"}),
+    changedPaths:(_worktree,base)=>base===failed?["docs/owner-fix.md"]:["docs/existing-payload.md","docs/owner-fix.md"],
+    validateExistingDraftPr:()=>{},
+    existingDraftPr:()=>({number:92,repository:"cesarmanuel8102/AI_Vault",issue:91,work_branch:"control-plane/synthetic-candidate",base_sha:canonical,head_sha:fixture.candidateHead,is_draft:true,is_open:true,same_repository:true,non_fork:true,author_login:"cesarmanuel8102",base_ref_name:"codex/own-capital-sustainable-return",base_ref_oid:canonical,head_ref_name:"control-plane/synthetic-candidate",head_ref_oid:fixture.candidateHead,changed_paths:["docs/existing-payload.md","docs/owner-fix.md"]}),
+    createDraftPr:()=>{throw new Error("existing PR required");},
+  });
+  const result=await new CandidateExecutionKernel(fixture.adapter).publish({...attempt({expected_base_sha:canonical,starting_head_sha:failed,require_existing_draft_pr:true}) as any});
+  assert.deepEqual(result.changed_paths,["docs/existing-payload.md","docs/owner-fix.md"]);
 });
 
 test("neutral kernel rejects remote readback mismatch after the guarded push",async()=>{

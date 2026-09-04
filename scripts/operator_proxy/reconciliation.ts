@@ -201,9 +201,21 @@ function planBlockedCi(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts
 
 function eligibleOwnerPayloadRepair(snapshot: CanonicalLifecycleSnapshot, ports: PlannerPorts): boolean {
   const record=snapshot.record,grant=ports.verifiedOwnerPayloadRepairGrant?.(record);
-  if(!grant||!record.pr||!record.head_sha||record.base_sha!==snapshot.spec.expected_base_sha||!remoteMatchesSnapshot(snapshot)||grant.authorization_id!==snapshot.spec.authorization_id||grant.repository!==snapshot.spec.repository||grant.roadmap_id!==snapshot.spec.roadmap_id||grant.roadmap_item_id!==snapshot.spec.roadmap_item_id||grant.front_id!==record.front_id||grant.issue!==record.issue||grant.pr!==record.pr||grant.work_branch!==snapshot.spec.work_branch||grant.canonical_base_sha!==snapshot.spec.expected_base_sha||grant.failed_head_sha!==record.head_sha||grant.eligible_failure_class!=="CI_FAILED"||grant.max_extra_builds!==1)return false;
+  if(!grant||!record.pr||!record.head_sha||record.base_sha!==snapshot.spec.expected_base_sha||!ownerRepairPrIdentityMatches(snapshot)||grant.authorization_id!==snapshot.spec.authorization_id||grant.repository!==snapshot.spec.repository||grant.roadmap_id!==snapshot.spec.roadmap_id||grant.roadmap_item_id!==snapshot.spec.roadmap_item_id||grant.front_id!==record.front_id||grant.issue!==record.issue||grant.pr!==record.pr||grant.work_branch!==snapshot.spec.work_branch||grant.canonical_base_sha!==snapshot.spec.expected_base_sha||grant.failed_head_sha!==record.head_sha||grant.eligible_failure_class!=="CI_FAILED"||grant.max_extra_builds!==1)return false;
   const receipt=ports.ownerPayloadRepairReceipt?.(grant.grant_key);
   return receipt?.phase==="CONSUMED"&&receipt.grant_key===grant.grant_key&&receipt.front_id===record.front_id&&receipt.failed_head_sha===record.head_sha&&typeof receipt.build_attempt_id==="string"&&/^[0-9a-f]{64}$/.test(receipt.build_attempt_id);
+}
+
+function ownerRepairPrIdentityMatches(snapshot: CanonicalLifecycleSnapshot): boolean {
+  const {record,spec}=snapshot;
+  if(!record.pr||!record.head_sha||!spec.work_branch)return false;
+  const remote=safe(()=>snapshot.observeRemoteHead()),pr=safe(()=>snapshot.observePr()),identity=pr?.identity;
+  const files=(identity?.files??[]).map((entry:any)=>String(entry.path));
+  return remote===record.head_sha&&identity?.headRefOid===record.head_sha&&
+    identity.author?.login===spec.repository.split("/",1)[0]&&identity.baseRefName==="codex/own-capital-sustainable-return"&&
+    identity.baseRefOid===spec.expected_base_sha&&identity.headRefName===spec.work_branch&&
+    identity.headRepository?.nameWithOwner===spec.repository&&identity.isCrossRepository===false&&
+    identity.isDraft===true&&identity.state==="OPEN"&&files.length>0&&files.every(path=>pathAllowed(path,spec));
 }
 
 // A policy BLOCK is terminal for its decided head. It is resumable only as an

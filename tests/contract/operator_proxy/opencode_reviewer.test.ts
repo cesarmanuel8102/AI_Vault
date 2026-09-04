@@ -338,11 +338,21 @@ test("oversized unprojectable evidence fails closed",()=>{
 test("oversized prompt fails before model execution",()=>{
   const f=fixture(),oldNode=process.env.OPERATOR_PROXY_NODE_PATH,oldEntry=process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT;process.env.OPERATOR_PROXY_NODE_PATH=process.execPath;process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=f.entry;
   let modelCalled=false;
-  const hugeDiff="diff\n+"+"x".repeat(256*1024);
+  const hugeDiff="diff\n+"+"x".repeat(512*1024);
   const panel={primary:{head:head,verdict:"PASS",model:"m",session:"s"}};
   const runner=(file:string,args:string[])=>{if(args.includes("worktree")&&args.includes("add")){mkdirSync(args[args.indexOf("--detach")+1],{recursive:true});return "";};if(args.includes("rev-parse"))return head;if(args.includes("merge-base"))return base;if(args.includes("status"))return "";if(args.includes("diff"))return hugeDiff;if(file===process.execPath){modelCalled=true;return "";};return "";},
     cleanup=()=>{oldNode===undefined?delete process.env.OPERATOR_PROXY_NODE_PATH:process.env.OPERATOR_PROXY_NODE_PATH=oldNode;oldEntry===undefined?delete process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT:process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=oldEntry;};
   try{assert.throws(()=>new OpenCodeReviewerBackend("ollama-cloud/glm-5.2",runner).review({repository:"qualification",repositoryRoot:f.root,pr:1,baseSha:base,headSha:head,risk:"LOW",changedFiles:["a"],builderSession:"builder",panelEvidence:panel},"session"),/bounded budget/);assert.equal(modelCalled,false);}
+  finally{cleanup();}
+});
+
+test("bounded medium-sized immutable diff reaches the reviewer transport",()=>{
+  const f=fixture(),oldNode=process.env.OPERATOR_PROXY_NODE_PATH,oldEntry=process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT;process.env.OPERATOR_PROXY_NODE_PATH=process.execPath;process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=f.entry;
+  let modelCalled=false;
+  const mediumDiff="diff\n+"+"x".repeat(300*1024);
+  const runner=(file:string,args:string[])=>{if(args.includes("worktree")&&args.includes("add")){mkdirSync(args[args.indexOf("--detach")+1],{recursive:true});return "";};if(args.includes("rev-parse"))return head;if(args.includes("merge-base"))return base;if(args.includes("status"))return "";if(args.includes("diff"))return mediumDiff;if(file===process.execPath){modelCalled=true;return modelLine({verdict:"PASS",head_sha:head,summary:"ok",findings:[]});};return "";},
+    cleanup=()=>{oldNode===undefined?delete process.env.OPERATOR_PROXY_NODE_PATH:process.env.OPERATOR_PROXY_NODE_PATH=oldNode;oldEntry===undefined?delete process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT:process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=oldEntry;};
+  try{assert.equal(new OpenCodeReviewerBackend("ollama-cloud/glm-5.2",runner).review({repository:"qualification",repositoryRoot:f.root,pr:1,baseSha:base,headSha:head,risk:"LOW",changedFiles:["a"],builderSession:"builder"},"medium").output.verdict,"PASS");assert.equal(modelCalled,true);}
   finally{cleanup();}
 });
 

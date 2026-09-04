@@ -32,7 +32,8 @@ function assertImmutable(runner:NativeRunner,repo:string,input:ReviewerInput){
   if(git(runner,repo,["status","--porcelain","--untracked-files=all"]))throw new ReviewerBackendError("review workspace mutated","REVIEWER_WRITE_ATTEMPT");
 }
 const MAX_SUMMARY=500;
-const MAX_PROMPT_SIZE=256*1024;
+// Keep complete immutable review diffs bounded without rejecting valid medium control-plane changes.
+const MAX_PROMPT_SIZE=512*1024;
 const MAX_EVIDENCE_PROJECTION_SIZE=4*1024;
 const MAX_EVIDENCE_UNPROJECTED_SIZE=16*1024;
 const MAX_EVIDENCE_FACTS=256;

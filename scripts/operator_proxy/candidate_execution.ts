@@ -59,6 +59,11 @@ export interface CandidateExistingDraftPr {
   is_open:boolean;
   same_repository:boolean;
   non_fork:boolean;
+  author_login:string|undefined;
+  base_ref_name:string|undefined;
+  base_ref_oid:string|undefined;
+  head_ref_name:string|undefined;
+  head_ref_oid:string|undefined;
   changed_paths:readonly string[];
 }
 
@@ -71,6 +76,8 @@ export interface CandidateExecutionAdapter {
   commit(worktree:PreparedCandidateWorktree,receipt:string,paths:readonly string[],provider:CandidateProviderResult):string;
   push(attempt:PreparedCandidateAttempt,head_sha:string):void;
   remoteHead(branch:string):string|undefined;
+  /** Validates a pre-existing Draft PR before any provider dispatch. */
+  validateExistingDraftPr?(attempt:PreparedCandidateAttempt):void;
   existingDraftPr(attempt:PreparedCandidateAttempt,head_sha:string,paths:readonly string[]):number|CandidateExistingDraftPr|undefined;
   createDraftPr(attempt:PreparedCandidateAttempt,head_sha:string):number;
   bindPrToIssue(issue:number,pr:number):void;
@@ -110,7 +117,8 @@ function validateProvider(attempt:PreparedCandidateAttempt,worktree:PreparedCand
 function validatedExistingPr(attempt:PreparedCandidateAttempt,head:string,paths:readonly string[],existing:number|CandidateExistingDraftPr|undefined):number|undefined {
   if(existing===undefined)return undefined;
   if(typeof existing==="number"){if(attempt.require_existing_draft_pr)throw new Error("candidate existing Draft PR identity invalid");return existing;}
-  if(!Number.isInteger(existing.number)||existing.number<1||existing.repository!==attempt.repository||existing.issue!==attempt.issue||existing.work_branch!==attempt.work_branch||existing.base_sha!==attempt.expected_base_sha||existing.head_sha!==head||existing.is_draft!==true||existing.is_open!==true||existing.same_repository!==true||existing.non_fork!==true||JSON.stringify([...existing.changed_paths].sort())!==JSON.stringify([...paths].sort()))throw new Error("candidate existing Draft PR identity invalid");
+  const owner=attempt.repository.split("/",1)[0];
+  if(!Number.isInteger(existing.number)||existing.number<1||existing.repository!==attempt.repository||existing.issue!==attempt.issue||existing.work_branch!==attempt.work_branch||existing.base_sha!==attempt.expected_base_sha||existing.head_sha!==head||existing.is_draft!==true||existing.is_open!==true||existing.same_repository!==true||existing.non_fork!==true||existing.author_login!==owner||existing.base_ref_name!=="codex/own-capital-sustainable-return"||existing.base_ref_oid!==attempt.expected_base_sha||existing.head_ref_name!==attempt.work_branch||existing.head_ref_oid!==head||JSON.stringify([...existing.changed_paths].sort())!==JSON.stringify([...paths].sort()))throw new Error("candidate existing Draft PR identity invalid");
   return existing.number;
 }
 
@@ -119,6 +127,7 @@ export class CandidateExecutionKernel {
 
   async publish(attempt:PreparedCandidateAttempt):Promise<CandidatePublicationResult> {
     validateAttempt(attempt);
+    if(attempt.require_existing_draft_pr){if(!this.adapter.validateExistingDraftPr)throw new Error("candidate existing Draft PR preflight unavailable");this.adapter.validateExistingDraftPr(attempt);}
     const worktree=this.adapter.prepare(attempt);
     const provider=await this.adapter.invokeProvider({...attempt.provider_request,...(attempt.provider_idempotency_key?{idempotency_key:attempt.provider_idempotency_key}:{})},worktree);
     validateProvider(attempt,worktree,provider);
@@ -133,10 +142,12 @@ export class CandidateExecutionKernel {
     if(!SHA40.test(head)||head===base)throw new Error("candidate commit invalid");
     this.adapter.push(attempt,head);
     if(this.adapter.remoteHead(attempt.work_branch)!==head)throw new Error("candidate remote head mismatch");
-    let pr=validatedExistingPr(attempt,head,paths,this.adapter.existingDraftPr(attempt,head,paths));
+    const publishedPaths=base===attempt.expected_base_sha?paths:[...new Set(this.adapter.changedPaths(worktree,attempt.expected_base_sha,head))].sort();
+    if(publishedPaths.length===0||!publishedPaths.every(path=>pathAllowed(path,attempt)))throw new Error("candidate published path outside scope");
+    let pr=validatedExistingPr(attempt,head,publishedPaths,this.adapter.existingDraftPr(attempt,head,publishedPaths));
     if(pr===undefined){if(attempt.require_existing_draft_pr)throw new Error("candidate existing Draft PR missing");pr=this.adapter.createDraftPr(attempt,head);}
     if(!Number.isInteger(pr)||pr<1)throw new Error("candidate Draft PR invalid");
     this.adapter.bindPrToIssue(attempt.issue,pr);
-    return {pr,head_sha:head,base_sha:attempt.expected_base_sha,work_branch:attempt.work_branch,changed_paths:paths,builder_backend:provider.builder_backend,builder_model:provider.builder_model,builder_session:provider.builder_session,provider_session:provider.provider_session,...(attempt.provider_idempotency_key?{provider_idempotency_key:attempt.provider_idempotency_key}:{})};
+    return {pr,head_sha:head,base_sha:attempt.expected_base_sha,work_branch:attempt.work_branch,changed_paths:publishedPaths,builder_backend:provider.builder_backend,builder_model:provider.builder_model,builder_session:provider.builder_session,provider_session:provider.provider_session,...(attempt.provider_idempotency_key?{provider_idempotency_key:attempt.provider_idempotency_key}:{})};
   }
 }

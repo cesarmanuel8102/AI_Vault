@@ -201,11 +201,20 @@ test("model-based: only a verified consumed owner grant can authorize one exhaus
   const staleRemote:any={...snapshot,observeRemoteHead:()=>SHA(4),observePr:()=>snapshot.observePr()};
   assert.notEqual(deriveReconciliationPlan(staleRemote, authorized).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
   const gitUnavailable:any={...snapshot,observeRemoteHead:()=>{throw new Error("git unavailable");},observePr:()=>snapshot.observePr()};
-  assert.equal(deriveReconciliationPlan(gitUnavailable, authorized).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
+  assert.notEqual(deriveReconciliationPlan(gitUnavailable, authorized).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
   const githubUnavailable:any={...snapshot,observeRemoteHead:()=>SHA(3),observePr:()=>undefined};
-  assert.equal(deriveReconciliationPlan(githubUnavailable, authorized).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
+  assert.notEqual(deriveReconciliationPlan(githubUnavailable, authorized).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
   const bothUnavailable:any={...snapshot,observeRemoteHead:()=>{throw new Error("git unavailable");},observePr:()=>undefined};
   assert.notEqual(deriveReconciliationPlan(bothUnavailable, authorized).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
+  for(const mutate of [
+    (identity:any)=>identity.author.login="attacker",
+    (identity:any)=>identity.baseRefOid=SHA(1),
+    (identity:any)=>identity.headRefName="control-plane/other",
+    (identity:any)=>identity.isDraft=false,
+    (identity:any)=>identity.state="CLOSED",
+    (identity:any)=>identity.isCrossRepository=true,
+    (identity:any)=>identity.files=[{path:"scripts/operator_proxy/authority/owner.ts"}],
+  ]) {const changed:any={...snapshot,observePr:()=>{const pr=snapshot.observePr()!;const identity={...pr.identity,author:{...pr.identity.author},files:[...(pr.identity.files??[])]};mutate(identity);return {...pr,identity};}};assert.notEqual(deriveReconciliationPlan(changed, authorized).move,"AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");}
   assert.notEqual(deriveReconciliationPlan(snapshot, {...authorized, ownerPayloadRepairReceipt: () => ({...receipt, phase: "VERIFIED"})}).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
   assert.notEqual(deriveReconciliationPlan(snapshot, {...authorized, verifiedOwnerPayloadRepairGrant: () => ({...grant, failed_head_sha: SHA(4)})}).move, "AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME");
 });
