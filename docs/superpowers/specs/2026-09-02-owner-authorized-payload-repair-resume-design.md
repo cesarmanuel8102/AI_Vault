@@ -550,3 +550,90 @@ and base synchronization cannot change either count.
 The Owner has approved the companion implementation plan and the V1 tracked
 repository-authority artifact. Implementation must preserve every invariant
 above.
+
+## Owner-Authorized Critical Merge Amendment
+
+### Purpose and Non-Substitution Rule
+
+This amendment adds one distinct, explicit capability:
+`OWNER_AUTHORIZED_CRITICAL_MERGE`. It is available only after deterministic
+policy has preserved a `CRITICAL` decision as `ESCALATE_TO_OWNER`. It never
+changes risk classification, creates a synthetic normal `APPROVE` decision, or
+uses the normal action executor to bypass its risk gate. `AUTO_MERGE` remains
+false; the capability performs one guarded, explicit merge only.
+
+### Authority Object and Canonical Binding
+
+`OwnerAuthorizedCriticalMerge` is a typed, canonically serialized object with
+unknown-field rejection. Its semantic SHA-256 is computed without any
+self-referential hash field and binds exactly:
+
+- repository, PR, optional bound issue/front lifecycle identity;
+- base branch/SHA and head branch/SHA;
+- policy `decision_id`, `decision_key`, `policy_sha256`, and outcome
+  `ESCALATE_TO_OWNER`;
+- exact-head CI evidence identity/SHA;
+- reviewer receipt identity/SHA, reviewer model, `PASS` verdict, and zero
+  findings;
+- `CRITICAL` risk, action `OWNER_AUTHORIZED_CRITICAL_MERGE`, `max_uses: 1`,
+  authorization ID, canonical Owner principal, and authorization-body SHA-256.
+
+The existing canonical `RepositoryAuthorization` and the pure Owner-principal
+resolver remain the only authority source. GitHub comments can supply the
+typed authorization evidence but never establish the Owner identity or relax a
+hard limit. Owner assertions for `HUMAN_FINAL_AUTHORITY`, `AUTO_MERGE`,
+`CANONICAL_LOCAL_SYNC`, `LIVE_TRADING`, and `REAL_MONEY` must exactly match the
+constitutional runtime configuration.
+
+### Append-Only Critical-Merge Receipt
+
+The critical-merge ledger is independent from ordinary decisions and Owner
+payload-repair receipts. Every transition appends a new immutable event for one
+authorization key, with contiguous sequence numbers, predecessor-event hashes,
+and an event SHA-256. The derived receipt view accepts only:
+
+```text
+VERIFIED -> CONSUMED -> MERGE_DISPATCHED -> MERGED_BOUND
+```
+
+Conflicting/duplicate phases, branch histories, or a second consumption fail
+closed. `CONSUMED` is durable before dispatch; `MERGE_DISPATCHED` is durable
+before the remote effect. A crash therefore resumes/reconciles only the exact
+authorization/PR/head pair, never a new logical merge attempt. A changed head,
+base, decision, CI result, review receipt, pause state, lease, or PR identity
+invalidates the authorization rather than being refreshed in place.
+
+### Dedicated Effect Path
+
+`executeOwnerAuthorizedCriticalMerge()` receives preserved policy escalation
+evidence plus a verified critical-merge authorization. It obtains an ephemeral
+`ExternalEffectGuard` capability only after the `CONSUMED` and
+`MERGE_DISPATCHED` receipts are durable and the live PR identity still exactly
+matches. The capability permits precisely one native merge-commit operation;
+it cannot enable GitHub auto-merge, issue another merge, mutate unrelated
+labels/comments/lifecycle state, or authorize a different PR/head/base.
+
+After GitHub reports a merge, reconciliation requires the exact authorized PR
+and head and appends `MERGED_BOUND` with the resulting canonical merge SHA.
+An already-merged PR is adopted only under those same exact bindings.
+
+### Bootstrap Scope
+
+The Owner authorizes one bootstrap use solely for the PR that introduces this
+capability. It may execute directly from the reviewed, clean isolated worktree
+only when that exact head has green CI, a passing independent review, and an
+immutable `ESCALATE_TO_OWNER` policy decision. The bootstrap is recorded as
+`BOOTSTRAP_OWNER_CRITICAL_MERGE_V1`; it is not authority for arbitrary feature
+branches or future heads.
+
+### Required Critical-Merge Tests
+
+Tests must prove that CRITICAL policy and the normal action executor retain
+their existing refusal behavior; a valid exact Owner authorization alone can
+enter the dedicated executor. Negative coverage must independently reject
+wrong repository/PR/base/head, stale CI/review evidence, reviewer findings or
+non-PASS verdict, any non-escalated policy, replay/second consumption, changed
+head after consumption, native auto-merge, receipt-chain corruption, lease or
+pause loss, and unrelated merged PR adoption. Crash tests cover post-CONSUMED
+and post-MERGE_DISPATCHED recovery. A successful merge binds the resulting
+canonical SHA exactly.

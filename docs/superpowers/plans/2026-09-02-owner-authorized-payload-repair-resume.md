@@ -352,4 +352,123 @@ export interface OwnerPayloadRepairBuildContext {
 
 ## Execution Handoff
 
-This plan is intentionally complete but **no execution mode is selected or started**. Implementation must begin only after a separate Owner review and authorization, using the required execution sub-skill and preserving the global constraints above.
+Tasks 1-11 are tracked by the SDD ledger. The Owner has separately approved
+the critical-merge amendment below for autonomous SDD execution. Every task
+still starts RED, is independently reviewed, and preserves the global
+constraints above.
+
+## Owner-Authorized Critical Merge Amendment Plan
+
+**Approved architecture:** `OWNER_AUTHORIZED_CRITICAL_MERGE` is a separate
+single-use capability for exact-bound CRITICAL policy escalations. It preserves
+`ESCALATE_TO_OWNER`, `AUTO_MERGE=false`, `HUMAN_FINAL_AUTHORITY=true`,
+`CANONICAL_LOCAL_SYNC=false`, `LIVE_TRADING=false`, and `REAL_MONEY=false`.
+The owner approval is the architectural and bootstrap authorization; no normal
+policy decision is fabricated.
+
+### Added Module Boundaries
+
+| Ownership | Module | Responsibility |
+| --- | --- | --- |
+| Typed authorization | `owner_critical_merge_authorization.ts` | Parse/verify canonical evidence and exact Owner binding. |
+| Append-only use history | `owner_critical_merge_receipt_ledger.ts` | Persist/derive `VERIFIED -> CONSUMED -> MERGE_DISPATCHED -> MERGED_BOUND`. |
+| Narrow execution | `owner_critical_merge_executor.ts` | Revalidate live identity and issue only one guarded explicit merge. |
+| Effect authority | `external_effect_guard.ts` | Issue an ephemeral capability scoped to one exact critical merge. |
+| Recovery | `reconciliation.ts`, `production_effects.ts` | Resume/adopt only the durable exact merge attempt. |
+
+### Task 12A: Typed Authorization and Receipt Contracts
+
+**Files:**
+- Modify: `scripts/operator_proxy/types.ts`
+- Create: `scripts/operator_proxy/owner_critical_merge_authorization.ts`
+- Create: `scripts/operator_proxy/owner_critical_merge_receipt_ledger.ts`
+- Create: `tests/contract/operator_proxy/owner_critical_merge_authorization.test.ts`
+- Create: `tests/contract/operator_proxy/owner_critical_merge_receipt_ledger.test.ts`
+
+**Interfaces:**
+- Produces `verifyOwnerAuthorizedCriticalMerge(input): OwnerAuthorizedCriticalMerge`.
+- Produces `OwnerCriticalMergeReceiptLedger.appendVerified()`, `.consume()`,
+  `.markMergeDispatched()`, `.bindMergedSha()`, and `.deriveReceiptView()`.
+- `OwnerAuthorizedCriticalMerge` contains canonical policy, CI/review, Owner,
+  PR/head/base, and single-use anchors described by the amended design.
+
+- [ ] Write failing parser tests for valid exact binding, every individual
+  repository/PR/base/head/policy/CI/review mismatch, non-PASS/nonzero findings,
+  unknown fields, and canonical hash stability. Run `npx --prefix
+  scripts/operator_proxy tsx --test
+  ../../tests/contract/operator_proxy/owner_critical_merge_authorization.test.ts`;
+  expect module-not-found failure.
+- [ ] Implement the minimal typed verifier using `resolveOwnerPrincipal`; do
+  not add a comment-derived authority source.
+- [ ] Write failing receipt tests for valid chain, duplicate phase, conflicting
+  predecessor, replay, and post-CONSUMED crash. Run the receipt test alone and
+  observe the missing-ledger failure before implementation.
+- [ ] Implement the immutable four-phase ledger; re-run both focused tests and
+  `npm run typecheck` from `scripts/operator_proxy`. Commit only Task 12A.
+
+### Task 12B: Guarded Dedicated Executor
+
+**Files:**
+- Modify: `scripts/operator_proxy/external_effect_guard.ts`
+- Create: `scripts/operator_proxy/owner_critical_merge_executor.ts`
+- Modify: `scripts/operator_proxy/github_bus.ts`
+- Modify: `scripts/operator_proxy/action_executor.ts` only for regression
+  coverage helpers, never to accept CRITICAL normal decisions
+- Create: `tests/contract/operator_proxy/owner_critical_merge_executor.test.ts`
+- Modify: `tests/contract/operator_proxy/external_effect_guard.test.ts`
+- Modify: `tests/contract/operator_proxy/action_executor.test.ts`
+
+**Interfaces:**
+- Produces `executeOwnerAuthorizedCriticalMerge(input, ports): CriticalMergeResult`.
+- Consumes a derived `CONSUMED` receipt and yields exactly one capability for
+  its `MERGE_DISPATCHED` commit/PR identity.
+
+- [ ] First prove in RED that normal CRITICAL action execution still refuses to
+  merge, while one verified consumed authorization can obtain only a single
+  exact merge capability. Run `npx --prefix scripts/operator_proxy tsx --test
+  ../../tests/contract/operator_proxy/owner_critical_merge_executor.test.ts
+  ../../tests/contract/operator_proxy/external_effect_guard.test.ts
+  ../../tests/contract/operator_proxy/action_executor.test.ts`; expected
+  failures are missing executor/capability behavior.
+- [ ] Implement `executeOwnerAuthorizedCriticalMerge()` without constructing a
+  fake normal decision or changing the risk classifier/policy engine.
+- [ ] Require durable `CONSUMED` then `MERGE_DISPATCHED`, exact live PR/base/
+  head/CI/review/policy/lease/pause checks, native merge-commit only, and
+  `MERGED_BOUND` exact canonical SHA.
+- [ ] Cover already-merged idempotent adoption and unrelated/force-changed
+  merged PR rejection; run the focused guard/ordinary merge regressions and
+  commit only Task 12B.
+
+### Task 12C: Bootstrap, Reconciliation, and Installation
+
+**Files:**
+- Modify: `scripts/operator_proxy/production_effects.ts`
+- Modify: `scripts/operator_proxy/reconciliation.ts`
+- Modify: `scripts/operator_proxy/Repair-OperatorProxy.psm1`
+- Modify: `tests/contract/operator_proxy/install.ps1`
+- Create: `tests/contract/operator_proxy/owner_critical_merge_recovery.test.ts`
+
+- [ ] Add RED tests for post-CONSUMED and post-MERGE_DISPATCHED recovery that
+  prove no second logical merge, and for bootstrap scope limited to an exact
+  reviewed clean head. Run `npx --prefix scripts/operator_proxy tsx --test
+  ../../tests/contract/operator_proxy/owner_critical_merge_recovery.test.ts`;
+  expect an absent integration/reconciliation failure.
+- [ ] Wire the dedicated path only after policy preserves
+  `ESCALATE_TO_OWNER`; update installer managed files and preserve disabled
+  scheduler/transactional rollback behavior.
+- [ ] Run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File
+  tests/contract/operator_proxy/install.ps1`, `pwsh -NoProfile -File
+  tests/contract/operator_proxy/install.ps1`, `npm test`, `npm run typecheck`,
+  `git diff --check`, and security/nontrading regressions. Commit only Task
+  12C after all pass and the scheduler remains disabled.
+
+### Task 13: Exact-Head Governed Integration and Runtime Evidence
+
+- [ ] Push normal commits to the existing PR, re-run exact-head CI and a full
+  DeepSeek Pro review for every new head, then materialize one exact
+  `ESCALATE_TO_OWNER` decision and Owner authorization.
+- [ ] Execute the one bootstrap merge only after all bindings match; reconcile
+  the exact canonical merge SHA through `MERGED_BOUND`.
+- [ ] Install only the canonical merge SHA transactionally, validate doctor and
+  a dry-run with the scheduler disabled, then continue the separately approved
+  frozen-front and clean-run certification procedure.
