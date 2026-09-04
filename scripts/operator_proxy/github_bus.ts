@@ -32,7 +32,16 @@ export class GitHubBus {
   createGovernedIssue(title:string,body:string,label="operator:building"){this.guard("issue_create");const url=this.call(["issue","create","--repo",this.repo,"--title",redactString(title),"--body",redactString(body),"--label",label]).trim();const match=url.match(/\/issues\/(\d+)$/);if(!match)throw new Error("governed Issue creation result invalid");return Number(match[1]);}
   bindPrToIssue(issue:number,pr:number){const data=this.json(["issue","view",String(issue),"--json","body"]);const marker=`OPERATOR_PROXY_PR: ${pr}`;if(String(data.body??"").includes(marker))return;if(/OPERATOR_PROXY_PR:\s*\d+/.test(String(data.body??"")))throw new Error("Issue already bound to another PR");this.guard("issue_modify",{issue,pr});this.call(["issue","edit",String(issue),"--repo",this.repo,"--body",redactString(`${String(data.body??"").trim()}\n\n${marker}\n`)]);}
   repairPrompt(issue:number){const comments=this.json(["issue","view",String(issue),"--json","comments"]).comments??[];const repair=comments.filter((c:any)=>String(c.body??"").includes("[OPERATOR-PROXY][REPAIR]")).at(-1);return redactString(String(repair?.body??""));}
-  issueComments(issue:number){const comments=this.json(["issue","view",String(issue),"--json","comments"]).comments;if(!Array.isArray(comments))throw new Error("issue comments response invalid");return comments;}
+  issueComments(issue:number){
+    if(!Number.isSafeInteger(issue)||issue<=0)throw new Error("issue comments request invalid");
+    let pages:unknown;try{pages=JSON.parse(this.call(["api","--paginate","--slurp",`repos/${this.repo}/issues/${issue}/comments?per_page=100`]));}catch{throw new Error("issue comments response invalid");}
+    if(!Array.isArray(pages)||pages.some(page=>!Array.isArray(page)))throw new Error("issue comments response invalid");
+    return pages.flat().map((comment:any)=>{
+      const id=comment?.id,body=comment?.body,login=comment?.user?.login;
+      if(!Number.isSafeInteger(id)||id<=0||typeof body!=="string"||typeof login!=="string"||!login||login!==login.trim()||!/^[A-Za-z0-9-]{1,39}$/.test(login))throw new Error("issue comments response invalid");
+      return {id:String(id),body,author:{login}};
+    });
+  }
   fileAt(path:string,ref:string){const raw=this.call(["api",`repos/${this.repo}/contents/${path}?ref=${ref}`,"--jq",".content"]);return Buffer.from(raw.replace(/\s/g,""),"base64").toString("utf8");}
   commitMessage(ref:string){if(!/^[0-9a-f]{40}$/.test(ref))throw new Error("commit message ref invalid");const message=this.call(["api",`repos/${this.repo}/commits/${ref}`,"--jq",".commit.message"]);if(!message.trim())throw new Error("commit message missing");return message.replace(/\r\n/g,"\n").trimEnd();}
   repairCount(issue:number){const comments=this.json(["issue","view",String(issue),"--json","comments"]).comments??[];return comments.filter((c:any)=>String(c.body??"").includes("[OPERATOR-PROXY][REPAIR]")).length;}
