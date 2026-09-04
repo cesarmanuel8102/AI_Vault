@@ -60,3 +60,10 @@ test("receipt ledger fails closed while another process owns the append transact
   writeFileSync(join(store.root,"owner-repair-receipts.lock"),"held");
   assert.throws(()=>store.appendVerified(grant()),/receipt lock unavailable/);
 });
+
+test("durable grant snapshot is recoverable by exact lifecycle identity after consumption",()=>{
+  const store=ledger(),g=grant();
+  store.appendVerified(g);store.consume(g.grant_key);
+  assert.deepEqual(store.findGrantSnapshot({front_id:g.front_id,issue:g.issue,pr:g.pr,failed_head_sha:g.failed_head_sha}),g);
+  assert.equal(store.findGrantSnapshot({front_id:g.front_id,issue:g.issue,pr:g.pr,failed_head_sha:"f".repeat(40)}),undefined);
+});

@@ -19,6 +19,8 @@ type ReceiptView = {phase:"VERIFIED"}|Consumed|Dispatched|HeadBound;
 type Candidate = {new_head_sha:string; provenance:{authorization_id:string;grant_key:string;build_attempt_id:string;consumed_event_sha256:string}};
 
 export interface OwnerPayloadRepairOrchestrationPorts {
+  /** Recovers only an exact immutable grant snapshot from the append-only receipt ledger. */
+  recover?(state:OwnerRepairState): Grant|undefined;
   verify(state:OwnerRepairState): Grant;
   /** Idempotent reconciliation gate that must pass before consuming or resuming a BLOCKED owner repair. */
   preflight?(state:OwnerRepairState,grant:Grant):void;
@@ -52,9 +54,11 @@ export class OwnerPayloadRepairOrchestrator {
     if (!state.head_sha) throw new Error("owner repair lifecycle denied");
     if (state.state === "BLOCKED" && state.last_error !== "CI_FAILED") throw new Error("owner repair lifecycle denied");
 
-    const grant = this.ports.verify(state);
+    const recovered = this.ports.recover?.(state);
+    const grant = recovered ?? this.ports.verify(state);
     if (grant.failed_head_sha !== state.head_sha) throw new Error("owner repair grant head mismatch");
     let view = this.ports.receipt.view(grant.grant_key);
+    if (recovered&&!view) throw new Error("owner repair receipt snapshot missing");
     if(state.state==="BLOCKED")this.ports.preflight?.(state,grant);
     if (!view) view = this.ports.receipt.verified(grant);
     if (view.phase === "VERIFIED") view = this.ports.receipt.consumed(grant.grant_key);

@@ -18,6 +18,18 @@ test("restart after BUILD_DISPATCHED redelivers only the persisted logical owner
   assert.equal(result.state,"CI_PENDING");assert.equal(result.repair_cycles,2);assert.equal(consumedCalls,0);assert.equal(dispatches,1);assert.deepEqual(seen,[attempt]);assert.equal(bound,1);
 });
 
+test("durable owner snapshot resumes a dispatched attempt without re-reading Owner evidence",async()=>{
+  let verifiedFromComment=0,dispatches=0;
+  const result=await new OwnerPayloadRepairOrchestrator({
+    recover:()=>({grant_key:grant,authorization_id:"AUTH",front_id:"BRAIN-101-R3-CRASH-01",failed_head_sha:failed}),
+    verify:()=>{verifiedFromComment++;throw new Error("Owner comment must not be read after dispatch");},
+    receipt:{view:()=>({phase:"BUILD_DISPATCHED" as const,event_sha256:dispatched,predecessor_event_sha256:consumed,build_attempt_id:attempt}),verified:()=>{throw new Error("unexpected")},consumed:()=>{throw new Error("unexpected")},dispatched:()=>{throw new Error("unexpected")},headBound:()=>{}},
+    lifecycle:{authorize:()=>{throw new Error("unexpected")},begin:()=>{throw new Error("unexpected")},adopt:(state:any)=>({...state,state:"CI_PENDING" as const,head_sha:head,repair_cycles:2})},
+    authorizeTransport:()=>({build_attempt_id:attempt}),dispatch:()=>{dispatches++;return {new_head_sha:head,provenance:{authorization_id:"AUTH",grant_key:grant,build_attempt_id:attempt,consumed_event_sha256:consumed}};},verifyLineage:()=>true,
+  } as any).resume({state:"BUILDING",repair_cycles:2,head_sha:failed,base_sha:base});
+  assert.equal(result.state,"CI_PENDING");assert.equal(verifiedFromComment,0);assert.equal(dispatches,1);
+});
+
 test("restart after HEAD_BOUND reconciles the published candidate without another provider delivery",async()=>{
   let recovered=0,dispatches=0;
   const ports:any={

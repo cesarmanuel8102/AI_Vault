@@ -43,6 +43,15 @@ export class OwnerRepairReceiptLedger {
     }finally{if(descriptor!==undefined){closeSync(descriptor);unlinkSync(lock);}}
   }
   deriveReceiptView(grant_key:string):OwnerGrantReceiptEvent {const all=this.events();this.validate(all);const list=all.filter(event=>event.grant_key===grant_key);if(!list.length)throw new Error("owner receipt missing");return list.at(-1)!;}
+  findGrantSnapshot(identity:{front_id:string;issue:number;pr:number;failed_head_sha:string}):OwnerAuthorizedPayloadRepairGrant|undefined {
+    const all=this.events();this.validate(all);
+    const matches=all.filter(event=>event.phase==="VERIFIED"&&event.front_id===identity.front_id&&event.failed_head_sha===identity.failed_head_sha&&event.immutable_grant_snapshot?.issue===identity.issue&&event.immutable_grant_snapshot?.pr===identity.pr);
+    if(matches.length>1)throw new Error("owner receipt snapshot ambiguous");
+    const event=matches[0];if(!event)return undefined;
+    const grant=event.immutable_grant_snapshot;
+    if(!grant||grant.grant_key!==event.grant_key||grant.authorization_id!==event.authorization_id||grant.front_id!==event.front_id||grant.failed_head_sha!==event.failed_head_sha)throw new Error("owner receipt snapshot invalid");
+    return grant;
+  }
   assertCurrentConsumedReceipt(receipt:OwnerGrantReceiptEvent):void {
     const all=this.events();this.validate(all);
     const current=all.filter(event=>event.grant_key===receipt.grant_key).at(-1);

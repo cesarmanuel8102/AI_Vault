@@ -101,13 +101,16 @@ export class ProductionEffects implements AutonomousEffects {
   }
   private resolveOwnerCriticalMerge(spec:ProxySpec,state:LifecycleRecord):OwnerAuthorizedCriticalMerge|undefined {
     if(!state.issue||!state.pr||!state.head_sha||!state.decision_id||!spec.front_id||!spec.work_branch)throw new Error("owner critical merge lifecycle binding invalid");
-    const comments=this.bus.issueComments(state.issue),hasEvidence=comments.some(comment=>String((comment as any)?.body??"").includes("OWNER_AUTHORIZED_CRITICAL_MERGE_V1"));
-    if(!hasEvidence)return undefined;
+    const receipts=new OwnerCriticalMergeReceiptLedger(join(this.root,"owner-critical-merge-receipts")),snapshot=receipts.findAuthorizationSnapshot({front_id:state.front_id,issue:state.issue,pr:state.pr,base_sha:state.base_sha,head_sha:state.head_sha});
+    if(!snapshot){const comments=this.bus.issueComments(state.issue),hasEvidence=comments.some(comment=>String((comment as any)?.body??"").includes("OWNER_AUTHORIZED_CRITICAL_MERGE_V1"));if(!hasEvidence)return undefined;}
     const decision=this.ledger.load(state.decision_id),checks=evaluateChecks(this.bus,state.head_sha,spec.work_branch);
     if(!checks.terminal||!checks.green)throw new Error("owner critical merge CI evidence invalid");
     const ci={evidence_id:`github-checks:${state.head_sha}`,evidence_sha256:sha256(safeJson({head_sha:state.head_sha,checks:checks.checks})),head_sha:state.head_sha};
     const authority=loadRepositoryAuthorization(join(this.sourceRepo,"scripts","operator_proxy","authority","repository_authorization.v1.json"),spec.repository);
-    const authorization=discoverOwnerAuthorizedCriticalMerge({comments,sources:{campaign_candidates:[],repository_candidates:[authority]},decision,ci,review:this.ownerCriticalMergeReviewReceipt(spec,state),base_branch:INTEGRATION_BRANCH,head_branch:spec.work_branch});
+    const review=this.ownerCriticalMergeReviewReceipt(spec,state);
+    const authorization=snapshot??discoverOwnerAuthorizedCriticalMerge({comments:this.bus.issueComments(state.issue),sources:{campaign_candidates:[],repository_candidates:[authority]},decision,ci,review,base_branch:INTEGRATION_BRANCH,head_branch:spec.work_branch});
+    if(!authorization)return undefined;
+    if(authorization.owner_principal!==authority.owner_principal||authorization.policy_sha256!==decision.policy_sha256||authorization.policy_outcome!=="ESCALATE_TO_OWNER"||authorization.risk!=="CRITICAL"||authorization.action!=="OWNER_AUTHORIZED_CRITICAL_MERGE"||authorization.max_uses!==1||authorization.ci_evidence_id!==ci.evidence_id||authorization.ci_evidence_sha256!==ci.evidence_sha256||authorization.review_receipt_id!==review.receipt_id||authorization.review_receipt_sha256!==review.receipt_sha256||authorization.reviewer_model!==review.model||authorization.review_verdict!==review.verdict||authorization.review_findings_count!==review.findings_count)throw new Error("owner critical merge recovered authorization invalid");
     if(authorization.authorization_id!==spec.authorization_id||authorization.repository!==spec.repository||authorization.front_id!==state.front_id||authorization.issue!==state.issue||authorization.pr!==state.pr||authorization.base_sha!==state.base_sha||authorization.head_sha!==state.head_sha||authorization.policy_decision_id!==state.decision_id)throw new Error("owner critical merge lifecycle identity invalid");
     return authorization;
   }
@@ -124,15 +127,22 @@ export class ProductionEffects implements AutonomousEffects {
   async resumeOwnerPayloadRepair(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore):Promise<LifecycleRecord|"PENDING"> {
     if(!state.issue||!state.pr||!state.head_sha||spec.executor!=="codex_control_plane")throw new Error("owner payload repair lifecycle identity invalid");
     const authority=loadRepositoryAuthorization(join(this.sourceRepo,"scripts","operator_proxy","authority","repository_authorization.v1.json"),spec.repository);
-    const comments=this.bus.issueComments(state.issue!),ownerEnvelopes=comments.filter(comment=>{
+    const receipts=new OwnerRepairReceiptLedger(join(this.root,"owner-repair-receipts"));
+    const recoveredGrant=(record:LifecycleRecord):OwnerAuthorizedPayloadRepairGrant|undefined=>{
+      const grant=receipts.findGrantSnapshot({front_id:record.front_id,issue:record.issue!,pr:record.pr!,failed_head_sha:record.head_sha!});if(!grant)return undefined;
+      if(grant.owner_principal!==authority.owner_principal||grant.authorization_id!==spec.authorization_id||grant.repository!==spec.repository||grant.roadmap_id!==spec.roadmap_id||grant.roadmap_item_id!==spec.roadmap_item_id||grant.front_id!==record.front_id||grant.issue!==record.issue||grant.pr!==record.pr||grant.work_branch!==spec.work_branch||grant.canonical_base_sha!==spec.expected_base_sha||grant.failed_head_sha!==record.head_sha||grant.eligible_failure_class!=="CI_FAILED"||grant.max_extra_builds!==1||record.repair_cycles!==2||record.state==="BLOCKED"&&(record.last_error!=="CI_FAILED"||store.consummatedPayloadRepairs(record.issue!,record.pr!)!==2))throw new Error("owner repair recovered grant invalid");
+      return grant;
+    };
+    const recovered=recoveredGrant(state),comments=recovered?[]:this.bus.issueComments(state.issue!),ownerEnvelopes=comments.filter(comment=>{
       const body=comment&&typeof comment==="object"?String((comment as Record<string,unknown>).body??""):"";
       return body.includes("BRAIN_OWNER_PAYLOAD_REPAIR_V1")||body.includes("END_BRAIN_OWNER_PAYLOAD_REPAIR_V1");
     });
     // No Owner evidence is a terminal wait, while malformed or ambiguous evidence fails closed below.
-    if(ownerEnvelopes.length===0)return "PENDING";
+    if(!recovered&&ownerEnvelopes.length===0)return "PENDING";
     const grantFor=(record:LifecycleRecord):OwnerAuthorizedPayloadRepairGrant=>discoverOwnerAuthorizedPayloadRepairGrant({spec,issue:record.issue!,pr:record.pr!,failed_head_sha:record.head_sha!,failure_class:record.state==="BLOCKED"?record.last_error??"": "CI_FAILED",ordinary_payload_repairs:store.consummatedPayloadRepairs(record.issue!,record.pr!),sources:{campaign_candidates:[],repository_candidates:[authority]},comments});
-    const receipts=new OwnerRepairReceiptLedger(join(this.root,"owner-repair-receipts"));let current=state;let grant:OwnerAuthorizedPayloadRepairGrant|undefined;
+    let current=state;let grant:OwnerAuthorizedPayloadRepairGrant|undefined;
     const coordinator=new OwnerPayloadRepairOrchestrator({
+      recover:record=>{grant=recoveredGrant(record as LifecycleRecord);return grant;},
       verify:record=>{grant=grantFor(record as LifecycleRecord);return grant;},
       preflight:(record,verified)=>this.assertOwnerPayloadRepairAuthorizationPlan(spec,record as LifecycleRecord,verified as OwnerAuthorizedPayloadRepairGrant),
       receipt:{

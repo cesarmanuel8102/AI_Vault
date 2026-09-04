@@ -56,6 +56,15 @@ export class OwnerCriticalMergeReceiptLedger {
     }finally{if(descriptor!==undefined){closeSync(descriptor);unlinkSync(lock);}}
   }
   deriveReceiptView(critical_merge_key:string):OwnerCriticalMergeReceiptEvent {const all=this.events();this.validate(all);const list=all.filter(event=>event.critical_merge_key===critical_merge_key);if(!list.length)throw new Error("critical merge receipt missing");return list.at(-1)!;}
+  findAuthorizationSnapshot(identity:{front_id:string;issue:number;pr:number;base_sha:string;head_sha:string}):OwnerAuthorizedCriticalMerge|undefined {
+    const all=this.events();this.validate(all);
+    const matches=all.filter(event=>event.phase==="VERIFIED"&&event.front_id===identity.front_id&&event.issue===identity.issue&&event.pr===identity.pr&&event.base_sha===identity.base_sha&&event.head_sha===identity.head_sha);
+    if(matches.length>1)throw new Error("critical merge receipt snapshot ambiguous");
+    const event=matches[0];if(!event)return undefined;
+    const authorization=event.immutable_authorization_snapshot;
+    if(!authorization||!snapshotMatchesEvent(authorization,event))throw new Error("critical merge receipt snapshot invalid");
+    return authorization;
+  }
   assertCurrentConsumedReceipt(receipt:OwnerCriticalMergeReceiptEvent):void {
     const all=this.events();this.validate(all);const current=all.filter(event=>event.critical_merge_key===receipt.critical_merge_key).at(-1);
     if(receipt.phase!=="CONSUMED"||!current||current.event_sha256!==receipt.event_sha256||current.phase!=="CONSUMED"||!sameIdentity(current,receipt))throw new Error("critical merge receipt consumed view invalid");

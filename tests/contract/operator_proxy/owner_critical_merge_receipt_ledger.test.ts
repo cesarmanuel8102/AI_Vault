@@ -61,3 +61,10 @@ test("critical merge receipt ledger rejects a hash-valid snapshot whose identity
   event.event_sha256=eventHash(event);writeFileSync(path,`${JSON.stringify(event)}\n`);
   assert.throws(()=>store.deriveReceiptView(grant.critical_merge_key),/critical merge receipt/i);
 });
+
+test("durable critical authorization snapshot is recoverable by exact lifecycle identity after consumption",()=>{
+  const store=ledger(),g=authorization();
+  store.appendVerified(g);store.consume(g.critical_merge_key);
+  assert.deepEqual(store.findAuthorizationSnapshot({front_id:g.front_id,issue:g.issue,pr:g.pr,base_sha:g.base_sha,head_sha:g.head_sha}),g);
+  assert.equal(store.findAuthorizationSnapshot({front_id:g.front_id,issue:g.issue,pr:g.pr,base_sha:g.base_sha,head_sha:"f".repeat(40)}),undefined);
+});

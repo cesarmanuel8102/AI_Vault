@@ -1,13 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {createHash} from "node:crypto";
 import {mkdtempSync} from "node:fs";
 import {tmpdir} from "node:os";
-import {join} from "node:path";
+import {join,resolve} from "node:path";
 import {LifecycleStore} from "../../../scripts/operator_proxy/lifecycle_store.js";
 import {AutonomousFlow} from "../../../scripts/operator_proxy/autonomous_flow.js";
 import {OwnerCriticalMergeReceiptLedger} from "../../../scripts/operator_proxy/owner_critical_merge_receipt_ledger.js";
 import {ProductionEffects} from "../../../scripts/operator_proxy/production_effects.js";
 import {Ledger} from "../../../scripts/operator_proxy/decision_ledger.js";
+import {REQUIRED_CHECKS} from "../../../scripts/operator_proxy/evidence_collector.js";
+import {safeJson} from "../../../scripts/operator_proxy/redaction.js";
 import type {LifecycleRecord,OwnerAuthorizedCriticalMerge} from "../../../scripts/operator_proxy/types.js";
 
 const base="a".repeat(40),head="b".repeat(40);
@@ -45,4 +48,17 @@ test("production critical merge adapter waits without Owner evidence and perform
   const effects=new ProductionEffects(bus,new Ledger(join(root,"ledger")),root,root,{assert:()=>{}} as any);
   const result=await effects.resumeOwnerCriticalMerge({front_id:state.front_id,roadmap_item_id:state.roadmap_item_id,expected_base_sha:base,work_branch:authorization().head_branch} as any,state,store);
   assert.equal(result,"PENDING");assert.equal(ordinaryMerges,0);
+});
+
+test("production critical merge resumes a durable authorization snapshot without rereading Owner evidence",async()=>{
+  const root=mkdtempSync(join(tmpdir(),"critical-merge-production-snapshot-")),store=new LifecycleStore(join(root,"lifecycle")),state=escalated();store.save(state);
+  const runs=[...REQUIRED_CHECKS,"deterministic","codex","publish"].map((name,index)=>({id:index+1,head_sha:head,name,status:"completed",conclusion:REQUIRED_CHECKS.includes(name)?"success":"skipped",app:{slug:"github-actions"},details_url:`https://github.com/cesarmanuel8102/AI_Vault/actions/runs/1/job/${index+1}`}));
+  const checks=runs.map(run=>({name:run.name,status:"COMPLETED",conclusion:String(run.conclusion).toUpperCase()}));
+  const grant={...authorization(),ci_evidence_id:`github-checks:${head}`,ci_evidence_sha256:createHash("sha256").update(safeJson({head_sha:head,checks})).digest("hex")};
+  const receipts=new OwnerCriticalMergeReceiptLedger(join(root,"owner-critical-merge-receipts"));receipts.appendVerified(grant);
+  let ownerCommentReads=0;const bus:any={setMutationGuard:()=>{},issueComments:()=>{ownerCommentReads++;throw new Error("Owner comment must not be read after durable authorization");},commitCheckRuns:()=>runs};
+  const effects:any=new ProductionEffects(bus,{load:()=>({policy_sha256:grant.policy_sha256})} as any,resolve(process.cwd(),"..",".."),root,{assert:()=>{},bind:()=>{}} as any);
+  effects.ownerCriticalMergeReviewReceipt=()=>({receipt_id:grant.review_receipt_id,receipt_sha256:grant.review_receipt_sha256,head_sha:head,model:grant.reviewer_model,verdict:grant.review_verdict,findings_count:grant.review_findings_count});
+  const result=await effects.resumeOwnerCriticalMerge({authorization_id:grant.authorization_id,repository:grant.repository,front_id:grant.front_id,roadmap_item_id:state.roadmap_item_id,expected_base_sha:base,work_branch:grant.head_branch} as any,state,store);
+  assert.equal(result.state,"MERGING");assert.equal(ownerCommentReads,0);
 });
