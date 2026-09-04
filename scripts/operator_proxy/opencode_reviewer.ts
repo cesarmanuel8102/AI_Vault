@@ -32,8 +32,8 @@ function assertImmutable(runner:NativeRunner,repo:string,input:ReviewerInput){
   if(git(runner,repo,["status","--porcelain","--untracked-files=all"]))throw new ReviewerBackendError("review workspace mutated","REVIEWER_WRITE_ATTEMPT");
 }
 const MAX_SUMMARY=500;
-// Keep complete immutable review diffs bounded without rejecting valid medium control-plane changes.
-const MAX_PROMPT_SIZE=512*1024;
+// Keep complete immutable review diffs bounded while transporting them as files.
+const MAX_COMPLETE_DIFF_SIZE=768*1024;
 const MAX_EVIDENCE_PROJECTION_SIZE=4*1024;
 const MAX_EVIDENCE_UNPROJECTED_SIZE=16*1024;
 const MAX_EVIDENCE_FACTS=256;
@@ -45,6 +45,7 @@ const MAX_FINDING_COUNT=6;
 // OpenCode truncates individual file attachments at 50 KiB. Keep each immutable
 // diff fragment below that provider boundary while retaining a bounded full diff.
 const MAX_REVIEW_ATTACHMENT_SIZE=48*1024;
+const MAX_DIFF_CHUNKS=16;
 // Bound each attempt while allowing large immutable diffs to complete before failover.
 const REVIEWER_TRANSPORT_TIMEOUT_MS=120_000;
 
@@ -127,7 +128,7 @@ export function projectPanelEvidence(evidence:unknown):{projection:string;sha256
   if(Buffer.byteLength(projection,"utf8")>MAX_EVIDENCE_PROJECTION_SIZE)throw new ReviewerBackendError("panel evidence projection overflow","REVIEWER_INVALID_INPUT");
   return {projection,sha256};
 }
-function reviewManifest(input:ReviewerInput,diff:string){
+function reviewManifest(input:ReviewerInput,diff:string,totalDiffBytes:number,totalDiffChunks:number){
   const staticLines:string[]=[
     "You are an independent read-only code reviewer. Return exactly one bare JSON object with keys verdict, head_sha, summary, findings.",
     "verdict must be exactly PASS only if findings=[]; CHANGES_REQUESTED only for repairable P1/P2; BLOCKED for P0, uncertainty, or invalid input.",
@@ -147,10 +148,9 @@ function reviewManifest(input:ReviewerInput,diff:string){
   const staticPart=staticLines.join("\n");
   const parts=[staticPart];
   if(projectionLine)parts.push(projectionLine);
-  parts.push(`COMPLETE_DIFF_SHA256=${hashString(diff)}`,"The complete immutable diff is supplied in the attached complete-diff chunks, in numeric filename order. Concatenate every chunk exactly once before reviewing.");
-  const manifest=parts.join("\n");
-  if(Buffer.byteLength(`${manifest}\n${diff}`,"utf8")>MAX_PROMPT_SIZE)throw new ReviewerBackendError("review prompt exceeds bounded budget","REVIEWER_INVALID_INPUT");
-  return manifest;
+  const filenames=Array.from({length:totalDiffChunks},(_,index)=>`complete-diff-${String(index+1).padStart(4,"0")}.patch`);
+  parts.push(`COMPLETE_DIFF_SHA256=${hashString(diff)}`,`TOTAL_DIFF_BYTES=${totalDiffBytes}`,`TOTAL_DIFF_CHUNKS=${totalDiffChunks}`,`CHUNK_SIZE_LIMIT_BYTES=${MAX_REVIEW_ATTACHMENT_SIZE}`,`CHUNK_FILENAMES=${JSON.stringify(filenames)}`,"The complete immutable diff is supplied in the attached complete-diff chunks, in numeric filename order. Concatenate every chunk exactly once before reviewing.");
+  return parts.join("\n");
 }
 
 function splitUtf8(value:string,maxBytes:number){
@@ -165,7 +165,12 @@ function splitUtf8(value:string,maxBytes:number){
 }
 
 function writeReviewAttachments(temp:string,input:ReviewerInput,diff:string){
-  const chunks=splitUtf8(diff,MAX_REVIEW_ATTACHMENT_SIZE),manifest=reviewManifest(input,diff),manifestPath=join(temp,"review-manifest.txt");
+  const totalDiffBytes=Buffer.byteLength(diff,"utf8");
+  if(totalDiffBytes>MAX_COMPLETE_DIFF_SIZE)throw new ReviewerBackendError("review complete diff exceeds bounded transport limit","REVIEWER_INVALID_INPUT");
+  const chunks=splitUtf8(diff,MAX_REVIEW_ATTACHMENT_SIZE);
+  if(chunks.length>MAX_DIFF_CHUNKS)throw new ReviewerBackendError("review diff chunk count exceeds bounded transport limit","REVIEWER_INVALID_INPUT");
+  if(chunks.some(chunk=>Buffer.byteLength(chunk,"utf8")>MAX_REVIEW_ATTACHMENT_SIZE))throw new ReviewerBackendError("review diff attachment exceeds bounded transport limit","REVIEWER_INVALID_INPUT");
+  const manifest=reviewManifest(input,diff,totalDiffBytes,chunks.length),manifestPath=join(temp,"review-manifest.txt");
   writeFileSync(manifestPath,manifest,"utf8");
   const paths=[manifestPath];
   for(const [index,chunk] of chunks.entries()){
