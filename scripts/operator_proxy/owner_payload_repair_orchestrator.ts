@@ -37,6 +37,8 @@ export interface OwnerPayloadRepairOrchestrationPorts {
     adopt(state:OwnerRepairState,candidate:Candidate): OwnerRepairState;
   };
   authorizeTransport(receipt:Dispatched): {build_attempt_id:string};
+  /** Persists/revalidates the same effective base before any candidate or transport effect. */
+  bindEffectiveBase?(state:OwnerRepairState,receipt:Dispatched):void;
   /** Finds an already-published exact candidate before any at-least-once redelivery. */
   findPublishedCandidate?(state:OwnerRepairState,receipt:Dispatched): Promise<Candidate|undefined>|Candidate|undefined;
   dispatch(capability:{build_attempt_id:string}): Promise<Candidate>|Candidate;
@@ -75,6 +77,8 @@ export class OwnerPayloadRepairOrchestrator {
     if (state.state === "OWNER_REPAIR_AUTHORIZED") state = this.ports.lifecycle.begin(state,consumed);
     const dispatched = view.phase === "BUILD_DISPATCHED" ? view : this.ports.receipt.dispatched(grant.grant_key);
     if (dispatched.predecessor_event_sha256 !== consumed.event_sha256 || dispatched.build_attempt_id !== consumed.build_attempt_id) throw new Error("owner repair receipt chain invalid");
+
+    this.ports.bindEffectiveBase?.(state,dispatched);
 
     let candidate=await this.ports.findPublishedCandidate?.(state,dispatched);
     if(!candidate){

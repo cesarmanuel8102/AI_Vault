@@ -33,6 +33,8 @@ export interface PreparedCandidateAttempt {
   expected_base_sha:string;
   /** Immutable head the provider must build from; defaults to the canonical adoption base. */
   starting_head_sha?:string;
+  /** Effective canonical base for a bound exceptional resume. */
+  effective_base_sha?:string;
   observed_head_sha?:string;
   allowed_paths:readonly string[];
   forbidden_paths:readonly string[];
@@ -70,6 +72,8 @@ export interface CandidateExistingDraftPr {
 export interface CandidateExecutionAdapter {
   prepare(attempt:PreparedCandidateAttempt):PreparedCandidateWorktree;
   invokeProvider(request:CandidateProviderRequest&{idempotency_key?:string},worktree:PreparedCandidateWorktree):Promise<CandidateProviderResult>;
+  /** Returns a locally committed, receipt-validated candidate for retry publication. */
+  recoverCommittedCandidate?(attempt:PreparedCandidateAttempt,worktree:PreparedCandidateWorktree):{head_sha:string;provider:CandidateProviderResult}|undefined;
   changedPaths(worktree:PreparedCandidateWorktree,base_sha:string,head_sha:string):string[];
   runDeclaredTests(worktree:PreparedCandidateWorktree,commands:readonly string[]):void;
   diffCheck(worktree:PreparedCandidateWorktree,base_sha:string,head_sha:string):void;
@@ -103,11 +107,12 @@ function pathAllowed(path:string,attempt:PreparedCandidateAttempt):boolean {
 }
 
 function validateAttempt(attempt:PreparedCandidateAttempt):void {
-  if(!attempt.repository||!attempt.front_id||!attempt.roadmap_item_id||!Number.isInteger(attempt.issue)||attempt.issue<1||!attempt.work_branch||!SHA40.test(attempt.expected_base_sha)||attempt.starting_head_sha!==undefined&&!SHA40.test(attempt.starting_head_sha)||attempt.allowed_paths.length===0||attempt.test_commands.length===0||!attempt.provider_request.prompt||typeof attempt.publication_receipt.render!=="function")throw new Error("candidate attempt invalid");
+  if(!attempt.repository||!attempt.front_id||!attempt.roadmap_item_id||!Number.isInteger(attempt.issue)||attempt.issue<1||!attempt.work_branch||!SHA40.test(attempt.expected_base_sha)||attempt.starting_head_sha!==undefined&&!SHA40.test(attempt.starting_head_sha)||attempt.effective_base_sha!==undefined&&(!SHA40.test(attempt.effective_base_sha)||attempt.effective_base_sha!==attempt.expected_base_sha)||attempt.allowed_paths.length===0||attempt.test_commands.length===0||!attempt.provider_request.prompt||typeof attempt.publication_receipt.render!=="function")throw new Error("candidate attempt invalid");
   for(const forbidden of ["repair_cycle","repair_prompt","owner_comment_body","owner_principal","authorization_policy","receipt_ledger_mutation","lifecycle_mutation"]){if(Object.hasOwn(attempt,forbidden))throw new Error("candidate attempt contains semantic field");}
 }
 
 function startingHead(attempt:PreparedCandidateAttempt):string{return attempt.starting_head_sha??attempt.expected_base_sha;}
+function effectiveBase(attempt:PreparedCandidateAttempt):string{return attempt.effective_base_sha??attempt.expected_base_sha;}
 
 function validateProvider(attempt:PreparedCandidateAttempt,worktree:PreparedCandidateWorktree,provider:CandidateProviderResult):void {
   const base=startingHead(attempt);
@@ -129,21 +134,26 @@ export class CandidateExecutionKernel {
     validateAttempt(attempt);
     if(attempt.require_existing_draft_pr){if(!this.adapter.validateExistingDraftPr)throw new Error("candidate existing Draft PR preflight unavailable");this.adapter.validateExistingDraftPr(attempt);}
     const worktree=this.adapter.prepare(attempt);
-    const provider=await this.adapter.invokeProvider({...attempt.provider_request,...(attempt.provider_idempotency_key?{idempotency_key:attempt.provider_idempotency_key}:{})},worktree);
+    const recovered=this.adapter.recoverCommittedCandidate?.(attempt,worktree);
+    const provider=recovered?.provider??await this.adapter.invokeProvider({...attempt.provider_request,...(attempt.provider_idempotency_key?{idempotency_key:attempt.provider_idempotency_key}:{})},worktree);
     validateProvider(attempt,worktree,provider);
-    const base=startingHead(attempt);
+    const base=startingHead(attempt),effective=effectiveBase(attempt);
     const paths=[...new Set(this.adapter.changedPaths(worktree,base,provider.head_sha))].sort();
     if(paths.length===0||!paths.every(path=>pathAllowed(path,attempt)))throw new Error("candidate changed path outside scope");
+    const effectivePaths=[...new Set(this.adapter.changedPaths(worktree,effective,provider.head_sha))].sort();
+    if(effectivePaths.length===0||!effectivePaths.every(path=>pathAllowed(path,attempt)))throw new Error("candidate effective base path outside scope");
     this.adapter.runDeclaredTests(worktree,attempt.test_commands);
     this.adapter.diffCheck(worktree,base,provider.head_sha);
+    if(effective!==base)this.adapter.diffCheck(worktree,effective,provider.head_sha);
     const receipt=attempt.publication_receipt.render(provider);
     if(!receipt.trim())throw new Error("candidate publication receipt invalid");
-    const head=this.adapter.commit(worktree,receipt,paths,provider);
+    const head=recovered?.head_sha??this.adapter.commit(worktree,receipt,paths,provider);
     if(!SHA40.test(head)||head===base)throw new Error("candidate commit invalid");
+    const publishedPaths=effective!==base?[...new Set(this.adapter.changedPaths(worktree,effective,head))].sort():paths;
+    if(publishedPaths.length===0||!publishedPaths.every(path=>pathAllowed(path,attempt)))throw new Error("candidate published path outside scope");
+    if(effective!==base)this.adapter.diffCheck(worktree,effective,head);
     this.adapter.push(attempt,head);
     if(this.adapter.remoteHead(attempt.work_branch)!==head)throw new Error("candidate remote head mismatch");
-    const publishedPaths=base===attempt.expected_base_sha?paths:[...new Set(this.adapter.changedPaths(worktree,attempt.expected_base_sha,head))].sort();
-    if(publishedPaths.length===0||!publishedPaths.every(path=>pathAllowed(path,attempt)))throw new Error("candidate published path outside scope");
     let pr=validatedExistingPr(attempt,head,publishedPaths,this.adapter.existingDraftPr(attempt,head,publishedPaths));
     if(pr===undefined){if(attempt.require_existing_draft_pr)throw new Error("candidate existing Draft PR missing");pr=this.adapter.createDraftPr(attempt,head);}
     if(!Number.isInteger(pr)||pr<1)throw new Error("candidate Draft PR invalid");

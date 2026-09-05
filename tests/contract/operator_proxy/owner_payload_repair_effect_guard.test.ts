@@ -12,6 +12,30 @@ const state:any={schema_version:1,front_id:spec.front_id,roadmap_item_id:spec.ro
 const grant:any={authorization_id:"AUTH",grant_key:grantKey,repository:spec.repository,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id,front_id:spec.front_id,issue:1,pr:2,work_branch:spec.work_branch,canonical_base_sha:base,failed_head_sha:head,eligible_failure_class:"CI_FAILED",max_extra_builds:1};
 const receipt=(phase="BUILD_DISPATCHED"):any=>({phase,grant_key:grantKey,front_id:spec.front_id,authorization_id:"AUTH",failed_head_sha:head,build_attempt_id:attempt,predecessor_event_sha256:consumed,event_sha256:dispatch});
 function guard(){const root=mkdtempSync(join(tmpdir(),"owner-guard-"));mkdirSync(join(root,"state"));return new ExternalEffectBoundary(root,{branchHead:()=>base,issuePaused:()=>false,prIdentity:()=>({headRefOid:head})} as any,()=>true);}
+test("durably bound descendant base permits owner effects and rejects runtime or tip drift",()=>{
+  const effective="9".repeat(40),auth="CESAR-BRAIN-101-OPERATOR-PROXY-20260722-01";
+  let tip=effective,runtime=effective,doctor=true,ancestor=true;
+  const boundSpec={...spec,authorization_id:auth},boundGrant={...grant,authorization_id:auth};
+  const binding:any={schema_version:1,grant_key:grantKey,front_id:spec.front_id,authorization_id:auth,build_attempt_id:attempt,frozen_base_sha:base,effective_base_sha:effective,failed_head_sha:head,build_dispatched_event_sha256:dispatch,predecessor_event_sha256:dispatch,canonical_branch:"codex/own-capital-sustainable-return",installed_runtime_sha:effective,event_sha256:"8".repeat(64)};
+  const root=mkdtempSync(join(tmpdir(),"owner-effective-guard-"));
+  const boundary=new ExternalEffectBoundary(root,{branchHead:()=>tip,issuePaused:()=>false,isAncestor:()=>ancestor,prIdentity:()=>({author:{login:"cesarmanuel8102"},headRefName:spec.work_branch,headRepository:{nameWithOwner:spec.repository},isCrossRepository:false,isDraft:true,state:"OPEN",headRefOid:head,baseRefName:binding.canonical_branch,baseRefOid:effective}),remoteBranchHead:()=>head} as any,()=>true);
+  const verifyEffectiveBase=()=>{if(runtime!==effective||!doctor)throw Error("installed runtime proof invalid");};
+  boundary.bind(boundSpec,state);
+  const context:any={spec:boundSpec,state,grant:boundGrant,build_attempt_id:attempt,consumed_event_sha256:consumed,build_dispatched_event_sha256:dispatch,effective_base:binding,verifyEffectiveBase};
+  const cap=boundary.authorizeOwnerPayloadRepairTransport(context,{...receipt(),authorization_id:auth});
+  assert.equal((cap as any).effective_base_sha,effective);
+  assert.doesNotThrow(()=>boundary.assert("builder_execute",{issue:1,pr:2}));
+  tip="7".repeat(40);assert.throws(()=>boundary.assert("builder_execute",{issue:1,pr:2}));tip=effective;
+  runtime=base;assert.throws(()=>boundary.assert("push",{issue:1,pr:2}));runtime=effective;
+  doctor=false;assert.throws(()=>boundary.assert("commit_create",{issue:1,pr:2}));doctor=true;
+  ancestor=false;assert.throws(()=>boundary.assert("builder_execute",{issue:1,pr:2}));
+});
+
+test("effective owner base requires the exact binding and a fresh runtime proof",()=>{
+  const effective="9".repeat(40),binding:any={grant_key:grantKey,front_id:spec.front_id,authorization_id:grant.authorization_id,build_attempt_id:attempt,frozen_base_sha:base,effective_base_sha:effective,failed_head_sha:head,build_dispatched_event_sha256:dispatch,predecessor_event_sha256:dispatch,canonical_branch:"codex/own-capital-sustainable-return",installed_runtime_sha:effective,event_sha256:"8".repeat(64)};
+  const context:any={spec,state,grant,build_attempt_id:attempt,consumed_event_sha256:consumed,build_dispatched_event_sha256:dispatch,effective_base:binding};
+  assert.throws(()=>guard().authorizeOwnerPayloadRepairTransport(context,receipt()),/denied|proof/);
+});
 test("owner transport capability requires the exact durable BUILD_DISPATCHED receipt and is not forgeable",()=>{
   const context={spec,state,grant,build_attempt_id:attempt,consumed_event_sha256:consumed,build_dispatched_event_sha256:dispatch};const boundary=guard(),cap=boundary.authorizeOwnerPayloadRepairTransport(context,receipt());
   assert.doesNotThrow(()=>boundary.assertOwnerPayloadRepairTransport(cap));

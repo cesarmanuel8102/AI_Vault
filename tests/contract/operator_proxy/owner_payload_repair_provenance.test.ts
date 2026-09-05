@@ -48,7 +48,7 @@ test("dedicated owner dispatcher sends one typed logical attempt without ordinar
 
 test("owner recovery parses only an exact immutable publication receipt",()=>{
   const message=[`fix(control-plane): owner payload repair ${spec.front_id}`,"",`OWNER_AUTHORIZATION_ID=${grant.authorization_id}`,`OWNER_GRANT_KEY=${grant.grant_key}`,`OWNER_BUILD_ATTEMPT_ID=${"1".repeat(64)}`,`OWNER_CONSUMED_EVENT_SHA256=${"2".repeat(64)}`,"BUILDER_BACKEND=opencode_ollama","BUILDER_MODEL=ollama-cloud/kimi-k2.7-code","PROVIDER_SESSION=provider-session"].join("\n");
-  assert.deepEqual(parseOwnerPayloadRepairCommitReceipt(message,spec.front_id!),{provenance:{authorization_id:grant.authorization_id,grant_key:grant.grant_key,build_attempt_id:"1".repeat(64),consumed_event_sha256:"2".repeat(64)},builder_session:"provider-session",builder_model:"ollama-cloud/kimi-k2.7-code"});
+  assert.deepEqual(parseOwnerPayloadRepairCommitReceipt(message,spec.front_id!),{provenance:{authorization_id:grant.authorization_id,grant_key:grant.grant_key,build_attempt_id:"1".repeat(64),consumed_event_sha256:"2".repeat(64)},builder_backend:"opencode_ollama",builder_session:"provider-session",provider_session:"provider-session",builder_model:"ollama-cloud/kimi-k2.7-code"});
   assert.throws(()=>parseOwnerPayloadRepairCommitReceipt(message.replace("PROVIDER_SESSION=provider-session","PROVIDER_SESSION=provider-session\nPROVIDER_SESSION=other"),spec.front_id!),/owner repair commit receipt invalid/);
   assert.throws(()=>parseOwnerPayloadRepairCommitReceipt(message.replace(`OWNER_GRANT_KEY=${grant.grant_key}`,"OWNER_GRANT_KEY=not-a-sha"),spec.front_id!),/owner repair commit receipt invalid/);
 });

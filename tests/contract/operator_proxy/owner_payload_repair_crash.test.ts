@@ -4,6 +4,15 @@ import {OwnerPayloadRepairOrchestrator} from "../../../scripts/operator_proxy/ow
 
 const base="a".repeat(40),failed="b".repeat(40),head="c".repeat(40),grant="d".repeat(64),consumed="e".repeat(64),attempt="f".repeat(64),dispatched="1".repeat(64);
 
+test("effective base binding precedes candidate discovery and survives pre-provider interruption",async()=>{
+  const order:string[]=[];let fail=true;
+  const ports:any={recover:()=>({grant_key:grant,authorization_id:"AUTH",front_id:"BRAIN-101-CRASH-BOUND-01",failed_head_sha:failed}),verify:()=>{throw Error("no second grant")},receipt:{view:()=>({phase:"BUILD_DISPATCHED",event_sha256:dispatched,predecessor_event_sha256:consumed,build_attempt_id:attempt}),verified:()=>{throw Error("no second grant")},consumed:()=>{throw Error("no second consumption")},dispatched:()=>{throw Error("no second dispatch")},headBound:()=>order.push("head-bound")},lifecycle:{adopt:(state:any)=>({...state,state:"CI_PENDING",head_sha:head})},bindEffectiveBase:()=>{order.push("bound");if(fail){fail=false;throw Error("crash after immutable binding")}},findPublishedCandidate:()=>{order.push("discover");return {new_head_sha:head,provenance:{authorization_id:"AUTH",grant_key:grant,build_attempt_id:attempt,consumed_event_sha256:consumed}}},authorizeTransport:()=>{throw Error("published candidate must not reexecute")},dispatch:()=>{throw Error("no provider retry")},verifyLineage:()=>true};
+  const state:any={state:"BUILDING",base_sha:base,head_sha:failed,repair_cycles:2};
+  await assert.rejects(new OwnerPayloadRepairOrchestrator(ports).resume(state),/crash after immutable binding/);
+  const result=await new OwnerPayloadRepairOrchestrator(ports).resume(state);
+  assert.equal(result.repair_cycles,2);assert.deepEqual(order,["bound","bound","discover","head-bound"]);
+});
+
 test("restart after BUILD_DISPATCHED redelivers only the persisted logical owner attempt",async()=>{
   let consumedCalls=0,dispatches=0,bound=0;const seen:string[]=[];
   const orchestrator=new OwnerPayloadRepairOrchestrator({
