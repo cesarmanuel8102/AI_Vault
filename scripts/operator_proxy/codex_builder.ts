@@ -31,7 +31,7 @@ export async function runCodexBuilder(input: BuilderTransportInput|BuilderInput,
   const started = new Date().toISOString();
   let stdout = "";
   try {
-    stdout = redactString(execFileSync(invocation.file, [...invocation.prefix, "--model", config.model, "exec", "--full-auto", "-C", input.worktree, input.prompt], {
+    stdout = redactString(execFileSync(invocation.file, [...invocation.prefix, "--model", config.model, "--sandbox", "workspace-write", "exec", "-C", input.worktree, input.prompt], {
       encoding: "utf8",
       env: { ...env, OPERATOR_PROXY_SESSION: input.session, OPERATOR_PROXY_PROVIDER_CORRELATION_ID: input.provider_correlation_id, ...(input.logical_attempt_id?{OPERATOR_PROXY_BUILD_ATTEMPT_ID:input.logical_attempt_id}:{}) },
       timeout: 900000,
