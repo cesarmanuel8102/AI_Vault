@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "5dd8ccef1ecd9e0db70a12ee2466b5cb914aa533a7c0e7fcd8dece1e017f69de",
+  "roadmap_sha256": "ecaa2e2fd745bb98220de32f4d7a64be9bd2b7b1277e6573ffcdfedfa0fa5f4f",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -895,7 +895,7 @@
     },
     "R3.4": {
       "title": "Agent V2 cognitive pipeline E2E",
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "dependencies": [
         "R3.13"
       ],
@@ -960,6 +960,73 @@
             "Set R3.4 to CLOSED_RUNTIME_VERIFIED only after the E2E passes",
             "Preserve exactly one authorized next roadmap item",
             "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+          ],
+          "test_commands": [
+            "git diff --check"
+          ]
+        }
+      }
+    },
+    "R3.5": {
+      "title": "Operator Proxy campaign supervisor wake loop",
+      "status": "PENDING_SEQUENCING",
+      "dependencies": [
+        "R3.4"
+      ],
+      "automation": {
+        "front_id": "BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01",
+        "objective": "Operator Proxy campaign supervisor wake loop",
+        "work_branch": "control-plane/brain-101-r3-5-supervisor-wake-loop",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "operator_proxy_governance",
+        "allowed_paths": [
+          "scripts/operator_proxy/campaign_supervisor.ts",
+          "tests/contract/operator_proxy/campaign_supervisor.test.ts",
+          "docs/roadmap/evidence/BRAIN_101_R3_5_SUPERVISOR_WAKE_LOOP.md"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "docs/roadmap/BRAIN_101_MANIFEST.json"
+        ],
+        "acceptance": [
+          "wake() enforces hard limits before executing tick",
+          "Incidents are classified, recorded, and routed to repair/human-gate/halt",
+          "Self-repair loops are bounded by maxSelfRepairs",
+          "TERMINAL_COMPLETED advances phase via nextPhase() helper",
+          "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+        ],
+        "test_commands": [
+          "npm run typecheck",
+          "npx tsx --test tests/contract/operator_proxy/campaign_supervisor.test.ts",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "closeout": {
+          "front_id": "BRAIN-101-R3.5-CLOSEOUT-01",
+          "objective": "Closeout for R3.5",
+          "work_branch": "control-plane/brain-101-r3-5-closeout",
+          "executor": "codex_control_plane",
+          "risk": "LOW",
+          "allowed_paths": [
+            "docs/roadmap/evidence/"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/"
+          ],
+          "acceptance": [
+            "Evidence recorded",
+            "Hard limits preserved"
           ],
           "test_commands": [
             "git diff --check"
@@ -1200,7 +1267,38 @@
     "closed_at_utc": "2026-08-29T23:59:59Z",
     "final_state": "R3_13_CLOSED_RUNTIME_VERIFIED_R3_4_AUTHORIZED_ACTIVE"
   },
-  "next_gate": "Execute R3.4 Agent V2 cognitive pipeline E2E as the single governed next R3 item",
+  "next_gate": "R3.4 closed; R3.5 is the single planned next roadmap item pending independent authorization and sequencing",
+  "r3_4_agent_v2_cognitive_pipeline_e2e_closeout": {
+    "evidence_path": "docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json",
+    "schema_version": 1,
+    "parent_front_id": "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-01",
+    "roadmap_id": "BRAIN-101",
+    "roadmap_item_id": "R3.4",
+    "issue": 246,
+    "pr": 247,
+    "decision_id": "0e02a259-e59f-4b41-90aa-233905a193cf",
+    "authorization_mode": "POLICY_APPROVED",
+    "base_sha": "311513a6a9c1e5cfea25b915fc30bfd475c3261b",
+    "closeout_base_sha": "dd5468258692bae90e1830a94890e8ae533334aa",
+    "head_sha": "91efbe2dcf41dc606953b190a624b607319de202",
+    "merge_commit": "dd5468258692bae90e1830a94890e8ae533334aa",
+    "builder_session": "agent-loop-builder-91efbe2dcf41dc606953b190a624b607319de202",
+    "reviewer_session": "reviewer:opencode_ollama:ollama-cloud/deepseek-v4-pro:51274231-22fe-46ab-ad76-366eb5e6c2b2",
+    "agent_loop_front_id": "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-01",
+    "agent_loop_work_branch": "agent/roadmap-doc-brain-101-r3-4-cognitive-pipeline-e2e",
+    "agent_loop_executor": "agent_loop",
+    "agent_loop_test_profile": "roadmap-doc",
+    "agent_loop_max_executor_cycles": 2,
+    "agent_loop_evidence_commit": "91efbe2dcf41dc606953b190a624b607319de202",
+    "e2e_evidence_path": "docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md",
+    "r3_4_status": "CLOSED_RUNTIME_VERIFIED",
+    "r3_can_close_now": false,
+    "r3_current_status": "PARTIALLY_CLOSED_R3_4_CLOSED_R3_5_PENDING_SEQUENCING",
+    "next_authorized_item": "R3.5",
+    "next_authorized_front_id": "BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01",
+    "closed_at_utc": "2026-08-30T00:00:00Z",
+    "final_state": "R3_4_CLOSED_RUNTIME_VERIFIED_R3_5_PENDING_SEQUENCING"
+  },
   "r2_3_constitutional_threat_model_closeout": {
     "evidence_path": "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json",
     "schema_version": 1,

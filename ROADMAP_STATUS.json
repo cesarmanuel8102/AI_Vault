@@ -1,9 +1,10 @@
 {
-  "current_head": "6f89252838854f8138442885f656b3ac8f8fc1a4",
-  "current_remote_head": "pending_push",
+  "current_head": "c26db83815c186730c7ce0672a0f28bfd271d416",
+  "current_remote_head": "c26db83815c186730c7ce0672a0f28bfd271d416",
+  "r3_4_closeout_merge_commit": "dd5468258692bae90e1830a94890e8ae533334aa",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "r3_13_r3_2_scope_incident_certification_closeout_ready",
-  "last_applied_checkpoint": "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-CLOSEOUT-01",
+  "migration_status": "r3_5_pending_sequencing",
+  "last_applied_checkpoint": "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-CLOSEOUT-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -172,11 +173,10 @@
     "FRONT-BRAIN-CODEX-TRAINING-MEMORY-MUTATION-FORENSIC-CLOSEOUT-01",
     "BRAIN_AGENT_V2_TOTAL_OPERATIONAL_EXCELLENCE_CLOSEOUT",
     "BRAIN-101-R3-1-CONTRACT-E2E-GAP-MATRIX-CLOSEOUT-01",
-    "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-CLOSEOUT-01"
+    "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-CLOSEOUT-01",
+    "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-CLOSEOUT-01"
   ],
-  "open_fronts": [
-    "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-01"
-  ],
+  "open_fronts": [],
   "blocked_fronts": [
     "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
     "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
@@ -192,12 +192,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-01",
-    "status": "authorized_next",
-    "reason": "R3.13 replacement certification closed runtime-verified; next governed item is Agent V2 cognitive pipeline E2E (agent_loop, roadmap-doc, NO_DEPLOY)."
+    "name": "BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01",
+    "status": "PENDING_SEQUENCING",
+    "reason": "R3.4 closed runtime-verified. R3.5 is the single planned next item, pending independent authorization (decision_id/issue/PR) and operator-proxy sequencing."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-08-29T23:59:59.000+00:00",
+  "last_updated": "2026-08-30T00:00:00.000+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
