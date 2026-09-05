@@ -83,7 +83,7 @@ test("owner-style attempt separates the canonical adoption base from the builder
   });
   const result=await new CandidateExecutionKernel(fixture.adapter).publish({...attempt({expected_base_sha:canonical}) as any,starting_head_sha:failed});
   assert.equal(result.base_sha,canonical);
-  assert.deepEqual(fixture.calls,["provider:attempt-immutable-1",`paths:${failed}`,"tests",`diff:${failed}`,"push",`paths:${canonical}`,"bind"]);
+  assert.deepEqual(fixture.calls,["provider:attempt-immutable-1",`paths:${failed}`,`paths:${canonical}`,"tests",`diff:${failed}`,`diff:${canonical}`,`paths:${canonical}`,`diff:${canonical}`,"push","bind"]);
 });
 
 test("owner-style candidate validates the complete PR diff from canonical base",async()=>{

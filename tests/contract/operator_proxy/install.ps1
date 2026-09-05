@@ -13,7 +13,8 @@ function Test-SameContractPath {
 }
 $root=(Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 Import-Module (Join-Path $root 'scripts\operator_proxy\Repair-OperatorProxy.psm1') -Force
-$ownerRepairModules=@('authority','candidate_execution.ts','correction_payload.ts','owner_payload_repair_grant.ts','owner_payload_repair_orchestrator.ts','owner_principal_resolver.ts','owner_repair_receipt_ledger.ts','owner_critical_merge_authorization.ts','owner_critical_merge_executor.ts','owner_critical_merge_receipt_ledger.ts')
+$ownerRepairModules=@('authority','candidate_execution.ts','correction_payload.ts','owner_payload_repair_grant.ts','owner_payload_repair_orchestrator.ts','owner_principal_resolver.ts','owner_repair_receipt_ledger.ts','owner_critical_merge_authorization.ts','owner_critical_merge_executor.ts','owner_critical_merge_receipt_ledger.ts','owner_repair_effective_base.ts','owner_payload_base_sync.ts')
+$ownerBaseAdvanceModules=@('owner_repair_effective_base.ts','owner_payload_base_sync.ts')
 $managed=@(Get-ManagedOperatorProxyFiles)
 foreach($required in $ownerRepairModules){if($managed -notcontains $required){throw "managed install missing owner repair module $required"}}
 $tmp=Join-Path $env:TEMP ('operator-proxy-'+[guid]::NewGuid())
@@ -54,6 +55,10 @@ try {
     if($compiledMirrorStatus){throw 'compiled install mirror dirty'}
     Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $install -ApprovedCommit $syntheticHead -ValidateStaging $validateStage -ValidateInstalled {param($p)} | Out-Null
     if([Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes((Join-Path $install 'operator_proxy.ts'))) -eq 'old-runtime'){throw 'install did not replace runtime'}
+    foreach($required in $ownerBaseAdvanceModules){
+        if(-not (Test-Path -LiteralPath (Join-Path $install $required))){throw "install missing owner base-advance module $required"}
+        if(-not [Linq.Enumerable]::SequenceEqual([byte[]][IO.File]::ReadAllBytes((Join-Path (Join-Path $synthetic 'scripts\operator_proxy') $required)),[byte[]][IO.File]::ReadAllBytes((Join-Path $install $required)))){throw "install owner base-advance module bytes differ $required"}
+    }
     $installedMirror=Join-Path $install 'repos\AI_Vault-governed'
     if(((& git -C $installedMirror rev-parse HEAD).Trim()) -ne $syntheticHead){throw 'installed mirror head mismatch'}
     if(((& git -C $installedMirror remote get-url origin).Trim()) -ne 'https://github.com/cesarmanuel8102/AI_Vault.git'){throw 'installed mirror remote mismatch'}
@@ -137,11 +142,14 @@ try {
     try{Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $syntheticInstall -ApprovedCommit $syntheticHead -ValidateStaging $validateStage -ValidateInstalled $postIdentityChange|Out-Null;throw 'post-install identity change accepted'}catch{if($_.Exception.Message -eq 'post-install identity change accepted'){throw}}finally{& git -C $synthetic remote set-url origin 'https://github.com/cesarmanuel8102/AI_Vault.git'}
     if(-not [Linq.Enumerable]::SequenceEqual([byte[]]$old,[IO.File]::ReadAllBytes((Join-Path $syntheticInstall 'operator_proxy.ts')))){throw 'TOCTOU rollback bytes differ'}
     [IO.File]::WriteAllBytes((Join-Path $install 'operator_proxy.ts'),$old)
+    $ownerBaseAdvanceRollbackBytes=@{}
+    foreach($required in $ownerBaseAdvanceModules){$prior=[Text.Encoding]::UTF8.GetBytes("prior-$required");[IO.File]::WriteAllBytes((Join-Path $install $required),$prior);$ownerBaseAdvanceRollbackBytes[$required]=$prior}
     [IO.File]::WriteAllText((Join-Path $synthetic 'mirror-source-proof.txt'),'next',[Text.Encoding]::UTF8)
     & git -C $synthetic add mirror-source-proof.txt; & git -C $synthetic commit -qm 'next fixture'
     $nextHead=(& git -C $synthetic rev-parse HEAD).Trim()
     try { Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $install -ApprovedCommit $nextHead -ValidateStaging $validateStage -ValidateInstalled {param($p) throw 'post-install validation failure'} | Out-Null; throw 'post failure accepted' } catch { if($_.Exception.Message -eq 'post failure accepted'){throw} }
     if(-not [Linq.Enumerable]::SequenceEqual([byte[]]$old,[IO.File]::ReadAllBytes((Join-Path $install 'operator_proxy.ts')))){throw 'rollback bytes differ'}
+    foreach($required in $ownerBaseAdvanceModules){if(-not [Linq.Enumerable]::SequenceEqual([byte[]]$ownerBaseAdvanceRollbackBytes[$required],[IO.File]::ReadAllBytes((Join-Path $install $required)))){throw "rollback owner base-advance module bytes differ $required"}}
     if(((& git -C $installedMirror rev-parse HEAD).Trim()) -ne $syntheticHead){throw 'rollback mirror head differs'}
     if(Test-Path -LiteralPath (Join-Path $installedMirror '.git\shallow')){throw 'rollback mirror is shallow'}
     $rollbackMirrorStatus=@(& git -C $installedMirror status --porcelain --untracked-files=all)

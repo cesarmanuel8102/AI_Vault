@@ -6,11 +6,15 @@ import {join} from "node:path";
 import {AutonomousFlow,newLifecycle} from "../../../scripts/operator_proxy/autonomous_flow.js";
 import {LifecycleStore} from "../../../scripts/operator_proxy/lifecycle_store.js";
 import {OwnerPayloadRepairOrchestrator} from "../../../scripts/operator_proxy/owner_payload_repair_orchestrator.js";
-import {ProductionEffects} from "../../../scripts/operator_proxy/production_effects.js";
+import {ProductionEffects,verifyOwnerRepairInstalledRuntime} from "../../../scripts/operator_proxy/production_effects.js";
 import {OwnerRepairReceiptLedger} from "../../../scripts/operator_proxy/owner_repair_receipt_ledger.js";
 import type {OwnerAuthorizedPayloadRepairGrant,ProxySpec} from "../../../scripts/operator_proxy/types.js";
 
 const base="a".repeat(40),failed="b".repeat(40),head="c".repeat(40),attempt="d".repeat(64),consumed="e".repeat(64),grant="f".repeat(64);
+test("Owner effective base rejects an uninstalled development checkout before runtime effects",()=>{
+  const root=mkdtempSync(join(tmpdir(),"owner-runtime-denied-"));
+  assert.throws(()=>verifyOwnerRepairInstalledRuntime(root,process.cwd(),base),/installed runtime/);
+});
 const spec:ProxySpec={schema_version:1,authorization_id:"CESAR-BRAIN-101-OPERATOR-PROXY-20260722-01",repository:"cesarmanuel8102/AI_Vault",roadmap_id:"BRAIN-101",roadmap_version:"1",roadmap_item_id:"R3.4",expected_base_sha:base,executor:"codex_control_plane",risk:"LOW",allowed_paths:["docs/"],forbidden_paths:["scripts/operator_proxy/"],acceptance:["pass"],test_commands:["git diff --check"],deployment_allowed:false,deployment_mode:"NO_DEPLOY",front_id:"BRAIN-101-R3-OWNER-FLOW-01",work_branch:"control-plane/owner-flow"};
 
 test("exhausted CI failure reaches ordinary CI through one owner attempt without ordinary repair semantics",async()=>{

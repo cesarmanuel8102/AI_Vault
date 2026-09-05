@@ -24,6 +24,14 @@ export interface TransitionalKeyedDecisionV1 extends LegacyDecisionV1 {decision_
 export interface Decision extends Omit<TransitionalKeyedDecisionV1,"schema_version"> {schema_version:2}
 export type NormalizedDecision = Decision | TransitionalKeyedDecisionV1 | (LegacyDecisionV1 & {decision_key:string;legacy_source_sha256:string});
 
+export interface OwnerPayloadRepairEffectiveBaseAnchors {
+  frozen_base_sha:string;
+  failed_head_sha:string;
+  effective_base_sha:string;
+  effective_base_binding_sha256:string;
+  synchronized_head_sha:string;
+}
+
 export interface LifecycleRecord {
   schema_version: 1;
   front_id: string;
@@ -45,7 +53,7 @@ export interface LifecycleRecord {
   // Redacted, bounded evidence for diagnosis only; never used for lifecycle control.
   last_error_detail?: string;
   builder_retry_reason?: "BUILDER_FAILURE";
-  owner_payload_repair?: {grant_key:string;consumed_event_sha256:string;build_attempt_id:string};
+  owner_payload_repair?: {grant_key:string;consumed_event_sha256:string;build_attempt_id:string}&Partial<OwnerPayloadRepairEffectiveBaseAnchors>;
   owner_critical_merge?: {critical_merge_key:string;consumed_event_sha256:string};
   merge_reconciliation?: {
     source: "GITHUB_EXTERNALLY_MERGED_PR";
