@@ -1,9 +1,12 @@
 import {createHash,randomUUID} from "node:crypto";
-import {join} from "node:path";
-import type {LifecycleRecord,ProxySpec,ReviewerOutput} from "./types.js";
+import {join,resolve} from "node:path";
+import {readFileSync,realpathSync} from "node:fs";
+import {execFileSync} from "node:child_process";
+import {pathToFileURL} from "node:url";
+import type {LifecycleRecord,ProxySpec,ReviewerOutput,OwnerAuthorizedCriticalMerge,OwnerAuthorizedPayloadRepairGrant} from "./types.js";
 import type {AutonomousEffects,CiResult,PolicyResult} from "./autonomous_flow.js";
 import {GitHubBus} from "./github_bus.js";
-import {GovernedBuilder} from "./governed_builder.js";
+import {GovernedBuilder,dispatchOwnerAuthorizedPayloadRepair,parseOwnerPayloadRepairCommitReceipt} from "./governed_builder.js";
 import {Ledger} from "./decision_ledger.js";
 import {collect,evaluateChecks} from "./evidence_collector.js";
 import {decide,decisionKey,decisionMatchesCandidate,POLICY_SHA256} from "./policy_engine.js";
@@ -20,8 +23,16 @@ import {safeJson} from "./redaction.js";
 import {AgentLoopBuilderAdapter} from "./agent_loop_builder_adapter.js";
 import {classify} from "./risk_classifier.js";
 import {INTEGRATION_BRANCH,MANIFEST_PATH,ROADMAP_PATH} from "./roadmap_sequencer.js";
-import {commitAccessFromBus,verifyBuilderProvenance,decisionBoundToLineage as decisionBoundToLineageRole,normalizeObservedFacts,type CanonicalLifecycleSnapshot} from "./lineage.js";
+import {commitAccessFromBus,verifyBuilderProvenance,verifyOwnerPayloadRepairAdoption,decisionBoundToLineage as decisionBoundToLineageRole,normalizeObservedFacts,type CanonicalLifecycleSnapshot} from "./lineage.js";
 import {deriveReconciliationPlan,validateInvariantSet,type PlannerPorts,type ReconciliationPlan} from "./reconciliation.js";
+import {discoverOwnerAuthorizedPayloadRepairGrant} from "./owner_payload_repair_grant.js";
+import {loadRepositoryAuthorization} from "./owner_principal_resolver.js";
+import {OwnerRepairReceiptLedger,type OwnerGrantReceiptEvent} from "./owner_repair_receipt_ledger.js";
+import {OwnerPayloadRepairOrchestrator} from "./owner_payload_repair_orchestrator.js";
+import {OwnerRepairEffectiveBaseLedger,type OwnerRepairEffectiveBaseBinding} from "./owner_repair_effective_base.js";
+import {discoverOwnerAuthorizedCriticalMerge} from "./owner_critical_merge_authorization.js";
+import {OwnerCriticalMergeReceiptLedger} from "./owner_critical_merge_receipt_ledger.js";
+import {executeOwnerAuthorizedCriticalMerge} from "./owner_critical_merge_executor.js";
 
 const FRESH_SUBJECT=(front:string)=>`feat(control-plane): complete ${front}`;
 const NEUTRALIZATION_SUBJECT=(front:string)=>`chore(control-plane): neutralize ${front} legacy baseline`;
@@ -51,9 +62,44 @@ const exactSpecExceptHistoricalBinding=(current:ProxySpec,historical:ProxySpec)=
   if(JSON.stringify(currentKeys)!==JSON.stringify(historicalKeys))return false;
   return currentKeys.every(key=>roadmapBindingFields.has(key)||JSON.stringify((current as any)[key])===JSON.stringify((historical as any)[key]));
 };
+
+/**
+ * A closeout exhausted at an earlier canonical base may only use that frozen
+ * Issue spec to discover an Owner-authorized exceptional repair. This never
+ * rebinds lifecycle state and accepts no ordinary stale-base recovery.
+ */
+export function resolveFrozenOwnerPayloadRepairSpec(current:ProxySpec,state:LifecycleRecord,body:string,validateHistorical:(current:ProxySpec,historical:ProxySpec,base:string)=>boolean,validateDispatchedOwner?:(historical:ProxySpec,state:LifecycleRecord)=>boolean):ProxySpec|undefined{
+  const fresh=state.state==="BLOCKED"&&state.last_error==="REPAIR_LIMIT_REACHED"&&state.owner_payload_repair===undefined;
+  const resumed=["OWNER_REPAIR_AUTHORIZED","BUILDING"].includes(state.state)&&state.last_error===undefined&&!!state.owner_payload_repair&&!!validateDispatchedOwner;
+  const exact=current.closeout_only===true&&state.front_id===current.front_id&&state.roadmap_item_id===current.roadmap_item_id&&(fresh||resumed)&&state.repair_cycles===2&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&typeof state.builder_session==="string"&&state.builder_session.length>0&&state.reviewer_session===undefined&&state.decision_id===undefined&&/^[0-9a-f]{40}$/.test(state.base_sha)&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&validBlockedCiEffectChain(state);
+  if(!exact)return undefined;
+  let parsed;try{parsed=parseIssue(body);}catch{return undefined;}
+  const historical=parsed.spec;
+  if(parsed.pr!==state.pr||historical.front_id!==state.front_id||historical.roadmap_item_id!==state.roadmap_item_id||historical.expected_base_sha!==state.base_sha||historical.closeout_only!==true||!validateHistorical(current,historical,state.base_sha))return undefined;
+  if(resumed&&!validateDispatchedOwner!(historical,state))return undefined;
+  return historical;
+}
 const canonicalDependencies=(value:unknown)=>Array.isArray(value)&&value.every(item=>typeof item==="string"&&/^R\d+(?:\.\d+)?$/.test(item))&&new Set(value).size===value.length?[...value].sort():undefined;
+const sameCriticalMergeAuthorization=(left:OwnerAuthorizedCriticalMerge,right:OwnerAuthorizedCriticalMerge)=>left.critical_merge_key===right.critical_merge_key&&left.authorization_id===right.authorization_id&&left.repository===right.repository&&left.issue===right.issue&&left.front_id===right.front_id&&left.pr===right.pr&&left.base_branch===right.base_branch&&left.base_sha===right.base_sha&&left.head_branch===right.head_branch&&left.head_sha===right.head_sha&&left.policy_decision_id===right.policy_decision_id&&left.policy_decision_key===right.policy_decision_key&&left.authorization_body_sha256===right.authorization_body_sha256;
 
 function safe<T>(operation:()=>T):T|undefined{try{return operation();}catch{return undefined;}}
+
+/** Proves the running installation against its clean, exact canonical mirror before Owner transport. */
+export function verifyOwnerRepairInstalledRuntime(root:string,sourceRepo:string,expectedTip:string):string {
+  try {
+    if(!/^[0-9a-f]{40}$/.test(expectedTip)||realpathSync(sourceRepo).toLowerCase()!==resolve(root,"repos","AI_Vault-governed").toLowerCase())throw new Error("mirror location");
+    const git=(args:string[])=>execFileSync(process.env.GIT_PATH??"git",["-C",sourceRepo,...args],{encoding:"utf8",timeout:30000,windowsHide:true}).trim();
+    if(git(["rev-parse","HEAD"])!==expectedTip||git(["status","--porcelain","--untracked-files=all"]))throw new Error("mirror state");
+    if(!["https://github.com/cesarmanuel8102/AI_Vault","https://github.com/cesarmanuel8102/AI_Vault.git","git@github.com:cesarmanuel8102/AI_Vault.git"].includes(git(["remote","get-url","origin"])))throw new Error("mirror repository");
+    const prefix="scripts/operator_proxy/",files=git(["ls-files","--",prefix]).split(/\r?\n/).filter(path=>/^scripts\/operator_proxy\/(?:[^/]+\.ts|(?:schemas|authority)\/.+|package(?:-lock)?\.json|Run-OperatorProxy\.ps1)$/.test(path));
+    if(!files.includes(`${prefix}production_effects.ts`)||!files.includes(`${prefix}owner_repair_effective_base.ts`))throw new Error("managed sources missing");
+    for(const path of files)if(!readFileSync(join(sourceRepo,path)).equals(readFileSync(join(root,path.slice(prefix.length)))))throw new Error("managed bytes differ");
+    const output=execFileSync(process.execPath,["--import",pathToFileURL(join(root,"node_modules","tsx","dist","loader.mjs")).href,join(root,"operator_proxy.ts"),"--doctor"],{encoding:"utf8",timeout:30000,windowsHide:true,env:{...process.env,OPERATOR_PROXY_ROOT:root,OPERATOR_PROXY_REPO:sourceRepo}});
+    const doctor=JSON.parse(output.trim());
+    if(doctor.status!=="PASS"||doctor.pause!==false||resolve(doctor.reviewer_repository).toLowerCase()!==resolve(sourceRepo).toLowerCase())throw new Error("doctor failed");
+    return expectedTip;
+  } catch {throw new Error("owner installed runtime verification failed");}
+}
 
 export class ProductionEffects implements AutonomousEffects {
   readonly builder:GovernedBuilder;readonly agentLoopBuilder:AgentLoopBuilderAdapter;
@@ -61,6 +107,7 @@ export class ProductionEffects implements AutonomousEffects {
   private activeSpec?:ProxySpec;private activeState?:import("./types.js").LifecycleRecord;
   constructor(readonly bus:GitHubBus,readonly ledger:Ledger,readonly sourceRepo:string,readonly root:string,readonly boundary:ExternalEffectBoundary,readonly coordinator:LocalCoordinator=failClosedCoordinator){this.bus.setMutationGuard(this.boundary.assert.bind(this.boundary));this.builder=new GovernedBuilder(sourceRepo,join(root,"worktrees"),bus,this.boundary.assert.bind(this.boundary));this.agentLoopBuilder=new AgentLoopBuilderAdapter(bus);this.store=new LifecycleStore(join(root,"lifecycle"));}
   bindLifecycle(spec:ProxySpec,state:import("./types.js").LifecycleRecord){this.activeSpec=spec;this.activeState=state;this.boundary.bind(spec,state);}
+  ownerRepairRuntimeSha(expectedTip:string):string{return verifyOwnerRepairInstalledRuntime(this.root,this.sourceRepo,expectedTip);}
   private bindObservedBlockedCiHead(spec:ProxySpec,state:LifecycleRecord){
     if(spec.executor!=="codex_control_plane"||!state.pr||!state.head_sha)return;
     const observed=String(this.bus.prIdentity(state.pr).headRefOid??"");
@@ -73,8 +120,186 @@ export class ProductionEffects implements AutonomousEffects {
     const item=manifest?.roadmap_items?.[historical.roadmap_item_id],dependencies=canonicalDependencies(item?.dependencies);
     return manifest?.roadmap_id===historical.roadmap_id&&manifest?.roadmap_version===historical.roadmap_version&&manifest?.repository===historical.repository&&manifest?.integration_branch===INTEGRATION_BRANCH&&manifest?.approval_status==="HUMAN_ADOPTED"&&manifest?.r0_status==="CLOSED_HUMAN_ADOPTED"&&manifest?.human_final_authority===true&&manifest?.auto_merge===false&&manifest?.canonical_local_sync===false&&manifest?.live_trading_enabled===false&&manifest?.roadmap_path===ROADMAP_PATH&&manifest?.roadmap_sha256===sha256(roadmapText)&&historical.roadmap_sha256===sha256(roadmapText)&&historical.manifest_sha256===sha256(manifestText)&&item?.status==="AUTHORIZED_ACTIVE"&&JSON.stringify(dependencies)===JSON.stringify(historical.dependencies??[]);
   }
+  /** Requires the pure reconciliation planner before consuming the exceptional Owner grant. */
+  private assertOwnerPayloadRepairAuthorizationPlan(spec:ProxySpec,state:LifecycleRecord,grant:OwnerAuthorizedPayloadRepairGrant):void {
+    const preview:any={phase:"CONSUMED",grant_key:grant.grant_key,front_id:grant.front_id,failed_head_sha:grant.failed_head_sha,build_attempt_id:"0".repeat(64)};
+    const snapshot=normalizeObservedFacts(spec,state,this.snapshotDeps());
+    const ports:PlannerPorts={...this.plannerPorts(spec,state),verifiedOwnerPayloadRepairGrant:()=>grant,ownerPayloadRepairReceipt:()=>preview};
+    const plan=deriveReconciliationPlan(snapshot,ports),invariants=validateInvariantSet(snapshot,plan,ports);
+    if(plan.move!=="AUTHORIZE_OWNER_PAYLOAD_REPAIR_RESUME"||invariants.violations.length)throw new Error("owner authorization reconciliation denied");
+  }
+  private ownerCriticalMergeReviewReceipt(spec:ProxySpec,state:LifecycleRecord){
+    if(!state.issue||!state.pr||!state.head_sha||!state.builder_session||!spec.front_id)throw new Error("owner critical merge review binding invalid");
+    const identity=this.bus.prIdentity(state.pr),files=(identity.files??[]).map((x:any)=>String(x.path)),reportPath="docs/agent_loop/pilot/EXECUTOR_REPORT.json",report=spec.executor==="agent_loop"&&files.includes(reportPath)?JSON.parse(this.bus.fileAt(reportPath,state.head_sha)):undefined,agentReceipt=spec.executor==="agent_loop"?inspectAgentLoopCommitModel(this.agentLoopReceiptMessage(spec,state,state.head_sha),spec.front_id,report?.model):undefined,routerReceipt=spec.executor==="codex_control_plane"?(state.owner_payload_repair?this.ownerPayloadRepairBuilderReceipt(state,state.head_sha,spec.front_id):this.anchoredRouterBuilderReceipt(state,state.head_sha,spec.front_id)):undefined,builderModel=agentReceipt?.model??(routerReceipt?.status==="VERIFIED"?routerReceipt.model:undefined)??verifiedBuilderModel(spec.executor);
+    if(agentReceipt?.status==="MISSING"||routerReceipt?.status==="PROVENANCE_RECOVERY_REQUIRED")throw new Error("owner critical merge builder provenance invalid");
+    const policyKey=decisionKey(spec,state.issue,state.pr,state.base_sha,state.head_sha),reviewKey=reviewEvidenceKey(policyKey,state.builder_session,builderModel),input={repository:spec.repository,repositoryRoot:this.sourceRepo,pr:state.pr,baseSha:state.base_sha,headSha:state.head_sha,risk:spec.risk,changedFiles:files,builderSession:state.builder_session,builderModel},expected={issue:state.issue,pr:state.pr,base_sha:state.base_sha,head_sha:state.head_sha,front_id:spec.front_id,builder_session:state.builder_session,builder_model:builderModel};
+    const cached=this.ledger.loadReview<any>(reviewKey,value=>{validateReviewerEnvelope(value,expected,input);});
+    const run=cached.router_run;
+    if(cached.result?.head_sha!==state.head_sha||run?.evidence_sha256===undefined||run?.model===undefined||cached.session!==run.session)throw new Error("owner critical merge review receipt invalid");
+    return {receipt_id:reviewKey,receipt_sha256:String(run.evidence_sha256),head_sha:state.head_sha,model:String(run.model),verdict:cached.result.verdict,findings_count:cached.result.findings.length};
+  }
+  private resolveOwnerCriticalMerge(spec:ProxySpec,state:LifecycleRecord):OwnerAuthorizedCriticalMerge|undefined {
+    if(!state.issue||!state.pr||!state.head_sha||!state.decision_id||!spec.front_id||!spec.work_branch)throw new Error("owner critical merge lifecycle binding invalid");
+    const receipts=new OwnerCriticalMergeReceiptLedger(join(this.root,"owner-critical-merge-receipts")),snapshot=receipts.findAuthorizationSnapshot({front_id:state.front_id,issue:state.issue,pr:state.pr,base_sha:state.base_sha,head_sha:state.head_sha});
+    if(!snapshot){const comments=this.bus.issueComments(state.issue),hasEvidence=comments.some(comment=>String((comment as any)?.body??"").includes("OWNER_AUTHORIZED_CRITICAL_MERGE_V1"));if(!hasEvidence)return undefined;}
+    const decision=this.ledger.load(state.decision_id),checks=evaluateChecks(this.bus,state.head_sha,spec.work_branch);
+    if(!checks.terminal||!checks.green)throw new Error("owner critical merge CI evidence invalid");
+    const ci={evidence_id:`github-checks:${state.head_sha}`,evidence_sha256:sha256(safeJson({head_sha:state.head_sha,checks:checks.checks})),head_sha:state.head_sha};
+    const authority=loadRepositoryAuthorization(join(this.sourceRepo,"scripts","operator_proxy","authority","repository_authorization.v1.json"),spec.repository);
+    const review=this.ownerCriticalMergeReviewReceipt(spec,state);
+    const authorization=snapshot??discoverOwnerAuthorizedCriticalMerge({comments:this.bus.issueComments(state.issue),sources:{campaign_candidates:[],repository_candidates:[authority]},decision,ci,review,base_branch:INTEGRATION_BRANCH,head_branch:spec.work_branch});
+    if(!authorization)return undefined;
+    if(authorization.owner_principal!==authority.owner_principal||authorization.policy_sha256!==decision.policy_sha256||authorization.policy_outcome!=="ESCALATE_TO_OWNER"||authorization.risk!=="CRITICAL"||authorization.action!=="OWNER_AUTHORIZED_CRITICAL_MERGE"||authorization.max_uses!==1||authorization.ci_evidence_id!==ci.evidence_id||authorization.ci_evidence_sha256!==ci.evidence_sha256||authorization.review_receipt_id!==review.receipt_id||authorization.review_receipt_sha256!==review.receipt_sha256||authorization.reviewer_model!==review.model||authorization.review_verdict!==review.verdict||authorization.review_findings_count!==review.findings_count)throw new Error("owner critical merge recovered authorization invalid");
+    if(authorization.authorization_id!==spec.authorization_id||authorization.repository!==spec.repository||authorization.front_id!==state.front_id||authorization.issue!==state.issue||authorization.pr!==state.pr||authorization.base_sha!==state.base_sha||authorization.head_sha!==state.head_sha||authorization.policy_decision_id!==state.decision_id)throw new Error("owner critical merge lifecycle identity invalid");
+    return authorization;
+  }
+  async resumeOwnerCriticalMerge(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore):Promise<LifecycleRecord|"PENDING"> {
+    if(state.state!=="ESCALATED"||state.last_error!=="OWNER_AUTHORITY_REQUIRED")throw new Error("owner critical merge lifecycle state invalid");
+    const authorization=this.resolveOwnerCriticalMerge(spec,state);if(!authorization)return "PENDING";
+    const receipts=new OwnerCriticalMergeReceiptLedger(join(this.root,"owner-critical-merge-receipts"));let receipt;try{receipt=receipts.deriveReceiptView(authorization.critical_merge_key);}catch(error){if(!(error instanceof Error)||error.message!=="critical merge receipt missing")throw error;receipt=receipts.appendVerified(authorization);}
+    if(receipt.phase==="VERIFIED")receipt=receipts.consume(authorization.critical_merge_key);
+    if(receipt.phase!=="CONSUMED")throw new Error("owner critical merge lifecycle receipt invalid");
+    const updated=store.beginOwnerCriticalMerge(state,receipts,authorization,receipt);this.bindLifecycle(spec,updated);return updated;
+  }
   ensureIssue(spec:ProxySpec){const existing=this.bus.findOpenFront(spec.front_id!);if(spec.executor==="agent_loop")return this.agentLoopBuilder.ensureIssue(spec,existing);if(existing.length>1)throw new Error("duplicate governed Issues");if(existing.length===1){const persisted=parseIssue(this.bus.issueBody(existing[0])).spec;if(JSON.stringify(persisted)!==JSON.stringify(spec))throw new Error("existing governed Issue spec mismatch");return existing[0];}return this.bus.createGovernedIssue(`feat(control-plane): ${spec.objective}`,issueBody(spec),"operator:building");}
   async ensureBuild(spec:ProxySpec,issue:number,session:string,repairCycle:number,previousHead?:string,retryReason?:"BUILDER_FAILURE"){return spec.executor==="agent_loop"?await this.agentLoopBuilder.observe(spec,issue,repairCycle,previousHead):await this.builder.build(spec,issue,session,repairCycle,retryReason);}
+  async resumeOwnerPayloadRepair(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore):Promise<LifecycleRecord|"PENDING"> {
+    if(!state.issue||!state.pr||!state.head_sha||spec.executor!=="codex_control_plane")throw new Error("owner payload repair lifecycle identity invalid");
+    const authority=loadRepositoryAuthorization(join(this.sourceRepo,"scripts","operator_proxy","authority","repository_authorization.v1.json"),spec.repository);
+    const receipts=new OwnerRepairReceiptLedger(join(this.root,"owner-repair-receipts"));
+    const bases=new OwnerRepairEffectiveBaseLedger(join(this.root,"owner-repair-receipts"));
+    const recoveredGrant=(record:LifecycleRecord):OwnerAuthorizedPayloadRepairGrant|undefined=>{
+      const grant=receipts.findGrantSnapshot({front_id:record.front_id,issue:record.issue!,pr:record.pr!,failed_head_sha:record.head_sha!});
+      if(!grant)return undefined;
+      if(grant.owner_principal!==authority.owner_principal||grant.authorization_id!==spec.authorization_id||grant.repository!==spec.repository||grant.roadmap_id!==spec.roadmap_id||grant.roadmap_item_id!==spec.roadmap_item_id||grant.front_id!==record.front_id||grant.issue!==record.issue||grant.pr!==record.pr||grant.work_branch!==spec.work_branch||grant.canonical_base_sha!==spec.expected_base_sha||grant.failed_head_sha!==record.head_sha||grant.eligible_failure_class!=="CI_FAILED"||grant.max_extra_builds!==1||record.repair_cycles!==2||record.state==="BLOCKED"&&(!["CI_FAILED","REPAIR_LIMIT_REACHED"].includes(record.last_error??"")||store.consummatedPayloadRepairs(record.issue!,record.pr!)!==2))throw new Error("owner repair recovered grant invalid");
+      return grant;
+    };
+    const recovered=recoveredGrant(state),comments=recovered?[]:this.bus.issueComments(state.issue);
+    const ownerEnvelopes=comments.filter(comment=>{
+      const body=comment&&typeof comment==="object"?String((comment as Record<string,unknown>).body??""):"";
+      return body.includes("BRAIN_OWNER_PAYLOAD_REPAIR_V1")||body.includes("END_BRAIN_OWNER_PAYLOAD_REPAIR_V1");
+    });
+    if(!recovered&&ownerEnvelopes.length===0)return "PENDING";
+    const grantFor=(record:LifecycleRecord)=>discoverOwnerAuthorizedPayloadRepairGrant({spec,issue:record.issue!,pr:record.pr!,failed_head_sha:record.head_sha!,failure_class:record.state==="BLOCKED"&&["CI_FAILED","REPAIR_LIMIT_REACHED"].includes(record.last_error??"")?"CI_FAILED":"",ordinary_payload_repairs:store.consummatedPayloadRepairs(record.issue!,record.pr!),sources:{campaign_candidates:[],repository_candidates:[authority]},comments});
+    let current=state,grant:OwnerAuthorizedPayloadRepairGrant|undefined,effective:OwnerRepairEffectiveBaseBinding|undefined;
+    const bindBase=(dispatchSha:string)=>{
+      if(!grant||!current.owner_payload_repair)throw new Error("owner repair effective base identity missing");
+      const prior=bases.load(grant.grant_key),tip=this.bus.branchHead(INTEGRATION_BRANCH);
+      const installed=this.ownerRepairRuntimeSha(tip);
+      const input={grant_key:grant.grant_key,front_id:grant.front_id,authorization_id:grant.authorization_id,build_attempt_id:current.owner_payload_repair.build_attempt_id,frozen_base_sha:grant.canonical_base_sha,effective_base_sha:prior?.effective_base_sha??tip,failed_head_sha:grant.failed_head_sha,build_dispatched_event_sha256:dispatchSha,canonical_branch:INTEGRATION_BRANCH,installed_runtime_sha:prior?.installed_runtime_sha??installed,predecessor_event_sha256:dispatchSha};
+      effective=bases.bind(input,{receipts,currentTip:tip,installedRuntimeSha:installed,doctorPassed:true,isAncestor:(a,b)=>this.bus.isAncestor(a,b)});
+      return effective;
+    };
+    const candidateEvidence=(newHead:string)=>{
+      if(!grant||!effective||!current.owner_payload_repair)throw new Error("owner repair effective base missing");
+      const receipt=parseOwnerPayloadRepairCommitReceipt(this.bus.commitMessage(newHead),spec.front_id!);
+      const identity=this.bus.prIdentity(grant.pr);
+      if(!verifyOwnerPayloadRepairAdoption({spec,grant,new_head_sha:newHead,remote_branch_head:this.bus.remoteBranchHead(spec.work_branch!),pr:{number:grant.pr,head:newHead,base:effective.effective_base_sha,identity,trustedAuthor:true,pathsInScope:true},provenance:receipt.provenance,build_attempt_id:current.owner_payload_repair.build_attempt_id,consumed_event_sha256:current.owner_payload_repair.consumed_event_sha256,effective_base_binding:effective,effective_base_provenance:receipt.effective_base,isAncestor:(older,newer)=>this.bus.isAncestor(older,newer)}))throw new Error("owner repair candidate adoption invalid");
+      return receipt;
+    };
+    const adopt=(record:LifecycleRecord,newHead:string)=>{
+      const receipt=candidateEvidence(newHead),provenance=receipt.provenance;
+      current=store.adoptOwnerPayloadRepairCandidate(record,{pr:grant!.pr,head_sha:newHead,builder_session:`owner-${receipt.builder_session}`,grant_key:provenance.grant_key,build_attempt_id:provenance.build_attempt_id,consumed_event_sha256:provenance.consumed_event_sha256,effective_base_binding:effective!,synchronized_head_sha:receipt.effective_base!.synchronized_head_sha},{effectiveBases:bases,receipts});
+      const effectiveSpec=this.ownerEffectiveSpec(spec,effective!.effective_base_sha);
+      this.bindLifecycle(effectiveSpec,current);
+      return current;
+    };
+    const coordinator=new OwnerPayloadRepairOrchestrator({
+      recover:record=>{grant=recoveredGrant(record as LifecycleRecord);return grant;},
+      verify:record=>{grant=grantFor(record as LifecycleRecord);return grant;},
+      preflight:(record,verified)=>this.assertOwnerPayloadRepairAuthorizationPlan(spec,record as LifecycleRecord,verified as OwnerAuthorizedPayloadRepairGrant),
+      receipt:{
+        view:key=>{try{return receipts.deriveReceiptView(key) as any;}catch(error){if(error instanceof Error&&error.message==="owner receipt missing")return undefined;throw error;}},
+        verified:value=>receipts.appendVerified(value as OwnerAuthorizedPayloadRepairGrant) as any,
+        consumed:key=>receipts.consume(key) as any,
+        dispatched:key=>receipts.markBuildDispatched(key) as any,
+        headBound:(key,head)=>{receipts.bindHead(key,head);},
+      },
+      lifecycle:{
+        authorize:(record,receipt)=>{current=store.authorizeOwnerPayloadRepair(record as LifecycleRecord,receipts,receipt as OwnerGrantReceiptEvent);this.bindLifecycle(spec,current);return current as any;},
+        begin:(record,receipt)=>{current=store.beginOwnerPayloadRepairBuild(record as LifecycleRecord,receipt as OwnerGrantReceiptEvent);this.bindLifecycle(spec,current);return current as any;},
+        adopt:(record,candidate)=>adopt(record as LifecycleRecord,candidate.new_head_sha) as any,
+      },
+      bindEffectiveBase:(_record,receipt)=>{bindBase(receipt.event_sha256);},
+      authorizeTransport:receipt=>{
+        if(!grant||!effective)throw new Error("owner payload repair grant missing");
+        return this.boundary.authorizeOwnerPayloadRepairTransport({spec,state:current,grant,consumed_event_sha256:receipt.predecessor_event_sha256,build_attempt_id:receipt.build_attempt_id,build_dispatched_event_sha256:receipt.event_sha256,effective_base:effective,verifyEffectiveBase:()=>{bindBase(receipt.event_sha256);}},receipt as OwnerGrantReceiptEvent);
+      },
+      findPublishedCandidate:(record,receipt)=>{
+        if(!grant||!effective||record.state!=="BUILDING"||record.repair_cycles!==2||!record.owner_payload_repair||record.owner_payload_repair.grant_key!==grant.grant_key||record.owner_payload_repair.build_attempt_id!==receipt.build_attempt_id||record.owner_payload_repair.consumed_event_sha256!==receipt.predecessor_event_sha256)throw new Error("owner repair remote candidate identity invalid");
+        const remote=this.bus.remoteBranchHead(spec.work_branch!);
+        if(remote===undefined)throw new Error("owner repair remote branch missing");
+        if(remote===record.head_sha)return undefined;
+        if(this.builder.isOwnerPayloadRepairBaseSync(spec,grant,effective,remote))return undefined;
+        const published=candidateEvidence(remote);
+        return {new_head_sha:remote,provenance:published.provenance};
+      },
+      dispatch:async capability=>{
+        if(!grant||!effective)throw new Error("owner payload repair grant missing");
+        const transport=capability as import("./external_effect_guard.js").OwnerPayloadRepairTransportCapability;
+        const assert=()=>this.boundary.assertOwnerPayloadRepairTransport(transport);
+        const sync=this.builder.synchronizeOwnerPayloadRepairBase(spec,grant,transport,assert);
+        const publication=this.builder.ownerPayloadRepairPublicationAdapter(spec,grant,transport,assert,{binding:effective,synchronized_head_sha:sync.synchronized_head_sha,consumed_event_sha256:current.owner_payload_repair!.consumed_event_sha256});
+        const published=await dispatchOwnerAuthorizedPayloadRepair({spec,grant,issue:grant.issue,build_attempt_id:capability.build_attempt_id,consumed_event_sha256:current.owner_payload_repair!.consumed_event_sha256,correction_payload:grant.correction_payload,publication,effective_base_binding:effective,synchronized_head_sha:sync.synchronized_head_sha});
+        return {new_head_sha:published.candidate.head_sha,provenance:published.provenance};
+      },
+      verifyLineage:candidate=>{candidateEvidence(candidate.new_head_sha);return true;},
+      reconcileHeadBound:(record,receipt)=>{
+        const prior=grant?bases.load(grant.grant_key):undefined;
+        if(!prior)throw new Error("owner repair head-bound effective base missing");
+        bindBase(prior.build_dispatched_event_sha256);
+        return adopt(record as LifecycleRecord,receipt.new_head_sha) as any;
+      },
+    });
+    return await coordinator.resume(current as any) as LifecycleRecord;
+  }
+
+  private ownerEffectiveSpec(frozen:ProxySpec,base:string):ProxySpec {
+    const manifestText=this.bus.fileAt(MANIFEST_PATH,base),roadmapText=this.bus.fileAt(ROADMAP_PATH,base);
+    const effective={...frozen,expected_base_sha:base,roadmap_sha256:sha256(roadmapText),manifest_sha256:sha256(manifestText)};
+    if(!this.validHistoricalRoadmapBinding(effective,effective,base)||!this.bus.isAncestor(frozen.expected_base_sha,base))throw new Error("owner effective roadmap binding invalid");
+    return effective;
+  }
+
+  /** Frozen authority survives adoption; subsequent effects use its proven effective execution base. */
+  resolveOwnerPayloadExecutionSpec(spec:ProxySpec,state:LifecycleRecord):ProxySpec {
+    const owner=state.owner_payload_repair;
+    if(!owner||!["frozen_base_sha","failed_head_sha","effective_base_sha","effective_base_binding_sha256","synchronized_head_sha"].some(key=>Object.hasOwn(owner,key)))return spec;
+    if(!owner.effective_base_sha)throw new Error("owner effective lifecycle anchors incomplete");
+    if(!state.issue||!state.pr||!state.head_sha||state.repair_cycles!==2||["BUILDING","OWNER_REPAIR_AUTHORIZED"].includes(state.state))throw new Error("owner effective lifecycle invalid");
+    const receipts=new OwnerRepairReceiptLedger(join(this.root,"owner-repair-receipts"));
+    const effective=new OwnerRepairEffectiveBaseLedger(join(this.root,"owner-repair-receipts")).load(owner.grant_key);
+    const headBound=receipts.deriveReceiptView(owner.grant_key);
+    const grant=receipts.findGrantSnapshot({front_id:state.front_id,issue:state.issue,pr:state.pr,failed_head_sha:owner.failed_head_sha!});
+    if(!effective||!grant||headBound.phase!=="HEAD_BOUND"||!headBound.new_head_sha||grant.grant_key!==owner.grant_key||grant.authorization_id!==spec.authorization_id||grant.repository!==spec.repository||grant.roadmap_id!==spec.roadmap_id||grant.roadmap_item_id!==state.roadmap_item_id||grant.work_branch!==spec.work_branch||grant.canonical_base_sha!==owner.frozen_base_sha||effective.effective_base_sha!==owner.effective_base_sha||headBound.build_attempt_id!==owner.build_attempt_id)throw new Error("owner effective authority invalid");
+    const parsed=parseIssue(this.bus.issueSnapshot(state.issue).body),frozen=parsed.spec;
+    if(parsed.pr!==state.pr||frozen.expected_base_sha!==grant.canonical_base_sha||frozen.front_id!==grant.front_id||!exactSpecExceptHistoricalBinding(spec,frozen))throw new Error("owner effective frozen spec mismatch");
+    const merged=["MERGED","INSTALL_PENDING","INSTALLING","RUNTIME_PILOT_PENDING","RUNTIME_PILOT_RUNNING","RUNTIME_VERIFIED","CLOSEOUT_PENDING","CLOSEOUT_MERGED","TERMINAL_COMPLETED"].includes(state.state);
+    this.ownerPayloadRepairBuilderReceipt(merged?{...state,base_sha:effective.effective_base_sha}:state,headBound.new_head_sha,state.front_id);
+    if(merged){
+      const nextBase=spec.expected_base_sha===frozen.expected_base_sha?effective.effective_base_sha:spec.expected_base_sha;
+      if(!state.completed_effects.includes(`merge:${state.head_sha}`)||!this.bus.isAncestor(headBound.new_head_sha,state.head_sha)||state.base_sha!==effective.effective_base_sha&&!this.bus.isAncestor(state.head_sha,state.base_sha)||nextBase!==effective.effective_base_sha&&(!this.bus.isAncestor(state.head_sha,nextBase)||this.bus.branchHead(INTEGRATION_BRANCH)!==nextBase))throw new Error("owner effective merge evidence invalid");
+      return this.ownerEffectiveSpec(frozen,nextBase);
+    }else if(state.head_sha!==headBound.new_head_sha||this.bus.branchHead(INTEGRATION_BRANCH)!==effective.effective_base_sha)throw new Error("owner effective candidate drift");
+    return this.ownerEffectiveSpec(frozen,effective.effective_base_sha);
+  }
+
+  private validDispatchedOwnerResume(spec:ProxySpec,state:LifecycleRecord):boolean {
+    const binding=state.owner_payload_repair;
+    if(!binding)return false;
+    const receipts=new OwnerRepairReceiptLedger(join(this.root,"owner-repair-receipts"));
+    const view=receipts.deriveReceiptView(binding.grant_key);
+    const grant=receipts.findGrantSnapshot({front_id:state.front_id,issue:state.issue!,pr:state.pr!,failed_head_sha:state.head_sha!});
+    if(!grant||grant.authorization_id!==spec.authorization_id||grant.repository!==spec.repository||grant.roadmap_id!==spec.roadmap_id||grant.roadmap_item_id!==spec.roadmap_item_id||grant.work_branch!==spec.work_branch||grant.canonical_base_sha!==spec.expected_base_sha||grant.grant_key!==binding.grant_key||view.build_attempt_id!==binding.build_attempt_id)return false;
+    if(view.phase==="CONSUMED")return state.state==="OWNER_REPAIR_AUTHORIZED"&&view.event_sha256===binding.consumed_event_sha256;
+    if(view.phase==="BUILD_DISPATCHED")return state.state==="BUILDING"&&view.predecessor_event_sha256===binding.consumed_event_sha256;
+    if(view.phase==="HEAD_BOUND"){
+      const effective=new OwnerRepairEffectiveBaseLedger(join(this.root,"owner-repair-receipts")).load(binding.grant_key);
+      return state.state==="BUILDING"&&!!effective&&effective.build_attempt_id===binding.build_attempt_id&&view.predecessor_event_sha256===effective.build_dispatched_event_sha256;
+    }
+    return false;
+  }
+
   ci(pr:number,head:string):CiResult {const p=this.bus.json(["pr","view",String(pr),"--json","headRefOid,headRefName"]);if(p.headRefOid!==head)throw new Error("CI head changed");const result=evaluateChecks(this.bus,head,String(p.headRefName));return !result.terminal?"PENDING":result.green?"PASS":"FAIL";}
   private agentLoopReceiptMessage(spec:ProxySpec,state:import("./types.js").LifecycleRecord,head:string){const current=this.bus.commitMessage(head),syncSubject=`chore(control-plane): synchronize ${spec.front_id} base`;if(current.split("\n",1)[0]!==syncSubject)return current;const builds=state.completed_effects.filter(value=>/^build:[0-9a-f]{40}$/.test(value)),candidate=builds.length===1?builds[0].slice(6):undefined;if(!candidate||state.repair_cycles!==0||state.builder_session!==`agent-loop-builder-${candidate}`||!state.completed_effects.includes(`base-sync:${head}`)||!this.bus.isAncestor(candidate,head))throw new Error("Agent Loop synchronized receipt evidence invalid");return this.bus.commitMessage(candidate);}
   private inspectRouterBuilderReceipt(head:string,baseSha:string,frontId:string):{model:string;headCommit:string;status:"VERIFIED"|"PROVENANCE_RECOVERY_REQUIRED"}{
@@ -180,7 +405,21 @@ export class ProductionEffects implements AutonomousEffects {
     if(!receiptHead||!receiptBase||!sessionBound||!this.bus.isAncestor(receiptHead,head)||!this.bus.isAncestor(receiptBase,state.base_sha))throw new Error("persisted builder receipt anchor invalid");
     return this.inspectRouterBuilderReceipt(receiptHead,receiptBase,front);
   }
-  review(pr:number,head:string,session:string) {const spec=this.activeSpec,state=this.activeState;if(!spec||!state?.issue||state.pr!==pr||state.head_sha!==head||!state.builder_session||!spec.front_id)throw new Error("review lifecycle binding missing");const policyKey=decisionKey(spec,state.issue,pr,state.base_sha,head),identity=this.bus.prIdentity(pr),files=(identity.files??[]).map((x:any)=>String(x.path)),reportPath="docs/agent_loop/pilot/EXECUTOR_REPORT.json",report=spec.executor==="agent_loop"&&files.includes(reportPath)?JSON.parse(this.bus.fileAt(reportPath,head)):undefined,receipt=spec.executor==="agent_loop"?inspectAgentLoopCommitModel(this.agentLoopReceiptMessage(spec,state,head),spec.front_id,report?.model):undefined,routerReceipt=spec.executor==="codex_control_plane"?this.anchoredRouterBuilderReceipt(state,head,spec.front_id):undefined,builderModel=receipt?.model??(routerReceipt?.status==="VERIFIED"?routerReceipt.model:undefined)??verifiedBuilderModel(spec.executor),reviewKey=reviewEvidenceKey(policyKey,state.builder_session,builderModel);if(receipt?.status==="MISSING")return {session:`reviewer:deterministic-receipt-repair:${head}`,output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"Agent Loop commit evidence requires bounded regeneration",findings:[{severity:"P1",title:"Executor model receipt missing",evidence:"The exact Agent Loop candidate commit subject is valid, but the required AGENT_LOOP_EXECUTOR_MODEL trailer is absent.",required_correction:"Regenerate the candidate with the installed governed Agent Loop worker so the commit records exactly one configured executor model receipt."}]}};if(spec.executor==="codex_control_plane"&&routerReceipt?.status==="PROVENANCE_RECOVERY_REQUIRED")return {session:`reviewer:builder-provenance-recovery:${head}`,output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"Builder model provenance requires a governed fresh rebuild",findings:[{severity:"P1",title:"Builder model receipt missing or invalid",evidence:"The control-plane candidate does not contain a valid BUILDER_MODEL receipt from a governed builder transaction. This may be an unattested legacy candidate or the provenance was lost.",required_correction:"Trigger BUILDER_PROVENANCE_RECOVERY_REQUIRED: run a fresh governed builder transaction from a verified clean baseline and produce a new HEAD containing a real BUILDER_BACKEND/BUILDER_MODEL/PROVIDER_SESSION receipt before review resumes."}]}};const input={repository:spec.repository,repositoryRoot:this.sourceRepo,pr,baseSha:state.base_sha,headSha:head,risk:spec.risk,changedFiles:files,builderSession:state.builder_session,builderModel},expected={issue:state.issue,pr,base_sha:state.base_sha,head_sha:head,front_id:spec.front_id,builder_session:state.builder_session,builder_model:builderModel};const cached=this.ledger.loadOrCreateReview(reviewKey,()=>{this.boundary.assert("reviewer_execute",{issue:state.issue,pr,expected_head:head});const run=new ReviewerRouter(join(this.root,"reviewer-router")).review(input);return {schema_version:1,...expected,requested_session:session,session:run.session,router_run:run,result:run.output};},value=>{validateReviewerEnvelope(value,expected,input);}).review as any;return {output:cached.result,session:cached.session};}
+  private ownerPayloadRepairBuilderReceipt(state:LifecycleRecord,head:string,front:string){
+    const binding=state.owner_payload_repair;
+    if(!binding)throw new Error("owner payload repair receipt binding missing");
+    const receipt=parseOwnerPayloadRepairCommitReceipt(this.bus.commitMessage(head),front),provenance=receipt.provenance;
+    if(provenance.grant_key!==binding.grant_key||provenance.build_attempt_id!==binding.build_attempt_id||provenance.consumed_event_sha256!==binding.consumed_event_sha256||state.builder_session!==`owner-${receipt.builder_session}`)throw new Error("owner payload repair receipt binding invalid");
+    if(binding.effective_base_sha!==undefined||receipt.effective_base!==undefined){
+      const effective=new OwnerRepairEffectiveBaseLedger(join(this.root,"owner-repair-receipts")).load(binding.grant_key);
+      const headBound=new OwnerRepairReceiptLedger(join(this.root,"owner-repair-receipts")).deriveReceiptView(binding.grant_key);
+      const p=receipt.effective_base;
+      if(!effective||!p||effective.authorization_id!==provenance.authorization_id||effective.grant_key!==binding.grant_key||effective.build_attempt_id!==binding.build_attempt_id||effective.front_id!==front||effective.frozen_base_sha!==binding.frozen_base_sha||effective.failed_head_sha!==binding.failed_head_sha||effective.effective_base_sha!==state.base_sha||effective.effective_base_sha!==binding.effective_base_sha||effective.event_sha256!==binding.effective_base_binding_sha256||p.frozen_base_sha!==effective.frozen_base_sha||p.effective_base_sha!==effective.effective_base_sha||p.binding_event_sha256!==effective.event_sha256||p.synchronized_head_sha!==binding.synchronized_head_sha||headBound.phase!=="HEAD_BOUND"||headBound.new_head_sha!==head||headBound.predecessor_event_sha256!==effective.build_dispatched_event_sha256)throw new Error("owner payload repair effective receipt binding invalid");
+      if(!this.bus.isAncestor(effective.frozen_base_sha,effective.effective_base_sha)||!this.bus.isAncestor(effective.failed_head_sha,p.synchronized_head_sha)||!this.bus.isAncestor(effective.effective_base_sha,p.synchronized_head_sha)||!this.bus.isAncestor(p.synchronized_head_sha,head))throw new Error("owner payload repair effective receipt ancestry invalid");
+    }
+    return {model:receipt.builder_model,headCommit:head,status:"VERIFIED" as const};
+  }
+  review(pr:number,head:string,session:string) {const spec=this.activeSpec,state=this.activeState;if(!spec||!state?.issue||state.pr!==pr||state.head_sha!==head||!state.builder_session||!spec.front_id)throw new Error("review lifecycle binding missing");const policyKey=decisionKey(spec,state.issue,pr,state.base_sha,head),identity=this.bus.prIdentity(pr),files=(identity.files??[]).map((x:any)=>String(x.path)),reportPath="docs/agent_loop/pilot/EXECUTOR_REPORT.json",report=spec.executor==="agent_loop"&&files.includes(reportPath)?JSON.parse(this.bus.fileAt(reportPath,head)):undefined,receipt=spec.executor==="agent_loop"?inspectAgentLoopCommitModel(this.agentLoopReceiptMessage(spec,state,head),spec.front_id,report?.model):undefined,routerReceipt=spec.executor==="codex_control_plane"?(state.owner_payload_repair?this.ownerPayloadRepairBuilderReceipt(state,head,spec.front_id):this.anchoredRouterBuilderReceipt(state,head,spec.front_id)):undefined,builderModel=receipt?.model??(routerReceipt?.status==="VERIFIED"?routerReceipt.model:undefined)??verifiedBuilderModel(spec.executor),reviewKey=reviewEvidenceKey(policyKey,state.builder_session,builderModel);if(receipt?.status==="MISSING")return {session:`reviewer:deterministic-receipt-repair:${head}`,output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"Agent Loop commit evidence requires bounded regeneration",findings:[{severity:"P1",title:"Executor model receipt missing",evidence:"The exact Agent Loop candidate commit subject is valid, but the required AGENT_LOOP_EXECUTOR_MODEL trailer is absent.",required_correction:"Regenerate the candidate with the installed governed Agent Loop worker so the commit records exactly one configured executor model receipt."}]}};if(spec.executor==="codex_control_plane"&&routerReceipt?.status==="PROVENANCE_RECOVERY_REQUIRED")return {session:`reviewer:builder-provenance-recovery:${head}`,output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"Builder model provenance requires a governed fresh rebuild",findings:[{severity:"P1",title:"Builder model receipt missing or invalid",evidence:"The control-plane candidate does not contain a valid BUILDER_MODEL receipt from a governed builder transaction. This may be an unattested legacy candidate or the provenance was lost.",required_correction:"Trigger BUILDER_PROVENANCE_RECOVERY_REQUIRED: run a fresh governed builder transaction from a verified clean baseline and produce a new HEAD containing a real BUILDER_BACKEND/BUILDER_MODEL/PROVIDER_SESSION receipt before review resumes."}]}};const input={repository:spec.repository,repositoryRoot:this.sourceRepo,pr,baseSha:state.base_sha,headSha:head,risk:spec.risk,changedFiles:files,builderSession:state.builder_session,builderModel},expected={issue:state.issue,pr,base_sha:state.base_sha,head_sha:head,front_id:spec.front_id,builder_session:state.builder_session,builder_model:builderModel};const cached=this.ledger.loadOrCreateReview(reviewKey,()=>{this.boundary.assert("reviewer_execute",{issue:state.issue,pr,expected_head:head});const run=new ReviewerRouter(join(this.root,"reviewer-router")).review(input);return {schema_version:1,...expected,requested_session:session,session:run.session,router_run:run,result:run.output};},value=>{validateReviewerEnvelope(value,expected,input);}).review as any;return {output:cached.result,session:cached.session};}
   /**
    * Semantic payload-repair accounting. Policy evidence carries only
    * CONSUMMATED payload-review repairs. Lifecycle repair_cycles (which also
@@ -188,7 +427,7 @@ export class ProductionEffects implements AutonomousEffects {
    */
   private consummatedPayloadRepairs(issue:number,pr:number){return new LifecycleStore(join(this.root,"lifecycle")).consummatedPayloadRepairs(issue,pr);}
   policy(spec:ProxySpec,issue:number,pr:number,head:string,review:ReviewerOutput,builderSession:string,reviewerSession:string,repairCycles:number):PolicyResult {review=normalizeReviewerOutput(review,head);const key=decisionKey(spec,issue,pr,spec.expected_base_sha,head),evidence=collect(this.bus,issue,pr,reviewerSession,review,spec);evidence.builder_session=builderSession;evidence.review_session=reviewerSession;evidence.repair_cycles=this.consummatedPayloadRepairs(issue,pr);const consummatedPayloadRepairs=evidence.repair_cycles;const candidate=decide(spec,evidence),prior=this.ledger.findByKey(key)??this.ledger.findByHead(head);if(prior){if(!decisionMatchesCandidate(prior,candidate))throw new Error("DECISION_IDENTITY_CONFLICT");return {outcome:prior.policy_decision,decision_id:prior.decision_id,consummated_payload_repairs:consummatedPayloadRepairs};}this.boundary.assert("decision_persist",{issue,pr,expected_head:head});const decision=this.ledger.recordOrLoad(candidate).decision;if(decision.policy_decision==="REPAIR"){this.boundary.assert("findings_publish",{issue,pr,expected_head:head});this.boundary.assert("repair_request",{issue,pr,expected_head:head});const marker=`decision_key=${decision.decision_key}`;this.bus.commentOnce("issue",issue,marker,`[OPERATOR-PROXY][REPAIR]\n\n${marker}\ndecision_id=${decision.decision_id}\nhead=${head}\nfindings=${safeJson(review.findings)}`);if(spec.executor==="agent_loop"){this.bus.reconcileLabel("issue",issue,"loop:repairing",["operator:repairing","loop:ci"]);this.bus.reconcileLabel("pr",pr,"loop:repairing",["operator:repairing","loop:ci"]);}}return {outcome:decision.policy_decision,decision_id:decision.decision_id,consummated_payload_repairs:consummatedPayloadRepairs};}
-  ensureMerge(pr:number,head:string,base:string,decisionId:string){const spec=this.activeSpec,state=this.activeState;if(!spec||!state?.issue||state.pr!==pr||state.head_sha!==head||state.base_sha!==base||state.decision_id!==decisionId||!state.builder_session||!state.reviewer_session)throw new Error("merge lifecycle binding missing");const decision=this.ledger.load(decisionId);if(decision.pr!==pr||decision.head_sha!==head||decision.base_sha!==base)throw new Error("merge decision binding mismatch");const alreadyMerged=this.ledger.hasHead(head)||this.bus.prIdentity(pr).state==="MERGED";if(!alreadyMerged){const reviewed=this.review(pr,head,state.reviewer_session),recomputed=this.policy(spec,state.issue,pr,head,reviewed.output,state.builder_session,reviewed.session,state.repair_cycles);if(recomputed.outcome!=="APPROVE"||recomputed.decision_id!==decisionId)throw new Error("merge decision revalidation failed");}const merge=execute(this.bus,this.ledger,decision,false);if(!merge)throw new Error("governed merge not completed");this.boundary.bindPostMerge(merge);reconcileAuthorizationComment(this.bus,decision);return merge;}
+  ensureMerge(pr:number,head:string,base:string,decisionId:string){const spec=this.activeSpec,state=this.activeState;if(!spec||!state?.issue||state.pr!==pr||state.head_sha!==head||state.base_sha!==base||state.decision_id!==decisionId||!state.builder_session||!state.reviewer_session)throw new Error("merge lifecycle binding missing");const decision=this.ledger.load(decisionId);if(decision.pr!==pr||decision.head_sha!==head||decision.base_sha!==base)throw new Error("merge decision binding mismatch");if(state.owner_critical_merge){const authorization=this.resolveOwnerCriticalMerge(spec,state);if(!authorization||authorization.critical_merge_key!==state.owner_critical_merge.critical_merge_key)throw new Error("owner critical merge authorization unavailable");const receipts=new OwnerCriticalMergeReceiptLedger(join(this.root,"owner-critical-merge-receipts")),result=executeOwnerAuthorizedCriticalMerge({authorization,receipts,revalidate:candidate=>{const current=this.resolveOwnerCriticalMerge(spec,state);if(!current||!sameCriticalMergeAuthorization(current,candidate))throw new Error("owner critical merge revalidation failed");},boundary:this.boundary,bus:this.bus});this.boundary.bindPostMerge(result.merge_commit_sha);return result.merge_commit_sha;}const alreadyMerged=this.ledger.hasHead(head)||this.bus.prIdentity(pr).state==="MERGED";if(!alreadyMerged){const reviewed=this.review(pr,head,state.reviewer_session),recomputed=this.policy(spec,state.issue,pr,head,reviewed.output,state.builder_session,reviewed.session,state.repair_cycles);if(recomputed.outcome!=="APPROVE"||recomputed.decision_id!==decisionId)throw new Error("merge decision revalidation failed");}const merge=execute(this.bus,this.ledger,decision,false);if(!merge)throw new Error("governed merge not completed");this.boundary.bindPostMerge(merge);reconcileAuthorizationComment(this.bus,decision);return merge;}
   ensureInstall(spec:ProxySpec,merge:string){const path=installArtifactPath(spec);if(!path)throw new Error("install artifact target invalid");const artifactSha256=createHash("sha256").update(Buffer.from(this.bus.fileAt(path,merge),"utf8")).digest("hex");return this.coordinator.install(spec,merge,artifactSha256);}
   ensureRuntimePilot(spec:ProxySpec,merge:string){return this.coordinator.pilot(spec,merge);}
   // =========================================================================
@@ -222,11 +461,13 @@ export class ProductionEffects implements AutonomousEffects {
     };
   }
   derivePlan(spec: ProxySpec, state: LifecycleRecord): ReconciliationPlan {
+    spec=this.resolveOwnerPayloadExecutionSpec(spec,state);
     const snapshot = normalizeObservedFacts(spec, state, this.snapshotDeps());
     return deriveReconciliationPlan(snapshot, this.plannerPorts(spec, state));
   }
   /** Non-mutating dry-run: outputs the normalized snapshot, lineage, invariants and plan. */
   dryRunReconciliation(spec: ProxySpec, state: LifecycleRecord) {
+    spec=this.resolveOwnerPayloadExecutionSpec(spec,state);
     const snapshot = normalizeObservedFacts(spec, state, this.snapshotDeps());
     const plan = deriveReconciliationPlan(snapshot, this.plannerPorts(spec, state));
     const invariants = validateInvariantSet(snapshot, plan, this.plannerPorts(spec, state));
@@ -289,6 +530,7 @@ export class ProductionEffects implements AutonomousEffects {
   }
   /** OBSERVE -> plan -> invariants -> apply. The authoritative recovery entry point. */
   reconcile(spec: ProxySpec, state: LifecycleRecord, store: LifecycleStore): LifecycleRecord {
+    spec=this.resolveOwnerPayloadExecutionSpec(spec,state);
     const dry = this.dryRunReconciliation(spec, state);
     if (dry.invariants.violations.length) throw new Error("reconciliation invariants violated: " + dry.invariants.violations.join(", "));
     return this.applyPlan(spec, state, store, dry.plan);
@@ -773,10 +1015,12 @@ export class ProductionEffects implements AutonomousEffects {
     const baseBound=decision.base_sha===state.base_sha||this.bus.isAncestor(decision.base_sha,state.base_sha);
     const common=decision.authorization_id===spec.authorization_id&&decision.repository===spec.repository&&decision.issue===state.issue&&decision.pr===state.pr&&state.base_sha===spec.expected_base_sha&&baseBound&&decision.roadmap_id===spec.roadmap_id&&decision.roadmap_item_id===spec.roadmap_item_id;
     const policyApproved=decision.policy_decision==="APPROVE"&&decision.allowed_action==="MERGE"&&this.ledger.hasHead(decision.head_sha);
-    const ownerAuthorized="review_findings_count" in decision&&"review_consistent" in decision&&decision.risk==="CRITICAL"&&decision.deterministic_gate==="PASS"&&decision.codex_review==="PASS"&&decision.review_findings_count===0&&decision.review_consistent===true&&decision.policy_decision==="ESCALATE_TO_OWNER"&&decision.allowed_action==="NONE"&&this.bus.verifyOwnerAuthorizedMerge(state.issue,state.pr,decision.head_sha,decision.base_sha,merge)===merge;
+    const criticalLedger=state.owner_critical_merge?new OwnerCriticalMergeReceiptLedger(join(this.root,"owner-critical-merge-receipts")):undefined,criticalReceipt=state.owner_critical_merge?criticalLedger!.deriveReceiptView(state.owner_critical_merge.critical_merge_key):undefined;
+    if(state.owner_critical_merge&&criticalReceipt?.phase==="MERGED_BOUND")criticalLedger!.assertMergedBoundToConsumedReceipt(state.owner_critical_merge.critical_merge_key,state.owner_critical_merge.consumed_event_sha256,merge);
+    const ownerAuthorized="review_findings_count" in decision&&"review_consistent" in decision&&decision.risk==="CRITICAL"&&decision.deterministic_gate==="PASS"&&decision.codex_review==="PASS"&&decision.review_findings_count===0&&decision.review_consistent===true&&decision.policy_decision==="ESCALATE_TO_OWNER"&&decision.allowed_action==="NONE"&&criticalReceipt?.phase==="MERGED_BOUND"&&criticalReceipt.issue===state.issue&&criticalReceipt.pr===state.pr&&criticalReceipt.base_sha===decision.base_sha&&criticalReceipt.head_sha===decision.head_sha&&criticalReceipt.policy_decision_id===decision.decision_id&&criticalReceipt.merge_commit_sha===merge&&this.bus.verifyMerged(state.pr,decision.head_sha,decision.base_sha)===merge;
     if(!common||!policyApproved&&!ownerAuthorized)throw new Error("closeout parent decision evidence mismatch");
     return {schema_version:1,parent_front_id:state.front_id,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id,issue:state.issue,pr:state.pr,decision_id:decision.decision_id,authorization_mode:ownerAuthorized?"OWNER_CONSTITUTIONAL":"POLICY_APPROVED",base_sha:decision.base_sha,closeout_base_sha:merge,head_sha:decision.head_sha,merge_commit:merge,builder_session:state.builder_session,reviewer_session:state.reviewer_session};
   }
-  async ensureCloseout(spec:ProxySpec,merge:string){this.boundary.assert("closeout_create",{issue:undefined});if(!spec.closeout)return this.coordinator.closeout(spec,merge);const c=spec.closeout,parentEvidence=safeJson(this.closeoutParentEvidence(spec,merge)),evidenceInstruction=`Record this immutable parent lifecycle evidence exactly; do not infer, omit, or replace known values with null: ${parentEvidence}`;const closeout:ProxySpec={...spec,executor:c.executor,risk:c.risk,allowed_paths:c.allowed_paths,forbidden_paths:c.forbidden_paths,acceptance:[...c.acceptance,evidenceInstruction],test_commands:c.test_commands,objective:`${c.objective.trim()}\n\nPARENT_LIFECYCLE_EVIDENCE_JSON=${parentEvidence}`,work_branch:c.work_branch,deployment_mode:"NO_DEPLOY",install_target:undefined,front_id:c.front_id,test_profile:c.test_profile,max_executor_cycles:c.max_executor_cycles,closeout:undefined,closeout_only:true};const store=new LifecycleStore(join(this.root,"lifecycle"));const enterable=()=>{const current=store.load(closeout.front_id!);if(current&&current.base_sha!==closeout.expected_base_sha)this.reconcile(closeout,current,store);return store.load(closeout.front_id!);};const prior=enterable();const flow=new AutonomousFlow(store,this);let state=await flow.step(closeout);for(let i=0;i<20;i++){if(["CI_PENDING","BLOCKED","ESCALATED","TERMINAL_COMPLETED"].includes(state.state))break;enterable();state=await flow.step(closeout);}if(state.state==="BLOCKED"||state.state==="ESCALATED")throw new Error(`closeout ${state.state}: ${state.last_error??"unknown"}`);return state.state==="TERMINAL_COMPLETED"?"PASS":"PENDING";}
+  async ensureCloseout(spec:ProxySpec,merge:string){this.boundary.assert("closeout_create",{issue:undefined});if(!spec.closeout)return this.coordinator.closeout(spec,merge);const c=spec.closeout,parentEvidence=safeJson(this.closeoutParentEvidence(spec,merge)),evidenceInstruction=`Record this immutable parent lifecycle evidence exactly; do not infer, omit, or replace known values with null: ${parentEvidence}`;const closeout:ProxySpec={...spec,executor:c.executor,risk:c.risk,allowed_paths:c.allowed_paths,forbidden_paths:c.forbidden_paths,acceptance:[...c.acceptance,evidenceInstruction],test_commands:c.test_commands,objective:`${c.objective.trim()}\n\nPARENT_LIFECYCLE_EVIDENCE_JSON=${parentEvidence}`,work_branch:c.work_branch,deployment_mode:"NO_DEPLOY",install_target:undefined,front_id:c.front_id,test_profile:c.test_profile,max_executor_cycles:c.max_executor_cycles,closeout:undefined,closeout_only:true};const store=new LifecycleStore(join(this.root,"lifecycle"));let activeCloseout=closeout;const enterable=()=>{const current=store.load(closeout.front_id!);if(current?.owner_payload_repair?.effective_base_sha)activeCloseout=this.resolveOwnerPayloadExecutionSpec(activeCloseout,current);if(current&&current.base_sha!==activeCloseout.expected_base_sha){const frozen=current.issue?resolveFrozenOwnerPayloadRepairSpec(closeout,current,this.bus.issueSnapshot(current.issue).body,(next,historical,base)=>this.validHistoricalRoadmapBinding(next,historical,base),(historical,record)=>this.validDispatchedOwnerResume(historical,record)):undefined;if(frozen)activeCloseout=frozen;else this.reconcile(activeCloseout,current,store);}return store.load(closeout.front_id!);};enterable();const flow=new AutonomousFlow(store,this);let state=await flow.step(activeCloseout);for(let i=0;i<20;i++){if(["CI_PENDING","BLOCKED","ESCALATED","TERMINAL_COMPLETED"].includes(state.state))break;enterable();state=await flow.step(activeCloseout);}if(state.state==="BLOCKED"||state.state==="ESCALATED")throw new Error(`closeout ${state.state}: ${state.last_error??"unknown"}`);return state.state==="TERMINAL_COMPLETED"?"PASS":"PENDING";}
   discoverNext(item:string){this.coordinator.discoverNext(item);}
 }

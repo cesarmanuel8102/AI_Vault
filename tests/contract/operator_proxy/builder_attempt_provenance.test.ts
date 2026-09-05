@@ -5,7 +5,7 @@ import {existsSync,mkdirSync,mkdtempSync,readFileSync,rmSync,writeFileSync} from
 import {randomUUID} from "node:crypto";
 import {tmpdir} from "node:os";
 import {join,resolve} from "node:path";
-import {BuilderAttemptProvenance,computeScopeFingerprint,readAttemptEvents} from "../../../scripts/operator_proxy/builder_attempt_provenance.js";
+import {BuilderAttemptProvenance,computeScopeFingerprint,readAttemptEvents,resolveCompletedBuilderSession,resolveCompletedBuilderSessionForSynchronizedLineage} from "../../../scripts/operator_proxy/builder_attempt_provenance.js";
 import type {ProxySpec} from "../../../scripts/operator_proxy/types.js";
 
 const spec:ProxySpec={
@@ -80,6 +80,61 @@ function activePath(root:string,frontId:string=spec.front_id!){
 }
 
 function providerCorr(backend:string="codex_cli_openai"){return `${backend}-${randomUUID()}`;}
+
+test("completed durable provenance resolves exactly one builder session for a descendant candidate",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance(),input=makeInput(r.worktree,r.base),started=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")});
+    writeFileSync(join(r.worktree,"docs","x.md"),"candidate\n");
+    execFileSync("git",["-C",r.worktree,"add","docs/x.md"]);execFileSync("git",["-C",r.worktree,"commit","-m","candidate"]);
+    const candidate=execFileSync("git",["-C",r.worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
+    p.recordAttemptCompleted(started.receipt_id,spec.front_id!,candidate,["docs/x.md"],started.provider_correlation_id);
+    writeFileSync(join(r.worktree,"docs","y.md"),"descendant\n");
+    execFileSync("git",["-C",r.worktree,"add","docs/y.md"]);execFileSync("git",["-C",r.worktree,"commit","-m","descendant"]);
+    const descendant=execFileSync("git",["-C",r.worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
+    const isAncestor=(older:string,newer:string)=>{try{execFileSync("git",["-C",r.worktree,"merge-base","--is-ancestor",older,newer]);return true;}catch{return false;}};
+    assert.equal(resolveCompletedBuilderSession({front_id:spec.front_id!,issue:90,base_sha:r.base,canonical_worktree:r.worktree,work_branch:spec.work_branch!,candidate_head_sha:descendant,isAncestor}),started.builder_session);
+    assert.equal(resolveCompletedBuilderSession({front_id:spec.front_id!,issue:90,base_sha:r.base,canonical_worktree:r.worktree,work_branch:spec.work_branch!,candidate_head_sha:"f".repeat(40),isAncestor:()=>false}),undefined);
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("completed durable provenance rejects two matching builder sessions",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance(),input=makeInput(r.worktree,r.base),first=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")});
+    writeFileSync(join(r.worktree,"docs","x.md"),"candidate\n");execFileSync("git",["-C",r.worktree,"add","docs/x.md"]);execFileSync("git",["-C",r.worktree,"commit","-m","candidate"]);
+    const head=execFileSync("git",["-C",r.worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();p.recordAttemptCompleted(first.receipt_id,spec.front_id!,head,["docs/x.md"],first.provider_correlation_id);
+    const second=p.recordAttemptStart({...input,session:"other-builder-session"},{backend:"opencode_ollama",model:"ollama-cloud/kimi-k2.7-code",attemptNumber:2,providerCorrelationId:providerCorr("opencode_ollama")});p.recordAttemptCompleted(second.receipt_id,spec.front_id!,head,["docs/x.md"],second.provider_correlation_id);
+    assert.throws(()=>resolveCompletedBuilderSession({front_id:spec.front_id!,issue:90,base_sha:r.base,canonical_worktree:r.worktree,work_branch:spec.work_branch!,candidate_head_sha:head,isAncestor:(older,newer)=>older===newer}),/ambiguous completed builder provenance/);
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("validated synchronization lineage resolves only one durable builder session from the original candidate",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance(),input=makeInput(r.worktree,r.base),started=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")});
+    writeFileSync(join(r.worktree,"docs","x.md"),"candidate\n");execFileSync("git",["-C",r.worktree,"add","docs/x.md"]);execFileSync("git",["-C",r.worktree,"commit","-m","candidate"]);
+    const candidate=execFileSync("git",["-C",r.worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
+    p.recordAttemptCompleted(started.receipt_id,spec.front_id!,candidate,["docs/x.md"],started.provider_correlation_id);
+    execFileSync("git",["-C",r.worktree,"commit","--allow-empty","-m","builder receipt wrapper"]);
+    const validatedBuilderReceipt=execFileSync("git",["-C",r.worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
+    const isAncestor=(older:string,newer:string)=>{try{execFileSync("git",["-C",r.worktree,"merge-base","--is-ancestor",older,newer]);return true;}catch{return false;}};
+    assert.equal(resolveCompletedBuilderSessionForSynchronizedLineage({front_id:spec.front_id!,issue:90,canonical_worktree:r.worktree,work_branch:spec.work_branch!,validated_builder_receipt_head_sha:validatedBuilderReceipt,isAncestor}),started.builder_session);
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("validated synchronization lineage rejects ambiguous durable builder sessions",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance(),input=makeInput(r.worktree,r.base),first=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")});
+    writeFileSync(join(r.worktree,"docs","x.md"),"candidate\n");execFileSync("git",["-C",r.worktree,"add","docs/x.md"]);execFileSync("git",["-C",r.worktree,"commit","-m","candidate"]);
+    const candidate=execFileSync("git",["-C",r.worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();p.recordAttemptCompleted(first.receipt_id,spec.front_id!,candidate,["docs/x.md"],first.provider_correlation_id);
+    const second=p.recordAttemptStart({...input,session:"other-builder-session"},{backend:"opencode_ollama",model:"ollama-cloud/kimi-k2.7-code",attemptNumber:2,providerCorrelationId:providerCorr("opencode_ollama")});p.recordAttemptCompleted(second.receipt_id,spec.front_id!,candidate,["docs/x.md"],second.provider_correlation_id);
+    execFileSync("git",["-C",r.worktree,"commit","--allow-empty","-m","builder receipt wrapper"]);
+    const validatedBuilderReceipt=execFileSync("git",["-C",r.worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
+    assert.throws(()=>resolveCompletedBuilderSessionForSynchronizedLineage({front_id:spec.front_id!,issue:90,canonical_worktree:r.worktree,work_branch:spec.work_branch!,validated_builder_receipt_head_sha:validatedBuilderReceipt,isAncestor:(older,newer)=>{try{execFileSync("git",["-C",r.worktree,"merge-base","--is-ancestor",older,newer]);return true;}catch{return false;}}}),/ambiguous completed builder provenance/);
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
 
 test("scope fingerprint includes base and sorted scopes",()=>{
   const a=computeScopeFingerprint(spec.expected_base_sha,["docs/b.md","docs/a.md"],["trading/"]);

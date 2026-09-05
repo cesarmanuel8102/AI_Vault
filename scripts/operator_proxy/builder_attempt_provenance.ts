@@ -162,6 +162,91 @@ export function readAttemptEvents(frontId: string, env = process.env): AttemptRe
   });
 }
 
+export interface CompletedBuilderSessionLookup {
+  front_id: string;
+  issue: number;
+  base_sha: string;
+  canonical_worktree: string;
+  work_branch: string;
+  candidate_head_sha: string;
+  isAncestor(older: string, newer: string): boolean;
+}
+
+export interface SynchronizedBuilderSessionLookup {
+  front_id: string;
+  issue: number;
+  canonical_worktree: string;
+  work_branch: string;
+  validated_builder_receipt_head_sha: string;
+  isAncestor(older: string, newer: string): boolean;
+}
+
+interface BuilderSessionSelector {
+  front_id: string;
+  issue: number;
+  base_sha?: string;
+  canonical_worktree: string;
+  work_branch: string;
+  candidate_head_sha: string;
+  isAncestor(older: string, newer: string): boolean;
+}
+
+function completedBuilderSessions(lookup: BuilderSessionSelector, env = process.env): string[] {
+  if (!safeFront.test(lookup.front_id) || !Number.isInteger(lookup.issue) || lookup.issue < 1 || lookup.base_sha !== undefined && !safeSha.test(lookup.base_sha) || !safeSha.test(lookup.candidate_head_sha) || !safeBranch.test(lookup.work_branch)) {
+    throw new Error("completed builder provenance lookup invalid");
+  }
+  let worktree: string;
+  try {
+    worktree = canonicalPath(lookup.canonical_worktree);
+  } catch {
+    throw new Error("completed builder provenance worktree invalid");
+  }
+  const root = operatorProxyRoot(env);
+  if (!root) return [];
+  const eventsPath = join(root, "state", "builder-attempts", lookup.front_id, "events.jsonl");
+  if (!existsSync(eventsPath)) return [];
+  const events = safeReadLines(eventsPath).map((line, index) => {
+    try {
+      return JSON.parse(line) as AttemptReceipt;
+    } catch {
+      throw new Error(`builder attempt event corrupt at line ${index}`);
+    }
+  });
+  const sessions: string[] = [];
+  for (let index = 0; index < events.length; index++) {
+    const event = events[index];
+    if (event.state !== "STARTED") continue;
+    const started = event as AttemptStartedReceipt;
+    if (started.front_id !== lookup.front_id || started.issue !== lookup.issue || lookup.base_sha !== undefined && started.base_sha !== lookup.base_sha || started.canonical_worktree !== worktree || started.work_branch !== lookup.work_branch) continue;
+    if (!safeProviderSession.test(started.builder_session) || !safeProviderSession.test(started.provider_correlation_id)) throw new Error("completed builder provenance receipt invalid");
+    const terminals = events.slice(index + 1).filter(candidate => candidate.receipt_id === started.receipt_id && (candidate.state === "COMPLETED" || candidate.state === "FAILED"));
+    if (terminals.length !== 1) {
+      if (terminals.length > 1) throw new Error("completed builder provenance terminal ambiguous");
+      continue;
+    }
+    const terminal = terminals[0];
+    if (terminal.state !== "COMPLETED") continue;
+    const completed = terminal as AttemptCompletedReceipt;
+    if (!safeSha.test(completed.head_sha) || completed.provider_correlation_id !== started.provider_correlation_id) throw new Error("completed builder provenance receipt invalid");
+    if (lookup.isAncestor(completed.head_sha, lookup.candidate_head_sha)) sessions.push(started.builder_session);
+  }
+  return sessions;
+}
+
+/** Resolves a builder identity only from one exact, durable completed attempt. */
+export function resolveCompletedBuilderSession(lookup: CompletedBuilderSessionLookup, env = process.env): string | undefined {
+  const sessions = completedBuilderSessions(lookup, env);
+  if (sessions.length > 1) throw new Error("ambiguous completed builder provenance");
+  return sessions[0];
+}
+
+/** Resolves a session across a synchronization chain only after its builder receipt is validated. */
+export function resolveCompletedBuilderSessionForSynchronizedLineage(lookup: SynchronizedBuilderSessionLookup, env = process.env): string | undefined {
+  const sessions = completedBuilderSessions({...lookup, candidate_head_sha: lookup.validated_builder_receipt_head_sha}, env);
+  if (sessions.length > 1) throw new Error("ambiguous completed builder provenance");
+  return sessions[0];
+}
+
 export function isTerminalReceiptFor(receiptId: string, event: AttemptReceipt): boolean {
   return event.receipt_id === receiptId && (event.state === "COMPLETED" || event.state === "FAILED");
 }

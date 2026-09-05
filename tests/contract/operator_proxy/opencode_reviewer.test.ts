@@ -17,8 +17,8 @@ function fixture(){const root=mkdtempSync(join(tmpdir(),"opencode-review-")),ent
 test("uses node plus OpenCode JS entrypoint, full diff retained, and no API/GitHub token",()=>{
   const f=fixture(),old={node:process.env.OPERATOR_PROXY_NODE_PATH,entry:process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT,api:process.env.OPENAI_API_KEY};process.env.OPERATOR_PROXY_NODE_PATH=process.execPath;process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=f.entry;process.env.OPENAI_API_KEY="must-not-propagate";
   const calls:{file:string;args:string[];options:any;prompt?:string;config?:any}[]=[];let statuses=0;const safeDiff=`diff --git a/a b/a\n+${"safe".repeat(100)}`;
-  const runner=(file:string,args:string[],options:any)=>{const promptIndex=args.indexOf("--file"),prompt=promptIndex>=0?readFileSync(args[promptIndex+1],"utf8"):undefined,config=file===process.execPath?JSON.parse(readFileSync(options.env.OPENCODE_CONFIG,"utf8")):undefined;calls.push({file,args,options,prompt,config});if(args.includes("worktree")&&args.includes("add")){mkdirSync(args[args.indexOf("--detach")+1],{recursive:true});return "";}if(args.includes("rev-parse"))return head;if(args.includes("merge-base"))return base;if(args.includes("status")){statuses++;return "";}if(args.includes("diff"))return safeDiff;if(file===process.execPath)return `${JSON.stringify({type:"text",sessionID:"provider-session",part:{type:"text",text:JSON.stringify({verdict:"PASS",head_sha:head,summary:"ok",findings:[]})}})}\n`;return "";}
-  try{const result=new OpenCodeReviewerBackend("ollama-cloud/glm-5.2",runner).review({repository:"cesarmanuel8102/AI_Vault",repositoryRoot:f.root,pr:1,baseSha:base,headSha:head,risk:"MEDIUM",changedFiles:["a"],builderSession:"builder"},"reviewer-session");assert.equal(result.output.verdict,"PASS");const call=calls.find(x=>x.file===process.execPath&&x.args[0]===f.entry)!;assert.ok(call);assert.equal(call.options.timeout,120_000);assert.equal(call.options.env.OPENAI_API_KEY,undefined);assert.equal(call.options.env.GH_TOKEN,undefined);assert.ok(call.args.every(arg=>arg.length<32767));assert.match(call.prompt!,/BEGIN_COMPLETE_DIFF/);assert.ok(call.prompt!.includes(safeDiff));assert.equal(call.prompt!.includes("[DIFF_TRUNCATED_BY_BOUNDED_PROMPT_BUDGET]"),false);assert.match(call.prompt!,/Do not call any tool/);const instruction=call.args[call.args.indexOf("--file")-1];assert.match(instruction,new RegExp(head));assert.match(instruction,/"summary":"1-500 characters"/);assert.match(instruction,/"severity":"P0\|P1\|P2"/);assert.match(instruction,/at most 6 findings/);assert.match(instruction,/PASS requires findings=\[\]/);assert.match(instruction,/Do not call tools/);assert.equal(call.args.at(-1),call.args[call.args.indexOf("--file")+1]);assert.equal(call.config.agent["brain-opencode-reviewer"].steps,2);assert.equal(call.config.agent["brain-opencode-reviewer"].temperature,0);assert.deepEqual(call.config.agent["brain-opencode-reviewer"].permission,{read:"deny",glob:"deny",grep:"deny",list:"deny",edit:"deny",write:"deny",create_file:"deny",bash:"deny",task:"deny",external_directory:"deny",webfetch:"deny",websearch:"deny",question:"deny",todowrite:"deny"});assert.equal(statuses,2);}
+  const runner=(file:string,args:string[],options:any)=>{const attachments=args.flatMap((arg,index)=>arg==="--file"?[args[index+1]]:[]),prompt=attachments.length?attachments.map(path=>readFileSync(path,"utf8")).join(""):undefined,config=file===process.execPath?JSON.parse(readFileSync(options.env.OPENCODE_CONFIG,"utf8")):undefined;calls.push({file,args,options,prompt,config});if(args.includes("worktree")&&args.includes("add")){mkdirSync(args[args.indexOf("--detach")+1],{recursive:true});return "";}if(args.includes("rev-parse"))return head;if(args.includes("merge-base"))return base;if(args.includes("status")){statuses++;return "";}if(args.includes("diff"))return safeDiff;if(file===process.execPath)return `${JSON.stringify({type:"text",sessionID:"provider-session",part:{type:"text",text:JSON.stringify({verdict:"PASS",head_sha:head,summary:"ok",findings:[]})}})}\n`;return "";}
+  try{const result=new OpenCodeReviewerBackend("ollama-cloud/glm-5.2",runner).review({repository:"cesarmanuel8102/AI_Vault",repositoryRoot:f.root,pr:1,baseSha:base,headSha:head,risk:"MEDIUM",changedFiles:["a"],builderSession:"builder"},"reviewer-session");assert.equal(result.output.verdict,"PASS");const call=calls.find(x=>x.file===process.execPath&&x.args[0]===f.entry)!;assert.ok(call);assert.equal(call.options.timeout,120_000);assert.equal(call.options.env.OPENAI_API_KEY,undefined);assert.equal(call.options.env.GH_TOKEN,undefined);assert.ok(call.args.every(arg=>arg.length<32767));assert.match(call.prompt!,/COMPLETE_DIFF_SHA256/);assert.ok(call.prompt!.includes(safeDiff));assert.equal(call.prompt!.includes("[DIFF_TRUNCATED_BY_BOUNDED_PROMPT_BUDGET]"),false);assert.match(call.prompt!,/Do not call any tool/);const instruction=call.args[call.args.indexOf("--file")-1];assert.match(instruction,new RegExp(head));assert.match(instruction,/"summary":"1-500 characters"/);assert.match(instruction,/"severity":"P0\|P1\|P2"/);assert.match(instruction,/at most 6 findings/);assert.match(instruction,/PASS requires findings=\[\]/);assert.match(instruction,/Do not call tools/);assert.ok(call.args.filter(arg=>arg==="--file").length>=2);assert.equal(call.config.agent["brain-opencode-reviewer"].steps,2);assert.equal(call.config.agent["brain-opencode-reviewer"].temperature,0);assert.deepEqual(call.config.agent["brain-opencode-reviewer"].permission,{read:"deny",glob:"deny",grep:"deny",list:"deny",edit:"deny",write:"deny",create_file:"deny",bash:"deny",task:"deny",external_directory:"deny",webfetch:"deny",websearch:"deny",question:"deny",todowrite:"deny"});assert.equal(statuses,2);}
   finally{old.node===undefined?delete process.env.OPERATOR_PROXY_NODE_PATH:process.env.OPERATOR_PROXY_NODE_PATH=old.node;old.entry===undefined?delete process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT:process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=old.entry;old.api===undefined?delete process.env.OPENAI_API_KEY:process.env.OPENAI_API_KEY=old.api;}
 });
 
@@ -335,15 +335,57 @@ test("oversized unprojectable evidence fails closed",()=>{
   finally{cleanup();}
 });
 
-test("oversized prompt fails before model execution",()=>{
+test("oversized complete diff fails before model execution",()=>{
   const f=fixture(),oldNode=process.env.OPERATOR_PROXY_NODE_PATH,oldEntry=process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT;process.env.OPERATOR_PROXY_NODE_PATH=process.execPath;process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=f.entry;
   let modelCalled=false;
-  const hugeDiff="diff\n+"+"x".repeat(256*1024);
+  const hugeDiff="x".repeat(768*1024+1);
   const panel={primary:{head:head,verdict:"PASS",model:"m",session:"s"}};
   const runner=(file:string,args:string[])=>{if(args.includes("worktree")&&args.includes("add")){mkdirSync(args[args.indexOf("--detach")+1],{recursive:true});return "";};if(args.includes("rev-parse"))return head;if(args.includes("merge-base"))return base;if(args.includes("status"))return "";if(args.includes("diff"))return hugeDiff;if(file===process.execPath){modelCalled=true;return "";};return "";},
     cleanup=()=>{oldNode===undefined?delete process.env.OPERATOR_PROXY_NODE_PATH:process.env.OPERATOR_PROXY_NODE_PATH=oldNode;oldEntry===undefined?delete process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT:process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=oldEntry;};
-  try{assert.throws(()=>new OpenCodeReviewerBackend("ollama-cloud/glm-5.2",runner).review({repository:"qualification",repositoryRoot:f.root,pr:1,baseSha:base,headSha:head,risk:"LOW",changedFiles:["a"],builderSession:"builder",panelEvidence:panel},"session"),/bounded budget/);assert.equal(modelCalled,false);}
+  try{assert.throws(()=>new OpenCodeReviewerBackend("ollama-cloud/glm-5.2",runner).review({repository:"qualification",repositoryRoot:f.root,pr:1,baseSha:base,headSha:head,risk:"LOW",changedFiles:["a"],builderSession:"builder",panelEvidence:panel},"session"),assertReviewerInvalidInput);assert.equal(modelCalled,false);}
   finally{cleanup();}
+});
+
+test("bounded medium-sized immutable diff reaches the reviewer transport",()=>{
+  const f=fixture(),oldNode=process.env.OPERATOR_PROXY_NODE_PATH,oldEntry=process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT;process.env.OPERATOR_PROXY_NODE_PATH=process.execPath;process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=f.entry;
+  let modelCalled=false;
+  const mediumDiff="diff\n+"+"x".repeat(300*1024);
+  const runner=(file:string,args:string[])=>{if(args.includes("worktree")&&args.includes("add")){mkdirSync(args[args.indexOf("--detach")+1],{recursive:true});return "";};if(args.includes("rev-parse"))return head;if(args.includes("merge-base"))return base;if(args.includes("status"))return "";if(args.includes("diff"))return mediumDiff;if(file===process.execPath){modelCalled=true;return modelLine({verdict:"PASS",head_sha:head,summary:"ok",findings:[]});};return "";},
+    cleanup=()=>{oldNode===undefined?delete process.env.OPERATOR_PROXY_NODE_PATH:process.env.OPERATOR_PROXY_NODE_PATH=oldNode;oldEntry===undefined?delete process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT:process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=oldEntry;};
+  try{assert.equal(new OpenCodeReviewerBackend("ollama-cloud/glm-5.2",runner).review({repository:"qualification",repositoryRoot:f.root,pr:1,baseSha:base,headSha:head,risk:"LOW",changedFiles:["a"],builderSession:"builder"},"medium").output.verdict,"PASS");assert.equal(modelCalled,true);}
+  finally{cleanup();}
+});
+
+test("splits a complete immutable diff into bounded ordered review attachments",()=>{
+  const f=fixture(),oldNode=process.env.OPERATOR_PROXY_NODE_PATH,oldEntry=process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT;process.env.OPERATOR_PROXY_NODE_PATH=process.execPath;process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=f.entry;
+  const diff="diff --git a/a b/a\n+"+"x".repeat(130*1024);let attachments:string[]=[],contents:string[]=[];
+  const runner=(file:string,args:string[])=>{if(args.includes("worktree")&&args.includes("add")){mkdirSync(args[args.indexOf("--detach")+1],{recursive:true});return "";}if(args.includes("rev-parse"))return head;if(args.includes("merge-base"))return base;if(args.includes("status"))return "";if(args.includes("diff"))return diff;if(file===process.execPath){attachments=args.flatMap((arg,index)=>arg==="--file"?[args[index+1]]:[]);contents=attachments.map(path=>readFileSync(path,"utf8"));return modelLine({verdict:"PASS",head_sha:head,summary:"ok",findings:[]});}return "";};
+  try{
+    assert.equal(new OpenCodeReviewerBackend("ollama-cloud/glm-5.2",runner as any).review({repository:"qualification",repositoryRoot:f.root,pr:1,baseSha:base,headSha:head,risk:"LOW",changedFiles:["a"],builderSession:"builder"},"chunked").output.verdict,"PASS");
+    assert.ok(attachments.length>2,"expected manifest plus multiple diff chunks");
+    assert.match(contents[0],/COMPLETE_DIFF_SHA256=/);
+    assert.equal(contents.slice(1).join(""),diff);
+    assert.ok(contents.slice(1).every(chunk=>Buffer.byteLength(chunk,"utf8")<=48*1024));
+  }finally{oldNode===undefined?delete process.env.OPERATOR_PROXY_NODE_PATH:process.env.OPERATOR_PROXY_NODE_PATH=oldNode;oldEntry===undefined?delete process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT:process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=oldEntry;}
+});
+
+test("transports complete bounded diffs through ordered UTF-8 attachments",()=>{
+  const f=fixture(),oldNode=process.env.OPERATOR_PROXY_NODE_PATH,oldEntry=process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT;process.env.OPERATOR_PROXY_NODE_PATH=process.execPath;process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=f.entry;
+  const review=(diff:string)=>{
+    let modelCalled=false,attachments:string[]=[],contents:string[]=[];
+    const runner=(file:string,args:string[])=>{if(args.includes("worktree")&&args.includes("add")){mkdirSync(args[args.indexOf("--detach")+1],{recursive:true});return "";}if(args.includes("rev-parse"))return head;if(args.includes("merge-base"))return base;if(args.includes("status"))return "";if(args.includes("diff"))return diff;if(file===process.execPath){modelCalled=true;attachments=args.flatMap((arg,index)=>arg==="--file"?[args[index+1]]:[]);contents=attachments.map(path=>readFileSync(path,"utf8"));return modelLine({verdict:"PASS",head_sha:head,summary:"ok",findings:[]});}return "";};
+    const invoke=()=>new OpenCodeReviewerBackend("ollama-cloud/glm-5.2",runner as any).review({repository:"qualification",repositoryRoot:f.root,pr:1,baseSha:base,headSha:head,risk:"LOW",changedFiles:["a"],builderSession:"builder"},"bounded");
+    return {invoke,called:()=>modelCalled,attachments:()=>attachments,contents:()=>contents};
+  };
+  try{
+    for(const diff of ["x".repeat(600*1024),"x".repeat(768*1024),"é".repeat(300*1024)]){
+      const attempt=review(diff);assert.equal(attempt.invoke().output.verdict,"PASS");const contents=attempt.contents();assert.equal(attempt.called(),true);assert.equal(contents.slice(1).join(""),diff);assert.ok(contents.slice(1).every(chunk=>Buffer.byteLength(chunk,"utf8")<=48*1024));assert.match(contents[0],new RegExp(`COMPLETE_DIFF_SHA256=${hashString(diff)}`));assert.match(contents[0],/TOTAL_DIFF_BYTES=/);assert.match(contents[0],/TOTAL_DIFF_CHUNKS=/);assert.match(contents[0],/CHUNK_SIZE_LIMIT_BYTES=49152/);assert.ok(attempt.attachments().slice(1).every((path,index)=>path.endsWith(`complete-diff-${String(index+1).padStart(4,"0")}.patch`)));
+    }
+    const chunkOverflow="x".repeat(48*1024-1)+("é"+"x".repeat(48*1024-3)).repeat(15)+"é";
+    for(const diff of ["x".repeat(768*1024+1),chunkOverflow]){
+      const attempt=review(diff);assert.throws(attempt.invoke,assertReviewerInvalidInput);assert.equal(attempt.called(),false);
+    }
+  }finally{oldNode===undefined?delete process.env.OPERATOR_PROXY_NODE_PATH:process.env.OPERATOR_PROXY_NODE_PATH=oldNode;oldEntry===undefined?delete process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT:process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=oldEntry;}
 });
 
 test("independent response bounds fail closed",()=>{
