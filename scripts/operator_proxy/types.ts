@@ -158,3 +158,26 @@ export interface ControllerSupersessionReceiptInputV1 {
 export interface ControllerSupersessionReceiptV1 extends ControllerSupersessionReceiptInputV1 {
   event_sha256: string;
 }
+
+export interface ControllerRebaselineCanonicalBindingV1 {
+  repository: string;
+  roadmap_item_id: string;
+  canonical_base_sha: string;
+  manifest_sha256: string;
+  roadmap_sha256: string;
+  item_status: "AUTHORIZED_ACTIVE" | "CLOSED_RUNTIME_VERIFIED";
+  hard_limits: RebaselineHardLimitsV1;
+}
+
+export interface ControllerRebaselinePlanInputV1 {
+  canonical: ControllerRebaselineCanonicalBindingV1;
+  historical: HistoricalAttemptRefV1;
+  evidence: FunctionalEvidenceAssertionV1;
+  receipts: readonly ControllerSupersessionReceiptV1[];
+}
+
+export interface ControllerRebaselinePlan {
+  status: "REBASELINE_REQUIRED" | "CLOSEOUT_ALLOWED" | "ALREADY_SUPERSEDED" | "BLOCKED";
+  supersession_key?: string;
+  reason?: string;
+}
