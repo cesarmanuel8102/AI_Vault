@@ -17,11 +17,12 @@ test("durably bound descendant base permits owner effects and rejects runtime or
   let tip=effective,runtime=effective,doctor=true,ancestor=true;
   const boundSpec={...spec,authorization_id:auth},boundGrant={...grant,authorization_id:auth};
   const binding:any={schema_version:1,grant_key:grantKey,front_id:spec.front_id,authorization_id:auth,build_attempt_id:attempt,frozen_base_sha:base,effective_base_sha:effective,failed_head_sha:head,build_dispatched_event_sha256:dispatch,predecessor_event_sha256:dispatch,canonical_branch:"codex/own-capital-sustainable-return",installed_runtime_sha:effective,event_sha256:"8".repeat(64)};
+  const runtimeSupport:any={schema_version:1,grant_key:grantKey,front_id:spec.front_id,authorization_id:auth,build_attempt_id:attempt,effective_base_sha:effective,effective_base_binding_sha256:binding.event_sha256,runtime_support_sha:effective,predecessor_event_sha256:binding.event_sha256,event_sha256:"7".repeat(64),created_at:new Date().toISOString()};
   const root=mkdtempSync(join(tmpdir(),"owner-effective-guard-"));
   const boundary=new ExternalEffectBoundary(root,{branchHead:()=>tip,issuePaused:()=>false,isAncestor:()=>ancestor,prIdentity:()=>({author:{login:"cesarmanuel8102"},headRefName:spec.work_branch,headRepository:{nameWithOwner:spec.repository},isCrossRepository:false,isDraft:true,state:"OPEN",headRefOid:head,baseRefName:binding.canonical_branch,baseRefOid:effective}),remoteBranchHead:()=>head} as any,()=>true);
   const verifyEffectiveBase=()=>{if(runtime!==effective||!doctor)throw Error("installed runtime proof invalid");};
   boundary.bind(boundSpec,state);
-  const context:any={spec:boundSpec,state,grant:boundGrant,build_attempt_id:attempt,consumed_event_sha256:consumed,build_dispatched_event_sha256:dispatch,effective_base:binding,verifyEffectiveBase};
+  const context:any={spec:boundSpec,state,grant:boundGrant,build_attempt_id:attempt,consumed_event_sha256:consumed,build_dispatched_event_sha256:dispatch,effective_base:binding,runtime_support:runtimeSupport,verifyEffectiveBase};
   const cap=boundary.authorizeOwnerPayloadRepairTransport(context,{...receipt(),authorization_id:auth});
   assert.equal((cap as any).effective_base_sha,effective);
   assert.doesNotThrow(()=>boundary.assert("builder_execute",{issue:1,pr:2}));
@@ -29,6 +30,22 @@ test("durably bound descendant base permits owner effects and rejects runtime or
   runtime=base;assert.throws(()=>boundary.assert("push",{issue:1,pr:2}));runtime=effective;
   doctor=false;assert.throws(()=>boundary.assert("commit_create",{issue:1,pr:2}));doctor=true;
   ancestor=false;assert.throws(()=>boundary.assert("builder_execute",{issue:1,pr:2}));
+});
+
+test("append-only runtime support lineage permits a descendant event after the immutable root",()=>{
+  const effective="9".repeat(40),support="6".repeat(40),auth="CESAR-BRAIN-101-OPERATOR-PROXY-20260722-01";
+  const boundSpec={...spec,authorization_id:auth},boundGrant={...grant,authorization_id:auth};
+  const binding:any={schema_version:1,grant_key:grantKey,front_id:spec.front_id,authorization_id:auth,build_attempt_id:attempt,frozen_base_sha:base,effective_base_sha:effective,failed_head_sha:head,build_dispatched_event_sha256:dispatch,predecessor_event_sha256:dispatch,canonical_branch:"codex/own-capital-sustainable-return",installed_runtime_sha:effective,event_sha256:"8".repeat(64)};
+  const runtimeSupport:any={schema_version:1,grant_key:grantKey,front_id:spec.front_id,authorization_id:auth,build_attempt_id:attempt,effective_base_sha:effective,effective_base_binding_sha256:binding.event_sha256,runtime_support_sha:support,predecessor_event_sha256:"7".repeat(64),event_sha256:"5".repeat(64),created_at:new Date().toISOString()};
+  let verified=0;
+  const root=mkdtempSync(join(tmpdir(),"owner-effective-guard-lineage-"));
+  const boundary=new ExternalEffectBoundary(root,{branchHead:()=>support,issuePaused:()=>false,isAncestor:()=>true,prIdentity:()=>({author:{login:"cesarmanuel8102"},headRefName:spec.work_branch,headRepository:{nameWithOwner:spec.repository},isCrossRepository:false,isDraft:true,state:"OPEN",headRefOid:head,baseRefName:binding.canonical_branch,baseRefOid:support}),remoteBranchHead:()=>head} as any,()=>true);
+  boundary.bind(boundSpec,state);
+  const context:any={spec:boundSpec,state,grant:boundGrant,build_attempt_id:attempt,consumed_event_sha256:consumed,build_dispatched_event_sha256:dispatch,effective_base:binding,runtime_support:runtimeSupport,verifyEffectiveBase:()=>{verified++;}};
+  const cap=boundary.authorizeOwnerPayloadRepairTransport(context,{...receipt(),authorization_id:auth});
+  assert.equal((cap as any).runtime_support_sha,support);
+  assert.ok(verified>=1);
+  assert.doesNotThrow(()=>boundary.assert("builder_execute",{issue:1,pr:2}));
 });
 
 test("effective owner base requires the exact binding and a fresh runtime proof",()=>{

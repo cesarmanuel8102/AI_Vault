@@ -4,6 +4,7 @@ import type {LifecycleRecord,ProxySpec,OwnerAuthorizedCriticalMerge,OwnerAuthori
 import type {GitHubBus} from "./github_bus.js";
 import type {OwnerGrantReceiptEvent} from "./owner_repair_receipt_ledger.js";
 import type {OwnerRepairEffectiveBaseBinding} from "./owner_repair_effective_base.js";
+import type {OwnerRepairRuntimeSupportEvent} from "./owner_repair_runtime_support.js";
 import type {OwnerCriticalMergeReceiptEvent} from "./owner_critical_merge_receipt_ledger.js";
 import {AUTH,REPO} from "./policy_engine.js";
 import {validBlockedCiEffectChain,validPrivilegedInstallEffectChain} from "./lifecycle_store.js";
@@ -12,8 +13,8 @@ export const EXTERNAL_EFFECT_REGISTRY=["issue_create","issue_modify","label_modi
 export type ExternalEffect=typeof EXTERNAL_EFFECT_REGISTRY[number];
 export interface EffectContext {issue?:number;pr?:number;expected_head?:string;observed_head?:string}
 export type EffectAssertion=(effect:ExternalEffect,context?:EffectContext)=>void;
-export interface OwnerPayloadRepairTransportContext {spec:ProxySpec;state:LifecycleRecord;grant:OwnerAuthorizedPayloadRepairGrant;consumed_event_sha256:string;build_attempt_id:string;build_dispatched_event_sha256:string;effective_base?:OwnerRepairEffectiveBaseBinding;verifyEffectiveBase?:()=>void;}
-export interface OwnerPayloadRepairTransportCapability {readonly front_id:string;readonly grant_key:string;readonly build_attempt_id:string;readonly dispatch_event_sha256:string;readonly effective_base_sha?:string;readonly effective_base_binding_sha256?:string;}
+export interface OwnerPayloadRepairTransportContext {spec:ProxySpec;state:LifecycleRecord;grant:OwnerAuthorizedPayloadRepairGrant;consumed_event_sha256:string;build_attempt_id:string;build_dispatched_event_sha256:string;effective_base?:OwnerRepairEffectiveBaseBinding;runtime_support?:OwnerRepairRuntimeSupportEvent;verifyEffectiveBase?:()=>void;}
+export interface OwnerPayloadRepairTransportCapability {readonly front_id:string;readonly grant_key:string;readonly build_attempt_id:string;readonly dispatch_event_sha256:string;readonly effective_base_sha?:string;readonly effective_base_binding_sha256?:string;readonly runtime_support_sha?:string;readonly runtime_support_event_sha256?:string;}
 export interface OwnerCriticalMergeContext {spec:ProxySpec;state:LifecycleRecord;authorization:OwnerAuthorizedCriticalMerge;}
 export interface OwnerCriticalMergeCapability {readonly critical_merge_key:string;readonly pr:number;readonly base_sha:string;readonly head_sha:string;readonly dispatch_event_sha256:string;}
 
@@ -45,20 +46,20 @@ export class ExternalEffectBoundary {
     const {spec,state,grant}=context,binding=state.owner_payload_repair;
     const exact=state.state==="BUILDING"&&state.repair_cycles===2&&!!binding&&spec.front_id===state.front_id&&spec.roadmap_item_id===state.roadmap_item_id&&state.base_sha===spec.expected_base_sha&&grant.repository===spec.repository&&grant.roadmap_id===spec.roadmap_id&&grant.roadmap_item_id===spec.roadmap_item_id&&grant.front_id===state.front_id&&grant.issue===state.issue&&grant.pr===state.pr&&grant.work_branch===spec.work_branch&&grant.canonical_base_sha===spec.expected_base_sha&&grant.failed_head_sha===state.head_sha&&grant.authorization_id===spec.authorization_id&&grant.eligible_failure_class==="CI_FAILED"&&grant.max_extra_builds===1&&binding.grant_key===grant.grant_key&&binding.build_attempt_id===context.build_attempt_id&&binding.consumed_event_sha256===context.consumed_event_sha256&&receipt.phase==="BUILD_DISPATCHED"&&receipt.grant_key===grant.grant_key&&receipt.front_id===state.front_id&&receipt.authorization_id===grant.authorization_id&&receipt.failed_head_sha===state.head_sha&&receipt.build_attempt_id===context.build_attempt_id&&receipt.predecessor_event_sha256===context.consumed_event_sha256&&receipt.event_sha256===context.build_dispatched_event_sha256&&/^[0-9a-f]{64}$/.test(receipt.event_sha256);
     if(!exact)throw new Error("owner payload repair transport denied");
-    const effective=context.effective_base;
+    const effective=context.effective_base,runtimeSupport=context.runtime_support;
     this.ownerEffectiveBaseProof=undefined;
     if(effective){
-      if(!context.verifyEffectiveBase||effective.grant_key!==grant.grant_key||effective.front_id!==grant.front_id||effective.authorization_id!==grant.authorization_id||effective.build_attempt_id!==context.build_attempt_id||effective.frozen_base_sha!==grant.canonical_base_sha||effective.failed_head_sha!==grant.failed_head_sha||effective.build_dispatched_event_sha256!==receipt.event_sha256||effective.predecessor_event_sha256!==receipt.event_sha256||effective.canonical_branch!=="codex/own-capital-sustainable-return"||effective.installed_runtime_sha!==effective.effective_base_sha||!/^[0-9a-f]{40}$/.test(effective.effective_base_sha)||!/^[0-9a-f]{64}$/.test(effective.event_sha256))throw new Error("owner effective base binding denied");
+      if(!context.verifyEffectiveBase||!runtimeSupport||effective.grant_key!==grant.grant_key||effective.front_id!==grant.front_id||effective.authorization_id!==grant.authorization_id||effective.build_attempt_id!==context.build_attempt_id||effective.frozen_base_sha!==grant.canonical_base_sha||effective.failed_head_sha!==grant.failed_head_sha||effective.build_dispatched_event_sha256!==receipt.event_sha256||effective.predecessor_event_sha256!==receipt.event_sha256||effective.canonical_branch!=="codex/own-capital-sustainable-return"||effective.installed_runtime_sha!==effective.effective_base_sha||runtimeSupport.grant_key!==effective.grant_key||runtimeSupport.front_id!==effective.front_id||runtimeSupport.authorization_id!==effective.authorization_id||runtimeSupport.build_attempt_id!==effective.build_attempt_id||runtimeSupport.effective_base_sha!==effective.effective_base_sha||runtimeSupport.effective_base_binding_sha256!==effective.event_sha256||!/^[0-9a-f]{40}$/.test(effective.effective_base_sha)||!/^[0-9a-f]{40}$/.test(runtimeSupport.runtime_support_sha)||!/^[0-9a-f]{64}$/.test(effective.event_sha256)||!/^[0-9a-f]{64}$/.test(runtimeSupport.predecessor_event_sha256)||!/^[0-9a-f]{64}$/.test(runtimeSupport.event_sha256))throw new Error("owner effective base binding denied");
       const verify=context.verifyEffectiveBase;
       this.ownerEffectiveBaseProof=()=>{
         verify();
-        if(this.bus.branchHead(effective.canonical_branch)!==effective.effective_base_sha||!this.bus.isAncestor(effective.frozen_base_sha,effective.effective_base_sha))throw new Error("owner effective base changed");
+        if(this.bus.branchHead(effective.canonical_branch)!==runtimeSupport.runtime_support_sha||!this.bus.isAncestor(effective.frozen_base_sha,effective.effective_base_sha)||!this.bus.isAncestor(effective.effective_base_sha,runtimeSupport.runtime_support_sha))throw new Error("owner effective base changed");
         const identity=this.bus.prIdentity(grant.pr);
-        if(identity.author?.login!==spec.repository.split("/",1)[0]||identity.headRefName!==spec.work_branch||identity.baseRefName!==effective.canonical_branch||![effective.frozen_base_sha,effective.effective_base_sha].includes(identity.baseRefOid)||identity.headRepository?.nameWithOwner!==spec.repository||identity.isCrossRepository!==false||identity.isDraft!==true||identity.state!=="OPEN"||this.bus.remoteBranchHead(spec.work_branch!)!==identity.headRefOid)throw new Error("owner effective base PR identity denied");
+        if(identity.author?.login!==spec.repository.split("/",1)[0]||identity.headRefName!==spec.work_branch||identity.baseRefName!==effective.canonical_branch||![effective.frozen_base_sha,effective.effective_base_sha,runtimeSupport.runtime_support_sha].includes(identity.baseRefOid)||identity.headRepository?.nameWithOwner!==spec.repository||identity.isCrossRepository!==false||identity.isDraft!==true||identity.state!=="OPEN"||this.bus.remoteBranchHead(spec.work_branch!)!==identity.headRefOid)throw new Error("owner effective base PR identity denied");
       };
       this.ownerEffectiveBaseProof();
     }
-    const capability=Object.freeze({front_id:state.front_id,grant_key:grant.grant_key,build_attempt_id:context.build_attempt_id,dispatch_event_sha256:receipt.event_sha256,...(effective?{effective_base_sha:effective.effective_base_sha,effective_base_binding_sha256:effective.event_sha256}:{})});this.ownerPayloadRepairTransport=capability;return capability;
+    const capability=Object.freeze({front_id:state.front_id,grant_key:grant.grant_key,build_attempt_id:context.build_attempt_id,dispatch_event_sha256:receipt.event_sha256,...(effective&&runtimeSupport?{effective_base_sha:effective.effective_base_sha,effective_base_binding_sha256:effective.event_sha256,runtime_support_sha:runtimeSupport.runtime_support_sha,runtime_support_event_sha256:runtimeSupport.event_sha256}:{})});this.ownerPayloadRepairTransport=capability;return capability;
   }
   assertOwnerPayloadRepairTransport(capability:OwnerPayloadRepairTransportCapability):void {if(!this.ownerPayloadRepairTransport||capability!==this.ownerPayloadRepairTransport)throw new Error("owner payload repair transport denied");this.ownerEffectiveBaseProof?.();}
   beginPrivilegedInstallResume(spec:ProxySpec,state:LifecycleRecord){
@@ -127,7 +128,7 @@ export class ExternalEffectBoundary {
       this.ownerEffectiveBaseProof?.();
       const binding=state.owner_payload_repair;
       const allowed=new Set<ExternalEffect>(["branch_create","builder_execute","commit_create","push","issue_modify"]);
-      const exact=state.state==="BUILDING"&&state.repair_cycles===2&&!!binding&&binding.grant_key===ownerTransport.grant_key&&binding.build_attempt_id===ownerTransport.build_attempt_id&&context.issue===state.issue&&(context.pr===undefined||context.pr===state.pr)&&allowed.has(effect)&&state.base_sha===spec.expected_base_sha&&this.bus.branchHead("codex/own-capital-sustainable-return")===(ownerTransport.effective_base_sha??spec.expected_base_sha);
+      const exact=state.state==="BUILDING"&&state.repair_cycles===2&&!!binding&&binding.grant_key===ownerTransport.grant_key&&binding.build_attempt_id===ownerTransport.build_attempt_id&&context.issue===state.issue&&(context.pr===undefined||context.pr===state.pr)&&allowed.has(effect)&&state.base_sha===spec.expected_base_sha&&this.bus.branchHead("codex/own-capital-sustainable-return")===(ownerTransport.runtime_support_sha??ownerTransport.effective_base_sha??spec.expected_base_sha);
       if(!exact)throw new Error("external effect denied by owner payload repair");
       if(state.issue&&this.bus.issuePaused(state.issue))throw new Error("external effect paused by GitHub label");
       return;
