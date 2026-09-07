@@ -128,3 +128,33 @@ export interface FunctionalEvidenceAssertionV1 {
   status: "PASSED";
   assertion_sha256: string;
 }
+
+export interface ControllerSupersessionReceiptInputV1 {
+  schema_version: 1;
+  controller: "CODEX_GOVERNED_CONTROLLER";
+  supersession_key: string;
+  sequence: number;
+  previous_event_sha256: string | null;
+  repository: string;
+  roadmap_item_id: string;
+  canonical_base_sha: string;
+  manifest_sha256: string;
+  roadmap_sha256: string;
+  historical_attempt_sha256: string;
+  front_id: string;
+  failed_head_sha: string;
+  grant_key: string;
+  consumed_event_sha256: string;
+  build_attempt_id: string;
+  functional_evidence_ref: string;
+  functional_evidence_path: string;
+  functional_evidence_sha256: string;
+  functional_evidence_assertion_sha256: string;
+  hard_limits: RebaselineHardLimitsV1;
+  persistent_agent_loop_enabled: false;
+  created_utc: string;
+}
+
+export interface ControllerSupersessionReceiptV1 extends ControllerSupersessionReceiptInputV1 {
+  event_sha256: string;
+}
