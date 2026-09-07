@@ -30,6 +30,8 @@ export interface OwnerPayloadRepairEffectiveBaseAnchors {
   effective_base_sha:string;
   effective_base_binding_sha256:string;
   synchronized_head_sha:string;
+  runtime_support_sha:string;
+  runtime_support_event_sha256:string;
 }
 
 export interface LifecycleRecord {

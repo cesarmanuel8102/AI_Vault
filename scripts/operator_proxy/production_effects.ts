@@ -30,6 +30,7 @@ import {loadRepositoryAuthorization} from "./owner_principal_resolver.js";
 import {OwnerRepairReceiptLedger,type OwnerGrantReceiptEvent} from "./owner_repair_receipt_ledger.js";
 import {OwnerPayloadRepairOrchestrator} from "./owner_payload_repair_orchestrator.js";
 import {OwnerRepairEffectiveBaseLedger,type OwnerRepairEffectiveBaseBinding} from "./owner_repair_effective_base.js";
+import {OwnerRepairRuntimeSupportLedger,type OwnerRepairRuntimeSupportEvent} from "./owner_repair_runtime_support.js";
 import {discoverOwnerAuthorizedCriticalMerge} from "./owner_critical_merge_authorization.js";
 import {OwnerCriticalMergeReceiptLedger} from "./owner_critical_merge_receipt_ledger.js";
 import {executeOwnerAuthorizedCriticalMerge} from "./owner_critical_merge_executor.js";
@@ -168,6 +169,7 @@ export class ProductionEffects implements AutonomousEffects {
     const authority=loadRepositoryAuthorization(join(this.sourceRepo,"scripts","operator_proxy","authority","repository_authorization.v1.json"),spec.repository);
     const receipts=new OwnerRepairReceiptLedger(join(this.root,"owner-repair-receipts"));
     const bases=new OwnerRepairEffectiveBaseLedger(join(this.root,"owner-repair-receipts"));
+    const supports=new OwnerRepairRuntimeSupportLedger(join(this.root,"owner-repair-receipts"));
     const recoveredGrant=(record:LifecycleRecord):OwnerAuthorizedPayloadRepairGrant|undefined=>{
       const grant=receipts.findGrantSnapshot({front_id:record.front_id,issue:record.issue!,pr:record.pr!,failed_head_sha:record.head_sha!});
       if(!grant)return undefined;
@@ -181,26 +183,29 @@ export class ProductionEffects implements AutonomousEffects {
     });
     if(!recovered&&ownerEnvelopes.length===0)return "PENDING";
     const grantFor=(record:LifecycleRecord)=>discoverOwnerAuthorizedPayloadRepairGrant({spec,issue:record.issue!,pr:record.pr!,failed_head_sha:record.head_sha!,failure_class:record.state==="BLOCKED"&&["CI_FAILED","REPAIR_LIMIT_REACHED"].includes(record.last_error??"")?"CI_FAILED":"",ordinary_payload_repairs:store.consummatedPayloadRepairs(record.issue!,record.pr!),sources:{campaign_candidates:[],repository_candidates:[authority]},comments});
-    let current=state,grant:OwnerAuthorizedPayloadRepairGrant|undefined,effective:OwnerRepairEffectiveBaseBinding|undefined;
+    let current=state,grant:OwnerAuthorizedPayloadRepairGrant|undefined,effective:OwnerRepairEffectiveBaseBinding|undefined,runtimeSupport:OwnerRepairRuntimeSupportEvent|undefined;
     const bindBase=(dispatchSha:string)=>{
       if(!grant||!current.owner_payload_repair)throw new Error("owner repair effective base identity missing");
       const prior=bases.load(grant.grant_key),tip=this.bus.branchHead(INTEGRATION_BRANCH);
       const installed=this.ownerRepairRuntimeSha(tip);
       const input={grant_key:grant.grant_key,front_id:grant.front_id,authorization_id:grant.authorization_id,build_attempt_id:current.owner_payload_repair.build_attempt_id,frozen_base_sha:grant.canonical_base_sha,effective_base_sha:prior?.effective_base_sha??tip,failed_head_sha:grant.failed_head_sha,build_dispatched_event_sha256:dispatchSha,canonical_branch:INTEGRATION_BRANCH,installed_runtime_sha:prior?.installed_runtime_sha??installed,predecessor_event_sha256:dispatchSha};
-      effective=bases.bind(input,{receipts,currentTip:tip,installedRuntimeSha:installed,doctorPassed:true,isAncestor:(a,b)=>this.bus.isAncestor(a,b)});
+      // The effective binding is immutable after first persistence. Revalidate
+      // its original anchors, then bind the live canonical runtime separately.
+      effective=bases.bind(input,{receipts,currentTip:prior?.effective_base_sha??tip,installedRuntimeSha:prior?.installed_runtime_sha??installed,doctorPassed:true,isAncestor:(a,b)=>this.bus.isAncestor(a,b)});
+      runtimeSupport=supports.bind(effective,{currentTip:tip,installedRuntimeSha:installed,isAncestor:(a,b)=>this.bus.isAncestor(a,b)});
       return effective;
     };
     const candidateEvidence=(newHead:string)=>{
-      if(!grant||!effective||!current.owner_payload_repair)throw new Error("owner repair effective base missing");
+      if(!grant||!effective||!runtimeSupport||!current.owner_payload_repair)throw new Error("owner repair effective base missing");
       const receipt=parseOwnerPayloadRepairCommitReceipt(this.bus.commitMessage(newHead),spec.front_id!);
       const identity=this.bus.prIdentity(grant.pr);
-      if(!verifyOwnerPayloadRepairAdoption({spec,grant,new_head_sha:newHead,remote_branch_head:this.bus.remoteBranchHead(spec.work_branch!),pr:{number:grant.pr,head:newHead,base:effective.effective_base_sha,identity,trustedAuthor:true,pathsInScope:true},provenance:receipt.provenance,build_attempt_id:current.owner_payload_repair.build_attempt_id,consumed_event_sha256:current.owner_payload_repair.consumed_event_sha256,effective_base_binding:effective,effective_base_provenance:receipt.effective_base,isAncestor:(older,newer)=>this.bus.isAncestor(older,newer)}))throw new Error("owner repair candidate adoption invalid");
+      if(!verifyOwnerPayloadRepairAdoption({spec,grant,new_head_sha:newHead,remote_branch_head:this.bus.remoteBranchHead(spec.work_branch!),pr:{number:grant.pr,head:newHead,base:runtimeSupport.runtime_support_sha,identity,trustedAuthor:true,pathsInScope:true},provenance:receipt.provenance,build_attempt_id:current.owner_payload_repair.build_attempt_id,consumed_event_sha256:current.owner_payload_repair.consumed_event_sha256,effective_base_binding:effective,runtime_support:runtimeSupport,effective_base_provenance:receipt.effective_base,isAncestor:(older,newer)=>this.bus.isAncestor(older,newer)}))throw new Error("owner repair candidate adoption invalid");
       return receipt;
     };
     const adopt=(record:LifecycleRecord,newHead:string)=>{
       const receipt=candidateEvidence(newHead),provenance=receipt.provenance;
-      current=store.adoptOwnerPayloadRepairCandidate(record,{pr:grant!.pr,head_sha:newHead,builder_session:`owner-${receipt.builder_session}`,grant_key:provenance.grant_key,build_attempt_id:provenance.build_attempt_id,consumed_event_sha256:provenance.consumed_event_sha256,effective_base_binding:effective!,synchronized_head_sha:receipt.effective_base!.synchronized_head_sha},{effectiveBases:bases,receipts});
-      const effectiveSpec=this.ownerEffectiveSpec(spec,effective!.effective_base_sha);
+      current=store.adoptOwnerPayloadRepairCandidate(record,{pr:grant!.pr,head_sha:newHead,builder_session:`owner-${receipt.builder_session}`,grant_key:provenance.grant_key,build_attempt_id:provenance.build_attempt_id,consumed_event_sha256:provenance.consumed_event_sha256,effective_base_binding:effective!,runtime_support:runtimeSupport!,synchronized_head_sha:receipt.effective_base!.synchronized_head_sha},{effectiveBases:bases,runtimeSupports:supports,receipts});
+      const effectiveSpec=this.ownerEffectiveSpec(spec,runtimeSupport!.runtime_support_sha);
       this.bindLifecycle(effectiveSpec,current);
       return current;
     };
@@ -223,14 +228,15 @@ export class ProductionEffects implements AutonomousEffects {
       bindEffectiveBase:(_record,receipt)=>{bindBase(receipt.event_sha256);},
       authorizeTransport:receipt=>{
         if(!grant||!effective)throw new Error("owner payload repair grant missing");
-        return this.boundary.authorizeOwnerPayloadRepairTransport({spec,state:current,grant,consumed_event_sha256:receipt.predecessor_event_sha256,build_attempt_id:receipt.build_attempt_id,build_dispatched_event_sha256:receipt.event_sha256,effective_base:effective,verifyEffectiveBase:()=>{bindBase(receipt.event_sha256);}},receipt as OwnerGrantReceiptEvent);
+        return this.boundary.authorizeOwnerPayloadRepairTransport({spec,state:current,grant,consumed_event_sha256:receipt.predecessor_event_sha256,build_attempt_id:receipt.build_attempt_id,build_dispatched_event_sha256:receipt.event_sha256,effective_base:effective,runtime_support:runtimeSupport,verifyEffectiveBase:()=>{bindBase(receipt.event_sha256);}},receipt as OwnerGrantReceiptEvent);
       },
       findPublishedCandidate:(record,receipt)=>{
         if(!grant||!effective||record.state!=="BUILDING"||record.repair_cycles!==2||!record.owner_payload_repair||record.owner_payload_repair.grant_key!==grant.grant_key||record.owner_payload_repair.build_attempt_id!==receipt.build_attempt_id||record.owner_payload_repair.consumed_event_sha256!==receipt.predecessor_event_sha256)throw new Error("owner repair remote candidate identity invalid");
         const remote=this.bus.remoteBranchHead(spec.work_branch!);
         if(remote===undefined)throw new Error("owner repair remote branch missing");
         if(remote===record.head_sha)return undefined;
-        if(this.builder.isOwnerPayloadRepairBaseSync(spec,grant,effective,remote))return undefined;
+        if(!runtimeSupport)throw new Error("owner repair runtime support missing");
+        if(this.builder.isOwnerPayloadRepairBaseSync(spec,grant,effective,runtimeSupport,remote))return undefined;
         const published=candidateEvidence(remote);
         return {new_head_sha:remote,provenance:published.provenance};
       },
@@ -239,8 +245,9 @@ export class ProductionEffects implements AutonomousEffects {
         const transport=capability as import("./external_effect_guard.js").OwnerPayloadRepairTransportCapability;
         const assert=()=>this.boundary.assertOwnerPayloadRepairTransport(transport);
         const sync=this.builder.synchronizeOwnerPayloadRepairBase(spec,grant,transport,assert);
-        const publication=this.builder.ownerPayloadRepairPublicationAdapter(spec,grant,transport,assert,{binding:effective,synchronized_head_sha:sync.synchronized_head_sha,consumed_event_sha256:current.owner_payload_repair!.consumed_event_sha256});
-        const published=await dispatchOwnerAuthorizedPayloadRepair({spec,grant,issue:grant.issue,build_attempt_id:capability.build_attempt_id,consumed_event_sha256:current.owner_payload_repair!.consumed_event_sha256,correction_payload:grant.correction_payload,publication,effective_base_binding:effective,synchronized_head_sha:sync.synchronized_head_sha});
+        if(!runtimeSupport)throw new Error("owner payload repair runtime support missing");
+        const publication=this.builder.ownerPayloadRepairPublicationAdapter(spec,grant,transport,assert,{binding:effective,runtime_support:runtimeSupport,synchronized_head_sha:sync.synchronized_head_sha,consumed_event_sha256:current.owner_payload_repair!.consumed_event_sha256});
+        const published=await dispatchOwnerAuthorizedPayloadRepair({spec,grant,issue:grant.issue,build_attempt_id:capability.build_attempt_id,consumed_event_sha256:current.owner_payload_repair!.consumed_event_sha256,correction_payload:grant.correction_payload,publication,effective_base_binding:effective,synchronized_head_sha:sync.synchronized_head_sha,runtime_support:runtimeSupport});
         return {new_head_sha:published.candidate.head_sha,provenance:published.provenance};
       },
       verifyLineage:candidate=>{candidateEvidence(candidate.new_head_sha);return true;},
@@ -268,20 +275,21 @@ export class ProductionEffects implements AutonomousEffects {
     if(!owner.effective_base_sha)throw new Error("owner effective lifecycle anchors incomplete");
     if(!state.issue||!state.pr||!state.head_sha||state.repair_cycles!==2||["BUILDING","OWNER_REPAIR_AUTHORIZED"].includes(state.state))throw new Error("owner effective lifecycle invalid");
     const receipts=new OwnerRepairReceiptLedger(join(this.root,"owner-repair-receipts"));
-    const effective=new OwnerRepairEffectiveBaseLedger(join(this.root,"owner-repair-receipts")).load(owner.grant_key);
+    const effective=new OwnerRepairEffectiveBaseLedger(join(this.root,"owner-repair-receipts")).load(owner.grant_key),runtimeSupport=new OwnerRepairRuntimeSupportLedger(join(this.root,"owner-repair-receipts")).load(owner.grant_key);
     const headBound=receipts.deriveReceiptView(owner.grant_key);
     const grant=receipts.findGrantSnapshot({front_id:state.front_id,issue:state.issue,pr:state.pr,failed_head_sha:owner.failed_head_sha!});
-    if(!effective||!grant||headBound.phase!=="HEAD_BOUND"||!headBound.new_head_sha||grant.grant_key!==owner.grant_key||grant.authorization_id!==spec.authorization_id||grant.repository!==spec.repository||grant.roadmap_id!==spec.roadmap_id||grant.roadmap_item_id!==state.roadmap_item_id||grant.work_branch!==spec.work_branch||grant.canonical_base_sha!==owner.frozen_base_sha||effective.effective_base_sha!==owner.effective_base_sha||headBound.build_attempt_id!==owner.build_attempt_id)throw new Error("owner effective authority invalid");
+    if(!effective||!runtimeSupport||!grant||headBound.phase!=="HEAD_BOUND"||!headBound.new_head_sha||grant.grant_key!==owner.grant_key||grant.authorization_id!==spec.authorization_id||grant.repository!==spec.repository||grant.roadmap_id!==spec.roadmap_id||grant.roadmap_item_id!==state.roadmap_item_id||grant.work_branch!==spec.work_branch||grant.canonical_base_sha!==owner.frozen_base_sha||effective.effective_base_sha!==owner.effective_base_sha||runtimeSupport.grant_key!==owner.grant_key||runtimeSupport.front_id!==state.front_id||runtimeSupport.authorization_id!==effective.authorization_id||runtimeSupport.build_attempt_id!==owner.build_attempt_id||runtimeSupport.effective_base_sha!==effective.effective_base_sha||runtimeSupport.effective_base_binding_sha256!==effective.event_sha256||runtimeSupport.runtime_support_sha!==owner.runtime_support_sha||runtimeSupport.event_sha256!==owner.runtime_support_event_sha256||headBound.build_attempt_id!==owner.build_attempt_id)throw new Error("owner effective authority invalid");
     const parsed=parseIssue(this.bus.issueSnapshot(state.issue).body),frozen=parsed.spec;
     if(parsed.pr!==state.pr||frozen.expected_base_sha!==grant.canonical_base_sha||frozen.front_id!==grant.front_id||!exactSpecExceptHistoricalBinding(spec,frozen))throw new Error("owner effective frozen spec mismatch");
     const merged=["MERGED","INSTALL_PENDING","INSTALLING","RUNTIME_PILOT_PENDING","RUNTIME_PILOT_RUNNING","RUNTIME_VERIFIED","CLOSEOUT_PENDING","CLOSEOUT_MERGED","TERMINAL_COMPLETED"].includes(state.state);
-    this.ownerPayloadRepairBuilderReceipt(merged?{...state,base_sha:effective.effective_base_sha}:state,headBound.new_head_sha,state.front_id);
+    const executionBase=runtimeSupport.runtime_support_sha;
+    this.ownerPayloadRepairBuilderReceipt(state,headBound.new_head_sha,state.front_id);
     if(merged){
-      const nextBase=spec.expected_base_sha===frozen.expected_base_sha?effective.effective_base_sha:spec.expected_base_sha;
-      if(!state.completed_effects.includes(`merge:${state.head_sha}`)||!this.bus.isAncestor(headBound.new_head_sha,state.head_sha)||state.base_sha!==effective.effective_base_sha&&!this.bus.isAncestor(state.head_sha,state.base_sha)||nextBase!==effective.effective_base_sha&&(!this.bus.isAncestor(state.head_sha,nextBase)||this.bus.branchHead(INTEGRATION_BRANCH)!==nextBase))throw new Error("owner effective merge evidence invalid");
+      const nextBase=spec.expected_base_sha===frozen.expected_base_sha?executionBase:spec.expected_base_sha;
+      if(!state.completed_effects.includes(`merge:${state.head_sha}`)||!this.bus.isAncestor(headBound.new_head_sha,state.head_sha)||state.base_sha!==executionBase&&!this.bus.isAncestor(state.head_sha,state.base_sha)||nextBase!==executionBase&&(!this.bus.isAncestor(state.head_sha,nextBase)||this.bus.branchHead(INTEGRATION_BRANCH)!==nextBase))throw new Error("owner effective merge evidence invalid");
       return this.ownerEffectiveSpec(frozen,nextBase);
-    }else if(state.head_sha!==headBound.new_head_sha||this.bus.branchHead(INTEGRATION_BRANCH)!==effective.effective_base_sha)throw new Error("owner effective candidate drift");
-    return this.ownerEffectiveSpec(frozen,effective.effective_base_sha);
+    }else if(state.head_sha!==headBound.new_head_sha||state.base_sha!==executionBase||this.bus.branchHead(INTEGRATION_BRANCH)!==executionBase)throw new Error("owner effective candidate drift");
+    return this.ownerEffectiveSpec(frozen,executionBase);
   }
 
   private validDispatchedOwnerResume(spec:ProxySpec,state:LifecycleRecord):boolean {
@@ -411,11 +419,12 @@ export class ProductionEffects implements AutonomousEffects {
     const receipt=parseOwnerPayloadRepairCommitReceipt(this.bus.commitMessage(head),front),provenance=receipt.provenance;
     if(provenance.grant_key!==binding.grant_key||provenance.build_attempt_id!==binding.build_attempt_id||provenance.consumed_event_sha256!==binding.consumed_event_sha256||state.builder_session!==`owner-${receipt.builder_session}`)throw new Error("owner payload repair receipt binding invalid");
     if(binding.effective_base_sha!==undefined||receipt.effective_base!==undefined){
-      const effective=new OwnerRepairEffectiveBaseLedger(join(this.root,"owner-repair-receipts")).load(binding.grant_key);
+      const effective=new OwnerRepairEffectiveBaseLedger(join(this.root,"owner-repair-receipts")).load(binding.grant_key),runtimeSupport=new OwnerRepairRuntimeSupportLedger(join(this.root,"owner-repair-receipts")).load(binding.grant_key);
       const headBound=new OwnerRepairReceiptLedger(join(this.root,"owner-repair-receipts")).deriveReceiptView(binding.grant_key);
       const p=receipt.effective_base;
-      if(!effective||!p||effective.authorization_id!==provenance.authorization_id||effective.grant_key!==binding.grant_key||effective.build_attempt_id!==binding.build_attempt_id||effective.front_id!==front||effective.frozen_base_sha!==binding.frozen_base_sha||effective.failed_head_sha!==binding.failed_head_sha||effective.effective_base_sha!==state.base_sha||effective.effective_base_sha!==binding.effective_base_sha||effective.event_sha256!==binding.effective_base_binding_sha256||p.frozen_base_sha!==effective.frozen_base_sha||p.effective_base_sha!==effective.effective_base_sha||p.binding_event_sha256!==effective.event_sha256||p.synchronized_head_sha!==binding.synchronized_head_sha||headBound.phase!=="HEAD_BOUND"||headBound.new_head_sha!==head||headBound.predecessor_event_sha256!==effective.build_dispatched_event_sha256)throw new Error("owner payload repair effective receipt binding invalid");
-      if(!this.bus.isAncestor(effective.frozen_base_sha,effective.effective_base_sha)||!this.bus.isAncestor(effective.failed_head_sha,p.synchronized_head_sha)||!this.bus.isAncestor(effective.effective_base_sha,p.synchronized_head_sha)||!this.bus.isAncestor(p.synchronized_head_sha,head))throw new Error("owner payload repair effective receipt ancestry invalid");
+      const postMerge=["MERGED","INSTALL_PENDING","INSTALLING","RUNTIME_PILOT_PENDING","RUNTIME_PILOT_RUNNING","RUNTIME_VERIFIED","CLOSEOUT_PENDING","CLOSEOUT_MERGED","TERMINAL_COMPLETED"].includes(state.state);
+      if(!effective||!runtimeSupport||!p||effective.authorization_id!==provenance.authorization_id||effective.grant_key!==binding.grant_key||effective.build_attempt_id!==binding.build_attempt_id||effective.front_id!==front||effective.frozen_base_sha!==binding.frozen_base_sha||effective.failed_head_sha!==binding.failed_head_sha||effective.effective_base_sha!==binding.effective_base_sha||effective.event_sha256!==binding.effective_base_binding_sha256||runtimeSupport.grant_key!==binding.grant_key||runtimeSupport.front_id!==front||runtimeSupport.authorization_id!==effective.authorization_id||runtimeSupport.build_attempt_id!==binding.build_attempt_id||runtimeSupport.effective_base_sha!==effective.effective_base_sha||runtimeSupport.effective_base_binding_sha256!==effective.event_sha256||!postMerge&&runtimeSupport.runtime_support_sha!==state.base_sha||runtimeSupport.runtime_support_sha!==binding.runtime_support_sha||runtimeSupport.event_sha256!==binding.runtime_support_event_sha256||p.frozen_base_sha!==effective.frozen_base_sha||p.effective_base_sha!==effective.effective_base_sha||p.binding_event_sha256!==effective.event_sha256||p.synchronized_head_sha!==binding.synchronized_head_sha||p.runtime_support_sha!==runtimeSupport.runtime_support_sha||p.runtime_support_event_sha256!==runtimeSupport.event_sha256||headBound.phase!=="HEAD_BOUND"||headBound.new_head_sha!==head||headBound.predecessor_event_sha256!==effective.build_dispatched_event_sha256)throw new Error("owner payload repair effective receipt binding invalid");
+      if(!this.bus.isAncestor(effective.frozen_base_sha,effective.effective_base_sha)||!this.bus.isAncestor(effective.effective_base_sha,runtimeSupport.runtime_support_sha)||!this.bus.isAncestor(effective.failed_head_sha,p.synchronized_head_sha)||!this.bus.isAncestor(runtimeSupport.runtime_support_sha,p.synchronized_head_sha)||!this.bus.isAncestor(p.synchronized_head_sha,head))throw new Error("owner payload repair effective receipt ancestry invalid");
     }
     return {model:receipt.builder_model,headCommit:head,status:"VERIFIED" as const};
   }

@@ -11,6 +11,7 @@ import {BuilderAttemptProvenance,resolveCompletedBuilderSession,resolveCompleted
 import {canonicalCorrectionPayloadBytes,parseCorrectionPayloadV1} from "./correction_payload.js";
 import {CandidateExecutionKernel,type CandidateExecutionAdapter,type CandidatePublicationResult,type PreparedCandidateAttempt} from "./candidate_execution.js";
 import {assertOwnerRepairEffectiveBaseBinding,ownerPayloadBaseSyncReceipt,verifyOwnerPayloadBaseSyncCommit,type OwnerRepairEffectiveBaseBinding,type OwnerPayloadBaseSyncProvenance} from "./owner_payload_base_sync.js";
+import type {OwnerRepairRuntimeSupportEvent} from "./owner_repair_runtime_support.js";
 
 export interface BuilderBus {
   findPrByBranch(branch:string):{number:number;head_sha:string}|undefined;
@@ -22,9 +23,9 @@ export interface BuilderBus {
 }
 export interface OwnerPayloadRepairBuilderInput {front_id:string;work_branch:string;failed_head_sha:string;correction_payload:CorrectionPayloadV1;provenance:{authorization_id:string;grant_key:string;build_attempt_id:string;consumed_event_sha256:string}}
 export interface OwnerPayloadRepairTransportRequest extends OwnerPayloadRepairBuilderInput {repository:string;roadmap_id:string;roadmap_item_id:string;issue:number;pr:number;canonical_base_sha:string;effective_base?:OwnerPayloadBaseSyncProvenance;idempotency_key:string;prompt:string}
-export interface OwnerPayloadRepairDispatchContext {spec:ProxySpec;grant:OwnerAuthorizedPayloadRepairGrant;issue:number;build_attempt_id:string;consumed_event_sha256:string;correction_payload:CorrectionPayloadV1;publication:CandidateExecutionAdapter;effective_base_binding?:OwnerRepairEffectiveBaseBinding;synchronized_head_sha?:string}
+export interface OwnerPayloadRepairDispatchContext {spec:ProxySpec;grant:OwnerAuthorizedPayloadRepairGrant;issue:number;build_attempt_id:string;consumed_event_sha256:string;correction_payload:CorrectionPayloadV1;publication:CandidateExecutionAdapter;effective_base_binding?:OwnerRepairEffectiveBaseBinding;synchronized_head_sha?:string;runtime_support?:OwnerRepairRuntimeSupportEvent}
 export interface OwnerPayloadRepairCandidate {candidate:CandidatePublicationResult;provenance:OwnerPayloadRepairBuilderInput["provenance"]}
-export interface OwnerPayloadRepairPublicationResume {binding:OwnerRepairEffectiveBaseBinding;synchronized_head_sha:string;consumed_event_sha256?:string}
+export interface OwnerPayloadRepairPublicationResume {binding:OwnerRepairEffectiveBaseBinding;runtime_support:OwnerRepairRuntimeSupportEvent;synchronized_head_sha:string;consumed_event_sha256?:string}
 
 function exact64(value:string){return /^[0-9a-f]{64}$/.test(value);}
 function exceptionalPathDenied(path:string){return path==="scripts/operator_proxy"||path.startsWith("scripts/operator_proxy/")||path.endsWith("/")&&("scripts/operator_proxy".startsWith(path)||".github".startsWith(path))||path===".github"||path.startsWith(".github/");}
@@ -38,12 +39,12 @@ function validateOwnerPayloadRepairDispatch(context:OwnerPayloadRepairDispatchCo
   return ownerPayloadRepairBuilderInput(grant,{build_attempt_id,consumed_event_sha256,correction_payload:parsed.payload});
 }
 function effectiveBaseResume(context:OwnerPayloadRepairDispatchContext):OwnerPayloadBaseSyncProvenance|undefined {
-  const binding=context.effective_base_binding,synchronized=context.synchronized_head_sha;
+  const binding=context.effective_base_binding,synchronized=context.synchronized_head_sha,support=context.runtime_support;
   if(!binding&&!synchronized)return undefined;
-  if(!binding||!synchronized||!exact64(context.build_attempt_id))throw new Error("owner effective base resume invalid");
+  if(!binding||!synchronized||!exact64(context.build_attempt_id)||support!==undefined&&(!/^[0-9a-f]{40}$/.test(support.runtime_support_sha)||!exact64(support.event_sha256)||support.grant_key!==context.grant.grant_key||support.front_id!==context.grant.front_id||support.authorization_id!==context.grant.authorization_id||support.build_attempt_id!==context.build_attempt_id||support.effective_base_sha!==binding.effective_base_sha||support.effective_base_binding_sha256!==binding.event_sha256))throw new Error("owner effective base resume invalid");
   assertOwnerRepairEffectiveBaseBinding(binding,context.grant,context.build_attempt_id);
   if(!/^[0-9a-f]{40}$/.test(synchronized))throw new Error("owner effective base resume invalid");
-  return {frozen_base_sha:binding.frozen_base_sha,effective_base_sha:binding.effective_base_sha,binding_event_sha256:binding.event_sha256,synchronized_head_sha:synchronized};
+  return {frozen_base_sha:binding.frozen_base_sha,effective_base_sha:binding.effective_base_sha,binding_event_sha256:binding.event_sha256,synchronized_head_sha:synchronized,...(support?{runtime_support_sha:support.runtime_support_sha,runtime_support_event_sha256:support.event_sha256}:{})};
 }
 function ownerPayloadRepairPrompt(request:OwnerPayloadRepairTransportRequest):string {
   return [
@@ -57,7 +58,7 @@ function ownerPayloadRepairPrompt(request:OwnerPayloadRepairTransportRequest):st
     `WORK_BRANCH=${request.work_branch}`,
     `CANONICAL_BASE_SHA=${request.canonical_base_sha}`,
     `AUTHORIZED_BASE_SHA=${request.canonical_base_sha}`,
-    ...(request.effective_base?[`EFFECTIVE_BASE_SHA=${request.effective_base.effective_base_sha}`,`EFFECTIVE_BASE_BINDING_SHA256=${request.effective_base.binding_event_sha256}`,`SYNCHRONIZED_HEAD_SHA=${request.effective_base.synchronized_head_sha}`]:[]),
+    ...(request.effective_base?[`EFFECTIVE_BASE_SHA=${request.effective_base.effective_base_sha}`,`EFFECTIVE_BASE_BINDING_SHA256=${request.effective_base.binding_event_sha256}`,`SYNCHRONIZED_HEAD_SHA=${request.effective_base.synchronized_head_sha}`,...(request.effective_base.runtime_support_sha?[`RUNTIME_SUPPORT_SHA=${request.effective_base.runtime_support_sha}`,`RUNTIME_SUPPORT_EVENT_SHA256=${request.effective_base.runtime_support_event_sha256}`]:[])]:[]),
     `FAILED_HEAD_SHA=${request.failed_head_sha}`,
     `AUTHORIZATION_ID=${request.provenance.authorization_id}`,
     `GRANT_KEY=${request.provenance.grant_key}`,
@@ -69,7 +70,7 @@ function ownerPayloadRepairPrompt(request:OwnerPayloadRepairTransportRequest):st
 }
 
 function ownerPayloadRepairReceipt(request:OwnerPayloadRepairTransportRequest,provider:{builder_backend:string;builder_model:string;provider_session:string;fallback_reason?:string}):string {
-  return [`fix(control-plane): owner payload repair ${request.front_id}`,"",`OWNER_AUTHORIZATION_ID=${request.provenance.authorization_id}`,`OWNER_GRANT_KEY=${request.provenance.grant_key}`,`OWNER_BUILD_ATTEMPT_ID=${request.provenance.build_attempt_id}`,`OWNER_CONSUMED_EVENT_SHA256=${request.provenance.consumed_event_sha256}`,...(request.effective_base?[`OWNER_FROZEN_BASE_SHA=${request.effective_base.frozen_base_sha}`,`OWNER_EFFECTIVE_BASE_SHA=${request.effective_base.effective_base_sha}`,`OWNER_EFFECTIVE_BASE_BINDING_SHA256=${request.effective_base.binding_event_sha256}`,`OWNER_SYNCHRONIZED_HEAD_SHA=${request.effective_base.synchronized_head_sha}`]:[]),`BUILDER_BACKEND=${provider.builder_backend}`,`BUILDER_MODEL=${provider.builder_model}`,`PROVIDER_SESSION=${provider.provider_session}`,...(provider.fallback_reason?[`FALLBACK_REASON=${provider.fallback_reason}`]:[])].join("\n");
+  return [`fix(control-plane): owner payload repair ${request.front_id}`,"",`OWNER_AUTHORIZATION_ID=${request.provenance.authorization_id}`,`OWNER_GRANT_KEY=${request.provenance.grant_key}`,`OWNER_BUILD_ATTEMPT_ID=${request.provenance.build_attempt_id}`,`OWNER_CONSUMED_EVENT_SHA256=${request.provenance.consumed_event_sha256}`,...(request.effective_base?[`OWNER_FROZEN_BASE_SHA=${request.effective_base.frozen_base_sha}`,`OWNER_EFFECTIVE_BASE_SHA=${request.effective_base.effective_base_sha}`,`OWNER_EFFECTIVE_BASE_BINDING_SHA256=${request.effective_base.binding_event_sha256}`,`OWNER_SYNCHRONIZED_HEAD_SHA=${request.effective_base.synchronized_head_sha}`,...(request.effective_base.runtime_support_sha?[`OWNER_RUNTIME_SUPPORT_SHA=${request.effective_base.runtime_support_sha}`,`OWNER_RUNTIME_SUPPORT_EVENT_SHA256=${request.effective_base.runtime_support_event_sha256}`]:[])]:[]),`BUILDER_BACKEND=${provider.builder_backend}`,`BUILDER_MODEL=${provider.builder_model}`,`PROVIDER_SESSION=${provider.provider_session}`,...(provider.fallback_reason?[`FALLBACK_REASON=${provider.fallback_reason}`]:[])].join("\n");
 }
 
 /** Validates the immutable receipt written by the exceptional publication path. */
@@ -77,9 +78,9 @@ export function parseOwnerPayloadRepairCommitReceipt(message:string,frontId:stri
   const lines=message.replace(/\r\n/g,"\n").trimEnd().split("\n");
   if(lines[0]!==`fix(control-plane): owner payload repair ${frontId}`)throw new Error("owner repair commit receipt invalid");
   const value=(name:string)=>{const values=lines.filter(line=>line.startsWith(`${name}=`)).map(line=>line.slice(name.length+1));if(values.length!==1)return undefined;return values[0];};
-  const authorization_id=value("OWNER_AUTHORIZATION_ID"),grant_key=value("OWNER_GRANT_KEY"),build_attempt_id=value("OWNER_BUILD_ATTEMPT_ID"),consumed_event_sha256=value("OWNER_CONSUMED_EVENT_SHA256"),builder_backend=value("BUILDER_BACKEND"),builder_model=value("BUILDER_MODEL"),provider_session=value("PROVIDER_SESSION"),fallback=lines.filter(line=>line.startsWith("FALLBACK_REASON=")),frozen_base_sha=value("OWNER_FROZEN_BASE_SHA"),effective_base_sha=value("OWNER_EFFECTIVE_BASE_SHA"),binding_event_sha256=value("OWNER_EFFECTIVE_BASE_BINDING_SHA256"),synchronized_head_sha=value("OWNER_SYNCHRONIZED_HEAD_SHA");
-  const hasEffective=[frozen_base_sha,effective_base_sha,binding_event_sha256,synchronized_head_sha].some(value=>value!==undefined),effective_base=hasEffective&&frozen_base_sha&&effective_base_sha&&binding_event_sha256&&synchronized_head_sha&&/^[0-9a-f]{40}$/.test(frozen_base_sha)&&/^[0-9a-f]{40}$/.test(effective_base_sha)&&exact64(binding_event_sha256)&&/^[0-9a-f]{40}$/.test(synchronized_head_sha)?{frozen_base_sha,effective_base_sha,binding_event_sha256,synchronized_head_sha}:undefined;
-  const allowedLines=new Set([lines[0],"",`OWNER_AUTHORIZATION_ID=${authorization_id}`,`OWNER_GRANT_KEY=${grant_key}`,`OWNER_BUILD_ATTEMPT_ID=${build_attempt_id}`,`OWNER_CONSUMED_EVENT_SHA256=${consumed_event_sha256}`,...(effective_base?[`OWNER_FROZEN_BASE_SHA=${frozen_base_sha}`,`OWNER_EFFECTIVE_BASE_SHA=${effective_base_sha}`,`OWNER_EFFECTIVE_BASE_BINDING_SHA256=${binding_event_sha256}`,`OWNER_SYNCHRONIZED_HEAD_SHA=${synchronized_head_sha}`]:[]),`BUILDER_BACKEND=${builder_backend}`,`BUILDER_MODEL=${builder_model}`,`PROVIDER_SESSION=${provider_session}`,...fallback]);
+  const authorization_id=value("OWNER_AUTHORIZATION_ID"),grant_key=value("OWNER_GRANT_KEY"),build_attempt_id=value("OWNER_BUILD_ATTEMPT_ID"),consumed_event_sha256=value("OWNER_CONSUMED_EVENT_SHA256"),builder_backend=value("BUILDER_BACKEND"),builder_model=value("BUILDER_MODEL"),provider_session=value("PROVIDER_SESSION"),fallback=lines.filter(line=>line.startsWith("FALLBACK_REASON=")),frozen_base_sha=value("OWNER_FROZEN_BASE_SHA"),effective_base_sha=value("OWNER_EFFECTIVE_BASE_SHA"),binding_event_sha256=value("OWNER_EFFECTIVE_BASE_BINDING_SHA256"),synchronized_head_sha=value("OWNER_SYNCHRONIZED_HEAD_SHA"),runtime_support_sha=value("OWNER_RUNTIME_SUPPORT_SHA"),runtime_support_event_sha256=value("OWNER_RUNTIME_SUPPORT_EVENT_SHA256");
+  const supportPresent=runtime_support_sha!==undefined||runtime_support_event_sha256!==undefined,hasEffective=[frozen_base_sha,effective_base_sha,binding_event_sha256,synchronized_head_sha].some(value=>value!==undefined),effective_base=hasEffective&&frozen_base_sha&&effective_base_sha&&binding_event_sha256&&synchronized_head_sha&&/^[0-9a-f]{40}$/.test(frozen_base_sha)&&/^[0-9a-f]{40}$/.test(effective_base_sha)&&exact64(binding_event_sha256)&&/^[0-9a-f]{40}$/.test(synchronized_head_sha)&&(!supportPresent||!!runtime_support_sha&&!!runtime_support_event_sha256&&/^[0-9a-f]{40}$/.test(runtime_support_sha)&&exact64(runtime_support_event_sha256))?{frozen_base_sha,effective_base_sha,binding_event_sha256,synchronized_head_sha,...(supportPresent?{runtime_support_sha:runtime_support_sha!,runtime_support_event_sha256:runtime_support_event_sha256!}:{})}:undefined;
+  const allowedLines=new Set([lines[0],"",`OWNER_AUTHORIZATION_ID=${authorization_id}`,`OWNER_GRANT_KEY=${grant_key}`,`OWNER_BUILD_ATTEMPT_ID=${build_attempt_id}`,`OWNER_CONSUMED_EVENT_SHA256=${consumed_event_sha256}`,...(effective_base?[`OWNER_FROZEN_BASE_SHA=${frozen_base_sha}`,`OWNER_EFFECTIVE_BASE_SHA=${effective_base_sha}`,`OWNER_EFFECTIVE_BASE_BINDING_SHA256=${binding_event_sha256}`,`OWNER_SYNCHRONIZED_HEAD_SHA=${synchronized_head_sha}`,...(effective_base.runtime_support_sha?[`OWNER_RUNTIME_SUPPORT_SHA=${effective_base.runtime_support_sha}`,`OWNER_RUNTIME_SUPPORT_EVENT_SHA256=${effective_base.runtime_support_event_sha256}`]:[])]:[]),`BUILDER_BACKEND=${builder_backend}`,`BUILDER_MODEL=${builder_model}`,`PROVIDER_SESSION=${provider_session}`,...fallback]);
   const allowedBackends=new Set(["codex_cli_openai","opencode_github_copilot","opencode_ollama"]);
   if(!authorization_id||!exact64(grant_key??"")||!exact64(build_attempt_id??"")||!exact64(consumed_event_sha256??"")||hasEffective&&!effective_base||!builder_backend||!allowedBackends.has(builder_backend)||!builder_model||!/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(builder_model)||!provider_session||!/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(provider_session)||fallback.length>1||fallback.length===1&&!ELIGIBLE_FALLBACK_FAILURES.has(fallback[0]!.slice("FALLBACK_REASON=".length))||!lines.every(line=>allowedLines.has(line)))throw new Error("owner repair commit receipt invalid");
   return {provenance:{authorization_id,grant_key:grant_key!,build_attempt_id:build_attempt_id!,consumed_event_sha256:consumed_event_sha256!},builder_backend:builder_backend as BuilderResult["builder_backend"],builder_session:provider_session,provider_session,builder_model:builder_model!,...(effective_base?{effective_base}:{})};
@@ -87,12 +88,12 @@ export function parseOwnerPayloadRepairCommitReceipt(message:string,frontId:stri
 /** Dispatches the one logical exceptional attempt. Receipt and lifecycle mutations are owned by Tasks 6/8. */
 export async function dispatchOwnerAuthorizedPayloadRepair(context:OwnerPayloadRepairDispatchContext):Promise<OwnerPayloadRepairCandidate> {
   const input=validateOwnerPayloadRepairDispatch(context);
-  const effective_base=effectiveBaseResume(context);
+  const effective_base=effectiveBaseResume(context),execution_base=effective_base?.runtime_support_sha??effective_base?.effective_base_sha;
   const request:OwnerPayloadRepairTransportRequest={...input,repository:context.grant.repository,roadmap_id:context.grant.roadmap_id,roadmap_item_id:context.grant.roadmap_item_id,issue:context.grant.issue,pr:context.grant.pr,canonical_base_sha:context.grant.canonical_base_sha,effective_base,idempotency_key:input.provenance.build_attempt_id,prompt:""};
   request.prompt=ownerPayloadRepairPrompt(request);
   if(context.spec.executor!=="codex_control_plane")throw new Error("owner repair executor invalid");
-  const candidate=await new CandidateExecutionKernel(context.publication).publish({repository:request.repository,front_id:request.front_id,roadmap_item_id:request.roadmap_item_id,issue:request.issue,work_branch:request.work_branch,expected_base_sha:effective_base?.effective_base_sha??request.canonical_base_sha,starting_head_sha:effective_base?.synchronized_head_sha??request.failed_head_sha,effective_base_sha:effective_base?.effective_base_sha,observed_head_sha:request.failed_head_sha,allowed_paths:context.spec.allowed_paths,forbidden_paths:context.spec.forbidden_paths,test_commands:context.spec.test_commands,provider_request:{prompt:request.prompt,executor_role:"codex_control_plane"},provider_idempotency_key:request.idempotency_key,publication_receipt:{kind:"OWNER_AUTHORIZED_PAYLOAD_REPAIR",render:provider=>ownerPayloadRepairReceipt(request,provider)},require_existing_draft_pr:true});
-  if(candidate.base_sha!==(effective_base?.effective_base_sha??request.canonical_base_sha)||candidate.work_branch!==request.work_branch||! /^[0-9a-f]{40}$/.test(candidate.head_sha)||candidate.head_sha===(effective_base?.synchronized_head_sha??request.failed_head_sha))throw new Error("owner repair candidate invalid");
+  const candidate=await new CandidateExecutionKernel(context.publication).publish({repository:request.repository,front_id:request.front_id,roadmap_item_id:request.roadmap_item_id,issue:request.issue,work_branch:request.work_branch,expected_base_sha:execution_base??request.canonical_base_sha,starting_head_sha:effective_base?.synchronized_head_sha??request.failed_head_sha,effective_base_sha:execution_base,observed_head_sha:request.failed_head_sha,allowed_paths:context.spec.allowed_paths,forbidden_paths:context.spec.forbidden_paths,test_commands:context.spec.test_commands,provider_request:{prompt:request.prompt,executor_role:"codex_control_plane"},provider_idempotency_key:request.idempotency_key,publication_receipt:{kind:"OWNER_AUTHORIZED_PAYLOAD_REPAIR",render:provider=>ownerPayloadRepairReceipt(request,provider)},require_existing_draft_pr:true});
+  if(candidate.base_sha!==(execution_base??request.canonical_base_sha)||candidate.work_branch!==request.work_branch||! /^[0-9a-f]{40}$/.test(candidate.head_sha)||candidate.head_sha===(effective_base?.synchronized_head_sha??request.failed_head_sha))throw new Error("owner repair candidate invalid");
   return {candidate,provenance:input.provenance};
 }
 /** Constructs the only exceptional-builder payload; raw owner comment text is never accepted. */
@@ -218,46 +219,48 @@ export class GovernedBuilder {
   constructor(readonly sourceRepo:string,readonly worktreeRoot:string,readonly bus:BuilderBus,readonly assertEffect:EffectAssertion,readonly codex=process.env.CODEX_PATH??"codex"){}
   synchronizeOwnerPayloadRepairBase(spec:ProxySpec,grant:OwnerAuthorizedPayloadRepairGrant,capability:OwnerPayloadRepairTransportCapability,assertCapability:()=>void):{synchronized_head_sha:string}{
     const effectiveCapability=capability as OwnerPayloadRepairTransportCapability&{effective_base_sha?:string;effective_base_binding_sha256?:string};
-    const effective=effectiveCapability.effective_base_sha,bindingSha=effectiveCapability.effective_base_binding_sha256;
-    if(!spec.front_id||!spec.work_branch||grant.front_id!==spec.front_id||grant.work_branch!==spec.work_branch||grant.canonical_base_sha!==spec.expected_base_sha||!effective||!bindingSha||!/^[0-9a-f]{40}$/.test(effective)||!exact64(bindingSha))throw new Error("owner base synchronization identity invalid");
+    const effective=effectiveCapability.effective_base_sha,bindingSha=effectiveCapability.effective_base_binding_sha256,supportSha=effectiveCapability.runtime_support_sha,supportEvent=effectiveCapability.runtime_support_event_sha256;
+    if(!spec.front_id||!spec.work_branch||grant.front_id!==spec.front_id||grant.work_branch!==spec.work_branch||grant.canonical_base_sha!==spec.expected_base_sha||!effective||!bindingSha||!supportSha||!supportEvent||!/^[0-9a-f]{40}$/.test(effective)||!/^[0-9a-f]{40}$/.test(supportSha)||!exact64(bindingSha)||!exact64(supportEvent))throw new Error("owner base synchronization identity invalid");
     const binding={grant_key:grant.grant_key,front_id:grant.front_id,authorization_id:grant.authorization_id,build_attempt_id:capability.build_attempt_id,frozen_base_sha:grant.canonical_base_sha,effective_base_sha:effective,failed_head_sha:grant.failed_head_sha,build_dispatched_event_sha256:capability.dispatch_event_sha256,canonical_branch:"codex/own-capital-sustainable-return",installed_runtime_sha:effective,event_sha256:bindingSha};
-    ensureCommit(this.sourceRepo,grant.canonical_base_sha);ensureCommit(this.sourceRepo,grant.failed_head_sha);ensureCommit(this.sourceRepo,effective);
-    try{git(this.sourceRepo,["merge-base","--is-ancestor",grant.canonical_base_sha,effective]);git(this.sourceRepo,["merge-base","--is-ancestor",grant.canonical_base_sha,grant.failed_head_sha]);}catch{throw new Error("owner base synchronization ancestry invalid");}
+    const runtimeSupport={grant_key:grant.grant_key,front_id:grant.front_id,authorization_id:grant.authorization_id,build_attempt_id:capability.build_attempt_id,effective_base_sha:effective,effective_base_binding_sha256:bindingSha,runtime_support_sha:supportSha,event_sha256:supportEvent};
+    ensureCommit(this.sourceRepo,grant.canonical_base_sha);ensureCommit(this.sourceRepo,grant.failed_head_sha);ensureCommit(this.sourceRepo,effective);ensureCommit(this.sourceRepo,supportSha);
+    try{git(this.sourceRepo,["merge-base","--is-ancestor",grant.canonical_base_sha,effective]);git(this.sourceRepo,["merge-base","--is-ancestor",effective,supportSha]);git(this.sourceRepo,["merge-base","--is-ancestor",grant.canonical_base_sha,grant.failed_head_sha]);}catch{throw new Error("owner base synchronization ancestry invalid");}
     const canonical=this.readPublishedBranchHead(this.sourceRepo,"codex/own-capital-sustainable-return");
-    if(canonical!==effective)throw new Error("owner effective base changed");
+    if(canonical!==supportSha)throw new Error("owner runtime support changed");
     const remote=this.readPublishedBranchHead(this.sourceRepo,spec.work_branch);
     if(!remote)throw new Error("owner repair branch missing");
     const parentLine=(head:string)=>git(this.sourceRepo,["rev-list","--parents","-n","1",head]).split(/\s+/),identity=this.bus.prIdentity(grant.pr);
     const files=(identity.files??[]).map((file:any)=>String(file.path));
-    const exactIdentity=identity.author?.login===spec.repository.split("/",1)[0]&&identity.baseRefName==="codex/own-capital-sustainable-return"&&[grant.canonical_base_sha,effective].includes(identity.baseRefOid)&&identity.headRefName===spec.work_branch&&identity.headRefOid===remote&&identity.headRepository?.nameWithOwner===spec.repository&&identity.isCrossRepository===false&&identity.isDraft===true&&identity.state==="OPEN"&&files.length>0&&files.every((path:string)=>allowed(path,spec));
+    const exactIdentity=identity.author?.login===spec.repository.split("/",1)[0]&&identity.baseRefName==="codex/own-capital-sustainable-return"&&[grant.canonical_base_sha,effective,supportSha].includes(identity.baseRefOid)&&identity.headRefName===spec.work_branch&&identity.headRefOid===remote&&identity.headRepository?.nameWithOwner===spec.repository&&identity.isCrossRepository===false&&identity.isDraft===true&&identity.state==="OPEN"&&files.length>0&&files.every((path:string)=>allowed(path,spec));
     if(!exactIdentity)throw new Error("owner repair synchronization Draft PR identity invalid");
     if(remote!==grant.failed_head_sha){
-      if(verifyOwnerPayloadBaseSyncCommit(git(this.sourceRepo,["show","-s","--format=%B",remote]),binding,remote,parentLine(remote).slice(1))){validateOwnerPayloadBaseSyncScopes(this.sourceRepo,grant.canonical_base_sha,grant.failed_head_sha,effective,remote,spec);return {synchronized_head_sha:remote};}
+      if(verifyOwnerPayloadBaseSyncCommit(git(this.sourceRepo,["show","-s","--format=%B",remote]),binding,remote,parentLine(remote).slice(1),runtimeSupport)){validateOwnerPayloadBaseSyncScopes(this.sourceRepo,grant.canonical_base_sha,grant.failed_head_sha,supportSha,remote,spec);return {synchronized_head_sha:remote};}
       throw new Error("owner repair branch advanced without exact synchronization receipt");
     }
     assertCapability();this.assertEffect("commit_create",{issue:grant.issue,pr:grant.pr});
-    const tree=git(this.sourceRepo,["merge-tree","--write-tree",grant.failed_head_sha,effective]);
+    const tree=git(this.sourceRepo,["merge-tree","--write-tree",grant.failed_head_sha,supportSha]);
     if(!/^[0-9a-f]{40}$/.test(tree))throw new Error("owner base synchronization tree invalid");
-    const synchronized=deterministicCommitTree(this.sourceRepo,tree,[grant.failed_head_sha,effective],ownerPayloadBaseSyncReceipt(spec.front_id,binding));
-    if(!verifyOwnerPayloadBaseSyncCommit(git(this.sourceRepo,["show","-s","--format=%B",synchronized]),binding,synchronized,parentLine(synchronized).slice(1)))throw new Error("owner base synchronization receipt invalid");
-    validateOwnerPayloadBaseSyncScopes(this.sourceRepo,grant.canonical_base_sha,grant.failed_head_sha,effective,synchronized,spec);
+    const synchronized=deterministicCommitTree(this.sourceRepo,tree,[grant.failed_head_sha,supportSha],ownerPayloadBaseSyncReceipt(spec.front_id,binding,runtimeSupport));
+    if(!verifyOwnerPayloadBaseSyncCommit(git(this.sourceRepo,["show","-s","--format=%B",synchronized]),binding,synchronized,parentLine(synchronized).slice(1),runtimeSupport))throw new Error("owner base synchronization receipt invalid");
+    validateOwnerPayloadBaseSyncScopes(this.sourceRepo,grant.canonical_base_sha,grant.failed_head_sha,supportSha,synchronized,spec);
     assertCapability();this.assertEffect("push",{issue:grant.issue,pr:grant.pr,expected_head:synchronized,observed_head:remote});
     native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"push","origin",`${synchronized}:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
     waitForRemoteBranchHead(this.bus,spec.work_branch,synchronized);
     return {synchronized_head_sha:synchronized};
   }
-  isOwnerPayloadRepairBaseSync(spec:ProxySpec,grant:OwnerAuthorizedPayloadRepairGrant,effective:OwnerRepairEffectiveBaseBinding,remote:string):boolean {
+  isOwnerPayloadRepairBaseSync(spec:ProxySpec,grant:OwnerAuthorizedPayloadRepairGrant,effective:OwnerRepairEffectiveBaseBinding,runtimeSupport:OwnerRepairRuntimeSupportEvent,remote:string):boolean {
     try{
       if(!spec.front_id||!spec.work_branch||grant.front_id!==spec.front_id||grant.work_branch!==spec.work_branch||grant.canonical_base_sha!==spec.expected_base_sha||! /^[0-9a-f]{40}$/.test(remote))return false;
       assertOwnerRepairEffectiveBaseBinding(effective,grant,effective.build_attempt_id);
-      ensureCommit(this.sourceRepo,remote);ensureCommit(this.sourceRepo,effective.effective_base_sha);
-      if(this.readPublishedBranchHead(this.sourceRepo,"codex/own-capital-sustainable-return")!==effective.effective_base_sha||this.readPublishedBranchHead(this.sourceRepo,spec.work_branch)!==remote)return false;
+      if(runtimeSupport.grant_key!==effective.grant_key||runtimeSupport.front_id!==effective.front_id||runtimeSupport.authorization_id!==effective.authorization_id||runtimeSupport.build_attempt_id!==effective.build_attempt_id||runtimeSupport.effective_base_sha!==effective.effective_base_sha||runtimeSupport.effective_base_binding_sha256!==effective.event_sha256||! /^[0-9a-f]{40}$/.test(runtimeSupport.runtime_support_sha)||!exact64(runtimeSupport.event_sha256))return false;
+      ensureCommit(this.sourceRepo,remote);ensureCommit(this.sourceRepo,effective.effective_base_sha);ensureCommit(this.sourceRepo,runtimeSupport.runtime_support_sha);
+      if(this.readPublishedBranchHead(this.sourceRepo,"codex/own-capital-sustainable-return")!==runtimeSupport.runtime_support_sha||this.readPublishedBranchHead(this.sourceRepo,spec.work_branch)!==remote)return false;
       const identity=this.bus.prIdentity(grant.pr);
       const files=(identity.files??[]).map((file:any)=>String(file.path));
-      if(identity.author?.login!==spec.repository.split("/",1)[0]||identity.baseRefName!=="codex/own-capital-sustainable-return"||![grant.canonical_base_sha,effective.effective_base_sha].includes(identity.baseRefOid)||identity.headRefName!==spec.work_branch||identity.headRefOid!==remote||identity.headRepository?.nameWithOwner!==spec.repository||identity.isCrossRepository!==false||identity.isDraft!==true||identity.state!=="OPEN"||files.length===0||!files.every((path:string)=>allowed(path,spec)))return false;
+      if(identity.author?.login!==spec.repository.split("/",1)[0]||identity.baseRefName!=="codex/own-capital-sustainable-return"||![grant.canonical_base_sha,effective.effective_base_sha,runtimeSupport.runtime_support_sha].includes(identity.baseRefOid)||identity.headRefName!==spec.work_branch||identity.headRefOid!==remote||identity.headRepository?.nameWithOwner!==spec.repository||identity.isCrossRepository!==false||identity.isDraft!==true||identity.state!=="OPEN"||files.length===0||!files.every((path:string)=>allowed(path,spec)))return false;
       const parents=git(this.sourceRepo,["rev-list","--parents","-n","1",remote]).split(/\s+/).slice(1);
-      if(!verifyOwnerPayloadBaseSyncCommit(git(this.sourceRepo,["show","-s","--format=%B",remote]),effective,remote,parents))return false;
-      validateOwnerPayloadBaseSyncScopes(this.sourceRepo,grant.canonical_base_sha,grant.failed_head_sha,effective.effective_base_sha,remote,spec);return true;
+      if(!verifyOwnerPayloadBaseSyncCommit(git(this.sourceRepo,["show","-s","--format=%B",remote]),effective,remote,parents,runtimeSupport))return false;
+      validateOwnerPayloadBaseSyncScopes(this.sourceRepo,grant.canonical_base_sha,grant.failed_head_sha,runtimeSupport.runtime_support_sha,remote,spec);return true;
     }catch{return false;}
   }
   /**
@@ -269,12 +272,12 @@ export class GovernedBuilder {
     const effectiveCapability=capability as OwnerPayloadRepairTransportCapability&{effective_base_sha?:string;effective_base_binding_sha256?:string};
     if(resume){
       assertOwnerRepairEffectiveBaseBinding(resume.binding,grant,capability.build_attempt_id,effectiveCapability.effective_base_binding_sha256);
-      if(effectiveCapability.effective_base_sha!==resume.binding.effective_base_sha||! /^[0-9a-f]{40}$/.test(resume.synchronized_head_sha))throw new Error("owner repair effective base resume invalid");
+      if(effectiveCapability.effective_base_sha!==resume.binding.effective_base_sha||effectiveCapability.runtime_support_sha!==resume.runtime_support.runtime_support_sha||effectiveCapability.runtime_support_event_sha256!==resume.runtime_support.event_sha256||resume.runtime_support.grant_key!==grant.grant_key||resume.runtime_support.front_id!==grant.front_id||resume.runtime_support.authorization_id!==grant.authorization_id||resume.runtime_support.build_attempt_id!==capability.build_attempt_id||resume.runtime_support.effective_base_sha!==resume.binding.effective_base_sha||resume.runtime_support.effective_base_binding_sha256!==resume.binding.event_sha256||! /^[0-9a-f]{40}$/.test(resume.synchronized_head_sha))throw new Error("owner repair effective base resume invalid");
     }
-    const effectiveBase=resume?.binding.effective_base_sha??spec.expected_base_sha,startHead=resume?.synchronized_head_sha??grant.failed_head_sha;
+    const effectiveBase=resume?.runtime_support.runtime_support_sha??resume?.binding.effective_base_sha??spec.expected_base_sha,startHead=resume?.synchronized_head_sha??grant.failed_head_sha;
     ensureCommit(this.sourceRepo,spec.expected_base_sha);ensureCommit(this.sourceRepo,grant.failed_head_sha);ensureCommit(this.sourceRepo,effectiveBase);ensureCommit(this.sourceRepo,startHead);
     try{git(this.sourceRepo,["merge-base","--is-ancestor",spec.expected_base_sha,effectiveBase]);git(this.sourceRepo,["merge-base","--is-ancestor",spec.expected_base_sha,grant.failed_head_sha]);if(resume)git(this.sourceRepo,["merge-base","--is-ancestor",effectiveBase,startHead]);}catch{throw new Error("owner repair failed head lineage invalid");}
-    if(resume){const parents=git(this.sourceRepo,["rev-list","--parents","-n","1",startHead]).split(/\s+/).slice(1);if(!verifyOwnerPayloadBaseSyncCommit(git(this.sourceRepo,["show","-s","--format=%B",startHead]),resume.binding,startHead,parents))throw new Error("owner repair synchronized head invalid");}
+    if(resume){const parents=git(this.sourceRepo,["rev-list","--parents","-n","1",startHead]).split(/\s+/).slice(1);if(!verifyOwnerPayloadBaseSyncCommit(git(this.sourceRepo,["show","-s","--format=%B",startHead]),resume.binding,startHead,parents,resume.runtime_support))throw new Error("owner repair synchronized head invalid");}
     mkdirSync(this.worktreeRoot,{recursive:true});const root=realpathSync(this.worktreeRoot);
     if(lstatSync(root).isSymbolicLink())throw new Error("owner repair worktree root symlink denied");
     const worktree=resolve(root,`${spec.front_id}-owner-${capability.build_attempt_id.slice(0,12)}${resume?`-base-${startHead.slice(0,12)}`:""}`);
@@ -286,7 +289,7 @@ export class GovernedBuilder {
     const localHead=git(worktree,["rev-parse","HEAD"]),localStatus=git(worktree,["status","--porcelain","--untracked-files=all"]);
     if(realpathSync(worktree).toLowerCase()!==worktree.toLowerCase()||git(worktree,["branch","--show-current"])!==""||localStatus)throw new Error("owner repair worktree state invalid");
     const recoveredReceipt=localHead===startHead?undefined:parseOwnerPayloadRepairCommitReceipt(git(worktree,["show","-s","--format=%B",localHead]),spec.front_id!);
-    if(localHead!==startHead&&(!recoveredReceipt||recoveredReceipt.provenance.authorization_id!==grant.authorization_id||recoveredReceipt.provenance.grant_key!==grant.grant_key||recoveredReceipt.provenance.build_attempt_id!==capability.build_attempt_id||!resume||!exact64(resume.consumed_event_sha256??"")||recoveredReceipt.provenance.consumed_event_sha256!==resume.consumed_event_sha256||JSON.stringify(recoveredReceipt.effective_base)!==JSON.stringify({frozen_base_sha:resume.binding.frozen_base_sha,effective_base_sha:resume.binding.effective_base_sha,binding_event_sha256:resume.binding.event_sha256,synchronized_head_sha:startHead})))throw new Error("owner repair worktree state invalid");
+    if(localHead!==startHead&&(!recoveredReceipt||recoveredReceipt.provenance.authorization_id!==grant.authorization_id||recoveredReceipt.provenance.grant_key!==grant.grant_key||recoveredReceipt.provenance.build_attempt_id!==capability.build_attempt_id||!resume||!exact64(resume.consumed_event_sha256??"")||recoveredReceipt.provenance.consumed_event_sha256!==resume.consumed_event_sha256||JSON.stringify(recoveredReceipt.effective_base)!==JSON.stringify({frozen_base_sha:resume.binding.frozen_base_sha,effective_base_sha:resume.binding.effective_base_sha,binding_event_sha256:resume.binding.event_sha256,synchronized_head_sha:startHead,runtime_support_sha:resume.runtime_support.runtime_support_sha,runtime_support_event_sha256:resume.runtime_support.event_sha256})))throw new Error("owner repair worktree state invalid");
     const assert = (effect:"builder_execute"|"commit_create"|"push"|"issue_modify") => {assertCapability();this.assertEffect(effect,{issue:grant.issue,pr:grant.pr});};
     return {
       prepare:()=>({worktree,starting_head:startHead}),

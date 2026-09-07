@@ -10,6 +10,7 @@ import {reconcileUntilStable} from "../../../scripts/operator_proxy/autonomous_r
 import {LifecycleStore} from "../../../scripts/operator_proxy/lifecycle_store.js";
 import {issueBody} from "../../../scripts/operator_proxy/spec_contract.js";
 import {OwnerRepairEffectiveBaseLedger} from "../../../scripts/operator_proxy/owner_repair_effective_base.js";
+import {OwnerRepairRuntimeSupportLedger} from "../../../scripts/operator_proxy/owner_repair_runtime_support.js";
 import {OwnerRepairReceiptLedger} from "../../../scripts/operator_proxy/owner_repair_receipt_ledger.js";
 import {ProductionEffects} from "../../../scripts/operator_proxy/production_effects.js";
 import type {LifecycleRecord,OwnerAuthorizedPayloadRepairGrant,ProxySpec} from "../../../scripts/operator_proxy/types.js";
@@ -44,7 +45,7 @@ function immutableFiles(revision="E"){
   return {roadmap,manifest};
 }
 
-function ownerReceipt(buildAttempt:string,consumedEvent:string,bindingEvent:string){
+function ownerReceipt(buildAttempt:string,consumedEvent:string,bindingEvent:string,runtimeSupportSha:string,runtimeSupportEvent:string){
   return [
     `fix(control-plane): owner payload repair ${frozenSpec.front_id}`,"",
     `OWNER_AUTHORIZATION_ID=${authorizationId}`,
@@ -55,6 +56,8 @@ function ownerReceipt(buildAttempt:string,consumedEvent:string,bindingEvent:stri
     `OWNER_EFFECTIVE_BASE_SHA=${effective}`,
     `OWNER_EFFECTIVE_BASE_BINDING_SHA256=${bindingEvent}`,
     `OWNER_SYNCHRONIZED_HEAD_SHA=${synchronized}`,
+    `OWNER_RUNTIME_SUPPORT_SHA=${runtimeSupportSha}`,
+    `OWNER_RUNTIME_SUPPORT_EVENT_SHA256=${runtimeSupportEvent}`,
     "BUILDER_BACKEND=opencode_ollama",
     "BUILDER_MODEL=ollama-cloud/kimi-k2.7-code",
     "PROVIDER_SESSION=owner-provider-session",
@@ -93,17 +96,18 @@ function fixture(options:{closeoutOnly?:boolean;historicalHashes?:boolean}={}):F
     grant_key:grant.grant_key,front_id:grant.front_id,authorization_id:grant.authorization_id,build_attempt_id:dispatched.build_attempt_id!,frozen_base_sha:frozen,effective_base_sha:effective,
     failed_head_sha:failed,build_dispatched_event_sha256:dispatched.event_sha256,canonical_branch:canonicalBranch,installed_runtime_sha:effective,predecessor_event_sha256:dispatched.event_sha256,
   },{receipts,currentTip:effective,installedRuntimeSha:effective,doctorPassed:true,isAncestor});
+  const runtimeSupport=new OwnerRepairRuntimeSupportLedger(join(root,"owner-repair-receipts")).bind(binding,{currentTip:effective,installedRuntimeSha:effective,isAncestor});
   receipts.bindHead(grant.grant_key,candidate);
   const bus:any={
     setMutationGuard:()=>{},branchHead:()=>tip,isAncestor,issueSnapshot:()=>({state:"OPEN",labels:["operator:building"],body}),
-    commitMessage:(head:string)=>{assert.equal(head,candidate);return ownerReceipt(dispatched.build_attempt_id!,consumed.event_sha256,binding.event_sha256);},
+    commitMessage:(head:string)=>{assert.equal(head,candidate);return ownerReceipt(dispatched.build_attempt_id!,consumed.event_sha256,binding.event_sha256,runtimeSupport.runtime_support_sha,runtimeSupport.event_sha256);},
     fileAt:(path:string,ref:string)=>{const files=ref===frozen?frozenFiles:ref===effective?effectiveFiles:ref===advanced?advancedFiles:undefined;assert.ok(files,`unexpected immutable ref ${ref}`);return path.endsWith("BRAIN_101_ROADMAP.md")?files.roadmap:files.manifest;},
     createGovernedIssue:()=>{mutations.push("createGovernedIssue");throw new Error("unexpected mutation");},replaceIssueBodyExact:()=>{mutations.push("replaceIssueBodyExact");throw new Error("unexpected mutation");},reconcileLabel:()=>{mutations.push("reconcileLabel");throw new Error("unexpected mutation");},commentOnce:()=>{mutations.push("commentOnce");throw new Error("unexpected mutation");},
   };
   const effects=new ProductionEffects(bus,{} as any,root,root,new ExternalEffectBoundary(root,bus,()=>true));
   const state:LifecycleRecord={
     schema_version:1,front_id:grant.front_id,roadmap_item_id:grant.roadmap_item_id,state:"CI_PENDING",issue:grant.issue,pr:grant.pr,base_sha:effective,head_sha:candidate,builder_session:"owner-owner-provider-session",repair_cycles:2,deployment_mode:"NO_DEPLOY",completed_effects:[`issue:${grant.issue}`,`build:${candidate}`],
-    owner_payload_repair:{grant_key:grant.grant_key,consumed_event_sha256:consumed.event_sha256,build_attempt_id:dispatched.build_attempt_id!,frozen_base_sha:frozen,failed_head_sha:failed,effective_base_sha:effective,effective_base_binding_sha256:binding.event_sha256,synchronized_head_sha:synchronized},updated_utc:new Date().toISOString(),
+    owner_payload_repair:{grant_key:grant.grant_key,consumed_event_sha256:consumed.event_sha256,build_attempt_id:dispatched.build_attempt_id!,frozen_base_sha:frozen,failed_head_sha:failed,effective_base_sha:effective,effective_base_binding_sha256:binding.event_sha256,runtime_support_sha:runtimeSupport.runtime_support_sha,runtime_support_event_sha256:runtimeSupport.event_sha256,synchronized_head_sha:synchronized},updated_utc:new Date().toISOString(),
   };
   return {root,effects,spec,state,setTip:next=>{tip=next;},setIssueBody:next=>{body=next;},removeAncestry:(older,next)=>{ancestry.delete(`${older}:${next}`);},mutations};
 }
@@ -125,7 +129,7 @@ test("forged adoption state without a matching receipt chain is denied",()=>{
 });
 
 test("every persisted owner adoption anchor is required",()=>{
-  const changes:Record<string,string>={grant_key:sha64("9"),consumed_event_sha256:sha64("8"),build_attempt_id:sha64("7"),frozen_base_sha:sha40("6"),failed_head_sha:sha40("5"),effective_base_sha:sha40("4"),effective_base_binding_sha256:sha64("3"),synchronized_head_sha:sha40("2")};
+  const changes:Record<string,string>={grant_key:sha64("9"),consumed_event_sha256:sha64("8"),build_attempt_id:sha64("7"),frozen_base_sha:sha40("6"),failed_head_sha:sha40("5"),effective_base_sha:sha40("4"),effective_base_binding_sha256:sha64("3"),runtime_support_sha:sha40("2"),runtime_support_event_sha256:sha64("1"),synchronized_head_sha:sha40("0")};
   for(const [key,replacement] of Object.entries(changes)){
     const value=fixture(),state=structuredClone(value.state);
     (state.owner_payload_repair as any)[key]=replacement;

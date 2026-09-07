@@ -67,10 +67,12 @@ function dispatchFromCurrent(view:OwnerGrantReceiptEvent,input:BindingInput):str
   fail("receipt is not dispatched");
 }
 
-function validateEvidence(input:BindingInput,evidence:OwnerRepairEffectiveBaseEvidence,allowHeadBoundReplay:boolean):void {
+function validateEvidence(input:BindingInput,evidence:OwnerRepairEffectiveBaseEvidence,allowHeadBoundReplay:boolean,allowRuntimeSupportReplay=false):void {
   if(!SHA64.test(input.grant_key)||!input.front_id||!input.authorization_id||!SHA64.test(input.build_attempt_id)||!SHA40.test(input.frozen_base_sha)||!SHA40.test(input.effective_base_sha)||!SHA40.test(input.failed_head_sha)||!SHA64.test(input.build_dispatched_event_sha256)||input.canonical_branch!==OWNER_REPAIR_EFFECTIVE_BASE_CANONICAL_BRANCH||!SHA40.test(input.installed_runtime_sha)||input.predecessor_event_sha256!==input.build_dispatched_event_sha256)fail("input invalid");
-  if(evidence.currentTip!==input.effective_base_sha)fail("canonical tip mismatch");
-  if(evidence.installedRuntimeSha!==input.effective_base_sha||input.installed_runtime_sha!==input.effective_base_sha)fail("runtime mismatch");
+  if(!allowRuntimeSupportReplay){
+    if(evidence.currentTip!==input.effective_base_sha)fail("canonical tip mismatch");
+    if(evidence.installedRuntimeSha!==input.effective_base_sha||input.installed_runtime_sha!==input.effective_base_sha)fail("runtime mismatch");
+  }else if(!SHA40.test(evidence.currentTip)||!SHA40.test(evidence.installedRuntimeSha))fail("runtime evidence invalid");
   if(evidence.doctorPassed!==true)fail("doctor failed");
   let descendant=false;try{descendant=evidence.isAncestor(input.frozen_base_sha,input.effective_base_sha);}catch{fail("ancestry unavailable");}
   if(!descendant)fail("effective base ancestry invalid");
@@ -107,6 +109,8 @@ export class OwnerRepairEffectiveBaseLedger {
     try{
       const bindings=this.all(),existing=bindings.find(binding=>binding.grant_key===input.grant_key),sameFront=bindings.find(binding=>binding.front_id===input.front_id);
       if(sameFront&&!existing)fail("conflict");
+      // Runtime support is recorded in its own append-only ledger. An existing
+      // effective-base binding must still reject a moved canonical tip.
       validateEvidence(input,evidence,existing!==undefined);
       if(existing){if(!sameBinding(existing,input))fail("conflict");return existing;}
       const binding:OwnerRepairEffectiveBaseBinding={schema_version:1,...input,event_sha256:"",created_at:new Date().toISOString()};

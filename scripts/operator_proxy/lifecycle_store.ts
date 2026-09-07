@@ -7,6 +7,7 @@ import {redactSensitiveData,safeJson} from "./redaction.js";
 import {OwnerRepairReceiptLedger,type OwnerGrantReceiptEvent} from "./owner_repair_receipt_ledger.js";
 import {OwnerCriticalMergeReceiptLedger,type OwnerCriticalMergeReceiptEvent} from "./owner_critical_merge_receipt_ledger.js";
 import {OwnerRepairEffectiveBaseLedger,type OwnerRepairEffectiveBaseBinding} from "./owner_repair_effective_base.js";
+import {OwnerRepairRuntimeSupportLedger,type OwnerRepairRuntimeSupportEvent} from "./owner_repair_runtime_support.js";
 
 const safeFront = (front: string) => {
   if (!/^[A-Z0-9][A-Z0-9._-]{5,127}$/.test(front)) throw new Error("front id invalid");
@@ -23,7 +24,9 @@ function validExpandableBlockedCiEffectChain(record:LifecycleRecord){
 }
 function hasEffectiveOwnerPayloadRepair(record:LifecycleRecord){
   const binding=record.owner_payload_repair;
-  return !!binding&&/^[0-9a-f]{40}$/.test(binding.frozen_base_sha??"")&&/^[0-9a-f]{40}$/.test(binding.failed_head_sha??"")&&/^[0-9a-f]{40}$/.test(binding.effective_base_sha??"")&&/^[0-9a-f]{64}$/.test(binding.effective_base_binding_sha256??"")&&/^[0-9a-f]{40}$/.test(binding.synchronized_head_sha??"");
+  const core=!!binding&&/^[0-9a-f]{40}$/.test(binding.frozen_base_sha??"")&&/^[0-9a-f]{40}$/.test(binding.failed_head_sha??"")&&/^[0-9a-f]{40}$/.test(binding.effective_base_sha??"")&&/^[0-9a-f]{64}$/.test(binding.effective_base_binding_sha256??"")&&/^[0-9a-f]{40}$/.test(binding.synchronized_head_sha??"");
+  const supportPresent=binding?.runtime_support_sha!==undefined||binding?.runtime_support_event_sha256!==undefined;
+  return core&&(!supportPresent||/^[0-9a-f]{40}$/.test(binding?.runtime_support_sha??"")&&/^[0-9a-f]{64}$/.test(binding?.runtime_support_event_sha256??""));
 }
 export function validPrivilegedInstallEffectChain(record:LifecycleRecord){
   const effects=record.completed_effects;
@@ -79,23 +82,25 @@ export class LifecycleStore {
     const updated={...record,state:transitionLifecycle(record.state,"BUILDING"),last_error:undefined,updated_utc:new Date().toISOString()};
     this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_owner_payload_repair_build_started",front_id:record.front_id,grant_key:binding.grant_key,consumed_event_sha256:binding.consumed_event_sha256,build_attempt_id:binding.build_attempt_id,repair_cycles:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);return updated;
   }
-  adoptOwnerPayloadRepairCandidate(record:LifecycleRecord,candidate:{pr:number;head_sha:string;builder_session:string;grant_key:string;build_attempt_id:string;consumed_event_sha256:string;effective_base_binding?:OwnerRepairEffectiveBaseBinding;synchronized_head_sha?:string},ledgers?:{effectiveBases:OwnerRepairEffectiveBaseLedger;receipts:OwnerRepairReceiptLedger}):LifecycleRecord {
+  adoptOwnerPayloadRepairCandidate(record:LifecycleRecord,candidate:{pr:number;head_sha:string;builder_session:string;grant_key:string;build_attempt_id:string;consumed_event_sha256:string;effective_base_binding?:OwnerRepairEffectiveBaseBinding;runtime_support?:OwnerRepairRuntimeSupportEvent;synchronized_head_sha?:string},ledgers?:{effectiveBases:OwnerRepairEffectiveBaseLedger;runtimeSupports?:OwnerRepairRuntimeSupportLedger;receipts:OwnerRepairReceiptLedger}):LifecycleRecord {
     const binding=record.owner_payload_repair,exact=record.state==="BUILDING"&&record.last_error===undefined&&record.repair_cycles===2&&!!binding&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&candidate.pr===record.pr&&/^[0-9a-f]{40}$/.test(candidate.head_sha)&&candidate.head_sha!==record.head_sha&&!!candidate.builder_session&&binding.grant_key===candidate.grant_key&&binding.build_attempt_id===candidate.build_attempt_id&&binding.consumed_event_sha256===candidate.consumed_event_sha256;
     if(!exact)throw new Error("owner payload repair candidate adoption denied");
     const hasEffectiveBase=candidate.effective_base_binding!==undefined||candidate.synchronized_head_sha!==undefined||ledgers!==undefined;
-    let effectiveBase:OwnerRepairEffectiveBaseBinding|undefined;
+    let effectiveBase:OwnerRepairEffectiveBaseBinding|undefined,runtimeSupport:OwnerRepairRuntimeSupportEvent|undefined;
     if(hasEffectiveBase){
       if(!candidate.effective_base_binding||!candidate.synchronized_head_sha||!ledgers||!/^[0-9a-f]{40}$/.test(candidate.synchronized_head_sha))throw new Error("owner payload repair candidate adoption denied");
       try{
-        const loaded=ledgers.effectiveBases.load(candidate.grant_key),headBound=ledgers.receipts.deriveReceiptView(candidate.grant_key);
+        const loaded=ledgers.effectiveBases.load(candidate.grant_key),headBound=ledgers.receipts.deriveReceiptView(candidate.grant_key),support=ledgers.runtimeSupports?.load(candidate.grant_key);
         const supplied=candidate.effective_base_binding as unknown as Record<string,unknown>,same=!!loaded&&Object.entries(loaded).every(([key,value])=>supplied[key]===value)&&Object.keys(supplied).length===Object.keys(loaded??{}).length;
-        if(!same||headBound.phase!=="HEAD_BOUND"||headBound.new_head_sha!==candidate.head_sha||headBound.predecessor_event_sha256!==loaded!.build_dispatched_event_sha256||headBound.build_attempt_id!==binding.build_attempt_id||loaded!.front_id!==record.front_id||loaded!.build_attempt_id!==binding.build_attempt_id||loaded!.frozen_base_sha!==record.base_sha||loaded!.failed_head_sha!==record.head_sha||loaded!.grant_key!==binding.grant_key)throw new Error("binding mismatch");
-        effectiveBase=loaded!;
+        const suppliedSupport=candidate.runtime_support as unknown as Record<string,unknown>|undefined,sameSupport=!!support&&!!suppliedSupport&&Object.entries(support).every(([key,value])=>suppliedSupport[key]===value)&&Object.keys(suppliedSupport).length===Object.keys(support).length;
+        if(!same||headBound.phase!=="HEAD_BOUND"||headBound.new_head_sha!==candidate.head_sha||headBound.predecessor_event_sha256!==loaded!.build_dispatched_event_sha256||headBound.build_attempt_id!==binding.build_attempt_id||loaded!.front_id!==record.front_id||loaded!.build_attempt_id!==binding.build_attempt_id||loaded!.frozen_base_sha!==record.base_sha||loaded!.failed_head_sha!==record.head_sha||loaded!.grant_key!==binding.grant_key||ledgers.runtimeSupports!==undefined&&(!sameSupport||support!.grant_key!==binding.grant_key||support!.effective_base_sha!==loaded!.effective_base_sha||support!.effective_base_binding_sha256!==loaded!.event_sha256))throw new Error("binding mismatch");
+        effectiveBase=loaded!;runtimeSupport=support;
       }catch{throw new Error("owner payload repair candidate adoption denied");}
     }
-    const ownerPayloadRepair=effectiveBase?{...binding,frozen_base_sha:effectiveBase.frozen_base_sha,failed_head_sha:effectiveBase.failed_head_sha,effective_base_sha:effectiveBase.effective_base_sha,effective_base_binding_sha256:effectiveBase.event_sha256,synchronized_head_sha:candidate.synchronized_head_sha!}:binding;
-    const updated={...record,state:transitionLifecycle(record.state,"PR_CREATED"),base_sha:effectiveBase?.effective_base_sha??record.base_sha,head_sha:candidate.head_sha,builder_session:candidate.builder_session,builder_receipt_head_sha:undefined,builder_receipt_base_sha:undefined,reviewer_session:undefined,decision_id:undefined,last_error:undefined,last_error_detail:undefined,builder_retry_reason:undefined,owner_payload_repair:ownerPayloadRepair,completed_effects:[`issue:${record.issue}`,`build:${candidate.head_sha}`],updated_utc:new Date().toISOString()};
-    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_owner_payload_repair_candidate_adopted",front_id:record.front_id,issue:record.issue,pr:record.pr,old_head_sha:record.head_sha,new_head_sha:candidate.head_sha,grant_key:binding.grant_key,build_attempt_id:binding.build_attempt_id,effective_base_sha:effectiveBase?.effective_base_sha,repair_cycles:updated.repair_cycles,updated_utc:updated.updated_utc})}\n`);return this.advance(updated,"CI_PENDING");
+    const ownerPayloadRepair=effectiveBase?{...binding,frozen_base_sha:effectiveBase.frozen_base_sha,failed_head_sha:effectiveBase.failed_head_sha,effective_base_sha:effectiveBase.effective_base_sha,effective_base_binding_sha256:effectiveBase.event_sha256,synchronized_head_sha:candidate.synchronized_head_sha!,...(runtimeSupport?{runtime_support_sha:runtimeSupport.runtime_support_sha,runtime_support_event_sha256:runtimeSupport.event_sha256}:{})}:binding;
+    const executionBase=runtimeSupport?.runtime_support_sha??effectiveBase?.effective_base_sha??record.base_sha;
+    const updated={...record,state:transitionLifecycle(record.state,"PR_CREATED"),base_sha:executionBase,head_sha:candidate.head_sha,builder_session:candidate.builder_session,builder_receipt_head_sha:undefined,builder_receipt_base_sha:undefined,reviewer_session:undefined,decision_id:undefined,last_error:undefined,last_error_detail:undefined,builder_retry_reason:undefined,owner_payload_repair:ownerPayloadRepair,completed_effects:[`issue:${record.issue}`,`build:${candidate.head_sha}`],updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_owner_payload_repair_candidate_adopted",front_id:record.front_id,issue:record.issue,pr:record.pr,old_head_sha:record.head_sha,new_head_sha:candidate.head_sha,grant_key:binding.grant_key,build_attempt_id:binding.build_attempt_id,effective_base_sha:effectiveBase?.effective_base_sha,runtime_support_sha:runtimeSupport?.runtime_support_sha,repair_cycles:updated.repair_cycles,updated_utc:updated.updated_utc})}\n`);return this.advance(updated,"CI_PENDING");
   }
   effect(record: LifecycleRecord, key: string): LifecycleRecord {
     if(!/^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/.test(key)) throw new Error("effect key invalid");

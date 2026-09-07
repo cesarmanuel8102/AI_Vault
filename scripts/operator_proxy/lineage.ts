@@ -1,6 +1,7 @@
 import type {LifecycleRecord, ProxySpec, NormalizedDecision, OwnerAuthorizedPayloadRepairGrant} from "./types.js";
 import {LEGACY_NEUTRALIZATION_TRAILER,LEGACY_REBUILD_TRAILER,PRIOR_UNATTESTED_HEAD_TRAILER,RESET_BASE_TRAILER,NEUTRALIZATION_HEAD_TRAILER,FRESH_BUILDER_HEAD_TRAILER} from "./builder_attempt_provenance.js";
 import type {OwnerRepairEffectiveBaseBinding} from "./owner_repair_effective_base.js";
+import type {OwnerRepairRuntimeSupportEvent} from "./owner_repair_runtime_support.js";
 import type {OwnerPayloadBaseSyncProvenance} from "./owner_payload_base_sync.js";
 
 // ---------------------------------------------------------------------------
@@ -353,6 +354,7 @@ export interface OwnerPayloadRepairAdoptionContext {
   provenance: {authorization_id:string;grant_key:string;build_attempt_id:string;consumed_event_sha256:string};
   /** Loaded durable binding; never a parser-provided reconstruction. */
   effective_base_binding?: OwnerRepairEffectiveBaseBinding;
+  runtime_support?: OwnerRepairRuntimeSupportEvent;
   /** Parsed from the synchronized candidate commit, separate from builder provenance. */
   effective_base_provenance?: OwnerPayloadBaseSyncProvenance;
   build_attempt_id: string;
@@ -362,18 +364,22 @@ export interface OwnerPayloadRepairAdoptionContext {
 
 /** Validates only the exact, owner-bound exceptional candidate adoption. */
 export function verifyOwnerPayloadRepairAdoption(context: OwnerPayloadRepairAdoptionContext): boolean {
-  const {spec,grant,pr,provenance,new_head_sha,effective_base_binding:binding,effective_base_provenance:baseSync}=context, identity=pr.identity;
+  const {spec,grant,pr,provenance,new_head_sha,effective_base_binding:binding,effective_base_provenance:baseSync,runtime_support:runtimeSupport}=context, identity=pr.identity;
   if(!SHA40.test(new_head_sha)||grant.repository!==spec.repository||grant.authorization_id!==spec.authorization_id||grant.roadmap_id!==spec.roadmap_id||grant.roadmap_item_id!==spec.roadmap_item_id||grant.front_id!==spec.front_id||grant.work_branch!==spec.work_branch||grant.canonical_base_sha!==spec.expected_base_sha||grant.max_extra_builds!==1)return false;
   if((binding===undefined)!==(baseSync===undefined))return false;
-  const prBase=binding?.effective_base_sha??grant.canonical_base_sha;
+  const supportPresent=baseSync?.runtime_support_sha!==undefined||baseSync?.runtime_support_event_sha256!==undefined;
+  if(supportPresent!==!!runtimeSupport)return false;
+  const prBase=baseSync?.runtime_support_sha??binding?.effective_base_sha??grant.canonical_base_sha;
   if(context.remote_branch_head!==new_head_sha||pr.head!==new_head_sha||identity.headRefOid!==new_head_sha||identity.baseRefOid!==prBase||identity.baseRefName!=="codex/own-capital-sustainable-return"||identity.headRefName!==grant.work_branch||identity.headRepository?.nameWithOwner!==grant.repository||identity.author?.login!==grant.owner_principal||identity.isCrossRepository!==false||identity.isDraft!==true||identity.state!=="OPEN")return false;
   if(!context.isAncestor(grant.failed_head_sha,new_head_sha)||!context.isAncestor(grant.canonical_base_sha,new_head_sha))return false;
   const files=(identity.files??[]).map(file=>String(file.path));
   if(!files.length||!files.every(path=>pathAllowed(path,spec)))return false;
   const original=provenance.authorization_id===grant.authorization_id&&provenance.grant_key===grant.grant_key&&provenance.build_attempt_id===context.build_attempt_id&&provenance.consumed_event_sha256===context.consumed_event_sha256&&/^[0-9a-f]{64}$/.test(context.build_attempt_id)&&/^[0-9a-f]{64}$/.test(context.consumed_event_sha256);
   if(!original||!binding||!baseSync)return original;
+  const supportBound=!runtimeSupport||baseSync.runtime_support_sha===runtimeSupport.runtime_support_sha&&baseSync.runtime_support_event_sha256===runtimeSupport.event_sha256&&runtimeSupport.grant_key===grant.grant_key&&runtimeSupport.front_id===grant.front_id&&runtimeSupport.authorization_id===grant.authorization_id&&runtimeSupport.build_attempt_id===context.build_attempt_id&&runtimeSupport.effective_base_sha===binding.effective_base_sha&&runtimeSupport.effective_base_binding_sha256===binding.event_sha256&&/^[0-9a-f]{40}$/.test(runtimeSupport.runtime_support_sha)&&/^[0-9a-f]{64}$/.test(runtimeSupport.event_sha256);
   const bound=binding.schema_version===1&&binding.grant_key===grant.grant_key&&binding.front_id===grant.front_id&&binding.authorization_id===grant.authorization_id&&binding.build_attempt_id===context.build_attempt_id&&binding.frozen_base_sha===grant.canonical_base_sha&&binding.failed_head_sha===grant.failed_head_sha&&binding.effective_base_sha===baseSync.effective_base_sha&&binding.installed_runtime_sha===binding.effective_base_sha&&binding.predecessor_event_sha256===binding.build_dispatched_event_sha256&&binding.canonical_branch==="codex/own-capital-sustainable-return"&&/^[0-9a-f]{40}$/.test(binding.effective_base_sha)&&/^[0-9a-f]{64}$/.test(binding.event_sha256)&&/^[0-9a-f]{64}$/.test(binding.build_dispatched_event_sha256)&&baseSync.frozen_base_sha===grant.canonical_base_sha&&baseSync.binding_event_sha256===binding.event_sha256&&SHA40.test(baseSync.synchronized_head_sha)&&baseSync.synchronized_head_sha!==new_head_sha;
-  return bound&&context.isAncestor(grant.canonical_base_sha,binding.effective_base_sha)&&context.isAncestor(grant.failed_head_sha,baseSync.synchronized_head_sha)&&context.isAncestor(binding.effective_base_sha,baseSync.synchronized_head_sha)&&context.isAncestor(baseSync.synchronized_head_sha,new_head_sha);
+  const executionBase=runtimeSupport?.runtime_support_sha??binding.effective_base_sha;
+  return bound&&supportBound&&context.isAncestor(grant.canonical_base_sha,binding.effective_base_sha)&&context.isAncestor(binding.effective_base_sha,executionBase)&&context.isAncestor(grant.failed_head_sha,baseSync.synchronized_head_sha)&&context.isAncestor(executionBase,baseSync.synchronized_head_sha)&&context.isAncestor(baseSync.synchronized_head_sha,new_head_sha);
 }
 export function deriveCandidateLineage(snapshot: CanonicalLifecycleSnapshot, decision: NormalizedDecision): CandidateLineage | undefined {
   // A compacted record can still decode its current `build` entry, but that
