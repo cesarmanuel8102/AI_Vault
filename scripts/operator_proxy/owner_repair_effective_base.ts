@@ -109,7 +109,9 @@ export class OwnerRepairEffectiveBaseLedger {
     try{
       const bindings=this.all(),existing=bindings.find(binding=>binding.grant_key===input.grant_key),sameFront=bindings.find(binding=>binding.front_id===input.front_id);
       if(sameFront&&!existing)fail("conflict");
-      validateEvidence(input,evidence,existing!==undefined,existing!==undefined);
+      // Runtime support is recorded in its own append-only ledger. An existing
+      // effective-base binding must still reject a moved canonical tip.
+      validateEvidence(input,evidence,existing!==undefined);
       if(existing){if(!sameBinding(existing,input))fail("conflict");return existing;}
       const binding:OwnerRepairEffectiveBaseBinding={schema_version:1,...input,event_sha256:"",created_at:new Date().toISOString()};
       binding.event_sha256=hash(withoutHash(binding));validateBinding(binding);
