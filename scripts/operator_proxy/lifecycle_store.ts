@@ -1,4 +1,4 @@
-import {appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync} from "node:fs";
+import {appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync} from "node:fs";
 import {join} from "node:path";
 import type {LifecycleRecord, LifecycleState, OwnerAuthorizedCriticalMerge} from "./types.js";
 import {CONTROL_PLANE_VERSION} from "./lineage.js";
@@ -48,6 +48,29 @@ export class LifecycleStore {
     const receiptAnchors=[record.builder_receipt_head_sha,record.builder_receipt_base_sha];
     if(record.schema_version!==1||record.front_id!==front||!Array.isArray(record.completed_effects)||receiptAnchors.some(value=>value!==undefined)&&!receiptAnchors.every(value=>typeof value==="string"&&/^[0-9a-f]{40}$/.test(value))) throw new Error("lifecycle state invalid");
     return record;
+  }
+  records(): LifecycleRecord[] {
+    return readdirSync(this.root,{withFileTypes:true}).filter(entry=>entry.isFile()&&entry.name.endsWith(".json")).map(entry=>{
+      const front=entry.name.slice(0,-".json".length);
+      return this.load(front)!;
+    });
+  }
+  recordsForRoadmapItem(roadmapItemId:string): LifecycleRecord[] {
+    if(!/^R\d+(?:\.\d+)?$/.test(roadmapItemId))throw new Error("roadmap item id invalid");
+    return readdirSync(this.root,{withFileTypes:true}).filter(entry=>entry.isFile()&&entry.name.endsWith(".json")).flatMap(entry=>{
+      let envelope:unknown;try{envelope=JSON.parse(readFileSync(join(this.root,entry.name),"utf8"));}catch{throw new Error("lifecycle state invalid");}
+      if(!envelope||typeof envelope!=="object"||(envelope as {roadmap_item_id?:unknown}).roadmap_item_id!==roadmapItemId)return [];
+      const front=(envelope as {front_id?:unknown}).front_id;
+      if(typeof front!=="string"||entry.name!==`${front}.json`)throw new Error("lifecycle state invalid");
+      return [this.load(front)!];
+    });
+  }
+  recordExecutableChildPrecedence(parent:LifecycleRecord,child:LifecycleRecord) {
+    const exact=parent.front_id!==child.front_id&&parent.roadmap_item_id===child.roadmap_item_id&&parent.state!=="TERMINAL_COMPLETED"&&child.state!=="TERMINAL_COMPLETED";
+    if(!exact)throw new Error("executable child precedence denied");
+    const eventPath=join(this.root,"events.jsonl"),events=existsSync(eventPath)?readFileSync(eventPath,"utf8").split("\n").filter(Boolean).map(line=>{try{return JSON.parse(line);}catch{throw new Error("lifecycle event ledger invalid");}}):[];
+    if(events.some(event=>event.event==="lifecycle_executable_child_precedence"&&event.parent_front_id===parent.front_id&&event.child_front_id===child.front_id&&event.roadmap_item_id===parent.roadmap_item_id))return;
+    appendFileSync(eventPath,`${safeJson({event:"lifecycle_executable_child_precedence",parent_front_id:parent.front_id,child_front_id:child.front_id,roadmap_item_id:parent.roadmap_item_id,parent_state:parent.state,child_state:child.state,updated_utc:new Date().toISOString()})}\n`);
   }
   save(record: LifecycleRecord) {
     record=redactSensitiveData(record);

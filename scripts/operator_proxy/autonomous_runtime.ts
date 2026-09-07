@@ -1,7 +1,7 @@
 import {join} from "node:path";
 import {createHash} from "node:crypto";
 import {GitHubBus} from "./github_bus.js";
-import {sequenceRoadmap} from "./roadmap_sequencer.js";
+import {resolveExecutableFront,sequenceRoadmap,type ExecutableFrontBus,type SequencedItem} from "./roadmap_sequencer.js";
 import {LifecycleStore} from "./lifecycle_store.js";
 import {AutonomousFlow} from "./autonomous_flow.js";
 import {ProductionEffects} from "./production_effects.js";
@@ -30,6 +30,11 @@ export function resumePrivilegedInstall(bus:GitHubBus,boundary:ExternalEffectBou
     const artifactSha256=createHash("sha256").update(Buffer.from(bus.fileAt(path,state.head_sha!),"utf8")).digest("hex");
     return coordinator.install(spec,state.head_sha!,artifactSha256)==="PASS"?flow.resumePrivilegedInstall(state):state;
   }finally{boundary.endPrivilegedInstallResume();}
+}
+
+/** Keeps runtime entrypoints from bypassing the sequencer's child-precedence contract. */
+export function resolveRuntimeExecutableFront(bus:ExecutableFrontBus,store:LifecycleStore,sequenced:SequencedItem,targetFrontId?:string){
+  return resolveExecutableFront(bus,store,sequenced.spec,targetFrontId);
 }
 
 // The single reconciliation entry point. The pre-consolidation architecture
@@ -115,11 +120,13 @@ export function reconcileUntilStable(effects:any,store:LifecycleStore,spec:Proxy
   throw new Error("reconciliation budget exhausted");
 }
 
-export async function runAutonomousRoadmapTick(bus:GitHubBus,root:string,reviewerRepo:string,boundary:ExternalEffectBoundary){
+export async function runAutonomousRoadmapTick(bus:GitHubBus,root:string,reviewerRepo:string,boundary:ExternalEffectBoundary,targetFrontId?:string){
   const sequenced=sequenceRoadmap(bus);const store=new LifecycleStore(join(root,"lifecycle"));const ledgerRoot=join(root,"decisions");const coordinator=new RequestCoordinator(join(root,"coordination"),boundary.assert.bind(boundary));
-  const effects=new ProductionEffects(bus,new Ledger(ledgerRoot),reviewerRepo,root,boundary,coordinator);const flow=new AutonomousFlow(store,effects);let persisted=store.load(sequenced.spec.front_id!);
-  if(persisted)persisted=reconcilePersistedRoadmapState(bus,effects,store,sequenced.spec,persisted);
-  if(persisted?.state==="ESCALATED"&&persisted.last_error==="LOCAL_PRIVILEGE_REQUIRED")persisted=resumePrivilegedInstall(bus,boundary,coordinator,flow,sequenced.spec,persisted);
-  let state=await flow.step(sequenced.spec);for(let i=0;i<24;i++){if(["CI_PENDING","BUILDING","RUNTIME_PILOT_RUNNING","CLOSEOUT_PENDING","BLOCKED","ESCALATED","TERMINAL_COMPLETED"].includes(state.state))break;state=await flow.step(sequenced.spec);}
+  const executable=resolveRuntimeExecutableFront(bus,store,sequenced,targetFrontId);let spec=executable.spec;
+  const effects=new ProductionEffects(bus,new Ledger(ledgerRoot),reviewerRepo,root,boundary,coordinator);const flow=new AutonomousFlow(store,effects);let persisted=executable.record??store.load(spec.front_id!);
+  if(persisted)spec=effects.resolveFrozenOwnerPayloadSpec(spec,persisted);
+  if(persisted)persisted=reconcilePersistedRoadmapState(bus,effects,store,spec,persisted);
+  if(persisted?.state==="ESCALATED"&&persisted.last_error==="LOCAL_PRIVILEGE_REQUIRED")persisted=resumePrivilegedInstall(bus,boundary,coordinator,flow,spec,persisted);
+  let state=await flow.step(spec);for(let i=0;i<24;i++){if(["CI_PENDING","BUILDING","RUNTIME_PILOT_RUNNING","CLOSEOUT_PENDING","BLOCKED","ESCALATED","TERMINAL_COMPLETED"].includes(state.state))break;state=await flow.step(spec);}
   return state;
 }
