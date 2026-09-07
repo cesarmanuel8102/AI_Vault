@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {createHash} from "node:crypto";
 import {mkdtempSync,readFileSync,writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
@@ -11,6 +12,7 @@ import {Ledger} from "../../../scripts/operator_proxy/decision_ledger.js";
 import {issueBody} from "../../../scripts/operator_proxy/spec_contract.js";
 
 const sha=(character:string)=>character.repeat(40);
+const digest=(value:string)=>createHash("sha256").update(Buffer.from(value,"utf8")).digest("hex");
 
 function parentSpec():any {
   return {
@@ -122,15 +124,30 @@ test("closeout selection rejects parent evidence bound to a different policy dec
 });
 
 test("an exact dispatched Owner closeout retains its frozen historical spec after child selection",()=>{
-  const root=mkdtempSync(join(tmpdir(),"executable-owner-frozen-")),parent=parentSpec(),child=closeoutSpec(parent),frozenBase=sha("d"),failed=sha("e"),currentHead=sha("f");
+  const root=mkdtempSync(join(tmpdir(),"executable-owner-frozen-")),store=new LifecycleStore(join(root,"lifecycle")),parent=parentSpec(),child=closeoutSpec(parent),frozenBase=sha("d"),failed=sha("e"),currentHead=sha("f"),parentRecord=saveParent(store,parent),roadmap="closeout roadmap\n";
+  const manifest:any={roadmap_id:child.roadmap_id,roadmap_version:child.roadmap_version,repository:child.repository,integration_branch:"codex/own-capital-sustainable-return",approval_status:"HUMAN_ADOPTED",r0_status:"CLOSED_HUMAN_ADOPTED",human_final_authority:true,auto_merge:false,canonical_local_sync:false,live_trading_enabled:false,roadmap_path:"docs/roadmap/BRAIN_101_ROADMAP.md",roadmap_sha256:digest(roadmap),roadmap_items:{[child.roadmap_item_id]:{status:"AUTHORIZED_ACTIVE",dependencies:child.dependencies}}};
+  const manifestText=JSON.stringify(manifest),current={...child,roadmap_sha256:digest(roadmap),manifest_sha256:digest(manifestText)};
   const state:any={schema_version:1,front_id:child.front_id,roadmap_item_id:child.roadmap_item_id,state:"BUILDING",base_sha:frozenBase,head_sha:failed,issue:248,pr:249,repair_cycles:2,deployment_mode:"NO_DEPLOY",completed_effects:["issue:248",`build:${failed}`],builder_session:"child-builder",owner_payload_repair:{grant_key:"a".repeat(64),consumed_event_sha256:"b".repeat(64),build_attempt_id:"c".repeat(64)},updated_utc:new Date().toISOString()};
-  const historical={...child,expected_base_sha:frozenBase},bus:any={setMutationGuard:()=>{},issueSnapshot:()=>({body:`${issueBody(historical).trim()}\n\nOPERATOR_PROXY_PR: 249\n`})};
+  const historical={...persistedCloseoutSpec(current,parentRecord),expected_base_sha:frozenBase},bus:any={setMutationGuard:()=>{},issueSnapshot:()=>({body:`${issueBody(historical).trim()}\n\nOPERATOR_PROXY_PR: 249\n`}),fileAt:(path:string)=>path.endsWith("MANIFEST.json")?manifestText:roadmap};
   const effects:any=new ProductionEffects(bus,new Ledger(join(root,"decisions")),root,root,{assert:()=>{}} as any);
-  effects.validHistoricalRoadmapBinding=()=>true;effects.validDispatchedOwnerResume=()=>true;
-  const resolved=effects.resolveFrozenOwnerPayloadSpec(child,state);
+  effects.validDispatchedOwnerResume=()=>true;
+  const resolved=effects.resolveFrozenOwnerPayloadSpec(current,state);
   assert.equal(resolved.expected_base_sha,frozenBase);
   assert.equal(resolved.front_id,child.front_id);
   assert.notEqual(currentHead,failed);
+});
+
+test("an Owner closeout rejects a historical parent-evidence mutation",()=>{
+  const root=mkdtempSync(join(tmpdir(),"executable-owner-frozen-mutation-")),store=new LifecycleStore(join(root,"lifecycle")),parent=parentSpec(),child=closeoutSpec(parent),frozenBase=sha("d"),failed=sha("e"),parentRecord=saveParent(store,parent),roadmap="closeout roadmap\n";
+  const manifest:any={roadmap_id:child.roadmap_id,roadmap_version:child.roadmap_version,repository:child.repository,integration_branch:"codex/own-capital-sustainable-return",approval_status:"HUMAN_ADOPTED",r0_status:"CLOSED_HUMAN_ADOPTED",human_final_authority:true,auto_merge:false,canonical_local_sync:false,live_trading_enabled:false,roadmap_path:"docs/roadmap/BRAIN_101_ROADMAP.md",roadmap_sha256:digest(roadmap),roadmap_items:{[child.roadmap_item_id]:{status:"AUTHORIZED_ACTIVE",dependencies:child.dependencies}}};
+  const manifestText=JSON.stringify(manifest),current={...child,roadmap_sha256:digest(roadmap),manifest_sha256:digest(manifestText)};
+  const state:any={schema_version:1,front_id:child.front_id,roadmap_item_id:child.roadmap_item_id,state:"BUILDING",base_sha:frozenBase,head_sha:failed,issue:248,pr:249,repair_cycles:2,deployment_mode:"NO_DEPLOY",completed_effects:["issue:248",`build:${failed}`],builder_session:"child-builder",owner_payload_repair:{grant_key:"a".repeat(64),consumed_event_sha256:"b".repeat(64),build_attempt_id:"c".repeat(64)},updated_utc:new Date().toISOString()};
+  const historical:any={...persistedCloseoutSpec(current,parentRecord),expected_base_sha:frozenBase};
+  historical.acceptance[historical.acceptance.length-1]="Record this immutable parent lifecycle evidence exactly; do not infer, omit, or replace known values with null: {\"tampered\":true}";
+  const bus:any={setMutationGuard:()=>{},issueSnapshot:()=>({body:`${issueBody(historical).trim()}\n\nOPERATOR_PROXY_PR: 249\n`}),fileAt:(path:string)=>path.endsWith("MANIFEST.json")?manifestText:roadmap};
+  const effects:any=new ProductionEffects(bus,new Ledger(join(root,"decisions")),root,root,{assert:()=>{}} as any);
+  effects.validDispatchedOwnerResume=()=>true;
+  assert.equal(effects.resolveFrozenOwnerPayloadSpec(current,state),current);
 });
 
 test("an Owner child selection preserves the single logical attempt and never emits a second consumed receipt",()=>{
