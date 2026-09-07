@@ -37,6 +37,16 @@ export function resolveRuntimeExecutableFront(bus:ExecutableFrontBus,store:Lifec
   return resolveExecutableFront(bus,store,sequenced.spec,targetFrontId);
 }
 
+function pendingOwnerPayloadRepairResume(record:LifecycleRecord){
+  const binding=record.owner_payload_repair;
+  return ["OWNER_REPAIR_AUTHORIZED","BUILDING"].includes(record.state)&&record.repair_cycles===2&&
+    Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&
+    /^[0-9a-f]{40}$/.test(record.head_sha??"")&&!!binding&&
+    /^[0-9a-f]{64}$/.test(binding.grant_key)&&
+    /^[0-9a-f]{64}$/.test(binding.consumed_event_sha256)&&
+    /^[0-9a-f]{64}$/.test(binding.build_attempt_id);
+}
+
 // The single reconciliation entry point. The pre-consolidation architecture
 // dispatched the same domain states through two parallel if-chains
 // (reconcilePersistedRoadmapState and reconcileCloseoutState), each with its
@@ -44,6 +54,10 @@ export function resolveRuntimeExecutableFront(bus:ExecutableFrontBus,store:Lifec
 // snapshot -> lineage -> invariants -> plan pipeline in ProductionEffects.
 export function reconcilePersistedRoadmapState(bus:GitHubBus,effects:ProductionEffects,store:LifecycleStore,spec:ProxySpec,persisted?:LifecycleRecord){
   if(!persisted)return persisted;
+  // The Owner receipt orchestrator is the only consumer of a dispatched
+  // exceptional build attempt. Generic reconciliation has no authority to
+  // replace or infer a move for that immutable attempt.
+  if(pendingOwnerPayloadRepairResume(persisted))return persisted;
   // An undecided post-build record whose same-PR payload advanced at the
   // matching base re-enters the pipeline at the new published head.
   if(persisted.base_sha===spec.expected_base_sha&&["CI_PENDING","REVIEWING"].includes(persisted.state)&&persisted.pr&&!persisted.reviewer_session&&!persisted.decision_id&&persisted.head_sha){
