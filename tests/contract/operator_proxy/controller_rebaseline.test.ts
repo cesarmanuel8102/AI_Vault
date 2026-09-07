@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {projectHistoricalAttempt} from "../../../scripts/operator_proxy/controller_rebaseline.js";
+import {projectHistoricalAttempt,verifyFunctionalEvidenceForRebaseline} from "../../../scripts/operator_proxy/controller_rebaseline.js";
 import type {LifecycleRecord} from "../../../scripts/operator_proxy/types.js";
 
 const exhaustedOwnerRecord=():LifecycleRecord=>({
@@ -32,4 +32,28 @@ test("projects an exhausted Owner attempt without changing its lifecycle record"
 test("rejects a nonexhausted or incomplete Owner attempt",()=>{
   assert.throws(()=>projectHistoricalAttempt({...exhaustedOwnerRecord(),repair_cycles:1}),/historical Owner attempt/);
   assert.throws(()=>projectHistoricalAttempt({...exhaustedOwnerRecord(),owner_payload_repair:undefined}),/historical Owner attempt/);
+});
+
+const validEvidenceInput=()=>({
+  item_id:"R9.9",
+  task_id:"BRAIN-101-SYNTHETIC-EVIDENCE-01",
+  evidence_path:"docs/roadmap/evidence/SYNTHETIC.md",
+  canonical_ref:"a".repeat(40),
+  evidence_bytes:Buffer.from("Status: PASSED\nPIPELINE=INTENT\nPIPELINE=PLAN\nACK_TASK_ID=BRAIN-101-SYNTHETIC-EVIDENCE-01\n","utf8"),
+  required_markers:["Status: PASSED","PIPELINE=INTENT","PIPELINE=PLAN","ACK_TASK_ID=BRAIN-101-SYNTHETIC-EVIDENCE-01"],
+  hard_limits:{human_final_authority:true,auto_merge:false,canonical_local_sync:false,live_trading:false,real_money:false}
+});
+
+test("accepts pinned passed functional evidence with every required marker",()=>{
+  const assertion=verifyFunctionalEvidenceForRebaseline(validEvidenceInput());
+  assert.equal(assertion.status,"PASSED");
+  assert.match(assertion.evidence_sha256,/^[0-9a-f]{64}$/);
+  assert.match(assertion.assertion_sha256,/^[0-9a-f]{64}$/);
+});
+
+test("rejects incomplete evidence and constitutional limit drift",()=>{
+  const missingAck=validEvidenceInput();missingAck.evidence_bytes=Buffer.from("Status: PASSED\nPIPELINE=INTENT\nPIPELINE=PLAN\n","utf8");
+  assert.throws(()=>verifyFunctionalEvidenceForRebaseline(missingAck),/evidence marker missing/);
+  const liveTrading=validEvidenceInput();liveTrading.hard_limits.live_trading=true;
+  assert.throws(()=>verifyFunctionalEvidenceForRebaseline(liveTrading),/hard limits invalid/);
 });

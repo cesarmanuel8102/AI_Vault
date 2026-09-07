@@ -89,3 +89,42 @@ export interface HistoricalAttemptRefV1 {
   build_attempt_id: string;
   historical_sha256: string;
 }
+
+export interface RebaselineHardLimitsV1 {
+  human_final_authority: true;
+  auto_merge: false;
+  canonical_local_sync: false;
+  live_trading: false;
+  real_money: false;
+}
+
+export interface RebaselineHardLimitsInputV1 {
+  human_final_authority: boolean;
+  auto_merge: boolean;
+  canonical_local_sync: boolean;
+  live_trading: boolean;
+  real_money: boolean;
+}
+
+export interface FunctionalEvidenceInputV1 {
+  item_id: string;
+  task_id: string;
+  evidence_path: string;
+  canonical_ref: string;
+  evidence_bytes: Uint8Array;
+  required_markers: readonly string[];
+  hard_limits: RebaselineHardLimitsInputV1;
+}
+
+export interface FunctionalEvidenceAssertionV1 {
+  schema_version: 1;
+  item_id: string;
+  task_id: string;
+  evidence_path: string;
+  canonical_ref: string;
+  evidence_sha256: string;
+  required_markers: readonly string[];
+  hard_limits: RebaselineHardLimitsV1;
+  status: "PASSED";
+  assertion_sha256: string;
+}
