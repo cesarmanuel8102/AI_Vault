@@ -63,6 +63,16 @@ const exactSpecExceptHistoricalBinding=(current:ProxySpec,historical:ProxySpec)=
   if(JSON.stringify(currentKeys)!==JSON.stringify(historicalKeys))return false;
   return currentKeys.every(key=>roadmapBindingFields.has(key)||JSON.stringify((current as any)[key])===JSON.stringify((historical as any)[key]));
 };
+const exactCloseoutSpecWithParentEvidence=(current:ProxySpec,historical:ProxySpec)=>{
+  if(current.closeout_only!==true||historical.closeout_only!==true||typeof current.objective!=="string"||typeof historical.objective!=="string"||!Array.isArray(current.acceptance)||!Array.isArray(historical.acceptance))return false;
+  const marker="\n\nPARENT_LIFECYCLE_EVIDENCE_JSON=",index=historical.objective.indexOf(marker);
+  if(index<0||historical.objective.slice(0,index)!==current.objective.trim())return false;
+  const evidence=historical.objective.slice(index+marker.length);
+  try{JSON.parse(evidence);}catch{return false;}
+  const instruction=`Record this immutable parent lifecycle evidence exactly; do not infer, omit, or replace known values with null: ${evidence}`;
+  if(historical.acceptance.length!==current.acceptance.length+1||historical.acceptance.at(-1)!==instruction||historical.acceptance.slice(0,-1).some((value,index)=>value!==current.acceptance![index]))return false;
+  return exactSpecExceptHistoricalBinding({...current,objective:historical.objective,acceptance:historical.acceptance},{...historical});
+};
 
 /**
  * A closeout exhausted at an earlier canonical base may only use that frozen
@@ -115,7 +125,7 @@ export class ProductionEffects implements AutonomousEffects {
     if(observed!==state.head_sha)this.boundary.bindBlockedCiRecoveryObservedHead(observed);
   }
   private validHistoricalRoadmapBinding(current:ProxySpec,historical:ProxySpec,base:string){
-    if(!exactSpecExceptHistoricalBinding(current,historical)||historical.expected_base_sha!==base||!/^[0-9a-f]{64}$/.test(historical.roadmap_sha256??"")||!/^[0-9a-f]{64}$/.test(historical.manifest_sha256??""))return false;
+    if(!(exactSpecExceptHistoricalBinding(current,historical)||exactCloseoutSpecWithParentEvidence(current,historical))||historical.expected_base_sha!==base||!/^[0-9a-f]{64}$/.test(historical.roadmap_sha256??"")||!/^[0-9a-f]{64}$/.test(historical.manifest_sha256??""))return false;
     const manifestText=this.bus.fileAt(MANIFEST_PATH,base),roadmapText=this.bus.fileAt(ROADMAP_PATH,base);
     let manifest:any;try{manifest=JSON.parse(manifestText);}catch{throw new Error("intermediate canonical manifest invalid");}
     const item=manifest?.roadmap_items?.[historical.roadmap_item_id],dependencies=canonicalDependencies(item?.dependencies);
