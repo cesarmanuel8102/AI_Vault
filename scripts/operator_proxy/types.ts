@@ -73,3 +73,111 @@ export interface LifecycleRecord {
   state_writer_control_plane_version?: number;
   updated_utc: string;
 }
+
+export interface HistoricalAttemptRefV1 {
+  schema_version: 1;
+  front_id: string;
+  roadmap_item_id: string;
+  lifecycle_state: LifecycleState;
+  issue: number;
+  pr: number;
+  base_sha: string;
+  failed_head_sha: string;
+  repair_cycles: 2;
+  grant_key: string;
+  consumed_event_sha256: string;
+  build_attempt_id: string;
+  historical_sha256: string;
+}
+
+export interface RebaselineHardLimitsV1 {
+  human_final_authority: true;
+  auto_merge: false;
+  canonical_local_sync: false;
+  live_trading: false;
+  real_money: false;
+}
+
+export interface RebaselineHardLimitsInputV1 {
+  human_final_authority: boolean;
+  auto_merge: boolean;
+  canonical_local_sync: boolean;
+  live_trading: boolean;
+  real_money: boolean;
+}
+
+export interface FunctionalEvidenceInputV1 {
+  item_id: string;
+  task_id: string;
+  evidence_path: string;
+  canonical_ref: string;
+  evidence_bytes: Uint8Array;
+  required_markers: readonly string[];
+  hard_limits: RebaselineHardLimitsInputV1;
+}
+
+export interface FunctionalEvidenceAssertionV1 {
+  schema_version: 1;
+  item_id: string;
+  task_id: string;
+  evidence_path: string;
+  canonical_ref: string;
+  evidence_sha256: string;
+  required_markers: readonly string[];
+  hard_limits: RebaselineHardLimitsV1;
+  status: "PASSED";
+  assertion_sha256: string;
+}
+
+export interface ControllerSupersessionReceiptInputV1 {
+  schema_version: 1;
+  controller: "CODEX_GOVERNED_CONTROLLER";
+  supersession_key: string;
+  sequence: number;
+  previous_event_sha256: string | null;
+  repository: string;
+  roadmap_item_id: string;
+  canonical_base_sha: string;
+  manifest_sha256: string;
+  roadmap_sha256: string;
+  historical_attempt_sha256: string;
+  front_id: string;
+  failed_head_sha: string;
+  grant_key: string;
+  consumed_event_sha256: string;
+  build_attempt_id: string;
+  functional_evidence_ref: string;
+  functional_evidence_path: string;
+  functional_evidence_sha256: string;
+  functional_evidence_assertion_sha256: string;
+  hard_limits: RebaselineHardLimitsV1;
+  persistent_agent_loop_enabled: false;
+  created_utc: string;
+}
+
+export interface ControllerSupersessionReceiptV1 extends ControllerSupersessionReceiptInputV1 {
+  event_sha256: string;
+}
+
+export interface ControllerRebaselineCanonicalBindingV1 {
+  repository: string;
+  roadmap_item_id: string;
+  canonical_base_sha: string;
+  manifest_sha256: string;
+  roadmap_sha256: string;
+  item_status: "AUTHORIZED_ACTIVE" | "CLOSED_RUNTIME_VERIFIED";
+  hard_limits: RebaselineHardLimitsV1;
+}
+
+export interface ControllerRebaselinePlanInputV1 {
+  canonical: ControllerRebaselineCanonicalBindingV1;
+  historical: HistoricalAttemptRefV1;
+  evidence: FunctionalEvidenceAssertionV1;
+  receipts: readonly ControllerSupersessionReceiptV1[];
+}
+
+export interface ControllerRebaselinePlan {
+  status: "REBASELINE_REQUIRED" | "CLOSEOUT_ALLOWED" | "ALREADY_SUPERSEDED" | "BLOCKED";
+  supersession_key?: string;
+  reason?: string;
+}
