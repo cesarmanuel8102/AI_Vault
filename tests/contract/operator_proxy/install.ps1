@@ -13,8 +13,8 @@ function Test-SameContractPath {
 }
 $root=(Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 Import-Module (Join-Path $root 'scripts\operator_proxy\Repair-OperatorProxy.psm1') -Force
-$ownerRepairModules=@('authority','candidate_execution.ts','correction_payload.ts','owner_payload_repair_grant.ts','owner_payload_repair_orchestrator.ts','owner_principal_resolver.ts','owner_repair_receipt_ledger.ts','owner_critical_merge_authorization.ts','owner_critical_merge_executor.ts','owner_critical_merge_receipt_ledger.ts','owner_repair_effective_base.ts','owner_payload_base_sync.ts')
-$ownerBaseAdvanceModules=@('owner_repair_effective_base.ts','owner_payload_base_sync.ts')
+$ownerRepairModules=@('authority','candidate_execution.ts','correction_payload.ts','owner_payload_repair_grant.ts','owner_payload_repair_orchestrator.ts','owner_principal_resolver.ts','owner_repair_receipt_ledger.ts','owner_repair_runtime_support.ts','owner_critical_merge_authorization.ts','owner_critical_merge_executor.ts','owner_critical_merge_receipt_ledger.ts','owner_repair_effective_base.ts','owner_payload_base_sync.ts')
+$ownerBaseAdvanceModules=@('owner_repair_effective_base.ts','owner_payload_base_sync.ts','owner_repair_runtime_support.ts')
 $managed=@(Get-ManagedOperatorProxyFiles)
 foreach($required in $ownerRepairModules){if($managed -notcontains $required){throw "managed install missing owner repair module $required"}}
 $tmp=Join-Path $env:TEMP ('operator-proxy-'+[guid]::NewGuid())
