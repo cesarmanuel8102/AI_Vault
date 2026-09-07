@@ -66,6 +66,13 @@ export function closeoutSpec(parent:ProxySpec):ProxySpec {
 
 const sameStrings=(left:readonly string[],right:readonly string[])=>left.length===right.length&&left.every((value,index)=>value===right[index]);
 const nonterminal=(record:LifecycleRecord)=>record.state!=="TERMINAL_COMPLETED";
+const sha256Value=/^[0-9a-f]{64}$/;
+
+/** A completed CRITICAL system repair is not a sibling lifecycle of its roadmap item. */
+function settledCriticalSystemRepair(record:LifecycleRecord){
+  const critical=record.owner_critical_merge;
+  return record.state==="MERGED"&&record.deployment_mode==="NO_DEPLOY"&&typeof record.head_sha==="string"&&/^[0-9a-f]{40}$/.test(record.head_sha)&&record.completed_effects.includes(`merge:${record.head_sha}`)&&!!critical&&sha256Value.test(critical.critical_merge_key)&&sha256Value.test(critical.consumed_event_sha256);
+}
 
 function assertCloseoutChild(bus:ExecutableFrontBus,parent:ProxySpec,child:ProxySpec,record:LifecycleRecord,parentRecord:LifecycleRecord){
   const issue=record.issue,prNumber=record.pr;
@@ -85,7 +92,7 @@ function assertCloseoutChild(bus:ExecutableFrontBus,parent:ProxySpec,child:Proxy
 
 /** Resolves the lifecycle that is actually executable, rather than assuming the active parent is resumable. */
 export function resolveExecutableFront(bus:ExecutableFrontBus,store:LifecycleStore,parent:ProxySpec,targetFrontId?:string):ExecutableFront {
-  const child=closeoutSpec(parent),records=store.recordsForRoadmapItem(parent.roadmap_item_id),siblings=records.filter(record=>record.front_id!==parent.front_id&&nonterminal(record));
+  const child=closeoutSpec(parent),records=store.recordsForRoadmapItem(parent.roadmap_item_id),siblings=records.filter(record=>record.front_id!==parent.front_id&&nonterminal(record)&&!settledCriticalSystemRepair(record));
   if(targetFrontId!==undefined&&targetFrontId!==parent.front_id&&targetFrontId!==child.front_id)throw new Error("targeted front does not belong to active roadmap item");
   if(siblings.length>1)throw new Error("executable lifecycle ambiguity");
   const candidate=siblings[0];

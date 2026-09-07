@@ -34,11 +34,12 @@ function saveParent(store:LifecycleStore,parent:any){
   const head=sha("f");const record:any={schema_version:1,front_id:parent.front_id,roadmap_item_id:parent.roadmap_item_id,state:"CLOSEOUT_PENDING",base_sha:parent.expected_base_sha,head_sha:head,issue:246,pr:247,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:246",`build:${head}`,`merge:${head}`],builder_session:"parent-builder",reviewer_session:"parent-reviewer",decision_id:"11111111-1111-4111-8111-111111111111",updated_utc:new Date().toISOString()};store.save(record);return record;
 }
 
-test("a valid nonterminal closeout child is the executable front before its active parent",()=>{
+test("a valid nonterminal closeout child is selected despite a settled owner system repair",()=>{
   const root=mkdtempSync(join(tmpdir(),"executable-front-")),store=new LifecycleStore(root),parent=parentSpec(),child=closeoutSpec(parent),frozenBase=sha("d"),childHead=sha("e");
   const parentRecord:any={schema_version:1,front_id:parent.front_id,roadmap_item_id:parent.roadmap_item_id,state:"CLOSEOUT_PENDING",base_sha:parent.expected_base_sha,head_sha:sha("f"),issue:246,pr:247,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:246",`build:${sha("f")}`,`merge:${sha("f")}`],builder_session:"parent-builder",reviewer_session:"parent-reviewer",decision_id:"11111111-1111-4111-8111-111111111111",updated_utc:new Date().toISOString()};
   const childRecord:any={schema_version:1,front_id:child.front_id,roadmap_item_id:child.roadmap_item_id,state:"BUILDING",base_sha:frozenBase,head_sha:childHead,issue:248,pr:249,repair_cycles:2,deployment_mode:"NO_DEPLOY",completed_effects:["issue:248",`build:${childHead}`],builder_session:"child-builder",updated_utc:new Date().toISOString()};
   store.save(parentRecord);store.save(childRecord);
+  store.save({schema_version:1,front_id:"OWNER-SYSTEM-REPAIR-01",roadmap_item_id:parent.roadmap_item_id,state:"MERGED",base_sha:sha("1"),head_sha:sha("2"),issue:282,pr:283,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:282",`build:${sha("3")}`,`merge:${sha("2")}`],builder_session:"system-builder",reviewer_session:"system-reviewer",decision_id:"33333333-3333-4333-8333-333333333333",owner_critical_merge:{critical_merge_key:"4".repeat(64),consumed_event_sha256:"5".repeat(64)},updated_utc:new Date().toISOString()} as any);
   const historical={...persistedCloseoutSpec(child,parentRecord),expected_base_sha:frozenBase};
   const bus:any={
     issueSnapshot:(issue:number)=>{assert.equal(issue,248);return {state:"OPEN",labels:["operator:building"],body:`${issueBody(historical).trim()}\n\nOPERATOR_PROXY_PR: 249\n`};},
@@ -87,6 +88,14 @@ test("terminal closeout child no longer blocks its parent",()=>{
 test("two nonterminal children fail closed before any child is selected",()=>{
   const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"executable-ambiguous-"))),parent=parentSpec(),child=closeoutSpec(parent),head=sha("e");
   for(const front of [child.front_id,"BRAIN-101-R3-4-UNDECLARED-RECOVERY-01"]){store.save({schema_version:1,front_id:front,roadmap_item_id:parent.roadmap_item_id,state:"BUILDING",base_sha:parent.expected_base_sha,head_sha:head,issue:248,pr:249,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:248",`build:${head}`],builder_session:"builder",updated_utc:new Date().toISOString()} as any);}
+  const bus:any={issueSnapshot:()=>{throw new Error("ambiguity must fail before remote reads");},prIdentity:()=>{throw new Error("ambiguity must fail before remote reads");},isAncestor:()=>false};
+  assert.throws(()=>resolveExecutableFront(bus,store,parent),/executable lifecycle ambiguity/);
+});
+
+test("an unproven merged NO_DEPLOY lifecycle remains an ambiguity",()=>{
+  const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"executable-unproven-"))),parent=parentSpec(),child=closeoutSpec(parent),head=sha("e");
+  store.save({schema_version:1,front_id:child.front_id,roadmap_item_id:parent.roadmap_item_id,state:"BUILDING",base_sha:parent.expected_base_sha,head_sha:head,issue:248,pr:249,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:248",`build:${head}`],builder_session:"builder",updated_utc:new Date().toISOString()} as any);
+  store.save({schema_version:1,front_id:"BRAIN-101-R3-4-UNPROVEN-MERGE-01",roadmap_item_id:parent.roadmap_item_id,state:"MERGED",base_sha:sha("1"),head_sha:sha("2"),issue:282,pr:283,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:282",`build:${sha("3")}`,`merge:${sha("2")}`],updated_utc:new Date().toISOString()} as any);
   const bus:any={issueSnapshot:()=>{throw new Error("ambiguity must fail before remote reads");},prIdentity:()=>{throw new Error("ambiguity must fail before remote reads");},isAncestor:()=>false};
   assert.throws(()=>resolveExecutableFront(bus,store,parent),/executable lifecycle ambiguity/);
 });
