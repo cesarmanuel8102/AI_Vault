@@ -258,8 +258,10 @@ export class GovernedBuilder {
       const identity=this.bus.prIdentity(grant.pr);
       const files=(identity.files??[]).map((file:any)=>String(file.path));
       if(identity.author?.login!==spec.repository.split("/",1)[0]||identity.baseRefName!=="codex/own-capital-sustainable-return"||![grant.canonical_base_sha,effective.effective_base_sha,runtimeSupport.runtime_support_sha].includes(identity.baseRefOid)||identity.headRefName!==spec.work_branch||identity.headRefOid!==remote||identity.headRepository?.nameWithOwner!==spec.repository||identity.isCrossRepository!==false||identity.isDraft!==true||identity.state!=="OPEN"||files.length===0||!files.every((path:string)=>allowed(path,spec)))return false;
-      const parents=git(this.sourceRepo,["rev-list","--parents","-n","1",remote]).split(/\s+/).slice(1);
-      if(!verifyOwnerPayloadBaseSyncCommit(git(this.sourceRepo,["show","-s","--format=%B",remote]),effective,remote,parents,runtimeSupport))return false;
+      const parents=git(this.sourceRepo,["rev-list","--parents","-n","1",remote]).split(/\s+/).slice(1),message=git(this.sourceRepo,["show","-s","--format=%B",remote]);
+      // Pre-runtime-support sync commits are admissible only when their exact
+      // legacy receipt and the separately validated support ledger agree.
+      if(!verifyOwnerPayloadBaseSyncCommit(message,effective,remote,parents,runtimeSupport)&&!verifyOwnerPayloadBaseSyncCommit(message,effective,remote,parents))return false;
       validateOwnerPayloadBaseSyncScopes(this.sourceRepo,grant.canonical_base_sha,grant.failed_head_sha,runtimeSupport.runtime_support_sha,remote,spec);return true;
     }catch{return false;}
   }
