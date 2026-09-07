@@ -107,7 +107,7 @@ test("governed builder synchronizes the exact signed runtime support instead of 
   const legacy=execFileSync("git",["commit-tree",legacyTree,"-p",failed,"-p",effective],{cwd:repo,encoding:"utf8",input:ownerPayloadBaseSyncReceipt(spec.front_id!,localBinding)}).trim();
   git(repo,["push","--force-with-lease","origin",`${legacy}:refs/heads/${spec.work_branch!}`]);
   bus.prIdentity=()=>({author:{login:"cesarmanuel8102"},baseRefName:integration,baseRefOid:effective,headRefName:spec.work_branch,headRefOid:legacy,headRepository:{nameWithOwner:spec.repository},isCrossRepository:false,isDraft:true,state:"OPEN",files:[{path:"docs/fix.md"}]});
-  assert.equal(builder.isOwnerPayloadRepairBaseSync({...spec,expected_base_sha:frozen},localGrant,localBinding as any,runtimeSupport,legacy),true);
+  assert.equal(builder.isOwnerPayloadRepairBaseSync({...spec,expected_base_sha:frozen},localGrant,localBinding as any,runtimeSupport as any,legacy),true);
 });
 
 test("owner base sync retries create the same SHA and reject inherited forbidden payloads",()=>{
