@@ -1171,7 +1171,7 @@ R3_13_CLOSEOUT_BASE_SHA: 6f89252838854f8138442885f656b3ac8f8fc1a4
 R3_13_HEAD_SHA: 07ce674e4173c1538bd978cfcc29f9170e6d50e5
 R3_13_MERGE_COMMIT: 6f89252838854f8138442885f656b3ac8f8fc1a4
 R3_13_CLOSEOUT_EVIDENCE: docs/roadmap/evidence/BRAIN_101_R3_13_R3_2_SCOPE_INCIDENT_CERTIFICATION_CLOSEOUT.json
-R3_4_STATUS: AUTHORIZED_ACTIVE
+R3_4_STATUS: CLOSED_RUNTIME_VERIFIED
 R3_4_FRONT: BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-01
 R3_4_EXECUTOR: agent_loop
 R3_4_WORK_BRANCH: agent/roadmap-doc-brain-101-r3-4-cognitive-pipeline-e2e
@@ -1179,6 +1179,16 @@ R3_4_RISK: LOW
 R3_4_DOMAIN: agent_loop
 R3_4_PROFILE: roadmap-doc
 R3_4_MAX_EXECUTOR_CYCLES: 2
+R3_4_ISSUE: 246
+R3_4_PR: 247
+R3_4_DECISION_ID: 0e02a259-e59f-4b41-90aa-233905a193cf
+R3_4_AUTHORIZATION_MODE: POLICY_APPROVED
+R3_4_BASE_SHA: 311513a6a9c1e5cfea25b915fc30bfd475c3261b
+R3_4_CLOSEOUT_BASE_SHA: dd5468258692bae90e1830a94890e8ae533334aa
+R3_4_HEAD_SHA: 91efbe2dcf41dc606953b190a624b607319de202
+R3_4_MERGE_COMMIT: dd5468258692bae90e1830a94890e8ae533334aa
+R3_4_BUILDER_SESSION: agent-loop-builder-91efbe2dcf41dc606953b190a624b607319de202
+R3_4_REVIEWER_SESSION: reviewer:opencode_ollama:ollama-cloud/deepseek-v4-pro:51274231-22fe-46ab-ad76-366eb5e6c2b2
 R3_4_ALLOWED_PATHS:
   - docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md
 R3_4_FORBIDDEN_PATHS:
@@ -1193,7 +1203,14 @@ R3_4_FORBIDDEN_PATHS:
   - tmp_agent/brain_v9/core/session.py
   - scripts/
 R3_4_DEPLOYMENT_MODE: NO_DEPLOY
-NEXT_GATE: Execute R3.4 Agent V2 cognitive pipeline E2E as the single governed next R3 item
+R3_4_CLOSEOUT_EVIDENCE: docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json
+NEXT_GATE: R3.4 closed; R3.5 is the single authorized next roadmap item
+
+## 13.24 R3.5 — Operator Proxy campaign supervisor wake loop
+
+R3.5 is the single canonical next item planned after the runtime-verified R3.4 closeout. It is a `MEDIUM` risk, `NO_DEPLOY`, `codex_control_plane` front with the exact front identifier `BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01`. Its scope is limited to the campaign supervisor implementation, its contract test, and the declared evidence document. The catalog remains the source of the complete acceptance, forbidden-path, hard-limit, repair-budget, and human-gate contract. R3.5 is not `AUTHORIZED_ACTIVE` in this closeout because it has no independent authorization record (decision_id/issue/PR); it is pending sequencing by the operator proxy once a governed front is created.
+
+R3.5 must enforce hard limits before each wake, classify and route incidents, bound self-repair, and advance terminal completion only through the governed phase helper. The controls remain unchanged: `HUMAN_FINAL_AUTHORITY=true`, `AUTO_MERGE=false`, `LIVE_TRADING=false`, `REAL_MONEY=false`, and `CANONICAL_LOCAL_SYNC=false`. No deployment, worker activation, trading, or canonical local synchronization is authorized.
 ```
 
 ## 13.20 Cierre runtime de R3.1
@@ -1220,4 +1237,12 @@ La evidencia de lifecycle parent se registra de forma inmutable y exacta: `paren
 
 Las cinco suites canónicas (`tests/contract/test_brain_101_r3_2_intent_router_contract.py`, `tests/contract/test_brain_101_r3_2_planner_contract.py`, `tests/contract/test_brain_101_r3_2_evaluator_contract.py`, `tests/contract/test_brain_101_r3_2_tool_gateway_contract.py`, `tests/contract/test_brain_101_r3_2_runtime_lifecycle_contract.py`) pasaron con 86 tests exitosos y 0 fallos. El incidente histórico en `docs/roadmap/evidence/BRAIN_101_R3_2_SCOPE_INCIDENT.json` se conserva sin modificación y PR #199 no se representa como contractualmente válido.
 
-El closeout machine-readable está en `docs/roadmap/evidence/BRAIN_101_R3_13_R3_2_SCOPE_INCIDENT_CERTIFICATION_CLOSEOUT.json`. R3.13 queda `CLOSED_RUNTIME_VERIFIED`. Se autoriza exactamente un siguiente item: `R3.4`, `LOW`, dominio `agent_loop`, ejecutor `agent_loop`, rama `agent/roadmap-doc-brain-101-r3-4-cognitive-pipeline-e2e`, perfil `roadmap-doc`, `max_executor_cycles=2`, `NO_DEPLOY`, permitido solo para `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md`, con closeout completo predeclarado. Live trading, real money, canonical local sync, auto-merge y deploy siguen no autorizados.
+El closeout machine-readable está en `docs/roadmap/evidence/BRAIN_101_R3_13_R3_2_SCOPE_INCIDENT_CERTIFICATION_CLOSEOUT.json`. R3.13 queda `CLOSED_RUNTIME_VERIFIED`. Se autorizó exactamente un siguiente item: `R3.4`, `LOW`, dominio `agent_loop`, ejecutor `agent_loop`, rama `agent/roadmap-doc-brain-101-r3-4-cognitive-pipeline-e2e`, perfil `roadmap-doc`, `max_executor_cycles=2`, `NO_DEPLOY`, permitido solo para `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md`, con closeout completo predeclarado. Live trading, real money, canonical local sync, auto-merge y deploy siguen no autorizados.
+
+## 13.23 Cierre runtime de R3.4
+
+R3.4 quedó cerrado en runtime con el E2E aislado `BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-01`. El ejecutor Agent Loop produjo el documento `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md` en el commit `91efbe2dcf41dc606953b190a624b607319de202`, usando la rama `agent/roadmap-doc-brain-101-r3-4-cognitive-pipeline-e2e`, perfil `roadmap-doc`, `max_executor_cycles=2`, y `NO_DEPLOY`. El documento registra el pipeline completo: percepción, razonamiento, planificación, acción, reflexión y memoria, verificando que solo se tocó la ruta permitida, que no se invocaron shell/network/Git/GitHub/subagentes/skills/LSP ni directorios externos, y que cada línea carece de espacios o tabs finales.
+
+La evidencia de lifecycle parent se registra de forma inmutable y exacta: `parent_front_id` `BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-01`, Issue #246, PR #247, decisión `0e02a259-e59f-4b41-90aa-233905a193cf`, modo de autorización `POLICY_APPROVED`, base `311513a6a9c1e5cfea25b915fc30bfd475c3261b`, closeout base `dd5468258692bae90e1830a94890e8ae533334aa`, head `91efbe2dcf41dc606953b190a624b607319de202`, merge `dd5468258692bae90e1830a94890e8ae533334aa`, builder session `agent-loop-builder-91efbe2dcf41dc606953b190a624b607319de202`, y reviewer session `reviewer:opencode_ollama:ollama-cloud/deepseek-v4-pro:51274231-22fe-46ab-ad76-366eb5e6c2b2`.
+
+El closeout machine-readable está en `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json`. R3.4 queda `CLOSED_RUNTIME_VERIFIED`, pero R3 no queda cerrado. No se autoriza ningún siguiente item por este frente. Live trading, real money, canonical local sync, auto-merge y deploy siguen no autorizados.

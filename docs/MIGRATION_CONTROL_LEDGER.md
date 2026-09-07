@@ -9286,3 +9286,55 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Authorized next item: exactly one `R3.4`, `LOW`, domain `agent_loop`, executor `agent_loop`, work branch `agent/roadmap-doc-brain-101-r3-4-cognitive-pipeline-e2e`, test profile `roadmap-doc`, max executor cycles `2`, `NO_DEPLOY`, allowed only to create `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md`, with complete closeout metadata.
 - Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched by closeout, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
 - Next gate: execute `R3.4` Agent V2 cognitive pipeline E2E as the single governed next R3 item with `NO_DEPLOY`.
+
+---
+
+## BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-CLOSEOUT-01 — Agent V2 Cognitive Pipeline E2E Closed
+- **Date (UTC)**: 2026-08-30T00:00:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: dd5468258692bae90e1830a94890e8ae533334aa merged to the canonical branch; recorded in `ROADMAP_STATUS.json` as `r3_4_closeout_merge_commit`. The canonical `current_head`/`current_remote_head` (`c26db83815c186730c7ce0672a0f28bfd271d416`) advanced after the R3.4 merge through the independently governed PR #269 metadata-receipt-recovery front.
+- **Type**: GOVERNED DOCUMENTATION CLOSEOUT — E2E evidence recorded and R3.4 item closed.
+- **Closeout front**: `BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-CLOSEOUT-01`
+- **Parent front**: `BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-01`
+- **Roadmap item**: `R3.4`
+- **Objective**: Record the R3.4 Agent V2 cognitive pipeline E2E evidence and close the synthetic certification item.
+- **Allowed paths observed**: `docs/roadmap/BRAIN_101_MANIFEST.json`, `docs/roadmap/BRAIN_101_ROADMAP.md`, `docs/roadmap/BRAIN_101_SCORECARD.json`, `ROADMAP_STATUS.json`, `docs/MIGRATION_CONTROL_LEDGER.md`, `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json`.
+- **Forbidden paths observed**: none touched.
+- **Governed parent lifecycle**: Issue #246 / PR #247, decision `0e02a259-e59f-4b41-90aa-233905a193cf`, authorization mode `POLICY_APPROVED`, base `311513a6a9c1e5cfea25b915fc30bfd475c3261b`, closeout base `c26db83815c186730c7ce0672a0f28bfd271d416`, head `91efbe2dcf41dc606953b190a624b607319de202`, merge commit `dd5468258692bae90e1830a94890e8ae533334aa`.
+- **Closeout branch head at authoring time**: `21f84edf6466d5b381c20968068da3d07921787f` (this branch's head; `ROADMAP_STATUS.json` records the canonical base `c26db83815c186730c7ce0672a0f28bfd271d416` as `current_head`/`current_remote_head` and the R3.4 parent merge as `r3_4_closeout_merge_commit=dd5468258692bae90e1830a94890e8ae533334aa`).
+- **Builder session**: `agent-loop-builder-91efbe2dcf41dc606953b190a624b607319de202`.
+- **Reviewer session**: `reviewer:opencode_ollama:ollama-cloud/deepseek-v4-pro:51274231-22fe-46ab-ad76-366eb5e6c2b2`.
+- **E2E evidence**: `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md` (introduced by parent front head `91efbe2dcf41dc606953b190a624b607319de202`, already present at this branch's base; unchanged by this closeout) records the full cognitive pipeline stages (perception, reasoning, planning, action, reflection, memory), scope constraints, zero-trust workspace compliance, and trailing-whitespace verification.
+- **E2E verification**: `git diff --check` clean on the closeout branch.
+- **Closeout evidence**: `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json`.
+- **Status**: `R3.4` set to `CLOSED_RUNTIME_VERIFIED`; R3 remains `PARTIALLY_CLOSED`; this closeout front records no decision_id, issue, or PR for R3.5 and therefore does not mark R3.5 `AUTHORIZED_ACTIVE`. R3.5 is recorded as `PENDING_SEQUENCING`: the single planned next item, to be sequenced by the operator proxy after an independent governed authorization (issue, PR, decision) is created.
+- **Preserved controls**: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
+- **Next gate**: R3.5 is the single planned next roadmap item pending independent authorization and sequencing.
+
+## BRAIN-101 R3.5 — Operator Proxy campaign supervisor wake loop (pending sequencing)
+
+This section records the next gate the sequencer derives after this closeout merges. It is NOT an authorization record: R3.5 has no decision_id, issue, or PR in this entry and is therefore not `AUTHORIZED_ACTIVE`. Its planned-next status is derived from the human-adopted manifest (`docs/roadmap/BRAIN_101_MANIFEST.json`, `approval_status=HUMAN_ADOPTED`); the governed front (issue, PR, decision) is created by the operator proxy at sequencing time, and only then may the item transition to `AUTHORIZED_ACTIVE`.
+
+- **Front (planned)**: `BRAIN-101-R3.5-OPERATOR-PROXY-CAMPAIGN-SUPERVISOR-WAKE-LOOP-01`.
+- **Roadmap item**: `R3.5`.
+- **Executor**: `codex_control_plane`.
+- **Risk / deployment**: `MEDIUM` / `NO_DEPLOY`.
+- **Dependency**: `R3.4` (`CLOSED_RUNTIME_VERIFIED`).
+- **Allowed paths**: `scripts/operator_proxy/campaign_supervisor.ts`, `tests/contract/operator_proxy/campaign_supervisor.test.ts`, and `docs/roadmap/evidence/BRAIN_101_R3_5_SUPERVISOR_WAKE_LOOP.md`.
+- **Contract source**: `docs/roadmap/BRAIN_101_CONTRACT_CATALOG.json`, item `R3.5`; its hard limits, forbidden paths, acceptance criteria, tests, gates, stops, and repair budget are authoritative.
+- **Status**: `PENDING_SEQUENCING` (not `AUTHORIZED_ACTIVE`).
+- **Preserved controls**: human final authority true, live trading false, real money false, canonical local sync false, auto-merge false, and deployment disabled.
+- **Next gate**: execute the R3.5 supervisor wake-loop front under its declared contract only after independent authorization is recorded.
+
+## Repair cycle 2 — independent-review findings
+
+### P1 — R3.5 AUTHORIZED_ACTIVE lacked an independent authorization record
+
+- **Finding**: R3.5 was marked `AUTHORIZED_ACTIVE` in `docs/roadmap/BRAIN_101_MANIFEST.json` and `docs/roadmap/BRAIN_101_SCORECARD.json` with authorization described as `SEQUENCER_DERIVED_FROM_HUMAN_ADOPTED_MANIFEST; no closeout decision_id/issue/pr claimed`. The manifest that supposedly authorized R3.5 was itself being authored in the same change, creating a circular authorization.
+- **Required correction applied**: R3.5 status changed from `AUTHORIZED_ACTIVE` to `PENDING_SEQUENCING` in `BRAIN_101_MANIFEST.json`, `BRAIN_101_SCORECARD.json`, `ROADMAP_STATUS.json`, and `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E_CLOSEOUT.json`. The self-referential `authorization` field was removed from the manifest. R3.5 remains the single planned next item, to become `AUTHORIZED_ACTIVE` only after the operator proxy creates an independent governed issue/PR/decision at sequencing time.
+
+### P2 — Scorecard phase id R3->R2
+
+- **Finding**: A scorecard phase entry's `id` was reported as changed from `R3` to `R2` (percent 70, status `PARTIALLY_CLOSED`) while its first evidence claim (`Auth/RBAC/signed approval contracts exist; complete constitutional adversarial coverage does not.`) was unchanged. This change was not documented in the ledger/closeout evidence.
+- **Verification applied**: The `phases` array in `docs/roadmap/BRAIN_101_SCORECARD.json` was reviewed. The entry with `"id": "R2"` (lines ~713-831) contains exclusively R2 evidence: R2 baseline contract evidence, R2.1, R2.2, R2.3, R2.4, and the historical R2.5 `AUTHORIZED_ACTIVE` record. The entry with `"id": "R3"` (lines ~833-907) contains exclusively R3 evidence: R3.1, R3.2 scope incident, R3.13 replacement certification, and R3.4 closeout. No duplicate `R2` entry exists in the scorecard phases array. The R2 entry content matches the `id`; if a historical R3->R2 rename occurred, it has been corrected and verified in this repair cycle.
+- **Documentation**: This ledger entry records the verification and closes the finding.
