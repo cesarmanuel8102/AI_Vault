@@ -89,7 +89,7 @@ test("governed builder synchronizes the exact signed runtime support instead of 
   const git=(cwd:string,args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8"}).trim();
   execFileSync("git",["init","--bare",remote],{encoding:"utf8"});mkdirSync(repo);git(repo,["init"]);git(repo,["config","user.name","test"]);git(repo,["config","user.email","test@example.invalid"]);
   const commit=(file:string,content:string,message:string)=>{const path=join(repo,file);mkdirSync(dirname(path),{recursive:true});writeFileSync(path,content);git(repo,["add","."]);git(repo,["commit","-m",message]);return git(repo,["rev-parse","HEAD"]);};
-  const frozen=commit("README.md","frozen\n","frozen");mkdirSync(join(repo,"docs"));git(repo,["checkout","-b",integration]);const effective=commit("docs/effective.md","effective\n","effective"),support=commit("docs/support.md","support\n","support");
+  const frozen=commit("README.md","frozen\n","frozen");mkdirSync(join(repo,"docs"));git(repo,["checkout","-b",integration]);const effective=commit("docs/effective.md","effective\n","effective"),support=commit("scripts/operator_proxy/runtime-support.ts","support\n","support");
   git(repo,["remote","add","origin",remote]);git(repo,["push","origin",integration]);git(repo,["checkout","-b",spec.work_branch!,frozen]);const failed=commit("docs/failed.md","failed\n","failed");git(repo,["push","origin",spec.work_branch!]);
   const localGrant={...grant,canonical_base_sha:frozen,failed_head_sha:failed};
   const localBinding={...binding,grant_key:localGrant.grant_key,front_id:localGrant.front_id,authorization_id:localGrant.authorization_id,build_attempt_id:attempt,frozen_base_sha:frozen,effective_base_sha:effective,failed_head_sha:failed,installed_runtime_sha:effective,event_sha256:bindingEvent};
@@ -101,8 +101,8 @@ test("governed builder synchronizes the exact signed runtime support instead of 
   assert.equal(remoteHead(spec.work_branch!),result.synchronized_head_sha);
   assert.equal(git(repo,["show","-s","--format=%P",result.synchronized_head_sha]),`${failed} ${support}`);
   assert.equal(verifyOwnerPayloadBaseSyncCommit(git(repo,["show","-s","--format=%B",result.synchronized_head_sha]),localBinding,result.synchronized_head_sha,[failed,support],runtimeSupport),true);
-  // A sync commit made before runtime-support receipts existed remains a sync,
-  // not a builder candidate, when the separately persisted support is exact.
+  // A sync commit made before runtime-support receipts existed must validate
+  // against its effective-base parent, not later runtime-support-only paths.
   const legacyTree=git(repo,["merge-tree","--write-tree",failed,effective]);
   const legacy=execFileSync("git",["commit-tree",legacyTree,"-p",failed,"-p",effective],{cwd:repo,encoding:"utf8",input:ownerPayloadBaseSyncReceipt(spec.front_id!,localBinding)}).trim();
   git(repo,["push","--force-with-lease","origin",`${legacy}:refs/heads/${spec.work_branch!}`]);
