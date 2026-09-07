@@ -73,3 +73,19 @@ export interface LifecycleRecord {
   state_writer_control_plane_version?: number;
   updated_utc: string;
 }
+
+export interface HistoricalAttemptRefV1 {
+  schema_version: 1;
+  front_id: string;
+  roadmap_item_id: string;
+  lifecycle_state: LifecycleState;
+  issue: number;
+  pr: number;
+  base_sha: string;
+  failed_head_sha: string;
+  repair_cycles: 2;
+  grant_key: string;
+  consumed_event_sha256: string;
+  build_attempt_id: string;
+  historical_sha256: string;
+}
