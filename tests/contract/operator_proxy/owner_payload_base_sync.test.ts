@@ -101,6 +101,13 @@ test("governed builder synchronizes the exact signed runtime support instead of 
   assert.equal(remoteHead(spec.work_branch!),result.synchronized_head_sha);
   assert.equal(git(repo,["show","-s","--format=%P",result.synchronized_head_sha]),`${failed} ${support}`);
   assert.equal(verifyOwnerPayloadBaseSyncCommit(git(repo,["show","-s","--format=%B",result.synchronized_head_sha]),localBinding,result.synchronized_head_sha,[failed,support],runtimeSupport),true);
+  // A sync commit made before runtime-support receipts existed remains a sync,
+  // not a builder candidate, when the separately persisted support is exact.
+  const legacyTree=git(repo,["merge-tree","--write-tree",failed,effective]);
+  const legacy=execFileSync("git",["commit-tree",legacyTree,"-p",failed,"-p",effective],{cwd:repo,encoding:"utf8",input:ownerPayloadBaseSyncReceipt(spec.front_id!,localBinding)}).trim();
+  git(repo,["push","--force-with-lease","origin",`${legacy}:refs/heads/${spec.work_branch!}`]);
+  bus.prIdentity=()=>({author:{login:"cesarmanuel8102"},baseRefName:integration,baseRefOid:effective,headRefName:spec.work_branch,headRefOid:legacy,headRepository:{nameWithOwner:spec.repository},isCrossRepository:false,isDraft:true,state:"OPEN",files:[{path:"docs/fix.md"}]});
+  assert.equal(builder.isOwnerPayloadRepairBaseSync({...spec,expected_base_sha:frozen},localGrant,localBinding as any,runtimeSupport,legacy),true);
 });
 
 test("owner base sync retries create the same SHA and reject inherited forbidden payloads",()=>{
