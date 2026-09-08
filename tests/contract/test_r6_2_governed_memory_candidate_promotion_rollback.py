@@ -80,3 +80,48 @@ def test_unknown_fields_or_mismatched_candidate_hash_fail_closed(tmp_path):
         "reason": "manual_decision_candidate_mismatch",
         "write_performed": False,
     }
+
+
+def _isolated_root(tmp_path: Path) -> Path:
+    root = tmp_path / "isolated-store"
+    root.mkdir()
+    (root / ".r6_2_isolated_root").write_text("isolated\n", encoding="utf-8")
+    (root / "semantic_memory.jsonl").write_bytes(b'{"id":"before"}\n')
+    (root / "semantic_memory_faiss.index").write_bytes(b"index-before")
+    (root / "semantic_memory_faiss_ids.json").write_bytes(b'["before"]\n')
+    return root
+
+
+def _artifact_hashes(root: Path) -> dict[str, str]:
+    return {
+        path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in sorted(root.glob("semantic_memory_*"))
+    }
+
+
+def test_isolated_rollback_restores_each_artifact_byte_for_byte(tmp_path):
+    from brain_v9.memory.memory_rollback import rollback_isolated_snapshot
+    from brain_v9.memory.memory_snapshot import create_isolated_memory_snapshot
+
+    root = _isolated_root(tmp_path)
+    before = _artifact_hashes(root)
+    snapshot = create_isolated_memory_snapshot(root, "a" * 64)
+    for path in root.glob("semantic_memory_*"):
+        path.write_bytes(b"changed-" + path.name.encode("ascii"))
+
+    result = rollback_isolated_snapshot(root, snapshot, "a" * 64)
+
+    assert result == {"ok": True, "reason": "rollback_applied", "receipt_sha256": "a" * 64}
+    assert _artifact_hashes(root) == before
+
+
+def test_canonical_traversal_or_corrupt_manifest_fails_before_copy(tmp_path):
+    from brain_v9.memory.memory_rollback import rollback_isolated_snapshot
+    from brain_v9.memory.memory_snapshot import create_isolated_memory_snapshot
+
+    assert create_isolated_memory_snapshot(Path("memory"), "a" * 64)["ok"] is False
+    root = _isolated_root(tmp_path)
+    before = _artifact_hashes(root)
+    result = rollback_isolated_snapshot(root, {"../escape": {}}, "a" * 64)
+    assert result["ok"] is False
+    assert _artifact_hashes(root) == before
