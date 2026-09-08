@@ -165,8 +165,8 @@ def test_sanitizer_namespace_import_does_not_eagerly_load_the_route_classifier()
     assert result.returncode == 0, result.stderr
 
 
-def test_r5_4_closeout_binds_verified_evidence_and_activates_only_r6_1():
-    """R5.4 may activate its sole dependency-eligible successor only at closeout."""
+def test_r5_4_closeout_binds_verified_evidence_and_preserves_its_r6_1_successor():
+    """R5.4's immutable closeout must remain valid after later roadmap transitions."""
     closeout = json.loads(CLOSEOUT_EVIDENCE.read_text(encoding="utf-8"))
     manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
 
@@ -185,12 +185,6 @@ def test_r5_4_closeout_binds_verified_evidence_and_activates_only_r6_1():
         "jit_binding_completed": True,
     }
     assert manifest["roadmap_items"]["R5.4"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    active_items = [
-        item_id
-        for item_id, item in manifest["roadmap_items"].items()
-        if item["status"] == "AUTHORIZED_ACTIVE"
-    ]
-    assert active_items == ["R6.1"]
     automation = manifest["roadmap_items"]["R6.1"]["automation"]
     assert automation["jit_binding_completed"] is True
     assert automation["dispatchable"] is True

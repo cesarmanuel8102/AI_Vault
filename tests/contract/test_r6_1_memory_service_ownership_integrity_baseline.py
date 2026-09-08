@@ -11,6 +11,10 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tmp_agent"))
 EVIDENCE = ROOT / "docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE.json"
+CLOSEOUT_EVIDENCE = (
+    ROOT
+    / "docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE_CLOSEOUT.json"
+)
 
 
 def test_memory_service_exposes_read_only_governed_retrieval(tmp_path):
@@ -195,3 +199,38 @@ def test_memory_service_never_reads_curated_artifacts_as_semantic_records(tmp_pa
     result = MemoryService(semantic_root=semantic_root).retrieve("result", top_k=5)
 
     assert [hit["id"] for hit in result["hits"]] == ["semantic"]
+
+
+def test_r6_1_closeout_activates_only_bound_r6_2_promotion_successor():
+    closeout = json.loads(CLOSEOUT_EVIDENCE.read_text(encoding="utf-8"))
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+
+    assert closeout["roadmap_item_id"] == "R6.1"
+    assert closeout["parent_merge_commit"] == "7b22aad8a003e33a29be1afcb563e027309d2d5f"
+    assert closeout["result"] == "CLOSED_RUNTIME_VERIFIED"
+    assert manifest["roadmap_items"]["R6.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    assert closeout["next_item"] == {
+        "roadmap_item_id": "R6.2",
+        "front_id": "BRAIN-101-R6-2-GOVERNED-MEMORY-CANDIDATE-PROMOTION-ROLLBACK-01",
+        "executor": "codex_control_plane",
+        "deployment_mode": "NO_DEPLOY",
+        "expected_base_sha_source": (
+            "sequenceRoadmap resolves the exact live canonical integration-branch head "
+            "at governed dispatch"
+        ),
+        "jit_binding_completed": True,
+    }
+    active_items = [
+        item_id
+        for item_id, item in manifest["roadmap_items"].items()
+        if item["status"] == "AUTHORIZED_ACTIVE"
+    ]
+    assert active_items == ["R6.2"]
+    automation = manifest["roadmap_items"]["R6.2"]["automation"]
+    assert automation["front_id"] == closeout["next_item"]["front_id"]
+    assert automation["jit_binding_completed"] is True
+    assert automation["dispatchable"] is True
+    assert manifest["roadmap_items"]["R6.2"]["hard_limits"] == closeout["hard_limits"]
+    assert automation["closeout"]["front_id"] == (
+        "BRAIN-101-R6-2-GOVERNED-MEMORY-CANDIDATE-PROMOTION-ROLLBACK-CLOSEOUT-01"
+    )
