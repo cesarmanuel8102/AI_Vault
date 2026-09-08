@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "30571071b53ee8cb9886cd683d84de76af79484d546b5b4de1fafee231e217af",
+  "roadmap_sha256": "5713b379dd076468dceaaa923e7d1806017f49eb5ec9114dee451badef9c4ff7",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -1763,7 +1763,7 @@
       }
     },
     "R6.1": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R6",
       "title": "MemoryService ownership and integrity baseline",
       "dependencies": [
@@ -1865,7 +1865,9 @@
             "ROADMAP_STATUS.json",
             "docs/MIGRATION_CONTROL_LEDGER.md",
             "docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE_CLOSEOUT.json",
-            "tests/contract/test_r6_1_memory_service_ownership_integrity_baseline.py"
+            "tests/contract/test_r6_1_memory_service_ownership_integrity_baseline.py",
+            "tests/contract/test_r5_4_agent_v2_cognitive_route_convergence.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py"
           ],
           "forbidden_paths": [
             ".env",
@@ -1883,13 +1885,14 @@
           ],
           "test_commands": [
             "python -m pytest -q tests/contract/test_r6_1_memory_service_ownership_integrity_baseline.py",
+            "python -m pytest -q tests/contract/test_r5_4_agent_v2_cognitive_route_convergence.py tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
             "git diff --check"
           ]
         }
       }
     },
     "R6.2": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R6",
       "title": "Governed memory candidate promotion and rollback",
       "dependencies": [
@@ -1934,18 +1937,50 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
-        "activation_requires": [
-          "expected_base_sha",
-          "front_id",
-          "work_branch",
-          "allowed_paths",
-          "forbidden_paths",
-          "test_commands",
-          "acceptance",
-          "rollback",
-          "evidence_path"
-        ]
+        "jit_binding_completed": true,
+        "dispatchable": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R6-2-GOVERNED-MEMORY-CANDIDATE-PROMOTION-ROLLBACK-01",
+        "objective": "Converge governed memory candidate promotion and rollback through MemoryService without automatic promotion, cross-room writes, or direct FAISS mutation",
+        "work_branch": "control-plane/r6-2-governed-memory-candidate-promotion-rollback",
+        "executor": "codex_control_plane",
+        "risk": "HIGH",
+        "domain": "memory_governance",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/memory_service.py",
+          "tmp_agent/brain_v9/core/semantic_memory_faiss.py",
+          "tmp_agent/brain_v9/memory/promotion_candidate_promoter.py",
+          "tmp_agent/brain_v9/memory/memory_snapshot.py",
+          "tmp_agent/brain_v9/memory/memory_rollback.py",
+          "docs/roadmap/evidence/BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK.json",
+          "tests/contract/test_r6_2_governed_memory_candidate_promotion_rollback.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Require an explicit governed candidate before any promotion attempt",
+          "Require a manual approval decision; reject automatic promotion and cross-room writes",
+          "Record promotion provenance, retention, deduplication, and a reversible rollback receipt",
+          "Preserve no deployment, no scheduler activation, no canonical local sync, no live trading, no real money, and no auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r6_2_governed_memory_candidate_promotion_rollback.py",
+          "python -m pytest -q tests/contract/test_r6_1_memory_service_ownership_integrity_baseline.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Restore only candidate metadata and governed index changes through the verified R6.2 rollback receipt",
+          "Do not modify live semantic data, scheduler configuration, runtime installation, canonical local state, trading, or financial controls"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK.json"
       }
     },
     "R6.3": {

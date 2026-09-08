@@ -1268,6 +1268,14 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Sole successor: R5.2 `BRAIN-101-R5-2-AGENT-V2-LIFECYCLE-CHECKPOINTS-01` is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`, and receives its exact `expected_base_sha` from the live canonical branch when `sequenceRoadmap` creates the governed spec.
 - Preserved controls: human final authority true; auto-merge false; canonical local sync false; persistent Agent Loop deferred; live trading false; real money false.
 
+## BRAIN-101 R6.1 - MemoryService Ownership and Integrity Baseline Closeout (2026-09-08)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: commit `88ab15ca49f2d567d38cee0f96b8c0a1f3c02e24`, merged as `7b22aad8a003e33a29be1afcb563e027309d2d5f` through PR #311.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE_CLOSEOUT.json` binds the read-only MemoryService ownership and integrity baseline.
+- Status: R6.1 is `CLOSED_RUNTIME_VERIFIED`; no deployment, scheduler activation, canonical local sync, live trading, real money, auto-merge, semantic-data mutation, or FAISS mutation occurred.
+- Sole successor: R6.2 `BRAIN-101-R6-2-GOVERNED-MEMORY-CANDIDATE-PROMOTION-ROLLBACK-01` is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`, and receives its exact expected base from the live canonical branch when `sequenceRoadmap` creates the governed spec.
+
 #### R5.2 Closeout and R5.3 Activation
 
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS_CLOSEOUT.json`, bound to source commit `946f60c3ce799204d110388f6f7fe2f3b6f9a529` and merge commit `40e8724a5fae642c554b329ef964e2be5e653d15`.

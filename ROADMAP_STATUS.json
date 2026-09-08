@@ -1,9 +1,9 @@
 {
-  "current_head": "5acb2363420a5e62ca77eeadf2dea91c85993e66",
-  "current_remote_head": "5acb2363420a5e62ca77eeadf2dea91c85993e66",
+  "current_head": "7b22aad8a003e33a29be1afcb563e027309d2d5f",
+  "current_remote_head": "7b22aad8a003e33a29be1afcb563e027309d2d5f",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "r5_4_cognitive_route_convergence_closed_r6_1_authorized",
-  "last_applied_checkpoint": "BRAIN-101-R5-4-AGENT-V2-COGNITIVE-ROUTE-CONVERGENCE-CLOSEOUT-01",
+  "migration_status": "r6_1_memory_service_ownership_integrity_baseline_closed_r6_2_authorized",
+  "last_applied_checkpoint": "BRAIN-101-R6-1-MEMORY-SERVICE-OWNERSHIP-INTEGRITY-BASELINE-CLOSEOUT-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -175,7 +175,7 @@
     "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-CLOSEOUT-01"
   ],
   "open_fronts": [
-    "BRAIN-101-R6-1-MEMORY-SERVICE-OWNERSHIP-INTEGRITY-BASELINE-01"
+    "BRAIN-101-R6-2-GOVERNED-MEMORY-CANDIDATE-PROMOTION-ROLLBACK-01"
   ],
   "blocked_fronts": [
     "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
@@ -192,12 +192,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "BRAIN-101-R6-1-MEMORY-SERVICE-OWNERSHIP-INTEGRITY-BASELINE-01",
+    "name": "BRAIN-101-R6-2-GOVERNED-MEMORY-CANDIDATE-PROMOTION-ROLLBACK-01",
     "status": "authorized_next",
-    "reason": "R5.4 closed the canonical Agent V2 route-convergence contract; the next dependency-eligible bounded candidate is the no-deploy MemoryService ownership and integrity baseline."
+    "reason": "R6.1 closed the governed MemoryService ownership and integrity baseline; the next dependency-eligible bounded candidate is the no-deploy, approval-gated memory promotion and rollback contract."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-09-08T17:56:00.000+00:00",
+  "last_updated": "2026-09-08T00:00:00.000+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -4798,9 +4798,9 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "R4_3_CLOSED_RUNTIME_VERIFIED_R5_1_AUTHORIZED_ACTIVE",
+    "status": "R6_1_CLOSED_RUNTIME_VERIFIED_R6_2_AUTHORIZED_ACTIVE",
     "approval_status": "HUMAN_ADOPTED",
-    "current_phase": "R5",
+    "current_phase": "R6",
     "human_final_authority": true,
     "auto_merge": false,
     "canonical_local_sync": false,
@@ -5420,10 +5420,10 @@
     "r4_3_front_id": "BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-01",
     "r4_3_executor": "codex_control_plane",
     "r4_3_deployment_mode": "NO_DEPLOY",
-    "next_authorized_item": "R6.1",
-    "roadmap_decomposition": "R5_R19_EXECUTABLE_R6_1_JIT_BOUND",
+    "next_authorized_item": "R6.2",
+    "roadmap_decomposition": "R5_R19_EXECUTABLE_R6_2_JIT_BOUND",
     "roadmap_decomposition_item_count": 41,
-    "roadmap_execution_binding": "R6_1_JIT_BOUND_LIVE_HEAD_AT_DISPATCH",
+    "roadmap_execution_binding": "R6_2_JIT_BOUND_LIVE_HEAD_AT_DISPATCH",
     "r4_3_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R4_3_CHAT_ENTRYPOINT_CONTRACTS_CLOSEOUT.json",
     "r4_3_closeout_source_commit": "dc968bff656f2e007c410c0aa0f5cb849988a3b3",
     "r4_3_closeout_parent_merge": "9389737eca240173591fe926c867012e029bccbd",
@@ -5455,12 +5455,19 @@
     "r5_4_expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
     "r5_4_implementation_merge_commit": "5acb2363420a5e62ca77eeadf2dea91c85993e66",
     "r5_4_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R5_4_AGENT_V2_COGNITIVE_ROUTE_CONVERGENCE_CLOSEOUT.json",
-    "r6_1_status": "AUTHORIZED_ACTIVE",
+    "r6_1_status": "CLOSED_RUNTIME_VERIFIED",
     "r6_1_front_id": "BRAIN-101-R6-1-MEMORY-SERVICE-OWNERSHIP-INTEGRITY-BASELINE-01",
     "r6_1_executor": "codex_control_plane",
     "r6_1_deployment_mode": "NO_DEPLOY",
     "r6_1_expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
-    "remaining_planned_unbound_items": 36
+    "r6_1_implementation_merge_commit": "7b22aad8a003e33a29be1afcb563e027309d2d5f",
+    "r6_1_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE_CLOSEOUT.json",
+    "r6_2_status": "AUTHORIZED_ACTIVE",
+    "r6_2_front_id": "BRAIN-101-R6-2-GOVERNED-MEMORY-CANDIDATE-PROMOTION-ROLLBACK-01",
+    "r6_2_executor": "codex_control_plane",
+    "r6_2_deployment_mode": "NO_DEPLOY",
+    "r6_2_expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+    "remaining_planned_unbound_items": 35
   },
   "brain_101_r3_1_contract_e2e_gap_matrix_closeout": {
     "status": "done",

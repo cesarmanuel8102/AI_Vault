@@ -9363,3 +9363,11 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R5_4_AGENT_V2_COGNITIVE_ROUTE_CONVERGENCE_CLOSEOUT.json`, bound to the verified route-selection and explicit degraded fallback evidence.
 - Status: R5.4 set to `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, canonical local sync, live trading, real money, or auto-merge occurred.
 - Authorized successor: exactly one R6.1, `BRAIN-101-R6-1-MEMORY-SERVICE-OWNERSHIP-INTEGRITY-BASELINE-01`, controller-governed `NO_DEPLOY`, bounded to governed MemoryService ownership and integrity without direct FAISS mutation.
+
+## BRAIN-101 R6.1 - MemoryService Ownership and Integrity Baseline Closeout (2026-09-08)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: commit `88ab15ca49f2d567d38cee0f96b8c0a1f3c02e24`, merged as `7b22aad8a003e33a29be1afcb563e027309d2d5f` through PR #311.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE_CLOSEOUT.json`, bound to the verified read-only MemoryService boundary and snapshot-integrity evidence.
+- Status: R6.1 set to `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, canonical local sync, live trading, real money, auto-merge, semantic-data mutation, or FAISS mutation occurred.
+- Authorized successor: exactly one R6.2, `BRAIN-101-R6-2-GOVERNED-MEMORY-CANDIDATE-PROMOTION-ROLLBACK-01`, controller-governed `NO_DEPLOY`, bounded to approval-gated candidate promotion, provenance, deduplication, and reversible rollback.

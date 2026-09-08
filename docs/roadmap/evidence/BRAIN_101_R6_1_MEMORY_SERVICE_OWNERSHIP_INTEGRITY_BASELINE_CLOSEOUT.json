@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "evidence_type": "BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE_CLOSEOUT",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "created_at_utc": "2026-09-08T00:00:00Z",
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R6.1",
+  "parent_front_id": "BRAIN-101-R6-1-MEMORY-SERVICE-OWNERSHIP-INTEGRITY-BASELINE-01",
+  "parent_source_commit": "88ab15ca49f2d567d38cee0f96b8c0a1f3c02e24",
+  "parent_merge_commit": "7b22aad8a003e33a29be1afcb563e027309d2d5f",
+  "parent_pr_number": 311,
+  "source_evidence_path": "docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE.json",
+  "result": "CLOSED_RUNTIME_VERIFIED",
+  "next_item": {
+    "roadmap_item_id": "R6.2",
+    "front_id": "BRAIN-101-R6-2-GOVERNED-MEMORY-CANDIDATE-PROMOTION-ROLLBACK-01",
+    "executor": "codex_control_plane",
+    "deployment_mode": "NO_DEPLOY",
+    "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+    "jit_binding_completed": true
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}
