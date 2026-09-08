@@ -712,7 +712,7 @@
     {
       "id": "R3",
       "percent": 70,
-      "status": "PARTIALLY_CLOSED_R3_13_CLOSED_R3_4_AUTHORIZED_ACTIVE",
+      "status": "PARTIALLY_CLOSED_R3_4_CLOSED",
       "evidence": [
         {
           "claim": "Auth/RBAC/signed approval contracts exist; complete constitutional adversarial coverage does not.",
@@ -827,13 +827,18 @@
           "command": null,
           "result": "R2.5 is MEDIUM risk, domain security_governance, executor codex_control_plane, work_branch control-plane/r2-5-five-role-rbac-matrix, deployment_mode NO_DEPLOY, and complete closeout metadata is declared. No executor alias is used.",
           "observed_at_utc": "2026-08-03T23:53:18Z"
+        },
+        {
+          "claim": "R3.4 functional objective closed through validated controller supersession receipt; historical Agent Loop attempt preserved.",
+          "classification": "CONTROLLER_REBASELINE_VERIFIED",
+          "observed_at_utc": "2026-09-08T00:52:00Z"
         }
       ]
     },
     {
       "id": "R3",
       "percent": 65,
-      "status": "PARTIALLY_CLOSED_R3_2_AUTHORIZED_ACTIVE",
+      "status": "PARTIALLY_CLOSED_R3_4_CLOSED",
       "evidence": [
         {
           "claim": "CI and recovery contracts exist; the required E2E matrix is incomplete.",
@@ -902,13 +907,18 @@
           "command": "python -m pytest tests/contract/test_brain_101_r3_2_*.py",
           "result": "86 contract tests passed, 0 failed. R3.2 remains SUPERSEDED_SCOPE_INCIDENT with preserved immutable incident evidence. R3.4 is the single authorized next item.",
           "observed_at_utc": "2026-08-29T23:59:59Z"
+        },
+        {
+          "claim": "R3.4 functional objective closed through validated controller supersession receipt; historical Agent Loop attempt preserved.",
+          "classification": "CONTROLLER_REBASELINE_VERIFIED",
+          "observed_at_utc": "2026-09-08T00:52:00Z"
         }
       ]
     },
     {
       "id": "R4",
       "percent": 35,
-      "status": "PARTIALLY_CLOSED",
+      "status": "AUTHORIZED_ACTIVE_R4_1_BASELINE",
       "evidence": [
         {
           "claim": "Router extraction progressed while R4 LOC and legacy targets remain unmet.",

@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "5dd8ccef1ecd9e0db70a12ee2466b5cb914aa533a7c0e7fcd8dece1e017f69de",
+  "roadmap_sha256": "bc4dcf22ad783af0b0d6b9e0669b0f3805623a1796287b383efa24c199bd1a2d",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -895,7 +895,7 @@
     },
     "R3.4": {
       "title": "Agent V2 cognitive pipeline E2E",
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "dependencies": [
         "R3.13"
       ],
@@ -1028,6 +1028,78 @@
             "Set R1.0 to CLOSED_RUNTIME_VERIFIED",
             "Set R1.2 to AUTHORIZED_ACTIVE only after the E2E passes",
             "Preserve human final authority and disabled live trading"
+          ],
+          "test_commands": [
+            "git diff --check"
+          ]
+        }
+      }
+    },
+    "R4.1": {
+      "title": "Modular-Monolith Baseline and Boundary Inventory",
+      "status": "AUTHORIZED_ACTIVE",
+      "dependencies": [
+        "R3.4"
+      ],
+      "automation": {
+        "front_id": "BRAIN-101-R4-1-MODULAR-MONOLITH-BASELINE-01",
+        "objective": "Build a canonical-base-pinned architecture inventory and select exactly one safe internal modular-monolith extraction for R4.2",
+        "work_branch": "control-plane/r4-1-modular-monolith-baseline",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "architecture",
+        "allowed_paths": [
+          "docs/roadmap/evidence/BRAIN_101_R4_1_MODULAR_MONOLITH_BASELINE.md",
+          "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "memory/semantic/",
+          "memory/rollback",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Measure current canonical entrypoints, ownership, dependencies, shared state, effects, coupling, and existing tests without modifying runtime code",
+          "Rank internal extraction candidates using the approved evidence model and select exactly one eligible in-process R4.2 candidate",
+          "Preserve one deployable monolith and do not introduce network boundaries, public-interface migrations, deployment, scheduler activation, canonical local sync, live trading, real money, or auto-merge"
+        ],
+        "test_commands": [
+          "npx --prefix scripts/operator_proxy exec -- tsx --test ../../tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "closeout": {
+          "front_id": "BRAIN-101-R4-1-MODULAR-MONOLITH-BASELINE-CLOSEOUT-01",
+          "objective": "Record R4.1 baseline evidence, close R4.1, and authorize exactly one evidence-selected R4.2 internal extraction",
+          "work_branch": "control-plane/r4-1-modular-monolith-baseline-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R4_1_MODULAR_MONOLITH_BASELINE_CLOSEOUT.json"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record the R4.1 canonical base, evidence hash, ranked candidate, rollback, and hard-limit evidence",
+            "Set R4.1 to CLOSED_RUNTIME_VERIFIED only when the evidence selects exactly one eligible R4.2 candidate",
+            "Authorize exactly one R4.2 internal modular-monolith extraction without microservices, deployment, scheduler activation, canonical local sync, live trading, real money, or auto-merge"
           ],
           "test_commands": [
             "git diff --check"

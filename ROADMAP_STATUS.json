@@ -2,8 +2,8 @@
   "current_head": "6f89252838854f8138442885f656b3ac8f8fc1a4",
   "current_remote_head": "pending_push",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "r3_13_r3_2_scope_incident_certification_closeout_ready",
-  "last_applied_checkpoint": "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-CLOSEOUT-01",
+  "migration_status": "r3_4_controller_rebaseline_closed_r4_1_authorized",
+  "last_applied_checkpoint": "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-CLOSEOUT-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -175,7 +175,7 @@
     "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-CLOSEOUT-01"
   ],
   "open_fronts": [
-    "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-01"
+    "BRAIN-101-R4-1-MODULAR-MONOLITH-BASELINE-01"
   ],
   "blocked_fronts": [
     "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
@@ -192,12 +192,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-01",
+    "name": "BRAIN-101-R4-1-MODULAR-MONOLITH-BASELINE-01",
     "status": "authorized_next",
-    "reason": "R3.13 replacement certification closed runtime-verified; next governed item is Agent V2 cognitive pipeline E2E (agent_loop, roadmap-doc, NO_DEPLOY)."
+    "reason": "R3.4 is functionally satisfied through controller-governed rebaseline; R4.1 is the sole documentation-only modular-monolith baseline item."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-08-29T23:59:59.000+00:00",
+  "last_updated": "2026-09-08T00:52:00.000+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -4798,9 +4798,9 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "R3_2_SCOPE_INCIDENT_R3_13_AUTHORIZED_ACTIVE",
+    "status": "R3_4_CLOSED_R4_1_AUTHORIZED_ACTIVE",
     "approval_status": "HUMAN_ADOPTED",
-    "current_phase": "R3",
+    "current_phase": "R4",
     "human_final_authority": true,
     "auto_merge": false,
     "canonical_local_sync": false,
@@ -5401,7 +5401,15 @@
       "test_commands": [
         "git diff --check"
       ]
-    }
+    },
+    "r3_4_status": "CLOSED_RUNTIME_VERIFIED",
+    "r3_4_execution_controller": "CODEX_GOVERNED_CONTROLLER",
+    "r3_4_controller_supersession_receipt_sha256": "2404fcdbb0675741dfd07881a5edbc74f86e0ce43875dbb5ec7ea486a93b4b0c",
+    "r4_1_status": "AUTHORIZED_ACTIVE",
+    "r4_1_front_id": "BRAIN-101-R4-1-MODULAR-MONOLITH-BASELINE-01",
+    "r4_1_executor": "codex_control_plane",
+    "r4_1_deployment_mode": "NO_DEPLOY",
+    "next_authorized_item": "R4.1"
   },
   "brain_101_r3_1_contract_e2e_gap_matrix_closeout": {
     "status": "done",

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R3.4",
+  "status": "CLOSED_RUNTIME_VERIFIED",
+  "functional_objective": "PASSED",
+  "historical_operational_attempt": "SUPERSEDED_REBASELINED",
+  "execution_controller": "CODEX_GOVERNED_CONTROLLER",
+  "controller_supersession_receipt_sha256": "2404fcdbb0675741dfd07881a5edbc74f86e0ce43875dbb5ec7ea486a93b4b0c",
+  "supersession_key": "999954ac79e22bed961a1007c21bd6554142ba463539d276324556960401e34b",
+  "historical_base_sha": "65b5d4c40e1f9a12348b5b2d2421be7ba66651a4",
+  "canonical_base_sha": "b134516c775feb5b302200ea559beb62d903c67a",
+  "historical_attempt_sha256": "ceb9537fa37caa610d7dc932cbc1b875a7700d2f4ceaee2905ecfabdb55b01b2",
+  "functional_evidence": {
+    "path": "docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md",
+    "ref": "b134516c775feb5b302200ea559beb62d903c67a",
+    "sha256": "dd976af365ad6bc730e7e0e5b87fd8e588096727496c290ac3d02e97b0f7fb12",
+    "assertion_sha256": "9b4dca01a4272299f94499b70add0cd2cb0b99dc39560fe45bcc8d6cf237fb9b"
+  },
+  "historical_artifacts_preserved": true,
+  "persistent_agent_loop_enabled": false,
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false
+  },
+  "next_authorized_item": "R4.1"
+}
