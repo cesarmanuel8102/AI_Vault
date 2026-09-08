@@ -89,6 +89,7 @@ def test_r5_3_closeout_activates_exactly_one_jit_bound_r5_4_successor():
     assert binding["deployment_mode"] == "NO_DEPLOY"
     assert binding["front_id"] == "BRAIN-101-R5-4-AGENT-V2-COGNITIVE-ROUTE-CONVERGENCE-01"
     assert binding["work_branch"] == "control-plane/r5-4-agent-v2-cognitive-route-convergence"
+    assert binding["closeout"]["risk"] == "MEDIUM"
 
 
 def test_closeout_preserves_pre_r5_history_except_the_declared_r4_3_transition():

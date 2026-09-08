@@ -1731,7 +1731,7 @@
           "objective": "Record verified R5.4 route-convergence evidence and authorize exactly one dependency-eligible successor",
           "work_branch": "control-plane/r5-4-agent-v2-cognitive-route-convergence-closeout",
           "executor": "codex_control_plane",
-          "risk": "HIGH",
+          "risk": "MEDIUM",
           "allowed_paths": [
             "docs/roadmap/BRAIN_101_MANIFEST.json",
             "docs/roadmap/BRAIN_101_ROADMAP.md",
