@@ -44,7 +44,8 @@ def test_semantic_memory_exposes_public_promote_record_boundary(tmp_path, monkey
     assert mem._ids == ["candidate_contract_001"]
 
 
-def test_promotion_candidate_promoter_does_not_call_private_faiss_add_to_index():
+def test_promotion_candidate_promoter_delegates_without_direct_faiss_mutation():
     source = (ROOT / "tmp_agent/brain_v9/memory/promotion_candidate_promoter.py").read_text(encoding="utf-8")
-    assert "mem.promote_record(" in source
+    assert "MemoryService" in source
+    assert "promote_record(" not in source
     assert "mem._add_to_index(" not in source
