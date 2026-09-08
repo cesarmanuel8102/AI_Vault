@@ -5,11 +5,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tmp_agent"))
 EVIDENCE = ROOT / "tmp_agent" / "front_chat_router_preservation_entrypoint_01"
 ROUTER = ROOT / "tmp_agent" / "brain_v9" / "core" / "router_entrypoint.py"
-MAIN = ROOT / "tmp_agent" / "brain_v9" / "main.py"
+ROUTES = ROOT / "tmp_agent" / "brain_v9" / "routes" / "chat_entrypoint_routes.py"
 SEMANTIC = ROOT / "memory" / "semantic" / "semantic_memory.jsonl"
 FAISS_IDS = ROOT / "memory" / "semantic" / "semantic_memory_faiss_ids.json"
 FAISS_INDEX = ROOT / "memory" / "semantic" / "semantic_memory_faiss.index"
@@ -29,20 +31,29 @@ def _load_json(name: str):
         return json.load(fh)
 
 
+def _require_memory_artifacts() -> None:
+    missing = [path.name for path in (SEMANTIC, FAISS_IDS, FAISS_INDEX) if not path.exists()]
+    if missing:
+        pytest.skip(f"memory artifacts are not materialized in this checkout: {', '.join(missing)}")
+
+
 def _git_staged_names():
     cp = subprocess.run(["git", "diff", "--cached", "--name-only"], cwd=ROOT, capture_output=True, text=True, check=True)
     return [line.strip().replace("\\", "/") for line in cp.stdout.splitlines() if line.strip()]
 
 
 def test_01_semantic_memory_lines_1715():
+    _require_memory_artifacts()
     assert sum(1 for _ in SEMANTIC.open(encoding="utf-8")) == 1715
 
 
 def test_02_faiss_ids_1616():
+    _require_memory_artifacts()
     assert len(json.load(FAISS_IDS.open(encoding="utf-8"))) == 1616
 
 
 def test_03_faiss_ntotal_1616_if_readable():
+    _require_memory_artifacts()
     try:
         import faiss
     except Exception:
@@ -50,9 +61,9 @@ def test_03_faiss_ntotal_1616_if_readable():
     assert faiss.read_index(str(FAISS_INDEX)).ntotal == 1616
 
 
-def test_04_base_path_canonical():
+def test_04_base_path_is_current_checkout():
     from brain_v9.config import BASE_PATH
-    assert str(BASE_PATH) == "C:\\AI_VAULT_CANONICAL"
+    assert BASE_PATH.resolve() == ROOT.resolve()
 
 
 def test_05_router_entrypoint_exists():
@@ -80,11 +91,11 @@ def test_08_governance_no_cot_filter_is_applied():
 
 
 def test_09_chat_route_uses_entrypoint_not_direct_llm_query():
-    main = MAIN.read_text(encoding="utf-8")
-    chat_start = main.index('@app.post("/chat"')
-    chat_end = main.index('@app.delete("/sessions', chat_start)
-    chat_block = main[chat_start:chat_end]
-    assert "handle_user_message(" in chat_block
+    routes = ROUTES.read_text(encoding="utf-8")
+    chat_start = routes.index('@router.post("/chat"')
+    chat_end = routes.index('@router.get("/chat/introspectivo/debug"', chat_start)
+    chat_block = routes[chat_start:chat_end]
+    assert "handle_chat_entrypoint(" in chat_block
     assert "LLMManager().query" not in chat_block
     assert ".llm.query" not in chat_block
 
@@ -94,7 +105,7 @@ def test_10_simple_message_returns_structured_output():
     result = asyncio.run(handle_user_message("hola", room="smoke-router", dry_run=True))
     assert isinstance(result, dict)
     assert result["content"]
-    assert result["canonical_path"] == "C:\\AI_VAULT_CANONICAL"
+    assert Path(result["canonical_path"]).resolve() == ROOT.resolve()
 
 
 def test_11_output_includes_intent():
@@ -123,6 +134,7 @@ def test_14_output_does_not_expose_raw_chain_of_thought():
 
 
 def test_15_dry_run_does_not_mutate_memory_or_faiss():
+    _require_memory_artifacts()
     from brain_v9.core.router_entrypoint import handle_user_message
     before = (_sha(SEMANTIC), _sha(FAISS_IDS), _sha(FAISS_INDEX))
     asyncio.run(handle_user_message("dry run only", room="smoke-router", dry_run=True))
