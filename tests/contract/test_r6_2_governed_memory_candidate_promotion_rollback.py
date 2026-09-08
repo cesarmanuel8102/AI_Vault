@@ -125,3 +125,47 @@ def test_canonical_traversal_or_corrupt_manifest_fails_before_copy(tmp_path):
     result = rollback_isolated_snapshot(root, {"../escape": {}}, "a" * 64)
     assert result["ok"] is False
     assert _artifact_hashes(root) == before
+
+def _prepared_receipt(service, tmp_path: Path) -> dict[str, object]:
+    candidate = governed_candidate()
+    prepared = service.prepare_governed_promotion(candidate, manual_decision(candidate), tmp_path / "staging")
+    assert prepared["ok"] is True
+    return prepared["receipt"]
+
+
+def test_exact_receipt_executes_once_in_isolated_root_and_can_roll_back(tmp_path, monkeypatch):
+    from brain_v9.core.memory_service import MemoryService
+
+    service = MemoryService(tmp_path / "configured-semantic")
+    root = _isolated_root(tmp_path)
+    receipt = _prepared_receipt(service, tmp_path)
+    before = _artifact_hashes(root)
+
+    def deterministic_fake_write(_receipt, target_root):
+        for path in target_root.glob("semantic_memory_*"):
+            path.write_bytes(b"after-" + path.name.encode("ascii"))
+        return {"ok": True, "writer": "contract-fake"}
+
+    monkeypatch.setattr(service, "_isolated_storage_write", deterministic_fake_write, raising=False)
+    execution = service.execute_isolated_governed_promotion(receipt, root)
+
+    assert execution["ok"] is True
+    assert execution["promotion_receipt_sha256"] == receipt["receipt_sha256"]
+    assert execution["write_performed"] is True
+    assert _artifact_hashes(root) != before
+    rollback = service.rollback_isolated_governed_promotion(execution, root)
+    assert rollback["ok"] is True
+    assert _artifact_hashes(root) == before
+
+
+def test_execution_rejects_configured_semantic_root(tmp_path):
+    from brain_v9.core.memory_service import MemoryService
+
+    service = MemoryService(tmp_path / "configured-semantic")
+    receipt = _prepared_receipt(service, tmp_path)
+
+    assert service.execute_isolated_governed_promotion(receipt, service.semantic_root) == {
+        "ok": False,
+        "reason": "canonical_promotion_not_enabled",
+        "write_performed": False,
+    }

@@ -245,6 +245,109 @@ class MemoryService:
         receipt["receipt_sha256"] = _canonical_sha256(receipt)
         return {"ok": True, "write_performed": False, "receipt": receipt}
 
+    @staticmethod
+    def _isolated_artifact_hashes(root: Path) -> Dict[str, str]:
+        return {
+            path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sorted(Path(root).glob("semantic_memory_*"))
+        }
+
+    @staticmethod
+    def _verify_promotion_receipt(receipt: Dict[str, Any]) -> bool:
+        expected = {
+            "schema_version",
+            "candidate_id",
+            "candidate_sha256",
+            "room_id",
+            "decision_id",
+            "approver_principal",
+            "staging_root",
+            "receipt_sha256",
+        }
+        return (
+            isinstance(receipt, dict)
+            and set(receipt) == expected
+            and receipt.get("schema_version") == 1
+            and isinstance(receipt.get("receipt_sha256"), str)
+            and receipt["receipt_sha256"] == _canonical_sha256(receipt, omit={"receipt_sha256"})
+        )
+
+    @staticmethod
+    def _isolated_storage_write(receipt: Dict[str, Any], isolated_root: Path) -> Dict[str, Any]:
+        """No runtime writer is enabled; contracts inject an isolated fake writer."""
+        del receipt, isolated_root
+        return {"ok": False, "reason": "isolated_storage_writer_not_configured"}
+
+    def execute_isolated_governed_promotion(
+        self, receipt: Dict[str, Any], isolated_root: Path
+    ) -> Dict[str, Any]:
+        """Execute only a sealed receipt in a marker-bound temporary root."""
+        root = Path(isolated_root).resolve()
+        if root == self.semantic_root.resolve() or root.name.lower() == "memory":
+            return {"ok": False, "reason": "canonical_promotion_not_enabled", "write_performed": False}
+        if not self._verify_promotion_receipt(receipt):
+            return {"ok": False, "reason": "promotion_receipt_invalid", "write_performed": False}
+        from tmp_agent.brain_v9.memory.memory_rollback import rollback_isolated_snapshot
+        from tmp_agent.brain_v9.memory.memory_snapshot import create_isolated_memory_snapshot
+
+        snapshot = create_isolated_memory_snapshot(root, receipt["receipt_sha256"])
+        if not snapshot.get("ok"):
+            return {"ok": False, "reason": snapshot.get("reason", "isolated_snapshot_failed"), "write_performed": False}
+        before = self._isolated_artifact_hashes(root)
+        try:
+            write_result = self._isolated_storage_write(receipt, root)
+            if not isinstance(write_result, dict) or write_result.get("ok") is not True:
+                raise RuntimeError("isolated_storage_write_rejected")
+            after = self._isolated_artifact_hashes(root)
+            if after == before:
+                raise RuntimeError("isolated_storage_write_no_effect")
+        except Exception:
+            rollback = rollback_isolated_snapshot(root, snapshot, receipt["receipt_sha256"])
+            return {
+                "ok": False,
+                "reason": "isolated_promotion_failed",
+                "write_performed": False,
+                "rollback": rollback,
+            }
+        execution = {
+            "ok": True,
+            "schema_version": 1,
+            "promotion_receipt_sha256": receipt["receipt_sha256"],
+            "candidate_id": receipt["candidate_id"],
+            "isolated_root": str(root),
+            "before_artifact_sha256": before,
+            "after_artifact_sha256": after,
+            "snapshot": snapshot,
+            "write_performed": True,
+        }
+        execution["execution_receipt_sha256"] = _canonical_sha256(execution)
+        return execution
+
+    def rollback_isolated_governed_promotion(
+        self, execution_receipt: Dict[str, Any], isolated_root: Path
+    ) -> Dict[str, Any]:
+        """Rollback only the matching isolated execution receipt."""
+        from tmp_agent.brain_v9.memory.memory_rollback import rollback_isolated_snapshot
+
+        root = Path(isolated_root).resolve()
+        if (
+            not isinstance(execution_receipt, dict)
+            or execution_receipt.get("isolated_root") != str(root)
+            or execution_receipt.get("execution_receipt_sha256")
+            != _canonical_sha256(execution_receipt, omit={"execution_receipt_sha256"})
+        ):
+            return {"ok": False, "reason": "execution_receipt_invalid"}
+        result = rollback_isolated_snapshot(
+            root,
+            execution_receipt.get("snapshot", {}),
+            str(execution_receipt.get("promotion_receipt_sha256") or ""),
+        )
+        if result.get("ok"):
+            restored = self._isolated_artifact_hashes(root)
+            if restored != execution_receipt.get("before_artifact_sha256"):
+                return {"ok": False, "reason": "rollback_verification_failed"}
+        return result
+
     def records_for_domain(self, domain: str) -> List[Dict[str, Any]]:
         return [
             record
