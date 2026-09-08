@@ -9316,3 +9316,10 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Status: R4.2 set to `CLOSED_RUNTIME_VERIFIED`.
 - Authorized next item: exactly one R4.3, `BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-01`, `MEDIUM`, controller-governed and `NO_DEPLOY`, bounded to immutable chat entrypoint runtime contracts.
 - Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, persistent Agent Loop disabled, and no runtime deployment.
+
+## R5-R19 Executable Decomposition
+
+- Front: `BRAIN-101-R5-R19-EXECUTABLE-DECOMPOSITION-01`.
+- Result: adds a 42-item `PLANNED_UNBOUND` BRAIN-101 backlog for R5 through R19 and a versioned JIT-binding contract.
+- Safety: planned items cannot dispatch; only one item may be `AUTHORIZED_ACTIVE`; all hard limits retain human final authority and prohibit auto-merge, canonical local sync, live trading, real money, and persistent Agent Loop activation.
+- R4.3 remains active until this authoring front is merged and R4.3 receives its evidence-bound closeout.

@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "b401ac1d55ccf7c3c8902db339a52ce4bb44e0ee3b851b56aa59bd035494e701",
+  "roadmap_sha256": "b9f0db4e921e5da28bc5a7f836681bc3023787284cdcd37756df28055fefdfce",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -1086,7 +1086,7 @@
             "ROADMAP_STATUS.json",
             "docs/MIGRATION_CONTROL_LEDGER.md",
             "docs/roadmap/evidence/BRAIN_101_R4_1_MODULAR_MONOLITH_BASELINE_CLOSEOUT.json",
-          "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts"
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts"
           ],
           "forbidden_paths": [
             ".env",
@@ -1247,6 +1247,2465 @@
             "git diff --check"
           ]
         }
+      }
+    },
+    "R5.1": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R5",
+      "title": "Agent V2 canonical runtime baseline and route inventory",
+      "dependencies": [
+        "R4.3"
+      ],
+      "objective": "Agent V2 canonical runtime baseline and route inventory",
+      "risk": "MEDIUM",
+      "domain": "cognitive_runtime",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "canonical runtime inventory",
+        "route and entrypoint map",
+        "parallel-path containment inventory"
+      ],
+      "negative_acceptance": [
+        "no route migration",
+        "no scheduler activation"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "agent_v2 runtime inventory",
+        "route contracts"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R5.2": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R5",
+      "title": "Agent V2 execution lifecycle identity and checkpoints",
+      "dependencies": [
+        "R5.1"
+      ],
+      "objective": "Agent V2 execution lifecycle identity and checkpoints",
+      "risk": "MEDIUM",
+      "domain": "cognitive_runtime",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "mission_id run_id room_id semantics",
+        "checkpoint and resume contract",
+        "cancellation retry streaming contract"
+      ],
+      "negative_acceptance": [
+        "no cross-room state",
+        "no bypass fastpath"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "agent_v2 lifecycle",
+        "session boundary"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R5.3": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R5",
+      "title": "Agent V2 planning execution evaluation persistence",
+      "dependencies": [
+        "R5.2"
+      ],
+      "objective": "Agent V2 planning execution evaluation persistence",
+      "risk": "MEDIUM",
+      "domain": "cognitive_runtime",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "planner executor evaluator persistence",
+        "normalized tool-result contract",
+        "finalizer evidence mapping"
+      ],
+      "negative_acceptance": [
+        "no hidden executor",
+        "no raw reasoning exposure"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "agent_v2 orchestration",
+        "evidence contracts"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R5.4": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R5",
+      "title": "Agent V2 cognitive route convergence",
+      "dependencies": [
+        "R5.3"
+      ],
+      "objective": "Agent V2 cognitive route convergence",
+      "risk": "HIGH",
+      "domain": "cognitive_runtime",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "intent routing direct LLM brain evidence mixed reasoning learning code and financial-research route convergence",
+        "fallback timeout policy",
+        "governance-bypass denial"
+      ],
+      "negative_acceptance": [
+        "no parallel canonical runtime",
+        "no governance-bypassing fastpath"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "agent_v2 route map",
+        "provider boundary"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R6.1": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R6",
+      "title": "MemoryService ownership and integrity baseline",
+      "dependencies": [
+        "R5.4"
+      ],
+      "objective": "MemoryService ownership and integrity baseline",
+      "risk": "MEDIUM",
+      "domain": "memory_governance",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "single-writer memory ownership",
+        "semantic curated separation",
+        "snapshot integrity and provenance baseline"
+      ],
+      "negative_acceptance": [
+        "no direct FAISS mutation",
+        "no ungoverned promotion"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "memory service",
+        "index integrity"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R6.2": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R6",
+      "title": "Governed memory candidate promotion and rollback",
+      "dependencies": [
+        "R6.1"
+      ],
+      "objective": "Governed memory candidate promotion and rollback",
+      "risk": "HIGH",
+      "domain": "memory_governance",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "stage candidate promote rollback queue",
+        "trust score retention deduplication",
+        "promotion evidence"
+      ],
+      "negative_acceptance": [
+        "no automatic promotion",
+        "no cross-room memory write"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "memory promotion",
+        "candidate queue"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R6.3": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R6",
+      "title": "Memory retrieval hydration and rebuild validation",
+      "dependencies": [
+        "R6.2"
+      ],
+      "objective": "Memory retrieval hydration and rebuild validation",
+      "risk": "MEDIUM",
+      "domain": "memory_governance",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "retrieve use E2E",
+        "rebuild index hydration and rollback",
+        "controlled ingestion benchmark"
+      ],
+      "negative_acceptance": [
+        "no opaque retrieval source",
+        "no FAISS inconsistency"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "retrieval service",
+        "benchmark harness"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R7.1": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R7",
+      "title": "Governed trace schema and event writer baseline",
+      "dependencies": [
+        "R5.4"
+      ],
+      "objective": "Governed trace schema and event writer baseline",
+      "risk": "MEDIUM",
+      "domain": "observability",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "correlation IDs trace schema event writers",
+        "tool gate state memory event taxonomy",
+        "private reasoning redaction"
+      ],
+      "negative_acceptance": [
+        "no chain-of-thought persistence",
+        "no uncorrelated event"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "trace schema",
+        "event writer"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R7.2": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R7",
+      "title": "Run timeline provider health and operational accounting",
+      "dependencies": [
+        "R7.1"
+      ],
+      "objective": "Run timeline provider health and operational accounting",
+      "risk": "MEDIUM",
+      "domain": "observability",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "run timeline provider health token cost accounting",
+        "error taxonomy health checks",
+        "controlled replay metadata"
+      ],
+      "negative_acceptance": [
+        "no secret telemetry",
+        "no uncontrolled replay"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "timeline projection",
+        "health reporting"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R7.3": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R7",
+      "title": "Visual Trace and operator console contracts",
+      "dependencies": [
+        "R7.2"
+      ],
+      "objective": "Visual Trace and operator console contracts",
+      "risk": "MEDIUM",
+      "domain": "observability",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "SSE or WebSocket trace delivery contract",
+        "visual trace operator console audit download",
+        "dashboard privacy boundary"
+      ],
+      "negative_acceptance": [
+        "no private reasoning display",
+        "no unaudited operator action"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "trace console",
+        "operator UX"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R8.1": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R8",
+      "title": "Provider Gateway policy and capability inventory",
+      "dependencies": [
+        "R5.4"
+      ],
+      "objective": "Provider Gateway policy and capability inventory",
+      "risk": "MEDIUM",
+      "domain": "provider_gateway",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "provider policy capability inventory",
+        "Kimi primary and authorized fallback policy",
+        "provider-independent contract baseline"
+      ],
+      "negative_acceptance": [
+        "no hidden provider fallback",
+        "no hardcoded final provider"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "provider gateway",
+        "capability registry"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R8.2": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R8",
+      "title": "Provider resilience and secret-safe operations",
+      "dependencies": [
+        "R8.1"
+      ],
+      "objective": "Provider resilience and secret-safe operations",
+      "risk": "HIGH",
+      "domain": "provider_gateway",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "timeouts retry circuit breaker health",
+        "prompt version registry and cost accounting",
+        "secret redaction"
+      ],
+      "negative_acceptance": [
+        "no secret logging",
+        "no unbounded retry"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "provider resilience",
+        "prompt registry"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R8.3": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R8",
+      "title": "Provider Gateway route integration and fallback validation",
+      "dependencies": [
+        "R8.2"
+      ],
+      "objective": "Provider Gateway route integration and fallback validation",
+      "risk": "MEDIUM",
+      "domain": "provider_gateway",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "route integration",
+        "explicit fallback receipts",
+        "provider outage validation"
+      ],
+      "negative_acceptance": [
+        "no provider-specific route fork",
+        "no silent degradation"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "provider integration",
+        "fallback receipts"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R9.1": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R9",
+      "title": "Curated Knowledge canonical inventory and taxonomy",
+      "dependencies": [
+        "R8.3"
+      ],
+      "objective": "Curated Knowledge canonical inventory and taxonomy",
+      "risk": "LOW",
+      "domain": "curated_knowledge",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "canonical inventory taxonomy quality and versioning",
+        "read-only lookup provenance",
+        "semantic-memory separation"
+      ],
+      "negative_acceptance": [
+        "no semantic-memory write",
+        "no unversioned knowledge source"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "curated knowledge catalog",
+        "lookup contract"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R9.2": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R9",
+      "title": "Curated Knowledge controlled ingestion and benchmark",
+      "dependencies": [
+        "R9.1"
+      ],
+      "objective": "Curated Knowledge controlled ingestion and benchmark",
+      "risk": "MEDIUM",
+      "domain": "curated_knowledge",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "controlled and canary ingestion",
+        "quality benchmark",
+        "route and contract validation"
+      ],
+      "negative_acceptance": [
+        "no direct production ingestion",
+        "no automatic promotion"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "ingestion control",
+        "knowledge benchmark"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R10.1": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R10",
+      "title": "Governed self-improvement capability and gap evaluation",
+      "dependencies": [
+        "R9.2"
+      ],
+      "objective": "Governed self-improvement capability and gap evaluation",
+      "risk": "MEDIUM",
+      "domain": "self_improvement",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "capability evaluator gap detector proposal schema",
+        "risk classification P0 through P3",
+        "learning journal provenance"
+      ],
+      "negative_acceptance": [
+        "no self-governance modification",
+        "no auto-merge"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "capability evaluator",
+        "proposal journal"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R10.2": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R10",
+      "title": "Sandboxed patch proposal and benchmark pipeline",
+      "dependencies": [
+        "R10.1"
+      ],
+      "objective": "Sandboxed patch proposal and benchmark pipeline",
+      "risk": "HIGH",
+      "domain": "self_improvement",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "sandbox patch generation benchmark and tests",
+        "canary evidence",
+        "risk-bounded proposal lifecycle"
+      ],
+      "negative_acceptance": [
+        "no production patch application",
+        "no workflow mutation"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "patch sandbox",
+        "benchmark pipeline"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R10.3": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R10",
+      "title": "Self-improvement promotion gate and rollback",
+      "dependencies": [
+        "R10.2"
+      ],
+      "objective": "Self-improvement promotion gate and rollback",
+      "risk": "HIGH",
+      "domain": "self_improvement",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "human approval promotion gate",
+        "rollback receipt",
+        "proposal provenance"
+      ],
+      "negative_acceptance": [
+        "no autonomous promotion",
+        "no risk contract mutation"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "promotion gate",
+        "rollback ledger"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R11.1": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R11",
+      "title": "Financial autonomy paper-only runtime inventory",
+      "dependencies": [
+        "R10.3"
+      ],
+      "objective": "Financial autonomy paper-only runtime inventory",
+      "risk": "MEDIUM",
+      "domain": "financial_autonomy",
+      "deployment_intent": "PAPER_ONLY",
+      "acceptance_intent": [
+        "financial autonomy interface inventory",
+        "paper-only feature-flag and dry-run boundary",
+        "memory and strategy contract boundary"
+      ],
+      "negative_acceptance": [
+        "no broker live execution",
+        "no real capital"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "financial autonomy interface",
+        "paper-mode flags"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R11.2": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R11",
+      "title": "Paper-only financial autonomy audit and rollback wiring",
+      "dependencies": [
+        "R11.1"
+      ],
+      "objective": "Paper-only financial autonomy audit and rollback wiring",
+      "risk": "HIGH",
+      "domain": "financial_autonomy",
+      "deployment_intent": "PAPER_ONLY",
+      "acceptance_intent": [
+        "broker gateway paper contract",
+        "risk gate audit events",
+        "rollback validation"
+      ],
+      "negative_acceptance": [
+        "no real-money credential use",
+        "no live trading enablement"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "paper broker gateway",
+        "financial audit"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R12.1": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R12",
+      "title": "Portfolio Manager allocation and ledger baseline",
+      "dependencies": [
+        "R11.2"
+      ],
+      "objective": "Portfolio Manager allocation and ledger baseline",
+      "risk": "HIGH",
+      "domain": "portfolio_risk",
+      "deployment_intent": "PAPER_ONLY",
+      "acceptance_intent": [
+        "allocation sizing exposure concentration correlation",
+        "cash reserve and portfolio ledger",
+        "attribution baseline"
+      ],
+      "negative_acceptance": [
+        "no constitutional risk limit change",
+        "no live allocation"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "portfolio manager",
+        "portfolio ledger"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R12.2": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R12",
+      "title": "Risk Engine loss exposure and market-failure gates",
+      "dependencies": [
+        "R12.1"
+      ],
+      "objective": "Risk Engine loss exposure and market-failure gates",
+      "risk": "CRITICAL",
+      "domain": "portfolio_risk",
+      "deployment_intent": "PAPER_ONLY",
+      "acceptance_intent": [
+        "2 percent daily loss 6 percent weekly drawdown 70 percent exposure enforcement",
+        "kill switch and stale-data broker-disconnect gates",
+        "duplicate-order and reconciliation denial"
+      ],
+      "negative_acceptance": [
+        "no higher risk limits",
+        "no real order routing"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "risk engine",
+        "execution gates"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R12.3": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R12",
+      "title": "Portfolio regime rebalance and risk attribution validation",
+      "dependencies": [
+        "R12.2"
+      ],
+      "objective": "Portfolio regime rebalance and risk attribution validation",
+      "risk": "HIGH",
+      "domain": "portfolio_risk",
+      "deployment_intent": "PAPER_ONLY",
+      "acceptance_intent": [
+        "regime throttling rebalance and attribution",
+        "VaR CVaR liquidity slippage fee gap validation",
+        "paper-only portfolio E2E"
+      ],
+      "negative_acceptance": [
+        "no live rebalance",
+        "no unbounded exposure"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "portfolio analytics",
+        "risk validation"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R13.1": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R13",
+      "title": "Paper-trading compliance policy inventory",
+      "dependencies": [
+        "R12.3"
+      ],
+      "objective": "Paper-trading compliance policy inventory",
+      "risk": "HIGH",
+      "domain": "compliance",
+      "deployment_intent": "PAPER_ONLY",
+      "acceptance_intent": [
+        "PDT wash sale market-hours restricted-symbol short-sale account-permission policy",
+        "jurisdiction and data-license boundary",
+        "paper-live distinction"
+      ],
+      "negative_acceptance": [
+        "no compliance bypass",
+        "no live permission grant"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "compliance policy",
+        "account constraints"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R13.2": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R13",
+      "title": "Compliance audit tax-lot and manual-review controls",
+      "dependencies": [
+        "R13.1"
+      ],
+      "objective": "Compliance audit tax-lot and manual-review controls",
+      "risk": "HIGH",
+      "domain": "compliance",
+      "deployment_intent": "PAPER_ONLY",
+      "acceptance_intent": [
+        "tax lots duplicate prevention audit trail",
+        "manual-review queue",
+        "paper compliance validation"
+      ],
+      "negative_acceptance": [
+        "no automatic override",
+        "no unsupervised restricted order"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "compliance audit",
+        "manual review"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R14.1": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R14",
+      "title": "Local validation data and experiment registry baseline",
+      "dependencies": [
+        "R13.2"
+      ],
+      "objective": "Local validation data and experiment registry baseline",
+      "risk": "MEDIUM",
+      "domain": "validation_lab",
+      "deployment_intent": "PAPER_ONLY",
+      "acceptance_intent": [
+        "local data adapters corporate actions survivorship lookahead controls",
+        "strategy and experiment registry",
+        "reproducibility"
+      ],
+      "negative_acceptance": [
+        "no cloud dependency for baseline",
+        "no lookahead acceptance"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "validation data",
+        "experiment registry"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R14.2": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R14",
+      "title": "Backtest realism and walk-forward validation",
+      "dependencies": [
+        "R14.1"
+      ],
+      "objective": "Backtest realism and walk-forward validation",
+      "risk": "HIGH",
+      "domain": "validation_lab",
+      "deployment_intent": "PAPER_ONLY",
+      "acceptance_intent": [
+        "slippage fees latency walk-forward out-of-sample regimes",
+        "benchmarking and QC parity",
+        "stress validation"
+      ],
+      "negative_acceptance": [
+        "no in-sample-only approval",
+        "no omitted fee model"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "backtest engine",
+        "walk-forward lab"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R14.3": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R14",
+      "title": "Validation Lab adversarial and statistical resilience",
+      "dependencies": [
+        "R14.2"
+      ],
+      "objective": "Validation Lab adversarial and statistical resilience",
+      "risk": "HIGH",
+      "domain": "validation_lab",
+      "deployment_intent": "PAPER_ONLY",
+      "acceptance_intent": [
+        "Monte Carlo bootstrap stress and reproducibility evidence",
+        "stale-data and gap scenario validation",
+        "experiment rollback"
+      ],
+      "negative_acceptance": [
+        "no unrepeatable result",
+        "no hidden data revision"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "statistical validation",
+        "experiment evidence"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R15.1": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R15",
+      "title": "Integrated paper broker and market-data lifecycle",
+      "dependencies": [
+        "R14.3"
+      ],
+      "objective": "Integrated paper broker and market-data lifecycle",
+      "risk": "HIGH",
+      "domain": "paper_trading",
+      "deployment_intent": "PAPER_ONLY",
+      "acceptance_intent": [
+        "paper broker market data order lifecycle partial fills cancel replace",
+        "disconnect and duplicate prevention",
+        "reconciliation contract"
+      ],
+      "negative_acceptance": [
+        "no real broker execution",
+        "no live account binding"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "paper execution",
+        "order lifecycle"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R15.2": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R15",
+      "title": "Paper trading portfolio compliance risk integration",
+      "dependencies": [
+        "R15.1"
+      ],
+      "objective": "Paper trading portfolio compliance risk integration",
+      "risk": "CRITICAL",
+      "domain": "paper_trading",
+      "deployment_intent": "PAPER_ONLY",
+      "acceptance_intent": [
+        "PortfolioManager Compliance Risk Engine integration",
+        "audit observability and daily close",
+        "incident recovery"
+      ],
+      "negative_acceptance": [
+        "no bypass of risk or compliance",
+        "no real capital"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "paper integration",
+        "daily close"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R15.3": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R15",
+      "title": "Paper trading soak and incident evidence",
+      "dependencies": [
+        "R15.2"
+      ],
+      "objective": "Paper trading soak and incident evidence",
+      "risk": "HIGH",
+      "domain": "paper_trading",
+      "deployment_intent": "PAPER_ONLY",
+      "acceptance_intent": [
+        "soak evidence reports and recovery",
+        "reconciliation under restart",
+        "paper trading operational acceptance"
+      ],
+      "negative_acceptance": [
+        "no live promotion",
+        "no unsupported fill claim"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "paper soak",
+        "incident reports"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R16.1": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R16",
+      "title": "Disabled LiveTradingGate multi-factor design",
+      "dependencies": [
+        "R15.3"
+      ],
+      "objective": "Disabled LiveTradingGate multi-factor design",
+      "risk": "CRITICAL",
+      "domain": "live_trading_gate",
+      "deployment_intent": "PAPER_ONLY",
+      "acceptance_intent": [
+        "multi-factor approval account binding operator confirmation capital and loss caps",
+        "symbol strategy allowlists time windows kill switch",
+        "preview and audit receipt"
+      ],
+      "negative_acceptance": [
+        "LIVE_TRADING_ENABLED remains false",
+        "REAL_MONEY remains false"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "live trading gate",
+        "approval receipt"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R16.2": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R16",
+      "title": "LiveTradingGate disabled-state and paper rollback validation",
+      "dependencies": [
+        "R16.1"
+      ],
+      "objective": "LiveTradingGate disabled-state and paper rollback validation",
+      "risk": "CRITICAL",
+      "domain": "live_trading_gate",
+      "deployment_intent": "PAPER_ONLY",
+      "acceptance_intent": [
+        "disabled-state enforcement",
+        "unauthorized live attempt denial",
+        "paper rollback and kill-switch validation"
+      ],
+      "negative_acceptance": [
+        "no live enablement",
+        "no real-money path"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "gate validation",
+        "paper rollback"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R17.1": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R17",
+      "title": "Selective microservice extraction candidacy assessment",
+      "dependencies": [
+        "R16.2"
+      ],
+      "objective": "Selective microservice extraction candidacy assessment",
+      "risk": "MEDIUM",
+      "domain": "selective_microservices",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "ownership stable contract E2E rollback and operational justification assessment",
+        "shared-filesystem denial",
+        "economic justification"
+      ],
+      "negative_acceptance": [
+        "no premature distributed architecture",
+        "no Kubernetes-first design"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "extraction assessment",
+        "service boundaries"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R17.2": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R17",
+      "title": "Selective microservice decision and containment",
+      "dependencies": [
+        "R17.1"
+      ],
+      "objective": "Selective microservice decision and containment",
+      "risk": "MEDIUM",
+      "domain": "selective_microservices",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "SELECTIVE_EXTRACTION_COMPLETE",
+        "JUSTIFIABLY_DEFERRED",
+        "feature flag and versioned API requirements when justified"
+      ],
+      "negative_acceptance": [
+        "no extraction without evidence",
+        "no shared mutable filesystem"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "extraction decision",
+        "containment policy"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R18.1": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R18",
+      "title": "Product and operator experience baseline",
+      "dependencies": [
+        "R17.2"
+      ],
+      "objective": "Product and operator experience baseline",
+      "risk": "MEDIUM",
+      "domain": "product_operations_ux",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "modern chat dashboard trace console notifications and operator inbox baseline",
+        "responsive accessibility requirements",
+        "approval and incident UX"
+      ],
+      "negative_acceptance": [
+        "no unaudited operator action",
+        "no private reasoning display"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "product UX",
+        "operator console"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R18.2": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R18",
+      "title": "Operational runbooks recovery and support surface",
+      "dependencies": [
+        "R18.1"
+      ],
+      "objective": "Operational runbooks recovery and support surface",
+      "risk": "MEDIUM",
+      "domain": "product_operations_ux",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "runbooks install upgrade backup restore release notes",
+        "health page version display support bundle",
+        "actionable errors"
+      ],
+      "negative_acceptance": [
+        "no destructive restore without rollback",
+        "no secret in support bundle"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "operations runbooks",
+        "support bundle"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R18.3": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R18",
+      "title": "Product operations acceptance and accessibility validation",
+      "dependencies": [
+        "R18.2"
+      ],
+      "objective": "Product operations acceptance and accessibility validation",
+      "risk": "MEDIUM",
+      "domain": "product_operations_ux",
+      "deployment_intent": "NO_DEPLOY",
+      "acceptance_intent": [
+        "operator workflow acceptance",
+        "accessibility and responsive validation",
+        "incident UI verification"
+      ],
+      "negative_acceptance": [
+        "no hidden operational dependency",
+        "no unaudited release"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "UX acceptance",
+        "operations validation"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R19.1": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R19",
+      "title": "BRAIN-101 certification gate matrix",
+      "dependencies": [
+        "R18.3"
+      ],
+      "objective": "BRAIN-101 certification gate matrix",
+      "risk": "CRITICAL",
+      "domain": "certification",
+      "deployment_intent": "CERTIFICATION_ONLY",
+      "acceptance_intent": [
+        "mandatory_certification_gates",
+        "security architecture runtime memory operations UX and paper validation gates",
+        "truthful deferred capability inventory"
+      ],
+      "negative_acceptance": [
+        "persistent_agent_loop_deferred",
+        "no false certification"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "certification matrix",
+        "gate registry"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R19.2": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R19",
+      "title": "Adversarial resilience and recovery certification",
+      "dependencies": [
+        "R19.1"
+      ],
+      "objective": "Adversarial resilience and recovery certification",
+      "risk": "CRITICAL",
+      "domain": "certification",
+      "deployment_intent": "CERTIFICATION_ONLY",
+      "acceptance_intent": [
+        "secret P3 replay scope prompt provider GitHub broker disk JSON FAISS stale-data duplicate crash scheduler rollback restore kill-switch evidence",
+        "adversarial recovery matrix"
+      ],
+      "negative_acceptance": [
+        "no omitted mandatory adversarial gate",
+        "no live trading test"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "adversarial suite",
+        "recovery evidence"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
+      }
+    },
+    "R19.3": {
+      "status": "PLANNED_UNBOUND",
+      "phase": "R19",
+      "title": "BRAIN-101 final evidence and certification decision",
+      "dependencies": [
+        "R19.2"
+      ],
+      "objective": "BRAIN-101 final evidence and certification decision",
+      "risk": "CRITICAL",
+      "domain": "certification",
+      "deployment_intent": "CERTIFICATION_ONLY",
+      "acceptance_intent": [
+        "final evidence bundle",
+        "BRAIN_101_CERTIFIED only when mandatory gates close",
+        "human final authority confirmation"
+      ],
+      "negative_acceptance": [
+        "no certification with open gates",
+        "no claim Agent Loop verified while deferred"
+      ],
+      "rollback_requirements": [
+        "reversible change plan",
+        "evidence-bound rollback verification",
+        "no destructive migration without a separately authorized rollback"
+      ],
+      "required_evidence_class": "BRAIN_101_GOVERNED_EXECUTION_EVIDENCE",
+      "test_intent": [
+        "focused contract tests",
+        "applicable regression tests",
+        "git diff --check",
+        "exact-head CI"
+      ],
+      "expected_component_ownership": [
+        "certification decision",
+        "final evidence"
+      ],
+      "hard_limits": {
+        "human_final_authority": true,
+        "auto_merge": false,
+        "canonical_local_sync": false,
+        "live_trading": false,
+        "real_money": false,
+        "persistent_agent_loop": "DEFERRED"
+      },
+      "automation": {
+        "jit_binding_required": true,
+        "dispatchable": false,
+        "activation_requires": [
+          "expected_base_sha",
+          "front_id",
+          "work_branch",
+          "allowed_paths",
+          "forbidden_paths",
+          "test_commands",
+          "acceptance",
+          "rollback",
+          "evidence_path"
+        ]
       }
     }
   },
@@ -1525,5 +3984,34 @@
     "next_authorized_front_id": "BRAIN-101-R3-2-AGENT-V2-COGNITIVE-PIPELINE-CONTRACTS-01",
     "closed_at_utc": "2026-08-12T00:00:00Z",
     "final_state": "R3_1_CLOSED_RUNTIME_VERIFIED_R3_2_AUTHORIZED_ACTIVE"
+  },
+  "roadmap_item_status_contract_v1": {
+    "schema_version": 1,
+    "legal_statuses": [
+      "CLOSED_RUNTIME_VERIFIED",
+      "SUPERSEDED_SCOPE_INCIDENT",
+      "AUTHORIZED_ACTIVE",
+      "PLANNED_UNBOUND"
+    ],
+    "planned_status": "PLANNED_UNBOUND",
+    "planned_semantics": "Owner-approved backlog item that cannot create an Issue, build, PR, or deployment until JIT binding."
+  },
+  "roadmap_execution_binding_v1": {
+    "schema_version": 1,
+    "planned_status": "PLANNED_UNBOUND",
+    "activation_status": "AUTHORIZED_ACTIVE",
+    "required_live_fields": [
+      "expected_base_sha",
+      "front_id",
+      "work_branch",
+      "allowed_paths",
+      "forbidden_paths",
+      "test_commands",
+      "acceptance",
+      "rollback",
+      "evidence_path"
+    ],
+    "activation_requires_exactly_one": true,
+    "binding_rule": "A closeout may activate exactly one dependency-eligible planned item after resolving all required fields from the live canonical repository."
   }
 }
