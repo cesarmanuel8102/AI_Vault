@@ -72,6 +72,65 @@ REQUIRED_CAPABILITY_METADATA_FIELDS = (
 )
 
 
+def build_execution_evidence(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """Project durable, non-sensitive execution evidence from a run state.
+
+    Checkpoints retain only workflow identity, aggregate outcome counts, and
+    provider/evaluator metadata. Goals, final answers, tool inputs, and tool
+    outputs intentionally remain outside this projection.
+    """
+    plan = raw.get("plan") if isinstance(raw.get("plan"), list) else []
+    tool_results = raw.get("tool_results") if isinstance(raw.get("tool_results"), list) else []
+
+    plan_tool_names = [
+        step["tool_name"]
+        for step in plan
+        if isinstance(step, dict) and isinstance(step.get("tool_name"), str)
+    ]
+    result_tool_names = [
+        result["tool_name"]
+        for result in tool_results
+        if isinstance(result, dict) and isinstance(result.get("tool_name"), str)
+    ]
+    tool_names = list(dict.fromkeys(plan_tool_names + result_tool_names))
+    statuses = [
+        step.get("status")
+        for step in plan
+        if isinstance(step, dict) and isinstance(step.get("status"), str)
+    ]
+    evaluator_result = raw.get("evaluator_result")
+    evaluator_values = list(evaluator_result.values()) if isinstance(evaluator_result, dict) else []
+    provider_metadata = raw.get("provider_metadata") if isinstance(raw.get("provider_metadata"), dict) else {}
+
+    return {
+        "schema_version": 1,
+        "mission_id": raw.get("mission_id"),
+        "run_id": raw.get("run_id"),
+        "room_id": raw.get("room_id"),
+        "plan": {
+            "step_count": len(plan),
+            "tool_names": plan_tool_names,
+        },
+        "tools": {
+            "result_count": len(tool_results),
+            "completed": statuses.count("completed"),
+            "failed": statuses.count("failed"),
+            "blocked": statuses.count("blocked"),
+            "tool_names": tool_names,
+        },
+        "evaluator": {
+            "source": raw.get("evaluator_source"),
+            "mode": raw.get("evaluator_parity_mode"),
+            "passed": bool(evaluator_values) and all(bool(value) for value in evaluator_values),
+        },
+        "finalizer": {
+            "provider": provider_metadata.get("provider_used"),
+            "model": provider_metadata.get("model_used"),
+            "degraded": bool(provider_metadata.get("provider_degraded", False)),
+        },
+    }
+
+
 def normalize_provider_metadata(
     raw_provider_metadata: Optional[Dict[str, Any]],
     raw: Optional[Dict[str, Any]] = None,

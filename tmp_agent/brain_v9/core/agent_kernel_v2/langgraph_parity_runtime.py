@@ -24,6 +24,7 @@ from .context_assembler import _is_follow_up, _has_generic_override, collect_can
 from .intent_classifier import classify_intent, list_supported_intents
 from .governance_policy import decide_governance
 from .finalizer import finalize_agent_run
+from .response_normalizer import build_execution_evidence
 
 LANGGRAPH_AVAILABLE = False
 GRAPH_START = None
@@ -163,6 +164,7 @@ class LangGraphParityRuntimeV2:
             "tools_considered": len([s for s in state.get("plan", []) if s.get("tool_name")]),
             "tools_blocked": len(state.get("blocked_tools", [])),
             "node_path": state.get("node_path", []),
+            "execution_evidence": build_execution_evidence(state),
         }
         CheckpointStore(self._run_dir(run_id)).save(run_id, state.get("status", "running"), step_index=step_index, data=cp_data)
 
