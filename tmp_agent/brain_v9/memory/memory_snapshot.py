@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,14 +14,40 @@ CANONICAL_FILES = (
 SNAPSHOT_ROOT = Path("memory/rollback_snapshots")
 
 
-def create_memory_snapshot(reason: str, snapshot_root: Path = SNAPSHOT_ROOT) -> Path:
+def create_memory_snapshot(
+    reason: str,
+    snapshot_root: Path = SNAPSHOT_ROOT,
+    canonical_root: Path = Path("."),
+) -> Path:
+    """Copy canonical memory artifacts with a verifiable, relative-path manifest."""
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     target = snapshot_root / stamp
     target.mkdir(parents=True, exist_ok=False)
-    for src in CANONICAL_FILES:
+    files = {}
+    for relative_path in CANONICAL_FILES:
+        src = Path(canonical_root) / relative_path
         if src.exists():
-            shutil.copy2(src, target / src.name)
+            copied = target / src.name
+            shutil.copy2(src, copied)
+            files[relative_path.as_posix()] = {
+                "sha256": hashlib.sha256(src.read_bytes()).hexdigest(),
+                "size_bytes": src.stat().st_size,
+            }
     (target / "SNAPSHOT_REASON.txt").write_text(reason + "\n", encoding="utf-8")
+    (target / "memory_snapshot_manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "created_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "reason": reason,
+                "files": files,
+            },
+            sort_keys=True,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     return target
 
 
