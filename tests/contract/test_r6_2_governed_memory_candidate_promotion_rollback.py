@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import sys
 from pathlib import Path
@@ -169,3 +170,38 @@ def test_execution_rejects_configured_semantic_root(tmp_path):
         "reason": "canonical_promotion_not_enabled",
         "write_performed": False,
     }
+
+
+def test_legacy_promoter_requires_typed_receipt_and_has_no_direct_storage_primitives(tmp_path):
+    from brain_v9.memory import promotion_candidate_promoter as promoter
+
+    legacy = promoter.promote_candidate(
+        "candidate-1", "all", "promotion", "legacy-token", "human", "legacy-confirmation"
+    )
+    candidate = governed_candidate()
+    prepared = promoter.promote_candidate(
+        "ignored-legacy-id",
+        "all",
+        "promotion",
+        "legacy-token",
+        "human",
+        "legacy-confirmation",
+        candidate=candidate,
+        decision=manual_decision(candidate),
+        semantic_root=tmp_path / "configured-semantic",
+        staging_root=tmp_path / "staging",
+    )
+
+    assert legacy == {
+        "ok": False,
+        "reason": "governed_receipt_required",
+        "promotion_performed": False,
+        "write_performed": False,
+    }
+    assert prepared["ok"] is True
+    assert prepared["write_performed"] is False
+    assert not (tmp_path / "configured-semantic").exists()
+    source = inspect.getsource(promoter)
+    assert "promote_record(" not in source
+    assert "rollback_from_snapshot(" not in source
+    assert "append_promotion_audit(" not in source
