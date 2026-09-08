@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "b9f0db4e921e5da28bc5a7f836681bc3023787284cdcd37756df28055fefdfce",
+  "roadmap_sha256": "d52a87b35821e189066c2880b0e19ae63adb99d9f3fbf68098dc8c4105faeead",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -1179,7 +1179,7 @@
     },
     "R4.3": {
       "title": "Chat Entrypoint Runtime Contract Extraction",
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "dependencies": [
         "R4.2"
       ],
@@ -1229,7 +1229,9 @@
             "docs/roadmap/BRAIN_101_SCORECARD.json",
             "ROADMAP_STATUS.json",
             "docs/MIGRATION_CONTROL_LEDGER.md",
-            "docs/roadmap/evidence/BRAIN_101_R4_3_CHAT_ENTRYPOINT_CONTRACTS_CLOSEOUT.json"
+            "docs/roadmap/evidence/BRAIN_101_R4_3_CHAT_ENTRYPOINT_CONTRACTS_CLOSEOUT.json",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts"
           ],
           "forbidden_paths": [
             ".env",
@@ -1244,13 +1246,15 @@
             "Preserve no deployment, no scheduler activation, no canonical local sync, no live trading, no real money, and no auto-merge"
           ],
           "test_commands": [
-            "git diff --check"
+            "git diff --check",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "npm --prefix scripts/operator_proxy test"
           ]
         }
       }
     },
     "R5.1": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R5",
       "title": "Agent V2 canonical runtime baseline and route inventory",
       "dependencies": [
@@ -1295,18 +1299,79 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
-        "activation_requires": [
-          "expected_base_sha",
-          "front_id",
-          "work_branch",
-          "allowed_paths",
-          "forbidden_paths",
-          "test_commands",
-          "acceptance",
-          "rollback",
-          "evidence_path"
-        ]
+        "jit_binding_completed": true,
+        "dispatchable": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R5-1-AGENT-V2-RUNTIME-BASELINE-01",
+        "objective": "Produce a source-evidenced Agent V2 canonical runtime and route inventory before any R5 route convergence change",
+        "work_branch": "control-plane/r5-1-agent-v2-runtime-baseline",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "cognitive_runtime",
+        "allowed_paths": [
+          "docs/roadmap/evidence/BRAIN_101_R5_1_AGENT_V2_RUNTIME_BASELINE.json",
+          "tests/contract/test_r5_1_agent_v2_runtime_baseline.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Inventory canonical Agent V2 entrypoints, route ownership, and cognitive-path boundaries from the live source tree",
+          "Map direct LLM, Brain evidence, mixed reasoning, learning, code-task, and financial-research paths without migrating them",
+          "Identify parallel or governance-bypassing paths as evidence only; do not change runtime behavior in this baseline front",
+          "Preserve no deployment, no scheduler activation, no canonical local sync, no live trading, no real money, and no auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r5_1_agent_v2_runtime_baseline.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Revert only the R5.1 evidence and its dedicated contract if acceptance is not met",
+          "Do not alter runtime routing, scheduler configuration, or financial controls during rollback"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R5_1_AGENT_V2_RUNTIME_BASELINE.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R5-1-AGENT-V2-RUNTIME-BASELINE-CLOSEOUT-01",
+          "objective": "Record R5.1 runtime-inventory evidence and authorize exactly one dependency-eligible R5 successor",
+          "work_branch": "control-plane/r5-1-agent-v2-runtime-baseline-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R5_1_AGENT_V2_RUNTIME_BASELINE_CLOSEOUT.json",
+            "tests/contract/test_r5_1_agent_v2_runtime_baseline.py"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Bind the R5.1 closeout to its verified baseline evidence",
+            "Authorize exactly one next R5 item only after the baseline is verified",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r5_1_agent_v2_runtime_baseline.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R5.2": {

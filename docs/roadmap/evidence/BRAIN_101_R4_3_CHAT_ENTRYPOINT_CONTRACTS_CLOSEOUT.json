@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "evidence_type": "BRAIN_101_R4_3_CHAT_ENTRYPOINT_CONTRACTS_CLOSEOUT",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "created_at_utc": "2026-09-08T06:42:03Z",
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R4.3",
+  "parent_front_id": "BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-01",
+  "parent_source_commit": "dc968bff656f2e007c410c0aa0f5cb849988a3b3",
+  "parent_merge_commit": "9389737eca240173591fe926c867012e029bccbd",
+  "result": "CLOSED_RUNTIME_VERIFIED",
+  "source_contract": {
+    "module": "tmp_agent/brain_v9/core/chat_entrypoint_contracts.py",
+    "compatibility_surface": "tmp_agent/brain_v9/core/chat_entrypoint_service.py",
+    "focused_contract": "tests/contract/test_r4_3_chat_entrypoint_contracts.py"
+  },
+  "next_item": {
+    "roadmap_item_id": "R5.1",
+    "front_id": "BRAIN-101-R5-1-AGENT-V2-RUNTIME-BASELINE-01",
+    "executor": "codex_control_plane",
+    "deployment_mode": "NO_DEPLOY",
+    "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+    "jit_binding_completed": true
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}

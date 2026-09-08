@@ -918,7 +918,7 @@
     {
       "id": "R4",
       "percent": 35,
-      "status": "AUTHORIZED_ACTIVE_R4_3_CHAT_ENTRYPOINT_CONTRACTS",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "evidence": [
         {
           "claim": "R4.1 completed a canonical modular-monolith baseline and selected one bounded internal router response-governance extraction.",
@@ -966,7 +966,7 @@
     {
       "id": "R5",
       "percent": 60,
-      "status": "PARTIALLY_CLOSED",
+      "status": "AUTHORIZED_ACTIVE",
       "evidence": [
         {
           "claim": "LangGraph parity is default, but parallel legacy/fastpath behavior remains.",
@@ -1336,10 +1336,12 @@
     "live_trading_must_remain_disabled": true
   },
   "roadmap_decomposition": {
-    "status": "R5_R19_PREAUTHORIZED_PENDING_R4_3_CLOSEOUT",
+    "status": "R5_R19_EXECUTABLE_R5_1_JIT_BOUND",
     "item_count": 41,
+    "remaining_planned_unbound_items": 40,
     "planned_status": "PLANNED_UNBOUND",
     "jit_binding_required": true,
+    "active_item": "R5.1",
     "persistent_agent_loop": "DEFERRED"
   }
 }
