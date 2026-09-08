@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -121,7 +122,7 @@ def test_native_runtime_marks_classifier_failure_as_explicit_route_fallback(tmp_
 
     monkeypatch.setattr(native_runtime, "RUN_ROOT", tmp_path)
     monkeypatch.setattr(state, "RUN_ROOT", tmp_path)
-    monkeypatch.setattr(native_runtime, "classify_intent", lambda _goal: (_ for _ in ()).throw(RuntimeError("timeout")))
+    monkeypatch.setattr(native_runtime, "_classify_canonical_intent", lambda _goal: (_ for _ in ()).throw(RuntimeError("timeout")))
     monkeypatch.setattr(
         native_runtime.AgentV2IntentAdapter,
         "select_route",
@@ -142,3 +143,19 @@ def test_native_runtime_marks_classifier_failure_as_explicit_route_fallback(tmp_
     assert completed["intent_route"] == "brain_evidence"
     assert completed["intent_route_source"] == "AgentV2IntentAdapter.degraded_fallback"
     assert completed["intent_route_fallback_used"] is True
+
+
+def test_sanitizer_namespace_import_does_not_eagerly_load_the_route_classifier():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from tmp_agent.brain_v9.core.agent_kernel_v2.response_normalizer import sanitize_user_facing_content; print(bool(sanitize_user_facing_content))",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr

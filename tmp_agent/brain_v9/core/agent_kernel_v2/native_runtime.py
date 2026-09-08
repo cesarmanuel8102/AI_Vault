@@ -11,10 +11,17 @@ from .state import RUN_ROOT, CANONICAL_AGENT_VERSION
 from .tool_gateway import ToolGatewayV2, ROOT as REPO_ROOT
 from .trace import TraceStore
 from .intent_adapter import AgentV2IntentAdapter
-from .intent_classifier import classify_intent
 from .response_normalizer import build_execution_evidence
 
 DIRECT_ASSISTANT_ROUTES = {"direct_assistant", "brain_evidence", "mixed_brain_reasoning"}
+
+
+def _classify_canonical_intent(goal: str) -> Dict[str, Any]:
+    """Load the canonical classifier only when a runtime executes a route."""
+    from .intent_classifier import classify_intent
+
+    return classify_intent(goal)
+
 
 class NativeAgentRuntimeV2:
     backend = "native_runtime"
@@ -116,7 +123,7 @@ class NativeAgentRuntimeV2:
                 route_fallback = False
             else:
                 try:
-                    classification = classify_intent(run["goal"])
+                    classification = _classify_canonical_intent(run["goal"])
                     route_info = {
                         "intent": classification.get("intent", "unknown_or_insufficient_info"),
                         "confidence": classification.get("confidence", 0.0),
