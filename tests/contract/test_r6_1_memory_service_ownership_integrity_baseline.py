@@ -231,3 +231,6 @@ def test_r6_1_closeout_activates_only_bound_r6_2_promotion_successor():
     assert automation["jit_binding_completed"] is True
     assert automation["dispatchable"] is True
     assert manifest["roadmap_items"]["R6.2"]["hard_limits"] == closeout["hard_limits"]
+    assert automation["closeout"]["front_id"] == (
+        "BRAIN-101-R6-2-GOVERNED-MEMORY-CANDIDATE-PROMOTION-ROLLBACK-CLOSEOUT-01"
+    )
