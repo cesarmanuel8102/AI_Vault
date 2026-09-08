@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "evidence_type": "BRAIN_101_R5_4_AGENT_V2_COGNITIVE_ROUTE_CONVERGENCE_CLOSEOUT",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "created_at_utc": "2026-09-08T17:56:00Z",
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R5.4",
+  "parent_front_id": "BRAIN-101-R5-4-AGENT-V2-COGNITIVE-ROUTE-CONVERGENCE-01",
+  "parent_source_commit": "709330783762d2b7ae7f256db01dad9eddc8a8d7",
+  "parent_merge_commit": "5acb2363420a5e62ca77eeadf2dea91c85993e66",
+  "parent_pr_number": 309,
+  "source_evidence_path": "docs/roadmap/evidence/BRAIN_101_R5_4_AGENT_V2_COGNITIVE_ROUTE_CONVERGENCE.json",
+  "result": "CLOSED_RUNTIME_VERIFIED",
+  "next_item": {
+    "roadmap_item_id": "R6.1",
+    "front_id": "BRAIN-101-R6-1-MEMORY-SERVICE-OWNERSHIP-INTEGRITY-BASELINE-01",
+    "executor": "codex_control_plane",
+    "deployment_mode": "NO_DEPLOY",
+    "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+    "jit_binding_completed": true
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}

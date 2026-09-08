@@ -61,34 +61,40 @@ def test_r5_through_r19_are_a_complete_non_executable_pre_authorized_backlog():
 def test_planned_backlog_has_unique_ids_acyclic_defined_and_phase_ordered_dependencies():
     manifest = _manifest()
     planned = _planned_items(manifest)
+    resolved = {
+        item_id
+        for item_id, item in manifest["roadmap_items"].items()
+        if item["status"] in {"CLOSED_RUNTIME_VERIFIED", "AUTHORIZED_ACTIVE"}
+    }
     assert len(planned) == len(set(planned))
-    _assert_acyclic(planned, {"R5.4"})
+    _assert_acyclic(planned, resolved)
     for item in planned.values():
         for dependency in item["dependencies"]:
-            assert dependency in planned or dependency == "R5.4"
-            dependency_phase = planned.get(dependency, {"phase": "R5"})["phase"]
+            assert dependency in planned or dependency in resolved
+            dependency_phase = manifest["roadmap_items"][dependency]["phase"]
             dependency_order = PHASE_ORDER[dependency_phase]
             assert dependency_order <= PHASE_ORDER[item["phase"]]
 
 
-def test_r5_3_closeout_activates_exactly_one_jit_bound_r5_4_successor():
+def test_r5_4_closeout_activates_exactly_one_jit_bound_r6_1_successor():
     manifest = _manifest()
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
-    assert active == ["R5.4"]
+    assert active == ["R6.1"]
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R5.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R5.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R5.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R5.4"]["automation"]
+    assert items["R5.4"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R6.1"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
     assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R5-4-AGENT-V2-COGNITIVE-ROUTE-CONVERGENCE-01"
-    assert binding["work_branch"] == "control-plane/r5-4-agent-v2-cognitive-route-convergence"
+    assert binding["front_id"] == "BRAIN-101-R6-1-MEMORY-SERVICE-OWNERSHIP-INTEGRITY-BASELINE-01"
+    assert binding["work_branch"] == "control-plane/r6-1-memory-service-ownership-integrity-baseline"
     assert binding["closeout"]["risk"] == "MEDIUM"
 
 
@@ -121,7 +127,7 @@ def test_manifest_roadmap_sha256_matches_the_exact_canonical_roadmap_bytes():
     assert manifest["roadmap_sha256"] == hashlib.sha256(ROADMAP.read_bytes()).hexdigest()
 
 
-def test_r5_4_is_the_only_jit_bound_active_item_after_r5_3_closeout():
+def test_closed_r5_items_are_not_reintroduced_to_the_planned_backlog():
     planned = _planned_items(_manifest())
     assert "R5.1" not in planned
     assert "R5.2" not in planned

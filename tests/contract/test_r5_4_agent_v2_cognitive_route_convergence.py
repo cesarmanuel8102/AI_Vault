@@ -9,6 +9,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / "docs/roadmap/evidence/BRAIN_101_R5_4_AGENT_V2_COGNITIVE_ROUTE_CONVERGENCE.json"
+CLOSEOUT_EVIDENCE = (
+    ROOT
+    / "docs/roadmap/evidence/BRAIN_101_R5_4_AGENT_V2_COGNITIVE_ROUTE_CONVERGENCE_CLOSEOUT.json"
+)
 sys.path.insert(0, str(ROOT / "tmp_agent"))
 
 
@@ -159,3 +163,37 @@ def test_sanitizer_namespace_import_does_not_eagerly_load_the_route_classifier()
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_r5_4_closeout_binds_verified_evidence_and_activates_only_r6_1():
+    """R5.4 may activate its sole dependency-eligible successor only at closeout."""
+    closeout = json.loads(CLOSEOUT_EVIDENCE.read_text(encoding="utf-8"))
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+
+    assert closeout["roadmap_item_id"] == "R5.4"
+    assert closeout["result"] == "CLOSED_RUNTIME_VERIFIED"
+    assert closeout["parent_merge_commit"] == "5acb2363420a5e62ca77eeadf2dea91c85993e66"
+    assert closeout["next_item"] == {
+        "roadmap_item_id": "R6.1",
+        "front_id": "BRAIN-101-R6-1-MEMORY-SERVICE-OWNERSHIP-INTEGRITY-BASELINE-01",
+        "executor": "codex_control_plane",
+        "deployment_mode": "NO_DEPLOY",
+        "expected_base_sha_source": (
+            "sequenceRoadmap resolves the exact live canonical integration-branch head "
+            "at governed dispatch"
+        ),
+        "jit_binding_completed": True,
+    }
+    assert manifest["roadmap_items"]["R5.4"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    active_items = [
+        item_id
+        for item_id, item in manifest["roadmap_items"].items()
+        if item["status"] == "AUTHORIZED_ACTIVE"
+    ]
+    assert active_items == ["R6.1"]
+    automation = manifest["roadmap_items"]["R6.1"]["automation"]
+    assert automation["jit_binding_completed"] is True
+    assert automation["dispatchable"] is True
+    assert automation["front_id"] == closeout["next_item"]["front_id"]
+    assert automation["expected_base_sha_source"] == closeout["next_item"]["expected_base_sha_source"]
+    assert manifest["roadmap_items"]["R6.1"]["hard_limits"] == closeout["hard_limits"]
