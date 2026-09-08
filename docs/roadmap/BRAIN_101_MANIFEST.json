@@ -1156,7 +1156,8 @@
             "docs/roadmap/BRAIN_101_SCORECARD.json",
             "ROADMAP_STATUS.json",
             "docs/MIGRATION_CONTROL_LEDGER.md",
-            "docs/roadmap/evidence/BRAIN_101_R4_2_ROUTER_RESPONSE_GOVERNANCE_CLOSEOUT.json"
+            "docs/roadmap/evidence/BRAIN_101_R4_2_ROUTER_RESPONSE_GOVERNANCE_CLOSEOUT.json",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts"
           ],
           "forbidden_paths": [
             ".env",

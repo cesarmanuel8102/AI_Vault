@@ -55,17 +55,23 @@ test("R4.1 baseline evidence selects one eligible no-deploy modular-monolith can
   ]);
 });
 
-test("R4.1 closeout binds the only active R4.2 contract to the measured recommendation",()=>{
+test("R4 closeouts preserve the linear R4.2-to-R4.3 authorization chain",()=>{
   const manifest=readJson(MANIFEST);
   assert.equal(manifest.roadmap_items["R4.1"].status,"CLOSED_RUNTIME_VERIFIED");
-  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R4.2"]);
-  const item=manifest.roadmap_items["R4.2"];
-  assert.equal(item.automation.front_id,"BRAIN-101-R4-2-ROUTER-RESPONSE-GOVERNANCE-01");
-  assert.equal(item.automation.deployment_mode,"NO_DEPLOY");
-  assert.deepEqual(item.automation.allowed_paths,[
+  const r42=manifest.roadmap_items["R4.2"];
+  assert.equal(r42.status,"CLOSED_RUNTIME_VERIFIED");
+  assert.equal(r42.automation.front_id,"BRAIN-101-R4-2-ROUTER-RESPONSE-GOVERNANCE-01");
+  assert.equal(r42.automation.deployment_mode,"NO_DEPLOY");
+  assert.deepEqual(r42.automation.allowed_paths,[
     "tmp_agent/brain_v9/core/router_entrypoint.py",
     "tmp_agent/brain_v9/core/router_response_governance.py",
     "tests/contract/test_r4_2_router_response_governance.py"
   ]);
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R4_1_MODULAR_MONOLITH_BASELINE_CLOSEOUT.json")));
+  assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R4_2_ROUTER_RESPONSE_GOVERNANCE_CLOSEOUT.json")));
+  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R4.3"]);
+  const r43=manifest.roadmap_items["R4.3"];
+  assert.deepEqual(r43.dependencies,["R4.2"]);
+  assert.equal(r43.automation.front_id,"BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-01");
+  assert.equal(r43.automation.deployment_mode,"NO_DEPLOY");
 });
