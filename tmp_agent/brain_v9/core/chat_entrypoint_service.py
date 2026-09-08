@@ -12,11 +12,13 @@ import json
 import logging
 import sys
 import traceback
-from collections.abc import Callable, MutableMapping
-from dataclasses import dataclass, fields
 from datetime import datetime
 from typing import Any
 
+from brain_v9.core.chat_entrypoint_contracts import (
+    ChatEntrypointRuntime,
+    chat_entrypoint_runtime_field_count,
+)
 from brain_v9.core.chat_runtime_helpers import (
     extract_god_task_text,
     extract_pending_action_from_text,
@@ -29,30 +31,6 @@ from brain_v9.core.chat_runtime_helpers import (
 )
 
 log = logging.getLogger("brain_v9")
-
-
-@dataclass(frozen=True)
-class ChatEntrypointRuntime:
-    active_sessions: MutableMapping[str, Any]
-    chat_response_cls: type
-    trivial_chat_fastpath: Callable[..., Any]
-    looks_like_curated_learning_probe: Callable[..., bool]
-    answer_chat_probe: Callable[..., Any]
-    format_curated_probe_response: Callable[..., str]
-    pad_authenticated_sessions: MutableMapping[str, Any]
-    brain_enable_unsafe_dev_endpoints: bool
-    get_gate: Callable[..., Any]
-    execute_god_chat_task: Callable[..., Any]
-    pad_audit: Callable[..., Any]
-    emit_agent_trace: Callable[..., Any]
-    handle_user_message: Callable[..., Any]
-    detect_local_network: Callable[..., Any]
-    scan_local_network: Callable[..., Any]
-    logger: Any = log
-
-
-def chat_entrypoint_runtime_field_count() -> int:
-    return len(fields(ChatEntrypointRuntime))
 
 
 async def handle_chat_entrypoint(req: Any, runtime: ChatEntrypointRuntime) -> Any:
