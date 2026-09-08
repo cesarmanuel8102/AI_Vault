@@ -195,31 +195,12 @@ def chat_agent(req: AgentChatRequest):
     if contains_forbidden_request_fields({"message": req.message}):
         raise HTTPException(status_code=403, detail="forbidden bypass/override fields detected in request")
     from .governance import validate_mode, parse_mode_from_message
-    from .intent_adapter import AgentV2IntentAdapter
-    from .context_assembler import assemble_recent_context, _is_follow_up
     nl_mode = parse_mode_from_message(req.message.strip())
     validated_mode = nl_mode or validate_mode(req.mode)
-    
-    # Load recent context for this user_id
-    recent_ctx = assemble_recent_context(
-        user_id=req.user_id or "local",
-        current_goal=req.message.strip(),
-        max_turns=5,
-        max_chars=3000,
-    )
-    
-    # Intent-based pre-planner gate with context awareness
-    adapter = AgentV2IntentAdapter()
-    route_info = adapter.select_route(req.message.strip(), recent_context=recent_ctx)
-    
     rt = get_agent_runtime_v2()
     run = rt.create_run(req.message, validated_mode, req.user_id)
-
-    # For direct_assistant and brain_evidence routes, we already handle in execute_run
-    # For mixed_brain_reasoning and operational_agent, we need the planner
-    if route_info["route"] in {"mixed_brain_reasoning", "operational_agent"}:
-        run = rt.plan_run(run["run_id"])
-
+    # The canonical runtime owns route selection and planning.  Duplicating the
+    # decision in this HTTP adapter could make its pre-plan differ from execution.
     run = rt.execute_run(run["run_id"])
     trace_events = rt.get_trace(run["run_id"])
     capability_metadata = _build_capability_metadata(run)

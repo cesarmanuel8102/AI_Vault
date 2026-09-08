@@ -15,6 +15,14 @@ from .response_normalizer import build_execution_evidence
 
 DIRECT_ASSISTANT_ROUTES = {"direct_assistant", "brain_evidence", "mixed_brain_reasoning"}
 
+
+def _classify_canonical_intent(goal: str) -> Dict[str, Any]:
+    """Load the canonical classifier only when a runtime executes a route."""
+    from .intent_classifier import classify_intent
+
+    return classify_intent(goal)
+
+
 class NativeAgentRuntimeV2:
     backend = "native_runtime"
 
@@ -99,12 +107,48 @@ class NativeAgentRuntimeV2:
                 "context_summary": recent_ctx.get("summary", "")[:800],
             }
         
-            # Intent-based pre-planner gate with context
+            # Route selection uses the same canonical classifier as the
+            # LangGraph-parity runtime. The adapter remains only for the
+            # dedicated promotion dry-run intent and degraded fallback.
             adapter = AgentV2IntentAdapter()
-            route_info = adapter.select_route(run["goal"], recent_context=recent_ctx)
+            promotion_meta = adapter._detect_promotion_adapter_intent(run["goal"])
+            if promotion_meta:
+                route_info = {
+                    "intent": "PROMOTION_ADAPTER_DRY_RUN",
+                    "confidence": 0.95,
+                    "route": "promotion_adapter_dry_run",
+                    "promotion_adapter_meta": promotion_meta,
+                }
+                route_source = "AgentV2IntentAdapter.promotion_dry_run"
+                route_fallback = False
+            else:
+                try:
+                    classification = _classify_canonical_intent(run["goal"])
+                    route_info = {
+                        "intent": classification.get("intent", "unknown_or_insufficient_info"),
+                        "confidence": classification.get("confidence", 0.0),
+                        "route": classification.get("route", "direct_assistant"),
+                        "meta": classification,
+                    }
+                    route_source = "NLIntentClassifierV2.classify_intent"
+                    route_fallback = classification.get("classifier") == "keyword_with_llm_degraded"
+                except Exception:
+                    route_info = adapter.select_route(run["goal"], recent_context=recent_ctx)
+                    route_source = "AgentV2IntentAdapter.degraded_fallback"
+                    route_fallback = True
+
+                if recent_ctx and recent_ctx.get("is_follow_up"):
+                    from .context_assembler import _has_generic_override
+
+                    previous_route = recent_ctx.get("prev_route")
+                    if previous_route in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"} and not _has_generic_override(run["goal"]):
+                        route_info["route"] = previous_route
+                        route_info["context_inherited"] = True
             run["intent_route"] = route_info["route"]
             run["intent_detected"] = route_info["intent"]
             run["intent_confidence"] = route_info["confidence"]
+            run["intent_route_source"] = route_source
+            run["intent_route_fallback_used"] = route_fallback
         
             # Direct assistant route — skip planner/tools, go straight to LLM
             if route_info["route"] == "direct_assistant":

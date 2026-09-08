@@ -40,9 +40,9 @@ def test_r5_2_closeout_binds_verified_implementation_and_activates_only_r5_3():
     assert closeout["parent_merge_commit"] == "40e8724a5fae642c554b329ef964e2be5e653d15"
     assert closeout["result"] == "CLOSED_RUNTIME_VERIFIED"
     assert closeout["hard_limits"]["persistent_agent_loop"] == "DEFERRED"
-    active = [item_id for item_id, item in manifest["roadmap_items"].items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert manifest["roadmap_items"]["R5.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    assert active == ["R5.3"]
+    assert closeout["next_item"]["roadmap_item_id"] == "R5.3"
+    assert closeout["next_item"]["jit_binding_completed"] is True
     binding = manifest["roadmap_items"]["R5.3"]["automation"]
     assert binding["front_id"] == "BRAIN-101-R5-3-AGENT-V2-PLANNING-EVALUATION-PERSISTENCE-01"
     assert binding["deployment_mode"] == "NO_DEPLOY"

@@ -177,10 +177,11 @@ def test_r5_1_closeout_is_bound_to_the_verified_merge_and_baseline_evidence():
 
 def test_r5_1_closeout_activates_only_jit_bound_r5_2():
     items = _manifest()["roadmap_items"]
-    active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
+    closeout = _closeout_evidence()
 
     assert items["R5.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    assert active == ["R5.2"]
+    assert closeout["next_item"]["roadmap_item_id"] == "R5.2"
+    assert closeout["next_item"]["jit_binding_completed"] is True
     binding = items["R5.2"]["automation"]
     assert binding["jit_binding_completed"] is True
     assert binding["dispatchable"] is True
