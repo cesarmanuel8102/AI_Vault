@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "roadmap_item_id": "R6.1",
+  "front_id": "BRAIN-101-R6-1-MEMORY-SERVICE-OWNERSHIP-INTEGRITY-BASELINE-01",
+  "deployment_mode": "NO_DEPLOY",
+  "memory_contract": {
+    "agent_v2_read_owner": "MemoryService",
+    "agent_v2_direct_faiss_access": false,
+    "agent_v2_promotion_enabled": false,
+    "semantic_curated_separation": true,
+    "snapshot_integrity_manifest": "sha256_relative_paths"
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  },
+  "rollback": {
+    "strategy": "revert_bounded_r6_1_source_and_contract_only",
+    "semantic_or_faiss_data_mutated": false,
+    "scheduler_mutated": false,
+    "runtime_installation_mutated": false
+  }
+}
