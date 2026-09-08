@@ -138,10 +138,19 @@ def test_r5_1_makes_parallel_paths_and_non_convergence_explicit():
 
 def test_r5_1_front_diff_is_limited_to_its_evidence_and_contract():
     evidence = _evidence()
+    implementation_head = (
+        _closeout_evidence()["parent_merge_commit"]
+        if CLOSEOUT_EVIDENCE.exists()
+        else "HEAD"
+    )
     changed = set(
         filter(
             None,
-            _git("diff", "--name-only", f"{evidence['canonical_base_sha']}..HEAD").splitlines(),
+            _git(
+                "diff",
+                "--name-only",
+                f"{evidence['canonical_base_sha']}..{implementation_head}",
+            ).splitlines(),
         )
     )
     assert changed <= {

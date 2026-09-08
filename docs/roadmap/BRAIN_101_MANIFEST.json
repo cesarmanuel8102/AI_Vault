@@ -1352,7 +1352,8 @@
             "docs/MIGRATION_CONTROL_LEDGER.md",
             "docs/roadmap/evidence/BRAIN_101_R5_1_AGENT_V2_RUNTIME_BASELINE_CLOSEOUT.json",
             "tests/contract/test_r5_1_agent_v2_runtime_baseline.py",
-            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py"
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts"
           ],
           "forbidden_paths": [
             ".env",
@@ -1370,6 +1371,7 @@
           ],
           "test_commands": [
             "python -m pytest -q tests/contract/test_r5_1_agent_v2_runtime_baseline.py",
+            "npm --prefix scripts/operator_proxy test",
             "git diff --check"
           ]
         }
