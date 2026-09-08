@@ -10,6 +10,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / "docs/roadmap/evidence/BRAIN_101_R5_3_AGENT_V2_PLANNING_EVALUATION_PERSISTENCE.json"
+CLOSEOUT_EVIDENCE = ROOT / "docs/roadmap/evidence/BRAIN_101_R5_3_AGENT_V2_PLANNING_EVALUATION_PERSISTENCE_CLOSEOUT.json"
 sys.path.insert(0, str(ROOT / "tmp_agent"))
 
 
@@ -33,6 +34,17 @@ def test_r5_3_evidence_declares_the_persistent_projection_and_no_deploy_limits()
         "real_money": False,
         "persistent_agent_loop": "DEFERRED",
     }
+
+
+def test_r5_3_closeout_binds_the_merged_implementation_and_activates_only_r5_4():
+    evidence = json.loads(CLOSEOUT_EVIDENCE.read_text(encoding="utf-8"))
+
+    assert evidence["roadmap_item_id"] == "R5.3"
+    assert evidence["parent_source_commit"] == "363a2f5fc0ade5c849db868ca4514a524bbb1b84"
+    assert evidence["parent_merge_commit"] == "3fabaf81e6c83f7d89eee6f850b18020e5813fbe"
+    assert evidence["next_item"]["roadmap_item_id"] == "R5.4"
+    assert evidence["next_item"]["deployment_mode"] == "NO_DEPLOY"
+    assert evidence["hard_limits"]["persistent_agent_loop"] == "DEFERRED"
 
 
 @pytest.mark.parametrize(
