@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R4.1",
+  "closeout_front_id": "BRAIN-101-R4-1-MODULAR-MONOLITH-BASELINE-CLOSEOUT-01",
+  "status": "CLOSED_RUNTIME_VERIFIED",
+  "execution_controller": "CODEX_GOVERNED_CONTROLLER",
+  "canonical_base_sha": "e33272377b92b2b3e2e8577f593b8db28741c299",
+  "baseline_canonical_base_sha": "f455904b98d9bc1ed690e7948f99d9200a13cce4",
+  "baseline_evidence_path": "docs/roadmap/evidence/BRAIN_101_R4_1_MODULAR_MONOLITH_BASELINE.md",
+  "baseline_evidence_sha256": "0ea9d8df5dd0e3a971afc6add1d869bfcaa5ca9ed95192709a3def7a6d7e84d5",
+  "recommendation_sha256": "4fbbe0b12642f00470f2fe109206055fb21dde7a65762ce0b3fb301231e22e1f",
+  "selected_candidate": "router response-governance helper extraction",
+  "selected_score": 29,
+  "r4_2_front_id": "BRAIN-101-R4-2-ROUTER-RESPONSE-GOVERNANCE-01",
+  "r4_2_deployment_mode": "NO_DEPLOY",
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop_enabled": false
+  },
+  "verification": {
+    "exactly_one_candidate": true,
+    "network_boundary": false,
+    "public_interface_migration": false,
+    "runtime_deployed": false,
+    "scheduler_activated": false,
+    "canonical_local_sync": false,
+    "trading_touched": false,
+    "financial_autonomy_touched": false
+  },
+  "rollback": "Revert this documentation-only closeout; R4.2 remains a separate unexecuted authorization until its own governed front is merged."
+}

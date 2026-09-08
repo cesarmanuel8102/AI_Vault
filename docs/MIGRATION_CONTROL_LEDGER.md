@@ -9296,3 +9296,12 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Persistent Agent Loop remains deferred and disabled; no runtime installation, scheduler activation, canonical local sync, live trading, real money, or auto-merge occurred.
 - Status: R3.4 is `CLOSED_RUNTIME_VERIFIED` with historical evidence preserved.
 - Authorized next item: exactly one R4.1, `BRAIN-101-R4-1-MODULAR-MONOLITH-BASELINE-01`, controller-governed and `NO_DEPLOY`, to produce an evidence-based strict modular-monolith baseline before any extraction.
+
+## BRAIN-101 R4.1 - Modular-Monolith Baseline Closeout (2026-09-08)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`.
+- Canonical base: `e33272377b92b2b3e2e8577f593b8db28741c299`; measured baseline base: `f455904b98d9bc1ed690e7948f99d9200a13cce4`.
+- Evidence SHA-256: `0ea9d8df5dd0e3a971afc6add1d869bfcaa5ca9ed95192709a3def7a6d7e84d5`; recommendation SHA-256: `4fbbe0b12642f00470f2fe109206055fb21dde7a65762ce0b3fb301231e22e1f`.
+- R4.1 status: `CLOSED_RUNTIME_VERIFIED`.
+- R4.2 authorization: `BRAIN-101-R4-2-ROUTER-RESPONSE-GOVERNANCE-01`, `NO_DEPLOY`, bounded to the exact evidence-selected router response-governance helper extraction paths.
+- No runtime deployment, scheduler activation, canonical local sync, live trading, real money, auto-merge, trading, or financial autonomy activity occurred.

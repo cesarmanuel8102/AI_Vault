@@ -1229,3 +1229,12 @@ R3.4 is closed as `CLOSED_RUNTIME_VERIFIED` from functional evidence pinned to c
 The validated append-only controller receipt is `2404fcdbb0675741dfd07881a5edbc74f86e0ce43875dbb5ec7ea486a93b4b0c`. It binds the historical base `65b5d4c40e1f9a12348b5b2d2421be7ba66651a4`, current canonical base `b134516c775feb5b302200ea559beb62d903c67a`, and the current R3.4 functional-evidence byte hash. No claim is made that the Agent Loop executed the closeout.
 
 Exactly one next item is authorized: R4.1, `BRAIN-101-R4-1-MODULAR-MONOLITH-BASELINE-01`, a controller-governed, documentation-only, `NO_DEPLOY` inventory of the strict modular monolith. It may not enable schedulers, deploy runtime, introduce microservices, modify trading or financial autonomy, or change canonical local synchronization.
+
+## R4.1 - Modular-Monolith Baseline Closeout (2026-09-08)
+
+- Front: `BRAIN-101-R4-1-MODULAR-MONOLITH-BASELINE-CLOSEOUT-01`.
+- Canonical baseline merge: `e33272377b92b2b3e2e8577f593b8db28741c299`; evidence source base: `f455904b98d9bc1ed690e7948f99d9200a13cce4`.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R4_1_MODULAR_MONOLITH_BASELINE.md` and `docs/roadmap/evidence/BRAIN_101_R4_1_MODULAR_MONOLITH_BASELINE_CLOSEOUT.json`.
+- Result: the base-pinned inventory selected exactly one eligible in-process candidate, `router response-governance helper extraction`, score `29`; no network boundary, public-interface migration, deployment, scheduler activation, canonical local sync, trading, or financial autonomy operation occurred.
+- Status: R4.1 is `CLOSED_RUNTIME_VERIFIED`; exactly one next item, R4.2 `BRAIN-101-R4-2-ROUTER-RESPONSE-GOVERNANCE-01`, is authorized as `NO_DEPLOY`.
+- Preserved controls: human final authority true; auto-merge false; canonical local sync false; live trading false; real money false; persistent Agent Loop deferred and disabled.

@@ -918,25 +918,26 @@
     {
       "id": "R4",
       "percent": 35,
-      "status": "AUTHORIZED_ACTIVE_R4_1_BASELINE",
+      "status": "AUTHORIZED_ACTIVE_R4_2_ROUTER_RESPONSE_GOVERNANCE",
       "evidence": [
         {
-          "claim": "Router extraction progressed while R4 LOC and legacy targets remain unmet.",
+          "claim": "R4.1 completed a canonical modular-monolith baseline and selected one bounded internal router response-governance extraction.",
           "classification": "STATIC_VERIFIED",
           "paths": [
-            "tmp_agent/brain_v9/main.py",
-            "tmp_agent/brain_v9/core/session.py",
-            "tmp_agent/brain_v9/agent/tools.py",
-            "tmp_agent/brain_v9/agent/loop.py"
+            "docs/roadmap/evidence/BRAIN_101_R4_1_MODULAR_MONOLITH_BASELINE.md",
+            "docs/roadmap/evidence/BRAIN_101_R4_1_MODULAR_MONOLITH_BASELINE_CLOSEOUT.json",
+            "tmp_agent/brain_v9/core/router_entrypoint.py"
           ],
-          "symbols": [],
-          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "symbols": [
+            "apply_governance"
+          ],
+          "commit": "e33272377b92b2b3e2e8577f593b8db28741c299",
           "issue": null,
-          "pr": null,
+          "pr": 295,
           "workflow_run": null,
-          "command": "AST/line-count audit executed during R0",
-          "result": "2164/3052/3519/2912 LOC and 30 direct main endpoints.",
-          "observed_at_utc": "2026-07-22T13:37:51Z"
+          "command": "R4.1 base-pinned file, import, LOC, test-reference, and history inventory",
+          "result": "Selected score 29: router response-governance helper extraction; R4.2 is authorized NO_DEPLOY.",
+          "observed_at_utc": "2026-09-08T03:13:50Z"
         }
       ]
     },
