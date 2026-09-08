@@ -18,10 +18,9 @@ const recommendation=(text:string)=>{
   return JSON.parse(match[1]);
 };
 
-test("R3.4 controller closeout makes R4.1 the only active item",()=>{
+test("R3.4 controller closeout remains immutable after downstream roadmap transitions",()=>{
   const manifest=readJson(MANIFEST);
   assert.equal(manifest.roadmap_items["R3.4"].status,"CLOSED_RUNTIME_VERIFIED");
-  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R4.1"]);
   assert.ok(existsSync(resolve(ROOT,R34_CLOSEOUT)));
 });
 
@@ -54,4 +53,19 @@ test("R4.1 baseline evidence selects one eligible no-deploy modular-monolith can
     "tmp_agent/brain_v9/core/router_response_governance.py",
     "tests/contract/test_r4_2_router_response_governance.py"
   ]);
+});
+
+test("R4.1 closeout binds the only active R4.2 contract to the measured recommendation",()=>{
+  const manifest=readJson(MANIFEST);
+  assert.equal(manifest.roadmap_items["R4.1"].status,"CLOSED_RUNTIME_VERIFIED");
+  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R4.2"]);
+  const item=manifest.roadmap_items["R4.2"];
+  assert.equal(item.automation.front_id,"BRAIN-101-R4-2-ROUTER-RESPONSE-GOVERNANCE-01");
+  assert.equal(item.automation.deployment_mode,"NO_DEPLOY");
+  assert.deepEqual(item.automation.allowed_paths,[
+    "tmp_agent/brain_v9/core/router_entrypoint.py",
+    "tmp_agent/brain_v9/core/router_response_governance.py",
+    "tests/contract/test_r4_2_router_response_governance.py"
+  ]);
+  assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R4_1_MODULAR_MONOLITH_BASELINE_CLOSEOUT.json")));
 });
