@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "evidence_type": "BRAIN_101_R5_4_AGENT_V2_COGNITIVE_ROUTE_CONVERGENCE",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R5.4",
+  "front_id": "BRAIN-101-R5-4-AGENT-V2-COGNITIVE-ROUTE-CONVERGENCE-01",
+  "canonical_base_sha": "66febf8404835a33b83bcfbdcae9c140932956c0",
+  "deployment_mode": "NO_DEPLOY",
+  "runtime_contract": {
+    "route_selection_owner": "agent_v2_runtime",
+    "http_preplanner_route_selection": false,
+    "parallel_cognitive_runtime": false,
+    "governance_fastpath": false
+  },
+  "route_coverage": [
+    "direct_assistant",
+    "brain_evidence",
+    "mixed_brain_reasoning",
+    "learning_code",
+    "financial_research"
+  ],
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}
