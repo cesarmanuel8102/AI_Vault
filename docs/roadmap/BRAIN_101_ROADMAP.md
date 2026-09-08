@@ -1268,6 +1268,13 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Sole successor: R5.2 `BRAIN-101-R5-2-AGENT-V2-LIFECYCLE-CHECKPOINTS-01` is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`, and receives its exact `expected_base_sha` from the live canonical branch when `sequenceRoadmap` creates the governed spec.
 - Preserved controls: human final authority true; auto-merge false; canonical local sync false; persistent Agent Loop deferred; live trading false; real money false.
 
+#### R5.2 Closeout and R5.3 Activation
+
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS_CLOSEOUT.json`, bound to source commit `946f60c3ce799204d110388f6f7fe2f3b6f9a529` and merge commit `40e8724a5fae642c554b329ef964e2be5e653d15`.
+- Status: R5.2 is `CLOSED_RUNTIME_VERIFIED`; mission, run, and room identity plus terminal lifecycle guards were verified in both Agent V2 runtime implementations without deployment.
+- Sole successor: R5.3 `BRAIN-101-R5-3-AGENT-V2-PLANNING-EVALUATION-PERSISTENCE-01` is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`, and receives its exact `expected_base_sha` from the live canonical branch when `sequenceRoadmap` creates the governed spec.
+- Preserved controls: human final authority true; auto-merge false; canonical local sync false; persistent Agent Loop deferred; live trading false; real money false.
+
 ### R6
 - `R6.1`: MemoryService ownership and integrity baseline.
 - `R6.2`: Governed memory candidate promotion and rollback.
