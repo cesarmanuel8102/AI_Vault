@@ -22,7 +22,7 @@ The historical promoter can append directly to semantic JSONL and FAISS and uses
 
 ### 1. Typed, immutable inputs
 
-`GovernedPromotionCandidateV1` contains a canonical candidate identifier, normalized record, source/evidence identifiers, origin room, retention class, and SHA-256 of canonical JSON.  The candidate parser rejects unknown fields, blank content, unsafe room identifiers, live-trading content, cross-room destination fields, and content whose computed hash differs from the supplied hash.
+`GovernedPromotionCandidateV1` contains a canonical candidate identifier, normalized record, source/evidence identifiers, origin room, retention class, and `candidate_sha256`.  `candidate_sha256` is SHA-256 of canonical JSON with that field omitted, avoiding a self-referential hash.  The candidate parser rejects unknown fields, blank content, unsafe room identifiers, live-trading content, cross-room destination fields, and content whose computed hash differs from the supplied hash.
 
 `ManualPromotionDecisionV1` contains the exact candidate identifier and candidate SHA-256, approver principal, immutable decision identifier, and an explicit `APPROVE_SINGLE_CANDIDATE` decision.  It rejects automated actors, expiry, mismatched candidate bindings, or any value other than the exact approval action.  A decision is authorization for one candidate, not a reusable promotion token.
 
