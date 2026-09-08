@@ -155,6 +155,8 @@ class LangGraphParityRuntimeV2:
     def _save_checkpoint(self, state: Dict[str, Any], step_index: int = 0) -> None:
         run_id = state["run_id"]
         cp_data = {
+            "mission_id": state.get("mission_id"),
+            "room_id": state.get("room_id"),
             "intent_route": state.get("intent_route"),
             "classification": state.get("classification"),
             "mode_effective": state.get("mode_effective"),
@@ -1416,7 +1418,7 @@ class LangGraphParityRuntimeV2:
         self._trace(run["run_id"], event_type, message, payload)
         return run
 
-    def create_run(self, goal: str, mode: str = "read_only", user_id: str = "local") -> Dict[str, Any]:
+    def create_run(self, goal: str, mode: str = "read_only", user_id: str = "local", mission_id: str | None = None, room_id: str | None = None) -> Dict[str, Any]:
         """Create a Native-compatible run and persist run.json.
 
         This method is required for get_agent_runtime_v2() production compatibility.
@@ -1433,6 +1435,8 @@ class LangGraphParityRuntimeV2:
             "mode_requested": mode,
             "mode_effective": normalized_mode,
             "user_id": user_id,
+            "mission_id": mission_id or run_id,
+            "room_id": room_id or user_id,
             "status": "created",
             "created_utc": created_utc,
             "updated_utc": created_utc,

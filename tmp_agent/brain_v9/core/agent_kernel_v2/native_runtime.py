@@ -31,7 +31,11 @@ class NativeAgentRuntimeV2:
         run["updated_utc"] = utc_now()
         d = self._run_dir(run["run_id"])
         (d / "run.json").write_text(json.dumps(run, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        CheckpointStore(d).save(run["run_id"], run["status"], data={"plan": run.get("plan", [])})
+        CheckpointStore(d).save(run["run_id"], run["status"], data={
+            "plan": run.get("plan", []),
+            "mission_id": run.get("mission_id"),
+            "room_id": run.get("room_id"),
+        })
         return run
 
     def _load_run(self, run_id: str) -> Dict[str, Any]:
@@ -43,7 +47,7 @@ class NativeAgentRuntimeV2:
     def _trace(self, run_id: str, event_type: str, message: str = "", data=None, step_id=None) -> None:
         TraceStore(self._run_dir(run_id)).append(AgentTraceEvent(event_type=event_type, run_id=run_id, step_id=step_id, message=message, data=data or {}))
 
-    def create_run(self, goal: str, mode: str = "read_only", user_id: str = "local") -> Dict[str, Any]:
+    def create_run(self, goal: str, mode: str = "read_only", user_id: str = "local", mission_id: str | None = None, room_id: str | None = None) -> Dict[str, Any]:
         from .governance import validate_mode, infer_auto_decision
         normalized_mode = validate_mode(mode)
         seed = f"{goal}|{utc_now()}|{user_id}".encode("utf-8")
@@ -53,6 +57,8 @@ class NativeAgentRuntimeV2:
         run["mode_requested"] = mode
         run["mode_effective"] = normalized_mode
         run["auto_decision"] = infer_auto_decision(goal) if normalized_mode == "auto" else "n/a"
+        run["mission_id"] = mission_id or run["run_id"]
+        run["room_id"] = room_id or user_id
         self._save_run(run)
         self._trace(run["run_id"], "run_created", "Agent V2 run created", {"mode": run["mode"], "goal_preview": goal[:180], "mode_requested": mode, "mode_effective": normalized_mode})
         return run
@@ -488,13 +494,28 @@ class NativeAgentRuntimeV2:
                         extra_results.append(rd)
         return plan, extra_results
 
+    def _invalid_transition(self, run: Dict[str, Any], target: str) -> Dict[str, Any]:
+        error = f"cannot transition terminal run from {run['status']} to {target}"
+        run["error"] = error
+        run["detail"] = error
+        self._save_run(run)
+        self._trace(run["run_id"], "invalid_transition", error, {"status": run["status"]})
+        return run
+
     def pause_run(self, run_id: str) -> Dict[str, Any]:
-        run = self._load_run(run_id); run["status"] = "paused"; self._save_run(run); self._trace(run_id, "run_paused", "Run paused"); return run
+        run = self._load_run(run_id)
+        if run.get("status") in {"completed", "failed", "cancelled", "degraded"}:
+            return self._invalid_transition(run, "paused")
+        run["status"] = "paused"; self._save_run(run); self._trace(run_id, "run_paused", "Run paused"); return run
     def resume_run(self, run_id: str) -> Dict[str, Any]:
-        run = self._load_run(run_id); run["status"] = "running"; self._save_run(run); self._trace(run_id, "run_resumed", "Run resumed"); return run
+        run = self._load_run(run_id)
+        if run.get("status") in {"completed", "failed", "cancelled", "degraded"}:
+            return self._invalid_transition(run, "resumed")
+        run["status"] = "running"; self._save_run(run); self._trace(run_id, "run_resumed", "Run resumed"); return run
     def cancel_run(self, run_id: str) -> Dict[str, Any]:
         run = self._load_run(run_id); run["status"] = "cancelled"; self._save_run(run); self._trace(run_id, "run_cancelled", "Run cancelled"); return run
     def get_run(self, run_id: str) -> Dict[str, Any]: return self._load_run(run_id)
+    def get_checkpoint(self, run_id: str): return CheckpointStore(self._run_dir(run_id)).load()
     def get_trace(self, run_id: str): return TraceStore(self._run_dir(run_id)).read()
     def list_runs(self):
         runs = []
