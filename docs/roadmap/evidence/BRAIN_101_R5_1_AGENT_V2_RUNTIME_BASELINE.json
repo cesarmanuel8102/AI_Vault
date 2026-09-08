@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "evidence_type": "BRAIN_101_R5_1_AGENT_V2_RUNTIME_BASELINE",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R5.1",
+  "front_id": "BRAIN-101-R5-1-AGENT-V2-RUNTIME-BASELINE-01",
+  "canonical_base_sha": "a9778af9d0eff51dec770c6514e06271f1b2d21e",
+  "deployment_mode": "NO_DEPLOY",
+  "baseline_only": true,
+  "runtime_behavior_modified": false,
+  "scheduler_activated": false,
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  },
+  "runtime_inventory": [
+    {
+      "id": "agent_v2_api",
+      "path": "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+      "source_anchor": "def chat_agent",
+      "source_sha256": "5f4c79e490bed7d8320ffec5801699af593f29d76e5e09adf0e88a98a7241c67",
+      "role": "Canonical Agent V2 chat HTTP entrypoint at /v2/chat/agent."
+    },
+    {
+      "id": "agent_v2_runtime_selector",
+      "path": "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+      "source_anchor": "def get_agent_runtime_v2",
+      "source_sha256": "44815c0cf09e4e58aff3bf964259f0e1ebd3385715758a4da8ffc19c3e784a10",
+      "role": "Selects LangGraph parity by default and native runtime as the explicit rollback or safe fallback."
+    },
+    {
+      "id": "agent_v2_langgraph_runtime",
+      "path": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "source_anchor": "def execute_run",
+      "source_sha256": "8399a7b38d839d8bb80ee47a9af04ffce2f6294fac4110c8833c947c14d54d1b",
+      "role": "Default Agent V2 execution runtime exposing Native-compatible lifecycle methods."
+    },
+    {
+      "id": "agent_v2_native_fallback",
+      "path": "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+      "source_anchor": "def execute_run",
+      "source_sha256": "0ced01a2a8bbacef0f73a56fd19bf1ab487027faac9b6318fa71dccc1485f119",
+      "role": "Explicit rollback and initialization-failure fallback runtime."
+    },
+    {
+      "id": "legacy_chat_route",
+      "path": "tmp_agent/brain_v9/routes/chat_entrypoint_routes.py",
+      "source_anchor": "async def chat(req: ChatRequest)",
+      "source_sha256": "f03cf4fb7bb1a3aaa449ffaa80bef13a6e64a7c71d15688b534be145f38e5a28",
+      "role": "Legacy POST /chat route delegated through the chat entrypoint service."
+    },
+    {
+      "id": "legacy_chat_service",
+      "path": "tmp_agent/brain_v9/core/chat_entrypoint_service.py",
+      "source_anchor": "async def handle_chat_entrypoint",
+      "source_sha256": "caa6a02d84d1ddef2ee90fe265cf96d6574d05f2d09c180e017c63a012da0ec2",
+      "role": "Legacy chat service boundary with fastpaths and injected runtime."
+    },
+    {
+      "id": "legacy_session_router",
+      "path": "tmp_agent/brain_v9/core/session.py",
+      "source_anchor": "async def chat(self, message: str",
+      "source_sha256": "e04a9a7d0a7444144285e946eaf315c6c1b11f545258e62b94833bc78abf2f66",
+      "role": "Historical session router that selects fastpaths, governed tools, agent, or LLM."
+    },
+    {
+      "id": "legacy_session_llm_router",
+      "path": "tmp_agent/brain_v9/core/session_routing_helpers.py",
+      "source_anchor": "async def _route_to_llm",
+      "source_sha256": "98762261b05c58a215e22a19ad80954c5356dbf846196e8a033a179bbef19c2d",
+      "role": "Historical direct-LLM route helper."
+    },
+    {
+      "id": "legacy_session_agent_router",
+      "path": "tmp_agent/brain_v9/core/session_agent_route.py",
+      "source_anchor": "async def _route_to_agent",
+      "source_sha256": "6b1831c026246d3c7d2fa96c7aa83376b4cd069942c9e41617978d7f4c8da3e7",
+      "role": "Historical agent route helper with Tool01 and guarded fastpaths."
+    },
+    {
+      "id": "intent_adapter",
+      "path": "tmp_agent/brain_v9/core/agent_kernel_v2/intent_adapter.py",
+      "source_anchor": "def select_route",
+      "source_sha256": "d3e635bb832c6ed451a9fa1d20f8f68c7930cddf46346e9f92b52025f49f70da",
+      "role": "Agent V2 intent and source-boundary classifier."
+    },
+    {
+      "id": "agent_v2_planner",
+      "path": "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+      "source_anchor": "def classify_goal",
+      "source_sha256": "2cb88c12837582e8147cc8707351378be8c6fd9524d233aaaae566c6d8d9e55c",
+      "role": "Agent V2 plan classifier for read-only diagnostics, explicit tools, and approval-gated actions."
+    }
+  ],
+  "cognitive_path_boundaries": [
+    {
+      "id": "direct_llm",
+      "owner": "legacy_session_llm_router",
+      "boundary": "Conceptual or non-operational legacy chat requests remain on the LLM helper path.",
+      "execution_claim": "read_only",
+      "source": {
+        "path": "tmp_agent/brain_v9/core/session_routing_helpers.py",
+        "anchor": "async def _route_to_llm"
+      }
+    },
+    {
+      "id": "brain_evidence",
+      "owner": "intent_adapter",
+      "boundary": "Agent V2 selects evidence sources only for Brain-signaled requests.",
+      "execution_claim": "read_only",
+      "source": {
+        "path": "tmp_agent/brain_v9/core/agent_kernel_v2/intent_adapter.py",
+        "anchor": "route = \"brain_evidence\""
+      }
+    },
+    {
+      "id": "mixed_reasoning",
+      "owner": "intent_adapter",
+      "boundary": "Low-confidence Brain query routing is represented separately from direct assistant routing.",
+      "execution_claim": "governed",
+      "source": {
+        "path": "tmp_agent/brain_v9/core/agent_kernel_v2/intent_adapter.py",
+        "anchor": "route = \"mixed_brain_reasoning\""
+      }
+    },
+    {
+      "id": "learning_external",
+      "owner": "intent_adapter",
+      "boundary": "External learning evidence is a named source type with read-only repository tools in this baseline.",
+      "execution_claim": "read_only",
+      "source": {
+        "path": "tmp_agent/brain_v9/core/agent_kernel_v2/intent_adapter.py",
+        "anchor": "\"type\": \"learning_external\""
+      }
+    },
+    {
+      "id": "code_task",
+      "owner": "agent_v2_planner",
+      "boundary": "Patch and write requests classify to approval-required or dry-run paths rather than an unconditional executor.",
+      "execution_claim": "governed",
+      "source": {
+        "path": "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+        "anchor": "return \"approval_required_write\""
+      }
+    },
+    {
+      "id": "financial_research",
+      "owner": "agent_v2_planner",
+      "boundary": "Financial autonomy is classified as a diagnostic boundary; this inventory does not identify an Agent V2 financial execution route.",
+      "execution_claim": "not_routed_by_agent_v2",
+      "source": {
+        "path": "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+        "anchor": "return \"financial_autonomy_diagnosis\""
+      }
+    }
+  ],
+  "parallel_path_findings": [
+    {
+      "id": "legacy_chat_entrypoint",
+      "containment_status": "INVENTORIED_NOT_MIGRATED",
+      "finding": "POST /chat remains a legacy route beside /v2/chat/agent.",
+      "source": {
+        "path": "tmp_agent/brain_v9/routes/chat_entrypoint_routes.py",
+        "anchor": "@router.post(\"/chat\""
+      }
+    },
+    {
+      "id": "legacy_session_router",
+      "containment_status": "INVENTORIED_NOT_MIGRATED",
+      "finding": "BrainSession retains independent fastpath, governed-tool, agent, and LLM routing.",
+      "source": {
+        "path": "tmp_agent/brain_v9/core/session.py",
+        "anchor": "async def chat(self, message: str"
+      }
+    },
+    {
+      "id": "native_runtime_fallback",
+      "containment_status": "INVENTORIED_NOT_MIGRATED",
+      "finding": "The native runtime remains a documented rollback and initialization-failure fallback.",
+      "source": {
+        "path": "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+        "anchor": "ROLLBACK_AGENT_V2_BACKEND = \"native_runtime\""
+      }
+    }
+  ],
+  "conclusion": "R5.1 establishes an evidence-bound inventory only. It neither declares a single runtime converged nor changes route behavior; the listed parallel paths are subsequent convergence work.",
+  "rollback": "Revert only this evidence file and its dedicated contract; no runtime, scheduler, or financial control changes are part of this front."
+}
