@@ -24,6 +24,7 @@ const receipt=(overrides:Record<string,unknown>={}):ControllerSupersessionReceip
   manifest_sha256:sha64("c"),
   roadmap_sha256:sha64("d"),
   historical_attempt_sha256:sha64("e"),
+  historical_base_sha:sha40("0"),
   front_id:"BRAIN-101-SYNTHETIC-FRONT-01",
   failed_head_sha:sha40("f"),
   grant_key:sha64("1"),
@@ -56,6 +57,12 @@ test("rejects a conflicting duplicate key, duplicate sequence, and bad predecess
   corrupt.event_sha256=eventHash(corrupt);
   appendFileSync(path,`${JSON.stringify(corrupt)}\n`);
   assert.throws(()=>store.validate(),/supersession receipt/i);
+});
+
+test("rejects a receipt without an exact historical base anchor",()=>{
+  const store=ledger();
+  assert.throws(()=>store.append(receipt({historical_base_sha:""})),/supersession receipt/i);
+  assert.throws(()=>store.append(receipt({historical_base_sha:undefined})),/supersession receipt/i);
 });
 
 test("fails closed for a hash-valid record with a corrupted predecessor",()=>{

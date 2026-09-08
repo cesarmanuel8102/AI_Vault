@@ -141,6 +141,7 @@ export interface ControllerSupersessionReceiptInputV1 {
   manifest_sha256: string;
   roadmap_sha256: string;
   historical_attempt_sha256: string;
+  historical_base_sha: string;
   front_id: string;
   failed_head_sha: string;
   grant_key: string;
