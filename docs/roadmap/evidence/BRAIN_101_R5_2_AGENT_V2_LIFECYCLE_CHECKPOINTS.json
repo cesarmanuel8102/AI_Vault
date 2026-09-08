@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "evidence_type": "BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R5.2",
+  "front_id": "BRAIN-101-R5-2-AGENT-V2-LIFECYCLE-CHECKPOINTS-01",
+  "canonical_base_sha": "13fe85a04562754b401ec0178dbdc648838335c5",
+  "deployment_mode": "NO_DEPLOY",
+  "runtime_contract": {
+    "identity": ["mission_id", "run_id", "room_id"],
+    "checkpoint_identity_persisted": true,
+    "terminal_pause_rejected": true,
+    "terminal_resume_rejected": true
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}

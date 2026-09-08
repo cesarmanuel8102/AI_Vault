@@ -58,6 +58,8 @@ class CreateRunRequest(BaseModel):
     goal: str
     mode: str = "read_only"
     user_id: str = "local"
+    mission_id: str | None = None
+    room_id: str | None = None
 
 class AgentChatRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -120,7 +122,7 @@ def list_runs():
 def create_run(req: CreateRunRequest):
     if not req.goal.strip():
         raise HTTPException(status_code=400, detail="goal required")
-    return {"ok": True, "run": get_agent_runtime_v2().create_run(req.goal, req.mode, req.user_id)}
+    return {"ok": True, "run": get_agent_runtime_v2().create_run(req.goal, req.mode, req.user_id, req.mission_id, req.room_id)}
 
 @router.get("/runs/{run_id}")
 def get_run(run_id: str):
