@@ -1336,12 +1336,12 @@
     "live_trading_must_remain_disabled": true
   },
   "roadmap_decomposition": {
-    "status": "R5_R19_EXECUTABLE_R5_1_JIT_BOUND",
+    "status": "R5_R19_EXECUTABLE_R5_2_JIT_BOUND",
     "item_count": 41,
-    "remaining_planned_unbound_items": 40,
+    "remaining_planned_unbound_items": 39,
     "planned_status": "PLANNED_UNBOUND",
     "jit_binding_required": true,
-    "active_item": "R5.1",
+    "active_item": "R5.2",
     "persistent_agent_loop": "DEFERRED"
   }
 }
