@@ -1238,3 +1238,12 @@ Exactly one next item is authorized: R4.1, `BRAIN-101-R4-1-MODULAR-MONOLITH-BASE
 - Result: the base-pinned inventory selected exactly one eligible in-process candidate, `router response-governance helper extraction`, score `29`; no network boundary, public-interface migration, deployment, scheduler activation, canonical local sync, trading, or financial autonomy operation occurred.
 - Status: R4.1 is `CLOSED_RUNTIME_VERIFIED`; exactly one next item, R4.2 `BRAIN-101-R4-2-ROUTER-RESPONSE-GOVERNANCE-01`, is authorized as `NO_DEPLOY`.
 - Preserved controls: human final authority true; auto-merge false; canonical local sync false; live trading false; real money false; persistent Agent Loop deferred and disabled.
+
+## R4.2 - Router Response-Governance Helper Extraction Closeout (2026-09-08)
+
+- Front: `BRAIN-101-R4-2-ROUTER-RESPONSE-GOVERNANCE-01`.
+- Source implementation: PR #297, commit `2f44a86ed7b6b807baba1bef00cd833c7944b67e`, merged as `74aa6881e9bf843ec738637a5cf9102a5b475bd0`.
+- Verification repair: PR #298, commit `4cba7a4c9ccdef7df7b45b37dc3b691711e4351e`, merged as `4fc39a77c6dff204fc757b19fdc454e2486966a0`. The repair made the historical smoke worktree-safe; it did not modify production code.
+- Result: `apply_governance` and its raw-reasoning filtering helpers now have one internal owner in `core/router_response_governance.py`; `core/router_entrypoint.py` preserves the public compatibility re-export. The focused R4.2 contract, portable preservation smoke, and chat service-boundary contract passed (`31 passed, 4 skipped`). The four skips occur only when the three non-versioned memory/FAISS snapshot artifacts are absent; the byte-level checks remain mandatory when those artifacts exist.
+- Status: R4.2 is `CLOSED_RUNTIME_VERIFIED`; exactly one next item, R4.3 `BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-01`, is authorized as `NO_DEPLOY` to extract only the immutable chat runtime contract.
+- Preserved controls: human final authority true; auto-merge false; canonical local sync false; live trading false; real money false; persistent Agent Loop deferred and disabled.

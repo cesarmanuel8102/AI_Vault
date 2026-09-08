@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R4.2",
+  "closeout_front_id": "BRAIN-101-R4-2-ROUTER-RESPONSE-GOVERNANCE-CLOSEOUT-01",
+  "status": "CLOSED_RUNTIME_VERIFIED",
+  "execution_controller": "CODEX_GOVERNED_CONTROLLER",
+  "implementation": {
+    "pr": 297,
+    "head_sha": "2f44a86ed7b6b807baba1bef00cd833c7944b67e",
+    "merge_commit": "74aa6881e9bf843ec738637a5cf9102a5b475bd0"
+  },
+  "verification_repair": {
+    "pr": 298,
+    "head_sha": "4cba7a4c9ccdef7df7b45b37dc3b691711e4351e",
+    "merge_commit": "4fc39a77c6dff204fc757b19fdc454e2486966a0",
+    "scope": "test harness portability only"
+  },
+  "verification": {
+    "command": "python -m pytest -q tests/contract/test_r4_2_router_response_governance.py tests/contract/test_chat_router_smoke_portability.py tests/smoke/smoke_front_chat_router_preservation_entrypoint_01.py tests/contract/test_main_chat_service_boundary_15e.py",
+    "passed": 31,
+    "failed": 0,
+    "skipped": 4,
+    "skip_condition": "All three non-versioned memory/FAISS snapshot artifacts are absent from the isolated checkout; when present, their byte-level assertions run.",
+    "py_compile": "PASS",
+    "diff_check": "PASS",
+    "ci": "PR #297 and PR #298 applicable checks passed; Agent Loop pilot jobs skipped by branch filter."
+  },
+  "next_authorization": {
+    "roadmap_item_id": "R4.3",
+    "front_id": "BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop_enabled": false
+  },
+  "rollback": "Revert the R4.2 extraction, portable smoke repair, and this documentation closeout as separate normal commits; no runtime installation or scheduler activation occurred."
+}

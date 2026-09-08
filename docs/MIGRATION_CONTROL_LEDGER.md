@@ -9305,3 +9305,14 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - R4.1 status: `CLOSED_RUNTIME_VERIFIED`.
 - R4.2 authorization: `BRAIN-101-R4-2-ROUTER-RESPONSE-GOVERNANCE-01`, `NO_DEPLOY`, bounded to the exact evidence-selected router response-governance helper extraction paths.
 - No runtime deployment, scheduler activation, canonical local sync, live trading, real money, auto-merge, trading, or financial autonomy activity occurred.
+
+## BRAIN-101 R4.2 - Router Response-Governance Helper Extraction Closeout (2026-09-08)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`.
+- Implementation: PR #297 source commit `2f44a86ed7b6b807baba1bef00cd833c7944b67e`, merged as `74aa6881e9bf843ec738637a5cf9102a5b475bd0`.
+- Verification repair: PR #298 source commit `4cba7a4c9ccdef7df7b45b37dc3b691711e4351e`, merged as `4fc39a77c6dff204fc757b19fdc454e2486966a0`; it repaired a test harness assumption only.
+- Runtime result: response governance owns `apply_governance` and raw-reasoning filtering in one internal helper; the router preserves the compatibility import surface. The focused R4.2 contract, portable preservation smoke, and service-boundary contract passed (`31 passed, 4 skipped`); skips are limited to missing non-versioned memory/FAISS snapshots.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R4_2_ROUTER_RESPONSE_GOVERNANCE_CLOSEOUT.json`.
+- Status: R4.2 set to `CLOSED_RUNTIME_VERIFIED`.
+- Authorized next item: exactly one R4.3, `BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-01`, `MEDIUM`, controller-governed and `NO_DEPLOY`, bounded to immutable chat entrypoint runtime contracts.
+- Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, persistent Agent Loop disabled, and no runtime deployment.

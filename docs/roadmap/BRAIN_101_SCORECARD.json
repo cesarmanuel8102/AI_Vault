@@ -918,7 +918,7 @@
     {
       "id": "R4",
       "percent": 35,
-      "status": "AUTHORIZED_ACTIVE_R4_2_ROUTER_RESPONSE_GOVERNANCE",
+      "status": "AUTHORIZED_ACTIVE_R4_3_CHAT_ENTRYPOINT_CONTRACTS",
       "evidence": [
         {
           "claim": "R4.1 completed a canonical modular-monolith baseline and selected one bounded internal router response-governance extraction.",
@@ -938,6 +938,28 @@
           "command": "R4.1 base-pinned file, import, LOC, test-reference, and history inventory",
           "result": "Selected score 29: router response-governance helper extraction; R4.2 is authorized NO_DEPLOY.",
           "observed_at_utc": "2026-09-08T03:13:50Z"
+        },
+        {
+          "claim": "R4.2 extracted the router response-governance helper and validated the portable router-preservation smoke before authorizing one chat runtime-contract boundary.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "tmp_agent/brain_v9/core/router_entrypoint.py",
+            "tmp_agent/brain_v9/core/router_response_governance.py",
+            "tests/smoke/smoke_front_chat_router_preservation_entrypoint_01.py",
+            "docs/roadmap/evidence/BRAIN_101_R4_2_ROUTER_RESPONSE_GOVERNANCE_CLOSEOUT.json"
+          ],
+          "symbols": [
+            "apply_governance",
+            "_strip_raw_cot_fields",
+            "ChatEntrypointRuntime"
+          ],
+          "commit": "4fc39a77c6dff204fc757b19fdc454e2486966a0",
+          "issue": null,
+          "pr": 298,
+          "workflow_run": null,
+          "command": "R4.2 focused contract, worktree-safe preservation smoke, chat service-boundary contract, and py_compile",
+          "result": "31 passed, 4 skipped only for absent non-versioned memory/FAISS artifacts; R4.2 CLOSED_RUNTIME_VERIFIED and R4.3 authorized NO_DEPLOY.",
+          "observed_at_utc": "2026-09-08T04:28:35Z"
         }
       ]
     },

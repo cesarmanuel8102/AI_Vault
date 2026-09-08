@@ -192,9 +192,9 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "BRAIN-101-R4-2-ROUTER-RESPONSE-GOVERNANCE-01",
+    "name": "BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-01",
     "status": "authorized_next",
-    "reason": "R4.1 baseline evidence selected the only authorized in-process, no-deploy R4.2 router response-governance helper extraction."
+    "reason": "R4.2 completed the evidence-selected router response-governance extraction; the next ranked bounded in-process candidate is the immutable chat entrypoint runtime-contract extraction."
   },
   "ready_for_next_front": true,
   "last_updated": "2026-09-08T00:52:00.000+00:00",
@@ -4798,7 +4798,7 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "R3_4_CLOSED_R4_1_AUTHORIZED_ACTIVE",
+    "status": "R4_2_CLOSED_RUNTIME_VERIFIED_R4_3_AUTHORIZED_ACTIVE",
     "approval_status": "HUMAN_ADOPTED",
     "current_phase": "R4",
     "human_final_authority": true,
@@ -5405,11 +5405,22 @@
     "r3_4_status": "CLOSED_RUNTIME_VERIFIED",
     "r3_4_execution_controller": "CODEX_GOVERNED_CONTROLLER",
     "r3_4_controller_supersession_receipt_sha256": "2404fcdbb0675741dfd07881a5edbc74f86e0ce43875dbb5ec7ea486a93b4b0c",
-    "r4_1_status": "AUTHORIZED_ACTIVE",
-    "r4_1_front_id": "BRAIN-101-R4-2-ROUTER-RESPONSE-GOVERNANCE-01",
+    "r4_1_status": "CLOSED_RUNTIME_VERIFIED",
+    "r4_1_front_id": "BRAIN-101-R4-1-MODULAR-MONOLITH-BASELINE-01",
     "r4_1_executor": "codex_control_plane",
     "r4_1_deployment_mode": "NO_DEPLOY",
-    "next_authorized_item": "R4.1"
+    "r4_2_status": "CLOSED_RUNTIME_VERIFIED",
+    "r4_2_front_id": "BRAIN-101-R4-2-ROUTER-RESPONSE-GOVERNANCE-01",
+    "r4_2_executor": "codex_control_plane",
+    "r4_2_deployment_mode": "NO_DEPLOY",
+    "r4_2_implementation_merge_commit": "74aa6881e9bf843ec738637a5cf9102a5b475bd0",
+    "r4_2_smoke_repair_merge_commit": "4fc39a77c6dff204fc757b19fdc454e2486966a0",
+    "r4_2_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R4_2_ROUTER_RESPONSE_GOVERNANCE_CLOSEOUT.json",
+    "r4_3_status": "AUTHORIZED_ACTIVE",
+    "r4_3_front_id": "BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-01",
+    "r4_3_executor": "codex_control_plane",
+    "r4_3_deployment_mode": "NO_DEPLOY",
+    "next_authorized_item": "R4.3"
   },
   "brain_101_r3_1_contract_e2e_gap_matrix_closeout": {
     "status": "done",

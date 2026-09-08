@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "029f706f0c410a8419ac6d8df5ea5462321e6f6b736c3e2b9cb3fe0b210d5205",
+  "roadmap_sha256": "b401ac1d55ccf7c3c8902db339a52ce4bb44e0ee3b851b56aa59bd035494e701",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -36,7 +36,7 @@
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
   "approval_status": "HUMAN_ADOPTED",
   "r0_status": "CLOSED_HUMAN_ADOPTED",
-  "current_phase": "R3",
+  "current_phase": "R4",
   "human_final_authority": true,
   "auto_merge": false,
   "canonical_local_sync": false,
@@ -1110,7 +1110,7 @@
     },
     "R4.2": {
       "title": "Router Response-Governance Helper Extraction",
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "dependencies": [
         "R4.1"
       ],
@@ -1147,7 +1147,7 @@
         "closeout": {
           "front_id": "BRAIN-101-R4-2-ROUTER-RESPONSE-GOVERNANCE-CLOSEOUT-01",
           "objective": "Record R4.2 verification and authorize exactly one next evidence-selected modular-monolith item",
-          "work_branch": "control-plane/r4-2-router-response-governance-closeout",
+          "work_branch": "control-plane/r4-2-router-response-governance-closeout-02",
           "executor": "codex_control_plane",
           "risk": "MEDIUM",
           "allowed_paths": [
@@ -1156,7 +1156,8 @@
             "docs/roadmap/BRAIN_101_SCORECARD.json",
             "ROADMAP_STATUS.json",
             "docs/MIGRATION_CONTROL_LEDGER.md",
-            "docs/roadmap/evidence/BRAIN_101_R4_2_ROUTER_RESPONSE_GOVERNANCE_CLOSEOUT.json"
+            "docs/roadmap/evidence/BRAIN_101_R4_2_ROUTER_RESPONSE_GOVERNANCE_CLOSEOUT.json",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts"
           ],
           "forbidden_paths": [
             ".env",
@@ -1167,6 +1168,78 @@
           ],
           "acceptance": [
             "Bind R4.2 closeout to its verified source and contract evidence",
+            "Keep the modular monolith in-process and authorize one next internal boundary only",
+            "Preserve no deployment, no scheduler activation, no canonical local sync, no live trading, no real money, and no auto-merge"
+          ],
+          "test_commands": [
+            "git diff --check"
+          ]
+        }
+      }
+    },
+    "R4.3": {
+      "title": "Chat Entrypoint Runtime Contract Extraction",
+      "status": "AUTHORIZED_ACTIVE",
+      "dependencies": [
+        "R4.2"
+      ],
+      "automation": {
+        "front_id": "BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-01",
+        "objective": "Extract only the immutable ChatEntrypointRuntime contract and field-count helper into one internal module while preserving the chat service compatibility surface",
+        "work_branch": "control-plane/r4-3-chat-entrypoint-contracts",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "architecture",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/chat_entrypoint_service.py",
+          "tmp_agent/brain_v9/core/chat_entrypoint_contracts.py",
+          "tests/contract/test_r4_3_chat_entrypoint_contracts.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          "tmp_agent/brain_v9/main.py",
+          "tmp_agent/brain_v9/routes/",
+          "tmp_agent/brain_v9/core/session.py",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "memory/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Move only the frozen ChatEntrypointRuntime dataclass and chat_entrypoint_runtime_field_count into the new internal contracts module",
+          "Preserve exact service-module re-exports and leave handle_chat_entrypoint in chat_entrypoint_service.py",
+          "Prove the extracted contracts module has no FastAPI, main, session, indexed-memory, provider, tool, filesystem, scheduler, trading, or deployment dependency",
+          "Pass the focused R4.3 contract, existing chat service-boundary contract, and git diff --check"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r4_3_chat_entrypoint_contracts.py",
+          "python -m pytest -q tests/contract/test_main_chat_service_boundary_15e.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "closeout": {
+          "front_id": "BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-CLOSEOUT-01",
+          "objective": "Record R4.3 contract extraction verification and authorize exactly one next internal modular-monolith boundary",
+          "work_branch": "control-plane/r4-3-chat-entrypoint-contracts-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R4_3_CHAT_ENTRYPOINT_CONTRACTS_CLOSEOUT.json"
+          ],
+          "forbidden_paths": [
+            ".env",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "memory/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Bind the R4.3 closeout to its verified source and contract evidence",
             "Keep the modular monolith in-process and authorize one next internal boundary only",
             "Preserve no deployment, no scheduler activation, no canonical local sync, no live trading, no real money, and no auto-merge"
           ],
@@ -1341,7 +1414,7 @@
     "closed_at_utc": "2026-08-29T23:59:59Z",
     "final_state": "R3_13_CLOSED_RUNTIME_VERIFIED_R3_4_AUTHORIZED_ACTIVE"
   },
-  "next_gate": "Execute R3.4 Agent V2 cognitive pipeline E2E as the single governed next R3 item",
+  "next_gate": "Execute R4.3 Chat Entrypoint Runtime Contract Extraction with NO_DEPLOY",
   "r2_3_constitutional_threat_model_closeout": {
     "evidence_path": "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json",
     "schema_version": 1,
