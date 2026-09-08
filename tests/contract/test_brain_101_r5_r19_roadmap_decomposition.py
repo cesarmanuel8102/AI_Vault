@@ -62,26 +62,33 @@ def test_planned_backlog_has_unique_ids_acyclic_defined_and_phase_ordered_depend
     manifest = _manifest()
     planned = _planned_items(manifest)
     assert len(planned) == len(set(planned))
-    _assert_acyclic(planned, {"R4.3"})
+    _assert_acyclic(planned, {"R5.1"})
     for item in planned.values():
         for dependency in item["dependencies"]:
-            assert dependency in planned or dependency == "R4.3"
-            dependency_phase = planned.get(dependency, {"phase": "R4"})["phase"]
-            dependency_order = 4 if dependency_phase == "R4" else PHASE_ORDER[dependency_phase]
+            assert dependency in planned or dependency == "R5.1"
+            dependency_phase = planned.get(dependency, {"phase": "R5"})["phase"]
+            dependency_order = PHASE_ORDER[dependency_phase]
             assert dependency_order <= PHASE_ORDER[item["phase"]]
 
 
-def test_exactly_one_item_is_executable_and_r4_history_remains_unchanged():
+def test_r4_3_closeout_activates_exactly_one_jit_bound_r5_1_successor():
     manifest = _manifest()
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
-    assert active == ["R4.3"]
+    assert active == ["R5.1"]
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    assert items["R4.3"]["status"] == "AUTHORIZED_ACTIVE"
+    assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R5.1"]["automation"]
+    assert binding["dispatchable"] is True
+    assert binding["jit_binding_completed"] is True
+    assert binding["executor"] == "codex_control_plane"
+    assert binding["deployment_mode"] == "NO_DEPLOY"
+    assert binding["front_id"] == "BRAIN-101-R5-1-AGENT-V2-RUNTIME-BASELINE-01"
+    assert binding["work_branch"] == "control-plane/r5-1-agent-v2-runtime-baseline"
 
 
-def test_decomposition_preserves_pre_r5_item_records_from_the_canonical_base():
+def test_closeout_preserves_pre_r5_history_except_the_declared_r4_3_transition():
     manifest = _manifest()
     baseline = json.loads(
         subprocess.check_output(
@@ -94,11 +101,13 @@ def test_decomposition_preserves_pre_r5_item_records_from_the_canonical_base():
         item_id: item
         for item_id, item in manifest["roadmap_items"].items()
         if not item_id.startswith(tuple(f"R{phase}." for phase in range(5, 20)))
+        and item_id != "R4.3"
     }
     baseline_pre_r5 = {
         item_id: item
         for item_id, item in baseline["roadmap_items"].items()
         if not item_id.startswith(tuple(f"R{phase}." for phase in range(5, 20)))
+        and item_id != "R4.3"
     }
     assert current_pre_r5 == baseline_pre_r5
 
@@ -108,15 +117,17 @@ def test_manifest_roadmap_sha256_matches_the_exact_canonical_roadmap_bytes():
     assert manifest["roadmap_sha256"] == hashlib.sha256(ROADMAP.read_bytes()).hexdigest()
 
 
-def test_r5_1_is_the_only_initially_eligible_jit_successor_after_r4_3_closeout():
+def test_r5_1_is_the_only_jit_bound_active_item_after_r4_3_closeout():
     planned = _planned_items(_manifest())
-    closed_after_r4_3 = {"R4.1", "R4.2", "R4.3"}
-    eligible = [
-        item_id
-        for item_id, item in planned.items()
-        if set(item["dependencies"]).issubset(closed_after_r4_3)
-    ]
-    assert eligible == ["R5.1"]
+    assert "R5.1" not in planned
+    assert {item_id for item_id, item in planned.items() if item["phase"] == "R5"} == {
+        "R5.2",
+        "R5.3",
+        "R5.4",
+    }
+    assert planned["R5.2"]["dependencies"] == ["R5.1"]
+    assert planned["R5.3"]["dependencies"] == ["R5.2"]
+    assert planned["R5.4"]["dependencies"] == ["R5.3"]
 
 
 def test_jit_binding_contract_requires_live_identity_scope_and_verification_before_activation():

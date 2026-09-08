@@ -1325,3 +1325,11 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - `R19.1`: BRAIN-101 certification gate matrix.
 - `R19.2`: Adversarial resilience and recovery certification.
 - `R19.3`: BRAIN-101 final evidence and certification decision.
+
+## R4.3 - Chat Entrypoint Runtime Contract Extraction Closeout (2026-09-08)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; source implementation commit `dc968bff656f2e007c410c0aa0f5cb849988a3b3`, merged as `9389737eca240173591fe926c867012e029bccbd`.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R4_3_CHAT_ENTRYPOINT_CONTRACTS_CLOSEOUT.json`; the extracted contract remains in-process and no runtime deployment occurred.
+- Status: R4.3 is `CLOSED_RUNTIME_VERIFIED`.
+- Sole successor: R5.1 `BRAIN-101-R5-1-AGENT-V2-RUNTIME-BASELINE-01` is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`, and receives its exact `expected_base_sha` from the live canonical branch when `sequenceRoadmap` creates the governed spec.
+- Preserved controls: human final authority true; auto-merge false; canonical local sync false; persistent Agent Loop deferred; live trading false; real money false.

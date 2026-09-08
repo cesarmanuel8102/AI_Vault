@@ -9320,6 +9320,14 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 ## R5-R19 Executable Decomposition
 
 - Front: `BRAIN-101-R5-R19-EXECUTABLE-DECOMPOSITION-01`.
-- Result: adds a 42-item `PLANNED_UNBOUND` BRAIN-101 backlog for R5 through R19 and a versioned JIT-binding contract.
+- Result: adds a 41-item `PLANNED_UNBOUND` BRAIN-101 backlog for R5 through R19 and a versioned JIT-binding contract.
 - Safety: planned items cannot dispatch; only one item may be `AUTHORIZED_ACTIVE`; all hard limits retain human final authority and prohibit auto-merge, canonical local sync, live trading, real money, and persistent Agent Loop activation.
 - R4.3 remains active until this authoring front is merged and R4.3 receives its evidence-bound closeout.
+
+## BRAIN-101 R4.3 - Chat Entrypoint Runtime Contract Extraction Closeout (2026-09-08)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: commit `dc968bff656f2e007c410c0aa0f5cb849988a3b3`, merged as `9389737eca240173591fe926c867012e029bccbd`.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R4_3_CHAT_ENTRYPOINT_CONTRACTS_CLOSEOUT.json`.
+- Status: R4.3 set to `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, canonical local sync, live trading, real money, or auto-merge occurred.
+- Authorized successor: exactly one R5.1, `BRAIN-101-R5-1-AGENT-V2-RUNTIME-BASELINE-01`, controller-governed `NO_DEPLOY`. Its exact expected base is derived from the live canonical branch by `sequenceRoadmap` at governed dispatch, avoiding a stale future SHA.
