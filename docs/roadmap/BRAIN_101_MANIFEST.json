@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "d684be3733630a1efd7e314de64bdea94af5b614ca45a50b2c92ea078d6debe1",
+  "roadmap_sha256": "b50039b064355f879b70427c944fbbee0bdde680cacddde579452fbd4c8ee41a",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -1508,7 +1508,7 @@
       }
     },
     "R5.3": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R5",
       "title": "Agent V2 planning execution evaluation persistence",
       "dependencies": [
@@ -1638,7 +1638,7 @@
       }
     },
     "R5.4": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R5",
       "title": "Agent V2 cognitive route convergence",
       "dependencies": [
@@ -1683,18 +1683,83 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
-        "activation_requires": [
-          "expected_base_sha",
-          "front_id",
-          "work_branch",
-          "allowed_paths",
-          "forbidden_paths",
-          "test_commands",
-          "acceptance",
-          "rollback",
-          "evidence_path"
-        ]
+        "jit_binding_completed": true,
+        "dispatchable": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R5-4-AGENT-V2-COGNITIVE-ROUTE-CONVERGENCE-01",
+        "objective": "Converge Agent V2 route selection through the established runtime boundary without introducing a parallel cognitive runtime or governance-bypassing fastpath",
+        "work_branch": "control-plane/r5-4-agent-v2-cognitive-route-convergence",
+        "executor": "codex_control_plane",
+        "risk": "HIGH",
+        "domain": "cognitive_runtime",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+          "docs/roadmap/evidence/BRAIN_101_R5_4_AGENT_V2_COGNITIVE_ROUTE_CONVERGENCE.json",
+          "tests/contract/test_r5_4_agent_v2_cognitive_route_convergence.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Converge direct assistant, brain evidence, mixed reasoning, learning/code, and financial research route selection through the canonical Agent V2 runtime boundary",
+          "Preserve bounded timeout and fallback behavior with explicit route evidence",
+          "Reject parallel runtime selection and governance-bypassing fastpaths",
+          "Preserve no deployment, no scheduler activation, no canonical local sync, no live trading, no real money, and no auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r5_4_agent_v2_cognitive_route_convergence.py",
+          "python -m pytest -q tests/contract/test_agent_v2_boundary_contracts_02.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Revert only the bounded R5.4 route-convergence implementation and its dedicated evidence and contract if acceptance cannot be met",
+          "Do not alter routing outside Agent V2, scheduler configuration, runtime installation, or financial controls during rollback"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R5_4_AGENT_V2_COGNITIVE_ROUTE_CONVERGENCE.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R5-4-AGENT-V2-COGNITIVE-ROUTE-CONVERGENCE-CLOSEOUT-01",
+          "objective": "Record verified R5.4 route-convergence evidence and authorize exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r5-4-agent-v2-cognitive-route-convergence-closeout",
+          "executor": "codex_control_plane",
+          "risk": "HIGH",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R5_4_AGENT_V2_COGNITIVE_ROUTE_CONVERGENCE_CLOSEOUT.json",
+            "tests/contract/test_r5_4_agent_v2_cognitive_route_convergence.py"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Bind the R5.4 closeout to verified route-convergence evidence",
+            "Authorize exactly one dependency-eligible successor only after R5.4 acceptance is verified",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r5_4_agent_v2_cognitive_route_convergence.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R6.1": {

@@ -55,7 +55,7 @@ test("R4.1 baseline evidence selects one eligible no-deploy modular-monolith can
   ]);
 });
 
-test("R5.2 closeout preserves R4 history and hands sole authority to JIT-bound R5.3",()=>{
+test("R5.3 closeout preserves R4 history and hands sole authority to JIT-bound R5.4",()=>{
   const manifest=readJson(MANIFEST);
   assert.equal(manifest.roadmap_items["R4.1"].status,"CLOSED_RUNTIME_VERIFIED");
   const r42=manifest.roadmap_items["R4.2"];
@@ -71,7 +71,8 @@ test("R5.2 closeout preserves R4 history and hands sole authority to JIT-bound R
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R4_2_ROUTER_RESPONSE_GOVERNANCE_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R5_1_AGENT_V2_RUNTIME_BASELINE_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS_CLOSEOUT.json")));
-  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R5.3"]);
+  assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R5_3_AGENT_V2_PLANNING_EVALUATION_PERSISTENCE_CLOSEOUT.json")));
+  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R5.4"]);
   const r43=manifest.roadmap_items["R4.3"];
   assert.deepEqual(r43.dependencies,["R4.2"]);
   assert.equal(r43.status,"CLOSED_RUNTIME_VERIFIED");
@@ -91,8 +92,14 @@ test("R5.2 closeout preserves R4 history and hands sole authority to JIT-bound R
   assert.equal(r52.status,"CLOSED_RUNTIME_VERIFIED");
   const r53=manifest.roadmap_items["R5.3"];
   assert.deepEqual(r53.dependencies,["R5.2"]);
-  assert.equal(r53.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r53.status,"CLOSED_RUNTIME_VERIFIED");
   assert.equal(r53.automation.front_id,"BRAIN-101-R5-3-AGENT-V2-PLANNING-EVALUATION-PERSISTENCE-01");
   assert.equal(r53.automation.jit_binding_completed,true);
   assert.equal(r53.automation.deployment_mode,"NO_DEPLOY");
+  const r54=manifest.roadmap_items["R5.4"];
+  assert.deepEqual(r54.dependencies,["R5.3"]);
+  assert.equal(r54.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r54.automation.front_id,"BRAIN-101-R5-4-AGENT-V2-COGNITIVE-ROUTE-CONVERGENCE-01");
+  assert.equal(r54.automation.jit_binding_completed,true);
+  assert.equal(r54.automation.deployment_mode,"NO_DEPLOY");
 });
