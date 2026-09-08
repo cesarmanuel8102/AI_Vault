@@ -6,9 +6,105 @@ this baseline.
 """
 from __future__ import annotations
 
+import hashlib
 import json
+import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
+
+
+_CANDIDATE_FIELDS = {
+    "schema_version",
+    "candidate_id",
+    "room_id",
+    "source_id",
+    "evidence_id",
+    "retention_class",
+    "text",
+    "candidate_sha256",
+}
+_DECISION_FIELDS = {
+    "schema_version",
+    "decision_id",
+    "approver_principal",
+    "approval_source",
+    "action",
+    "candidate_id",
+    "candidate_sha256",
+    "room_id",
+    "expires_utc",
+}
+_ROOM_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_-]{2,63}$")
+
+
+def _canonical_sha256(value: Dict[str, Any], *, omit: set[str] | None = None) -> str:
+    payload = {key: item for key, item in value.items() if key not in (omit or set())}
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _parse_governed_candidate_v1(candidate: Dict[str, Any]) -> tuple[Dict[str, Any], List[str]]:
+    if not isinstance(candidate, dict):
+        return {}, ["candidate_not_object"]
+    errors: List[str] = []
+    unknown = sorted(set(candidate) - _CANDIDATE_FIELDS)
+    if unknown:
+        errors.append("candidate_unknown_fields")
+    for field in _CANDIDATE_FIELDS:
+        if field not in candidate:
+            errors.append(f"candidate_missing_{field}")
+    if candidate.get("schema_version") != 1:
+        errors.append("candidate_schema_version_invalid")
+    parsed = {field: candidate.get(field) for field in _CANDIDATE_FIELDS}
+    for field in ("candidate_id", "source_id", "evidence_id", "retention_class", "text"):
+        if not isinstance(parsed.get(field), str) or not parsed[field].strip():
+            errors.append(f"candidate_{field}_invalid")
+    room_id = parsed.get("room_id")
+    if not isinstance(room_id, str) or not _ROOM_ID_PATTERN.fullmatch(room_id):
+        errors.append("candidate_room_id_invalid")
+    text = str(parsed.get("text") or "").lower()
+    if any(term in text for term in ("live trading", "real money", "place order")):
+        errors.append("candidate_prohibited_content")
+    candidate_hash = parsed.get("candidate_sha256")
+    if not isinstance(candidate_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", candidate_hash):
+        errors.append("candidate_sha256_invalid")
+    elif candidate_hash != _canonical_sha256(parsed, omit={"candidate_sha256"}):
+        errors.append("candidate_sha256_mismatch")
+    return parsed, errors
+
+
+def _parse_manual_promotion_decision_v1(decision: Dict[str, Any]) -> tuple[Dict[str, Any], List[str]]:
+    if not isinstance(decision, dict):
+        return {}, ["manual_decision_not_object"]
+    errors: List[str] = []
+    unknown = sorted(set(decision) - _DECISION_FIELDS)
+    if unknown:
+        errors.append("manual_decision_unknown_fields")
+    for field in _DECISION_FIELDS:
+        if field not in decision:
+            errors.append(f"manual_decision_missing_{field}")
+    if decision.get("schema_version") != 1:
+        errors.append("manual_decision_schema_version_invalid")
+    parsed = {field: decision.get(field) for field in _DECISION_FIELDS}
+    for field in ("decision_id", "approver_principal", "candidate_id", "candidate_sha256", "room_id"):
+        if not isinstance(parsed.get(field), str) or not parsed[field].strip():
+            errors.append(f"manual_decision_{field}_invalid")
+    if parsed.get("approval_source") != "human_owner":
+        errors.append("manual_decision_not_human")
+    if parsed.get("action") != "APPROVE_SINGLE_CANDIDATE":
+        errors.append("manual_decision_action_invalid")
+    if not isinstance(parsed.get("candidate_sha256"), str) or not re.fullmatch(
+        r"[0-9a-f]{64}", parsed["candidate_sha256"]
+    ):
+        errors.append("manual_decision_candidate_sha256_invalid")
+    try:
+        expires = datetime.fromisoformat(str(parsed.get("expires_utc") or "").replace("Z", "+00:00"))
+        if expires.tzinfo is None or expires <= datetime.now(timezone.utc):
+            errors.append("manual_decision_expired")
+    except ValueError:
+        errors.append("manual_decision_expiry_invalid")
+    return parsed, errors
 
 
 class MemoryService:
@@ -104,6 +200,155 @@ class MemoryService:
         """Reserve the only write entrypoint until governed promotion is implemented."""
         del record
         raise PermissionError("MemoryService promotion is disabled in the R6.1 read-only baseline")
+
+    def validate_governed_candidate(self, candidate: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate one typed candidate without reading or writing semantic storage."""
+        parsed, errors = _parse_governed_candidate_v1(candidate)
+        return {
+            "ok": not errors,
+            "candidate_id": parsed.get("candidate_id", ""),
+            "candidate_sha256": parsed.get("candidate_sha256", "") if not errors else "",
+            "errors": errors,
+        }
+
+    def prepare_governed_promotion(
+        self,
+        candidate: Dict[str, Any],
+        decision: Dict[str, Any],
+        staging_root: Path,
+    ) -> Dict[str, Any]:
+        """Bind a validated candidate to one manual decision without any write effect."""
+        parsed_candidate, candidate_errors = _parse_governed_candidate_v1(candidate)
+        if candidate_errors:
+            return {"ok": False, "reason": "invalid_governed_candidate", "write_performed": False}
+        parsed_decision, decision_errors = _parse_manual_promotion_decision_v1(decision)
+        if decision_errors:
+            return {"ok": False, "reason": "invalid_manual_decision", "write_performed": False}
+        if any(
+            parsed_decision[field] != parsed_candidate[field]
+            for field in ("candidate_id", "candidate_sha256", "room_id")
+        ):
+            return {
+                "ok": False,
+                "reason": "manual_decision_candidate_mismatch",
+                "write_performed": False,
+            }
+        receipt = {
+            "schema_version": 1,
+            "candidate_id": parsed_candidate["candidate_id"],
+            "candidate_sha256": parsed_candidate["candidate_sha256"],
+            "room_id": parsed_candidate["room_id"],
+            "decision_id": parsed_decision["decision_id"],
+            "approver_principal": parsed_decision["approver_principal"],
+            "staging_root": str(Path(staging_root)),
+        }
+        receipt["receipt_sha256"] = _canonical_sha256(receipt)
+        return {"ok": True, "write_performed": False, "receipt": receipt}
+
+    @staticmethod
+    def _isolated_artifact_hashes(root: Path) -> Dict[str, str]:
+        return {
+            path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sorted(Path(root).glob("semantic_memory_*"))
+        }
+
+    @staticmethod
+    def _verify_promotion_receipt(receipt: Dict[str, Any]) -> bool:
+        expected = {
+            "schema_version",
+            "candidate_id",
+            "candidate_sha256",
+            "room_id",
+            "decision_id",
+            "approver_principal",
+            "staging_root",
+            "receipt_sha256",
+        }
+        return (
+            isinstance(receipt, dict)
+            and set(receipt) == expected
+            and receipt.get("schema_version") == 1
+            and isinstance(receipt.get("receipt_sha256"), str)
+            and receipt["receipt_sha256"] == _canonical_sha256(receipt, omit={"receipt_sha256"})
+        )
+
+    @staticmethod
+    def _isolated_storage_write(receipt: Dict[str, Any], isolated_root: Path) -> Dict[str, Any]:
+        """No runtime writer is enabled; contracts inject an isolated fake writer."""
+        del receipt, isolated_root
+        return {"ok": False, "reason": "isolated_storage_writer_not_configured"}
+
+    def execute_isolated_governed_promotion(
+        self, receipt: Dict[str, Any], isolated_root: Path
+    ) -> Dict[str, Any]:
+        """Execute only a sealed receipt in a marker-bound temporary root."""
+        root = Path(isolated_root).resolve()
+        if root == self.semantic_root.resolve() or root.name.lower() == "memory":
+            return {"ok": False, "reason": "canonical_promotion_not_enabled", "write_performed": False}
+        if not self._verify_promotion_receipt(receipt):
+            return {"ok": False, "reason": "promotion_receipt_invalid", "write_performed": False}
+        from tmp_agent.brain_v9.memory.memory_rollback import rollback_isolated_snapshot
+        from tmp_agent.brain_v9.memory.memory_snapshot import create_isolated_memory_snapshot
+
+        snapshot = create_isolated_memory_snapshot(root, receipt["receipt_sha256"])
+        if not snapshot.get("ok"):
+            return {"ok": False, "reason": snapshot.get("reason", "isolated_snapshot_failed"), "write_performed": False}
+        before = self._isolated_artifact_hashes(root)
+        try:
+            write_result = self._isolated_storage_write(receipt, root)
+            if not isinstance(write_result, dict) or write_result.get("ok") is not True:
+                raise RuntimeError("isolated_storage_write_rejected")
+            after = self._isolated_artifact_hashes(root)
+            if set(after) != set(before):
+                raise RuntimeError("isolated_storage_write_artifact_topology_changed")
+            if after == before:
+                raise RuntimeError("isolated_storage_write_no_effect")
+        except Exception:
+            rollback = rollback_isolated_snapshot(root, snapshot, receipt["receipt_sha256"])
+            return {
+                "ok": False,
+                "reason": "isolated_promotion_failed",
+                "write_performed": False,
+                "rollback": rollback,
+            }
+        execution = {
+            "ok": True,
+            "schema_version": 1,
+            "promotion_receipt_sha256": receipt["receipt_sha256"],
+            "candidate_id": receipt["candidate_id"],
+            "isolated_root": str(root),
+            "before_artifact_sha256": before,
+            "after_artifact_sha256": after,
+            "snapshot": snapshot,
+            "write_performed": True,
+        }
+        execution["execution_receipt_sha256"] = _canonical_sha256(execution)
+        return execution
+
+    def rollback_isolated_governed_promotion(
+        self, execution_receipt: Dict[str, Any], isolated_root: Path
+    ) -> Dict[str, Any]:
+        """Rollback only the matching isolated execution receipt."""
+        from tmp_agent.brain_v9.memory.memory_rollback import rollback_isolated_snapshot
+
+        root = Path(isolated_root).resolve()
+        if (
+            not isinstance(execution_receipt, dict)
+            or execution_receipt.get("isolated_root") != str(root)
+            or execution_receipt.get("execution_receipt_sha256")
+            != _canonical_sha256(execution_receipt, omit={"execution_receipt_sha256"})
+        ):
+            return {"ok": False, "reason": "execution_receipt_invalid"}
+        result = rollback_isolated_snapshot(
+            root,
+            execution_receipt.get("snapshot", {}),
+            str(execution_receipt.get("promotion_receipt_sha256") or ""),
+        )
+        if result.get("ok"):
+            restored = self._isolated_artifact_hashes(root)
+            if restored != execution_receipt.get("before_artifact_sha256"):
+                return {"ok": False, "reason": "rollback_verification_failed"}
+        return result
 
     def records_for_domain(self, domain: str) -> List[Dict[str, Any]]:
         return [

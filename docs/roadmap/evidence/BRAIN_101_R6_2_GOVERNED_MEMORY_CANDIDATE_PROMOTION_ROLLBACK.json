@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "evidence_type": "BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R6.2",
+  "front_id": "BRAIN-101-R6-2-GOVERNED-MEMORY-CANDIDATE-PROMOTION-ROLLBACK-01",
+  "base_commit": "e491be0bc3195fe79285fce5245bfafc4eee02c3",
+  "verification_head_before_evidence": "2fc3a574aa903a6244b8c7ff08ce819dfe3cf274",
+  "deployment_mode": "NO_DEPLOY",
+  "verification": {
+    "r6_2_contract": "10 passed",
+    "r6_1_regression": "9 passed",
+    "python_compile": "passed",
+    "diff_check": "passed"
+  },
+  "verified_controls": [
+    "typed_candidate_and_manual_decision_are_hash_bound",
+    "legacy_promoter_cannot_write_or_mutate_faiss",
+    "isolated_receipts_require_marker_bound_temporary_roots",
+    "receipt_tampering_is_rejected_before_mutation",
+    "partial_write_restores_all_artifacts_byte_for_byte",
+    "canonical_promotion_is_not_enabled"
+  ],
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  },
+  "runtime_actions": {
+    "worker_install": false,
+    "scheduler_activation": false,
+    "provider_call": false,
+    "canonical_memory_mutation": false
+  }
+}
