@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "evidence_type": "BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS_CLOSEOUT",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "created_at_utc": "2026-09-08T14:52:00Z",
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R5.2",
+  "parent_front_id": "BRAIN-101-R5-2-AGENT-V2-LIFECYCLE-CHECKPOINTS-01",
+  "parent_source_commit": "946f60c3ce799204d110388f6f7fe2f3b6f9a529",
+  "parent_merge_commit": "40e8724a5fae642c554b329ef964e2be5e653d15",
+  "parent_pr_number": 305,
+  "source_evidence_path": "docs/roadmap/evidence/BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS.json",
+  "result": "CLOSED_RUNTIME_VERIFIED",
+  "next_item": {
+    "roadmap_item_id": "R5.3",
+    "front_id": "BRAIN-101-R5-3-AGENT-V2-PLANNING-EVALUATION-PERSISTENCE-01",
+    "executor": "codex_control_plane",
+    "deployment_mode": "NO_DEPLOY",
+    "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+    "jit_binding_completed": true
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}

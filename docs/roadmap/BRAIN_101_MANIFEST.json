@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "a2fc50e90269dd559b9c4b8e477970ea547b79302bc52fa8b87860530a4b5c1d",
+  "roadmap_sha256": "d684be3733630a1efd7e314de64bdea94af5b614ca45a50b2c92ea078d6debe1",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -1378,7 +1378,7 @@
       }
     },
     "R5.2": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R5",
       "title": "Agent V2 execution lifecycle identity and checkpoints",
       "dependencies": [
@@ -1482,7 +1482,9 @@
             "ROADMAP_STATUS.json",
             "docs/MIGRATION_CONTROL_LEDGER.md",
             "docs/roadmap/evidence/BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS_CLOSEOUT.json",
-            "tests/contract/test_r5_2_agent_v2_lifecycle_checkpoints.py"
+            "tests/contract/test_r5_2_agent_v2_lifecycle_checkpoints.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts"
           ],
           "forbidden_paths": [
             ".env",
@@ -1506,7 +1508,7 @@
       }
     },
     "R5.3": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R5",
       "title": "Agent V2 planning execution evaluation persistence",
       "dependencies": [
@@ -1551,18 +1553,88 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
-        "activation_requires": [
-          "expected_base_sha",
-          "front_id",
-          "work_branch",
-          "allowed_paths",
-          "forbidden_paths",
-          "test_commands",
-          "acceptance",
-          "rollback",
-          "evidence_path"
-        ]
+        "jit_binding_completed": true,
+        "dispatchable": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R5-3-AGENT-V2-PLANNING-EVALUATION-PERSISTENCE-01",
+        "objective": "Make the existing Agent V2 planner, execution results, evaluator evidence, and finalizer handoff explicit and durable behind the established runtime boundary",
+        "work_branch": "control-plane/r5-3-agent-v2-planning-evaluation-persistence",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "cognitive_runtime",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+          "docs/roadmap/evidence/BRAIN_101_R5_3_AGENT_V2_PLANNING_EVALUATION_PERSISTENCE.json",
+          "tests/contract/test_brain_101_r3_2_planner_contract.py",
+          "tests/contract/test_brain_101_r3_2_evaluator_contract.py",
+          "tests/contract/test_r5_3_agent_v2_planning_evaluation_persistence.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Persist an explicit planning, tool-result, evaluator, and finalizer evidence chain for each Agent V2 run without exposing raw reasoning",
+          "Normalize tool results at the runtime boundary and reject hidden executor or cross-room evidence paths",
+          "Preserve the established lifecycle identities and fail closed behavior without a governance-bypassing fastpath",
+          "Preserve no deployment, no scheduler activation, no canonical local sync, no live trading, no real money, and no auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r5_3_agent_v2_planning_evaluation_persistence.py",
+          "python -m pytest -q tests/contract/test_brain_101_r3_2_planner_contract.py",
+          "python -m pytest -q tests/contract/test_brain_101_r3_2_evaluator_contract.py",
+          "python -m pytest -q tests/contract/test_agent_v2_boundary_contracts_02.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Revert only the bounded R5.3 orchestration implementation and its dedicated evidence and contracts if its acceptance cannot be met",
+          "Do not alter routing, scheduler configuration, runtime installation, or financial controls during rollback"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R5_3_AGENT_V2_PLANNING_EVALUATION_PERSISTENCE.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R5-3-AGENT-V2-PLANNING-EVALUATION-PERSISTENCE-CLOSEOUT-01",
+          "objective": "Record verified R5.3 orchestration evidence and authorize exactly one dependency-eligible R5 successor",
+          "work_branch": "control-plane/r5-3-agent-v2-planning-evaluation-persistence-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R5_3_AGENT_V2_PLANNING_EVALUATION_PERSISTENCE_CLOSEOUT.json",
+            "tests/contract/test_r5_3_agent_v2_planning_evaluation_persistence.py"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Bind the R5.3 closeout to its verified orchestration evidence",
+            "Authorize exactly one next R5 item only after orchestration acceptance is verified",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r5_3_agent_v2_planning_evaluation_persistence.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R5.4": {

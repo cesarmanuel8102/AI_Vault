@@ -55,7 +55,7 @@ test("R4.1 baseline evidence selects one eligible no-deploy modular-monolith can
   ]);
 });
 
-test("R5.1 closeout preserves R4 history and hands sole authority to JIT-bound R5.2",()=>{
+test("R5.2 closeout preserves R4 history and hands sole authority to JIT-bound R5.3",()=>{
   const manifest=readJson(MANIFEST);
   assert.equal(manifest.roadmap_items["R4.1"].status,"CLOSED_RUNTIME_VERIFIED");
   const r42=manifest.roadmap_items["R4.2"];
@@ -70,7 +70,8 @@ test("R5.1 closeout preserves R4 history and hands sole authority to JIT-bound R
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R4_1_MODULAR_MONOLITH_BASELINE_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R4_2_ROUTER_RESPONSE_GOVERNANCE_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R5_1_AGENT_V2_RUNTIME_BASELINE_CLOSEOUT.json")));
-  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R5.2"]);
+  assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS_CLOSEOUT.json")));
+  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R5.3"]);
   const r43=manifest.roadmap_items["R4.3"];
   assert.deepEqual(r43.dependencies,["R4.2"]);
   assert.equal(r43.status,"CLOSED_RUNTIME_VERIFIED");
@@ -84,8 +85,14 @@ test("R5.1 closeout preserves R4 history and hands sole authority to JIT-bound R
   assert.equal(r51.status,"CLOSED_RUNTIME_VERIFIED");
   const r52=manifest.roadmap_items["R5.2"];
   assert.deepEqual(r52.dependencies,["R5.1"]);
-  assert.equal(r52.status,"AUTHORIZED_ACTIVE");
   assert.equal(r52.automation.front_id,"BRAIN-101-R5-2-AGENT-V2-LIFECYCLE-CHECKPOINTS-01");
   assert.equal(r52.automation.jit_binding_completed,true);
   assert.equal(r52.automation.deployment_mode,"NO_DEPLOY");
+  assert.equal(r52.status,"CLOSED_RUNTIME_VERIFIED");
+  const r53=manifest.roadmap_items["R5.3"];
+  assert.deepEqual(r53.dependencies,["R5.2"]);
+  assert.equal(r53.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r53.automation.front_id,"BRAIN-101-R5-3-AGENT-V2-PLANNING-EVALUATION-PERSISTENCE-01");
+  assert.equal(r53.automation.jit_binding_completed,true);
+  assert.equal(r53.automation.deployment_mode,"NO_DEPLOY");
 });

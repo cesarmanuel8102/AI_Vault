@@ -9339,3 +9339,11 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R5_1_AGENT_V2_RUNTIME_BASELINE_CLOSEOUT.json`, which binds the source-evidenced Agent V2 inventory and its explicit parallel-path findings.
 - Status: R5.1 set to `CLOSED_RUNTIME_VERIFIED`; no runtime behavior was changed, and no deployment, installation, scheduler activation, canonical local sync, live trading, real money, or auto-merge occurred.
 - Authorized successor: exactly one R5.2, `BRAIN-101-R5-2-AGENT-V2-LIFECYCLE-CHECKPOINTS-01`, controller-governed `NO_DEPLOY`, bounded to the Agent V2 lifecycle identity, checkpoint, cancellation, resume, retry, and streaming contract.
+
+## BRAIN-101 R5.2 - Agent V2 Lifecycle Checkpoints Closeout (2026-09-08)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: commit `946f60c3ce799204d110388f6f7fe2f3b6f9a529`, merged as `40e8724a5fae642c554b329ef964e2be5e653d15` through PR #305.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS_CLOSEOUT.json`, bound to the verified lifecycle implementation evidence.
+- Status: R5.2 set to `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, canonical local sync, live trading, real money, or auto-merge occurred.
+- Authorized successor: exactly one R5.3, `BRAIN-101-R5-3-AGENT-V2-PLANNING-EVALUATION-PERSISTENCE-01`, controller-governed `NO_DEPLOY`, bounded to Agent V2 planning, normalized execution results, evaluator evidence, and finalizer persistence.
