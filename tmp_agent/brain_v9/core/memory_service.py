@@ -299,6 +299,8 @@ class MemoryService:
             if not isinstance(write_result, dict) or write_result.get("ok") is not True:
                 raise RuntimeError("isolated_storage_write_rejected")
             after = self._isolated_artifact_hashes(root)
+            if set(after) != set(before):
+                raise RuntimeError("isolated_storage_write_artifact_topology_changed")
             if after == before:
                 raise RuntimeError("isolated_storage_write_no_effect")
         except Exception:

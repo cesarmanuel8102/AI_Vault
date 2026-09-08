@@ -205,3 +205,59 @@ def test_legacy_promoter_requires_typed_receipt_and_has_no_direct_storage_primit
     assert "promote_record(" not in source
     assert "rollback_from_snapshot(" not in source
     assert "append_promotion_audit(" not in source
+
+
+def test_partial_isolated_write_rolls_back_when_artifact_topology_changes(tmp_path, monkeypatch):
+    from brain_v9.core.memory_service import MemoryService
+
+    service = MemoryService(tmp_path / "configured-semantic")
+    root = _isolated_root(tmp_path)
+    receipt = _prepared_receipt(service, tmp_path)
+    before = _artifact_hashes(root)
+
+    def corrupting_write(_receipt, target_root):
+        artifacts = sorted(target_root.glob("semantic_memory_*"))
+        artifacts[0].write_bytes(b"partially-written")
+        artifacts[1].unlink()
+        return {"ok": True}
+
+    monkeypatch.setattr(service, "_isolated_storage_write", corrupting_write, raising=False)
+    result = service.execute_isolated_governed_promotion(receipt, root)
+
+    assert result["ok"] is False
+    assert result["reason"] == "isolated_promotion_failed"
+    assert result["rollback"]["ok"] is True
+    assert _artifact_hashes(root) == before
+
+
+def test_tampered_promotion_receipt_is_rejected_before_isolated_mutation(tmp_path):
+    from brain_v9.core.memory_service import MemoryService
+
+    service = MemoryService(tmp_path / "configured-semantic")
+    root = _isolated_root(tmp_path)
+    receipt = _prepared_receipt(service, tmp_path)
+    receipt["candidate_id"] = "substituted-candidate"
+    before = _artifact_hashes(root)
+
+    assert service.execute_isolated_governed_promotion(receipt, root) == {
+        "ok": False,
+        "reason": "promotion_receipt_invalid",
+        "write_performed": False,
+    }
+    assert _artifact_hashes(root) == before
+
+
+def test_unconfigured_writer_fails_closed_and_restores_isolated_artifacts(tmp_path):
+    from brain_v9.core.memory_service import MemoryService
+
+    service = MemoryService(tmp_path / "configured-semantic")
+    root = _isolated_root(tmp_path)
+    receipt = _prepared_receipt(service, tmp_path)
+    before = _artifact_hashes(root)
+
+    result = service.execute_isolated_governed_promotion(receipt, root)
+
+    assert result["ok"] is False
+    assert result["reason"] == "isolated_promotion_failed"
+    assert result["rollback"]["ok"] is True
+    assert _artifact_hashes(root) == before
