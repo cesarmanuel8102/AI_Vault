@@ -9286,3 +9286,13 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Authorized next item: exactly one `R3.4`, `LOW`, domain `agent_loop`, executor `agent_loop`, work branch `agent/roadmap-doc-brain-101-r3-4-cognitive-pipeline-e2e`, test profile `roadmap-doc`, max executor cycles `2`, `NO_DEPLOY`, allowed only to create `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md`, with complete closeout metadata.
 - Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched by closeout, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
 - Next gate: execute `R3.4` Agent V2 cognitive pipeline E2E as the single governed next R3 item with `NO_DEPLOY`.
+
+## BRAIN-101 R3.4 — Controller-Governed Rebaseline Closeout (2026-09-08)
+
+- Historical front: `BRAIN-101-R3-4-AGENT-V2-COGNITIVE-PIPELINE-E2E-01`; historical Issue #248 and PR #249 remain immutable and are not represented as a compliant Agent Loop completion.
+- Functional objective: `PASSED` from canonical evidence `docs/roadmap/evidence/BRAIN_101_R3_4_AGENT_V2_COGNITIVE_PIPELINE_E2E.md` pinned to `b134516c775feb5b302200ea559beb62d903c67a`.
+- Historical operational attempt: `SUPERSEDED_REBASELINED`; historical base `65b5d4c40e1f9a12348b5b2d2421be7ba66651a4`, historical projection `ceb9537fa37caa610d7dc932cbc1b875a7700d2f4ceaee2905ecfabdb55b01b2`, repair cycles and historical receipts unchanged.
+- Execution provenance: `CODEX_GOVERNED_CONTROLLER` through append-only controller receipt `2404fcdbb0675741dfd07881a5edbc74f86e0ce43875dbb5ec7ea486a93b4b0c`; supersession key `999954ac79e22bed961a1007c21bd6554142ba463539d276324556960401e34b`.
+- Persistent Agent Loop remains deferred and disabled; no runtime installation, scheduler activation, canonical local sync, live trading, real money, or auto-merge occurred.
+- Status: R3.4 is `CLOSED_RUNTIME_VERIFIED` with historical evidence preserved.
+- Authorized next item: exactly one R4.1, `BRAIN-101-R4-1-MODULAR-MONOLITH-BASELINE-01`, controller-governed and `NO_DEPLOY`, to produce an evidence-based strict modular-monolith baseline before any extraction.
