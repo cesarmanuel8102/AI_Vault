@@ -1247,3 +1247,81 @@ Exactly one next item is authorized: R4.1, `BRAIN-101-R4-1-MODULAR-MONOLITH-BASE
 - Result: `apply_governance` and its raw-reasoning filtering helpers now have one internal owner in `core/router_response_governance.py`; `core/router_entrypoint.py` preserves the public compatibility re-export. The focused R4.2 contract, portable preservation smoke, and chat service-boundary contract passed (`31 passed, 4 skipped`). The four skips occur only when the three non-versioned memory/FAISS snapshot artifacts are absent; the byte-level checks remain mandatory when those artifacts exist.
 - Status: R4.2 is `CLOSED_RUNTIME_VERIFIED`; exactly one next item, R4.3 `BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-01`, is authorized as `NO_DEPLOY` to extract only the immutable chat runtime contract.
 - Preserved controls: human final authority true; auto-merge false; canonical local sync false; live trading false; real money false; persistent Agent Loop deferred and disabled.
+
+
+## R5-R19 Executable Decomposition (pre-authorized, JIT-bound)
+
+The strategic BRAIN-101 phases R5 through R19 are now represented as a pre-authorized backlog of coherent `PLANNED_UNBOUND` items. These items preserve the approved phase order and hard limits but are non-executable: they contain no frozen base SHA, branch, front, allowlist, or test command. At each verified closeout, the Codex Governed Controller may bind exactly one dependency-eligible item to the live canonical repository and make it the only `AUTHORIZED_ACTIVE` item.
+
+The backlog covers Agent V2 runtime convergence; governed memory; visual trace and observability; Provider Gateway; Curated Knowledge; self-improvement; paper-only financial autonomy, portfolio, risk, compliance, validation, and paper trading; disabled LiveTradingGate; selective microservice decisions; product operations; and adversarial final certification. Persistent Agent Loop remains deferred, and live trading, real money, auto-merge, and canonical local sync remain disabled.
+
+### R5
+- `R5.1`: Agent V2 canonical runtime baseline and route inventory.
+- `R5.2`: Agent V2 execution lifecycle identity and checkpoints.
+- `R5.3`: Agent V2 planning execution evaluation persistence.
+- `R5.4`: Agent V2 cognitive route convergence.
+
+### R6
+- `R6.1`: MemoryService ownership and integrity baseline.
+- `R6.2`: Governed memory candidate promotion and rollback.
+- `R6.3`: Memory retrieval hydration and rebuild validation.
+
+### R7
+- `R7.1`: Governed trace schema and event writer baseline.
+- `R7.2`: Run timeline provider health and operational accounting.
+- `R7.3`: Visual Trace and operator console contracts.
+
+### R8
+- `R8.1`: Provider Gateway policy and capability inventory.
+- `R8.2`: Provider resilience and secret-safe operations.
+- `R8.3`: Provider Gateway route integration and fallback validation.
+
+### R9
+- `R9.1`: Curated Knowledge canonical inventory and taxonomy.
+- `R9.2`: Curated Knowledge controlled ingestion and benchmark.
+
+### R10
+- `R10.1`: Governed self-improvement capability and gap evaluation.
+- `R10.2`: Sandboxed patch proposal and benchmark pipeline.
+- `R10.3`: Self-improvement promotion gate and rollback.
+
+### R11
+- `R11.1`: Financial autonomy paper-only runtime inventory.
+- `R11.2`: Paper-only financial autonomy audit and rollback wiring.
+
+### R12
+- `R12.1`: Portfolio Manager allocation and ledger baseline.
+- `R12.2`: Risk Engine loss exposure and market-failure gates.
+- `R12.3`: Portfolio regime rebalance and risk attribution validation.
+
+### R13
+- `R13.1`: Paper-trading compliance policy inventory.
+- `R13.2`: Compliance audit tax-lot and manual-review controls.
+
+### R14
+- `R14.1`: Local validation data and experiment registry baseline.
+- `R14.2`: Backtest realism and walk-forward validation.
+- `R14.3`: Validation Lab adversarial and statistical resilience.
+
+### R15
+- `R15.1`: Integrated paper broker and market-data lifecycle.
+- `R15.2`: Paper trading portfolio compliance risk integration.
+- `R15.3`: Paper trading soak and incident evidence.
+
+### R16
+- `R16.1`: Disabled LiveTradingGate multi-factor design.
+- `R16.2`: LiveTradingGate disabled-state and paper rollback validation.
+
+### R17
+- `R17.1`: Selective microservice extraction candidacy assessment.
+- `R17.2`: Selective microservice decision and containment.
+
+### R18
+- `R18.1`: Product and operator experience baseline.
+- `R18.2`: Operational runbooks recovery and support surface.
+- `R18.3`: Product operations acceptance and accessibility validation.
+
+### R19
+- `R19.1`: BRAIN-101 certification gate matrix.
+- `R19.2`: Adversarial resilience and recovery certification.
+- `R19.3`: BRAIN-101 final evidence and certification decision.
