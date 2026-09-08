@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "b50039b064355f879b70427c944fbbee0bdde680cacddde579452fbd4c8ee41a",
+  "roadmap_sha256": "30571071b53ee8cb9886cd683d84de76af79484d546b5b4de1fafee231e217af",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -1638,7 +1638,7 @@
       }
     },
     "R5.4": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R5",
       "title": "Agent V2 cognitive route convergence",
       "dependencies": [
@@ -1763,7 +1763,7 @@
       }
     },
     "R6.1": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R6",
       "title": "MemoryService ownership and integrity baseline",
       "dependencies": [
@@ -1808,18 +1808,84 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
-        "activation_requires": [
-          "expected_base_sha",
-          "front_id",
-          "work_branch",
-          "allowed_paths",
-          "forbidden_paths",
-          "test_commands",
-          "acceptance",
-          "rollback",
-          "evidence_path"
-        ]
+        "jit_binding_completed": true,
+        "dispatchable": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R6-1-MEMORY-SERVICE-OWNERSHIP-INTEGRITY-BASELINE-01",
+        "objective": "Establish a single governed MemoryService ownership boundary and integrity baseline without mutating semantic or FAISS data",
+        "work_branch": "control-plane/r6-1-memory-service-ownership-integrity-baseline",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "memory_governance",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/memory_service.py",
+          "tmp_agent/brain_v9/core/semantic_memory.py",
+          "tmp_agent/brain_v9/core/semantic_memory_faiss.py",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/memory_gateway.py",
+          "tmp_agent/brain_v9/memory/memory_snapshot.py",
+          "docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE.json",
+          "tests/contract/test_r6_1_memory_service_ownership_integrity_baseline.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Establish one explicit MemoryService ownership boundary for governed memory access",
+          "Preserve semantic and curated-memory separation with snapshot integrity and provenance evidence",
+          "Reject direct FAISS mutation and ungoverned promotion paths",
+          "Preserve no deployment, no scheduler activation, no canonical local sync, no live trading, no real money, and no auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r6_1_memory_service_ownership_integrity_baseline.py",
+          "python -m pytest -q tests/contract/test_agent_v2_boundary_contracts_02.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Revert only the bounded R6.1 MemoryService ownership implementation and its dedicated evidence and contract if acceptance cannot be met",
+          "Do not alter semantic or FAISS data, scheduler configuration, runtime installation, or financial controls during rollback"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R6-1-MEMORY-SERVICE-OWNERSHIP-INTEGRITY-BASELINE-CLOSEOUT-01",
+          "objective": "Record verified R6.1 MemoryService ownership evidence and authorize exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r6-1-memory-service-ownership-integrity-baseline-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE_CLOSEOUT.json",
+            "tests/contract/test_r6_1_memory_service_ownership_integrity_baseline.py"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Bind the R6.1 closeout to verified MemoryService ownership and integrity evidence",
+            "Authorize exactly one dependency-eligible successor only after R6.1 acceptance is verified",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r6_1_memory_service_ownership_integrity_baseline.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R6.2": {

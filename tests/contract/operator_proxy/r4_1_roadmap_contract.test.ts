@@ -55,7 +55,7 @@ test("R4.1 baseline evidence selects one eligible no-deploy modular-monolith can
   ]);
 });
 
-test("R5.3 closeout preserves R4 history and hands sole authority to JIT-bound R5.4",()=>{
+test("R5.4 closeout preserves R4 and R5 history and hands sole authority to JIT-bound R6.1",()=>{
   const manifest=readJson(MANIFEST);
   assert.equal(manifest.roadmap_items["R4.1"].status,"CLOSED_RUNTIME_VERIFIED");
   const r42=manifest.roadmap_items["R4.2"];
@@ -72,7 +72,8 @@ test("R5.3 closeout preserves R4 history and hands sole authority to JIT-bound R
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R5_1_AGENT_V2_RUNTIME_BASELINE_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R5_3_AGENT_V2_PLANNING_EVALUATION_PERSISTENCE_CLOSEOUT.json")));
-  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R5.4"]);
+  assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R5_4_AGENT_V2_COGNITIVE_ROUTE_CONVERGENCE_CLOSEOUT.json")));
+  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R6.1"]);
   const r43=manifest.roadmap_items["R4.3"];
   assert.deepEqual(r43.dependencies,["R4.2"]);
   assert.equal(r43.status,"CLOSED_RUNTIME_VERIFIED");
@@ -98,8 +99,14 @@ test("R5.3 closeout preserves R4 history and hands sole authority to JIT-bound R
   assert.equal(r53.automation.deployment_mode,"NO_DEPLOY");
   const r54=manifest.roadmap_items["R5.4"];
   assert.deepEqual(r54.dependencies,["R5.3"]);
-  assert.equal(r54.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r54.status,"CLOSED_RUNTIME_VERIFIED");
   assert.equal(r54.automation.front_id,"BRAIN-101-R5-4-AGENT-V2-COGNITIVE-ROUTE-CONVERGENCE-01");
   assert.equal(r54.automation.jit_binding_completed,true);
   assert.equal(r54.automation.deployment_mode,"NO_DEPLOY");
+  const r61=manifest.roadmap_items["R6.1"];
+  assert.deepEqual(r61.dependencies,["R5.4"]);
+  assert.equal(r61.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r61.automation.front_id,"BRAIN-101-R6-1-MEMORY-SERVICE-OWNERSHIP-INTEGRITY-BASELINE-01");
+  assert.equal(r61.automation.jit_binding_completed,true);
+  assert.equal(r61.automation.deployment_mode,"NO_DEPLOY");
 });

@@ -9355,3 +9355,11 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R5_3_AGENT_V2_PLANNING_EVALUATION_PERSISTENCE_CLOSEOUT.json`, bound to the verified shared normalized execution-evidence projection in both Agent V2 runtimes.
 - Status: R5.3 set to `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, canonical local sync, live trading, real money, or auto-merge occurred.
 - Authorized successor: exactly one R5.4, `BRAIN-101-R5-4-AGENT-V2-COGNITIVE-ROUTE-CONVERGENCE-01`, controller-governed `NO_DEPLOY`, bounded to route convergence and fail-closed runtime selection.
+
+## BRAIN-101 R5.4 - Agent V2 Cognitive Route Convergence Closeout (2026-09-08)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: commit `709330783762d2b7ae7f256db01dad9eddc8a8d7`, merged as `5acb2363420a5e62ca77eeadf2dea91c85993e66` through PR #309.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R5_4_AGENT_V2_COGNITIVE_ROUTE_CONVERGENCE_CLOSEOUT.json`, bound to the verified route-selection and explicit degraded fallback evidence.
+- Status: R5.4 set to `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, canonical local sync, live trading, real money, or auto-merge occurred.
+- Authorized successor: exactly one R6.1, `BRAIN-101-R6-1-MEMORY-SERVICE-OWNERSHIP-INTEGRITY-BASELINE-01`, controller-governed `NO_DEPLOY`, bounded to governed MemoryService ownership and integrity without direct FAISS mutation.
