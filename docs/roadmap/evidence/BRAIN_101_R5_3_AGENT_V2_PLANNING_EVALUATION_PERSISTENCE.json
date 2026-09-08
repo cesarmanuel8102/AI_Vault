@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "evidence_type": "BRAIN_101_R5_3_AGENT_V2_PLANNING_EVALUATION_PERSISTENCE",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R5.3",
+  "front_id": "BRAIN-101-R5-3-AGENT-V2-PLANNING-EVALUATION-PERSISTENCE-01",
+  "canonical_base_sha": "a6e6c808a9c9f1ece40f4d84ef88ef6d01cbe378",
+  "deployment_mode": "NO_DEPLOY",
+  "runtime_contract": {
+    "execution_evidence_checkpointed": true,
+    "schema_version": 1,
+    "required_sections": [
+      "plan",
+      "tools",
+      "evaluator",
+      "finalizer"
+    ],
+    "sensitive_fields_excluded": [
+      "goal",
+      "final_answer",
+      "tool_inputs",
+      "tool_outputs"
+    ],
+    "native_and_parity_projection_equivalent": true
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}

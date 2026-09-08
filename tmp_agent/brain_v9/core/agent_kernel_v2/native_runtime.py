@@ -11,6 +11,7 @@ from .state import RUN_ROOT, CANONICAL_AGENT_VERSION
 from .tool_gateway import ToolGatewayV2, ROOT as REPO_ROOT
 from .trace import TraceStore
 from .intent_adapter import AgentV2IntentAdapter
+from .response_normalizer import build_execution_evidence
 
 DIRECT_ASSISTANT_ROUTES = {"direct_assistant", "brain_evidence", "mixed_brain_reasoning"}
 
@@ -35,6 +36,7 @@ class NativeAgentRuntimeV2:
             "plan": run.get("plan", []),
             "mission_id": run.get("mission_id"),
             "room_id": run.get("room_id"),
+            "execution_evidence": build_execution_evidence(run),
         })
         return run
 
