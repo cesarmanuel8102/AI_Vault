@@ -1,6 +1,7 @@
 """Contract for the pre-authorized, JIT-bound BRAIN-101 R5-R19 backlog."""
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -8,6 +9,7 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "docs" / "roadmap" / "BRAIN_101_MANIFEST.json"
+ROADMAP = ROOT / "docs" / "roadmap" / "BRAIN_101_ROADMAP.md"
 PHASES = tuple(f"R{phase}" for phase in range(5, 20))
 PHASE_ORDER = {phase: index for index, phase in enumerate(PHASES, start=5)}
 
@@ -93,7 +95,17 @@ def test_decomposition_preserves_pre_r5_item_records_from_the_canonical_base():
         for item_id, item in manifest["roadmap_items"].items()
         if not item_id.startswith(tuple(f"R{phase}." for phase in range(5, 20)))
     }
-    assert current_pre_r5 == baseline["roadmap_items"]
+    baseline_pre_r5 = {
+        item_id: item
+        for item_id, item in baseline["roadmap_items"].items()
+        if not item_id.startswith(tuple(f"R{phase}." for phase in range(5, 20)))
+    }
+    assert current_pre_r5 == baseline_pre_r5
+
+
+def test_manifest_roadmap_sha256_matches_the_exact_canonical_roadmap_bytes():
+    manifest = _manifest()
+    assert manifest["roadmap_sha256"] == hashlib.sha256(ROADMAP.read_bytes()).hexdigest()
 
 
 def test_r5_1_is_the_only_initially_eligible_jit_successor_after_r4_3_closeout():
