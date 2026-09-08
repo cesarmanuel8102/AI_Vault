@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "d52a87b35821e189066c2880b0e19ae63adb99d9f3fbf68098dc8c4105faeead",
+  "roadmap_sha256": "a2fc50e90269dd559b9c4b8e477970ea547b79302bc52fa8b87860530a4b5c1d",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -1254,7 +1254,7 @@
       }
     },
     "R5.1": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R5",
       "title": "Agent V2 canonical runtime baseline and route inventory",
       "dependencies": [
@@ -1351,7 +1351,9 @@
             "ROADMAP_STATUS.json",
             "docs/MIGRATION_CONTROL_LEDGER.md",
             "docs/roadmap/evidence/BRAIN_101_R5_1_AGENT_V2_RUNTIME_BASELINE_CLOSEOUT.json",
-            "tests/contract/test_r5_1_agent_v2_runtime_baseline.py"
+            "tests/contract/test_r5_1_agent_v2_runtime_baseline.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts"
           ],
           "forbidden_paths": [
             ".env",
@@ -1369,13 +1371,14 @@
           ],
           "test_commands": [
             "python -m pytest -q tests/contract/test_r5_1_agent_v2_runtime_baseline.py",
+            "npm --prefix scripts/operator_proxy test",
             "git diff --check"
           ]
         }
       }
     },
     "R5.2": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R5",
       "title": "Agent V2 execution lifecycle identity and checkpoints",
       "dependencies": [
@@ -1420,18 +1423,86 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
-        "activation_requires": [
-          "expected_base_sha",
-          "front_id",
-          "work_branch",
-          "allowed_paths",
-          "forbidden_paths",
-          "test_commands",
-          "acceptance",
-          "rollback",
-          "evidence_path"
-        ]
+        "jit_binding_completed": true,
+        "dispatchable": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R5-2-AGENT-V2-LIFECYCLE-CHECKPOINTS-01",
+        "objective": "Make Agent V2 lifecycle identity, checkpoints, cancellation, resume, retry, and streaming semantics explicit behind the existing Agent V2 runtime boundary",
+        "work_branch": "control-plane/r5-2-agent-v2-lifecycle-checkpoints",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "cognitive_runtime",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/checkpoints.py",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/state.py",
+          "docs/roadmap/evidence/BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS.json",
+          "tests/contract/test_brain_101_r3_2_runtime_lifecycle_contract.py",
+          "tests/contract/test_r5_2_agent_v2_lifecycle_checkpoints.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Establish stable mission_id, run_id, and room_id semantics at the Agent V2 runtime boundary without cross-room state",
+          "Persist and validate checkpoints for pause, resume, cancellation, and bounded retry across the native and LangGraph-parity runtime contracts",
+          "Define streaming lifecycle behavior and fail closed on an invalid lifecycle transition without adding a governance-bypassing fastpath",
+          "Preserve no deployment, no scheduler activation, no canonical local sync, no live trading, no real money, and no auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r5_2_agent_v2_lifecycle_checkpoints.py",
+          "python -m pytest -q tests/contract/test_brain_101_r3_2_runtime_lifecycle_contract.py",
+          "python -m pytest -q tests/contract/test_agent_v2_boundary_contracts_02.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Revert only the bounded R5.2 lifecycle implementation and its dedicated evidence and contracts if the lifecycle acceptance cannot be met",
+          "Do not alter routing, scheduler configuration, runtime installation, or financial controls during rollback"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R5-2-AGENT-V2-LIFECYCLE-CHECKPOINTS-CLOSEOUT-01",
+          "objective": "Record verified R5.2 lifecycle evidence and authorize exactly one dependency-eligible R5 successor",
+          "work_branch": "control-plane/r5-2-agent-v2-lifecycle-checkpoints-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS_CLOSEOUT.json",
+            "tests/contract/test_r5_2_agent_v2_lifecycle_checkpoints.py"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Bind the R5.2 closeout to its verified lifecycle evidence",
+            "Authorize exactly one next R5 item only after lifecycle acceptance is verified",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r5_2_agent_v2_lifecycle_checkpoints.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R5.3": {

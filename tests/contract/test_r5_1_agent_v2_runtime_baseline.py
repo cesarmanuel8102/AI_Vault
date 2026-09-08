@@ -9,6 +9,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / "docs/roadmap/evidence/BRAIN_101_R5_1_AGENT_V2_RUNTIME_BASELINE.json"
+CLOSEOUT_EVIDENCE = (
+    ROOT
+    / "docs/roadmap/evidence/BRAIN_101_R5_1_AGENT_V2_RUNTIME_BASELINE_CLOSEOUT.json"
+)
+MANIFEST = ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json"
+
+R5_1_SOURCE_COMMIT = "8f923a318b39b0d24e14def6e079bb6a31ae0650"
+R5_1_MERGE_COMMIT = "0e4ba1286f5ff8f6ee90908efc472c5790595409"
 
 EXPECTED_PATHS = {
     "agent_v2_api": "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
@@ -46,6 +54,14 @@ def _git_bytes(*args: str) -> bytes:
 
 def _evidence() -> dict:
     return json.loads(EVIDENCE.read_text(encoding="utf-8"))
+
+
+def _manifest() -> dict:
+    return json.loads(MANIFEST.read_text(encoding="utf-8"))
+
+
+def _closeout_evidence() -> dict:
+    return json.loads(CLOSEOUT_EVIDENCE.read_text(encoding="utf-8"))
 
 
 def test_r5_1_evidence_is_bound_to_the_governed_front_and_hard_limits():
@@ -122,13 +138,63 @@ def test_r5_1_makes_parallel_paths_and_non_convergence_explicit():
 
 def test_r5_1_front_diff_is_limited_to_its_evidence_and_contract():
     evidence = _evidence()
+    implementation_head = (
+        _closeout_evidence()["parent_merge_commit"]
+        if CLOSEOUT_EVIDENCE.exists()
+        else "HEAD"
+    )
     changed = set(
         filter(
             None,
-            _git("diff", "--name-only", f"{evidence['canonical_base_sha']}..HEAD").splitlines(),
+            _git(
+                "diff",
+                "--name-only",
+                f"{evidence['canonical_base_sha']}..{implementation_head}",
+            ).splitlines(),
         )
     )
     assert changed <= {
         "docs/roadmap/evidence/BRAIN_101_R5_1_AGENT_V2_RUNTIME_BASELINE.json",
         "tests/contract/test_r5_1_agent_v2_runtime_baseline.py",
     }
+
+
+def test_r5_1_closeout_is_bound_to_the_verified_merge_and_baseline_evidence():
+    closeout = _closeout_evidence()
+
+    assert closeout["schema_version"] == 1
+    assert closeout["evidence_type"] == "BRAIN_101_R5_1_AGENT_V2_RUNTIME_BASELINE_CLOSEOUT"
+    assert closeout["controller"] == "CODEX_GOVERNED_CONTROLLER"
+    assert closeout["roadmap_id"] == "BRAIN-101"
+    assert closeout["roadmap_item_id"] == "R5.1"
+    assert closeout["parent_front_id"] == "BRAIN-101-R5-1-AGENT-V2-RUNTIME-BASELINE-01"
+    assert closeout["parent_source_commit"] == R5_1_SOURCE_COMMIT
+    assert closeout["parent_merge_commit"] == R5_1_MERGE_COMMIT
+    assert closeout["source_evidence_path"] == str(EVIDENCE.relative_to(ROOT)).replace("\\", "/")
+    assert closeout["result"] == "CLOSED_RUNTIME_VERIFIED"
+    assert closeout["hard_limits"] == _evidence()["hard_limits"]
+
+
+def test_r5_1_closeout_activates_only_jit_bound_r5_2():
+    items = _manifest()["roadmap_items"]
+    active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
+
+    assert items["R5.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    assert active == ["R5.2"]
+    binding = items["R5.2"]["automation"]
+    assert binding["jit_binding_completed"] is True
+    assert binding["dispatchable"] is True
+    assert binding["front_id"] == "BRAIN-101-R5-2-AGENT-V2-LIFECYCLE-CHECKPOINTS-01"
+    assert binding["work_branch"] == "control-plane/r5-2-agent-v2-lifecycle-checkpoints"
+    assert binding["expected_base_sha_source"] == (
+        "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch"
+    )
+    assert binding["deployment_mode"] == "NO_DEPLOY"
+    assert binding["evidence_path"] == (
+        "docs/roadmap/evidence/BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS.json"
+    )
+    assert binding["allowed_paths"]
+    assert binding["forbidden_paths"]
+    assert binding["test_commands"]
+    assert binding["acceptance"]
+    assert binding["rollback"]

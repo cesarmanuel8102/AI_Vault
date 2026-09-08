@@ -1261,6 +1261,13 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - `R5.3`: Agent V2 planning execution evaluation persistence.
 - `R5.4`: Agent V2 cognitive route convergence.
 
+#### R5.1 Closeout and R5.2 Activation
+
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R5_1_AGENT_V2_RUNTIME_BASELINE_CLOSEOUT.json`, bound to source commit `8f923a318b39b0d24e14def6e079bb6a31ae0650` and merge commit `0e4ba1286f5ff8f6ee90908efc472c5790595409`.
+- Status: R5.1 is `CLOSED_RUNTIME_VERIFIED`; its source-backed inventory recorded parallel runtime paths without changing runtime behavior or deploying it.
+- Sole successor: R5.2 `BRAIN-101-R5-2-AGENT-V2-LIFECYCLE-CHECKPOINTS-01` is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`, and receives its exact `expected_base_sha` from the live canonical branch when `sequenceRoadmap` creates the governed spec.
+- Preserved controls: human final authority true; auto-merge false; canonical local sync false; persistent Agent Loop deferred; live trading false; real money false.
+
 ### R6
 - `R6.1`: MemoryService ownership and integrity baseline.
 - `R6.2`: Governed memory candidate promotion and rollback.
