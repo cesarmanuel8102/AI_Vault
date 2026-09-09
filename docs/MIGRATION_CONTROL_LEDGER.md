@@ -9488,3 +9488,8 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no ingestion, semantic-memory write, network fetch, provider call, promotion, installation, scheduler activation, canonical local sync, live trading, real money, or auto-merge occurred.
 - Transition: R9.2 is `CLOSED_RUNTIME_VERIFIED`; R10.1 is the only `AUTHORIZED_ACTIVE` item, JIT-bound to a no-deploy governed capability/gap evaluator contract.
 - Preserved: HUMAN_FINAL_AUTHORITY=true; AUTO_MERGE=false; CANONICAL_LOCAL_SYNC=false; LIVE_TRADING=false; REAL_MONEY=false; persistent Agent Loop remains DEFERRED and Disabled.
+
+## BRAIN-101 R11.2 Closeout (2026-09-09)
+- Controller: CODEX_GOVERNED_CONTROLLER; parent merge b7bd7ca40be21e5fde843c1b2e8a5871c5be5bf6 via PR #341.
+- Transition: R11.2 CLOSED_RUNTIME_VERIFIED; R12.1 sole AUTHORIZED_ACTIVE and JIT-bound NO_DEPLOY paper-only portfolio baseline.
+- Preserved: HUMAN_FINAL_AUTHORITY=true; AUTO_MERGE=false; CANONICAL_LOCAL_SYNC=false; LIVE_TRADING=false; REAL_MONEY=false; Agent Loop DEFERRED/Disabled.

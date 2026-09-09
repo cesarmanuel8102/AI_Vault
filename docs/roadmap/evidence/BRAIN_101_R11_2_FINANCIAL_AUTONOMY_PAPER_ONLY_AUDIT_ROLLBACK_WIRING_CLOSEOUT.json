@@ -1,0 +1,29 @@
+{
+  "roadmap_item": "R11.2",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "implementation_source_commit": "dfa5dacf5efdc76b14c967596b6038dd1be3b817",
+  "implementation_merge_commit": "b7bd7ca40be21e5fde843c1b2e8a5871c5be5bf6",
+  "implementation_pr": 341,
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "successor": {
+    "roadmap_item": "R12.1",
+    "front_id": "BRAIN-101-R12-1-PORTFOLIO-MANAGER-ALLOCATION-LEDGER-BASELINE-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "runtime_actions": {
+    "deployment": false,
+    "scheduler_mutation": false,
+    "broker_connect": false,
+    "broker_order": false,
+    "order_submit": false,
+    "provider_call": false,
+    "network_fetch": false,
+    "runtime_import": false,
+    "runtime_mutation": false,
+    "configuration_mutation": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}

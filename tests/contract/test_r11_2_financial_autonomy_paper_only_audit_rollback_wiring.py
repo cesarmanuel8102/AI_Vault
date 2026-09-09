@@ -121,3 +121,22 @@ def test_module_source_has_no_financial_runtime_or_external_effect_imports():
     assert "requests" not in source
     assert "httpx" not in source
     assert "socket" not in source
+
+
+def test_closeout_records_merged_r11_2_evidence_and_only_authorizes_r12_1():
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/"
+            "BRAIN_101_R11_2_FINANCIAL_AUTONOMY_PAPER_ONLY_AUDIT_ROLLBACK_WIRING_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert closeout["roadmap_item"] == "R11.2"
+    assert closeout["implementation_merge_commit"] == "b7bd7ca40be21e5fde843c1b2e8a5871c5be5bf6"
+    assert closeout["successor"] == {
+        "roadmap_item": "R12.1",
+        "front_id": "BRAIN-101-R12-1-PORTFOLIO-MANAGER-ALLOCATION-LEDGER-BASELINE-01",
+        "deployment_mode": "NO_DEPLOY",
+    }
+    assert all(value is False for value in closeout["runtime_actions"].values())

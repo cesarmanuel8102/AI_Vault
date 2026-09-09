@@ -1488,3 +1488,8 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no broker connection, order, provider/network call, financial-autonomy runtime import, scheduler mutation, canonical local sync, live trading, real money, or auto-merge occurred.
 - Status: R11.1 is `CLOSED_RUNTIME_VERIFIED`.
 - Authorized successor: exactly one R11.2, `BRAIN-101-R11-2-FINANCIAL-AUTONOMY-PAPER-ONLY-AUDIT-ROLLBACK-WIRING-01`, controller-governed `NO_DEPLOY`, bounded to deterministic audit and rollback evidence only.
+
+## BRAIN-101 R11.2 Closeout (2026-09-09)
+- Controller: CODEX_GOVERNED_CONTROLLER; parent merge b7bd7ca40be21e5fde843c1b2e8a5871c5be5bf6 via PR #341.
+- Evidence: docs/roadmap/evidence/BRAIN_101_R11_2_FINANCIAL_AUTONOMY_PAPER_ONLY_AUDIT_ROLLBACK_WIRING_CLOSEOUT.json; deterministic audit and rollback receipts only.
+- Status: R11.2 CLOSED_RUNTIME_VERIFIED; sole successor R12.1 BRAIN-101-R12-1-PORTFOLIO-MANAGER-ALLOCATION-LEDGER-BASELINE-01, NO_DEPLOY.
