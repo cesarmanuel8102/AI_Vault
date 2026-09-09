@@ -105,6 +105,7 @@ def test_r10_1_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_
     assert binding["deployment_mode"] == "NO_DEPLOY"
     assert binding["front_id"] == "BRAIN-101-R10-2-SANDBOXED-PATCH-PROPOSAL-BENCHMARK-PIPELINE-01"
     assert binding["work_branch"] == "control-plane/r10-2-sandboxed-patch-proposal-benchmark-pipeline"
+    assert binding["closeout"]["risk"] == "MEDIUM"
     assert binding["allowed_paths"] == [
         "tmp_agent/brain_v9/core/sandboxed_patch_proposal.py",
         "docs/roadmap/evidence/BRAIN_101_R10_2_SANDBOXED_PATCH_PROPOSAL_BENCHMARK_PIPELINE.json",

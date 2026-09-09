@@ -3386,10 +3386,10 @@
         "evidence_path": "docs/roadmap/evidence/BRAIN_101_R10_2_SANDBOXED_PATCH_PROPOSAL_BENCHMARK_PIPELINE.json",
         "closeout": {
           "front_id": "BRAIN-101-R10-2-SANDBOXED-PATCH-PROPOSAL-BENCHMARK-PIPELINE-CLOSEOUT-01",
-          "objective": "Record verified R10.2 sandboxed patch-proposal evidence before authorizing exactly one dependency-eligible successor",
-          "work_branch": "control-plane/r10-2-sandboxed-patch-proposal-benchmark-pipeline-closeout",
-          "executor": "codex_control_plane",
-          "risk": "HIGH",
+        "objective": "Record verified R10.2 sandboxed patch-proposal evidence before authorizing exactly one dependency-eligible successor",
+        "work_branch": "control-plane/r10-2-sandboxed-patch-proposal-benchmark-pipeline-closeout",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
           "allowed_paths": [
             "docs/roadmap/BRAIN_101_MANIFEST.json",
             "docs/roadmap/BRAIN_101_ROADMAP.md",
