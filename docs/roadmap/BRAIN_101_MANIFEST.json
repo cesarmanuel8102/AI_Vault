@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "9084d32638120ac40cdc2f75a0aadba7ac4bf97f35892877cb4554e1695a0c4d",
+  "roadmap_sha256": "31bda87c1aa819b013aa8b9d4fa61cb2d503535140cc28ddedca108cf9f1ff22",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -36,7 +36,7 @@
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
   "approval_status": "HUMAN_ADOPTED",
   "r0_status": "CLOSED_HUMAN_ADOPTED",
-  "current_phase": "R4",
+  "current_phase": "R9",
   "human_final_authority": true,
   "auto_merge": false,
   "canonical_local_sync": false,
@@ -2856,7 +2856,7 @@
       }
     },
     "R9.1": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R9",
       "title": "Curated Knowledge canonical inventory and taxonomy",
       "dependencies": [
@@ -2921,7 +2921,7 @@
       }
     },
     "R9.2": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R9",
       "title": "Curated Knowledge controlled ingestion and benchmark",
       "dependencies": [
@@ -2966,18 +2966,23 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
-        "activation_requires": [
-          "expected_base_sha",
-          "front_id",
-          "work_branch",
-          "allowed_paths",
-          "forbidden_paths",
-          "test_commands",
-          "acceptance",
-          "rollback",
-          "evidence_path"
-        ]
+        "jit_binding_completed": true,
+        "dispatchable": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R9-2-CURATED-KNOWLEDGE-CONTROLLED-INGESTION-BENCHMARK-01",
+        "objective": "Add a deterministic canary-ingestion planner and benchmark contract without source ingestion, semantic-memory writes, or automatic promotion",
+        "work_branch": "control-plane/r9-2-curated-knowledge-controlled-ingestion-benchmark",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "curated_knowledge",
+        "allowed_paths": ["tmp_agent/brain_v9/core/curated_knowledge_ingestion.py", "docs/roadmap/evidence/BRAIN_101_R9_2_CURATED_KNOWLEDGE_CONTROLLED_INGESTION_BENCHMARK.json", "tests/contract/test_r9_2_curated_knowledge_controlled_ingestion_benchmark.py"],
+        "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+        "acceptance": ["Define a deterministic canary-ingestion planning and benchmark contract", "Reject direct source ingestion, semantic-memory writes, provider calls, network access, and automatic promotion", "Preserve no deployment, scheduler activation, canonical local sync, live trading, real money, and auto-merge"],
+        "test_commands": ["python -m pytest -q tests/contract/test_r9_2_curated_knowledge_controlled_ingestion_benchmark.py", "python -m pytest -q tests/contract/test_r9_1_curated_knowledge_canonical_inventory_taxonomy.py", "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "git diff --check"],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": ["Restore only the prior canary-planning contract through version-controlled rollback", "Do not ingest sources, mutate semantic memory, provider configuration, scheduler configuration, canonical local state, trading, or financial controls"],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R9_2_CURATED_KNOWLEDGE_CONTROLLED_INGESTION_BENCHMARK.json",
+        "closeout": {"front_id": "BRAIN-101-R9-2-CURATED-KNOWLEDGE-CONTROLLED-INGESTION-BENCHMARK-CLOSEOUT-01", "objective": "Record verified R9.2 canary-planning and benchmark evidence before authorizing exactly one dependency-eligible successor", "work_branch": "control-plane/r9-2-curated-knowledge-controlled-ingestion-benchmark-closeout", "executor": "codex_control_plane", "risk": "MEDIUM", "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R9_2_CURATED_KNOWLEDGE_CONTROLLED_INGESTION_BENCHMARK_CLOSEOUT.json", "tests/contract/test_r9_2_curated_knowledge_controlled_ingestion_benchmark.py", "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts", "tests/contract/operator_proxy/sequencer.test.ts"], "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"], "acceptance": ["Record exact R9.2 planning and benchmark evidence", "Set R9.2 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged", "Preserve exactly one authorized next roadmap item", "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"], "test_commands": ["python -m pytest -q tests/contract/test_r9_2_curated_knowledge_controlled_ingestion_benchmark.py", "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "git diff --check"]}
       }
     },
     "R10.1": {

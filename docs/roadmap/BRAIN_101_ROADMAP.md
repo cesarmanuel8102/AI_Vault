@@ -1434,3 +1434,12 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no installation or installed-runtime claim is made.
 - Status: R8.3 is `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, provider call, canonical local sync, live trading, real money, or auto-merge occurred.
 - Sole successor: R9.1 `BRAIN-101-R9-1-CURATED-KNOWLEDGE-CANONICAL-INVENTORY-TAXONOMY-01` is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`, and receives its exact expected base from the live canonical branch when `sequenceRoadmap` creates the governed spec.
+
+## BRAIN-101 R9.1 - Curated Knowledge Canonical Inventory and Taxonomy Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: `b72790571d212cc0f8dbe9de272862dac1068fc2`, merged as `b5105efaff840a4b4129c728207b28e9de1a5e71` through PR #329.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R9_1_CURATED_KNOWLEDGE_CANONICAL_INVENTORY_TAXONOMY_CLOSEOUT.json`, binding the static versioned catalog, read-only provenance, and rejection of unversioned lookup, memory writes, source ingestion, network access, and provider calls.
+- Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no installation or installed-runtime claim is made.
+- Status: R9.1 is `CLOSED_RUNTIME_VERIFIED`; deployment, installation, scheduler activation, source ingestion, semantic-memory writes, provider calls, canonical local sync, live trading, real money, and auto-merge remain disabled.
+- Authorized successor: exactly one R9.2, `BRAIN-101-R9-2-CURATED-KNOWLEDGE-CONTROLLED-INGESTION-BENCHMARK-01`, controller-governed `NO_DEPLOY`, bounded to deterministic canary-planning and benchmark contracts without production ingestion or automatic promotion.
