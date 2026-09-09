@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R7.3",
+  "front_id": "BRAIN-101-R7-3-VISUAL-TRACE-OPERATOR-CONSOLE-CONTRACTS-01",
+  "deployment_mode": "NO_DEPLOY",
+  "runtime_actions": {
+    "worker_install": false,
+    "scheduler_activation": false,
+    "provider_call": false,
+    "canonical_local_sync": false
+  },
+  "controls": [
+    "Read-only trace projection",
+    "Correlation-bound sanitized events only",
+    "No private reasoning or secret display",
+    "No unaudited operator action"
+  ]
+}
