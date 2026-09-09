@@ -9530,3 +9530,10 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R14_1_LOCAL_VALIDATION_DATA_EXPERIMENT_REGISTRY_CLOSEOUT.json`; local-only deterministic receipts, lookahead rejection, and no-effect boundaries.
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; deployment, installation, scheduler activation, market-data, broker, provider, network, runtime, canonical local sync, live trading, real money, and auto-merge remain disabled.
 - Transition: R14.1 is `CLOSED_RUNTIME_VERIFIED`; R14.2 is sole `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` for deterministic backtest realism and walk-forward validation.
+
+## BRAIN-101 R14.2 Closeout - Backtest Realism and Walk-Forward Validation (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; source `818ce645b0c2954ee5a2502165533bc558db83df`, merged as `385cef856d0222e547350606dd36042c86c2ccb5` through PR #357.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R14_2_BACKTEST_REALISM_WALK_FORWARD_VALIDATION_CLOSEOUT.json`; deterministic local inputs, cost model, lookahead, and walk-forward receipt controls.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; deployment, installation, scheduler activation, market-data, broker, provider, network, runtime, canonical local sync, live trading, real money, and auto-merge remain disabled.
+- Transition: R14.2 is `CLOSED_RUNTIME_VERIFIED`; R14.3 is sole `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` for deterministic adversarial and statistical validation resilience.

@@ -62,7 +62,7 @@ def test_registry_rejects_effectful_operations_and_declares_no_deploy_evidence()
     assert all(value is False for value in evidence["runtime_actions"].values())
 
 
-def test_closeout_closes_r14_1_and_jit_binds_r14_2_without_deploy():
+def test_closeout_preserves_r14_1_to_r14_2_successor_receipt_after_later_closeout():
     manifest = json.loads(
         (ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8")
     )
@@ -74,7 +74,7 @@ def test_closeout_closes_r14_1_and_jit_binds_r14_2_without_deploy():
     )
     assert manifest["roadmap_items"]["R14.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     successor = manifest["roadmap_items"]["R14.2"]
-    assert successor["status"] == "AUTHORIZED_ACTIVE"
+    assert successor["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert successor["dependencies"] == ["R14.1"]
     assert successor["automation"]["deployment_mode"] == "NO_DEPLOY"
     assert closeout["verification_level"] == "CODE_AND_CI_VERIFIED_NO_DEPLOY"

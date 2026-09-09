@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "479ade3d894a454fb0a590a24ca73e138a9be3c1d3be0b7b908b4f949d8e87dc",
+  "roadmap_sha256": "fafa2ee93bfce7edd51647017c3d0a3cd0af28cc0a0ec222e0897fc33b0f8e46",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -4648,7 +4648,7 @@
       }
     },
     "R14.2": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R14",
       "title": "Backtest realism and walk-forward validation",
       "dependencies": [
@@ -4755,6 +4755,7 @@
             "ROADMAP_STATUS.json",
             "docs/MIGRATION_CONTROL_LEDGER.md",
             "docs/roadmap/evidence/BRAIN_101_R14_2_BACKTEST_REALISM_WALK_FORWARD_VALIDATION_CLOSEOUT.json",
+            "tests/contract/test_r14_1_local_validation_data_experiment_registry.py",
             "tests/contract/test_r14_2_backtest_realism_walk_forward_validation.py",
             "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
             "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
@@ -4784,7 +4785,7 @@
       }
     },
     "R14.3": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R14",
       "title": "Validation Lab adversarial and statistical resilience",
       "dependencies": [
@@ -4829,7 +4830,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
+        "dispatchable": true,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
@@ -4840,7 +4841,83 @@
           "acceptance",
           "rollback",
           "evidence_path"
-        ]
+        ],
+        "jit_binding_completed": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R14-3-VALIDATION-LAB-ADVERSARIAL-STATISTICAL-RESILIENCE-01",
+        "objective": "Add deterministic local adversarial and statistical validation receipts without market-data, broker, provider, network, runtime, scheduler, or trading action",
+        "work_branch": "control-plane/r14-3-validation-lab-adversarial-statistical-resilience",
+        "executor": "codex_control_plane",
+        "risk": "HIGH",
+        "domain": "validation_lab",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/validation_resilience.py",
+          "docs/roadmap/evidence/BRAIN_101_R14_3_VALIDATION_LAB_ADVERSARIAL_STATISTICAL_RESILIENCE.json",
+          "tests/contract/test_r14_3_validation_lab_adversarial_statistical_resilience.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Validate deterministic local bootstrap, stale-data, gap, and reproducibility receipts",
+          "Reject cloud-dependent, broker, provider, network, runtime, scheduler, and trading inputs",
+          "Preserve human final authority and prohibit live trading, real money, canonical sync, and auto-merge effects"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r14_3_validation_lab_adversarial_statistical_resilience.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Record deterministic validation rollback evidence without external data, runtime, scheduler, configuration, trading, or financial-control mutation"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R14_3_VALIDATION_LAB_ADVERSARIAL_STATISTICAL_RESILIENCE.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R14-3-VALIDATION-LAB-ADVERSARIAL-STATISTICAL-RESILIENCE-CLOSEOUT-01",
+          "objective": "Record verified R14.3 adversarial and statistical resilience evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r14-3-validation-lab-adversarial-statistical-resilience-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R14_3_VALIDATION_LAB_ADVERSARIAL_STATISTICAL_RESILIENCE_CLOSEOUT.json",
+            "tests/contract/test_r14_3_validation_lab_adversarial_statistical_resilience.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R14.3 validation evidence",
+            "Set R14.3 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r14_3_validation_lab_adversarial_statistical_resilience.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R15.1": {
