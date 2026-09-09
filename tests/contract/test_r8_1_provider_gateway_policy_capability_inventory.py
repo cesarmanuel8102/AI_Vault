@@ -66,3 +66,31 @@ def test_evidence_records_a_no_deploy_static_inventory_boundary():
         "scheduler_activation": False,
         "canonical_local_sync": False,
     }
+
+
+def test_closeout_closes_r8_1_and_authorizes_only_bound_r8_2():
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/BRAIN_101_R8_1_PROVIDER_GATEWAY_POLICY_CAPABILITY_INVENTORY_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert manifest["roadmap_items"]["R8.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    assert [
+        item_id
+        for item_id, item in manifest["roadmap_items"].items()
+        if item["status"] == "AUTHORIZED_ACTIVE"
+    ] == ["R8.2"]
+    binding = manifest["roadmap_items"]["R8.2"]["automation"]
+    assert binding["jit_binding_completed"] is True
+    assert binding["deployment_mode"] == "NO_DEPLOY"
+    assert binding["work_branch"] == "control-plane/r8-2-provider-resilience-secret-safe-operations"
+    assert closeout["parent_merge_commit"] == "33b0ba73d7bd0ca79dab76c32016d6bf2a7f9740"
+    assert closeout["runtime_actions"] == {
+        "worker_install": False,
+        "scheduler_activation": False,
+        "provider_call": False,
+        "canonical_local_sync": False,
+    }

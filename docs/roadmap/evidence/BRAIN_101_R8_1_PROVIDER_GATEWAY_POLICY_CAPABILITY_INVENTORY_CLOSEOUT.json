@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R8.1",
+  "front_id": "BRAIN-101-R8-1-PROVIDER-GATEWAY-POLICY-CAPABILITY-INVENTORY-CLOSEOUT-01",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "parent_source_commit": "da87569a987d2c937a945aeb84f737bbe3cddecb",
+  "parent_merge_commit": "33b0ba73d7bd0ca79dab76c32016d6bf2a7f9740",
+  "parent_pr": 323,
+  "implementation_evidence_path": "docs/roadmap/evidence/BRAIN_101_R8_1_PROVIDER_GATEWAY_POLICY_CAPABILITY_INVENTORY.json",
+  "verification": {
+    "focused_contract_tests_passed": 6,
+    "regression_contract_tests_passed": 17,
+    "python_compile_passed": true,
+    "git_diff_check_passed": true,
+    "ci_exact_head_passed": true,
+    "ci_windows_initial_lock_harness_retry": "PASS"
+  },
+  "runtime_actions": {
+    "worker_install": false,
+    "scheduler_activation": false,
+    "provider_call": false,
+    "canonical_local_sync": false
+  },
+  "successor": {
+    "roadmap_item_id": "R8.2",
+    "front_id": "BRAIN-101-R8-2-PROVIDER-RESILIENCE-SECRET-SAFE-OPERATIONS-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}
