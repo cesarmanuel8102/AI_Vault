@@ -1,0 +1,29 @@
+{
+  "roadmap_item": "R10.3",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "promotion_contract": {
+    "human_final_authority_required": true,
+    "proposal_provenance_required": true,
+    "immutable_decision": true,
+    "immutable_rollback_receipt": true,
+    "apply_permitted": false
+  },
+  "runtime_actions": {
+    "deployment": false,
+    "scheduler_mutation": false,
+    "patch_application": false,
+    "filesystem_write": false,
+    "runtime_mutation": false,
+    "provider_call": false,
+    "network_fetch": false,
+    "semantic_memory_write": false,
+    "canonical_memory_write": false,
+    "automatic_promotion": false,
+    "self_governance_modification": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}
