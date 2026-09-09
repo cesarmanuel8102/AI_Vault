@@ -49,7 +49,7 @@ def _assert_acyclic(items: dict, roots: set[str]) -> None:
 def test_r5_through_r19_are_a_complete_non_executable_pre_authorized_backlog():
     manifest = _manifest()
     planned = _planned_items(manifest)
-    assert set(item["phase"] for item in planned.values()) == set(PHASES) - {"R5", "R6", "R7", "R8", "R9", "R10"}
+    assert set(item["phase"] for item in planned.values()) == set(PHASES) - {"R5", "R6", "R7", "R8", "R9", "R10", "R11"}
     assert all(item_id.startswith(f"{item['phase']}.") for item_id, item in planned.items())
     assert all(item["status"] == "PLANNED_UNBOUND" for item in planned.values())
     assert all(item["automation"]["jit_binding_required"] is True for item in planned.values())
@@ -81,7 +81,7 @@ def test_r10_3_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R11.1"
+    assert active[0] == "R11.2"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -100,18 +100,19 @@ def test_r10_3_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_
     assert items["R10.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R10.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R10.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R11.1"]["automation"]
+    assert items["R11.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R11.2"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
     assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R11-1-FINANCIAL-AUTONOMY-PAPER-ONLY-RUNTIME-INVENTORY-01"
-    assert binding["work_branch"] == "control-plane/r11-1-financial-autonomy-paper-only-runtime-inventory"
+    assert binding["front_id"] == "BRAIN-101-R11-2-FINANCIAL-AUTONOMY-PAPER-ONLY-AUDIT-ROLLBACK-WIRING-01"
+    assert binding["work_branch"] == "control-plane/r11-2-financial-autonomy-paper-only-audit-rollback-wiring"
     assert binding["closeout"]["risk"] == "MEDIUM"
     assert binding["allowed_paths"] == [
-        "tmp_agent/brain_v9/core/financial_autonomy_paper_inventory.py",
-        "docs/roadmap/evidence/BRAIN_101_R11_1_FINANCIAL_AUTONOMY_PAPER_ONLY_RUNTIME_INVENTORY.json",
-        "tests/contract/test_r11_1_financial_autonomy_paper_only_runtime_inventory.py",
+        "tmp_agent/brain_v9/core/financial_autonomy_paper_audit.py",
+        "docs/roadmap/evidence/BRAIN_101_R11_2_FINANCIAL_AUTONOMY_PAPER_ONLY_AUDIT_ROLLBACK_WIRING.json",
+        "tests/contract/test_r11_2_financial_autonomy_paper_only_audit_rollback_wiring.py",
     ]
 
 
