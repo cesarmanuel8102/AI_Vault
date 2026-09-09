@@ -9523,3 +9523,10 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Controller: `CODEX_GOVERNED_CONTROLLER`; PR #353 merged as `74f0410f6dde280a1f3cabe2626ab78690a8bf69`.
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; all broker, order, provider, network, runtime, scheduler, canonical-sync, live-trading, real-money, and auto-merge actions remain disabled.
 - Transition: R13.2 is `CLOSED_RUNTIME_VERIFIED`; R14.1 is sole `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` local validation and experiment-registry work.
+
+## BRAIN-101 R14.1 Closeout - Local Validation Data and Experiment Registry (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; source `00d0271ebc4a8e3bb1821d134fc020d3c4a8b82b`, merged as `f54b240a88cb917d083aa51b6e5245923db8c814` through PR #355.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R14_1_LOCAL_VALIDATION_DATA_EXPERIMENT_REGISTRY_CLOSEOUT.json`; local-only deterministic receipts, lookahead rejection, and no-effect boundaries.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; deployment, installation, scheduler activation, market-data, broker, provider, network, runtime, canonical local sync, live trading, real money, and auto-merge remain disabled.
+- Transition: R14.1 is `CLOSED_RUNTIME_VERIFIED`; R14.2 is sole `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` for deterministic backtest realism and walk-forward validation.

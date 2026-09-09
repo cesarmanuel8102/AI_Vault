@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R14.1",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "implementation_pr": 355,
+  "implementation_source_commit": "00d0271ebc4a8e3bb1821d134fc020d3c4a8b82b",
+  "implementation_merge_commit": "f54b240a88cb917d083aa51b6e5245923db8c814",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "evidence_path": "docs/roadmap/evidence/BRAIN_101_R14_1_LOCAL_VALIDATION_DATA_EXPERIMENT_REGISTRY.json",
+  "successor": {
+    "roadmap_item": "R14.2",
+    "front_id": "BRAIN-101-R14-2-BACKTEST-REALISM-WALK-FORWARD-VALIDATION-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "runtime_actions": {
+    "deployment": false,
+    "installation": false,
+    "scheduler_activation": false,
+    "provider_call": false,
+    "broker_action": false,
+    "order_action": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}
