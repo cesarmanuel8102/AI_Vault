@@ -1385,3 +1385,11 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Status: R4.3 is `CLOSED_RUNTIME_VERIFIED`.
 - Sole successor: R5.1 `BRAIN-101-R5-1-AGENT-V2-RUNTIME-BASELINE-01` is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`, and receives its exact `expected_base_sha` from the live canonical branch when `sequenceRoadmap` creates the governed spec.
 - Preserved controls: human final authority true; auto-merge false; canonical local sync false; persistent Agent Loop deferred; live trading false; real money false.
+
+## BRAIN-101 R7.1 - Governed Trace Schema and Event Writer Baseline Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent sources: commits `208023f0c194fdd63e2997692043d9e5efff4ec4` and `df0e3b4a56533172b9c4b0e9f2de7adf32be1c48`, merged as `4f844849520a7e8a39ac9d59ffdda7c14cf5477b` through PR #317.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R7_1_GOVERNED_TRACE_SCHEMA_EVENT_WRITER_BASELINE_CLOSEOUT.json`, bound to correlation identity, an audited event taxonomy, and the persisted redaction boundary.
+- Status: R7.1 is `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, provider call, canonical local sync, live trading, real money, or auto-merge occurred.
+- Sole successor: R7.2 `BRAIN-101-R7-2-RUN-TIMELINE-PROVIDER-HEALTH-OPERATIONAL-ACCOUNTING-01` is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`, and receives its exact expected base from the live canonical branch when `sequenceRoadmap` creates the governed spec.

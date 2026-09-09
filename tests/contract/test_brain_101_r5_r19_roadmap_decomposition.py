@@ -81,7 +81,7 @@ def test_r5_4_closeout_preserves_the_jit_bound_r6_1_transition_and_one_active_su
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R7.1"
+    assert active[0] == "R7.2"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -89,14 +89,21 @@ def test_r5_4_closeout_preserves_the_jit_bound_r6_1_transition_and_one_active_su
     assert items["R5.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R5.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R5.4"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R7.1"]["automation"]
+    assert items["R7.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R7.2"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
     assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R7-1-GOVERNED-TRACE-SCHEMA-EVENT-WRITER-BASELINE-01"
-    assert binding["work_branch"] == "control-plane/r7-1-governed-trace-schema-event-writer-baseline"
-    assert binding["closeout"]["risk"] == "MEDIUM"
+    assert binding["front_id"] == "BRAIN-101-R7-2-RUN-TIMELINE-PROVIDER-HEALTH-OPERATIONAL-ACCOUNTING-01"
+    assert binding["work_branch"] == "control-plane/r7-2-run-timeline-provider-health-operational-accounting"
+    assert binding["allowed_paths"] == [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/trace.py",
+        "tmp_agent/brain_v9/tracing/timeline.py",
+        "tmp_agent/brain_v9/provider_health/provider_health.py",
+        "docs/roadmap/evidence/BRAIN_101_R7_2_RUN_TIMELINE_PROVIDER_HEALTH_OPERATIONAL_ACCOUNTING.json",
+        "tests/contract/test_r7_2_run_timeline_provider_health_operational_accounting.py",
+    ]
 
 
 def test_closeout_preserves_pre_r5_history_except_the_declared_r4_3_transition():

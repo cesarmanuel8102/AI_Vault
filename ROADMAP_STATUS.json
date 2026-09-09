@@ -1,9 +1,9 @@
 {
-  "current_head": "31ab5832e443bc4e820c0cd502e898e1f924e10e",
-  "current_remote_head": "31ab5832e443bc4e820c0cd502e898e1f924e10e",
+  "current_head": "4f844849520a7e8a39ac9d59ffdda7c14cf5477b",
+  "current_remote_head": "4f844849520a7e8a39ac9d59ffdda7c14cf5477b",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "r6_3_memory_retrieval_hydration_rebuild_validation_closed_r7_1_authorized",
-  "last_applied_checkpoint": "BRAIN-101-R6-3-MEMORY-RETRIEVAL-HYDRATION-REBUILD-VALIDATION-CLOSEOUT-01",
+  "migration_status": "r7_1_governed_trace_schema_event_writer_baseline_closed_r7_2_authorized",
+  "last_applied_checkpoint": "BRAIN-101-R7-1-GOVERNED-TRACE-SCHEMA-EVENT-WRITER-BASELINE-CLOSEOUT-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -175,7 +175,7 @@
     "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-CLOSEOUT-01"
   ],
   "open_fronts": [
-    "BRAIN-101-R7-1-GOVERNED-TRACE-SCHEMA-EVENT-WRITER-BASELINE-01"
+    "BRAIN-101-R7-2-RUN-TIMELINE-PROVIDER-HEALTH-OPERATIONAL-ACCOUNTING-01"
   ],
   "blocked_fronts": [
     "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
@@ -192,9 +192,9 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "BRAIN-101-R7-1-GOVERNED-TRACE-SCHEMA-EVENT-WRITER-BASELINE-01",
+    "name": "BRAIN-101-R7-2-RUN-TIMELINE-PROVIDER-HEALTH-OPERATIONAL-ACCOUNTING-01",
     "status": "authorized_next",
-    "reason": "R6.3 closed isolated retrieval hydration and rebuild validation; the next dependency-eligible bounded candidate is the no-deploy governed trace schema and event writer baseline."
+    "reason": "R7.1 closed governed correlation-bound trace persistence; the next dependency-eligible bounded candidate is no-deploy sanitized timeline projection and pure provider health accounting."
   },
   "ready_for_next_front": true,
   "last_updated": "2026-09-08T00:00:00.000+00:00",
@@ -4798,9 +4798,9 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "R6_3_CLOSED_RUNTIME_VERIFIED_R7_1_AUTHORIZED_ACTIVE",
+    "status": "R7_1_CLOSED_RUNTIME_VERIFIED_R7_2_AUTHORIZED_ACTIVE",
     "approval_status": "HUMAN_ADOPTED",
-    "current_phase": "R6",
+    "current_phase": "R7",
     "human_final_authority": true,
     "auto_merge": false,
     "canonical_local_sync": false,
@@ -5420,10 +5420,10 @@
     "r4_3_front_id": "BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-01",
     "r4_3_executor": "codex_control_plane",
     "r4_3_deployment_mode": "NO_DEPLOY",
-    "next_authorized_item": "R7.1",
-    "roadmap_decomposition": "R5_R19_EXECUTABLE_R7_1_JIT_BOUND",
+    "next_authorized_item": "R7.2",
+    "roadmap_decomposition": "R5_R19_EXECUTABLE_R7_2_JIT_BOUND",
     "roadmap_decomposition_item_count": 41,
-    "roadmap_execution_binding": "R7_1_JIT_BOUND_LIVE_HEAD_AT_DISPATCH",
+    "roadmap_execution_binding": "R7_2_JIT_BOUND_LIVE_HEAD_AT_DISPATCH",
     "r4_3_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R4_3_CHAT_ENTRYPOINT_CONTRACTS_CLOSEOUT.json",
     "r4_3_closeout_source_commit": "dc968bff656f2e007c410c0aa0f5cb849988a3b3",
     "r4_3_closeout_parent_merge": "9389737eca240173591fe926c867012e029bccbd",
@@ -5476,12 +5476,18 @@
     "r6_3_expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
     "r6_3_implementation_merge_commit": "31ab5832e443bc4e820c0cd502e898e1f924e10e",
     "r6_3_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION_CLOSEOUT.json",
-    "r7_1_status": "AUTHORIZED_ACTIVE",
+    "r7_1_status": "CLOSED_RUNTIME_VERIFIED",
     "r7_1_front_id": "BRAIN-101-R7-1-GOVERNED-TRACE-SCHEMA-EVENT-WRITER-BASELINE-01",
     "r7_1_executor": "codex_control_plane",
     "r7_1_deployment_mode": "NO_DEPLOY",
-    "r7_1_expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
-    "remaining_planned_unbound_items": 33
+    "r7_1_implementation_merge_commit": "4f844849520a7e8a39ac9d59ffdda7c14cf5477b",
+    "r7_1_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R7_1_GOVERNED_TRACE_SCHEMA_EVENT_WRITER_BASELINE_CLOSEOUT.json",
+    "r7_2_status": "AUTHORIZED_ACTIVE",
+    "r7_2_front_id": "BRAIN-101-R7-2-RUN-TIMELINE-PROVIDER-HEALTH-OPERATIONAL-ACCOUNTING-01",
+    "r7_2_executor": "codex_control_plane",
+    "r7_2_deployment_mode": "NO_DEPLOY",
+    "r7_2_expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+    "remaining_planned_unbound_items": 32
   },
   "brain_101_r3_1_contract_e2e_gap_matrix_closeout": {
     "status": "done",

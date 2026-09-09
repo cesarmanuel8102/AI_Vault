@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "2b7e0f398e9d008a2ed9bb65b2e0109ffe2aa1b085143dac75d60bef9803dbaf",
+  "roadmap_sha256": "72aefc80da7e5f364d2863be157cd55397dce013b8ddb231d36cbe207056e379",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -2152,7 +2152,7 @@
       }
     },
     "R7.1": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R7",
       "title": "Governed trace schema and event writer baseline",
       "dependencies": [
@@ -2253,7 +2253,9 @@
             "docs/MIGRATION_CONTROL_LEDGER.md",
             "docs/roadmap/evidence/BRAIN_101_R7_1_GOVERNED_TRACE_SCHEMA_EVENT_WRITER_BASELINE_CLOSEOUT.json",
             "tests/contract/test_r7_1_governed_trace_schema_event_writer.py",
-            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py"
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
           ],
           "forbidden_paths": [
             ".env",
@@ -2277,7 +2279,7 @@
       }
     },
     "R7.2": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R7",
       "title": "Run timeline provider health and operational accounting",
       "dependencies": [
@@ -2322,18 +2324,88 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
-        "activation_requires": [
-          "expected_base_sha",
-          "front_id",
-          "work_branch",
-          "allowed_paths",
-          "forbidden_paths",
-          "test_commands",
-          "acceptance",
-          "rollback",
-          "evidence_path"
-        ]
+        "jit_binding_completed": true,
+        "dispatchable": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R7-2-RUN-TIMELINE-PROVIDER-HEALTH-OPERATIONAL-ACCOUNTING-01",
+        "objective": "Project already-sanitized correlation-bound trace events into deterministic timelines and derive pure provider health and operational accounting without provider calls, secret telemetry, or uncontrolled replay",
+        "work_branch": "control-plane/r7-2-run-timeline-provider-health-operational-accounting",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "observability",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/agent_kernel_v2/trace.py",
+          "tmp_agent/brain_v9/tracing/timeline.py",
+          "tmp_agent/brain_v9/provider_health/provider_health.py",
+          "docs/roadmap/evidence/BRAIN_101_R7_2_RUN_TIMELINE_PROVIDER_HEALTH_OPERATIONAL_ACCOUNTING.json",
+          "tests/contract/test_r7_2_run_timeline_provider_health_operational_accounting.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Project only sanitized correlation-bound allowlisted events into a stable run timeline",
+          "Derive provider health, error taxonomy, and token-cost accounting from supplied safe metadata without provider calls",
+          "Reject missing correlation, non-monotonic timeline input, raw secret fields, and uncontrolled replay metadata",
+          "Preserve no deployment, no scheduler activation, no canonical local sync, no live trading, no real money, and no auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r7_2_run_timeline_provider_health_operational_accounting.py",
+          "python -m pytest -q tests/contract/test_r7_1_governed_trace_schema_event_writer.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Restore only the previous timeline projection and pure health accounting behavior through version-controlled rollback",
+          "Do not modify scheduler configuration, runtime installation, canonical local state, trading, or financial controls"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R7_2_RUN_TIMELINE_PROVIDER_HEALTH_OPERATIONAL_ACCOUNTING.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R7-2-RUN-TIMELINE-PROVIDER-HEALTH-OPERATIONAL-ACCOUNTING-CLOSEOUT-01",
+          "objective": "Record verified R7.2 timeline and pure provider-health evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r7-2-run-timeline-provider-health-operational-accounting-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R7_2_RUN_TIMELINE_PROVIDER_HEALTH_OPERATIONAL_ACCOUNTING_CLOSEOUT.json",
+            "tests/contract/test_r7_2_run_timeline_provider_health_operational_accounting.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R7.2 Issue PR decision merge and sanitized timeline provider-health evidence",
+            "Set R7.2 to CLOSED_RUNTIME_VERIFIED only after the implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r7_2_run_timeline_provider_health_operational_accounting.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R7.3": {
