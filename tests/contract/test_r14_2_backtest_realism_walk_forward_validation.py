@@ -66,7 +66,7 @@ def test_backtest_realism_rejects_effects_and_declares_no_deploy_evidence():
     assert all(value is False for value in evidence["runtime_actions"].values())
 
 
-def test_closeout_closes_r14_2_and_jit_binds_r14_3_without_deploy():
+def test_closeout_preserves_r14_2_to_r14_3_history_and_current_r14_3_closeout_without_deploy():
     manifest = json.loads(
         (ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8")
     )
@@ -77,10 +77,10 @@ def test_closeout_closes_r14_2_and_jit_binds_r14_3_without_deploy():
         ).read_text(encoding="utf-8")
     )
     assert manifest["roadmap_items"]["R14.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    successor = manifest["roadmap_items"]["R14.3"]
-    assert successor["status"] == "AUTHORIZED_ACTIVE"
-    assert successor["dependencies"] == ["R14.2"]
-    assert successor["automation"]["deployment_mode"] == "NO_DEPLOY"
+    r14_3 = manifest["roadmap_items"]["R14.3"]
+    assert r14_3["status"] == "CLOSED_RUNTIME_VERIFIED"
+    assert r14_3["dependencies"] == ["R14.2"]
+    assert r14_3["automation"]["deployment_mode"] == "NO_DEPLOY"
     assert closeout["verification_level"] == "CODE_AND_CI_VERIFIED_NO_DEPLOY"
     assert closeout["successor"]["roadmap_item"] == "R14.3"
     assert all(value is False for value in closeout["runtime_actions"].values())

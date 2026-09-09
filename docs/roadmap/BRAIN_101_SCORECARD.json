@@ -965,7 +965,7 @@
     },
     {
       "id": "R5",
-      "percent": 60,
+      "percent": 100,
       "status": "AUTHORIZED_ACTIVE",
       "evidence": [
         {
@@ -1245,6 +1245,23 @@
           "command": "python -m pytest -q tests/contract/test_r14_2_backtest_realism_walk_forward_validation.py",
           "result": "Deterministic local validation receipts and no-effect boundaries verified; R14.3 remains required.",
           "observed_at_utc": "2026-09-09T23:17:06Z"
+        },
+        {
+          "claim": "R14.3 adversarial and statistical validation resilience is verified without deployment.",
+          "classification": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+          "paths": [
+            "tmp_agent/brain_v9/core/validation_resilience.py",
+            "docs/roadmap/evidence/BRAIN_101_R14_3_VALIDATION_LAB_ADVERSARIAL_STATISTICAL_RESILIENCE.json",
+            "docs/roadmap/evidence/BRAIN_101_R14_3_VALIDATION_LAB_ADVERSARIAL_STATISTICAL_RESILIENCE_CLOSEOUT.json"
+          ],
+          "symbols": ["evaluate_validation_resilience"],
+          "commit": "f867c7bd8446d6fea803df6e3affcf3cfb46c1d9",
+          "issue": null,
+          "pr": 359,
+          "workflow_run": null,
+          "command": "python -m pytest -q tests/contract/test_r14_3_validation_lab_adversarial_statistical_resilience.py",
+          "result": "Deterministic resilience receipts and no-effect boundaries verified; R15.1 remains required.",
+          "observed_at_utc": "2026-09-09T23:43:31Z"
         }
       ]
     },

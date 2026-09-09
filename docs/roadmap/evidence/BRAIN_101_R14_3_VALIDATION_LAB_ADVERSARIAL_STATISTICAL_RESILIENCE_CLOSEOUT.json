@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R14.3",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "implementation_pr": 359,
+  "implementation_source_commit": "ee8bad1409395ae2567cbf2cafbe2b4d0f6c0f09",
+  "implementation_merge_commit": "f867c7bd8446d6fea803df6e3affcf3cfb46c1d9",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "evidence_path": "docs/roadmap/evidence/BRAIN_101_R14_3_VALIDATION_LAB_ADVERSARIAL_STATISTICAL_RESILIENCE.json",
+  "successor": {"roadmap_item": "R15.1", "front_id": "BRAIN-101-R15-1-PAPER-BROKER-MARKET-DATA-LIFECYCLE-01", "deployment_mode": "NO_DEPLOY"},
+  "runtime_actions": {"deployment": false, "installation": false, "scheduler_activation": false, "provider_call": false, "broker_action": false, "order_action": false, "canonical_local_sync": false, "live_trading": false, "real_money": false, "auto_merge": false}
+}

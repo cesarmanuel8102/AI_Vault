@@ -1535,3 +1535,10 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R14_2_BACKTEST_REALISM_WALK_FORWARD_VALIDATION_CLOSEOUT.json`; deterministic local source, cost-model, lookahead, and walk-forward receipt controls were verified.
 - Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no deployment, installation, scheduler activation, market-data, broker, provider, network, runtime, canonical sync, live trading, real money, or auto-merge occurred.
 - Status: R14.2 is `CLOSED_RUNTIME_VERIFIED`; sole successor R14.3 is `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` for adversarial and statistical resilience evidence.
+
+## BRAIN-101 R14.3 - Validation Resilience Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; source `ee8bad1409395ae2567cbf2cafbe2b4d0f6c0f09`, merged as `f867c7bd8446d6fea803df6e3affcf3cfb46c1d9` through PR #359.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R14_3_VALIDATION_LAB_ADVERSARIAL_STATISTICAL_RESILIENCE_CLOSEOUT.json`; deterministic local stale-data, gap, and reproducibility controls were verified.
+- Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no deployment, installation, scheduler activation, market-data, broker, provider, network, runtime, canonical sync, live trading, real money, or auto-merge occurred.
+- Status: R14.3 is `CLOSED_RUNTIME_VERIFIED`; sole successor R15.1 is `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` for a simulated paper execution lifecycle contract.

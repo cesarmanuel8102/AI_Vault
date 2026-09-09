@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "fafa2ee93bfce7edd51647017c3d0a3cd0af28cc0a0ec222e0897fc33b0f8e46",
+  "roadmap_sha256": "bf57b8c5f69ad73155ade5036eca124a6f33edf06579faa23a23cd5a0c59e44a",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -4785,7 +4785,7 @@
       }
     },
     "R14.3": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R14",
       "title": "Validation Lab adversarial and statistical resilience",
       "dependencies": [
@@ -4892,6 +4892,7 @@
             "ROADMAP_STATUS.json",
             "docs/MIGRATION_CONTROL_LEDGER.md",
             "docs/roadmap/evidence/BRAIN_101_R14_3_VALIDATION_LAB_ADVERSARIAL_STATISTICAL_RESILIENCE_CLOSEOUT.json",
+            "tests/contract/test_r14_2_backtest_realism_walk_forward_validation.py",
             "tests/contract/test_r14_3_validation_lab_adversarial_statistical_resilience.py",
             "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
             "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
@@ -4921,7 +4922,7 @@
       }
     },
     "R15.1": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R15",
       "title": "Integrated paper broker and market-data lifecycle",
       "dependencies": [
@@ -4966,7 +4967,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
+        "dispatchable": true,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
@@ -4977,7 +4978,73 @@
           "acceptance",
           "rollback",
           "evidence_path"
-        ]
+        ],
+        "jit_binding_completed": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R15-1-PAPER-BROKER-MARKET-DATA-LIFECYCLE-01",
+        "objective": "Add deterministic simulated paper execution lifecycle receipts without broker, provider, network, runtime, scheduler, or trading action",
+        "work_branch": "control-plane/r15-1-paper-broker-market-data-lifecycle",
+        "executor": "codex_control_plane",
+        "risk": "HIGH",
+        "domain": "paper_trading",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/paper_execution_lifecycle.py",
+          "docs/roadmap/evidence/BRAIN_101_R15_1_PAPER_BROKER_MARKET_DATA_LIFECYCLE.json",
+          "tests/contract/test_r15_1_paper_broker_market_data_lifecycle.py"
+        ],
+        "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+        "acceptance": [
+          "Validate deterministic simulated paper order lifecycle, cancellation, duplicate prevention, and reconciliation receipts",
+          "Reject broker, provider, network, runtime, scheduler, and live or real-money inputs",
+          "Preserve human final authority and prohibit live trading, real money, canonical sync, and auto-merge effects"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r15_1_paper_broker_market_data_lifecycle.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": ["Record deterministic simulated-paper rollback evidence without external or runtime mutation"],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R15_1_PAPER_BROKER_MARKET_DATA_LIFECYCLE.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R15-1-PAPER-BROKER-MARKET-DATA-LIFECYCLE-CLOSEOUT-01",
+          "objective": "Record verified R15.1 simulated paper execution evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r15-1-paper-broker-market-data-lifecycle-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R15_1_PAPER_BROKER_MARKET_DATA_LIFECYCLE_CLOSEOUT.json",
+            "tests/contract/test_r15_1_paper_broker_market_data_lifecycle.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R15.1 simulated paper execution evidence",
+            "Set R15.1 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r15_1_paper_broker_market_data_lifecycle.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R15.2": {
