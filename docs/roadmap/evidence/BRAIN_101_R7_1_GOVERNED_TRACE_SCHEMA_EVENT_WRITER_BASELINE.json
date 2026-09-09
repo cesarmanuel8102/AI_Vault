@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "evidence_type": "BRAIN_101_R7_1_GOVERNED_TRACE_SCHEMA_EVENT_WRITER_BASELINE",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R7.1",
+  "front_id": "BRAIN-101-R7-1-GOVERNED-TRACE-SCHEMA-EVENT-WRITER-BASELINE-01",
+  "base_commit": "7e0dda152c5e52c70df46754a759a128bbd55f8e",
+  "deployment_mode": "NO_DEPLOY",
+  "trace_contract": {
+    "schema_version": 1,
+    "required_identity": [
+      "run_id",
+      "event_id",
+      "correlation_id"
+    ],
+    "taxonomy": "explicit_allowlist",
+    "redaction_boundary": "brain_v9.tracing.trace_redactor.sanitize_event"
+  },
+  "runtime_actions": {
+    "worker_install": false,
+    "scheduler_activation": false,
+    "provider_call": false,
+    "canonical_local_sync": false
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}
