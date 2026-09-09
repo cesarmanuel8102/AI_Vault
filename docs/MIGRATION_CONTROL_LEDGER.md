@@ -9445,6 +9445,15 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Transition: R9.1 is `CLOSED_RUNTIME_VERIFIED`; R9.2 is the only `AUTHORIZED_ACTIVE` item, JIT-bound to a no-deploy controlled canary-planning/benchmark contract.
 - Preserved: HUMAN_FINAL_AUTHORITY=true; AUTO_MERGE=false; CANONICAL_LOCAL_SYNC=false; LIVE_TRADING=false; REAL_MONEY=false; persistent Agent Loop remains DEFERRED and Disabled.
 
+## BRAIN-101 R10.3 Closeout - Self-Improvement Promotion Gate and Rollback (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: `33d0265d59f937b28f91e635b385941a2c0f8758`, merged as `efc1b39d943051392a519b8027ad0bc784e2d3e9` through PR #337.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R10_3_SELF_IMPROVEMENT_PROMOTION_GATE_ROLLBACK_CLOSEOUT.json`, bound to explicit human approval, exact candidate provenance, immutable decision and rollback-receipt hashes, exact-head CI, and reviewer approval.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; promotion application, broker and order actions, filesystem writes, runtime mutation, provider or network use, memory writes, installation, scheduler activation, canonical local sync, live trading, real money, and auto-merge did not occur.
+- Transition: R10.3 is `CLOSED_RUNTIME_VERIFIED`; R11.1 is the only `AUTHORIZED_ACTIVE` item, JIT-bound to a static paper-only inventory with no runtime financial-autonomy import or execution.
+- Preserved: HUMAN_FINAL_AUTHORITY=true; AUTO_MERGE=false; CANONICAL_LOCAL_SYNC=false; LIVE_TRADING=false; REAL_MONEY=false; persistent Agent Loop remains DEFERRED and Disabled.
+
 ## BRAIN-101 R10.2 Closeout - Sandboxed Patch Proposal and Benchmark Pipeline (2026-09-09)
 
 - Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.

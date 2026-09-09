@@ -76,12 +76,12 @@ def test_planned_backlog_has_unique_ids_acyclic_defined_and_phase_ordered_depend
             assert dependency_order <= PHASE_ORDER[item["phase"]]
 
 
-def test_r10_2_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_r10_3():
+def test_r10_3_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_r11_1():
     manifest = _manifest()
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R10.3"
+    assert active[0] == "R11.1"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -99,18 +99,19 @@ def test_r10_2_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_
     assert items["R9.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R10.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R10.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R10.3"]["automation"]
+    assert items["R10.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R11.1"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
     assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R10-3-SELF-IMPROVEMENT-PROMOTION-GATE-ROLLBACK-01"
-    assert binding["work_branch"] == "control-plane/r10-3-self-improvement-promotion-gate-rollback"
+    assert binding["front_id"] == "BRAIN-101-R11-1-FINANCIAL-AUTONOMY-PAPER-ONLY-RUNTIME-INVENTORY-01"
+    assert binding["work_branch"] == "control-plane/r11-1-financial-autonomy-paper-only-runtime-inventory"
     assert binding["closeout"]["risk"] == "MEDIUM"
     assert binding["allowed_paths"] == [
-        "tmp_agent/brain_v9/core/self_improvement_promotion.py",
-        "docs/roadmap/evidence/BRAIN_101_R10_3_SELF_IMPROVEMENT_PROMOTION_GATE_ROLLBACK.json",
-        "tests/contract/test_r10_3_self_improvement_promotion_gate_rollback.py",
+        "tmp_agent/brain_v9/core/financial_autonomy_paper_inventory.py",
+        "docs/roadmap/evidence/BRAIN_101_R11_1_FINANCIAL_AUTONOMY_PAPER_ONLY_RUNTIME_INVENTORY.json",
+        "tests/contract/test_r11_1_financial_autonomy_paper_only_runtime_inventory.py",
     ]
 
 

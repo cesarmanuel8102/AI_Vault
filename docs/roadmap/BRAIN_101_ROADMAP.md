@@ -1462,6 +1462,15 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Status: R10.1 is `CLOSED_RUNTIME_VERIFIED`; canonical local sync, live trading, real money, and auto-merge remain disabled.
 - Authorized successor: exactly one R10.2, `BRAIN-101-R10-2-SANDBOXED-PATCH-PROPOSAL-BENCHMARK-PIPELINE-01`, controller-governed `NO_DEPLOY`, bounded to immutable sandboxed patch proposals and benchmark receipts without patch application.
 
+## BRAIN-101 R10.3 - Self-Improvement Promotion Gate and Rollback Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: `33d0265d59f937b28f91e635b385941a2c0f8758`, merged as `efc1b39d943051392a519b8027ad0bc784e2d3e9` through PR #337.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R10_3_SELF_IMPROVEMENT_PROMOTION_GATE_ROLLBACK_CLOSEOUT.json`, bound to explicit human approval, exact proposal provenance, immutable decisions, deterministic rollback receipts, exact-head CI, and reviewer approval.
+- Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no promotion application, broker or order action, filesystem write, runtime mutation, provider or network use, memory write, installation, scheduler activation, canonical local sync, live trading, real money, or auto-merge occurred.
+- Status: R10.3 is `CLOSED_RUNTIME_VERIFIED`; human final authority and all financial hard limits remain unchanged.
+- Authorized successor: exactly one R11.1, `BRAIN-101-R11-1-FINANCIAL-AUTONOMY-PAPER-ONLY-RUNTIME-INVENTORY-01`, controller-governed `NO_DEPLOY`, bounded to static paper-only inventory without importing or executing financial-autonomy runtime code.
+
 ## BRAIN-101 R10.2 - Sandboxed Patch Proposal and Benchmark Pipeline Closeout (2026-09-09)
 
 - Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
