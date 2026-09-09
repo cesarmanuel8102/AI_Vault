@@ -1515,3 +1515,9 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R13_1_PAPER_TRADING_COMPLIANCE_POLICY_INVENTORY_CLOSEOUT.json`, bound to deterministic PDT, wash-sale, market-hours, restricted-symbol, permission, jurisdiction, data-license, and paper-only denials.
 - Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no broker connection, order action, provider/network call, scheduler mutation, canonical local sync, live trading, real money, or auto-merge occurred.
 - Status: R13.1 is `CLOSED_RUNTIME_VERIFIED`; the sole successor is R13.2 `BRAIN-101-R13-2-COMPLIANCE-AUDIT-TAX-LOT-MANUAL-REVIEW-01`, paper-only with `NO_DEPLOY`.
+
+## BRAIN-101 R13.2 - Compliance Audit Tax-Lot and Manual-Review Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; source `65889375d33efcdca5b647cfed0a48fe110fbdaf`, merged as `74f0410f6dde280a1f3cabe2626ab78690a8bf69` through PR #353.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R13_2_COMPLIANCE_AUDIT_TAX_LOT_MANUAL_REVIEW_CLOSEOUT.json`; deterministic audit only, with no effects.
+- Status: R13.2 is `CLOSED_RUNTIME_VERIFIED`; sole successor R14.1 is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`.
