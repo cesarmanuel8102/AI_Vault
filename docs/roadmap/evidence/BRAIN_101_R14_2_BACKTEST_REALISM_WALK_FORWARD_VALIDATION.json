@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R14.2",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "scope": "deterministic local backtest realism and walk-forward validation receipts",
+  "runtime_actions": {
+    "deployment": false,
+    "installation": false,
+    "scheduler_activation": false,
+    "market_data": false,
+    "provider_call": false,
+    "broker_action": false,
+    "order_action": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}
