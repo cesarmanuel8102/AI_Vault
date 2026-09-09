@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R8.1",
+  "front_id": "BRAIN-101-R8-1-PROVIDER-GATEWAY-POLICY-CAPABILITY-INVENTORY-01",
+  "deployment_mode": "NO_DEPLOY",
+  "provider_identities": [
+    "codex",
+    "kimi_k2_6_cloud",
+    "local_ollama"
+  ],
+  "controls": [
+    "Static inspection-only provider inventory",
+    "Explicit provider identity required",
+    "Implicit provider fallback rejected",
+    "Provider invocation rejected",
+    "Secret-bearing runtime configuration rejected"
+  ],
+  "runtime_actions": {
+    "provider_call": false,
+    "runtime_configuration_mutation": false,
+    "scheduler_activation": false,
+    "canonical_local_sync": false
+  }
+}
