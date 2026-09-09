@@ -241,3 +241,37 @@ def test_r6_3_evidence_binds_isolated_validation_to_no_deploy_contract():
         "provider_call": False,
         "canonical_memory_mutation": False,
     }
+
+
+def test_r6_3_closeout_authorizes_only_bound_r7_1_trace_successor():
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/"
+            "BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+
+    assert closeout["roadmap_item_id"] == "R6.3"
+    assert closeout["parent_merge_commit"] == "31ab5832e443bc4e820c0cd502e898e1f924e10e"
+    assert closeout["result"] == "CLOSED_RUNTIME_VERIFIED"
+    assert manifest["roadmap_items"]["R6.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    assert closeout["next_item"] == {
+        "roadmap_item_id": "R7.1",
+        "front_id": "BRAIN-101-R7-1-GOVERNED-TRACE-SCHEMA-EVENT-WRITER-BASELINE-01",
+        "executor": "codex_control_plane",
+        "deployment_mode": "NO_DEPLOY",
+        "expected_base_sha_source": (
+            "sequenceRoadmap resolves the exact live canonical integration-branch head "
+            "at governed dispatch"
+        ),
+        "jit_binding_completed": True,
+    }
+    active = [key for key, item in manifest["roadmap_items"].items() if item["status"] == "AUTHORIZED_ACTIVE"]
+    assert active == ["R7.1"]
+    automation = manifest["roadmap_items"]["R7.1"]["automation"]
+    assert automation["dispatchable"] is True
+    assert automation["closeout"]["front_id"] == (
+        "BRAIN-101-R7-1-GOVERNED-TRACE-SCHEMA-EVENT-WRITER-BASELINE-CLOSEOUT-01"
+    )

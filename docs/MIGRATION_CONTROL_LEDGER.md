@@ -9379,3 +9379,11 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK_CLOSEOUT.json`, bound to approval-gated candidate receipts, isolated-write-only execution, topology-preserving rollback, and legacy direct-write denial.
 - Status: R6.2 set to `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, canonical local sync, live trading, real money, auto-merge, semantic-data mutation, or FAISS mutation occurred.
 - Authorized successor: exactly one R6.3, `BRAIN-101-R6-3-MEMORY-RETRIEVAL-HYDRATION-REBUILD-VALIDATION-01`, controller-governed `NO_DEPLOY`, bounded to isolated retrieval hydration, deterministic rebuild validation, and evidence-bound rollback.
+
+## BRAIN-101 R6.3 - Memory Retrieval Hydration and Rebuild Validation Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: commit `e5826cb38215f7cbf5090e0b9161d47d3d66ffbc`, merged as `31ab5832e443bc4e820c0cd502e898e1f924e10e` through PR #315.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION_CLOSEOUT.json`, bound to marker-bound source snapshots, attributable records, exact records/IDs topology, deterministic rebuild receipt identity, and isolated rollback verification.
+- Status: R6.3 set to `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, provider call, canonical memory mutation, canonical local sync, live trading, real money, or auto-merge occurred.
+- Authorized successor: exactly one R7.1, `BRAIN-101-R7-1-GOVERNED-TRACE-SCHEMA-EVENT-WRITER-BASELINE-01`, controller-governed `NO_DEPLOY`, bounded to governed trace schema, explicit event taxonomy, correlation identity, and private-reasoning redaction.
