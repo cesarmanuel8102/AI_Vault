@@ -91,3 +91,23 @@ def test_evidence_records_no_deploy_and_no_patch_application():
     assert evidence["verification_level"] == "CODE_AND_CI_VERIFIED_NO_DEPLOY"
     assert evidence["proposal_contract"]["apply_permitted"] is False
     assert all(value is False for value in evidence["runtime_actions"].values())
+
+
+def test_closeout_records_merged_evidence_and_only_authorizes_r10_3():
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/"
+            "BRAIN_101_R10_2_SANDBOXED_PATCH_PROPOSAL_BENCHMARK_PIPELINE_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert closeout["roadmap_item"] == "R10.2"
+    assert closeout["implementation_merge_commit"] == "2a73c573a6ba0a444beffde56697acfdcafcbc7d"
+    assert closeout["verification_level"] == "CODE_AND_CI_VERIFIED_NO_DEPLOY"
+    assert closeout["successor"] == {
+        "roadmap_item": "R10.3",
+        "front_id": "BRAIN-101-R10-3-SELF-IMPROVEMENT-PROMOTION-GATE-ROLLBACK-01",
+        "deployment_mode": "NO_DEPLOY",
+    }
+    assert all(value is False for value in closeout["runtime_actions"].values())

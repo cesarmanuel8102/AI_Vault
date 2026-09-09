@@ -1,0 +1,42 @@
+{
+  "roadmap_item": "R10.2",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "implementation_source_commit": "a5936f69a62e6f091f80154a9e1ed1b7a3035c85",
+  "implementation_merge_commit": "2a73c573a6ba0a444beffde56697acfdcafcbc7d",
+  "implementation_pr": 335,
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "verified_contracts": {
+    "focused_and_regression_tests_passed": 41,
+    "python_compile": true,
+    "exact_head_ci": true,
+    "independent_reviewer": "PASS"
+  },
+  "proposal_contract": {
+    "deterministic": true,
+    "immutable_candidate": true,
+    "immutable_benchmark_receipt": true,
+    "apply_permitted": false
+  },
+  "successor": {
+    "roadmap_item": "R10.3",
+    "front_id": "BRAIN-101-R10-3-SELF-IMPROVEMENT-PROMOTION-GATE-ROLLBACK-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "runtime_actions": {
+    "deployment": false,
+    "scheduler_mutation": false,
+    "patch_application": false,
+    "filesystem_write": false,
+    "runtime_mutation": false,
+    "provider_call": false,
+    "network_fetch": false,
+    "semantic_memory_write": false,
+    "canonical_memory_write": false,
+    "automatic_promotion": false,
+    "self_governance_modification": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}

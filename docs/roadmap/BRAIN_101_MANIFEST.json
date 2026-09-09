@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "c3f37cb3b61cf6cf2152b3d8b11a993b252c65306fc56a88183d425fea9c397b",
+  "roadmap_sha256": "2e4d34866b0909cc5f14c4aa3df62d4867b7c25940de9a724b514728f0b713f4",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -3299,7 +3299,7 @@
       }
     },
     "R10.2": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R10",
       "title": "Sandboxed patch proposal and benchmark pipeline",
       "dependencies": [
@@ -3386,10 +3386,10 @@
         "evidence_path": "docs/roadmap/evidence/BRAIN_101_R10_2_SANDBOXED_PATCH_PROPOSAL_BENCHMARK_PIPELINE.json",
         "closeout": {
           "front_id": "BRAIN-101-R10-2-SANDBOXED-PATCH-PROPOSAL-BENCHMARK-PIPELINE-CLOSEOUT-01",
-        "objective": "Record verified R10.2 sandboxed patch-proposal evidence before authorizing exactly one dependency-eligible successor",
-        "work_branch": "control-plane/r10-2-sandboxed-patch-proposal-benchmark-pipeline-closeout",
-        "executor": "codex_control_plane",
-        "risk": "MEDIUM",
+          "objective": "Record verified R10.2 sandboxed patch-proposal evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r10-2-sandboxed-patch-proposal-benchmark-pipeline-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
           "allowed_paths": [
             "docs/roadmap/BRAIN_101_MANIFEST.json",
             "docs/roadmap/BRAIN_101_ROADMAP.md",
@@ -3426,7 +3426,7 @@
       }
     },
     "R10.3": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R10",
       "title": "Self-improvement promotion gate and rollback",
       "dependencies": [
@@ -3471,18 +3471,85 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
-        "activation_requires": [
-          "expected_base_sha",
-          "front_id",
-          "work_branch",
-          "allowed_paths",
-          "forbidden_paths",
-          "test_commands",
-          "acceptance",
-          "rollback",
-          "evidence_path"
-        ]
+        "jit_binding_completed": true,
+        "dispatchable": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R10-3-SELF-IMPROVEMENT-PROMOTION-GATE-ROLLBACK-01",
+        "objective": "Add a deterministic human-approved self-improvement promotion gate with immutable rollback receipts and no patch application",
+        "work_branch": "control-plane/r10-3-self-improvement-promotion-gate-rollback",
+        "executor": "codex_control_plane",
+        "risk": "HIGH",
+        "domain": "self_improvement",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/self_improvement_promotion.py",
+          "docs/roadmap/evidence/BRAIN_101_R10_3_SELF_IMPROVEMENT_PROMOTION_GATE_ROLLBACK.json",
+          "tests/contract/test_r10_3_self_improvement_promotion_gate_rollback.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Require explicit human approval and immutable proposal provenance before a promotion decision",
+          "Create deterministic rollback receipts and reject automatic promotion, patch application, filesystem writes, runtime mutation, provider calls, network access, and canonical-memory writes",
+          "Preserve no deployment, scheduler activation, canonical local sync, live trading, real money, and auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r10_3_self_improvement_promotion_gate_rollback.py",
+          "python -m pytest -q tests/contract/test_r10_2_sandboxed_patch_proposal_benchmark_pipeline.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Record a deterministic rollback receipt without applying or reverting a production patch",
+          "Do not mutate runtime configuration, scheduler configuration, canonical memory, trading, or financial controls"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R10_3_SELF_IMPROVEMENT_PROMOTION_GATE_ROLLBACK.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R10-3-SELF-IMPROVEMENT-PROMOTION-GATE-ROLLBACK-CLOSEOUT-01",
+          "objective": "Record verified R10.3 promotion-gate evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r10-3-self-improvement-promotion-gate-rollback-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R10_3_SELF_IMPROVEMENT_PROMOTION_GATE_ROLLBACK_CLOSEOUT.json",
+            "tests/contract/test_r10_3_self_improvement_promotion_gate_rollback.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R10.3 promotion-gate and rollback evidence",
+            "Set R10.3 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r10_3_self_improvement_promotion_gate_rollback.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R11.1": {
