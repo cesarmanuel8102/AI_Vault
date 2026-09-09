@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "roadmap_item": "R9.1",
+  "front_id": "BRAIN-101-R9-1-CURATED-KNOWLEDGE-CANONICAL-INVENTORY-TAXONOMY-CLOSEOUT-01",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "parent_source_commit": "b72790571d212cc0f8dbe9de272862dac1068fc2",
+  "parent_merge_commit": "b5105efaff840a4b4129c728207b28e9de1a5e71",
+  "parent_pr": 329,
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "verification": {
+    "focused_contract_tests_passed": 11,
+    "r8_3_regression_contract_passed": true,
+    "roadmap_contract_passed": true,
+    "python_compile_passed": true,
+    "git_diff_check_passed": true,
+    "exact_head_ci_passed": true,
+    "independent_reviewer_passed": true
+  },
+  "runtime_actions": {
+    "worker_install": false,
+    "scheduler_activation": false,
+    "source_ingestion": false,
+    "semantic_memory_write": false,
+    "provider_call": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false
+  },
+  "successor": {
+    "roadmap_item": "R9.2",
+    "front_id": "BRAIN-101-R9-2-CURATED-KNOWLEDGE-CONTROLLED-INGESTION-BENCHMARK-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}

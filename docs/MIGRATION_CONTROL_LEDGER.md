@@ -9436,3 +9436,11 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no installation or installed-runtime claim is made.
 - Status: R8.3 is `CLOSED_RUNTIME_VERIFIED`; deployment, installation, scheduler activation, provider calls, canonical local sync, live trading, real money, and auto-merge remain disabled.
 - Authorized successor: exactly one R9.1, `BRAIN-101-R9-1-CURATED-KNOWLEDGE-CANONICAL-INVENTORY-TAXONOMY-01`, controller-governed `NO_DEPLOY`.
+
+## BRAIN-101 R9.1 Closeout — Curated Knowledge Canonical Inventory and Taxonomy (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; implementation source `b72790571d212cc0f8dbe9de272862dac1068fc2`, merged as `b5105efaff840a4b4129c728207b28e9de1a5e71` through PR #329.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R9_1_CURATED_KNOWLEDGE_CANONICAL_INVENTORY_TAXONOMY_CLOSEOUT.json` records static versioned catalog/provenance verification and exact-head CI/reviewer approval.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no installed-runtime verification is claimed because R9.1 is `NO_DEPLOY`.
+- Transition: R9.1 is `CLOSED_RUNTIME_VERIFIED`; R9.2 is the only `AUTHORIZED_ACTIVE` item, JIT-bound to a no-deploy controlled canary-planning/benchmark contract.
+- Preserved: HUMAN_FINAL_AUTHORITY=true; AUTO_MERGE=false; CANONICAL_LOCAL_SYNC=false; LIVE_TRADING=false; REAL_MONEY=false; persistent Agent Loop remains DEFERRED and Disabled.

@@ -97,3 +97,33 @@ def test_evidence_records_static_catalog_and_no_runtime_effects():
         "live_trading": False,
         "real_money": False,
     }
+
+
+def test_closeout_authorizes_only_r9_2_with_a_no_deploy_canary_planning_scope():
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+    closeout_path = ROOT / "docs/roadmap/evidence/BRAIN_101_R9_1_CURATED_KNOWLEDGE_CANONICAL_INVENTORY_TAXONOMY_CLOSEOUT.json"
+
+    active = [
+        item_id
+        for item_id, item in manifest["roadmap_items"].items()
+        if item["status"] == "AUTHORIZED_ACTIVE"
+    ]
+    r91 = manifest["roadmap_items"]["R9.1"]
+    r92 = manifest["roadmap_items"]["R9.2"]
+    closeout = json.loads(closeout_path.read_text(encoding="utf-8"))
+
+    assert r91["status"] == "CLOSED_RUNTIME_VERIFIED"
+    assert active == ["R9.2"]
+    assert r92["automation"]["front_id"] == "BRAIN-101-R9-2-CURATED-KNOWLEDGE-CONTROLLED-INGESTION-BENCHMARK-01"
+    assert r92["automation"]["work_branch"] == "control-plane/r9-2-curated-knowledge-controlled-ingestion-benchmark"
+    assert r92["automation"]["deployment_mode"] == "NO_DEPLOY"
+    assert r92["automation"]["allowed_paths"] == [
+        "tmp_agent/brain_v9/core/curated_knowledge_ingestion.py",
+        "docs/roadmap/evidence/BRAIN_101_R9_2_CURATED_KNOWLEDGE_CONTROLLED_INGESTION_BENCHMARK.json",
+        "tests/contract/test_r9_2_curated_knowledge_controlled_ingestion_benchmark.py",
+    ]
+    assert closeout["parent_merge_commit"] == "b5105efaff840a4b4129c728207b28e9de1a5e71"
+    assert closeout["verification_level"] == "CODE_AND_CI_VERIFIED_NO_DEPLOY"
+    assert closeout["runtime_actions"]["worker_install"] is False
+    assert closeout["runtime_actions"]["scheduler_activation"] is False
+    assert closeout["runtime_actions"]["source_ingestion"] is False
