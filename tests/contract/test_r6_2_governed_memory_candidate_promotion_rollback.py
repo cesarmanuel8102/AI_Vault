@@ -298,3 +298,6 @@ def test_r6_2_closeout_activates_only_bound_r6_3_hydration_successor():
     assert automation["jit_binding_completed"] is True
     assert automation["dispatchable"] is True
     assert manifest["roadmap_items"]["R6.3"]["hard_limits"] == closeout["hard_limits"]
+    assert automation["closeout"]["front_id"] == (
+        "BRAIN-101-R6-3-MEMORY-RETRIEVAL-HYDRATION-REBUILD-VALIDATION-CLOSEOUT-01"
+    )

@@ -2109,7 +2109,42 @@
           "Restore only verified isolated snapshot and rebuild artifacts through an evidence-bound rollback receipt",
           "Do not modify canonical semantic data, scheduler configuration, runtime installation, canonical local state, trading, or financial controls"
         ],
-        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION.json"
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R6-3-MEMORY-RETRIEVAL-HYDRATION-REBUILD-VALIDATION-CLOSEOUT-01",
+          "objective": "Record verified R6.3 isolated retrieval hydration and rebuild evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r6-3-memory-retrieval-hydration-rebuild-validation-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION_CLOSEOUT.json",
+            "tests/contract/test_r6_3_memory_retrieval_hydration_rebuild_validation.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Bind R6.3 closeout to verified isolated retrieval hydration and rebuild validation evidence",
+            "Authorize exactly one dependency-eligible successor only after R6.3 acceptance is verified",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r6_3_memory_retrieval_hydration_rebuild_validation.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R7.1": {
