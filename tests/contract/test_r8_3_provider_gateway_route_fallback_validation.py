@@ -150,3 +150,36 @@ def test_evidence_records_a_static_no_deploy_route_validation_boundary():
         "scheduler_activation": False,
         "canonical_local_sync": False,
     }
+
+
+def test_closeout_closes_r8_3_and_authorizes_only_bound_r9_1():
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/BRAIN_101_R8_3_PROVIDER_GATEWAY_ROUTE_FALLBACK_VALIDATION_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert manifest["roadmap_items"]["R8.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    assert [
+        item_id
+        for item_id, item in manifest["roadmap_items"].items()
+        if item["status"] == "AUTHORIZED_ACTIVE"
+    ] == ["R9.1"]
+    binding = manifest["roadmap_items"]["R9.1"]["automation"]
+    assert binding["jit_binding_completed"] is True
+    assert binding["deployment_mode"] == "NO_DEPLOY"
+    assert binding["work_branch"] == "control-plane/r9-1-curated-knowledge-canonical-inventory-taxonomy"
+    assert binding["allowed_paths"] == [
+        "tmp_agent/brain_v9/core/curated_knowledge_catalog.py",
+        "docs/roadmap/evidence/BRAIN_101_R9_1_CURATED_KNOWLEDGE_CANONICAL_INVENTORY_TAXONOMY.json",
+        "tests/contract/test_r9_1_curated_knowledge_canonical_inventory_taxonomy.py",
+    ]
+    assert closeout["parent_merge_commit"] == "5f32c71538c141590416d2d36c120add9aad967d"
+    assert closeout["runtime_actions"] == {
+        "worker_install": False,
+        "scheduler_activation": False,
+        "provider_call": False,
+        "canonical_local_sync": False,
+    }

@@ -55,7 +55,7 @@ test("R4.1 baseline evidence selects one eligible no-deploy modular-monolith can
   ]);
 });
 
-test("R5.4 through R8.2 closeouts preserve history and hand sole authority to JIT-bound R8.3",()=>{
+test("R5.4 through R8.3 closeouts preserve history and hand sole authority to JIT-bound R9.1",()=>{
   const manifest=readJson(MANIFEST);
   assert.equal(manifest.roadmap_items["R4.1"].status,"CLOSED_RUNTIME_VERIFIED");
   const r42=manifest.roadmap_items["R4.2"];
@@ -76,7 +76,7 @@ test("R5.4 through R8.2 closeouts preserve history and hand sole authority to JI
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION_CLOSEOUT.json")));
-  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R8.3"]);
+  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R9.1"]);
   const r43=manifest.roadmap_items["R4.3"];
   assert.deepEqual(r43.dependencies,["R4.2"]);
   assert.equal(r43.status,"CLOSED_RUNTIME_VERIFIED");
@@ -159,8 +159,14 @@ test("R5.4 through R8.2 closeouts preserve history and hand sole authority to JI
   assert.equal(r82.automation.deployment_mode,"NO_DEPLOY");
   const r83=manifest.roadmap_items["R8.3"];
   assert.deepEqual(r83.dependencies,["R8.2"]);
-  assert.equal(r83.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r83.status,"CLOSED_RUNTIME_VERIFIED");
   assert.equal(r83.automation.front_id,"BRAIN-101-R8-3-PROVIDER-GATEWAY-ROUTE-FALLBACK-VALIDATION-01");
   assert.equal(r83.automation.jit_binding_completed,true);
   assert.equal(r83.automation.deployment_mode,"NO_DEPLOY");
+  const r91=manifest.roadmap_items["R9.1"];
+  assert.deepEqual(r91.dependencies,["R8.3"]);
+  assert.equal(r91.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r91.automation.front_id,"BRAIN-101-R9-1-CURATED-KNOWLEDGE-CANONICAL-INVENTORY-TAXONOMY-01");
+  assert.equal(r91.automation.jit_binding_completed,true);
+  assert.equal(r91.automation.deployment_mode,"NO_DEPLOY");
 });
