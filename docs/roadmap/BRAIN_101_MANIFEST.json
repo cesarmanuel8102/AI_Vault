@@ -4747,7 +4747,7 @@
           "objective": "Record verified R14.2 backtest-realism and walk-forward validation evidence before authorizing exactly one dependency-eligible successor",
           "work_branch": "control-plane/r14-2-backtest-realism-walk-forward-validation-closeout",
           "executor": "codex_control_plane",
-          "risk": "HIGH",
+          "risk": "MEDIUM",
           "allowed_paths": [
             "docs/roadmap/BRAIN_101_MANIFEST.json",
             "docs/roadmap/BRAIN_101_ROADMAP.md",
