@@ -1401,3 +1401,11 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R7_2_RUN_TIMELINE_PROVIDER_HEALTH_OPERATIONAL_ACCOUNTING_CLOSEOUT.json`, bound to deterministic timelines, supplied-metadata provider health accounting, controlled replay, and the no-provider-call boundary.
 - Status: R7.2 is `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, provider call, canonical local sync, live trading, real money, or auto-merge occurred.
 - Sole successor: R7.3 `BRAIN-101-R7-3-VISUAL-TRACE-OPERATOR-CONSOLE-CONTRACTS-01` is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`, and receives its exact expected base from the live canonical branch when `sequenceRoadmap` creates the governed spec.
+
+## BRAIN-101 R7.3 - Visual Trace and Operator Console Contracts Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: commit `6f57175e8ccba406a46bb8aa6be648194eb80595`, merged as `f9f5af76860be15f5b9801d5a57ead265848ad8f` through PR #321.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R7_3_VISUAL_TRACE_OPERATOR_CONSOLE_CONTRACTS_CLOSEOUT.json`, bound to the read-only sanitized trace projection, correlation identity, private-reasoning redaction, and safe DOM-only console rendering.
+- Status: R7.3 is `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, provider call, canonical local sync, live trading, real money, or auto-merge occurred.
+- Sole successor: R8.1 `BRAIN-101-R8-1-PROVIDER-GATEWAY-POLICY-CAPABILITY-INVENTORY-01` is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`, and receives its exact expected base from the live canonical branch when `sequenceRoadmap` creates the governed spec.

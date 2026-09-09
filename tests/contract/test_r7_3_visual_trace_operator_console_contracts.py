@@ -85,3 +85,26 @@ def test_r7_3_evidence_is_no_deploy_and_preserves_privacy_boundary():
         "No private reasoning or secret display",
         "No unaudited operator action",
     ]
+
+
+def test_r7_3_closeout_preserves_no_deploy_evidence_and_hands_one_item_to_r8_1():
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/BRAIN_101_R7_3_VISUAL_TRACE_OPERATOR_CONSOLE_CONTRACTS_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert manifest["roadmap_items"]["R7.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    assert [
+        item_id
+        for item_id, item in manifest["roadmap_items"].items()
+        if item["status"] == "AUTHORIZED_ACTIVE"
+    ] == ["R8.1"]
+    assert closeout["parent_merge_commit"] == "f9f5af76860be15f5b9801d5a57ead265848ad8f"
+    assert closeout["runtime_actions"] == {
+        "worker_install": False,
+        "scheduler_activation": False,
+        "provider_call": False,
+        "canonical_local_sync": False,
+    }
