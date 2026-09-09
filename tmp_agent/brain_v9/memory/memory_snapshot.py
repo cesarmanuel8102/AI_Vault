@@ -14,6 +14,8 @@ CANONICAL_FILES = (
 )
 SNAPSHOT_ROOT = Path("memory/rollback_snapshots")
 ISOLATED_ROOT_MARKER = ".r6_2_isolated_root"
+R6_3_ISOLATED_ROOT_MARKER = ".r6_3_isolated_retrieval_root"
+R6_3_ISOLATED_SNAPSHOT_MARKER = ".r6_3_isolated_retrieval_snapshot"
 ISOLATED_ARTIFACTS = (
     "semantic_memory.jsonl",
     "semantic_memory_faiss.index",
@@ -28,6 +30,56 @@ def _isolated_root_or_error(root: Path) -> tuple[Path | None, str]:
     if not (resolved / ISOLATED_ROOT_MARKER).is_file():
         return None, "isolated_root_marker_missing"
     return resolved, ""
+
+
+def isolated_retrieval_root_or_error(root: Path) -> tuple[Path | None, str]:
+    """Accept only an existing R6.3 marker-bound temporary retrieval root."""
+    resolved = Path(root).resolve()
+    if resolved.name.lower() == "memory" or not resolved.exists():
+        return None, "isolated_retrieval_root_invalid"
+    if not (resolved / R6_3_ISOLATED_ROOT_MARKER).is_file():
+        return None, "isolated_retrieval_root_marker_missing"
+    return resolved, ""
+
+
+def isolated_retrieval_artifact_hashes(root: Path) -> dict[str, str]:
+    return {
+        name: hashlib.sha256((Path(root) / name).read_bytes()).hexdigest()
+        for name in ISOLATED_ARTIFACTS
+    }
+
+
+def create_isolated_retrieval_snapshot(
+    isolated_root: Path, receipt_sha256: str
+) -> dict[str, object]:
+    """Snapshot the complete R6.3 isolated retrieval topology before a write."""
+    root, error = isolated_retrieval_root_or_error(isolated_root)
+    if root is None:
+        return {"ok": False, "reason": error}
+    if not isinstance(receipt_sha256, str) or len(receipt_sha256) != 64:
+        return {"ok": False, "reason": "receipt_sha256_invalid"}
+    try:
+        files = {
+            name: {"sha256": hashlib.sha256((root / name).read_bytes()).hexdigest()}
+            for name in ISOLATED_ARTIFACTS
+        }
+    except OSError:
+        return {"ok": False, "reason": "isolated_retrieval_artifact_missing"}
+    snapshots = root / ".r6_3_snapshots"
+    snapshots.mkdir(exist_ok=True)
+    snapshot_dir = Path(tempfile.mkdtemp(prefix="snapshot-", dir=snapshots))
+    for name in ISOLATED_ARTIFACTS:
+        shutil.copy2(root / name, snapshot_dir / name)
+    manifest = {"schema_version": 1, "receipt_sha256": receipt_sha256, "files": files}
+    (snapshot_dir / "manifest.json").write_text(
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8"
+    )
+    return {
+        "ok": True,
+        "receipt_sha256": receipt_sha256,
+        "snapshot_dir": str(snapshot_dir),
+        "manifest": manifest,
+    }
 
 
 def create_isolated_memory_snapshot(isolated_root: Path, receipt_sha256: str) -> dict[str, object]:

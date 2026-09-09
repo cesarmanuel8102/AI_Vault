@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "evidence_type": "BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R6.3",
+  "front_id": "BRAIN-101-R6-3-MEMORY-RETRIEVAL-HYDRATION-REBUILD-VALIDATION-01",
+  "base_commit": "0c1956ce64ceebe6e7f82352d7bde35214d54525",
+  "verification_head_before_evidence": "d2f307450d6298444416569c92eb3a544baa11f7",
+  "deployment_mode": "NO_DEPLOY",
+  "verification": {
+    "r6_3_contract": "8 passed",
+    "r6_2_regression": "11 passed",
+    "r6_1_regression": "9 passed",
+    "python_compile": "passed",
+    "diff_check": "passed"
+  },
+  "verified_controls": [
+    "hydration_accepts_only_an_explicit_marker_bound_snapshot",
+    "every_hydrated_record_has_attributable_id_and_source",
+    "records_and_faiss_ids_topology_must_match_exactly",
+    "snapshot_artifact_hashes_are_verified_before_copy",
+    "public_retrieval_falls_back_read_only_with_attributable_source",
+    "rebuild_identity_is_receipt_bound_and_deterministic",
+    "failed_rebuild_restores_all_isolated_artifacts_byte_for_byte",
+    "canonical_memory_hydration_is_not_enabled"
+  ],
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  },
+  "runtime_actions": {
+    "worker_install": false,
+    "scheduler_activation": false,
+    "provider_call": false,
+    "canonical_memory_mutation": false
+  }
+}
