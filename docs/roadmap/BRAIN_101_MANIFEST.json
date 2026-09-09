@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "e32e8e27ad37a9b0a592aa0ef2ad9e9072047bce5fc22be298eb0c427648d6be",
+  "roadmap_sha256": "d55a5fa84c375809814ecf9ac72988445db6d86538ed02e8f24c986b2742a14f",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -2537,7 +2537,7 @@
       }
     },
     "R8.1": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R8",
       "title": "Provider Gateway policy and capability inventory",
       "dependencies": [
@@ -2664,7 +2664,7 @@
       }
     },
     "R8.2": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R8",
       "title": "Provider resilience and secret-safe operations",
       "dependencies": [
@@ -2709,18 +2709,85 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
-        "activation_requires": [
-          "expected_base_sha",
-          "front_id",
-          "work_branch",
-          "allowed_paths",
-          "forbidden_paths",
-          "test_commands",
-          "acceptance",
-          "rollback",
-          "evidence_path"
-        ]
+        "jit_binding_completed": true,
+        "dispatchable": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R8-2-PROVIDER-RESILIENCE-SECRET-SAFE-OPERATIONS-01",
+        "objective": "Add a deterministic, inspection-only provider resilience policy for bounded retry classification, circuit state, prompt-version metadata, and secret-safe accounting without provider invocation or runtime configuration mutation",
+        "work_branch": "control-plane/r8-2-provider-resilience-secret-safe-operations",
+        "executor": "codex_control_plane",
+        "risk": "HIGH",
+        "domain": "provider_gateway",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/provider_gateway.py",
+          "docs/roadmap/evidence/BRAIN_101_R8_2_PROVIDER_RESILIENCE_SECRET_SAFE_OPERATIONS.json",
+          "tests/contract/test_r8_2_provider_resilience_secret_safe_operations.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Define bounded deterministic retry and circuit-state policy without provider clients, retries, or network execution",
+          "Reject secret-bearing metadata, unknown providers, unbounded retry requests, and runtime configuration mutation",
+          "Preserve no deployment, no scheduler activation, no provider calls, no canonical local sync, no live trading, no real money, and no auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r8_2_provider_resilience_secret_safe_operations.py",
+          "python -m pytest -q tests/contract/test_r8_1_provider_gateway_policy_capability_inventory.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Restore only the prior provider resilience policy through version-controlled rollback",
+          "Do not mutate provider secrets, runtime configuration, scheduler configuration, canonical local state, trading, or financial controls"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R8_2_PROVIDER_RESILIENCE_SECRET_SAFE_OPERATIONS.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R8-2-PROVIDER-RESILIENCE-SECRET-SAFE-OPERATIONS-CLOSEOUT-01",
+          "objective": "Record verified R8.2 provider-resilience evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r8-2-provider-resilience-secret-safe-operations-closeout",
+          "executor": "codex_control_plane",
+          "risk": "HIGH",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R8_2_PROVIDER_RESILIENCE_SECRET_SAFE_OPERATIONS_CLOSEOUT.json",
+            "tests/contract/test_r8_2_provider_resilience_secret_safe_operations.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R8.2 implementation evidence and provider resilience policy verification",
+            "Set R8.2 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r8_2_provider_resilience_secret_safe_operations.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R8.3": {

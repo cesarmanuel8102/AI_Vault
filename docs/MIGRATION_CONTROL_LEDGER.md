@@ -9411,3 +9411,11 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R7_3_VISUAL_TRACE_OPERATOR_CONSOLE_CONTRACTS_CLOSEOUT.json`, bound to pre-sanitized correlation-bound events, no private-reasoning display, and no unaudited operator action.
 - Status: R7.3 set to `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, provider call, canonical local sync, live trading, real money, or auto-merge occurred.
 - Authorized successor: exactly one R8.1, `BRAIN-101-R8-1-PROVIDER-GATEWAY-POLICY-CAPABILITY-INVENTORY-01`, controller-governed `NO_DEPLOY`, bounded to a provider policy and capability inventory without secret use, provider invocation, fallback execution, or runtime configuration mutation.
+
+## BRAIN-101 R8.1 - Provider Gateway Policy and Capability Inventory Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: `da87569a987d2c937a945aeb84f737bbe3cddecb`, merged as `33b0ba73d7bd0ca79dab76c32016d6bf2a7f9740` through PR #323.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R8_1_PROVIDER_GATEWAY_POLICY_CAPABILITY_INVENTORY_CLOSEOUT.json`, bound to an immutable inspection-only inventory with explicit provider identities and fail-closed fallback, invocation, and secret-bearing configuration boundaries.
+- Status: R8.1 set to `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, provider call, canonical local sync, live trading, real money, or auto-merge occurred.
+- Authorized successor: exactly one R8.2, `BRAIN-101-R8-2-PROVIDER-RESILIENCE-SECRET-SAFE-OPERATIONS-01`, controller-governed `NO_DEPLOY`, bounded to deterministic resilience and secret-safe metadata policy without provider execution or runtime configuration mutation.

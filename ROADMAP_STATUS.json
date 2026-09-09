@@ -175,7 +175,7 @@
     "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-CLOSEOUT-01"
   ],
   "open_fronts": [
-    "BRAIN-101-R8-1-PROVIDER-GATEWAY-POLICY-CAPABILITY-INVENTORY-01"
+    "BRAIN-101-R8-2-PROVIDER-RESILIENCE-SECRET-SAFE-OPERATIONS-01"
   ],
   "blocked_fronts": [
     "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
@@ -192,12 +192,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "BRAIN-101-R8-1-PROVIDER-GATEWAY-POLICY-CAPABILITY-INVENTORY-01",
+    "name": "BRAIN-101-R8-2-PROVIDER-RESILIENCE-SECRET-SAFE-OPERATIONS-01",
     "status": "authorized_next",
-    "reason": "R7.3 closed the read-only sanitized visual trace and operator console contract; the next dependency-eligible bounded candidate is a no-deploy provider policy and capability inventory."
+    "reason": "R8.1 closed the static provider policy and capability inventory; the next dependency-eligible bounded candidate is a no-deploy provider resilience and secret-safe operations contract."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-09-09T02:47:18.000+00:00",
+  "last_updated": "2026-09-09T03:26:17.000+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -5420,10 +5420,10 @@
     "r4_3_front_id": "BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-01",
     "r4_3_executor": "codex_control_plane",
     "r4_3_deployment_mode": "NO_DEPLOY",
-    "next_authorized_item": "R8.1",
-    "roadmap_decomposition": "R5_R19_EXECUTABLE_R8_1_JIT_BOUND",
+    "next_authorized_item": "R8.2",
+    "roadmap_decomposition": "R5_R19_EXECUTABLE_R8_2_JIT_BOUND",
     "roadmap_decomposition_item_count": 41,
-    "roadmap_execution_binding": "R8_1_JIT_BOUND_LIVE_HEAD_AT_DISPATCH",
+    "roadmap_execution_binding": "R8_2_JIT_BOUND_LIVE_HEAD_AT_DISPATCH",
     "r4_3_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R4_3_CHAT_ENTRYPOINT_CONTRACTS_CLOSEOUT.json",
     "r4_3_closeout_source_commit": "dc968bff656f2e007c410c0aa0f5cb849988a3b3",
     "r4_3_closeout_parent_merge": "9389737eca240173591fe926c867012e029bccbd",
