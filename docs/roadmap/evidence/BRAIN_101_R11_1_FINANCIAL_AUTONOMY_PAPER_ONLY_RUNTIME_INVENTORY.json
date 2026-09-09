@@ -1,0 +1,33 @@
+{
+  "roadmap_item": "R11.1",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "inventory_contract": {
+    "paper_only": true,
+    "deterministic": true,
+    "immutable": true,
+    "runtime_import_permitted": false,
+    "broker_action_permitted": false,
+    "order_action_permitted": false,
+    "provider_call_permitted": false,
+    "network_fetch_permitted": false
+  },
+  "runtime_actions": {
+    "deployment": false,
+    "scheduler_mutation": false,
+    "broker_connect": false,
+    "broker_order": false,
+    "order_submit": false,
+    "order_cancel": false,
+    "live_trading": false,
+    "real_money": false,
+    "provider_call": false,
+    "network_fetch": false,
+    "runtime_import": false,
+    "runtime_mutation": false,
+    "semantic_memory_write": false,
+    "canonical_memory_write": false,
+    "canonical_local_sync": false,
+    "auto_merge": false
+  }
+}
