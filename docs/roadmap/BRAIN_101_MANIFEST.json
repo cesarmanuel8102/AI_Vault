@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "bdb0b93ea91f91063a4b800419ddc6876f700d843f530a807d04eed09e609b5e",
+  "roadmap_sha256": "479ade3d894a454fb0a590a24ca73e138a9be3c1d3be0b7b908b4f949d8e87dc",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -4512,7 +4512,7 @@
       }
     },
     "R14.1": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R14",
       "title": "Local validation data and experiment registry baseline",
       "dependencies": [
@@ -4648,7 +4648,7 @@
       }
     },
     "R14.2": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R14",
       "title": "Backtest realism and walk-forward validation",
       "dependencies": [
@@ -4693,7 +4693,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
+        "dispatchable": true,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
@@ -4704,7 +4704,83 @@
           "acceptance",
           "rollback",
           "evidence_path"
-        ]
+        ],
+        "jit_binding_completed": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R14-2-BACKTEST-REALISM-WALK-FORWARD-VALIDATION-01",
+        "objective": "Add deterministic backtest realism and walk-forward validation receipts without market-data, broker, provider, network, runtime, scheduler, or trading action",
+        "work_branch": "control-plane/r14-2-backtest-realism-walk-forward-validation",
+        "executor": "codex_control_plane",
+        "risk": "HIGH",
+        "domain": "validation_lab",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/backtest_realism.py",
+          "docs/roadmap/evidence/BRAIN_101_R14_2_BACKTEST_REALISM_WALK_FORWARD_VALIDATION.json",
+          "tests/contract/test_r14_2_backtest_realism_walk_forward_validation.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Validate deterministic slippage, fee, latency, and walk-forward receipt construction from supplied local inputs only",
+          "Reject in-sample-only, lookahead, cloud-dependent, broker, provider, network, runtime, scheduler, and trading inputs",
+          "Preserve human final authority and prohibit live trading, real money, canonical sync, and auto-merge effects"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r14_2_backtest_realism_walk_forward_validation.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Record deterministic validation rollback evidence without external data, runtime, scheduler, configuration, trading, or financial-control mutation"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R14_2_BACKTEST_REALISM_WALK_FORWARD_VALIDATION.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R14-2-BACKTEST-REALISM-WALK-FORWARD-VALIDATION-CLOSEOUT-01",
+          "objective": "Record verified R14.2 backtest-realism and walk-forward validation evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r14-2-backtest-realism-walk-forward-validation-closeout",
+          "executor": "codex_control_plane",
+          "risk": "HIGH",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R14_2_BACKTEST_REALISM_WALK_FORWARD_VALIDATION_CLOSEOUT.json",
+            "tests/contract/test_r14_2_backtest_realism_walk_forward_validation.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R14.2 validation evidence",
+            "Set R14.2 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r14_2_backtest_realism_walk_forward_validation.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R14.3": {

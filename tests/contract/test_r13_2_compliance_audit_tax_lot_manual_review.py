@@ -110,7 +110,7 @@ def test_evidence_declares_paper_only_no_deploy_audit_contract():
     assert all(value is False for value in evidence["runtime_actions"].values())
 
 
-def test_closeout_closes_r13_2_and_jit_binds_r14_1_without_deploy():
+def test_closeout_preserves_r13_2_successor_receipt_after_r14_1_closes():
     manifest = json.loads(
         (ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8")
     )
@@ -122,7 +122,7 @@ def test_closeout_closes_r13_2_and_jit_binds_r14_1_without_deploy():
     )
     assert manifest["roadmap_items"]["R13.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     successor = manifest["roadmap_items"]["R14.1"]
-    assert successor["status"] == "AUTHORIZED_ACTIVE"
+    assert successor["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert successor["dependencies"] == ["R13.2"]
     assert successor["automation"]["deployment_mode"] == "NO_DEPLOY"
     assert closeout["verification_level"] == "CODE_AND_CI_VERIFIED_NO_DEPLOY"
