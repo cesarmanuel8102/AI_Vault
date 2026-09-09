@@ -1,9 +1,9 @@
 {
-  "current_head": "f9f5af76860be15f5b9801d5a57ead265848ad8f",
-  "current_remote_head": "f9f5af76860be15f5b9801d5a57ead265848ad8f",
+  "current_head": "227fbca2cc9856e9cc47a22aab37c69891d56884",
+  "current_remote_head": "227fbca2cc9856e9cc47a22aab37c69891d56884",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "r7_3_visual_trace_operator_console_contracts_closed_r8_1_authorized",
-  "last_applied_checkpoint": "BRAIN-101-R7-3-VISUAL-TRACE-OPERATOR-CONSOLE-CONTRACTS-CLOSEOUT-01",
+  "migration_status": "r8_2_provider_resilience_secret_safe_operations_closed_r8_3_authorized",
+  "last_applied_checkpoint": "BRAIN-101-R8-2-PROVIDER-RESILIENCE-SECRET-SAFE-OPERATIONS-CLOSEOUT-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -175,7 +175,7 @@
     "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-CLOSEOUT-01"
   ],
   "open_fronts": [
-    "BRAIN-101-R8-2-PROVIDER-RESILIENCE-SECRET-SAFE-OPERATIONS-01"
+    "BRAIN-101-R8-3-PROVIDER-GATEWAY-ROUTE-FALLBACK-VALIDATION-01"
   ],
   "blocked_fronts": [
     "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
@@ -192,9 +192,9 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "BRAIN-101-R8-2-PROVIDER-RESILIENCE-SECRET-SAFE-OPERATIONS-01",
+    "name": "BRAIN-101-R8-3-PROVIDER-GATEWAY-ROUTE-FALLBACK-VALIDATION-01",
     "status": "authorized_next",
-    "reason": "R8.1 closed the static provider policy and capability inventory; the next dependency-eligible bounded candidate is a no-deploy provider resilience and secret-safe operations contract."
+    "reason": "R8.2 closed deterministic resilience policy; the next dependency-eligible bounded candidate is no-deploy provider route integration with explicit fallback receipts."
   },
   "ready_for_next_front": true,
   "last_updated": "2026-09-09T03:26:17.000+00:00",
@@ -4798,9 +4798,9 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "R7_3_CLOSED_RUNTIME_VERIFIED_R8_1_AUTHORIZED_ACTIVE",
+    "status": "R8_2_CLOSED_RUNTIME_VERIFIED_R8_3_AUTHORIZED_ACTIVE",
     "approval_status": "HUMAN_ADOPTED",
-    "current_phase": "R7",
+    "current_phase": "R8",
     "human_final_authority": true,
     "auto_merge": false,
     "canonical_local_sync": false,
@@ -5420,10 +5420,10 @@
     "r4_3_front_id": "BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-01",
     "r4_3_executor": "codex_control_plane",
     "r4_3_deployment_mode": "NO_DEPLOY",
-    "next_authorized_item": "R8.2",
-    "roadmap_decomposition": "R5_R19_EXECUTABLE_R8_2_JIT_BOUND",
+    "next_authorized_item": "R8.3",
+    "roadmap_decomposition": "R5_R19_EXECUTABLE_R8_3_JIT_BOUND",
     "roadmap_decomposition_item_count": 41,
-    "roadmap_execution_binding": "R8_2_JIT_BOUND_LIVE_HEAD_AT_DISPATCH",
+    "roadmap_execution_binding": "R8_3_JIT_BOUND_LIVE_HEAD_AT_DISPATCH",
     "r4_3_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R4_3_CHAT_ENTRYPOINT_CONTRACTS_CLOSEOUT.json",
     "r4_3_closeout_source_commit": "dc968bff656f2e007c410c0aa0f5cb849988a3b3",
     "r4_3_closeout_parent_merge": "9389737eca240173591fe926c867012e029bccbd",
@@ -5494,7 +5494,7 @@
     "r7_3_deployment_mode": "NO_DEPLOY",
     "r7_3_implementation_merge_commit": "f9f5af76860be15f5b9801d5a57ead265848ad8f",
     "r7_3_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R7_3_VISUAL_TRACE_OPERATOR_CONSOLE_CONTRACTS_CLOSEOUT.json",
-    "r8_1_status": "AUTHORIZED_ACTIVE",
+    "r8_1_status": "CLOSED_RUNTIME_VERIFIED",
     "r8_1_front_id": "BRAIN-101-R8-1-PROVIDER-GATEWAY-POLICY-CAPABILITY-INVENTORY-01",
     "r8_1_executor": "codex_control_plane",
     "r8_1_deployment_mode": "NO_DEPLOY",
