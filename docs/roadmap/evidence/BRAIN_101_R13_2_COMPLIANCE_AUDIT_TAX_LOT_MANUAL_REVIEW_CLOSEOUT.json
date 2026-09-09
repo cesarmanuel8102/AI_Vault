@@ -1,0 +1,29 @@
+{
+  "roadmap_item": "R13.2",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "implementation_source_commit": "65889375d33efcdca5b647cfed0a48fe110fbdaf",
+  "implementation_merge_commit": "74f0410f6dde280a1f3cabe2626ab78690a8bf69",
+  "implementation_pr": 353,
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "successor": {
+    "roadmap_item": "R14.1",
+    "front_id": "BRAIN-101-R14-1-LOCAL-VALIDATION-DATA-EXPERIMENT-REGISTRY-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "runtime_actions": {
+    "deployment": false,
+    "scheduler_mutation": false,
+    "broker_connect": false,
+    "broker_order": false,
+    "order_submit": false,
+    "provider_call": false,
+    "network_fetch": false,
+    "runtime_import": false,
+    "runtime_mutation": false,
+    "configuration_mutation": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}

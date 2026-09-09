@@ -55,7 +55,7 @@ test("R4.1 baseline evidence selects one eligible no-deploy modular-monolith can
   ]);
 });
 
-test("R5.4 through R13.1 closeouts preserve history and hand sole authority to JIT-bound R13.2",()=>{
+test("R5.4 through R13.2 closeouts preserve history and hand sole authority to JIT-bound R14.1",()=>{
   const manifest=readJson(MANIFEST);
   assert.equal(manifest.roadmap_items["R4.1"].status,"CLOSED_RUNTIME_VERIFIED");
   const r42=manifest.roadmap_items["R4.2"];
@@ -76,7 +76,7 @@ test("R5.4 through R13.1 closeouts preserve history and hand sole authority to J
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION_CLOSEOUT.json")));
-  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R13.2"]);
+  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R14.1"]);
   const r43=manifest.roadmap_items["R4.3"];
   assert.deepEqual(r43.dependencies,["R4.2"]);
   assert.equal(r43.status,"CLOSED_RUNTIME_VERIFIED");
@@ -231,8 +231,14 @@ test("R5.4 through R13.1 closeouts preserve history and hand sole authority to J
   assert.equal(r131.automation.deployment_mode,"NO_DEPLOY");
   const r132=manifest.roadmap_items["R13.2"];
   assert.deepEqual(r132.dependencies,["R13.1"]);
-  assert.equal(r132.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r132.status,"CLOSED_RUNTIME_VERIFIED");
   assert.equal(r132.automation.front_id,"BRAIN-101-R13-2-COMPLIANCE-AUDIT-TAX-LOT-MANUAL-REVIEW-01");
   assert.equal(r132.automation.jit_binding_completed,true);
   assert.equal(r132.automation.deployment_mode,"NO_DEPLOY");
+  const r141=manifest.roadmap_items["R14.1"];
+  assert.deepEqual(r141.dependencies,["R13.2"]);
+  assert.equal(r141.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r141.automation.front_id,"BRAIN-101-R14-1-LOCAL-VALIDATION-DATA-EXPERIMENT-REGISTRY-01");
+  assert.equal(r141.automation.jit_binding_completed,true);
+  assert.equal(r141.automation.deployment_mode,"NO_DEPLOY");
 });

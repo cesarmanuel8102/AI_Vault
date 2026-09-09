@@ -9517,3 +9517,9 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no deployment, installation, scheduler activation, broker or order action, provider/network call, canonical local sync, live trading, real money, or auto-merge occurred.
 - Transition: R13.1 is `CLOSED_RUNTIME_VERIFIED`; R13.2 is the only `AUTHORIZED_ACTIVE` item, JIT-bound to a paper-only compliance audit, tax-lot, and manual-review contract.
 - Preserved: HUMAN_FINAL_AUTHORITY=true; AUTO_MERGE=false; CANONICAL_LOCAL_SYNC=false; LIVE_TRADING=false; REAL_MONEY=false; Agent Loop remains DEFERRED and Disabled.
+
+## BRAIN-101 R13.2 Closeout - Compliance Audit Tax-Lot and Manual Review (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; PR #353 merged as `74f0410f6dde280a1f3cabe2626ab78690a8bf69`.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; all broker, order, provider, network, runtime, scheduler, canonical-sync, live-trading, real-money, and auto-merge actions remain disabled.
+- Transition: R13.2 is `CLOSED_RUNTIME_VERIFIED`; R14.1 is sole `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` local validation and experiment-registry work.
