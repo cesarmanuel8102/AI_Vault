@@ -2125,7 +2125,10 @@
             "docs/MIGRATION_CONTROL_LEDGER.md",
             "docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION_CLOSEOUT.json",
             "tests/contract/test_r6_3_memory_retrieval_hydration_rebuild_validation.py",
-            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py"
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/test_r6_1_memory_service_ownership_integrity_baseline.py",
+            "tests/contract/test_r6_2_governed_memory_candidate_promotion_rollback.py"
           ],
           "forbidden_paths": [
             ".env",
