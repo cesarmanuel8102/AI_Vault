@@ -94,3 +94,22 @@ def test_module_source_does_not_import_financial_autonomy_runtime():
     assert "subprocess" not in source
     assert "requests" not in source
     assert "httpx" not in source
+
+
+def test_closeout_records_merged_evidence_and_only_authorizes_r11_2():
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/"
+            "BRAIN_101_R11_1_FINANCIAL_AUTONOMY_PAPER_ONLY_RUNTIME_INVENTORY_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert closeout["roadmap_item"] == "R11.1"
+    assert closeout["implementation_merge_commit"] == "586976f30f5c880dcf9bf29df7afa88a05b68e91"
+    assert closeout["successor"] == {
+        "roadmap_item": "R11.2",
+        "front_id": "BRAIN-101-R11-2-FINANCIAL-AUTONOMY-PAPER-ONLY-AUDIT-ROLLBACK-WIRING-01",
+        "deployment_mode": "NO_DEPLOY",
+    }
+    assert all(value is False for value in closeout["runtime_actions"].values())
