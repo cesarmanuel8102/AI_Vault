@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "13c74272c8a11528aadb517c1b537af4a8008328277ccf4d0a7ae6abb34c6772",
+  "roadmap_sha256": "bca6a707c315af733923149fb3a1721bf1f58e2d028dbacb050b9899076e3766",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -4100,7 +4100,7 @@
       }
     },
     "R12.3": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R12",
       "title": "Portfolio regime rebalance and risk attribution validation",
       "dependencies": [
@@ -4238,7 +4238,7 @@
       }
     },
     "R13.1": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R13",
       "title": "Paper-trading compliance policy inventory",
       "dependencies": [
@@ -4283,7 +4283,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
+        "dispatchable": true,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
@@ -4294,10 +4294,86 @@
           "acceptance",
           "rollback",
           "evidence_path"
-        ]
+        ],
+        "jit_binding_completed": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R13-1-PAPER-TRADING-COMPLIANCE-POLICY-INVENTORY-01",
+        "objective": "Add deterministic paper-only compliance-policy inventory receipts without broker, order, provider, network, runtime, scheduler, or permission action",
+        "work_branch": "control-plane/r13-1-paper-trading-compliance-policy-inventory",
+        "executor": "codex_control_plane",
+        "risk": "HIGH",
+        "domain": "compliance",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/paper_trading_compliance_policy.py",
+          "docs/roadmap/evidence/BRAIN_101_R13_1_PAPER_TRADING_COMPLIANCE_POLICY_INVENTORY.json",
+          "tests/contract/test_r13_1_paper_trading_compliance_policy_inventory.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Validate deterministic paper-only PDT, wash-sale, market-hours, restricted-symbol, short-sale, and account-permission policy receipts",
+          "Validate jurisdiction, data-license, and paper-live boundary denials without external execution",
+          "Preserve human final authority and prohibit live trading, real money, broker, provider, network, runtime, scheduler, canonical sync, and auto-merge effects"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r13_1_paper_trading_compliance_policy_inventory.py",
+          "python -m pytest -q tests/contract/test_r12_3_portfolio_regime_rebalance_risk_attribution_validation.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Record deterministic paper-only compliance-denial rollback evidence without broker, order, runtime, scheduler, configuration, memory, trading, or financial-control mutation"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R13_1_PAPER_TRADING_COMPLIANCE_POLICY_INVENTORY.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R13-1-PAPER-TRADING-COMPLIANCE-POLICY-INVENTORY-CLOSEOUT-01",
+          "objective": "Record verified R13.1 paper-only compliance-policy evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r13-1-paper-trading-compliance-policy-inventory-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R13_1_PAPER_TRADING_COMPLIANCE_POLICY_INVENTORY_CLOSEOUT.json",
+            "tests/contract/test_r13_1_paper_trading_compliance_policy_inventory.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R13.1 paper-only compliance-policy evidence",
+            "Set R13.1 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r13_1_paper_trading_compliance_policy_inventory.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
-    },
-    "R13.2": {
+    },    "R13.2": {
       "status": "PLANNED_UNBOUND",
       "phase": "R13",
       "title": "Compliance audit tax-lot and manual-review controls",
