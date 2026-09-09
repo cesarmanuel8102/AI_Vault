@@ -13,16 +13,26 @@ from typing import Annotated, Iterator
 from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from brain_v9.api_security import StrictOperatorAccess, require_operator_access
-
-try:
-    from brain_v9.tracing.trace_redactor import sanitize_event as _sanitize_event
-except Exception:
-    def _sanitize_event(event): return event  # type: ignore
+from ..api_security import StrictOperatorAccess, require_operator_access
+from ..tracing.trace_redactor import sanitize_event as _sanitize_event
 
 
 router = APIRouter(tags=["agent-trace"])
 OperatorAccess = Annotated[None, Depends(require_operator_access)]
+
+
+def project_trace_console_event(event: dict) -> dict:
+    """Return one already-sanitized, correlation-bound event for read-only display."""
+    if not isinstance(event, dict):
+        raise ValueError("trace_console_event_invalid")
+    if not isinstance(event.get("correlation_id"), str) or not event["correlation_id"]:
+        raise ValueError("trace_console_correlation_id_required")
+    if not isinstance(event.get("event_id"), str) or not event["event_id"]:
+        raise ValueError("trace_console_event_id_required")
+    safe_event = _sanitize_event(dict(event))
+    if safe_event != event:
+        raise ValueError("trace_console_event_not_sanitized")
+    return safe_event
 
 
 def _trace_root(room_id: str, run_id: str) -> _Path:

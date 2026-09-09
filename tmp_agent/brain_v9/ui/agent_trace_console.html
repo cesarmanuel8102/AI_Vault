@@ -72,12 +72,22 @@
     el.className = 'event';
     el.setAttribute('data-type', evt.type);
     el.setAttribute('data-severity', evt.severity || 'info');
-    el.innerHTML = '<div class="event-icon">' + icon + '</div>' +
-      '<div class="event-content">' +
-        '<div class="event-title">' + (evt.title || evt.type) + '</div>' +
-        '<div class="event-text">' + (evt.text || '') + '</div>' +
-      '</div>' +
-      '<div class="event-ts">' + (evt.ts || '').split('.')[0].replace('T', ' ') + '</div>';
+    const eventIcon = document.createElement('div');
+    eventIcon.className = 'event-icon';
+    eventIcon.textContent = icon;
+    const content = document.createElement('div');
+    content.className = 'event-content';
+    const title = document.createElement('div');
+    title.className = 'event-title';
+    title.textContent = evt.title || evt.type || '';
+    const text = document.createElement('div');
+    text.className = 'event-text';
+    text.textContent = evt.text || '';
+    content.append(title, text);
+    const timestamp = document.createElement('div');
+    timestamp.className = 'event-ts';
+    timestamp.textContent = (evt.ts || '').split('.')[0].replace('T', ' ');
+    el.append(eventIcon, content, timestamp);
     list.insertBefore(el, list.firstChild);
     applyFilter();
     lastTs.textContent = 'Last: ' + (evt.ts || '').split('.')[0].replace('T', ' ');
@@ -100,7 +110,7 @@
   // Load latest snapshot
   async function loadLatest() {
     try {
-      const res = await fetch('/brain/agent-trace/latest?room_id=' + roomId + '&run_id=' + runId + '&limit=200');
+      const res = await fetch('/brain/agent-trace/latest?room_id=' + encodeURIComponent(roomId) + '&run_id=' + encodeURIComponent(runId) + '&limit=200');
       if (res.ok) {
         const data = await res.json();
         if (data.events) {
@@ -114,7 +124,7 @@
   let es = null;
   function connectSSE() {
     if (es) try { es.close(); } catch(e) {}
-    es = new EventSource('/brain/agent-trace/stream?room_id=' + roomId + '&run_id=' + runId);
+    es = new EventSource('/brain/agent-trace/stream?room_id=' + encodeURIComponent(roomId) + '&run_id=' + encodeURIComponent(runId));
     badge.textContent = 'Connecting...';
     badge.className = 'badge';
 
