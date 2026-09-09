@@ -76,12 +76,12 @@ def test_planned_backlog_has_unique_ids_acyclic_defined_and_phase_ordered_depend
             assert dependency_order <= PHASE_ORDER[item["phase"]]
 
 
-def test_r8_2_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_r8_3():
+def test_r8_3_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_r9_1():
     manifest = _manifest()
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R8.3"
+    assert active[0] == "R9.1"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -94,17 +94,18 @@ def test_r8_2_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_r
     assert items["R7.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R8.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R8.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R8.3"]["automation"]
+    assert items["R8.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R9.1"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
     assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R8-3-PROVIDER-GATEWAY-ROUTE-FALLBACK-VALIDATION-01"
-    assert binding["work_branch"] == "control-plane/r8-3-provider-gateway-route-fallback-validation"
+    assert binding["front_id"] == "BRAIN-101-R9-1-CURATED-KNOWLEDGE-CANONICAL-INVENTORY-TAXONOMY-01"
+    assert binding["work_branch"] == "control-plane/r9-1-curated-knowledge-canonical-inventory-taxonomy"
     assert binding["allowed_paths"] == [
-        "tmp_agent/brain_v9/core/provider_gateway.py",
-        "docs/roadmap/evidence/BRAIN_101_R8_3_PROVIDER_GATEWAY_ROUTE_FALLBACK_VALIDATION.json",
-        "tests/contract/test_r8_3_provider_gateway_route_fallback_validation.py",
+        "tmp_agent/brain_v9/core/curated_knowledge_catalog.py",
+        "docs/roadmap/evidence/BRAIN_101_R9_1_CURATED_KNOWLEDGE_CANONICAL_INVENTORY_TAXONOMY.json",
+        "tests/contract/test_r9_1_curated_knowledge_canonical_inventory_taxonomy.py",
     ]
 
 

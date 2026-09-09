@@ -9427,3 +9427,12 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R8_2_PROVIDER_RESILIENCE_SECRET_SAFE_OPERATIONS_CLOSEOUT.json`, binding bounded policy classification, secret-safe prompt/cost metadata, exact-head CI, and no-deploy controls.
 - Status: R8.2 is `CLOSED_RUNTIME_VERIFIED`; deployment, installation, scheduler activation, provider calls, canonical local sync, live trading, real money, and auto-merge remain disabled.
 - Authorized successor: exactly one R8.3, `BRAIN-101-R8-3-PROVIDER-GATEWAY-ROUTE-FALLBACK-VALIDATION-01`, controller-governed `NO_DEPLOY`.
+
+## BRAIN-101 R8.3 - Provider Gateway Route and Fallback Validation Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: `a00c63a65d41824b8fee330a79f46e97765afd09`, merged as `5f32c71538c141590416d2d36c120add9aad967d` through PR #327.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R8_3_PROVIDER_GATEWAY_ROUTE_FALLBACK_VALIDATION_CLOSEOUT.json`, binding deterministic route selection, immutable explicit fallback receipts, exact-head CI, and reviewer approval.
+- Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no installation or installed-runtime claim is made.
+- Status: R8.3 is `CLOSED_RUNTIME_VERIFIED`; deployment, installation, scheduler activation, provider calls, canonical local sync, live trading, real money, and auto-merge remain disabled.
+- Authorized successor: exactly one R9.1, `BRAIN-101-R9-1-CURATED-KNOWLEDGE-CANONICAL-INVENTORY-TAXONOMY-01`, controller-governed `NO_DEPLOY`.

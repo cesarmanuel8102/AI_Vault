@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R8.3",
+  "front_id": "BRAIN-101-R8-3-PROVIDER-GATEWAY-ROUTE-FALLBACK-VALIDATION-CLOSEOUT-01",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "parent_source_commit": "a00c63a65d41824b8fee330a79f46e97765afd09",
+  "parent_merge_commit": "5f32c71538c141590416d2d36c120add9aad967d",
+  "parent_pr": 327,
+  "implementation_evidence_path": "docs/roadmap/evidence/BRAIN_101_R8_3_PROVIDER_GATEWAY_ROUTE_FALLBACK_VALIDATION.json",
+  "verification": {
+    "focused_contract_tests_passed": 14,
+    "r8_2_regression_contract_passed": true,
+    "roadmap_contract_passed": true,
+    "python_compile_passed": true,
+    "git_diff_check_passed": true,
+    "ci_exact_head_passed": true,
+    "reviewer_passed": true
+  },
+  "runtime_actions": {
+    "worker_install": false,
+    "scheduler_activation": false,
+    "provider_call": false,
+    "canonical_local_sync": false
+  },
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "successor": {
+    "roadmap_item_id": "R9.1",
+    "front_id": "BRAIN-101-R9-1-CURATED-KNOWLEDGE-CANONICAL-INVENTORY-TAXONOMY-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}
