@@ -96,3 +96,22 @@ def test_evidence_records_human_authority_and_no_deploy_boundaries():
     assert evidence["promotion_contract"]["human_final_authority_required"] is True
     assert evidence["promotion_contract"]["apply_permitted"] is False
     assert all(value is False for value in evidence["runtime_actions"].values())
+
+
+def test_closeout_records_merged_evidence_and_only_authorizes_r11_1():
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/"
+            "BRAIN_101_R10_3_SELF_IMPROVEMENT_PROMOTION_GATE_ROLLBACK_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert closeout["roadmap_item"] == "R10.3"
+    assert closeout["implementation_merge_commit"] == "efc1b39d943051392a519b8027ad0bc784e2d3e9"
+    assert closeout["successor"] == {
+        "roadmap_item": "R11.1",
+        "front_id": "BRAIN-101-R11-1-FINANCIAL-AUTONOMY-PAPER-ONLY-RUNTIME-INVENTORY-01",
+        "deployment_mode": "NO_DEPLOY",
+    }
+    assert all(value is False for value in closeout["runtime_actions"].values())

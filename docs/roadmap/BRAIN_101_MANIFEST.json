@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "2e4d34866b0909cc5f14c4aa3df62d4867b7c25940de9a724b514728f0b713f4",
+  "roadmap_sha256": "7db023893b2a01c19781691fdcd66e0374bfabc73db9235ff7b248f0c30ea657",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -3426,7 +3426,7 @@
       }
     },
     "R10.3": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R10",
       "title": "Self-improvement promotion gate and rollback",
       "dependencies": [
@@ -3553,7 +3553,7 @@
       }
     },
     "R11.1": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R11",
       "title": "Financial autonomy paper-only runtime inventory",
       "dependencies": [
@@ -3598,7 +3598,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
+        "dispatchable": true,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
@@ -3609,7 +3609,84 @@
           "acceptance",
           "rollback",
           "evidence_path"
-        ]
+        ],
+        "jit_binding_completed": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R11-1-FINANCIAL-AUTONOMY-PAPER-ONLY-RUNTIME-INVENTORY-01",
+        "objective": "Add a deterministic paper-only financial-autonomy runtime inventory with no broker, trading, or capital action",
+        "work_branch": "control-plane/r11-1-financial-autonomy-paper-only-runtime-inventory",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "financial_autonomy",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/financial_autonomy_paper_inventory.py",
+          "docs/roadmap/evidence/BRAIN_101_R11_1_FINANCIAL_AUTONOMY_PAPER_ONLY_RUNTIME_INVENTORY.json",
+          "tests/contract/test_r11_1_financial_autonomy_paper_only_runtime_inventory.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Produce deterministic paper-only interface inventory and reject broker, order, live-trading, real-money, provider, network, and runtime actions",
+          "Preserve explicit human authority, disabled scheduler, canonical local sync, live trading, real money, and auto-merge",
+          "Do not import or execute financial-autonomy runtime code"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r11_1_financial_autonomy_paper_only_runtime_inventory.py",
+          "python -m pytest -q tests/contract/test_r10_3_self_improvement_promotion_gate_rollback.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Record deterministic paper-only rollback evidence without broker, order, runtime, configuration, scheduler, memory, trading, or financial-control mutation"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R11_1_FINANCIAL_AUTONOMY_PAPER_ONLY_RUNTIME_INVENTORY.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R11-1-FINANCIAL-AUTONOMY-PAPER-ONLY-RUNTIME-INVENTORY-CLOSEOUT-01",
+          "objective": "Record verified R11.1 paper-only inventory evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r11-1-financial-autonomy-paper-only-runtime-inventory-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R11_1_FINANCIAL_AUTONOMY_PAPER_ONLY_RUNTIME_INVENTORY_CLOSEOUT.json",
+            "tests/contract/test_r11_1_financial_autonomy_paper_only_runtime_inventory.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R11.1 paper-only inventory evidence",
+            "Set R11.1 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r11_1_financial_autonomy_paper_only_runtime_inventory.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R11.2": {
