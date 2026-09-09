@@ -49,7 +49,7 @@ def _assert_acyclic(items: dict, roots: set[str]) -> None:
 def test_r5_through_r19_are_a_complete_non_executable_pre_authorized_backlog():
     manifest = _manifest()
     planned = _planned_items(manifest)
-    assert set(item["phase"] for item in planned.values()) == set(PHASES) - {"R5", "R6"}
+    assert set(item["phase"] for item in planned.values()) == set(PHASES) - {"R5", "R6", "R7"}
     assert all(item_id.startswith(f"{item['phase']}.") for item_id, item in planned.items())
     assert all(item["status"] == "PLANNED_UNBOUND" for item in planned.values())
     assert all(item["automation"]["jit_binding_required"] is True for item in planned.values())
@@ -76,12 +76,12 @@ def test_planned_backlog_has_unique_ids_acyclic_defined_and_phase_ordered_depend
             assert dependency_order <= PHASE_ORDER[item["phase"]]
 
 
-def test_r5_4_closeout_preserves_the_jit_bound_r6_1_transition_and_one_active_successor():
+def test_r7_2_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_r7_3():
     manifest = _manifest()
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R7.2"
+    assert active[0] == "R7.3"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -90,19 +90,19 @@ def test_r5_4_closeout_preserves_the_jit_bound_r6_1_transition_and_one_active_su
     assert items["R5.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R5.4"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R7.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R7.2"]["automation"]
+    assert items["R7.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R7.3"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
     assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R7-2-RUN-TIMELINE-PROVIDER-HEALTH-OPERATIONAL-ACCOUNTING-01"
-    assert binding["work_branch"] == "control-plane/r7-2-run-timeline-provider-health-operational-accounting"
+    assert binding["front_id"] == "BRAIN-101-R7-3-VISUAL-TRACE-OPERATOR-CONSOLE-CONTRACTS-01"
+    assert binding["work_branch"] == "control-plane/r7-3-visual-trace-operator-console-contracts"
     assert binding["allowed_paths"] == [
-        "tmp_agent/brain_v9/core/agent_kernel_v2/trace.py",
-        "tmp_agent/brain_v9/tracing/timeline.py",
-        "tmp_agent/brain_v9/provider_health/provider_health.py",
-        "docs/roadmap/evidence/BRAIN_101_R7_2_RUN_TIMELINE_PROVIDER_HEALTH_OPERATIONAL_ACCOUNTING.json",
-        "tests/contract/test_r7_2_run_timeline_provider_health_operational_accounting.py",
+        "tmp_agent/brain_v9/routes/trace_streaming_routes.py",
+        "tmp_agent/brain_v9/ui/agent_trace_console.html",
+        "docs/roadmap/evidence/BRAIN_101_R7_3_VISUAL_TRACE_OPERATOR_CONSOLE_CONTRACTS.json",
+        "tests/contract/test_r7_3_visual_trace_operator_console_contracts.py",
     ]
 
 

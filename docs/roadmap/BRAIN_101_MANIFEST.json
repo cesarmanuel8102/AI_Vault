@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "72aefc80da7e5f364d2863be157cd55397dce013b8ddb231d36cbe207056e379",
+  "roadmap_sha256": "ac512024e75a7e00025efd2a29fa74b4a33b76c6e649ebac01325d57d25ab3e3",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -2279,7 +2279,7 @@
       }
     },
     "R7.2": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R7",
       "title": "Run timeline provider health and operational accounting",
       "dependencies": [
@@ -2409,7 +2409,7 @@
       }
     },
     "R7.3": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R7",
       "title": "Visual Trace and operator console contracts",
       "dependencies": [
@@ -2454,18 +2454,86 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
-        "activation_requires": [
-          "expected_base_sha",
-          "front_id",
-          "work_branch",
-          "allowed_paths",
-          "forbidden_paths",
-          "test_commands",
-          "acceptance",
-          "rollback",
-          "evidence_path"
-        ]
+        "jit_binding_completed": true,
+        "dispatchable": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R7-3-VISUAL-TRACE-OPERATOR-CONSOLE-CONTRACTS-01",
+        "objective": "Expose only already-sanitized correlation-bound trace events through a read-only visual trace console and auditable operator export contract without private reasoning, provider calls, or unaudited operator actions",
+        "work_branch": "control-plane/r7-3-visual-trace-operator-console-contracts",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "observability",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/routes/trace_streaming_routes.py",
+          "tmp_agent/brain_v9/ui/agent_trace_console.html",
+          "docs/roadmap/evidence/BRAIN_101_R7_3_VISUAL_TRACE_OPERATOR_CONSOLE_CONTRACTS.json",
+          "tests/contract/test_r7_3_visual_trace_operator_console_contracts.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Expose only pre-sanitized, correlation-bound trace events through a read-only stream and visual console contract",
+          "Provide an auditable safe export projection while rejecting raw secrets, private reasoning, unsafe run identifiers, and unaudited operator actions",
+          "Preserve no deployment, no scheduler activation, no provider calls, no canonical local sync, no live trading, no real money, and no auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r7_3_visual_trace_operator_console_contracts.py",
+          "python -m pytest -q tests/contract/test_r7_2_run_timeline_provider_health_operational_accounting.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Restore only the previous read-only trace console projection through version-controlled rollback",
+          "Do not modify scheduler configuration, runtime installation, canonical local state, trading, or financial controls"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R7_3_VISUAL_TRACE_OPERATOR_CONSOLE_CONTRACTS.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R7-3-VISUAL-TRACE-OPERATOR-CONSOLE-CONTRACTS-CLOSEOUT-01",
+          "objective": "Record verified R7.3 read-only visual trace and operator-console evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r7-3-visual-trace-operator-console-contracts-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R7_3_VISUAL_TRACE_OPERATOR_CONSOLE_CONTRACTS_CLOSEOUT.json",
+            "tests/contract/test_r7_3_visual_trace_operator_console_contracts.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R7.3 Issue PR decision merge and safe visual trace console evidence",
+            "Set R7.3 to CLOSED_RUNTIME_VERIFIED only after the implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r7_3_visual_trace_operator_console_contracts.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R8.1": {
