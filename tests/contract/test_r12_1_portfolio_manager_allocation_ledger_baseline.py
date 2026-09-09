@@ -205,7 +205,7 @@ def test_closeout_records_merged_r12_1_evidence_and_only_authorizes_r12_2():
     assert closeout["successor"] == {
         "roadmap_item": "R12.2",
         "front_id": "BRAIN-101-R12-2-RISK-ENGINE-LOSS-EXPOSURE-MARKET-FAILURE-GATES-01",
-        "deployment_mode": "PAPER_ONLY_NO_DEPLOY",
+        "deployment_mode": "NO_DEPLOY",
     }
     assert all(value is False for value in closeout["runtime_actions"].values())
 
@@ -219,4 +219,4 @@ def test_closeout_records_merged_r12_1_evidence_and_only_authorizes_r12_2():
     assert active == ["R12.2"]
     binding = manifest["roadmap_items"]["R12.2"]["automation"]
     assert binding["front_id"] == closeout["successor"]["front_id"]
-    assert binding["deployment_mode"] == "PAPER_ONLY_NO_DEPLOY"
+    assert binding["deployment_mode"] == "NO_DEPLOY"

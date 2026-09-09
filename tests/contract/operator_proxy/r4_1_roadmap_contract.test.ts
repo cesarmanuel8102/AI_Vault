@@ -216,5 +216,5 @@ test("R5.4 through R12.1 closeouts preserve history and hand sole authority to J
   assert.equal(r122.status,"AUTHORIZED_ACTIVE");
   assert.equal(r122.automation.front_id,"BRAIN-101-R12-2-RISK-ENGINE-LOSS-EXPOSURE-MARKET-FAILURE-GATES-01");
   assert.equal(r122.automation.jit_binding_completed,true);
-  assert.equal(r122.automation.deployment_mode,"PAPER_ONLY_NO_DEPLOY");
+  assert.equal(r122.automation.deployment_mode,"NO_DEPLOY");
 });

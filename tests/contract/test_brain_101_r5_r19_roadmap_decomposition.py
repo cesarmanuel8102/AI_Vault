@@ -107,7 +107,7 @@ def test_r10_3_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
-    assert binding["deployment_mode"] == "PAPER_ONLY_NO_DEPLOY"
+    assert binding["deployment_mode"] == "NO_DEPLOY"
     assert binding["front_id"] == "BRAIN-101-R12-2-RISK-ENGINE-LOSS-EXPOSURE-MARKET-FAILURE-GATES-01"
     assert binding["work_branch"] == "control-plane/r12-2-risk-engine-loss-exposure-market-failure-gates"
     assert binding["closeout"]["risk"] == "MEDIUM"

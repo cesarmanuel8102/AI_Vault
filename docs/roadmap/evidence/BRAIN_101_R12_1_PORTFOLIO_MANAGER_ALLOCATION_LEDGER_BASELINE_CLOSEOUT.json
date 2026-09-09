@@ -8,7 +8,7 @@
   "successor": {
     "roadmap_item": "R12.2",
     "front_id": "BRAIN-101-R12-2-RISK-ENGINE-LOSS-EXPOSURE-MARKET-FAILURE-GATES-01",
-    "deployment_mode": "PAPER_ONLY_NO_DEPLOY"
+    "deployment_mode": "NO_DEPLOY"
   },
   "runtime_actions": {
     "deployment": false,

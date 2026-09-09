@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "c5ef5ee1c155629669cb2a571f826788b006d076474984806d54ac6e7142d197",
+  "roadmap_sha256": "8ad1f5e83a38987f30f12e67e3b5c5ffe07c46f693648fada4b5a98b53de7305",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -4053,7 +4053,7 @@
           "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
           "git diff --check"
         ],
-        "deployment_mode": "PAPER_ONLY_NO_DEPLOY",
+        "deployment_mode": "NO_DEPLOY",
         "rollback": [
           "Record deterministic paper-only gate-denial rollback evidence without broker, order, runtime, scheduler, configuration, memory, trading, or financial-control mutation"
         ],
