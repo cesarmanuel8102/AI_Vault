@@ -55,7 +55,7 @@ test("R4.1 baseline evidence selects one eligible no-deploy modular-monolith can
   ]);
 });
 
-test("R5.4 and R6.1 closeouts preserve history and hand sole authority to JIT-bound R6.2",()=>{
+test("R5.4 through R6.2 closeouts preserve history and hand sole authority to JIT-bound R6.3",()=>{
   const manifest=readJson(MANIFEST);
   assert.equal(manifest.roadmap_items["R4.1"].status,"CLOSED_RUNTIME_VERIFIED");
   const r42=manifest.roadmap_items["R4.2"];
@@ -73,7 +73,9 @@ test("R5.4 and R6.1 closeouts preserve history and hand sole authority to JIT-bo
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R5_3_AGENT_V2_PLANNING_EVALUATION_PERSISTENCE_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R5_4_AGENT_V2_COGNITIVE_ROUTE_CONVERGENCE_CLOSEOUT.json")));
-  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R6.2"]);
+  assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE_CLOSEOUT.json")));
+  assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK_CLOSEOUT.json")));
+  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R6.3"]);
   const r43=manifest.roadmap_items["R4.3"];
   assert.deepEqual(r43.dependencies,["R4.2"]);
   assert.equal(r43.status,"CLOSED_RUNTIME_VERIFIED");
@@ -111,9 +113,16 @@ test("R5.4 and R6.1 closeouts preserve history and hand sole authority to JIT-bo
   assert.equal(r61.automation.deployment_mode,"NO_DEPLOY");
   const r62=manifest.roadmap_items["R6.2"];
   assert.deepEqual(r62.dependencies,["R6.1"]);
-  assert.equal(r62.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r62.status,"CLOSED_RUNTIME_VERIFIED");
   assert.equal(r62.automation.front_id,"BRAIN-101-R6-2-GOVERNED-MEMORY-CANDIDATE-PROMOTION-ROLLBACK-01");
   assert.equal(r62.automation.jit_binding_completed,true);
   assert.equal(r62.automation.deployment_mode,"NO_DEPLOY");
   assert.equal(r62.automation.closeout.risk,"MEDIUM");
+  const r63=manifest.roadmap_items["R6.3"];
+  assert.deepEqual(r63.dependencies,["R6.2"]);
+  assert.equal(r63.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r63.automation.front_id,"BRAIN-101-R6-3-MEMORY-RETRIEVAL-HYDRATION-REBUILD-VALIDATION-01");
+  assert.equal(r63.automation.jit_binding_completed,true);
+  assert.equal(r63.automation.deployment_mode,"NO_DEPLOY");
+  assert.equal(r63.automation.closeout.risk,"MEDIUM");
 });
