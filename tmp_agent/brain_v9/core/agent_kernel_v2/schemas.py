@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
 
 def utc_now() -> str:
@@ -11,6 +12,42 @@ def utc_now() -> str:
 STATUSES = {"created", "planned", "running", "waiting_approval", "paused", "failed", "completed", "cancelled"}
 MODES = {"read_only", "build", "auto"}
 LEGACY_MODE_MAP = {"dry_run": "read_only", "approval_required": "build", "write_allowed": "build"}
+TRACE_EVENT_TAXONOMY = frozenset(
+    {
+        "approval_required",
+        "capability_metadata_node",
+        "context_assembly_node",
+        "end_node",
+        "evaluator_node",
+        "evidence_routing_node",
+        "final_answer_created",
+        "finalizer_node",
+        "governance_gate_node",
+        "intent_node",
+        "intent_route",
+        "invalid_transition",
+        "memory_retrieval_completed",
+        "memory_retrieval_node",
+        "memory_retrieval_started",
+        "mode_escalation_detected",
+        "native_helper_error",
+        "plan_created",
+        "planner_node",
+        "repair_or_replan_node",
+        "result_normalization_node",
+        "run_cancelled",
+        "run_completed",
+        "run_created",
+        "run_failed",
+        "run_paused",
+        "run_resumed",
+        "start_node",
+        "tool_call_completed",
+        "tool_call_started",
+        "tool_execution_node",
+        "tool_execution_summary",
+    }
+)
 
 
 @dataclass
@@ -44,9 +81,16 @@ class AgentTraceEvent:
     event_type: str
     run_id: str
     timestamp_utc: str = field(default_factory=utc_now)
+    event_id: str = field(default_factory=lambda: "trace_" + uuid4().hex)
+    correlation_id: Optional[str] = None
+    schema_version: int = 1
     step_id: Optional[str] = None
     message: str = ""
     data: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.correlation_id is None:
+            self.correlation_id = self.run_id
 
 
 @dataclass

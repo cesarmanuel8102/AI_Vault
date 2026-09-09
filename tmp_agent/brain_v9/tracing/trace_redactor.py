@@ -4,6 +4,9 @@ Safe event redactor for Agent Visual Trace Console.
 Removes blocked fields, scrubs secrets, redacts protected paths,
 truncates strings, and limits data field size.
 Never mutates the original event dict.
+
+R7.1 makes this sanitizer the single redaction boundary for persisted Agent V2
+trace events. The writer validates event identity and taxonomy before calling it.
 """
 import copy
 import json
