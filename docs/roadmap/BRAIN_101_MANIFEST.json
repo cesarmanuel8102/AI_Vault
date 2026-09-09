@@ -2754,7 +2754,7 @@
           "objective": "Record verified R8.2 provider-resilience evidence before authorizing exactly one dependency-eligible successor",
           "work_branch": "control-plane/r8-2-provider-resilience-secret-safe-operations-closeout",
           "executor": "codex_control_plane",
-          "risk": "HIGH",
+          "risk": "MEDIUM",
           "allowed_paths": [
             "docs/roadmap/BRAIN_101_MANIFEST.json",
             "docs/roadmap/BRAIN_101_ROADMAP.md",
