@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "ac512024e75a7e00025efd2a29fa74b4a33b76c6e649ebac01325d57d25ab3e3",
+  "roadmap_sha256": "e32e8e27ad37a9b0a592aa0ef2ad9e9072047bce5fc22be298eb0c427648d6be",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -2409,7 +2409,7 @@
       }
     },
     "R7.3": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R7",
       "title": "Visual Trace and operator console contracts",
       "dependencies": [
@@ -2537,7 +2537,7 @@
       }
     },
     "R8.1": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R8",
       "title": "Provider Gateway policy and capability inventory",
       "dependencies": [
@@ -2582,18 +2582,85 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
-        "activation_requires": [
-          "expected_base_sha",
-          "front_id",
-          "work_branch",
-          "allowed_paths",
-          "forbidden_paths",
-          "test_commands",
-          "acceptance",
-          "rollback",
-          "evidence_path"
-        ]
+        "jit_binding_completed": true,
+        "dispatchable": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R8-1-PROVIDER-GATEWAY-POLICY-CAPABILITY-INVENTORY-01",
+        "objective": "Establish a deterministic provider policy and capability inventory boundary that records configured provider capabilities without provider invocation, secret exposure, hidden fallback execution, or runtime configuration mutation",
+        "work_branch": "control-plane/r8-1-provider-gateway-policy-capability-inventory",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "provider_gateway",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/provider_gateway.py",
+          "docs/roadmap/evidence/BRAIN_101_R8_1_PROVIDER_GATEWAY_POLICY_CAPABILITY_INVENTORY.json",
+          "tests/contract/test_r8_1_provider_gateway_policy_capability_inventory.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Define a provider-independent policy and capability inventory boundary with explicit configured-provider identities and no hidden fallback",
+          "Reject secret-bearing configuration, unknown providers, unsafe fallback requests, and any provider invocation from the inventory boundary",
+          "Preserve no deployment, no scheduler activation, no provider calls, no canonical local sync, no live trading, no real money, and no auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r8_1_provider_gateway_policy_capability_inventory.py",
+          "python -m pytest -q tests/contract/test_r7_3_visual_trace_operator_console_contracts.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Restore only the prior provider policy inventory through version-controlled rollback",
+          "Do not mutate provider secrets, runtime configuration, scheduler configuration, canonical local state, trading, or financial controls"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R8_1_PROVIDER_GATEWAY_POLICY_CAPABILITY_INVENTORY.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R8-1-PROVIDER-GATEWAY-POLICY-CAPABILITY-INVENTORY-CLOSEOUT-01",
+          "objective": "Record verified R8.1 provider-policy inventory evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r8-1-provider-gateway-policy-capability-inventory-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R8_1_PROVIDER_GATEWAY_POLICY_CAPABILITY_INVENTORY_CLOSEOUT.json",
+            "tests/contract/test_r8_1_provider_gateway_policy_capability_inventory.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R8.1 implementation evidence and provider policy inventory verification",
+            "Set R8.1 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r8_1_provider_gateway_policy_capability_inventory.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R8.2": {

@@ -1,9 +1,9 @@
 {
-  "current_head": "40b7886fe95b9b56cb5bcfb015ff2760344f074b",
-  "current_remote_head": "40b7886fe95b9b56cb5bcfb015ff2760344f074b",
+  "current_head": "f9f5af76860be15f5b9801d5a57ead265848ad8f",
+  "current_remote_head": "f9f5af76860be15f5b9801d5a57ead265848ad8f",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "r7_2_run_timeline_provider_health_operational_accounting_closed_r7_3_authorized",
-  "last_applied_checkpoint": "BRAIN-101-R7-2-RUN-TIMELINE-PROVIDER-HEALTH-OPERATIONAL-ACCOUNTING-CLOSEOUT-01",
+  "migration_status": "r7_3_visual_trace_operator_console_contracts_closed_r8_1_authorized",
+  "last_applied_checkpoint": "BRAIN-101-R7-3-VISUAL-TRACE-OPERATOR-CONSOLE-CONTRACTS-CLOSEOUT-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -175,7 +175,7 @@
     "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-CLOSEOUT-01"
   ],
   "open_fronts": [
-    "BRAIN-101-R7-3-VISUAL-TRACE-OPERATOR-CONSOLE-CONTRACTS-01"
+    "BRAIN-101-R8-1-PROVIDER-GATEWAY-POLICY-CAPABILITY-INVENTORY-01"
   ],
   "blocked_fronts": [
     "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
@@ -192,12 +192,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "BRAIN-101-R7-3-VISUAL-TRACE-OPERATOR-CONSOLE-CONTRACTS-01",
+    "name": "BRAIN-101-R8-1-PROVIDER-GATEWAY-POLICY-CAPABILITY-INVENTORY-01",
     "status": "authorized_next",
-    "reason": "R7.2 closed deterministic sanitized timeline projection and pure provider health accounting; the next dependency-eligible bounded candidate is a no-deploy read-only visual trace and operator-console contract."
+    "reason": "R7.3 closed the read-only sanitized visual trace and operator console contract; the next dependency-eligible bounded candidate is a no-deploy provider policy and capability inventory."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-09-08T00:00:00.000+00:00",
+  "last_updated": "2026-09-09T02:47:18.000+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -4798,7 +4798,7 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "R7_2_CLOSED_RUNTIME_VERIFIED_R7_3_AUTHORIZED_ACTIVE",
+    "status": "R7_3_CLOSED_RUNTIME_VERIFIED_R8_1_AUTHORIZED_ACTIVE",
     "approval_status": "HUMAN_ADOPTED",
     "current_phase": "R7",
     "human_final_authority": true,
@@ -5420,10 +5420,10 @@
     "r4_3_front_id": "BRAIN-101-R4-3-CHAT-ENTRYPOINT-CONTRACTS-01",
     "r4_3_executor": "codex_control_plane",
     "r4_3_deployment_mode": "NO_DEPLOY",
-    "next_authorized_item": "R7.3",
-    "roadmap_decomposition": "R5_R19_EXECUTABLE_R7_3_JIT_BOUND",
+    "next_authorized_item": "R8.1",
+    "roadmap_decomposition": "R5_R19_EXECUTABLE_R8_1_JIT_BOUND",
     "roadmap_decomposition_item_count": 41,
-    "roadmap_execution_binding": "R7_3_JIT_BOUND_LIVE_HEAD_AT_DISPATCH",
+    "roadmap_execution_binding": "R8_1_JIT_BOUND_LIVE_HEAD_AT_DISPATCH",
     "r4_3_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R4_3_CHAT_ENTRYPOINT_CONTRACTS_CLOSEOUT.json",
     "r4_3_closeout_source_commit": "dc968bff656f2e007c410c0aa0f5cb849988a3b3",
     "r4_3_closeout_parent_merge": "9389737eca240173591fe926c867012e029bccbd",
@@ -5488,12 +5488,18 @@
     "r7_2_deployment_mode": "NO_DEPLOY",
     "r7_2_implementation_merge_commit": "40b7886fe95b9b56cb5bcfb015ff2760344f074b",
     "r7_2_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R7_2_RUN_TIMELINE_PROVIDER_HEALTH_OPERATIONAL_ACCOUNTING_CLOSEOUT.json",
-    "r7_3_status": "AUTHORIZED_ACTIVE",
+    "r7_3_status": "CLOSED_RUNTIME_VERIFIED",
     "r7_3_front_id": "BRAIN-101-R7-3-VISUAL-TRACE-OPERATOR-CONSOLE-CONTRACTS-01",
     "r7_3_executor": "codex_control_plane",
     "r7_3_deployment_mode": "NO_DEPLOY",
-    "r7_3_expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
-    "remaining_planned_unbound_items": 31
+    "r7_3_implementation_merge_commit": "f9f5af76860be15f5b9801d5a57ead265848ad8f",
+    "r7_3_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R7_3_VISUAL_TRACE_OPERATOR_CONSOLE_CONTRACTS_CLOSEOUT.json",
+    "r8_1_status": "AUTHORIZED_ACTIVE",
+    "r8_1_front_id": "BRAIN-101-R8-1-PROVIDER-GATEWAY-POLICY-CAPABILITY-INVENTORY-01",
+    "r8_1_executor": "codex_control_plane",
+    "r8_1_deployment_mode": "NO_DEPLOY",
+    "r8_1_expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+    "remaining_planned_unbound_items": 30
   },
   "brain_101_r3_1_contract_e2e_gap_matrix_closeout": {
     "status": "done",

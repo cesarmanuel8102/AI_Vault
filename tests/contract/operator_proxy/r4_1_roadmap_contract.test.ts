@@ -55,7 +55,7 @@ test("R4.1 baseline evidence selects one eligible no-deploy modular-monolith can
   ]);
 });
 
-test("R5.4 through R7.2 closeouts preserve history and hand sole authority to JIT-bound R7.3",()=>{
+test("R5.4 through R7.3 closeouts preserve history and hand sole authority to JIT-bound R8.1",()=>{
   const manifest=readJson(MANIFEST);
   assert.equal(manifest.roadmap_items["R4.1"].status,"CLOSED_RUNTIME_VERIFIED");
   const r42=manifest.roadmap_items["R4.2"];
@@ -76,7 +76,7 @@ test("R5.4 through R7.2 closeouts preserve history and hand sole authority to JI
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION_CLOSEOUT.json")));
-  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R7.3"]);
+  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R8.1"]);
   const r43=manifest.roadmap_items["R4.3"];
   assert.deepEqual(r43.dependencies,["R4.2"]);
   assert.equal(r43.status,"CLOSED_RUNTIME_VERIFIED");
@@ -140,8 +140,15 @@ test("R5.4 through R7.2 closeouts preserve history and hand sole authority to JI
   assert.equal(r72.automation.deployment_mode,"NO_DEPLOY");
   const r73=manifest.roadmap_items["R7.3"];
   assert.deepEqual(r73.dependencies,["R7.2"]);
-  assert.equal(r73.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r73.status,"CLOSED_RUNTIME_VERIFIED");
   assert.equal(r73.automation.front_id,"BRAIN-101-R7-3-VISUAL-TRACE-OPERATOR-CONSOLE-CONTRACTS-01");
   assert.equal(r73.automation.jit_binding_completed,true);
   assert.equal(r73.automation.deployment_mode,"NO_DEPLOY");
+  assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R7_3_VISUAL_TRACE_OPERATOR_CONSOLE_CONTRACTS_CLOSEOUT.json")));
+  const r81=manifest.roadmap_items["R8.1"];
+  assert.deepEqual(r81.dependencies,["R5.4"]);
+  assert.equal(r81.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r81.automation.front_id,"BRAIN-101-R8-1-PROVIDER-GATEWAY-POLICY-CAPABILITY-INVENTORY-01");
+  assert.equal(r81.automation.jit_binding_completed,true);
+  assert.equal(r81.automation.deployment_mode,"NO_DEPLOY");
 });

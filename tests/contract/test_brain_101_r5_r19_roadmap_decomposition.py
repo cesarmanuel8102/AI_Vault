@@ -76,12 +76,12 @@ def test_planned_backlog_has_unique_ids_acyclic_defined_and_phase_ordered_depend
             assert dependency_order <= PHASE_ORDER[item["phase"]]
 
 
-def test_r7_2_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_r7_3():
+def test_r7_3_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_r8_1():
     manifest = _manifest()
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R7.3"
+    assert active[0] == "R8.1"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -91,18 +91,18 @@ def test_r7_2_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_r
     assert items["R5.4"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R7.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R7.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R7.3"]["automation"]
+    assert items["R7.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R8.1"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
     assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R7-3-VISUAL-TRACE-OPERATOR-CONSOLE-CONTRACTS-01"
-    assert binding["work_branch"] == "control-plane/r7-3-visual-trace-operator-console-contracts"
+    assert binding["front_id"] == "BRAIN-101-R8-1-PROVIDER-GATEWAY-POLICY-CAPABILITY-INVENTORY-01"
+    assert binding["work_branch"] == "control-plane/r8-1-provider-gateway-policy-capability-inventory"
     assert binding["allowed_paths"] == [
-        "tmp_agent/brain_v9/routes/trace_streaming_routes.py",
-        "tmp_agent/brain_v9/ui/agent_trace_console.html",
-        "docs/roadmap/evidence/BRAIN_101_R7_3_VISUAL_TRACE_OPERATOR_CONSOLE_CONTRACTS.json",
-        "tests/contract/test_r7_3_visual_trace_operator_console_contracts.py",
+        "tmp_agent/brain_v9/core/provider_gateway.py",
+        "docs/roadmap/evidence/BRAIN_101_R8_1_PROVIDER_GATEWAY_POLICY_CAPABILITY_INVENTORY.json",
+        "tests/contract/test_r8_1_provider_gateway_policy_capability_inventory.py",
     ]
 
 

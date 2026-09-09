@@ -1,0 +1,50 @@
+{
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "runtime_actions": {
+    "canonical_local_sync": false,
+    "provider_call": false,
+    "scheduler_activation": false,
+    "worker_install": false
+  },
+  "hard_limits": {
+    "persistent_agent_loop": "DEFERRED",
+    "human_final_authority": true,
+    "canonical_local_sync": false,
+    "real_money": false,
+    "live_trading": false,
+    "auto_merge": false
+  },
+  "roadmap_id": "BRAIN-101",
+  "result": "CLOSED_RUNTIME_VERIFIED",
+  "verification": {
+    "operator_proxy_contract_windows": "passed",
+    "operator_proxy_contract_ubuntu": "passed",
+    "roadmap_regression": "9 passed",
+    "r7_3_contract": "8 passed",
+    "independent_review": "passed",
+    "exact_head_ci": "passed",
+    "r7_2_regression": "11 passed"
+  },
+  "parent_source_commit": "6f57175e8ccba406a46bb8aa6be648194eb80595",
+  "evidence_type": "BRAIN_101_R7_3_VISUAL_TRACE_OPERATOR_CONSOLE_CONTRACTS_CLOSEOUT",
+  "verified_controls": [
+    "read_only_sanitized_correlation_bound_trace_projection",
+    "private_reasoning_and_secret_rejection",
+    "dom_text_content_only_console_rendering",
+    "operator_action_boundary_preserved"
+  ],
+  "schema_version": 1,
+  "roadmap_item_id": "R7.3",
+  "parent_merge_commit": "f9f5af76860be15f5b9801d5a57ead265848ad8f",
+  "front_id": "BRAIN-101-R7-3-VISUAL-TRACE-OPERATOR-CONSOLE-CONTRACTS-CLOSEOUT-01",
+  "implementation_evidence_path": "docs/roadmap/evidence/BRAIN_101_R7_3_VISUAL_TRACE_OPERATOR_CONSOLE_CONTRACTS.json",
+  "parent_pr_number": 321,
+  "deployment_mode": "NO_DEPLOY",
+  "next_item": {
+    "roadmap_item_id": "R8.1",
+    "front_id": "BRAIN-101-R8-1-PROVIDER-GATEWAY-POLICY-CAPABILITY-INVENTORY-01",
+    "executor": "codex_control_plane",
+    "jit_binding_completed": true,
+    "deployment_mode": "NO_DEPLOY"
+  }
+}
