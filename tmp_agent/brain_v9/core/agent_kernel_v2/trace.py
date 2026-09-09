@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
 from pathlib import Path
-from brain_v9.tracing.trace_redactor import sanitize_event
+from ...tracing.trace_redactor import sanitize_event
 
 from .schemas import AgentTraceEvent, TRACE_EVENT_TAXONOMY, to_dict
 from .state import RAW_COT_MARKERS

@@ -3,19 +3,17 @@ from __future__ import annotations
 
 import ast
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "tmp_agent"))
 
 
 def test_trace_store_persists_only_governed_correlation_bound_redacted_events(tmp_path):
-    from brain_v9.core.agent_kernel_v2.schemas import AgentTraceEvent
-    from brain_v9.core.agent_kernel_v2.trace import TraceStore
+    from tmp_agent.brain_v9.core.agent_kernel_v2.schemas import AgentTraceEvent
+    from tmp_agent.brain_v9.core.agent_kernel_v2.trace import TraceStore
 
     store = TraceStore(tmp_path)
     store.append(
@@ -59,8 +57,8 @@ def test_trace_store_persists_only_governed_correlation_bound_redacted_events(tm
 def test_trace_store_rejects_missing_correlation_or_unknown_taxonomy_before_write(
     tmp_path, event, reason
 ):
-    from brain_v9.core.agent_kernel_v2.schemas import AgentTraceEvent
-    from brain_v9.core.agent_kernel_v2.trace import TraceStore
+    from tmp_agent.brain_v9.core.agent_kernel_v2.schemas import AgentTraceEvent
+    from tmp_agent.brain_v9.core.agent_kernel_v2.trace import TraceStore
 
     store = TraceStore(tmp_path)
     candidate = AgentTraceEvent(run_id="run-r7-1", **event)
@@ -71,7 +69,7 @@ def test_trace_store_rejects_missing_correlation_or_unknown_taxonomy_before_writ
 
 
 def test_trace_event_defaults_bind_identity_to_its_run():
-    from brain_v9.core.agent_kernel_v2.schemas import AgentTraceEvent
+    from tmp_agent.brain_v9.core.agent_kernel_v2.schemas import AgentTraceEvent
 
     event = AgentTraceEvent(event_type="run_completed", run_id="run-r7-1")
 
@@ -81,8 +79,8 @@ def test_trace_event_defaults_bind_identity_to_its_run():
 
 
 def test_trace_store_redacts_private_reasoning_markers_before_persistence(tmp_path):
-    from brain_v9.core.agent_kernel_v2.schemas import AgentTraceEvent
-    from brain_v9.core.agent_kernel_v2.trace import TraceStore
+    from tmp_agent.brain_v9.core.agent_kernel_v2.schemas import AgentTraceEvent
+    from tmp_agent.brain_v9.core.agent_kernel_v2.trace import TraceStore
 
     store = TraceStore(tmp_path)
     store.append(
@@ -100,7 +98,7 @@ def test_trace_store_redacts_private_reasoning_markers_before_persistence(tmp_pa
 
 
 def test_all_static_runtime_trace_types_are_in_the_governed_taxonomy():
-    from brain_v9.core.agent_kernel_v2.schemas import TRACE_EVENT_TAXONOMY
+    from tmp_agent.brain_v9.core.agent_kernel_v2.schemas import TRACE_EVENT_TAXONOMY
 
     runtime_paths = (
         ROOT / "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
