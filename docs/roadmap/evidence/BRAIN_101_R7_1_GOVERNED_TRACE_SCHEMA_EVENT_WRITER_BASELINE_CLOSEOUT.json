@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "evidence_type": "BRAIN_101_R7_1_GOVERNED_TRACE_SCHEMA_EVENT_WRITER_BASELINE_CLOSEOUT",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R7.1",
+  "front_id": "BRAIN-101-R7-1-GOVERNED-TRACE-SCHEMA-EVENT-WRITER-BASELINE-CLOSEOUT-01",
+  "parent_source_commits": [
+    "208023f0c194fdd63e2997692043d9e5efff4ec4",
+    "df0e3b4a56533172b9c4b0e9f2de7adf32be1c48"
+  ],
+  "parent_merge_commit": "4f844849520a7e8a39ac9d59ffdda7c14cf5477b",
+  "parent_pr_number": 317,
+  "implementation_evidence_path": "docs/roadmap/evidence/BRAIN_101_R7_1_GOVERNED_TRACE_SCHEMA_EVENT_WRITER_BASELINE.json",
+  "result": "CLOSED_RUNTIME_VERIFIED",
+  "deployment_mode": "NO_DEPLOY",
+  "verification": {
+    "r7_1_contract": "7 passed",
+    "trace_redactor_regression": "28 passed",
+    "roadmap_regression": "8 passed",
+    "sanitizer_regression": "14/14 passed",
+    "exact_head_ci": "passed",
+    "independent_review": "passed"
+  },
+  "verified_controls": [
+    "correlation_bound_event_identity",
+    "runtime_audited_explicit_event_taxonomy",
+    "pre_persistence_secret_path_and_private_reasoning_redaction",
+    "unknown_taxonomy_and_missing_correlation_rejection",
+    "package_relative_redactor_import_compatibility"
+  ],
+  "runtime_actions": {
+    "worker_install": false,
+    "scheduler_activation": false,
+    "provider_call": false,
+    "canonical_local_sync": false
+  },
+  "next_item": {
+    "roadmap_item_id": "R7.2",
+    "front_id": "BRAIN-101-R7-2-RUN-TIMELINE-PROVIDER-HEALTH-OPERATIONAL-ACCOUNTING-01",
+    "executor": "codex_control_plane",
+    "deployment_mode": "NO_DEPLOY",
+    "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+    "jit_binding_completed": true
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}

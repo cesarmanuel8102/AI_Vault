@@ -9387,3 +9387,11 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION_CLOSEOUT.json`, bound to marker-bound source snapshots, attributable records, exact records/IDs topology, deterministic rebuild receipt identity, and isolated rollback verification.
 - Status: R6.3 set to `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, provider call, canonical memory mutation, canonical local sync, live trading, real money, or auto-merge occurred.
 - Authorized successor: exactly one R7.1, `BRAIN-101-R7-1-GOVERNED-TRACE-SCHEMA-EVENT-WRITER-BASELINE-01`, controller-governed `NO_DEPLOY`, bounded to governed trace schema, explicit event taxonomy, correlation identity, and private-reasoning redaction.
+
+## BRAIN-101 R7.1 - Governed Trace Schema and Event Writer Baseline Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent sources: `208023f0c194fdd63e2997692043d9e5efff4ec4` and `df0e3b4a56533172b9c4b0e9f2de7adf32be1c48`, merged as `4f844849520a7e8a39ac9d59ffdda7c14cf5477b` through PR #317.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R7_1_GOVERNED_TRACE_SCHEMA_EVENT_WRITER_BASELINE_CLOSEOUT.json`, bound to correlation identity, the runtime-audited event taxonomy, and private-reasoning redaction before persistence.
+- Status: R7.1 set to `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, provider call, canonical local sync, live trading, real money, or auto-merge occurred.
+- Authorized successor: exactly one R7.2, `BRAIN-101-R7-2-RUN-TIMELINE-PROVIDER-HEALTH-OPERATIONAL-ACCOUNTING-01`, controller-governed `NO_DEPLOY`, bounded to sanitized timeline projection, pure provider-health accounting, controlled replay metadata, and no secret telemetry.
