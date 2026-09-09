@@ -142,7 +142,7 @@ def test_evidence_and_module_are_paper_only_and_external_effect_free():
         assert forbidden not in source
 
 
-def test_closeout_records_merged_r12_2_evidence_and_only_authorizes_r12_3():
+def test_closeout_records_merged_r12_2_evidence_and_preserves_r12_3_binding_after_progression():
     closeout = json.loads(
         (
             ROOT
@@ -161,14 +161,10 @@ def test_closeout_records_merged_r12_2_evidence_and_only_authorizes_r12_3():
     assert all(value is False for value in closeout["runtime_actions"].values())
 
     manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
-    active = [
-        item_id
-        for item_id, item in manifest["roadmap_items"].items()
-        if item["status"] == "AUTHORIZED_ACTIVE"
-    ]
     assert manifest["roadmap_items"]["R12.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    assert active == ["R12.3"]
-    binding = manifest["roadmap_items"]["R12.3"]["automation"]
+    successor = manifest["roadmap_items"]["R12.3"]
+    assert successor["status"] in {"AUTHORIZED_ACTIVE", "CLOSED_RUNTIME_VERIFIED"}
+    binding = successor["automation"]
     assert binding["front_id"] == closeout["successor"]["front_id"]
     assert binding["work_branch"] == (
         "control-plane/r12-3-portfolio-regime-rebalance-risk-attribution-validation"
