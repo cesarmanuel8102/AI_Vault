@@ -1,0 +1,23 @@
+{
+  "roadmap_item": "R13.1",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "compliance_policy_contract": {
+    "paper_only": true,
+    "policies": ["PDT", "wash_sale", "market_hours", "restricted_symbol", "short_sale_permission", "account_permission", "jurisdiction", "data_license", "paper_live_boundary"]
+  },
+  "runtime_actions": {
+    "deployment": false,
+    "scheduler_mutation": false,
+    "broker_connect": false,
+    "broker_order": false,
+    "order_submit": false,
+    "provider_call": false,
+    "network_fetch": false,
+    "runtime_import": false,
+    "runtime_mutation": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}
