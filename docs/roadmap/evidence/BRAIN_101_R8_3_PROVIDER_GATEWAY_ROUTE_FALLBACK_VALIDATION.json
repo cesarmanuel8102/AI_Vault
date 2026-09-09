@@ -1,0 +1,27 @@
+{
+  "roadmap_item_id": "R8.3",
+  "status": "IMPLEMENTATION_EVIDENCE",
+  "deployment_mode": "NO_DEPLOY",
+  "provider_route_policy": {
+    "execution": "forbidden",
+    "allowed_circuit_states": [
+      "CLOSED",
+      "OPEN"
+    ],
+    "fallback_receipt": "immutable and required only for an OPEN circuit",
+    "implicit_fallback": "forbidden",
+    "silent_degradation": "forbidden"
+  },
+  "runtime_actions": {
+    "provider_call": false,
+    "runtime_configuration_mutation": false,
+    "scheduler_activation": false,
+    "canonical_local_sync": false
+  },
+  "invariants": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "live_trading": false,
+    "real_money": false
+  }
+}
