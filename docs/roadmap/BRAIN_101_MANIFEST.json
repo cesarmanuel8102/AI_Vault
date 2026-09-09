@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "5713b379dd076468dceaaa923e7d1806017f49eb5ec9114dee451badef9c4ff7",
+  "roadmap_sha256": "90fbcd5576e050d0fef06ae9e9d974468602ceffce4c4cebe185c32ed45ea8c9",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -1894,7 +1894,7 @@
       }
     },
     "R6.2": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R6",
       "title": "Governed memory candidate promotion and rollback",
       "dependencies": [
@@ -1996,7 +1996,10 @@
             "ROADMAP_STATUS.json",
             "docs/MIGRATION_CONTROL_LEDGER.md",
             "docs/roadmap/evidence/BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK_CLOSEOUT.json",
-            "tests/contract/test_r6_2_governed_memory_candidate_promotion_rollback.py"
+            "tests/contract/test_r6_2_governed_memory_candidate_promotion_rollback.py",
+            "tests/contract/test_r6_1_memory_service_ownership_integrity_baseline.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts"
           ],
           "forbidden_paths": [
             ".env",
@@ -2020,7 +2023,7 @@
       }
     },
     "R6.3": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R6",
       "title": "Memory retrieval hydration and rebuild validation",
       "dependencies": [
@@ -2065,18 +2068,84 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
-        "activation_requires": [
-          "expected_base_sha",
-          "front_id",
-          "work_branch",
-          "allowed_paths",
-          "forbidden_paths",
-          "test_commands",
-          "acceptance",
-          "rollback",
-          "evidence_path"
-        ]
+        "jit_binding_completed": true,
+        "dispatchable": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R6-3-MEMORY-RETRIEVAL-HYDRATION-REBUILD-VALIDATION-01",
+        "objective": "Validate isolated semantic retrieval hydration and deterministic index rebuild recovery without canonical-memory mutation or opaque retrieval sources",
+        "work_branch": "control-plane/r6-3-memory-retrieval-hydration-rebuild-validation",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "memory_governance",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/memory_service.py",
+          "tmp_agent/brain_v9/core/semantic_memory_faiss.py",
+          "tmp_agent/brain_v9/memory/memory_snapshot.py",
+          "tmp_agent/brain_v9/memory/memory_rollback.py",
+          "docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION.json",
+          "tests/contract/test_r6_3_memory_retrieval_hydration_rebuild_validation.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Hydrate retrieval only from an explicit isolated semantic snapshot with attributable source records",
+          "Validate deterministic rebuild identity and rollback for the isolated index artifacts",
+          "Reject opaque retrieval sources, FAISS topology inconsistency, and any canonical-memory write",
+          "Preserve no deployment, no scheduler activation, no canonical local sync, no live trading, no real money, and no auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r6_3_memory_retrieval_hydration_rebuild_validation.py",
+          "python -m pytest -q tests/contract/test_r6_2_governed_memory_candidate_promotion_rollback.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Restore only verified isolated snapshot and rebuild artifacts through an evidence-bound rollback receipt",
+          "Do not modify canonical semantic data, scheduler configuration, runtime installation, canonical local state, trading, or financial controls"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R6-3-MEMORY-RETRIEVAL-HYDRATION-REBUILD-VALIDATION-CLOSEOUT-01",
+          "objective": "Record verified R6.3 isolated retrieval hydration and rebuild evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r6-3-memory-retrieval-hydration-rebuild-validation-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION_CLOSEOUT.json",
+            "tests/contract/test_r6_3_memory_retrieval_hydration_rebuild_validation.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Bind R6.3 closeout to verified isolated retrieval hydration and rebuild validation evidence",
+            "Authorize exactly one dependency-eligible successor only after R6.3 acceptance is verified",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r6_3_memory_retrieval_hydration_rebuild_validation.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R7.1": {

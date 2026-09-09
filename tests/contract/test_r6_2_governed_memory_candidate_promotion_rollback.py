@@ -261,3 +261,43 @@ def test_unconfigured_writer_fails_closed_and_restores_isolated_artifacts(tmp_pa
     assert result["reason"] == "isolated_promotion_failed"
     assert result["rollback"]["ok"] is True
     assert _artifact_hashes(root) == before
+
+
+def test_r6_2_closeout_activates_only_bound_r6_3_hydration_successor():
+    closeout_path = (
+        ROOT
+        / "docs/roadmap/evidence/"
+        "BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK_CLOSEOUT.json"
+    )
+    closeout = json.loads(closeout_path.read_text(encoding="utf-8"))
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+
+    assert closeout["roadmap_item_id"] == "R6.2"
+    assert closeout["parent_merge_commit"] == "70d89d89ce036a03fd52784c252e802159eec373"
+    assert closeout["result"] == "CLOSED_RUNTIME_VERIFIED"
+    assert manifest["roadmap_items"]["R6.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    assert closeout["next_item"] == {
+        "roadmap_item_id": "R6.3",
+        "front_id": "BRAIN-101-R6-3-MEMORY-RETRIEVAL-HYDRATION-REBUILD-VALIDATION-01",
+        "executor": "codex_control_plane",
+        "deployment_mode": "NO_DEPLOY",
+        "expected_base_sha_source": (
+            "sequenceRoadmap resolves the exact live canonical integration-branch head "
+            "at governed dispatch"
+        ),
+        "jit_binding_completed": True,
+    }
+    active_items = [
+        item_id
+        for item_id, item in manifest["roadmap_items"].items()
+        if item["status"] == "AUTHORIZED_ACTIVE"
+    ]
+    assert active_items == ["R6.3"]
+    automation = manifest["roadmap_items"]["R6.3"]["automation"]
+    assert automation["front_id"] == closeout["next_item"]["front_id"]
+    assert automation["jit_binding_completed"] is True
+    assert automation["dispatchable"] is True
+    assert manifest["roadmap_items"]["R6.3"]["hard_limits"] == closeout["hard_limits"]
+    assert automation["closeout"]["front_id"] == (
+        "BRAIN-101-R6-3-MEMORY-RETRIEVAL-HYDRATION-REBUILD-VALIDATION-CLOSEOUT-01"
+    )

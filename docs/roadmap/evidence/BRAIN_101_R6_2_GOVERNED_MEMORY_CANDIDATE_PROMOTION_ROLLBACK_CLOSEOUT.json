@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "evidence_type": "BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK_CLOSEOUT",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "created_at_utc": "2026-09-08T00:00:00Z",
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R6.2",
+  "parent_front_id": "BRAIN-101-R6-2-GOVERNED-MEMORY-CANDIDATE-PROMOTION-ROLLBACK-01",
+  "parent_source_commit": "3585bf803707ba31f56dded936e6323cacc58727",
+  "parent_merge_commit": "70d89d89ce036a03fd52784c252e802159eec373",
+  "parent_pr_number": 313,
+  "source_evidence_path": "docs/roadmap/evidence/BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK.json",
+  "result": "CLOSED_RUNTIME_VERIFIED",
+  "next_item": {
+    "roadmap_item_id": "R6.3",
+    "front_id": "BRAIN-101-R6-3-MEMORY-RETRIEVAL-HYDRATION-REBUILD-VALIDATION-01",
+    "executor": "codex_control_plane",
+    "deployment_mode": "NO_DEPLOY",
+    "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+    "jit_binding_completed": true
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}
