@@ -124,3 +124,29 @@ def test_evidence_and_module_are_paper_only_and_external_effect_free():
         "from trading",
     ):
         assert forbidden not in source
+
+
+def test_closeout_preserves_r13_1_no_deploy_evidence_and_jit_binds_r13_2():
+    manifest = json.loads(
+        (ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8")
+    )
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/"
+            "BRAIN_101_R13_1_PAPER_TRADING_COMPLIANCE_POLICY_INVENTORY_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert manifest["roadmap_items"]["R13.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    successor = manifest["roadmap_items"]["R13.2"]
+    assert successor["status"] == "AUTHORIZED_ACTIVE"
+    assert successor["dependencies"] == ["R13.1"]
+    assert successor["automation"]["front_id"] == (
+        "BRAIN-101-R13-2-COMPLIANCE-AUDIT-TAX-LOT-MANUAL-REVIEW-01"
+    )
+    assert successor["automation"]["deployment_mode"] == "NO_DEPLOY"
+    assert closeout["roadmap_item"] == "R13.1"
+    assert closeout["verification_level"] == "CODE_AND_CI_VERIFIED_NO_DEPLOY"
+    assert closeout["successor"]["roadmap_item"] == "R13.2"
+    assert all(value is False for value in closeout["runtime_actions"].values())

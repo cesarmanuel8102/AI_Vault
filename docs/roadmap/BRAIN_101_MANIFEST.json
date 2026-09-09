@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "bca6a707c315af733923149fb3a1721bf1f58e2d028dbacb050b9899076e3766",
+  "roadmap_sha256": "473ff740c94ae9d557cdc119111fe0e6ad390457f0ad37765697ca52b5f385b1",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -4238,7 +4238,7 @@
       }
     },
     "R13.1": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R13",
       "title": "Paper-trading compliance policy inventory",
       "dependencies": [
@@ -4373,8 +4373,9 @@
           ]
         }
       }
-    },    "R13.2": {
-      "status": "PLANNED_UNBOUND",
+    },
+    "R13.2": {
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R13",
       "title": "Compliance audit tax-lot and manual-review controls",
       "dependencies": [
@@ -4419,7 +4420,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
+        "dispatchable": true,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
@@ -4430,7 +4431,84 @@
           "acceptance",
           "rollback",
           "evidence_path"
-        ]
+        ],
+        "jit_binding_completed": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R13-2-COMPLIANCE-AUDIT-TAX-LOT-MANUAL-REVIEW-01",
+        "objective": "Add deterministic paper-only compliance audit receipts for tax-lot duplicate prevention and manual-review routing without broker, order, provider, network, runtime, scheduler, or permission action",
+        "work_branch": "control-plane/r13-2-compliance-audit-tax-lot-manual-review",
+        "executor": "codex_control_plane",
+        "risk": "HIGH",
+        "domain": "compliance",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/paper_trading_compliance_audit.py",
+          "docs/roadmap/evidence/BRAIN_101_R13_2_COMPLIANCE_AUDIT_TAX_LOT_MANUAL_REVIEW.json",
+          "tests/contract/test_r13_2_compliance_audit_tax_lot_manual_review.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Validate deterministic paper-only tax-lot identity and duplicate-prevention audit receipts",
+          "Route restricted or incomplete paper compliance evidence to manual review without automatic override",
+          "Preserve human final authority and prohibit live trading, real money, broker, provider, network, runtime, scheduler, canonical sync, and auto-merge effects"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r13_2_compliance_audit_tax_lot_manual_review.py",
+          "python -m pytest -q tests/contract/test_r13_1_paper_trading_compliance_policy_inventory.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Record deterministic paper-only audit rollback evidence without broker, order, runtime, scheduler, configuration, memory, trading, or financial-control mutation"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R13_2_COMPLIANCE_AUDIT_TAX_LOT_MANUAL_REVIEW.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R13-2-COMPLIANCE-AUDIT-TAX-LOT-MANUAL-REVIEW-CLOSEOUT-01",
+          "objective": "Record verified R13.2 paper-only compliance audit evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r13-2-compliance-audit-tax-lot-manual-review-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R13_2_COMPLIANCE_AUDIT_TAX_LOT_MANUAL_REVIEW_CLOSEOUT.json",
+            "tests/contract/test_r13_2_compliance_audit_tax_lot_manual_review.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R13.2 paper-only compliance-audit evidence",
+            "Set R13.2 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r13_2_compliance_audit_tax_lot_manual_review.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R14.1": {
