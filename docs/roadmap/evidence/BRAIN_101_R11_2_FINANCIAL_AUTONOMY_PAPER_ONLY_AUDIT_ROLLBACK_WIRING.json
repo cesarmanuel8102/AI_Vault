@@ -1,0 +1,30 @@
+{
+  "roadmap_item": "R11.2",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "audit_contract": {
+    "paper_only": true,
+    "broker_connection_permitted": false,
+    "order_action_permitted": false,
+    "provider_calls_permitted": false,
+    "network_permitted": false,
+    "rollback_validation_only": true,
+    "runtime_change_permitted": false
+  },
+  "runtime_actions": {
+    "deployment": false,
+    "scheduler_mutation": false,
+    "broker_connect": false,
+    "broker_order": false,
+    "order_submit": false,
+    "provider_call": false,
+    "network_fetch": false,
+    "runtime_import": false,
+    "runtime_mutation": false,
+    "configuration_mutation": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}
