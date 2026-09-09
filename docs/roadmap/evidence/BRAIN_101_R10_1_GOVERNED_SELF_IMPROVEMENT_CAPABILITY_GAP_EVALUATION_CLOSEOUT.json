@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "roadmap_item": "R10.1",
+  "front_id": "BRAIN-101-R10-1-GOVERNED-SELF-IMPROVEMENT-CAPABILITY-GAP-EVALUATION-CLOSEOUT-01",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "parent_source_commit": "a7b1a6c8c42f75cd916eb9d3cc7aabd5c5507918",
+  "parent_merge_commit": "c83a7b8be1716ffc74bffe07dc228a416f714abc",
+  "parent_pr": 333,
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "verification": {
+    "focused_contract_tests_passed": 16,
+    "r9_2_regression_contract_passed": true,
+    "roadmap_contract_passed": true,
+    "python_compile_passed": true,
+    "git_diff_check_passed": true,
+    "exact_head_ci_passed": true,
+    "independent_reviewer_passed": true
+  },
+  "runtime_actions": {
+    "worker_install": false,
+    "scheduler_activation": false,
+    "patch_application": false,
+    "filesystem_write": false,
+    "runtime_mutation": false,
+    "self_governance_modification": false,
+    "automatic_promotion": false,
+    "provider_call": false,
+    "network_fetch": false,
+    "semantic_memory_write": false,
+    "canonical_memory_write": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  },
+  "successor": {
+    "roadmap_item": "R10.2",
+    "front_id": "BRAIN-101-R10-2-SANDBOXED-PATCH-PROPOSAL-BENCHMARK-PIPELINE-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}

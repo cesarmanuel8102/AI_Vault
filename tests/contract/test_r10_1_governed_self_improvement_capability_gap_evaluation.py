@@ -107,3 +107,22 @@ def test_evidence_records_planning_only_and_no_runtime_effects():
     assert evidence["verification_level"] == "CODE_AND_CI_VERIFIED_NO_DEPLOY"
     assert evidence["proposal_contract"]["apply_permitted"] is False
     assert all(value is False for value in evidence["runtime_actions"].values())
+
+
+def test_closeout_records_no_deploy_verification_and_the_only_authorized_successor():
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/"
+            "BRAIN_101_R10_1_GOVERNED_SELF_IMPROVEMENT_CAPABILITY_GAP_EVALUATION_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert closeout["roadmap_item"] == "R10.1"
+    assert closeout["verification_level"] == "CODE_AND_CI_VERIFIED_NO_DEPLOY"
+    assert closeout["successor"] == {
+        "roadmap_item": "R10.2",
+        "front_id": "BRAIN-101-R10-2-SANDBOXED-PATCH-PROPOSAL-BENCHMARK-PIPELINE-01",
+        "deployment_mode": "NO_DEPLOY",
+    }
+    assert all(value is False for value in closeout["runtime_actions"].values())

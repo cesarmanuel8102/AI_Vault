@@ -1452,3 +1452,12 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; the item expressly rejects source ingestion, semantic-memory writes, network fetches, provider calls, automatic promotion, installation, and scheduler activation.
 - Status: R9.2 is `CLOSED_RUNTIME_VERIFIED`; canonical local sync, live trading, real money, and auto-merge remain disabled.
 - Authorized successor: exactly one R10.1, `BRAIN-101-R10-1-GOVERNED-SELF-IMPROVEMENT-CAPABILITY-GAP-EVALUATION-01`, controller-governed `NO_DEPLOY`, bounded to deterministic capability/gap evaluation and typed proposal provenance without self-governance modification or automatic promotion.
+
+## BRAIN-101 R10.1 - Governed Self-Improvement Capability and Gap Evaluation Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: `a7b1a6c8c42f75cd916eb9d3cc7aabd5c5507918`, merged as `c83a7b8be1716ffc74bffe07dc228a416f714abc` through PR #333.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R10_1_GOVERNED_SELF_IMPROVEMENT_CAPABILITY_GAP_EVALUATION_CLOSEOUT.json`, bound to deterministic immutable gap evaluation, P0-P3 classification, typed SHA-256 proposal provenance, exact-head CI, and reviewer approval.
+- Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no patch application, filesystem write, runtime mutation, self-governance modification, automatic promotion, provider call, network access, canonical-memory write, installation, or scheduler activation occurred.
+- Status: R10.1 is `CLOSED_RUNTIME_VERIFIED`; canonical local sync, live trading, real money, and auto-merge remain disabled.
+- Authorized successor: exactly one R10.2, `BRAIN-101-R10-2-SANDBOXED-PATCH-PROPOSAL-BENCHMARK-PIPELINE-01`, controller-governed `NO_DEPLOY`, bounded to immutable sandboxed patch proposals and benchmark receipts without patch application.

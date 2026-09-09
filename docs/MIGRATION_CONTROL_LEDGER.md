@@ -9445,6 +9445,15 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Transition: R9.1 is `CLOSED_RUNTIME_VERIFIED`; R9.2 is the only `AUTHORIZED_ACTIVE` item, JIT-bound to a no-deploy controlled canary-planning/benchmark contract.
 - Preserved: HUMAN_FINAL_AUTHORITY=true; AUTO_MERGE=false; CANONICAL_LOCAL_SYNC=false; LIVE_TRADING=false; REAL_MONEY=false; persistent Agent Loop remains DEFERRED and Disabled.
 
+## BRAIN-101 R10.1 Closeout - Governed Self-Improvement Capability and Gap Evaluation (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: `a7b1a6c8c42f75cd916eb9d3cc7aabd5c5507918`, merged as `c83a7b8be1716ffc74bffe07dc228a416f714abc` through PR #333.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R10_1_GOVERNED_SELF_IMPROVEMENT_CAPABILITY_GAP_EVALUATION_CLOSEOUT.json`, bound to deterministic capability-gap evaluation, immutable typed proposal provenance, exact-head CI, and reviewer approval.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no patch application, filesystem write, runtime mutation, self-governance modification, automatic promotion, provider call, network access, canonical-memory write, installation, scheduler activation, canonical local sync, live trading, real money, or auto-merge occurred.
+- Transition: R10.1 is `CLOSED_RUNTIME_VERIFIED`; R10.2 is the only `AUTHORIZED_ACTIVE` item, JIT-bound to a sandboxed patch-proposal and benchmark contract that remains proposal-only.
+- Preserved: HUMAN_FINAL_AUTHORITY=true; AUTO_MERGE=false; CANONICAL_LOCAL_SYNC=false; LIVE_TRADING=false; REAL_MONEY=false; persistent Agent Loop remains DEFERRED and Disabled.
+
 ## BRAIN-101 R9.2 Closeout — Curated Knowledge Controlled Ingestion and Benchmark (2026-09-09)
 
 - Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.

@@ -55,7 +55,7 @@ test("R4.1 baseline evidence selects one eligible no-deploy modular-monolith can
   ]);
 });
 
-test("R5.4 through R9.2 closeouts preserve history and hand sole authority to JIT-bound R10.1",()=>{
+test("R5.4 through R10.1 closeouts preserve history and hand sole authority to JIT-bound R10.2",()=>{
   const manifest=readJson(MANIFEST);
   assert.equal(manifest.roadmap_items["R4.1"].status,"CLOSED_RUNTIME_VERIFIED");
   const r42=manifest.roadmap_items["R4.2"];
@@ -76,7 +76,7 @@ test("R5.4 through R9.2 closeouts preserve history and hand sole authority to JI
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION_CLOSEOUT.json")));
-  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R10.1"]);
+  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R10.2"]);
   const r43=manifest.roadmap_items["R4.3"];
   assert.deepEqual(r43.dependencies,["R4.2"]);
   assert.equal(r43.status,"CLOSED_RUNTIME_VERIFIED");
@@ -177,8 +177,14 @@ test("R5.4 through R9.2 closeouts preserve history and hand sole authority to JI
   assert.equal(r92.status,"CLOSED_RUNTIME_VERIFIED");
   const r101=manifest.roadmap_items["R10.1"];
   assert.deepEqual(r101.dependencies,["R9.2"]);
-  assert.equal(r101.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r101.status,"CLOSED_RUNTIME_VERIFIED");
   assert.equal(r101.automation.front_id,"BRAIN-101-R10-1-GOVERNED-SELF-IMPROVEMENT-CAPABILITY-GAP-EVALUATION-01");
   assert.equal(r101.automation.jit_binding_completed,true);
   assert.equal(r101.automation.deployment_mode,"NO_DEPLOY");
+  const r102=manifest.roadmap_items["R10.2"];
+  assert.deepEqual(r102.dependencies,["R10.1"]);
+  assert.equal(r102.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r102.automation.front_id,"BRAIN-101-R10-2-SANDBOXED-PATCH-PROPOSAL-BENCHMARK-PIPELINE-01");
+  assert.equal(r102.automation.jit_binding_completed,true);
+  assert.equal(r102.automation.deployment_mode,"NO_DEPLOY");
 });
