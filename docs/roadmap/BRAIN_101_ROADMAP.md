@@ -1502,3 +1502,8 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Controller: CODEX_GOVERNED_CONTROLLER; parent merge 8196245e533622455a6cb3c93b9db56b799ddc18 via PR #345.
 - Evidence: docs/roadmap/evidence/BRAIN_101_R12_2_RISK_ENGINE_LOSS_EXPOSURE_MARKET_FAILURE_GATES_CLOSEOUT.json; deterministic paper-only risk-gate receipts only.
 - Status: R12.2 CLOSED_RUNTIME_VERIFIED; sole successor R12.3 BRAIN-101-R12-3-PORTFOLIO-REGIME-REBALANCE-RISK-ATTRIBUTION-VALIDATION-01, PAPER_ONLY with NO_DEPLOY.
+
+## BRAIN-101 R12.3 Closeout (2026-09-09)
+- Controller: CODEX_GOVERNED_CONTROLLER; parent merge 79f15d5468da1d50a07e431b6b260208ea4516f2 via PR #348.
+- Evidence: docs/roadmap/evidence/BRAIN_101_R12_3_PORTFOLIO_REGIME_REBALANCE_RISK_ATTRIBUTION_VALIDATION_CLOSEOUT.json; deterministic paper-only regime and risk-attribution receipts only.
+- Status: R12.3 CLOSED_RUNTIME_VERIFIED; sole successor R13.1 BRAIN-101-R13-1-PAPER-TRADING-COMPLIANCE-POLICY-INVENTORY-01, PAPER_ONLY with NO_DEPLOY.

@@ -127,3 +127,37 @@ def test_evidence_and_module_are_paper_only_and_external_effect_free():
         "from trading",
     ):
         assert forbidden not in source
+
+
+def test_closeout_records_merged_r12_3_evidence_and_only_authorizes_r13_1():
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/"
+            "BRAIN_101_R12_3_PORTFOLIO_REGIME_REBALANCE_RISK_ATTRIBUTION_VALIDATION_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert closeout["roadmap_item"] == "R12.3"
+    assert closeout["implementation_merge_commit"] == "79f15d5468da1d50a07e431b6b260208ea4516f2"
+    assert closeout["successor"]["roadmap_item"] == "R13.1"
+    assert closeout["successor"]["deployment_mode"] == "NO_DEPLOY"
+    assert all(value is False for value in closeout["runtime_actions"].values())
+
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+    active = [
+        item_id
+        for item_id, item in manifest["roadmap_items"].items()
+        if item["status"] == "AUTHORIZED_ACTIVE"
+    ]
+    assert manifest["roadmap_items"]["R12.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    assert active == ["R13.1"]
+    binding = manifest["roadmap_items"]["R13.1"]["automation"]
+    assert binding["front_id"] == closeout["successor"]["front_id"]
+    assert binding["deployment_mode"] == "NO_DEPLOY"
+    assert binding["allowed_paths"] == [
+        "tmp_agent/brain_v9/core/paper_trading_compliance_policy.py",
+        "docs/roadmap/evidence/"
+        "BRAIN_101_R13_1_PAPER_TRADING_COMPLIANCE_POLICY_INVENTORY.json",
+        "tests/contract/test_r13_1_paper_trading_compliance_policy_inventory.py",
+    ]

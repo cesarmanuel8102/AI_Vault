@@ -1,0 +1,29 @@
+{
+  "roadmap_item": "R12.3",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "implementation_source_commit": "eff14097ac73d860e18a85f4b02326e70fed1ddb",
+  "implementation_merge_commit": "79f15d5468da1d50a07e431b6b260208ea4516f2",
+  "implementation_pr": 348,
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "successor": {
+    "roadmap_item": "R13.1",
+    "front_id": "BRAIN-101-R13-1-PAPER-TRADING-COMPLIANCE-POLICY-INVENTORY-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "runtime_actions": {
+    "deployment": false,
+    "scheduler_mutation": false,
+    "broker_connect": false,
+    "broker_order": false,
+    "order_submit": false,
+    "provider_call": false,
+    "network_fetch": false,
+    "runtime_import": false,
+    "runtime_mutation": false,
+    "configuration_mutation": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}

@@ -81,7 +81,7 @@ def test_r10_3_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R12.3"
+    assert active[0] == "R13.1"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -104,18 +104,19 @@ def test_r10_3_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_
     assert items["R11.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R12.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R12.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R12.3"]["automation"]
+    assert items["R12.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R13.1"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
     assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R12-3-PORTFOLIO-REGIME-REBALANCE-RISK-ATTRIBUTION-VALIDATION-01"
-    assert binding["work_branch"] == "control-plane/r12-3-portfolio-regime-rebalance-risk-attribution-validation"
+    assert binding["front_id"] == "BRAIN-101-R13-1-PAPER-TRADING-COMPLIANCE-POLICY-INVENTORY-01"
+    assert binding["work_branch"] == "control-plane/r13-1-paper-trading-compliance-policy-inventory"
     assert binding["closeout"]["risk"] == "MEDIUM"
     assert binding["allowed_paths"] == [
-        "tmp_agent/brain_v9/core/portfolio_regime_paper_validation.py",
-        "docs/roadmap/evidence/BRAIN_101_R12_3_PORTFOLIO_REGIME_REBALANCE_RISK_ATTRIBUTION_VALIDATION.json",
-        "tests/contract/test_r12_3_portfolio_regime_rebalance_risk_attribution_validation.py",
+        "tmp_agent/brain_v9/core/paper_trading_compliance_policy.py",
+        "docs/roadmap/evidence/BRAIN_101_R13_1_PAPER_TRADING_COMPLIANCE_POLICY_INVENTORY.json",
+        "tests/contract/test_r13_1_paper_trading_compliance_policy_inventory.py",
     ]
 
 
