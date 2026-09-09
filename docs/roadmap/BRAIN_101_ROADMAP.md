@@ -1507,3 +1507,11 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Controller: CODEX_GOVERNED_CONTROLLER; parent merge 79f15d5468da1d50a07e431b6b260208ea4516f2 via PR #348.
 - Evidence: docs/roadmap/evidence/BRAIN_101_R12_3_PORTFOLIO_REGIME_REBALANCE_RISK_ATTRIBUTION_VALIDATION_CLOSEOUT.json; deterministic paper-only regime and risk-attribution receipts only.
 - Status: R12.3 CLOSED_RUNTIME_VERIFIED; sole successor R13.1 BRAIN-101-R13-1-PAPER-TRADING-COMPLIANCE-POLICY-INVENTORY-01, PAPER_ONLY with NO_DEPLOY.
+
+## BRAIN-101 R13.1 - Paper-Trading Compliance Policy Inventory Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: `b94d29ff6a23758aece0b1a11d90c489eec4369b`, merged as `d82286cf22a1e40c72db308bf73e6e8275170b45` through PR #351.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R13_1_PAPER_TRADING_COMPLIANCE_POLICY_INVENTORY_CLOSEOUT.json`, bound to deterministic PDT, wash-sale, market-hours, restricted-symbol, permission, jurisdiction, data-license, and paper-only denials.
+- Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no broker connection, order action, provider/network call, scheduler mutation, canonical local sync, live trading, real money, or auto-merge occurred.
+- Status: R13.1 is `CLOSED_RUNTIME_VERIFIED`; the sole successor is R13.2 `BRAIN-101-R13-2-COMPLIANCE-AUDIT-TAX-LOT-MANUAL-REVIEW-01`, paper-only with `NO_DEPLOY`.

@@ -49,7 +49,7 @@ def _assert_acyclic(items: dict, roots: set[str]) -> None:
 def test_r5_through_r19_are_a_complete_non_executable_pre_authorized_backlog():
     manifest = _manifest()
     planned = _planned_items(manifest)
-    assert set(item["phase"] for item in planned.values()) == set(PHASES) - {"R5", "R6", "R7", "R8", "R9", "R10", "R11", "R12"}
+    assert set(item["phase"] for item in planned.values()) == set(PHASES) - {"R5", "R6", "R7", "R8", "R9", "R10", "R11", "R12", "R13"}
     assert all(item_id.startswith(f"{item['phase']}.") for item_id, item in planned.items())
     assert all(item["status"] == "PLANNED_UNBOUND" for item in planned.values())
     assert all(item["automation"]["jit_binding_required"] is True for item in planned.values())
@@ -76,12 +76,12 @@ def test_planned_backlog_has_unique_ids_acyclic_defined_and_phase_ordered_depend
             assert dependency_order <= PHASE_ORDER[item["phase"]]
 
 
-def test_r10_3_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_r11_1():
+def test_governed_closeouts_preserve_history_and_hand_sole_authority_to_jit_bound_r13_2():
     manifest = _manifest()
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R13.1"
+    assert active[0] == "R13.2"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -105,18 +105,19 @@ def test_r10_3_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_
     assert items["R12.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R12.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R12.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R13.1"]["automation"]
+    assert items["R13.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R13.2"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
     assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R13-1-PAPER-TRADING-COMPLIANCE-POLICY-INVENTORY-01"
-    assert binding["work_branch"] == "control-plane/r13-1-paper-trading-compliance-policy-inventory"
+    assert binding["front_id"] == "BRAIN-101-R13-2-COMPLIANCE-AUDIT-TAX-LOT-MANUAL-REVIEW-01"
+    assert binding["work_branch"] == "control-plane/r13-2-compliance-audit-tax-lot-manual-review"
     assert binding["closeout"]["risk"] == "MEDIUM"
     assert binding["allowed_paths"] == [
-        "tmp_agent/brain_v9/core/paper_trading_compliance_policy.py",
-        "docs/roadmap/evidence/BRAIN_101_R13_1_PAPER_TRADING_COMPLIANCE_POLICY_INVENTORY.json",
-        "tests/contract/test_r13_1_paper_trading_compliance_policy_inventory.py",
+        "tmp_agent/brain_v9/core/paper_trading_compliance_audit.py",
+        "docs/roadmap/evidence/BRAIN_101_R13_2_COMPLIANCE_AUDIT_TAX_LOT_MANUAL_REVIEW.json",
+        "tests/contract/test_r13_2_compliance_audit_tax_lot_manual_review.py",
     ]
 
 

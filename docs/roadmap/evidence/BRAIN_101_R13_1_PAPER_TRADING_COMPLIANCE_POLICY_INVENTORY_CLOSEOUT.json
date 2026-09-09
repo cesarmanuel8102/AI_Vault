@@ -1,0 +1,29 @@
+{
+  "roadmap_item": "R13.1",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "implementation_source_commit": "b94d29ff6a23758aece0b1a11d90c489eec4369b",
+  "implementation_merge_commit": "d82286cf22a1e40c72db308bf73e6e8275170b45",
+  "implementation_pr": 351,
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "successor": {
+    "roadmap_item": "R13.2",
+    "front_id": "BRAIN-101-R13-2-COMPLIANCE-AUDIT-TAX-LOT-MANUAL-REVIEW-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "runtime_actions": {
+    "deployment": false,
+    "scheduler_mutation": false,
+    "broker_connect": false,
+    "broker_order": false,
+    "order_submit": false,
+    "provider_call": false,
+    "network_fetch": false,
+    "runtime_import": false,
+    "runtime_mutation": false,
+    "configuration_mutation": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}

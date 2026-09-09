@@ -9508,3 +9508,12 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Controller: CODEX_GOVERNED_CONTROLLER; parent merge 79f15d5468da1d50a07e431b6b260208ea4516f2 via PR #348.
 - Transition: R12.3 CLOSED_RUNTIME_VERIFIED; R13.1 sole AUTHORIZED_ACTIVE and JIT-bound PAPER_ONLY with NO_DEPLOY.
 - Preserved: HUMAN_FINAL_AUTHORITY=true; AUTO_MERGE=false; CANONICAL_LOCAL_SYNC=false; LIVE_TRADING=false; REAL_MONEY=false; Agent Loop DEFERRED/Disabled.
+
+## BRAIN-101 R13.1 Closeout - Paper-Trading Compliance Policy Inventory (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: `b94d29ff6a23758aece0b1a11d90c489eec4369b`, merged as `d82286cf22a1e40c72db308bf73e6e8275170b45` through PR #351.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R13_1_PAPER_TRADING_COMPLIANCE_POLICY_INVENTORY_CLOSEOUT.json`, bound to deterministic paper-only compliance-denial receipts and exact-head CI/reviewer approval.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no deployment, installation, scheduler activation, broker or order action, provider/network call, canonical local sync, live trading, real money, or auto-merge occurred.
+- Transition: R13.1 is `CLOSED_RUNTIME_VERIFIED`; R13.2 is the only `AUTHORIZED_ACTIVE` item, JIT-bound to a paper-only compliance audit, tax-lot, and manual-review contract.
+- Preserved: HUMAN_FINAL_AUTHORITY=true; AUTO_MERGE=false; CANONICAL_LOCAL_SYNC=false; LIVE_TRADING=false; REAL_MONEY=false; Agent Loop remains DEFERRED and Disabled.
