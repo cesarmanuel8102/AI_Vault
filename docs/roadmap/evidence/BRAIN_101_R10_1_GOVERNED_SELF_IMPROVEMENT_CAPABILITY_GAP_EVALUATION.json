@@ -1,0 +1,25 @@
+{
+  "roadmap_item": "R10.1",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "proposal_contract": {
+    "deterministic": true,
+    "provenance_sha256": true,
+    "apply_permitted": false,
+    "model_or_provider_required": false
+  },
+  "runtime_actions": {
+    "deployment": false,
+    "scheduler_mutation": false,
+    "runtime_mutation": false,
+    "provider_call": false,
+    "network_fetch": false,
+    "semantic_memory_write": false,
+    "canonical_memory_write": false,
+    "automatic_promotion": false,
+    "self_governance_modification": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}
