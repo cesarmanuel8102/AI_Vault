@@ -1417,3 +1417,11 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R8_1_PROVIDER_GATEWAY_POLICY_CAPABILITY_INVENTORY_CLOSEOUT.json`, bound to the static inspection-only provider inventory, explicit identity checks, fallback rejection, invocation rejection, and secret-bearing configuration rejection.
 - Status: R8.1 is `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, provider call, canonical local sync, live trading, real money, or auto-merge occurred.
 - Sole successor: R8.2 `BRAIN-101-R8-2-PROVIDER-RESILIENCE-SECRET-SAFE-OPERATIONS-01` is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`, and receives its exact expected base from the live canonical branch when `sequenceRoadmap` creates the governed spec.
+
+## BRAIN-101 R8.2 - Provider Resilience and Secret-Safe Operations Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: commit `ebd1898b13b0f47a8a57e20135750efb487a9226`, merged as `227fbca2cc9856e9cc47a22aab37c69891d56884` through PR #325.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R8_2_PROVIDER_RESILIENCE_SECRET_SAFE_OPERATIONS_CLOSEOUT.json`, bound to bounded retry classification, circuit-state policy, prompt-version and cost metadata validation, and secret-safe rejection.
+- Status: R8.2 is `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, provider call, canonical local sync, live trading, real money, or auto-merge occurred.
+- Sole successor: R8.3 `BRAIN-101-R8-3-PROVIDER-GATEWAY-ROUTE-FALLBACK-VALIDATION-01` is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`, and receives its exact expected base from the live canonical branch when `sequenceRoadmap` creates the governed spec.

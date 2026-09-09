@@ -2739,7 +2739,7 @@ Reviews inert patch draft proposals and decides which qualify for materializatio
 - SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-MATERIALIZATION-PLAN-DRY-RUN-01
 
 ### Front: FRONT-SEC-01
-**Commit:** `52d9dd82`   
+**Commit:** `52d9dd82`
 **Scope:** Fix hardcoded approval token in SemanticMemoryRealWriteReadinessGate — require env var BRAIN_APPROVAL_4D_DRY_GATE_TOKEN
 **Finding Source:** GLM51-DEEP-INTEGRAL-AUDIT-01
 **Tests:** 22 passed (smoke_front_sec_01_approval_token), 23 passed (existing unit/smoke)
@@ -9419,3 +9419,11 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R8_1_PROVIDER_GATEWAY_POLICY_CAPABILITY_INVENTORY_CLOSEOUT.json`, bound to an immutable inspection-only inventory with explicit provider identities and fail-closed fallback, invocation, and secret-bearing configuration boundaries.
 - Status: R8.1 set to `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, provider call, canonical local sync, live trading, real money, or auto-merge occurred.
 - Authorized successor: exactly one R8.2, `BRAIN-101-R8-2-PROVIDER-RESILIENCE-SECRET-SAFE-OPERATIONS-01`, controller-governed `NO_DEPLOY`, bounded to deterministic resilience and secret-safe metadata policy without provider execution or runtime configuration mutation.
+
+## BRAIN-101 R8.2 - Provider Resilience and Secret-Safe Operations Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: `ebd1898b13b0f47a8a57e20135750efb487a9226`, merged as `227fbca2cc9856e9cc47a22aab37c69891d56884` through PR #325.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R8_2_PROVIDER_RESILIENCE_SECRET_SAFE_OPERATIONS_CLOSEOUT.json`, binding bounded policy classification, secret-safe prompt/cost metadata, exact-head CI, and no-deploy controls.
+- Status: R8.2 is `CLOSED_RUNTIME_VERIFIED`; deployment, installation, scheduler activation, provider calls, canonical local sync, live trading, real money, and auto-merge remain disabled.
+- Authorized successor: exactly one R8.3, `BRAIN-101-R8-3-PROVIDER-GATEWAY-ROUTE-FALLBACK-VALIDATION-01`, controller-governed `NO_DEPLOY`.
