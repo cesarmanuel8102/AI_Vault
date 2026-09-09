@@ -11,6 +11,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any, Iterable
 
+from ..tracing.trace_redactor import sanitize_event
+
 
 @dataclass(frozen=True)
 class ProviderHealthRecord:
@@ -125,3 +127,42 @@ def build_provider_health_snapshot(
         "local_fallback_available": local_llama_available,
         "records": [record.to_dict() for record in records],
     }
+
+
+_OBSERVATION_FIELDS = {"provider_id", "model", "outcome", "input_tokens", "output_tokens", "cost_microusd", "error_type"}
+_OUTCOMES = {"success", "error", "timeout"}
+
+
+def derive_provider_health_and_accounting(observations: Iterable[dict[str, Any]]) -> dict[str, Any]:
+    """Aggregate sanitized provider observations without probing a provider or writing state."""
+    aggregate: dict[tuple[str, str], dict[str, Any]] = {}
+    totals = {"input_tokens": 0, "output_tokens": 0, "cost_microusd": 0}
+    for observation in observations:
+        if not isinstance(observation, dict) or set(observation) - _OBSERVATION_FIELDS:
+            raise ValueError("provider_observation_invalid")
+        if sanitize_event(observation) != observation:
+            raise ValueError("provider_observation_not_sanitized")
+        provider_id, model, outcome = observation.get("provider_id"), observation.get("model"), observation.get("outcome")
+        if not all(isinstance(value, str) and value.strip() for value in (provider_id, model)) or outcome not in _OUTCOMES:
+            raise ValueError("provider_observation_invalid")
+        if outcome in {"error", "timeout"} and (not isinstance(observation.get("error_type"), str) or not observation["error_type"].strip()):
+            raise ValueError("provider_error_type_required")
+        if outcome == "success" and "error_type" in observation:
+            raise ValueError("provider_error_type_invalid")
+        numeric = {field: observation.get(field) for field in totals}
+        if not all(isinstance(value, int) and not isinstance(value, bool) and value >= 0 for value in numeric.values()):
+            raise ValueError("provider_accounting_invalid")
+        key = (provider_id, model)
+        record = aggregate.setdefault(key, {"provider_id": provider_id, "model": model, "success_count": 0, "error_count": 0, "timeout_count": 0, **{field: 0 for field in totals}, "error_taxonomy": {}})
+        record[f"{outcome}_count"] += 1
+        if outcome in {"error", "timeout"}:
+            record["error_taxonomy"][observation["error_type"]] = record["error_taxonomy"].get(observation["error_type"], 0) + 1
+        for field, value in numeric.items():
+            record[field] += value
+            totals[field] += value
+    providers = []
+    for key in sorted(aggregate):
+        record = aggregate[key]
+        record["error_taxonomy"] = dict(sorted(record["error_taxonomy"].items()))
+        providers.append(record)
+    return {"schema_version": 1, "provider_count": len(providers), **totals, "providers": providers}
