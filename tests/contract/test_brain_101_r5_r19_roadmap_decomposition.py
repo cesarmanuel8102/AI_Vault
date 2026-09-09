@@ -81,7 +81,7 @@ def test_r10_3_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R12.1"
+    assert active[0] == "R12.2"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -102,18 +102,19 @@ def test_r10_3_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_
     assert items["R10.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R11.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R11.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R12.1"]["automation"]
+    assert items["R12.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R12.2"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
-    assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R12-1-PORTFOLIO-MANAGER-ALLOCATION-LEDGER-BASELINE-01"
-    assert binding["work_branch"] == "control-plane/r12-1-portfolio-manager-allocation-ledger-baseline"
+    assert binding["deployment_mode"] == "PAPER_ONLY_NO_DEPLOY"
+    assert binding["front_id"] == "BRAIN-101-R12-2-RISK-ENGINE-LOSS-EXPOSURE-MARKET-FAILURE-GATES-01"
+    assert binding["work_branch"] == "control-plane/r12-2-risk-engine-loss-exposure-market-failure-gates"
     assert binding["closeout"]["risk"] == "MEDIUM"
     assert binding["allowed_paths"] == [
-        "tmp_agent/brain_v9/core/portfolio_manager_paper_baseline.py",
-        "docs/roadmap/evidence/BRAIN_101_R12_1_PORTFOLIO_MANAGER_ALLOCATION_LEDGER_BASELINE.json",
-        "tests/contract/test_r12_1_portfolio_manager_allocation_ledger_baseline.py",
+        "tmp_agent/brain_v9/core/risk_engine_paper_gates.py",
+        "docs/roadmap/evidence/BRAIN_101_R12_2_RISK_ENGINE_LOSS_EXPOSURE_MARKET_FAILURE_GATES.json",
+        "tests/contract/test_r12_2_risk_engine_loss_exposure_market_failure_gates.py",
     ]
 
 
