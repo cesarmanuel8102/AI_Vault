@@ -76,12 +76,12 @@ def test_planned_backlog_has_unique_ids_acyclic_defined_and_phase_ordered_depend
             assert dependency_order <= PHASE_ORDER[item["phase"]]
 
 
-def test_r9_2_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_r10_1():
+def test_r10_1_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_r10_2():
     manifest = _manifest()
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R10.1"
+    assert active[0] == "R10.2"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -97,17 +97,18 @@ def test_r9_2_closeout_preserves_history_and_hands_sole_authority_to_jit_bound_r
     assert items["R8.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R9.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R9.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R10.1"]["automation"]
+    assert items["R10.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R10.2"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
     assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R10-1-GOVERNED-SELF-IMPROVEMENT-CAPABILITY-GAP-EVALUATION-01"
-    assert binding["work_branch"] == "control-plane/r10-1-governed-self-improvement-capability-gap-evaluation"
+    assert binding["front_id"] == "BRAIN-101-R10-2-SANDBOXED-PATCH-PROPOSAL-BENCHMARK-PIPELINE-01"
+    assert binding["work_branch"] == "control-plane/r10-2-sandboxed-patch-proposal-benchmark-pipeline"
     assert binding["allowed_paths"] == [
-        "tmp_agent/brain_v9/core/self_improvement_capability.py",
-        "docs/roadmap/evidence/BRAIN_101_R10_1_GOVERNED_SELF_IMPROVEMENT_CAPABILITY_GAP_EVALUATION.json",
-        "tests/contract/test_r10_1_governed_self_improvement_capability_gap_evaluation.py",
+        "tmp_agent/brain_v9/core/sandboxed_patch_proposal.py",
+        "docs/roadmap/evidence/BRAIN_101_R10_2_SANDBOXED_PATCH_PROPOSAL_BENCHMARK_PIPELINE.json",
+        "tests/contract/test_r10_2_sandboxed_patch_proposal_benchmark_pipeline.py",
     ]
 
 
