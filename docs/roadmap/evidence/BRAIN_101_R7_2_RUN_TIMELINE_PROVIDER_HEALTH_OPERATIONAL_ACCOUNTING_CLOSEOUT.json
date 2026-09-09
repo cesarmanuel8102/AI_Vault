@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "evidence_type": "BRAIN_101_R7_2_RUN_TIMELINE_PROVIDER_HEALTH_OPERATIONAL_ACCOUNTING_CLOSEOUT",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R7.2",
+  "front_id": "BRAIN-101-R7-2-RUN-TIMELINE-PROVIDER-HEALTH-OPERATIONAL-ACCOUNTING-CLOSEOUT-01",
+  "parent_source_commit": "60fb63d26123e77e388511f9b4bc8df91bd50069",
+  "parent_merge_commit": "40b7886fe95b9b56cb5bcfb015ff2760344f074b",
+  "parent_pr_number": 319,
+  "implementation_evidence_path": "docs/roadmap/evidence/BRAIN_101_R7_2_RUN_TIMELINE_PROVIDER_HEALTH_OPERATIONAL_ACCOUNTING.json",
+  "result": "CLOSED_RUNTIME_VERIFIED",
+  "deployment_mode": "NO_DEPLOY",
+  "verification": {
+    "r7_2_contract": "11 passed",
+    "r7_1_regression": "7 passed",
+    "roadmap_regression": "8 passed",
+    "exact_head_ci": "passed",
+    "independent_review": "passed"
+  },
+  "verified_controls": [
+    "sanitized_correlation_bound_timeline_projection",
+    "monotonic_ordering_and_controlled_replay_only",
+    "pure_supplied_metadata_provider_health_and_cost_accounting",
+    "no_provider_call_or_runtime_write_boundary"
+  ],
+  "runtime_actions": {
+    "worker_install": false,
+    "scheduler_activation": false,
+    "provider_call": false,
+    "canonical_local_sync": false
+  },
+  "next_item": {
+    "roadmap_item_id": "R7.3",
+    "front_id": "BRAIN-101-R7-3-VISUAL-TRACE-OPERATOR-CONSOLE-CONTRACTS-01",
+    "executor": "codex_control_plane",
+    "deployment_mode": "NO_DEPLOY",
+    "jit_binding_completed": true
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}

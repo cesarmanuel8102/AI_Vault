@@ -121,3 +121,29 @@ def test_r7_2_sources_are_no_provider_call_and_evidence_is_no_deploy():
     assert evidence["roadmap_item_id"] == "R7.2"
     assert evidence["deployment_mode"] == "NO_DEPLOY"
     assert evidence["runtime_actions"] == {"worker_install": False, "scheduler_activation": False, "provider_call": False, "canonical_local_sync": False}
+
+
+def test_r7_2_closeout_preserves_no_deploy_evidence_and_authorizes_only_r7_3():
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/BRAIN_101_R7_2_RUN_TIMELINE_PROVIDER_HEALTH_OPERATIONAL_ACCOUNTING_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert closeout["roadmap_item_id"] == "R7.2"
+    assert closeout["parent_merge_commit"] == "40b7886fe95b9b56cb5bcfb015ff2760344f074b"
+    assert closeout["parent_pr_number"] == 319
+    assert closeout["result"] == "CLOSED_RUNTIME_VERIFIED"
+    assert closeout["runtime_actions"] == {
+        "worker_install": False,
+        "scheduler_activation": False,
+        "provider_call": False,
+        "canonical_local_sync": False,
+    }
+    assert closeout["next_item"] == {
+        "roadmap_item_id": "R7.3",
+        "front_id": "BRAIN-101-R7-3-VISUAL-TRACE-OPERATOR-CONSOLE-CONTRACTS-01",
+        "executor": "codex_control_plane",
+        "deployment_mode": "NO_DEPLOY",
+        "jit_binding_completed": True,
+    }
