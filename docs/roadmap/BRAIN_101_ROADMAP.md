@@ -1443,3 +1443,12 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no installation or installed-runtime claim is made.
 - Status: R9.1 is `CLOSED_RUNTIME_VERIFIED`; deployment, installation, scheduler activation, source ingestion, semantic-memory writes, provider calls, canonical local sync, live trading, real money, and auto-merge remain disabled.
 - Authorized successor: exactly one R9.2, `BRAIN-101-R9-2-CURATED-KNOWLEDGE-CONTROLLED-INGESTION-BENCHMARK-01`, controller-governed `NO_DEPLOY`, bounded to deterministic canary-planning and benchmark contracts without production ingestion or automatic promotion.
+
+## BRAIN-101 R9.2 - Curated Knowledge Controlled Ingestion and Benchmark Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: `87defd3789834c725ac27e2428930c590afdc37f`, merged as `d4282df220483cf5fa4c943889ab2929593e5b0f` through PR #331.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R9_2_CURATED_KNOWLEDGE_CONTROLLED_INGESTION_BENCHMARK_CLOSEOUT.json`, bound to a deterministic canary-planning contract and benchmark identity only.
+- Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; the item expressly rejects source ingestion, semantic-memory writes, network fetches, provider calls, automatic promotion, installation, and scheduler activation.
+- Status: R9.2 is `CLOSED_RUNTIME_VERIFIED`; canonical local sync, live trading, real money, and auto-merge remain disabled.
+- Authorized successor: exactly one R10.1, `BRAIN-101-R10-1-GOVERNED-SELF-IMPROVEMENT-CAPABILITY-GAP-EVALUATION-01`, controller-governed `NO_DEPLOY`, bounded to deterministic capability/gap evaluation and typed proposal provenance without self-governance modification or automatic promotion.

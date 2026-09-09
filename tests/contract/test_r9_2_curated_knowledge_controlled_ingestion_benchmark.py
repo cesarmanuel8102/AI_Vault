@@ -82,3 +82,22 @@ def test_evidence_records_planning_only_and_no_deploy_effects():
     assert evidence["canary_contract"]["execution_permitted"] is False
     assert evidence["canary_contract"]["automatic_promotion_permitted"] is False
     assert all(value is False for value in evidence["runtime_actions"].values())
+
+
+def test_closeout_records_no_deploy_verification_and_the_only_authorized_successor():
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/"
+            "BRAIN_101_R9_2_CURATED_KNOWLEDGE_CONTROLLED_INGESTION_BENCHMARK_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert closeout["roadmap_item"] == "R9.2"
+    assert closeout["verification_level"] == "CODE_AND_CI_VERIFIED_NO_DEPLOY"
+    assert closeout["successor"] == {
+        "roadmap_item": "R10.1",
+        "front_id": "BRAIN-101-R10-1-GOVERNED-SELF-IMPROVEMENT-CAPABILITY-GAP-EVALUATION-01",
+        "deployment_mode": "NO_DEPLOY",
+    }
+    assert all(value is False for value in closeout["runtime_actions"].values())

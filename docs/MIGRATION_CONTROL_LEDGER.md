@@ -9444,3 +9444,12 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no installed-runtime verification is claimed because R9.1 is `NO_DEPLOY`.
 - Transition: R9.1 is `CLOSED_RUNTIME_VERIFIED`; R9.2 is the only `AUTHORIZED_ACTIVE` item, JIT-bound to a no-deploy controlled canary-planning/benchmark contract.
 - Preserved: HUMAN_FINAL_AUTHORITY=true; AUTO_MERGE=false; CANONICAL_LOCAL_SYNC=false; LIVE_TRADING=false; REAL_MONEY=false; persistent Agent Loop remains DEFERRED and Disabled.
+
+## BRAIN-101 R9.2 Closeout — Curated Knowledge Controlled Ingestion and Benchmark (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: `87defd3789834c725ac27e2428930c590afdc37f`, merged as `d4282df220483cf5fa4c943889ab2929593e5b0f` through PR #331.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R9_2_CURATED_KNOWLEDGE_CONTROLLED_INGESTION_BENCHMARK_CLOSEOUT.json`, bound to deterministic canary-planning/benchmark validation and exact-head CI/reviewer approval.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no ingestion, semantic-memory write, network fetch, provider call, promotion, installation, scheduler activation, canonical local sync, live trading, real money, or auto-merge occurred.
+- Transition: R9.2 is `CLOSED_RUNTIME_VERIFIED`; R10.1 is the only `AUTHORIZED_ACTIVE` item, JIT-bound to a no-deploy governed capability/gap evaluator contract.
+- Preserved: HUMAN_FINAL_AUTHORITY=true; AUTO_MERGE=false; CANONICAL_LOCAL_SYNC=false; LIVE_TRADING=false; REAL_MONEY=false; persistent Agent Loop remains DEFERRED and Disabled.

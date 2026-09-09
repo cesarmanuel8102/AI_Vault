@@ -99,21 +99,16 @@ def test_evidence_records_static_catalog_and_no_runtime_effects():
     }
 
 
-def test_closeout_authorizes_only_r9_2_with_a_no_deploy_canary_planning_scope():
+def test_closeout_preserves_the_r9_2_no_deploy_canary_planning_scope_after_successor_completion():
     manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
     closeout_path = ROOT / "docs/roadmap/evidence/BRAIN_101_R9_1_CURATED_KNOWLEDGE_CANONICAL_INVENTORY_TAXONOMY_CLOSEOUT.json"
 
-    active = [
-        item_id
-        for item_id, item in manifest["roadmap_items"].items()
-        if item["status"] == "AUTHORIZED_ACTIVE"
-    ]
     r91 = manifest["roadmap_items"]["R9.1"]
     r92 = manifest["roadmap_items"]["R9.2"]
     closeout = json.loads(closeout_path.read_text(encoding="utf-8"))
 
     assert r91["status"] == "CLOSED_RUNTIME_VERIFIED"
-    assert active == ["R9.2"]
+    assert r92["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert r92["automation"]["front_id"] == "BRAIN-101-R9-2-CURATED-KNOWLEDGE-CONTROLLED-INGESTION-BENCHMARK-01"
     assert r92["automation"]["work_branch"] == "control-plane/r9-2-curated-knowledge-controlled-ingestion-benchmark"
     assert r92["automation"]["deployment_mode"] == "NO_DEPLOY"

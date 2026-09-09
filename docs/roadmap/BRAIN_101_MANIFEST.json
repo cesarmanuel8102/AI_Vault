@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "31bda87c1aa819b013aa8b9d4fa61cb2d503535140cc28ddedca108cf9f1ff22",
+  "roadmap_sha256": "a54a9792e2fcc00d65e8bf52ee813b0eae15431967ca460b062170f19b284c71",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -36,7 +36,7 @@
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
   "approval_status": "HUMAN_ADOPTED",
   "r0_status": "CLOSED_HUMAN_ADOPTED",
-  "current_phase": "R9",
+  "current_phase": "R10",
   "human_final_authority": true,
   "auto_merge": false,
   "canonical_local_sync": false,
@@ -2921,7 +2921,7 @@
       }
     },
     "R9.2": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R9",
       "title": "Curated Knowledge controlled ingestion and benchmark",
       "dependencies": [
@@ -2986,7 +2986,7 @@
       }
     },
     "R10.1": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R10",
       "title": "Governed self-improvement capability and gap evaluation",
       "dependencies": [
@@ -3031,18 +3031,85 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
-        "activation_requires": [
-          "expected_base_sha",
-          "front_id",
-          "work_branch",
-          "allowed_paths",
-          "forbidden_paths",
-          "test_commands",
-          "acceptance",
-          "rollback",
-          "evidence_path"
-        ]
+        "jit_binding_completed": true,
+        "dispatchable": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R10-1-GOVERNED-SELF-IMPROVEMENT-CAPABILITY-GAP-EVALUATION-01",
+        "objective": "Add a deterministic self-improvement capability and gap evaluator with typed proposal provenance without self-governance modification or automatic promotion",
+        "work_branch": "control-plane/r10-1-governed-self-improvement-capability-gap-evaluation",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "self_improvement",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/self_improvement_capability.py",
+          "docs/roadmap/evidence/BRAIN_101_R10_1_GOVERNED_SELF_IMPROVEMENT_CAPABILITY_GAP_EVALUATION.json",
+          "tests/contract/test_r10_1_governed_self_improvement_capability_gap_evaluation.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Define a deterministic capability and gap evaluation contract with P0 through P3 classifications and typed proposal provenance",
+          "Reject self-governance modification, runtime mutation, automatic promotion, provider calls, network access, and canonical-memory writes",
+          "Preserve no deployment, scheduler activation, canonical local sync, live trading, real money, and auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r10_1_governed_self_improvement_capability_gap_evaluation.py",
+          "python -m pytest -q tests/contract/test_r9_2_curated_knowledge_controlled_ingestion_benchmark.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Restore only the prior capability-evaluation contract through version-controlled rollback",
+          "Do not mutate self-governance, runtime configuration, scheduler configuration, canonical memory, trading, or financial controls"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R10_1_GOVERNED_SELF_IMPROVEMENT_CAPABILITY_GAP_EVALUATION.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R10-1-GOVERNED-SELF-IMPROVEMENT-CAPABILITY-GAP-EVALUATION-CLOSEOUT-01",
+          "objective": "Record verified R10.1 capability and gap evaluation evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r10-1-governed-self-improvement-capability-gap-evaluation-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R10_1_GOVERNED_SELF_IMPROVEMENT_CAPABILITY_GAP_EVALUATION_CLOSEOUT.json",
+            "tests/contract/test_r10_1_governed_self_improvement_capability_gap_evaluation.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R10.1 capability and gap evaluation evidence",
+            "Set R10.1 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r10_1_governed_self_improvement_capability_gap_evaluation.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R10.2": {

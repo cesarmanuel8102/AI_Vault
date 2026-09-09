@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "roadmap_item": "R9.2",
+  "front_id": "BRAIN-101-R9-2-CURATED-KNOWLEDGE-CONTROLLED-INGESTION-BENCHMARK-CLOSEOUT-01",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "parent_source_commit": "87defd3789834c725ac27e2428930c590afdc37f",
+  "parent_merge_commit": "d4282df220483cf5fa4c943889ab2929593e5b0f",
+  "parent_pr": 331,
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "verification": {
+    "focused_contract_tests_passed": 14,
+    "r9_1_regression_contract_passed": true,
+    "roadmap_contract_passed": true,
+    "python_compile_passed": true,
+    "git_diff_check_passed": true,
+    "exact_head_ci_passed": true,
+    "independent_reviewer_passed": true
+  },
+  "runtime_actions": {
+    "worker_install": false,
+    "scheduler_activation": false,
+    "source_ingestion": false,
+    "semantic_memory_write": false,
+    "provider_call": false,
+    "network_fetch": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false
+  },
+  "successor": {
+    "roadmap_item": "R10.1",
+    "front_id": "BRAIN-101-R10-1-GOVERNED-SELF-IMPROVEMENT-CAPABILITY-GAP-EVALUATION-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}
