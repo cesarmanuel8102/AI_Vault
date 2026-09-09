@@ -1,0 +1,35 @@
+{
+  "roadmap_item": "R12.3",
+  "front_id": "BRAIN-101-R12-3-PORTFOLIO-REGIME-REBALANCE-RISK-ATTRIBUTION-VALIDATION-01",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "portfolio_validation_contract": {
+    "paper_only": true,
+    "risk_gate_receipt_required": true,
+    "reuses_max_gross_exposure_bps": 7000,
+    "validates": [
+      "regime_throttling",
+      "rebalance_delta",
+      "var_cvar",
+      "liquidity",
+      "slippage",
+      "fees",
+      "gap"
+    ]
+  },
+  "runtime_actions": {
+    "deployment": false,
+    "scheduler_mutation": false,
+    "broker_connect": false,
+    "broker_order": false,
+    "order_submit": false,
+    "provider_call": false,
+    "network_fetch": false,
+    "runtime_import": false,
+    "runtime_mutation": false,
+    "configuration_mutation": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}
