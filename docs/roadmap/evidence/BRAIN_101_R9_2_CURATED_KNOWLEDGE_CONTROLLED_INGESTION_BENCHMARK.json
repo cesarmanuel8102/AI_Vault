@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "roadmap_item": "R9.2",
+  "front_id": "BRAIN-101-R9-2-CURATED-KNOWLEDGE-CONTROLLED-INGESTION-BENCHMARK-01",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "canary_contract": {
+    "catalog_dependency": "R9.1",
+    "candidate_reference_scheme": "candidate://",
+    "max_canary_limit": 10,
+    "benchmark_required": true,
+    "execution_permitted": false,
+    "automatic_promotion_permitted": false
+  },
+  "runtime_actions": {
+    "worker_install": false,
+    "scheduler_activation": false,
+    "source_ingestion": false,
+    "semantic_memory_write": false,
+    "provider_call": false,
+    "network_access": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false
+  }
+}
