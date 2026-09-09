@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R14.2",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "implementation_pr": 357,
+  "implementation_source_commit": "818ce645b0c2954ee5a2502165533bc558db83df",
+  "implementation_merge_commit": "385cef856d0222e547350606dd36042c86c2ccb5",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "evidence_path": "docs/roadmap/evidence/BRAIN_101_R14_2_BACKTEST_REALISM_WALK_FORWARD_VALIDATION.json",
+  "successor": {
+    "roadmap_item": "R14.3",
+    "front_id": "BRAIN-101-R14-3-VALIDATION-LAB-ADVERSARIAL-STATISTICAL-RESILIENCE-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "runtime_actions": {
+    "deployment": false,
+    "installation": false,
+    "scheduler_activation": false,
+    "provider_call": false,
+    "broker_action": false,
+    "order_action": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}

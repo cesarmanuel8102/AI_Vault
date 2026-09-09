@@ -990,7 +990,7 @@
     },
     {
       "id": "R6",
-      "percent": 30,
+      "percent": 60,
       "status": "OPEN",
       "evidence": [
         {
@@ -1225,6 +1225,26 @@
           "command": "python -m pytest -q tests/contract/test_r14_1_local_validation_data_experiment_registry.py",
           "result": "Deterministic local receipts and no-effect boundaries verified; R14.2 remains required.",
           "observed_at_utc": "2026-09-09T22:49:44Z"
+        },
+        {
+          "claim": "R14.2 backtest realism and walk-forward validation is verified without deployment.",
+          "classification": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+          "paths": [
+            "tmp_agent/brain_v9/core/backtest_realism.py",
+            "docs/roadmap/evidence/BRAIN_101_R14_2_BACKTEST_REALISM_WALK_FORWARD_VALIDATION.json",
+            "docs/roadmap/evidence/BRAIN_101_R14_2_BACKTEST_REALISM_WALK_FORWARD_VALIDATION_CLOSEOUT.json"
+          ],
+          "symbols": [
+            "evaluate_backtest_realism",
+            "reject_backtest_realism_effect"
+          ],
+          "commit": "385cef856d0222e547350606dd36042c86c2ccb5",
+          "issue": null,
+          "pr": 357,
+          "workflow_run": null,
+          "command": "python -m pytest -q tests/contract/test_r14_2_backtest_realism_walk_forward_validation.py",
+          "result": "Deterministic local validation receipts and no-effect boundaries verified; R14.3 remains required.",
+          "observed_at_utc": "2026-09-09T23:17:06Z"
         }
       ]
     },
