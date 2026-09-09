@@ -140,3 +140,43 @@ def test_evidence_and_module_are_paper_only_and_external_effect_free():
         "from trading",
     ):
         assert forbidden not in source
+
+
+def test_closeout_records_merged_r12_2_evidence_and_only_authorizes_r12_3():
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/"
+            "BRAIN_101_R12_2_RISK_ENGINE_LOSS_EXPOSURE_MARKET_FAILURE_GATES_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert closeout["roadmap_item"] == "R12.2"
+    assert closeout["implementation_merge_commit"] == "8196245e533622455a6cb3c93b9db56b799ddc18"
+    assert closeout["successor"] == {
+        "roadmap_item": "R12.3",
+        "front_id": "BRAIN-101-R12-3-PORTFOLIO-REGIME-REBALANCE-RISK-ATTRIBUTION-VALIDATION-01",
+        "deployment_mode": "NO_DEPLOY",
+    }
+    assert all(value is False for value in closeout["runtime_actions"].values())
+
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+    active = [
+        item_id
+        for item_id, item in manifest["roadmap_items"].items()
+        if item["status"] == "AUTHORIZED_ACTIVE"
+    ]
+    assert manifest["roadmap_items"]["R12.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    assert active == ["R12.3"]
+    binding = manifest["roadmap_items"]["R12.3"]["automation"]
+    assert binding["front_id"] == closeout["successor"]["front_id"]
+    assert binding["work_branch"] == (
+        "control-plane/r12-3-portfolio-regime-rebalance-risk-attribution-validation"
+    )
+    assert binding["deployment_mode"] == "NO_DEPLOY"
+    assert binding["allowed_paths"] == [
+        "tmp_agent/brain_v9/core/portfolio_regime_paper_validation.py",
+        "docs/roadmap/evidence/"
+        "BRAIN_101_R12_3_PORTFOLIO_REGIME_REBALANCE_RISK_ATTRIBUTION_VALIDATION.json",
+        "tests/contract/test_r12_3_portfolio_regime_rebalance_risk_attribution_validation.py",
+    ]
