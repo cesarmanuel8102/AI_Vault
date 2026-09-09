@@ -220,16 +220,10 @@ def test_r6_1_closeout_activates_only_bound_r6_2_promotion_successor():
         ),
         "jit_binding_completed": True,
     }
-    active_items = [
-        item_id
-        for item_id, item in manifest["roadmap_items"].items()
-        if item["status"] == "AUTHORIZED_ACTIVE"
-    ]
     assert manifest["roadmap_items"]["R6.2"]["status"] in {
         "AUTHORIZED_ACTIVE",
         "CLOSED_RUNTIME_VERIFIED",
     }
-    assert active_items == ["R6.3"]
     automation = manifest["roadmap_items"]["R6.2"]["automation"]
     assert automation["front_id"] == closeout["next_item"]["front_id"]
     assert automation["jit_binding_completed"] is True

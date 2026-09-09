@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "90fbcd5576e050d0fef06ae9e9d974468602ceffce4c4cebe185c32ed45ea8c9",
+  "roadmap_sha256": "2b7e0f398e9d008a2ed9bb65b2e0109ffe2aa1b085143dac75d60bef9803dbaf",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -2023,7 +2023,7 @@
       }
     },
     "R6.3": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R6",
       "title": "Memory retrieval hydration and rebuild validation",
       "dependencies": [
@@ -2149,7 +2149,7 @@
       }
     },
     "R7.1": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R7",
       "title": "Governed trace schema and event writer baseline",
       "dependencies": [
@@ -2194,18 +2194,83 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
-        "activation_requires": [
-          "expected_base_sha",
-          "front_id",
-          "work_branch",
-          "allowed_paths",
-          "forbidden_paths",
-          "test_commands",
-          "acceptance",
-          "rollback",
-          "evidence_path"
-        ]
+        "jit_binding_completed": true,
+        "dispatchable": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R7-1-GOVERNED-TRACE-SCHEMA-EVENT-WRITER-BASELINE-01",
+        "objective": "Define a governed correlation-bound trace schema and event writer with explicit taxonomy and private-reasoning redaction, without runtime deployment or uncontrolled telemetry",
+        "work_branch": "control-plane/r7-1-governed-trace-schema-event-writer-baseline",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "observability",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/agent_kernel_v2/schemas.py",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/trace.py",
+          "tmp_agent/brain_v9/tracing/trace_redactor.py",
+          "docs/roadmap/evidence/BRAIN_101_R7_1_GOVERNED_TRACE_SCHEMA_EVENT_WRITER_BASELINE.json",
+          "tests/contract/test_r7_1_governed_trace_schema_event_writer.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Write only correlation-bound allowlisted trace event types with explicit run and event identity",
+          "Redact private reasoning, secrets, protected paths, and opaque payloads before trace persistence",
+          "Reject missing correlation IDs, unknown event taxonomy, and unredacted private-reasoning fields",
+          "Preserve no deployment, no scheduler activation, no canonical local sync, no live trading, no real money, and no auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r7_1_governed_trace_schema_event_writer.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Restore only the previous governed trace schema and writer behavior through version-controlled rollback",
+          "Do not modify scheduler configuration, runtime installation, canonical local state, trading, or financial controls"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R7_1_GOVERNED_TRACE_SCHEMA_EVENT_WRITER_BASELINE.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R7-1-GOVERNED-TRACE-SCHEMA-EVENT-WRITER-BASELINE-CLOSEOUT-01",
+          "objective": "Record verified R7.1 trace schema and event writer evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r7-1-governed-trace-schema-event-writer-baseline-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R7_1_GOVERNED_TRACE_SCHEMA_EVENT_WRITER_BASELINE_CLOSEOUT.json",
+            "tests/contract/test_r7_1_governed_trace_schema_event_writer.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Bind R7.1 closeout to verified governed trace schema and event writer evidence",
+            "Authorize exactly one dependency-eligible successor only after R7.1 acceptance is verified",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r7_1_governed_trace_schema_event_writer.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R7.2": {

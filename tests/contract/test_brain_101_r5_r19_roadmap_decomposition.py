@@ -81,7 +81,7 @@ def test_r5_4_closeout_preserves_the_jit_bound_r6_1_transition_and_one_active_su
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0].startswith("R6.")
+    assert active[0] == "R7.1"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -89,13 +89,13 @@ def test_r5_4_closeout_preserves_the_jit_bound_r6_1_transition_and_one_active_su
     assert items["R5.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R5.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R5.4"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R6.1"]["automation"]
+    binding = items["R7.1"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
     assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R6-1-MEMORY-SERVICE-OWNERSHIP-INTEGRITY-BASELINE-01"
-    assert binding["work_branch"] == "control-plane/r6-1-memory-service-ownership-integrity-baseline"
+    assert binding["front_id"] == "BRAIN-101-R7-1-GOVERNED-TRACE-SCHEMA-EVENT-WRITER-BASELINE-01"
+    assert binding["work_branch"] == "control-plane/r7-1-governed-trace-schema-event-writer-baseline"
     assert binding["closeout"]["risk"] == "MEDIUM"
 
 

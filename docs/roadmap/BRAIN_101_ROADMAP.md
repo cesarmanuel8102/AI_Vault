@@ -1284,6 +1284,14 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Status: R6.2 is `CLOSED_RUNTIME_VERIFIED`; no deployment, scheduler activation, canonical local sync, live trading, real money, auto-merge, semantic-data mutation, or FAISS mutation occurred.
 - Sole successor: R6.3 `BRAIN-101-R6-3-MEMORY-RETRIEVAL-HYDRATION-REBUILD-VALIDATION-01` is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`, and receives its exact expected base from the live canonical branch when `sequenceRoadmap` creates the governed spec.
 
+## BRAIN-101 R6.3 - Memory Retrieval Hydration and Rebuild Validation Closeout (2026-09-09)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: commit `e5826cb38215f7cbf5090e0b9161d47d3d66ffbc`, merged as `31ab5832e443bc4e820c0cd502e898e1f924e10e` through PR #315.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION_CLOSEOUT.json` binds explicit snapshot provenance, record/ID topology validation, deterministic rebuild identity, and byte-for-byte isolated rollback.
+- Status: R6.3 is `CLOSED_RUNTIME_VERIFIED`; no deployment, installation, scheduler activation, provider call, canonical memory mutation, canonical local sync, live trading, real money, or auto-merge occurred.
+- Sole successor: R7.1 `BRAIN-101-R7-1-GOVERNED-TRACE-SCHEMA-EVENT-WRITER-BASELINE-01` is `AUTHORIZED_ACTIVE`, `NO_DEPLOY`, and receives its exact expected base from the live canonical branch when `sequenceRoadmap` creates the governed spec.
+
 #### R5.2 Closeout and R5.3 Activation
 
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R5_2_AGENT_V2_LIFECYCLE_CHECKPOINTS_CLOSEOUT.json`, bound to source commit `946f60c3ce799204d110388f6f7fe2f3b6f9a529` and merge commit `40e8724a5fae642c554b329ef964e2be5e653d15`.
