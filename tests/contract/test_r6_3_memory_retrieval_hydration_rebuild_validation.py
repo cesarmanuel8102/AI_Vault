@@ -221,3 +221,23 @@ def test_deterministic_rebuild_identity_requires_exact_hydration_receipt(tmp_pat
         "reason": "hydration_receipt_invalid",
         "write_performed": False,
     }
+
+
+def test_r6_3_evidence_binds_isolated_validation_to_no_deploy_contract():
+    evidence_path = (
+        ROOT
+        / "docs/roadmap/evidence/"
+        "BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION.json"
+    )
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+
+    assert evidence["roadmap_item_id"] == "R6.3"
+    assert evidence["base_commit"] == "0c1956ce64ceebe6e7f82352d7bde35214d54525"
+    assert evidence["verification_head_before_evidence"] == "d2f307450d6298444416569c92eb3a544baa11f7"
+    assert evidence["deployment_mode"] == "NO_DEPLOY"
+    assert evidence["runtime_actions"] == {
+        "worker_install": False,
+        "scheduler_activation": False,
+        "provider_call": False,
+        "canonical_memory_mutation": False,
+    }
