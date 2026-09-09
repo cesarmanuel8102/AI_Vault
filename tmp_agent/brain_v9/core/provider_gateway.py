@@ -27,6 +27,25 @@ class ProviderResilienceDecision:
     cost_microunits: int
 
 
+@dataclass(frozen=True)
+class ProviderFallbackReceipt:
+    """An explicit, immutable authorization to route an open circuit elsewhere."""
+
+    requested_provider_id: str
+    fallback_provider_id: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class ProviderRouteDecision:
+    """A deterministic route choice; it never creates a provider client or call."""
+
+    requested_provider_id: str
+    selected_provider_id: str
+    fallback_used: bool
+    reason: str
+
+
 _INVENTORY = (
     ProviderCapability("codex", "codex_cli", ("inventory_read",)),
     ProviderCapability("kimi_k2_6_cloud", "ollama_cloud", ("inventory_read",)),
@@ -145,6 +164,48 @@ def provider_resilience_decision(
         "CLOSED",
         "success",
         cost_microunits,
+    )
+
+
+def resolve_provider_route(
+    requested_provider_id: str,
+    *,
+    circuit_state: str,
+    fallback_receipt: Optional[ProviderFallbackReceipt] = None,
+) -> ProviderRouteDecision:
+    """Select a static route and require a matching receipt for any fallback."""
+
+    if requested_provider_id not in _BY_ID:
+        raise ValueError("unknown_provider")
+    if circuit_state not in ("CLOSED", "OPEN"):
+        raise ValueError("unknown_circuit_state")
+    if circuit_state == "CLOSED":
+        if fallback_receipt is not None:
+            raise ValueError("fallback_receipt_not_permitted")
+        return ProviderRouteDecision(
+            requested_provider_id,
+            requested_provider_id,
+            False,
+            "primary_route",
+        )
+
+    if fallback_receipt is None:
+        raise ValueError("explicit_fallback_receipt_required")
+    if not isinstance(fallback_receipt, ProviderFallbackReceipt):
+        raise ValueError("fallback_receipt_invalid")
+    if fallback_receipt.requested_provider_id != requested_provider_id:
+        raise ValueError("fallback_receipt_request_mismatch")
+    if fallback_receipt.fallback_provider_id not in _BY_ID:
+        raise ValueError("unknown_provider")
+    if fallback_receipt.fallback_provider_id == requested_provider_id:
+        raise ValueError("fallback_provider_must_differ")
+    if fallback_receipt.reason != "circuit_open":
+        raise ValueError("fallback_receipt_reason_invalid")
+    return ProviderRouteDecision(
+        requested_provider_id,
+        fallback_receipt.fallback_provider_id,
+        True,
+        "explicit_circuit_open_fallback",
     )
 
 
