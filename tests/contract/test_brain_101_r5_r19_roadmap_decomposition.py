@@ -49,7 +49,7 @@ def _assert_acyclic(items: dict, roots: set[str]) -> None:
 def test_r5_through_r19_are_a_complete_non_executable_pre_authorized_backlog():
     manifest = _manifest()
     planned = _planned_items(manifest)
-    assert set(item["phase"] for item in planned.values()) == set(PHASES) - {"R5"}
+    assert set(item["phase"] for item in planned.values()) == set(PHASES) - {"R5", "R6"}
     assert all(item_id.startswith(f"{item['phase']}.") for item_id, item in planned.items())
     assert all(item["status"] == "PLANNED_UNBOUND" for item in planned.values())
     assert all(item["automation"]["jit_binding_required"] is True for item in planned.values())
