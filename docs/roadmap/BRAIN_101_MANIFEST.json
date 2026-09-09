@@ -2253,7 +2253,9 @@
             "docs/MIGRATION_CONTROL_LEDGER.md",
             "docs/roadmap/evidence/BRAIN_101_R7_1_GOVERNED_TRACE_SCHEMA_EVENT_WRITER_BASELINE_CLOSEOUT.json",
             "tests/contract/test_r7_1_governed_trace_schema_event_writer.py",
-            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py"
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
           ],
           "forbidden_paths": [
             ".env",
@@ -2364,7 +2366,46 @@
           "Restore only the previous timeline projection and pure health accounting behavior through version-controlled rollback",
           "Do not modify scheduler configuration, runtime installation, canonical local state, trading, or financial controls"
         ],
-        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R7_2_RUN_TIMELINE_PROVIDER_HEALTH_OPERATIONAL_ACCOUNTING.json"
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R7_2_RUN_TIMELINE_PROVIDER_HEALTH_OPERATIONAL_ACCOUNTING.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R7-2-RUN-TIMELINE-PROVIDER-HEALTH-OPERATIONAL-ACCOUNTING-CLOSEOUT-01",
+          "objective": "Record verified R7.2 timeline and pure provider-health evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r7-2-run-timeline-provider-health-operational-accounting-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R7_2_RUN_TIMELINE_PROVIDER_HEALTH_OPERATIONAL_ACCOUNTING_CLOSEOUT.json",
+            "tests/contract/test_r7_2_run_timeline_provider_health_operational_accounting.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R7.2 Issue PR decision merge and sanitized timeline provider-health evidence",
+            "Set R7.2 to CLOSED_RUNTIME_VERIFIED only after the implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r7_2_run_timeline_provider_health_operational_accounting.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R7.3": {
