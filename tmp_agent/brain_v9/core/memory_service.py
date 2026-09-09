@@ -350,6 +350,236 @@ class MemoryService:
                 return {"ok": False, "reason": "rollback_verification_failed"}
         return result
 
+    @staticmethod
+    def _r6_3_snapshot_receipt(snapshot_root: Path) -> tuple[Dict[str, Any] | None, str]:
+        """Parse an attributable snapshot without accepting an opaque memory source."""
+        from tmp_agent.brain_v9.memory.memory_snapshot import R6_3_ISOLATED_SNAPSHOT_MARKER
+
+        root = Path(snapshot_root).resolve()
+        if not root.is_dir() or not (root / R6_3_ISOLATED_SNAPSHOT_MARKER).is_file():
+            return None, "snapshot_root_invalid"
+        artifacts = (
+            "semantic_memory.jsonl",
+            "semantic_memory_faiss.index",
+            "semantic_memory_faiss_ids.json",
+        )
+        try:
+            manifest = json.loads((root / "hydration_manifest.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None, "snapshot_manifest_invalid"
+        if set(manifest) != {"schema_version", "snapshot_id", "artifact_sha256"}:
+            return None, "snapshot_manifest_invalid"
+        if manifest.get("schema_version") != 1 or not isinstance(manifest.get("snapshot_id"), str) or not manifest["snapshot_id"].strip():
+            return None, "snapshot_manifest_invalid"
+        hashes = manifest.get("artifact_sha256")
+        if not isinstance(hashes, dict) or set(hashes) != set(artifacts):
+            return None, "snapshot_manifest_invalid"
+        actual: Dict[str, str] = {}
+        try:
+            for name in artifacts:
+                content = (root / name).read_bytes()
+                actual[name] = hashlib.sha256(content).hexdigest()
+                if not isinstance(hashes[name], str) or hashes[name] != actual[name]:
+                    return None, "snapshot_artifact_hash_mismatch"
+            records = [
+                json.loads(line)
+                for line in (root / "semantic_memory.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            ids = json.loads((root / "semantic_memory_faiss_ids.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None, "snapshot_records_invalid"
+        provenance: List[Dict[str, str]] = []
+        for record in records:
+            if not isinstance(record, dict) or not isinstance(record.get("id"), str) or not record["id"].strip():
+                return None, "snapshot_record_id_invalid"
+            if not isinstance(record.get("source"), str) or not record["source"].strip():
+                return None, "snapshot_record_source_invalid"
+            provenance.append({"id": record["id"], "source": record["source"]})
+        record_ids = [record["id"] for record in provenance]
+        if not isinstance(ids, list) or any(not isinstance(item, str) for item in ids) or ids != record_ids or len(set(ids)) != len(ids):
+            return None, "snapshot_faiss_topology_inconsistent"
+        receipt: Dict[str, Any] = {
+            "schema_version": 1,
+            "snapshot_id": manifest["snapshot_id"],
+            "snapshot_root": str(root),
+            "artifact_sha256": actual,
+            "record_provenance": provenance,
+        }
+        receipt["rebuild_identity_sha256"] = _canonical_sha256(receipt)
+        receipt["receipt_sha256"] = _canonical_sha256(receipt)
+        return receipt, ""
+
+    @staticmethod
+    def _verify_r6_3_snapshot_receipt(receipt: Dict[str, Any]) -> bool:
+        expected = {
+            "schema_version", "snapshot_id", "snapshot_root", "artifact_sha256", "record_provenance",
+            "rebuild_identity_sha256", "receipt_sha256",
+        }
+        if not isinstance(receipt, dict) or set(receipt) != expected or receipt.get("schema_version") != 1:
+            return False
+        unsigned = {key: value for key, value in receipt.items() if key not in {"receipt_sha256"}}
+        identity_input = {key: value for key, value in unsigned.items() if key != "rebuild_identity_sha256"}
+        if receipt.get("rebuild_identity_sha256") != _canonical_sha256(identity_input):
+            return False
+        if receipt.get("receipt_sha256") != _canonical_sha256(unsigned):
+            return False
+        parsed, error = MemoryService._r6_3_snapshot_receipt(Path(str(receipt.get("snapshot_root") or "")))
+        return error == "" and parsed == receipt
+
+    def prepare_isolated_retrieval_hydration(self, snapshot_root: Path) -> Dict[str, Any]:
+        """Validate explicit isolated snapshot provenance before any hydration write."""
+        receipt, error = self._r6_3_snapshot_receipt(snapshot_root)
+        if receipt is None:
+            return {"ok": False, "reason": error, "write_performed": False}
+        return {"ok": True, "write_performed": False, "receipt": receipt}
+
+    @staticmethod
+    def _isolated_retrieval_rebuild(receipt: Dict[str, Any], isolated_root: Path) -> Dict[str, Any]:
+        """Production rebuild remains disabled until a separately governed runtime integration."""
+        del receipt, isolated_root
+        return {"ok": False, "reason": "isolated_retrieval_rebuilder_not_configured"}
+
+    def hydrate_isolated_retrieval(self, receipt: Dict[str, Any], isolated_root: Path) -> Dict[str, Any]:
+        """Copy only a sealed, attributable snapshot into a marker-bound temporary root."""
+        root = Path(isolated_root).resolve()
+        if root == self.semantic_root.resolve():
+            return {"ok": False, "reason": "canonical_hydration_not_enabled", "write_performed": False}
+        if not self._verify_r6_3_snapshot_receipt(receipt):
+            return {"ok": False, "reason": "hydration_receipt_invalid", "write_performed": False}
+        from tmp_agent.brain_v9.memory.memory_snapshot import (
+            ISOLATED_ARTIFACTS,
+            create_isolated_retrieval_snapshot,
+            isolated_retrieval_artifact_hashes,
+            isolated_retrieval_root_or_error,
+        )
+        from tmp_agent.brain_v9.memory.memory_rollback import rollback_isolated_retrieval_snapshot
+
+        root, error = isolated_retrieval_root_or_error(root)
+        if root is None:
+            return {"ok": False, "reason": error, "write_performed": False}
+        snapshot = create_isolated_retrieval_snapshot(root, receipt["receipt_sha256"])
+        if not snapshot.get("ok"):
+            return {"ok": False, "reason": snapshot.get("reason", "isolated_snapshot_failed"), "write_performed": False}
+        try:
+            source = Path(receipt["snapshot_root"])
+            staged = []
+            for name in ISOLATED_ARTIFACTS:
+                temporary = root / f".{name}.r6_3_hydrate"
+                temporary.write_bytes((source / name).read_bytes())
+                staged.append((temporary, root / name))
+            for temporary, destination in staged:
+                temporary.replace(destination)
+        except OSError:
+            rollback = rollback_isolated_retrieval_snapshot(root, snapshot, receipt["receipt_sha256"])
+            return {"ok": False, "reason": "isolated_hydration_failed", "write_performed": False, "rollback": rollback}
+        hydrated_hashes = isolated_retrieval_artifact_hashes(root)
+        if hydrated_hashes != receipt["artifact_sha256"]:
+            rollback = rollback_isolated_retrieval_snapshot(root, snapshot, receipt["receipt_sha256"])
+            return {"ok": False, "reason": "isolated_hydration_verification_failed", "write_performed": False, "rollback": rollback}
+        hydration_receipt = {
+            "schema_version": 1,
+            "source_snapshot_id": receipt["snapshot_id"],
+            "source_receipt_sha256": receipt["receipt_sha256"],
+            "isolated_root": str(root),
+            "artifact_sha256": hydrated_hashes,
+            "record_provenance": receipt["record_provenance"],
+            "rebuild_identity_sha256": receipt["rebuild_identity_sha256"],
+        }
+        hydration_receipt["hydration_receipt_sha256"] = _canonical_sha256(hydration_receipt)
+        return {
+            "ok": True,
+            "write_performed": True,
+            "source_snapshot_id": receipt["snapshot_id"],
+            "hydration_receipt": hydration_receipt,
+        }
+
+    @staticmethod
+    def _verify_hydration_receipt(receipt: Dict[str, Any], root: Path) -> bool:
+        expected = {
+            "schema_version", "source_snapshot_id", "source_receipt_sha256", "isolated_root",
+            "artifact_sha256", "record_provenance", "rebuild_identity_sha256", "hydration_receipt_sha256",
+        }
+        return (
+            isinstance(receipt, dict)
+            and set(receipt) == expected
+            and receipt.get("schema_version") == 1
+            and receipt.get("isolated_root") == str(Path(root).resolve())
+            and receipt.get("hydration_receipt_sha256")
+            == _canonical_sha256(receipt, omit={"hydration_receipt_sha256"})
+        )
+
+    def rebuild_isolated_retrieval(self, hydration_receipt: Dict[str, Any], isolated_root: Path) -> Dict[str, Any]:
+        """Run a receipt-bound testable rebuild and rollback every invalid isolated result."""
+        root = Path(isolated_root).resolve()
+        if root == self.semantic_root.resolve():
+            return {"ok": False, "reason": "canonical_hydration_not_enabled", "write_performed": False}
+        if not self._verify_hydration_receipt(hydration_receipt, root):
+            return {"ok": False, "reason": "hydration_receipt_invalid", "write_performed": False}
+        from tmp_agent.brain_v9.memory.memory_snapshot import (
+            create_isolated_retrieval_snapshot,
+            isolated_retrieval_artifact_hashes,
+            isolated_retrieval_root_or_error,
+        )
+        from tmp_agent.brain_v9.memory.memory_rollback import rollback_isolated_retrieval_snapshot
+
+        root, error = isolated_retrieval_root_or_error(root)
+        if root is None:
+            return {"ok": False, "reason": error, "write_performed": False}
+        before = isolated_retrieval_artifact_hashes(root)
+        if before != hydration_receipt["artifact_sha256"]:
+            return {"ok": False, "reason": "hydrated_artifact_hash_mismatch", "write_performed": False}
+        snapshot = create_isolated_retrieval_snapshot(root, hydration_receipt["hydration_receipt_sha256"])
+        if not snapshot.get("ok"):
+            return {"ok": False, "reason": snapshot.get("reason", "isolated_snapshot_failed"), "write_performed": False}
+        try:
+            rebuilt = self._isolated_retrieval_rebuild(hydration_receipt, root)
+            if not isinstance(rebuilt, dict) or rebuilt.get("ok") is not True:
+                raise RuntimeError("isolated_retrieval_rebuild_rejected")
+            if rebuilt.get("rebuild_identity_sha256") != hydration_receipt["rebuild_identity_sha256"]:
+                raise RuntimeError("isolated_retrieval_rebuild_identity_mismatch")
+            verified, error = self._r6_3_snapshot_receipt_from_hydrated_root(root, hydration_receipt)
+            if verified is None or error:
+                raise RuntimeError(error or "isolated_retrieval_rebuild_invalid")
+            after = isolated_retrieval_artifact_hashes(root)
+            if after == before:
+                raise RuntimeError("isolated_retrieval_rebuild_no_effect")
+        except Exception:
+            rollback = rollback_isolated_retrieval_snapshot(root, snapshot, hydration_receipt["hydration_receipt_sha256"])
+            return {"ok": False, "reason": "isolated_rebuild_failed", "write_performed": False, "rollback": rollback}
+        return {
+            "ok": True,
+            "write_performed": True,
+            "rebuild_identity_sha256": hydration_receipt["rebuild_identity_sha256"],
+            "before_artifact_sha256": before,
+            "after_artifact_sha256": after,
+        }
+
+    @staticmethod
+    def _r6_3_snapshot_receipt_from_hydrated_root(
+        root: Path, hydration_receipt: Dict[str, Any]
+    ) -> tuple[Dict[str, Any] | None, str]:
+        """Validate records/IDs after a rebuild without treating the index bytes as provenance."""
+        try:
+            records = [
+                json.loads(line)
+                for line in (root / "semantic_memory.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            ids = json.loads((root / "semantic_memory_faiss_ids.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None, "isolated_rebuild_records_invalid"
+        provenance = []
+        for record in records:
+            if not isinstance(record, dict) or not isinstance(record.get("id"), str) or not isinstance(record.get("source"), str) or not record["id"].strip() or not record["source"].strip():
+                return None, "isolated_rebuild_record_provenance_invalid"
+            provenance.append({"id": record["id"], "source": record["source"]})
+        if not isinstance(ids, list) or ids != [item["id"] for item in provenance] or len(set(ids)) != len(ids):
+            return None, "isolated_rebuild_topology_inconsistent"
+        if provenance != hydration_receipt["record_provenance"]:
+            return None, "isolated_rebuild_provenance_changed"
+        return {"record_provenance": provenance}, ""
+
     def records_for_domain(self, domain: str) -> List[Dict[str, Any]]:
         return [
             record
