@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "19d853a525bbd419f825bf800ef8c8b1d075ccb7e32f41e4693c5c8d32e62110",
+  "roadmap_sha256": "8ad1f5e83a38987f30f12e67e3b5c5ffe07c46f693648fada4b5a98b53de7305",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -3826,7 +3826,7 @@
       }
     },
     "R12.1": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R12",
       "title": "Portfolio Manager allocation and ledger baseline",
       "dependencies": [
@@ -3963,7 +3963,7 @@
       }
     },
     "R12.2": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R12",
       "title": "Risk Engine loss exposure and market-failure gates",
       "dependencies": [
@@ -4008,7 +4008,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
+        "dispatchable": true,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
@@ -4019,7 +4019,84 @@
           "acceptance",
           "rollback",
           "evidence_path"
-        ]
+        ],
+        "jit_binding_completed": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R12-2-RISK-ENGINE-LOSS-EXPOSURE-MARKET-FAILURE-GATES-01",
+        "objective": "Add deterministic paper-only risk-engine loss, exposure, and market-failure gate baseline without broker, order, provider, network, runtime, or scheduler action",
+        "work_branch": "control-plane/r12-2-risk-engine-loss-exposure-market-failure-gates",
+        "executor": "codex_control_plane",
+        "risk": "CRITICAL",
+        "domain": "portfolio_risk",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/risk_engine_paper_gates.py",
+          "docs/roadmap/evidence/BRAIN_101_R12_2_RISK_ENGINE_LOSS_EXPOSURE_MARKET_FAILURE_GATES.json",
+          "tests/contract/test_r12_2_risk_engine_loss_exposure_market_failure_gates.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Enforce deterministic paper-only 2 percent daily loss, 6 percent weekly drawdown, and 70 percent exposure gates",
+          "Deny kill-switch, stale-data, broker-disconnect, duplicate-order, and reconciliation failure states without execution",
+          "Preserve human final authority and prohibit live trading, real money, broker, provider, network, runtime, scheduler, canonical sync, and auto-merge effects"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r12_2_risk_engine_loss_exposure_market_failure_gates.py",
+          "python -m pytest -q tests/contract/test_r12_1_portfolio_manager_allocation_ledger_baseline.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": [
+          "Record deterministic paper-only gate-denial rollback evidence without broker, order, runtime, scheduler, configuration, memory, trading, or financial-control mutation"
+        ],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R12_2_RISK_ENGINE_LOSS_EXPOSURE_MARKET_FAILURE_GATES.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R12-2-RISK-ENGINE-LOSS-EXPOSURE-MARKET-FAILURE-GATES-CLOSEOUT-01",
+          "objective": "Record verified R12.2 paper-only risk-gate evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r12-2-risk-engine-loss-exposure-market-failure-gates-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R12_2_RISK_ENGINE_LOSS_EXPOSURE_MARKET_FAILURE_GATES_CLOSEOUT.json",
+            "tests/contract/test_r12_2_risk_engine_loss_exposure_market_failure_gates.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R12.2 paper-only risk-gate evidence",
+            "Set R12.2 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r12_2_risk_engine_loss_exposure_market_failure_gates.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R12.3": {

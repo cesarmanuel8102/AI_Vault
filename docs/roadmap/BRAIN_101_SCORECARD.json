@@ -2,7 +2,7 @@
   "schema_version": 1,
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-  "status": "R11_2_CLOSED_RUNTIME_VERIFIED_R12_1_AUTHORIZED_ACTIVE",
+  "status": "R12_1_CLOSED_RUNTIME_VERIFIED_R12_2_AUTHORIZED_ACTIVE",
   "audit_baseline_head": "759edfb",
   "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
