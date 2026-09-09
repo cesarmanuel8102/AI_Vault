@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "roadmap_item": "R9.1",
+  "front_id": "BRAIN-101-R9-1-CURATED-KNOWLEDGE-CANONICAL-INVENTORY-TAXONOMY-01",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "catalog": {
+    "version": "1.0.0",
+    "inventory_kind": "static_repository_catalog",
+    "read_only": true,
+    "entry_ids": [
+      "BRAIN-101-CURATED-GOVERNANCE",
+      "BRAIN-101-CURATED-OPERATIONS"
+    ]
+  },
+  "runtime_actions": {
+    "worker_install": false,
+    "scheduler_activation": false,
+    "semantic_memory_write": false,
+    "source_ingestion": false,
+    "provider_call": false,
+    "network_access": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false
+  }
+}
