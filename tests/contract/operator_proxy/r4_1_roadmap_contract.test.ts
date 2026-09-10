@@ -55,7 +55,7 @@ test("R4.1 baseline evidence selects one eligible no-deploy modular-monolith can
   ]);
 });
 
-test("R5.4 through R15.1 closeouts preserve history and hand sole authority to JIT-bound R15.2",()=>{
+test("R5.4 through R15.2 closeouts preserve history and hand sole authority to JIT-bound R15.3",()=>{
   const manifest=readJson(MANIFEST);
   assert.equal(manifest.roadmap_items["R4.1"].status,"CLOSED_RUNTIME_VERIFIED");
   const r42=manifest.roadmap_items["R4.2"];
@@ -76,7 +76,7 @@ test("R5.4 through R15.1 closeouts preserve history and hand sole authority to J
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION_CLOSEOUT.json")));
-  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R15.2"]);
+  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R15.3"]);
   const r43=manifest.roadmap_items["R4.3"];
   assert.deepEqual(r43.dependencies,["R4.2"]);
   assert.equal(r43.status,"CLOSED_RUNTIME_VERIFIED");
@@ -261,8 +261,14 @@ test("R5.4 through R15.1 closeouts preserve history and hand sole authority to J
   assert.equal(r151.automation.deployment_mode,"NO_DEPLOY");
   const r152=manifest.roadmap_items["R15.2"];
   assert.deepEqual(r152.dependencies,["R15.1"]);
-  assert.equal(r152.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r152.status,"CLOSED_RUNTIME_VERIFIED");
   assert.equal(r152.automation.front_id,"BRAIN-101-R15-2-PAPER-PORTFOLIO-COMPLIANCE-RISK-INTEGRATION-01");
   assert.equal(r152.automation.jit_binding_completed,true);
   assert.equal(r152.automation.deployment_mode,"NO_DEPLOY");
+  const r153=manifest.roadmap_items["R15.3"];
+  assert.deepEqual(r153.dependencies,["R15.2"]);
+  assert.equal(r153.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r153.automation.front_id,"BRAIN-101-R15-3-PAPER-SOAK-INCIDENT-EVIDENCE-01");
+  assert.equal(r153.automation.jit_binding_completed,true);
+  assert.equal(r153.automation.deployment_mode,"NO_DEPLOY");
 });

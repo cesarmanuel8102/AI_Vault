@@ -96,7 +96,7 @@ def test_closeout_closes_r15_1_and_jit_binds_r15_2_without_deploy():
     )
     assert manifest["roadmap_items"]["R15.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     successor = manifest["roadmap_items"]["R15.2"]
-    assert successor["status"] == "AUTHORIZED_ACTIVE"
+    assert successor["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert successor["dependencies"] == ["R15.1"]
     assert successor["automation"]["deployment_mode"] == "NO_DEPLOY"
     assert closeout["verification_level"] == "CODE_AND_CI_VERIFIED_NO_DEPLOY"
@@ -104,12 +104,13 @@ def test_closeout_closes_r15_1_and_jit_binds_r15_2_without_deploy():
     assert all(value is False for value in closeout["runtime_actions"].values())
 
 
-def test_r15_2_active_binding_predeclares_a_no_deploy_closeout_contract():
+def test_r15_2_closed_binding_preserves_a_no_deploy_closeout_contract():
     manifest = json.loads(
         (ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8")
     )
-    successor = manifest["roadmap_items"]["R15.2"]
-    closeout = successor["automation"]["closeout"]
+    item = manifest["roadmap_items"]["R15.2"]
+    assert item["status"] == "CLOSED_RUNTIME_VERIFIED"
+    closeout = item["automation"]["closeout"]
     assert closeout["risk"] == "MEDIUM"
     assert closeout["executor"] == "codex_control_plane"
     assert "docs/roadmap/BRAIN_101_MANIFEST.json" in closeout["allowed_paths"]

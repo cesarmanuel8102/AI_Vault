@@ -88,3 +88,23 @@ def test_paper_portfolio_compliance_risk_rejects_effects_and_declares_no_deploy_
     )
     assert evidence["verification_level"] == "CODE_AND_CI_VERIFIED_NO_DEPLOY"
     assert all(value is False for value in evidence["runtime_actions"].values())
+
+
+def test_closeout_closes_r15_2_and_jit_binds_r15_3_without_deploy():
+    closeout = json.loads(
+        (
+            ROOT / "docs/roadmap/evidence/"
+            "BRAIN_101_R15_2_PAPER_PORTFOLIO_COMPLIANCE_RISK_INTEGRATION_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+    manifest = json.loads(
+        (ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8")
+    )
+    assert manifest["roadmap_items"]["R15.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    successor = manifest["roadmap_items"]["R15.3"]
+    assert successor["status"] == "AUTHORIZED_ACTIVE"
+    assert successor["dependencies"] == ["R15.2"]
+    assert successor["automation"]["deployment_mode"] == "NO_DEPLOY"
+    assert closeout["verification_level"] == "CODE_AND_CI_VERIFIED_NO_DEPLOY"
+    assert closeout["successor"]["roadmap_item"] == "R15.3"
+    assert all(value is False for value in closeout["runtime_actions"].values())
