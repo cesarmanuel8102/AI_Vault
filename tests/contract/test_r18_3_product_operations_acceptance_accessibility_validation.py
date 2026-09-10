@@ -108,5 +108,9 @@ def test_closeout_closes_r18_3_and_jit_binds_only_r19_1_without_deploy():
         "docs/roadmap/evidence/BRAIN_101_R19_1_CERTIFICATION_GATE_MATRIX.json",
         "tests/contract/test_r19_1_brain_101_certification_gate_matrix.py",
     ]
+    closeout_binding = binding["closeout"]
+    assert closeout_binding["front_id"] == "BRAIN-101-R19-1-CERTIFICATION-GATE-MATRIX-CLOSEOUT-01"
+    assert closeout_binding["work_branch"] == "control-plane/r19-1-certification-gate-matrix-closeout"
+    assert closeout_binding["risk"] == "MEDIUM"
     assert closeout["implementation_merge"] == "2366867af4ad67941808c4569ae0e4fb704c0bc7"
     assert all(value is False for value in closeout["runtime_actions"].values())

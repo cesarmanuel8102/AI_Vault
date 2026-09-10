@@ -6040,7 +6040,45 @@
         "test_commands": ["python -m pytest -q tests/contract/test_r19_1_brain_101_certification_gate_matrix.py", "git diff --check"],
         "acceptance": ["Record mandatory certification gates and truthful deferred capability inventory", "Reject false certification, runtime actions, and constitutional-limit changes"],
         "rollback": ["Record deterministic certification rollback evidence without external mutation"],
-        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R19_1_CERTIFICATION_GATE_MATRIX.json"
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R19_1_CERTIFICATION_GATE_MATRIX.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R19-1-CERTIFICATION-GATE-MATRIX-CLOSEOUT-01",
+          "objective": "Record R19.1 certification-gate evidence before authorizing one dependency-eligible successor",
+          "work_branch": "control-plane/r19-1-certification-gate-matrix-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R19_1_CERTIFICATION_GATE_MATRIX_CLOSEOUT.json",
+            "tests/contract/test_r19_1_brain_101_certification_gate_matrix.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R19.1 certification-gate evidence",
+            "Preserve truthful deferred capability inventory and all constitutional limits",
+            "Preserve exactly one authorized next roadmap item"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r19_1_brain_101_certification_gate_matrix.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R19.2": {
