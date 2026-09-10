@@ -77,7 +77,9 @@ test("R5.4 through R17.1 closeouts preserve history and hand sole authority to R
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION_CLOSEOUT.json")));
   assert.deepEqual(activeItems(manifest).map(([item])=>item),[]);
-  assert.equal(manifest.brain_101_certified,true);
+  assert.equal(manifest.brain_101_certified,false);
+  assert.equal(manifest.certification_status,"REJECTED_PENDING_REMEDIATION");
+  assert.equal(manifest.current_program?.status,"REMEDIATION_REQUIRED");
   const r43=manifest.roadmap_items["R4.3"];
   assert.deepEqual(r43.dependencies,["R4.2"]);
   assert.equal(r43.status,"CLOSED_RUNTIME_VERIFIED");
