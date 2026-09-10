@@ -9607,4 +9607,4 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 
 - Controller: `CODEX_GOVERNED_CONTROLLER`; implementation PR #379 merged as `2366867af4ad67941808c4569ae0e4fb704c0bc7`.
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; runtime, deployment, installation, scheduler activation, network, canonical-sync, live trading, real money, and auto-merge remain disabled.
-- Transition: R18.3 is `CLOSED_RUNTIME_VERIFIED`; R19.1 is the sole `AUTHORIZED_ACTIVE` item, JIT-bound `CERTIFICATION_ONLY` for a deterministic certification gate matrix.
+- Transition: R18.3 is `CLOSED_RUNTIME_VERIFIED`; R19.1 is the sole `AUTHORIZED_ACTIVE` item with `CERTIFICATION_ONLY` intent and a fail-closed `NO_DEPLOY` binding for a deterministic certification gate matrix.

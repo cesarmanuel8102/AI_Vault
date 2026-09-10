@@ -1611,4 +1611,4 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 
 - Controller: `CODEX_GOVERNED_CONTROLLER`; source PR #379 merged as `2366867af4ad67941808c4569ae0e4fb704c0bc7`.
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R18_3_PRODUCT_OPERATIONS_ACCEPTANCE_ACCESSIBILITY_VALIDATION_CLOSEOUT.json`; operator workflow, accessibility, responsive behavior, and incident UI acceptance evidence is deterministic and no-deploy.
-- Status: R18.3 is `CLOSED_RUNTIME_VERIFIED`; exactly one successor R19.1 is JIT-bound `CERTIFICATION_ONLY` for the BRAIN-101 certification gate matrix.
+- Status: R18.3 is `CLOSED_RUNTIME_VERIFIED`; exactly one successor R19.1 has `CERTIFICATION_ONLY` intent and is JIT-bound `NO_DEPLOY` for the BRAIN-101 certification gate matrix.

@@ -102,7 +102,7 @@ def test_closeout_closes_r18_3_and_jit_binds_only_r19_1_without_deploy():
     binding = manifest["roadmap_items"]["R19.1"]["automation"]
     assert binding["front_id"] == "BRAIN-101-R19-1-CERTIFICATION-GATE-MATRIX-01"
     assert binding["work_branch"] == "control-plane/r19-1-certification-gate-matrix"
-    assert binding["deployment_mode"] == "CERTIFICATION_ONLY"
+    assert binding["deployment_mode"] == "NO_DEPLOY"
     assert binding["allowed_paths"] == [
         "tmp_agent/brain_v9/core/brain_101_certification_gate_matrix.py",
         "docs/roadmap/evidence/BRAIN_101_R19_1_CERTIFICATION_GATE_MATRIX.json",
