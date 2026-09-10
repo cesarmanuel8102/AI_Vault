@@ -9567,3 +9567,9 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Controller: `CODEX_GOVERNED_CONTROLLER`; implementation PR #367 merged as `ee43e40af0cfe7ef0f2fa6db1ce065e68d57b619`.
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; all runtime, scheduler, broker, network, live-trading, real-money, canonical-sync, and auto-merge actions remain disabled.
 - Transition: R16.1 is `CLOSED_RUNTIME_VERIFIED`; R16.2 is sole `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` for disabled-state and paper rollback validation.
+
+## BRAIN-101 R16.2 Closeout - Disabled-State Paper Rollback Validation (2026-09-10)
+
+- Controller: CODEX_GOVERNED_CONTROLLER; implementation PR #369 merged as 758836c1b467cf5898e16b92c86e4674813c2e1e.
+- Classification: CODE_AND_CI_VERIFIED_NO_DEPLOY; all runtime, scheduler, broker, network, live-trading, real-money, canonical-sync, and auto-merge actions remain disabled.
+- Transition: R16.2 is CLOSED_RUNTIME_VERIFIED; R17.1 is sole AUTHORIZED_ACTIVE, JIT-bound NO_DEPLOY for a selective microservice candidacy assessment.

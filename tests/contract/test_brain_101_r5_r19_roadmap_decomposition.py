@@ -81,7 +81,7 @@ def test_governed_closeouts_preserve_history_and_hand_sole_authority_to_jit_boun
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R16.2"
+    assert active[0] == "R17.1"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -114,17 +114,18 @@ def test_governed_closeouts_preserve_history_and_hand_sole_authority_to_jit_boun
     assert items["R15.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R15.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R16.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R16.2"]["automation"]
+    assert items["R16.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R17.1"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
     assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R16-2-DISABLED-STATE-PAPER-ROLLBACK-VALIDATION-01"
-    assert binding["work_branch"] == "control-plane/r16-2-disabled-state-paper-rollback-validation"
+    assert binding["front_id"] == "BRAIN-101-R17-1-SELECTIVE-MICROSERVICE-CANDIDACY-ASSESSMENT-01"
+    assert binding["work_branch"] == "control-plane/r17-1-selective-microservice-candidacy-assessment"
     assert binding["allowed_paths"] == [
-        "tmp_agent/brain_v9/core/live_trading_gate_validation.py",
-        "docs/roadmap/evidence/BRAIN_101_R16_2_DISABLED_STATE_PAPER_ROLLBACK_VALIDATION.json",
-        "tests/contract/test_r16_2_disabled_state_paper_rollback_validation.py",
+        "tmp_agent/brain_v9/core/microservice_candidacy_assessment.py",
+        "docs/roadmap/evidence/BRAIN_101_R17_1_SELECTIVE_MICROSERVICE_CANDIDACY_ASSESSMENT.json",
+        "tests/contract/test_r17_1_selective_microservice_candidacy_assessment.py",
     ]
 
 
