@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "f87a034f7aaa003fb867fd56c522b9d510bd749bcac613e388d584466cf0ab9f",
+  "roadmap_sha256": "0f201a205788fd77817568ffe704667f676446bec53bb35d0a0b199b45202d0b",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -5967,7 +5967,7 @@
       }
     },
     "R19.1": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R19",
       "title": "BRAIN-101 certification gate matrix",
       "dependencies": [
@@ -6082,7 +6082,7 @@
       }
     },
     "R19.2": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R19",
       "title": "Adversarial resilience and recovery certification",
       "dependencies": [
@@ -6126,7 +6126,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
+        "dispatchable": true,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
@@ -6137,7 +6137,35 @@
           "acceptance",
           "rollback",
           "evidence_path"
-        ]
+        ],
+        "jit_binding_completed": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R19-2-ADVERSARIAL-RESILIENCE-RECOVERY-CERTIFICATION-01",
+        "objective": "Record deterministic adversarial resilience and recovery certification evidence without runtime actions",
+        "work_branch": "control-plane/r19-2-adversarial-resilience-recovery-certification",
+        "executor": "codex_control_plane",
+        "risk": "CRITICAL",
+        "domain": "certification",
+        "deployment_mode": "NO_DEPLOY",
+        "live_trading_enabled": false,
+        "real_money_enabled": false,
+        "allowed_paths": ["tmp_agent/brain_v9/core/brain_101_adversarial_resilience_recovery_certification.py", "docs/roadmap/evidence/BRAIN_101_R19_2_ADVERSARIAL_RESILIENCE_RECOVERY_CERTIFICATION.json", "tests/contract/test_r19_2_adversarial_resilience_recovery_certification.py"],
+        "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+        "test_commands": ["python -m pytest -q tests/contract/test_r19_2_adversarial_resilience_recovery_certification.py", "git diff --check"],
+        "acceptance": ["Record mandatory adversarial resilience and recovery gates without runtime mutation", "Reject omitted mandatory adversarial gates and live-trading tests"],
+        "rollback": ["Record deterministic adversarial recovery rollback evidence without external mutation"],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R19_2_ADVERSARIAL_RESILIENCE_RECOVERY_CERTIFICATION.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R19-2-ADVERSARIAL-RESILIENCE-RECOVERY-CERTIFICATION-CLOSEOUT-01",
+          "objective": "Record R19.2 adversarial resilience evidence before authorizing the final certification decision",
+          "work_branch": "control-plane/r19-2-adversarial-resilience-recovery-certification-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R19_2_ADVERSARIAL_RESILIENCE_RECOVERY_CERTIFICATION_CLOSEOUT.json", "tests/contract/test_r19_2_adversarial_resilience_recovery_certification.py", "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts", "tests/contract/operator_proxy/sequencer.test.ts"],
+          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+          "acceptance": ["Record exact R19.2 adversarial resilience and recovery evidence", "Preserve all constitutional limits and exactly one authorized successor"],
+          "test_commands": ["python -m pytest -q tests/contract/test_r19_2_adversarial_resilience_recovery_certification.py", "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "git diff --check"]
+        }
       }
     },
     "R19.3": {
