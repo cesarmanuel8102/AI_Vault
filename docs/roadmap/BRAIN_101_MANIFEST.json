@@ -5353,6 +5353,7 @@
           "evidence_path"
         ],
         "jit_binding_completed": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
         "front_id": "BRAIN-101-R16-1-DISABLED-LIVE-TRADING-GATE-DESIGN-01",
         "objective": "Define a deterministic disabled LiveTradingGate contract with fail-closed multi-factor preview and audit receipts; no live execution, real money, broker, provider, network, runtime, or scheduler action",
         "work_branch": "control-plane/r16-1-disabled-live-trading-gate-design",
@@ -5367,7 +5368,46 @@
         "test_commands": ["python -m pytest -q tests/contract/test_r16_1_disabled_live_trading_gate_design.py", "git diff --check"],
         "acceptance": ["Prove live trading and real money remain disabled", "Reject broker, network, runtime, scheduler, live-trading, and real-money effects"],
         "rollback": ["Record deterministic disabled-gate rollback evidence without external mutation"],
-        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R16_1_DISABLED_LIVE_TRADING_GATE_DESIGN.json"
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R16_1_DISABLED_LIVE_TRADING_GATE_DESIGN.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R16-1-DISABLED-LIVE-TRADING-GATE-DESIGN-CLOSEOUT-01",
+          "objective": "Record verified R16.1 disabled LiveTradingGate design evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r16-1-disabled-live-trading-gate-design-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R16_1_DISABLED_LIVE_TRADING_GATE_DESIGN_CLOSEOUT.json",
+            "tests/contract/test_r16_1_disabled_live_trading_gate_design.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R16.1 disabled LiveTradingGate design and rollback evidence",
+            "Set R16.1 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r16_1_disabled_live_trading_gate_design.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R16.2": {
