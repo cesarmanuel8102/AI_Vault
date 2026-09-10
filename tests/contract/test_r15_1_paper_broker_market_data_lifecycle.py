@@ -102,3 +102,15 @@ def test_closeout_closes_r15_1_and_jit_binds_r15_2_without_deploy():
     assert closeout["verification_level"] == "CODE_AND_CI_VERIFIED_NO_DEPLOY"
     assert closeout["successor"]["roadmap_item"] == "R15.2"
     assert all(value is False for value in closeout["runtime_actions"].values())
+
+
+def test_r15_2_active_binding_predeclares_a_no_deploy_closeout_contract():
+    manifest = json.loads(
+        (ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8")
+    )
+    successor = manifest["roadmap_items"]["R15.2"]
+    closeout = successor["automation"]["closeout"]
+    assert closeout["risk"] == "MEDIUM"
+    assert closeout["executor"] == "codex_control_plane"
+    assert "docs/roadmap/BRAIN_101_MANIFEST.json" in closeout["allowed_paths"]
+    assert "tmp_agent/brain_v9/trading/" in closeout["forbidden_paths"]

@@ -5132,7 +5132,47 @@
         ],
         "deployment_mode": "NO_DEPLOY",
         "rollback": ["Record deterministic simulated-paper rollback evidence without external or runtime mutation"],
-        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R15_2_PAPER_PORTFOLIO_COMPLIANCE_RISK_INTEGRATION.json"
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R15_2_PAPER_PORTFOLIO_COMPLIANCE_RISK_INTEGRATION.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R15-2-PAPER-PORTFOLIO-COMPLIANCE-RISK-INTEGRATION-CLOSEOUT-01",
+          "objective": "Record verified R15.2 simulated portfolio, compliance, risk, audit, and rollback evidence before authorizing exactly one dependency-eligible successor",
+          "work_branch": "control-plane/r15-2-paper-portfolio-compliance-risk-integration-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R15_2_PAPER_PORTFOLIO_COMPLIANCE_RISK_INTEGRATION_CLOSEOUT.json",
+            "tests/contract/test_r15_1_paper_broker_market_data_lifecycle.py",
+            "tests/contract/test_r15_2_paper_portfolio_compliance_risk_integration.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R15.2 simulated portfolio, compliance, risk, audit, and rollback evidence",
+            "Set R15.2 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r15_2_paper_portfolio_compliance_risk_integration.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R15.3": {
