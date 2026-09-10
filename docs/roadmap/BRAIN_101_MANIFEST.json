@@ -5354,6 +5354,7 @@
         ],
         "jit_binding_completed": true,
         "front_id": "BRAIN-101-R16-1-DISABLED-LIVE-TRADING-GATE-DESIGN-01",
+        "objective": "Define a deterministic disabled LiveTradingGate contract with fail-closed multi-factor preview and audit receipts; no live execution, real money, broker, provider, network, runtime, or scheduler action",
         "work_branch": "control-plane/r16-1-disabled-live-trading-gate-design",
         "executor": "codex_control_plane",
         "risk": "CRITICAL",
