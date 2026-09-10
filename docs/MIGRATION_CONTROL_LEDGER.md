@@ -9555,3 +9555,9 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Controller: `CODEX_GOVERNED_CONTROLLER`; implementation PR #363 merged as `0b06d18ab6f043c778be3b992fb9ce4313ce01fc`.
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; all broker, order, provider, network, runtime, scheduler, canonical-sync, live-trading, real-money, and auto-merge actions remain disabled.
 - Transition: R15.2 is `CLOSED_RUNTIME_VERIFIED`; R15.3 is sole `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` for deterministic paper soak and incident evidence.
+
+## BRAIN-101 R15.3 Closeout - Paper Soak and Incident Evidence (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; implementation PR #365 merged as `2744b58b061a59ef376dd26ba59a7a5e9d83abbc`.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; all runtime, scheduler, broker, network, live-trading, real-money, canonical-sync, and auto-merge actions remain disabled.
+- Transition: R15.3 is `CLOSED_RUNTIME_VERIFIED`; R16.1 is sole `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` with LiveTradingGate disabled.

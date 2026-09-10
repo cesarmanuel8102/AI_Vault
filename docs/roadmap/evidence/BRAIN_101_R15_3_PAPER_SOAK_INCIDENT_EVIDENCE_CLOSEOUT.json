@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R15.3",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "implementation_pr": 365,
+  "implementation_source_commit": "8f0f7de52bc74e45aa773c39ed2fe1089e072a00",
+  "implementation_merge_commit": "2744b58b061a59ef376dd26ba59a7a5e9d83abbc",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "successor": {"roadmap_item": "R16.1", "front_id": "BRAIN-101-R16-1-DISABLED-LIVE-TRADING-GATE-DESIGN-01", "deployment_mode": "NO_DEPLOY"},
+  "runtime_actions": {"deployment": false, "installation": false, "scheduler_activation": false, "provider_call": false, "network_call": false, "broker_action": false, "order_action": false, "runtime_execution": false, "canonical_local_sync": false, "live_trading": false, "real_money": false, "auto_merge": false}
+}

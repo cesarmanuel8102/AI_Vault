@@ -81,7 +81,7 @@ def test_governed_closeouts_preserve_history_and_hand_sole_authority_to_jit_boun
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R15.3"
+    assert active[0] == "R16.1"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -112,17 +112,18 @@ def test_governed_closeouts_preserve_history_and_hand_sole_authority_to_jit_boun
     assert items["R14.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R15.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R15.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R15.3"]["automation"]
+    assert items["R15.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R16.1"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
     assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R15-3-PAPER-SOAK-INCIDENT-EVIDENCE-01"
-    assert binding["work_branch"] == "control-plane/r15-3-paper-soak-incident-evidence"
+    assert binding["front_id"] == "BRAIN-101-R16-1-DISABLED-LIVE-TRADING-GATE-DESIGN-01"
+    assert binding["work_branch"] == "control-plane/r16-1-disabled-live-trading-gate-design"
     assert binding["allowed_paths"] == [
-        "tmp_agent/brain_v9/core/paper_soak_incident_evidence.py",
-        "docs/roadmap/evidence/BRAIN_101_R15_3_PAPER_SOAK_INCIDENT_EVIDENCE.json",
-        "tests/contract/test_r15_3_paper_soak_incident_evidence.py",
+        "tmp_agent/brain_v9/core/live_trading_gate_design.py",
+        "docs/roadmap/evidence/BRAIN_101_R16_1_DISABLED_LIVE_TRADING_GATE_DESIGN.json",
+        "tests/contract/test_r16_1_disabled_live_trading_gate_design.py",
     ]
 
 

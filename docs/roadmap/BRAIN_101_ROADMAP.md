@@ -1555,3 +1555,9 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R15_2_PAPER_PORTFOLIO_COMPLIANCE_RISK_INTEGRATION_CLOSEOUT.json`; deterministic paper-only portfolio, compliance, risk, audit, and rollback receipts only.
 - Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no deployment, installation, scheduler activation, broker, provider, network, runtime, order, canonical sync, live trading, real money, or auto-merge occurred.
 - Status: R15.2 is `CLOSED_RUNTIME_VERIFIED`; sole successor R15.3 is `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` for deterministic paper soak and incident evidence.
+
+## BRAIN-101 R15.3 - Paper Soak and Incident Evidence Closeout (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; source `8f0f7de52bc74e45aa773c39ed2fe1089e072a00`, merged as `2744b58b061a59ef376dd26ba59a7a5e9d83abbc` through PR #365.
+- Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; all deployment, installation, scheduler, broker, provider, network, runtime, canonical sync, live trading, real money, and auto-merge actions remain disabled.
+- Status: R15.3 is `CLOSED_RUNTIME_VERIFIED`; sole successor R16.1 is `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` with LiveTradingGate explicitly disabled.
