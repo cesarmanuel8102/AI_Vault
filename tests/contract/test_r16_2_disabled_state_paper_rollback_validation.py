@@ -137,3 +137,21 @@ def test_evidence_and_module_are_no_deploy_and_external_effect_free():
         "from trading",
     ):
         assert forbidden not in source
+
+
+def test_closeout_closes_r16_2_and_binds_r17_1_without_deploy():
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/"
+            "BRAIN_101_R16_2_DISABLED_STATE_PAPER_ROLLBACK_VALIDATION_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+
+    assert manifest["roadmap_items"]["R16.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    successor = manifest["roadmap_items"]["R17.1"]
+    assert successor["status"] == "AUTHORIZED_ACTIVE"
+    assert successor["automation"]["deployment_mode"] == "NO_DEPLOY"
+    assert closeout["successor"]["roadmap_item"] == "R17.1"
+    assert all(value is False for value in closeout["runtime_actions"].values())

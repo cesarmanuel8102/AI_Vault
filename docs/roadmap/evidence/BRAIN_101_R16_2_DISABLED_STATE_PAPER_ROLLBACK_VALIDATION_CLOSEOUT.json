@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R16.2",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "implementation_merge_commit": "758836c1b467cf5898e16b92c86e4674813c2e1e",
+  "successor": {
+    "roadmap_item": "R17.1",
+    "front_id": "BRAIN-101-R17-1-SELECTIVE-MICROSERVICE-CANDIDACY-ASSESSMENT-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "runtime_actions": {
+    "deployment": false,
+    "installation": false,
+    "scheduler_activation": false,
+    "provider_call": false,
+    "network_call": false,
+    "broker_action": false,
+    "runtime_execution": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}

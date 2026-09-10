@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "b1ebeace9c59d7541d48d8531b392f25bfd6f409c04ec32a9501ac70f3db958e",
+  "roadmap_sha256": "2acdb98f8072e381a6a3447281e8dc5102eb1227c9748bdbd897eedb57a3aa5c",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -5411,7 +5411,7 @@
       }
     },
     "R16.2": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R16",
       "title": "LiveTradingGate disabled-state and paper rollback validation",
       "dependencies": [
@@ -5527,7 +5527,7 @@
       }
     },
     "R17.1": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R17",
       "title": "Selective microservice extraction candidacy assessment",
       "dependencies": [
@@ -5572,7 +5572,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
+        "dispatchable": true,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
@@ -5583,7 +5583,35 @@
           "acceptance",
           "rollback",
           "evidence_path"
-        ]
+        ],
+        "jit_binding_completed": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R17-1-SELECTIVE-MICROSERVICE-CANDIDACY-ASSESSMENT-01",
+        "objective": "Assess selective microservice extraction candidacy with ownership, rollback, and economic evidence while preserving the modular monolith",
+        "work_branch": "control-plane/r17-1-selective-microservice-candidacy-assessment",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "selective_microservices",
+        "deployment_mode": "NO_DEPLOY",
+        "live_trading_enabled": false,
+        "real_money_enabled": false,
+        "allowed_paths": ["tmp_agent/brain_v9/core/microservice_candidacy_assessment.py", "docs/roadmap/evidence/BRAIN_101_R17_1_SELECTIVE_MICROSERVICE_CANDIDACY_ASSESSMENT.json", "tests/contract/test_r17_1_selective_microservice_candidacy_assessment.py"],
+        "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+        "test_commands": ["python -m pytest -q tests/contract/test_r17_1_selective_microservice_candidacy_assessment.py", "git diff --check"],
+        "acceptance": ["Assess extraction candidacy without introducing a distributed runtime", "Preserve rollback and economic justification evidence without external effects"],
+        "rollback": ["Record deterministic no-deploy assessment rollback evidence without external mutation"],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R17_1_SELECTIVE_MICROSERVICE_CANDIDACY_ASSESSMENT.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R17-1-SELECTIVE-MICROSERVICE-CANDIDACY-ASSESSMENT-CLOSEOUT-01",
+          "objective": "Record R17.1 candidacy evidence before authorizing one dependency-eligible successor",
+          "work_branch": "control-plane/r17-1-selective-microservice-candidacy-assessment-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R17_1_SELECTIVE_MICROSERVICE_CANDIDACY_ASSESSMENT_CLOSEOUT.json", "tests/contract/test_r17_1_selective_microservice_candidacy_assessment.py", "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts", "tests/contract/operator_proxy/sequencer.test.ts"],
+          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+          "acceptance": ["Record exact R17.1 candidacy evidence", "Set R17.1 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged", "Preserve exactly one authorized next roadmap item", "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"],
+          "test_commands": ["python -m pytest -q tests/contract/test_r17_1_selective_microservice_candidacy_assessment.py", "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "git diff --check"]
+        }
       }
     },
     "R17.2": {
