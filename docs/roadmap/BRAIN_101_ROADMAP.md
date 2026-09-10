@@ -1599,3 +1599,10 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R18_1_PRODUCT_OPERATOR_EXPERIENCE_BASELINE_CLOSEOUT.json`; dashboard, trace, notification, operator inbox, approval, incident, and responsive-accessibility requirements are verified without exposing private reasoning.
 - Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no runtime start, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, or auto-merge occurred.
 - Status: R18.1 is `CLOSED_RUNTIME_VERIFIED`; exactly one successor R18.2 is JIT-bound `NO_DEPLOY` for operational runbooks and support surface requirements.
+
+## BRAIN-101 R18.2 - Operational Runbooks Recovery and Support Surface Closeout (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; source PR #377 merged as `b943b0ff24ee22c5c2c1f702ebcc7138c608ac63`.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R18_2_OPERATIONAL_RUNBOOKS_SUPPORT_SURFACE_CLOSEOUT.json`; installation, upgrade, backup, restore/rollback, release-note, health/version, redacted-support-bundle, and actionable-error requirements were verified as deterministic no-deploy evidence.
+- Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no restore, runtime start, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, or auto-merge occurred.
+- Status: R18.2 is `CLOSED_RUNTIME_VERIFIED`; exactly one successor R18.3 is JIT-bound `NO_DEPLOY` for product operations acceptance and accessibility validation.

@@ -990,7 +990,7 @@
     },
     {
       "id": "R6",
-      "percent": 60,
+      "percent": 80,
       "status": "OPEN",
       "evidence": [
         {
@@ -1360,6 +1360,24 @@
           "command": null,
           "result": "Operational surfaces present; accessibility/restore/support bundle remain.",
           "observed_at_utc": "2026-07-22T13:37:51Z"
+        },
+        {
+          "claim": "R18.2 records deterministic operational runbook and redacted support-surface requirements without runtime actions; R18.3 remains for acceptance and accessibility validation.",
+          "classification": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+          "paths": [
+            "tmp_agent/brain_v9/core/operational_runbook_support_baseline.py",
+            "docs/roadmap/evidence/BRAIN_101_R18_2_OPERATIONAL_RUNBOOKS_SUPPORT_SURFACE.json"
+          ],
+          "symbols": [
+            "assess_operational_runbook_support_baseline"
+          ],
+          "commit": "b943b0ff24ee22c5c2c1f702ebcc7138c608ac63",
+          "issue": null,
+          "pr": 377,
+          "workflow_run": null,
+          "command": "python -m pytest -q tests/contract/test_r18_2_operational_runbooks_support_surface.py",
+          "result": "Support-surface contract and exact-head CI passed with no runtime effects.",
+          "observed_at_utc": "2026-09-10T07:24:30Z"
         }
       ]
     },

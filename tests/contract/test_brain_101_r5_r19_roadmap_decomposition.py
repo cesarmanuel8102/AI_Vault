@@ -49,7 +49,7 @@ def _assert_acyclic(items: dict, roots: set[str]) -> None:
 def test_r5_through_r19_are_a_complete_non_executable_pre_authorized_backlog():
     manifest = _manifest()
     planned = _planned_items(manifest)
-    assert set(item["phase"] for item in planned.values()) == set(PHASES) - {"R5", "R6", "R7", "R8", "R9", "R10", "R11", "R12", "R13", "R14", "R15", "R16", "R17"}
+    assert set(item["phase"] for item in planned.values()) == set(PHASES) - {"R5", "R6", "R7", "R8", "R9", "R10", "R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18"}
     assert all(item_id.startswith(f"{item['phase']}.") for item_id, item in planned.items())
     assert all(item["status"] == "PLANNED_UNBOUND" for item in planned.values())
     assert all(item["automation"]["jit_binding_required"] is True for item in planned.values())
@@ -81,7 +81,7 @@ def test_governed_closeouts_preserve_history_and_hand_sole_authority_to_jit_boun
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R18.2"
+    assert active[0] == "R18.3"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"

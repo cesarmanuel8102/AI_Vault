@@ -90,3 +90,27 @@ def test_evidence_records_support_surface_without_runtime_actions():
     assert evidence["decision"] == "SUPPORT_SURFACE_VERIFIED"
     assert evidence["support_surface"]["support_bundle_redacted"] is True
     assert all(value is False for value in evidence["runtime_actions"].values())
+
+
+def test_closeout_closes_r18_2_and_jit_binds_only_r18_3_without_deploy():
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/BRAIN_101_R18_2_OPERATIONAL_RUNBOOKS_SUPPORT_SURFACE_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+    assert manifest["roadmap_items"]["R18.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    active = [item_id for item_id, item in manifest["roadmap_items"].items() if item["status"] == "AUTHORIZED_ACTIVE"]
+    assert active == ["R18.3"]
+    binding = manifest["roadmap_items"]["R18.3"]["automation"]
+    assert binding["front_id"] == "BRAIN-101-R18-3-PRODUCT-OPERATIONS-ACCEPTANCE-ACCESSIBILITY-VALIDATION-01"
+    assert binding["work_branch"] == "control-plane/r18-3-product-operations-acceptance-accessibility-validation"
+    assert binding["deployment_mode"] == "NO_DEPLOY"
+    assert binding["allowed_paths"] == [
+        "tmp_agent/brain_v9/core/product_operations_acceptance_accessibility_validation.py",
+        "docs/roadmap/evidence/BRAIN_101_R18_3_PRODUCT_OPERATIONS_ACCEPTANCE_ACCESSIBILITY_VALIDATION.json",
+        "tests/contract/test_r18_3_product_operations_acceptance_accessibility_validation.py",
+    ]
+    assert closeout["implementation_merge"] == "b943b0ff24ee22c5c2c1f702ebcc7138c608ac63"
+    assert all(value is False for value in closeout["runtime_actions"].values())
