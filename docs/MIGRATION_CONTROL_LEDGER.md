@@ -9629,3 +9629,14 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R19_3_FINAL_EVIDENCE_CERTIFICATION_DECISION_CLOSEOUT.json`; the Human Owner exercised final authority after the R19.1 gate matrix and R19.2 adversarial-resilience evidence completed.
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no runtime start, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, or auto-merge occurred.
 - Transition: all BRAIN-101 items are `CLOSED_RUNTIME_VERIFIED`; `BRAIN_101_CERTIFIED` is recorded with no `AUTHORIZED_ACTIVE` successor. Persistent Agent Loop remains `DEFERRED` and Disabled.
+
+## BRAIN-101 BR0 Canonical Certification Reconciliation (2026-09-10)
+
+- Scope: documentation/schema/current-state reconciliation only; no runtime,
+  scheduler, trading, HIVE, deployment, canonical-local-sync, auto-merge, live
+  trading, or real-money action occurred.
+- Historical record preserved: the R19.3 internal certification event and all
+  prior receipts remain immutable and are referenced as `RECORDED`.
+- Current state: external certification is `REJECTED_PENDING_REMEDIATION` and
+  current program is `BRAIN-101-REMEDIATION / REMEDIATION_REQUIRED`.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_BR0_CANONICAL_CERTIFICATION_RECONCILIATION.json` binds the reconciled pointers and preserves the constitutional limits.

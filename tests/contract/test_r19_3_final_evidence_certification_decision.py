@@ -98,8 +98,19 @@ def test_human_final_authority_closeout_certifies_without_enabling_runtime():
     assert closeout["owner_final_authority"] is True
     assert closeout["brain_101_certified"] is True
     assert all(value is False for value in closeout["runtime_actions"].values())
-    assert manifest["brain_101_certified"] is True
+    assert manifest["brain_101_certified"] is False
+    assert manifest["historical_internal_certification"]["event"] == "RECORDED"
+    assert manifest["historical_internal_certification"]["owner_authority"] is True
+    assert manifest["external_certification"] == {
+        "accepted": False,
+        "status": "REJECTED_PENDING_REMEDIATION",
+    }
+    assert manifest["current_program"] == {
+        "program": "BRAIN-101-REMEDIATION",
+        "status": "REMEDIATION_REQUIRED",
+    }
     assert manifest["roadmap_items"]["R19.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert [item_id for item_id, item in manifest["roadmap_items"].items() if item["status"] == "AUTHORIZED_ACTIVE"] == []
-    assert scorecard["status"] == "BRAIN_101_CERTIFIED"
+    assert scorecard["status"] == "BRAIN_101_REMEDIATION_REQUIRED"
     assert scorecard["certified_score"] == 101
+    assert scorecard["historical_internal_certified_score"] == 101

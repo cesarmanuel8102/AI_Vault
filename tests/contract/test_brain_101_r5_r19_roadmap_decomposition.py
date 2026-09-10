@@ -82,7 +82,12 @@ def test_governed_closeouts_preserve_history_and_hand_sole_authority_to_jit_boun
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 0
     assert active == []
-    assert manifest["brain_101_certified"] is True
+    assert manifest["brain_101_certified"] is False
+    assert manifest["historical_internal_certification"]["event"] == "RECORDED"
+    assert manifest["current_program"] == {
+        "program": "BRAIN-101-REMEDIATION",
+        "status": "REMEDIATION_REQUIRED",
+    }
     assert items["R19.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"

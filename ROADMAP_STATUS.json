@@ -4798,14 +4798,27 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "R10_1_CLOSED_RUNTIME_VERIFIED_R10_2_AUTHORIZED_ACTIVE",
+    "status": "BRAIN_101_REMEDIATION_REQUIRED",
     "approval_status": "HUMAN_ADOPTED",
-    "current_phase": "R10",
+    "current_phase": "BR0",
     "human_final_authority": true,
     "auto_merge": false,
     "canonical_local_sync": false,
     "live_trading_enabled": false,
     "real_money_enabled": false,
+    "historical_internal_certification": {
+      "event": "RECORDED",
+      "historical_commit": "9abfb5e51eaed56ae6463426d5a297f476a13734",
+      "owner_authority": true
+    },
+    "external_certification": {
+      "accepted": false,
+      "status": "REJECTED_PENDING_REMEDIATION"
+    },
+    "current_program": {
+      "program": "BRAIN-101-REMEDIATION",
+      "status": "REMEDIATION_REQUIRED"
+    },
     "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
     "adoption_pr": 35,
     "adoption_pr_head": "a605c4d88510acd477cf26d2787bc38b1c02af48",

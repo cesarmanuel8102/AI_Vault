@@ -1,5 +1,11 @@
 # BRAIN LAB / AI_VAULT — ROADMAP MAESTRO CANÓNICO AL 101%
 
+> Historical note: `BRAIN_101_CERTIFIED` remains an immutable internal
+> certification event at `9abfb5e51eaed56ae6463426d5a297f476a13734`. The
+> present program state is `BRAIN-101-REMEDIATION / REMEDIATION_REQUIRED` and
+> external certification is `REJECTED_PENDING_REMEDIATION`; this note does not
+> rewrite any historical receipt.
+
 **Roadmap ID:** `BRAIN-101`
 **Versión:** `1.0.0-reconstructed-glm-harmonized`
 **Destinatario operativo:** Codex
@@ -26,7 +32,7 @@ R1.2 runtime activation was paused until a synthetic documentation-only flow pro
 Codex queda encargado de llevar Brain Lab desde el HEAD remoto actual hasta:
 
 ```text
-STATUS: BRAIN_101_CERTIFIED
+HISTORICAL_INTERNAL_STATUS: BRAIN_101_CERTIFIED
 ```
 
 La estructura permanente es:
@@ -625,7 +631,7 @@ Adversarial tests: secrets, P3 bypass, replay, scope violation, model refusal/ha
 Certificación:
 
 ```text
-STATUS: BRAIN_101_CERTIFIED
+HISTORICAL_INTERNAL_STATUS: BRAIN_101_CERTIFIED
 LIVE_TRADING_ENABLED: false
 AUTO_MERGE: false
 CANONICAL_LOCAL_SYNC: false
@@ -1632,4 +1638,4 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Controller: `CODEX_GOVERNED_CONTROLLER`; source PR #385 merged as `9fcadfa198fac70ab3ea29d8e42891b17533596b`.
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R19_3_FINAL_EVIDENCE_CERTIFICATION_DECISION_CLOSEOUT.json`; the final decision was accepted by explicit human authority after R19.1 and R19.2 verified the certification and resilience gates.
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; runtime start, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, and auto-merge remain disabled.
-- Status: `BRAIN_101_CERTIFIED`; all roadmap items are closed. Persistent Agent Loop remains deliberately `DEFERRED` and Disabled.
+- Historical internal status: `BRAIN_101_CERTIFIED`; all historical roadmap items were closed. Current program status is `BRAIN-101-REMEDIATION` / `REMEDIATION_REQUIRED`. Persistent Agent Loop remains deliberately `DEFERRED` and Disabled.
