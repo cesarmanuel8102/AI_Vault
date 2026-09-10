@@ -76,7 +76,7 @@ test("R5.4 through R15.3 closeouts preserve history and hand sole authority to d
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_1_MEMORY_SERVICE_OWNERSHIP_INTEGRITY_BASELINE_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_2_GOVERNED_MEMORY_CANDIDATE_PROMOTION_ROLLBACK_CLOSEOUT.json")));
   assert.ok(existsSync(resolve(ROOT,"docs/roadmap/evidence/BRAIN_101_R6_3_MEMORY_RETRIEVAL_HYDRATION_REBUILD_VALIDATION_CLOSEOUT.json")));
-  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R16.1"]);
+  assert.deepEqual(activeItems(manifest).map(([item])=>item),["R16.2"]);
   const r43=manifest.roadmap_items["R4.3"];
   assert.deepEqual(r43.dependencies,["R4.2"]);
   assert.equal(r43.status,"CLOSED_RUNTIME_VERIFIED");
@@ -272,7 +272,7 @@ test("R5.4 through R15.3 closeouts preserve history and hand sole authority to d
   assert.equal(r153.automation.jit_binding_completed,true);
   assert.equal(r153.automation.deployment_mode,"NO_DEPLOY");
   const r161=manifest.roadmap_items["R16.1"];
-  assert.equal(r161.status,"AUTHORIZED_ACTIVE");
+  assert.equal(r161.status,"CLOSED_RUNTIME_VERIFIED");
   assert.equal(r161.automation.front_id,"BRAIN-101-R16-1-DISABLED-LIVE-TRADING-GATE-DESIGN-01");
   assert.equal(r161.automation.live_trading_enabled,false);
   assert.equal(r161.automation.deployment_mode,"NO_DEPLOY");

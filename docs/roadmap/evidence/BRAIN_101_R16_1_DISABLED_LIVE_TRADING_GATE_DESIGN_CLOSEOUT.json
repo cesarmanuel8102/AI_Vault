@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R16.1",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "implementation_merge_commit": "ee43e40af0cfe7ef0f2fa6db1ce065e68d57b619",
+  "successor": {
+    "roadmap_item": "R16.2",
+    "front_id": "BRAIN-101-R16-2-DISABLED-STATE-PAPER-ROLLBACK-VALIDATION-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "runtime_actions": {
+    "deployment": false,
+    "installation": false,
+    "scheduler_activation": false,
+    "provider_call": false,
+    "network_call": false,
+    "broker_action": false,
+    "runtime_execution": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}

@@ -1561,3 +1561,10 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Controller: `CODEX_GOVERNED_CONTROLLER`; source `8f0f7de52bc74e45aa773c39ed2fe1089e072a00`, merged as `2744b58b061a59ef376dd26ba59a7a5e9d83abbc` through PR #365.
 - Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; all deployment, installation, scheduler, broker, provider, network, runtime, canonical sync, live trading, real money, and auto-merge actions remain disabled.
 - Status: R15.3 is `CLOSED_RUNTIME_VERIFIED`; sole successor R16.1 is `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` with LiveTradingGate explicitly disabled.
+
+## BRAIN-101 R16.1 - Disabled LiveTradingGate Multi-Factor Design Closeout (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; implementation merged as `ee43e40af0cfe7ef0f2fa6db1ce065e68d57b619` through PR #367.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R16_1_DISABLED_LIVE_TRADING_GATE_DESIGN_CLOSEOUT.json`; deterministic preview/audit receipts only.
+- Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; deployment, installation, scheduler, broker, provider, network, runtime, canonical sync, live trading, real money, and auto-merge remain disabled.
+- Status: R16.1 is `CLOSED_RUNTIME_VERIFIED`; sole successor R16.2 is `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` for disabled-state and paper rollback validation.
