@@ -83,3 +83,21 @@ def test_r16_1_evidence_declares_no_deploy_and_disabled_external_effects():
     assert evidence["live_trading_enabled"] is False
     assert evidence["real_money_enabled"] is False
     assert all(value is False for value in evidence["runtime_actions"].values())
+
+
+def test_closeout_closes_r16_1_and_binds_disabled_r16_2_without_deploy():
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    closeout = json.loads((root / "docs/roadmap/evidence/BRAIN_101_R16_1_DISABLED_LIVE_TRADING_GATE_DESIGN_CLOSEOUT.json").read_text(encoding="utf-8"))
+    manifest = json.loads((root / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+    assert manifest["roadmap_items"]["R16.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    successor = manifest["roadmap_items"]["R16.2"]
+    assert successor["status"] == "AUTHORIZED_ACTIVE"
+    assert successor["automation"]["deployment_mode"] == "NO_DEPLOY"
+    assert successor["automation"]["live_trading_enabled"] is False
+    assert successor["automation"]["closeout"]["front_id"] == "BRAIN-101-R16-2-DISABLED-STATE-PAPER-ROLLBACK-VALIDATION-CLOSEOUT-01"
+    assert successor["automation"]["closeout"]["work_branch"] == "control-plane/r16-2-disabled-state-paper-rollback-validation-closeout"
+    assert closeout["successor"]["roadmap_item"] == "R16.2"
+    assert all(value is False for value in closeout["runtime_actions"].values())

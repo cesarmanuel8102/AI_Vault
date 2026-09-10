@@ -1292,8 +1292,8 @@
     },
     {
       "id": "R16",
-      "percent": 0,
-      "status": "OPEN",
+      "percent": 50,
+      "status": "IN_PROGRESS",
       "evidence": [
         {
           "claim": "LiveTradingGate implementation is absent while live remains disabled.",

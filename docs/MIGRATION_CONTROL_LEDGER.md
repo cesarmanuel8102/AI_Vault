@@ -9561,3 +9561,9 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Controller: `CODEX_GOVERNED_CONTROLLER`; implementation PR #365 merged as `2744b58b061a59ef376dd26ba59a7a5e9d83abbc`.
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; all runtime, scheduler, broker, network, live-trading, real-money, canonical-sync, and auto-merge actions remain disabled.
 - Transition: R15.3 is `CLOSED_RUNTIME_VERIFIED`; R16.1 is sole `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` with LiveTradingGate disabled.
+
+## BRAIN-101 R16.1 Closeout - Disabled LiveTradingGate Multi-Factor Design (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; implementation PR #367 merged as `ee43e40af0cfe7ef0f2fa6db1ce065e68d57b619`.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; all runtime, scheduler, broker, network, live-trading, real-money, canonical-sync, and auto-merge actions remain disabled.
+- Transition: R16.1 is `CLOSED_RUNTIME_VERIFIED`; R16.2 is sole `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` for disabled-state and paper rollback validation.

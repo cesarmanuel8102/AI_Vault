@@ -49,7 +49,7 @@ def _assert_acyclic(items: dict, roots: set[str]) -> None:
 def test_r5_through_r19_are_a_complete_non_executable_pre_authorized_backlog():
     manifest = _manifest()
     planned = _planned_items(manifest)
-    assert set(item["phase"] for item in planned.values()) == set(PHASES) - {"R5", "R6", "R7", "R8", "R9", "R10", "R11", "R12", "R13", "R14", "R15"}
+    assert set(item["phase"] for item in planned.values()) == set(PHASES) - {"R5", "R6", "R7", "R8", "R9", "R10", "R11", "R12", "R13", "R14", "R15", "R16"}
     assert all(item_id.startswith(f"{item['phase']}.") for item_id, item in planned.items())
     assert all(item["status"] == "PLANNED_UNBOUND" for item in planned.values())
     assert all(item["automation"]["jit_binding_required"] is True for item in planned.values())
@@ -81,7 +81,7 @@ def test_governed_closeouts_preserve_history_and_hand_sole_authority_to_jit_boun
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R16.1"
+    assert active[0] == "R16.2"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -113,17 +113,18 @@ def test_governed_closeouts_preserve_history_and_hand_sole_authority_to_jit_boun
     assert items["R15.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R15.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R15.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R16.1"]["automation"]
+    assert items["R16.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R16.2"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
     assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R16-1-DISABLED-LIVE-TRADING-GATE-DESIGN-01"
-    assert binding["work_branch"] == "control-plane/r16-1-disabled-live-trading-gate-design"
+    assert binding["front_id"] == "BRAIN-101-R16-2-DISABLED-STATE-PAPER-ROLLBACK-VALIDATION-01"
+    assert binding["work_branch"] == "control-plane/r16-2-disabled-state-paper-rollback-validation"
     assert binding["allowed_paths"] == [
-        "tmp_agent/brain_v9/core/live_trading_gate_design.py",
-        "docs/roadmap/evidence/BRAIN_101_R16_1_DISABLED_LIVE_TRADING_GATE_DESIGN.json",
-        "tests/contract/test_r16_1_disabled_live_trading_gate_design.py",
+        "tmp_agent/brain_v9/core/live_trading_gate_validation.py",
+        "docs/roadmap/evidence/BRAIN_101_R16_2_DISABLED_STATE_PAPER_ROLLBACK_VALIDATION.json",
+        "tests/contract/test_r16_2_disabled_state_paper_rollback_validation.py",
     ]
 
 

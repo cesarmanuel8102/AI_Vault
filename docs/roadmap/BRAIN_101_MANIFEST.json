@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "162088a52ae4d5d543c792c76269edaccdf6b953da2bd2759bbdad0b12293095",
+  "roadmap_sha256": "b1ebeace9c59d7541d48d8531b392f25bfd6f409c04ec32a9501ac70f3db958e",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -5295,7 +5295,7 @@
       }
     },
     "R16.1": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R16",
       "title": "Disabled LiveTradingGate multi-factor design",
       "dependencies": [
@@ -5411,7 +5411,7 @@
       }
     },
     "R16.2": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R16",
       "title": "LiveTradingGate disabled-state and paper rollback validation",
       "dependencies": [
@@ -5456,7 +5456,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
+        "dispatchable": true,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
@@ -5467,7 +5467,63 @@
           "acceptance",
           "rollback",
           "evidence_path"
-        ]
+        ],
+        "jit_binding_completed": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R16-2-DISABLED-STATE-PAPER-ROLLBACK-VALIDATION-01",
+        "objective": "Validate disabled-state enforcement, unauthorized live-attempt denial, paper rollback, and kill-switch receipts without live execution or real money",
+        "work_branch": "control-plane/r16-2-disabled-state-paper-rollback-validation",
+        "executor": "codex_control_plane",
+        "risk": "CRITICAL",
+        "domain": "live_trading_gate",
+        "deployment_mode": "NO_DEPLOY",
+        "live_trading_enabled": false,
+        "real_money_enabled": false,
+        "allowed_paths": ["tmp_agent/brain_v9/core/live_trading_gate_validation.py", "docs/roadmap/evidence/BRAIN_101_R16_2_DISABLED_STATE_PAPER_ROLLBACK_VALIDATION.json", "tests/contract/test_r16_2_disabled_state_paper_rollback_validation.py"],
+        "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+        "test_commands": ["python -m pytest -q tests/contract/test_r16_2_disabled_state_paper_rollback_validation.py", "git diff --check"],
+        "acceptance": ["Prove disabled-state and unauthorized-live-attempt denial", "Validate paper rollback and kill-switch receipts without external effects"],
+        "rollback": ["Record deterministic paper-only rollback validation without external mutation"],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R16_2_DISABLED_STATE_PAPER_ROLLBACK_VALIDATION.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R16-2-DISABLED-STATE-PAPER-ROLLBACK-VALIDATION-CLOSEOUT-01",
+          "objective": "Record R16.2 disabled-state and paper rollback evidence before authorizing one dependency-eligible successor",
+          "work_branch": "control-plane/r16-2-disabled-state-paper-rollback-validation-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R16_2_DISABLED_STATE_PAPER_ROLLBACK_VALIDATION_CLOSEOUT.json",
+            "tests/contract/test_r16_2_disabled_state_paper_rollback_validation.py",
+            "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
+            "tests/contract/operator_proxy/sequencer.test.ts"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R16.2 disabled-state and paper rollback evidence",
+            "Set R16.2 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"
+          ],
+          "test_commands": [
+            "python -m pytest -q tests/contract/test_r16_2_disabled_state_paper_rollback_validation.py",
+            "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+            "git diff --check"
+          ]
+        }
       }
     },
     "R17.1": {
