@@ -9595,3 +9595,10 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Controller: `CODEX_GOVERNED_CONTROLLER`; implementation PR #375 merged as `61159db72982faa15a347075b62509310a6747fe`.
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; runtime start, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, and auto-merge remain disabled.
 - Transition: R18.1 is `CLOSED_RUNTIME_VERIFIED`; R18.2 is the sole `AUTHORIZED_ACTIVE` item, JIT-bound `NO_DEPLOY` for operational runbooks recovery and support surface requirements.
+
+## BRAIN-101 R18.2 Closeout - Operational Runbooks Recovery and Support Surface (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; implementation PR #377 merged as `b943b0ff24ee22c5c2c1f702ebcc7138c608ac63`.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R18_2_OPERATIONAL_RUNBOOKS_SUPPORT_SURFACE_CLOSEOUT.json`; deterministic install, upgrade, backup, restore/rollback, release-note, health/version, redacted-support-bundle, and actionable-error support requirements only.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; restore execution, runtime start, deployment, installation, scheduler activation, network, canonical-sync, live-trading, real-money, and auto-merge actions remain disabled.
+- Transition: R18.2 is `CLOSED_RUNTIME_VERIFIED`; R18.3 is the sole `AUTHORIZED_ACTIVE` item, JIT-bound `NO_DEPLOY` for product operations acceptance and accessibility validation.
