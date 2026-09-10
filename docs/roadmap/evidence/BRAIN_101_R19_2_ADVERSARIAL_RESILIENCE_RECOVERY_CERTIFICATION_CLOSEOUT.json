@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R19.2",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "implementation_merge": "aca1929abb8e981dadc3caec377bc24bd46bd09d",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "implementation_evidence": "docs/roadmap/evidence/BRAIN_101_R19_2_ADVERSARIAL_RESILIENCE_RECOVERY_CERTIFICATION.json",
+  "decision": "ADVERSARIAL_RESILIENCE_RECOVERY_VERIFIED",
+  "brain_101_certified": false,
+  "successor": {"roadmap_item": "R19.3", "front_id": "BRAIN-101-R19-3-FINAL-EVIDENCE-CERTIFICATION-DECISION-01", "deployment_mode": "NO_DEPLOY"},
+  "runtime_actions": {"runtime_start": false, "deployment": false, "installation": false, "scheduler_activation": false, "network_call": false, "canonical_local_sync": false, "live_trading": false, "real_money": false, "auto_merge": false}
+}

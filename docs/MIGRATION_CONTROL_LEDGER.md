@@ -9615,3 +9615,10 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R19_1_CERTIFICATION_GATE_MATRIX_CLOSEOUT.json`; records a truthful mandatory-gate matrix and deferred persistent Agent Loop capability, not final BRAIN-101 certification.
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; runtime, deployment, installation, scheduler activation, network, canonical-sync, live trading, real money, and auto-merge remain disabled.
 - Transition: R19.1 is `CLOSED_RUNTIME_VERIFIED`; R19.2 is the sole `AUTHORIZED_ACTIVE` item with `CERTIFICATION_ONLY` intent and a fail-closed `NO_DEPLOY` binding for adversarial resilience and recovery certification.
+
+## BRAIN-101 R19.2 Closeout - Adversarial Resilience and Recovery Certification (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; implementation PR #383 merged as `aca1929abb8e981dadc3caec377bc24bd46bd09d`.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R19_2_ADVERSARIAL_RESILIENCE_RECOVERY_CERTIFICATION_CLOSEOUT.json`; records mandatory adversarial resilience and recovery evidence only, not final BRAIN-101 certification.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; runtime, deployment, installation, scheduler activation, network, canonical-sync, live trading, real money, and auto-merge remain disabled.
+- Transition: R19.2 is `CLOSED_RUNTIME_VERIFIED`; R19.3 is the sole `AUTHORIZED_ACTIVE` item with `CERTIFICATION_ONLY` intent, fail-closed `NO_DEPLOY` binding, and explicit human final-authority requirement.

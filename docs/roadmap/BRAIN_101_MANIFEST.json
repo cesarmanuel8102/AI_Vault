@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "0f201a205788fd77817568ffe704667f676446bec53bb35d0a0b199b45202d0b",
+  "roadmap_sha256": "156e3c747f70f05e101cab0a65ad6b955d359ee2a812c7af07ab1c0d491a5dcb",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -6082,7 +6082,7 @@
       }
     },
     "R19.2": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R19",
       "title": "Adversarial resilience and recovery certification",
       "dependencies": [
@@ -6169,7 +6169,7 @@
       }
     },
     "R19.3": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R19",
       "title": "BRAIN-101 final evidence and certification decision",
       "dependencies": [
@@ -6214,7 +6214,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
+        "dispatchable": true,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
@@ -6225,7 +6225,35 @@
           "acceptance",
           "rollback",
           "evidence_path"
-        ]
+        ],
+        "jit_binding_completed": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R19-3-FINAL-EVIDENCE-CERTIFICATION-DECISION-01",
+        "objective": "Record final certification evidence and require an explicit human final-authority decision before any BRAIN-101 certification claim",
+        "work_branch": "control-plane/r19-3-final-evidence-certification-decision",
+        "executor": "codex_control_plane",
+        "risk": "CRITICAL",
+        "domain": "certification",
+        "deployment_mode": "NO_DEPLOY",
+        "live_trading_enabled": false,
+        "real_money_enabled": false,
+        "allowed_paths": ["tmp_agent/brain_v9/core/brain_101_final_certification_decision.py", "docs/roadmap/evidence/BRAIN_101_R19_3_FINAL_EVIDENCE_CERTIFICATION_DECISION.json", "tests/contract/test_r19_3_final_evidence_certification_decision.py"],
+        "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+        "test_commands": ["python -m pytest -q tests/contract/test_r19_3_final_evidence_certification_decision.py", "git diff --check"],
+        "acceptance": ["Record final BRAIN-101 evidence without a certification claim absent explicit human final-authority approval", "Reject any open gate, runtime action, or constitutional-limit change"],
+        "rollback": ["Record deterministic final-certification rollback evidence without external mutation"],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R19_3_FINAL_EVIDENCE_CERTIFICATION_DECISION.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R19-3-FINAL-EVIDENCE-CERTIFICATION-DECISION-CLOSEOUT-01",
+          "objective": "Record the final certification decision only after explicit human final-authority approval",
+          "work_branch": "control-plane/r19-3-final-evidence-certification-decision-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R19_3_FINAL_EVIDENCE_CERTIFICATION_DECISION_CLOSEOUT.json", "tests/contract/test_r19_3_final_evidence_certification_decision.py", "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts", "tests/contract/operator_proxy/sequencer.test.ts"],
+          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+          "acceptance": ["Require explicit human final-authority approval before BRAIN-101 certification", "Preserve all constitutional limits and do not activate the persistent Agent Loop"],
+          "test_commands": ["python -m pytest -q tests/contract/test_r19_3_final_evidence_certification_decision.py", "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "git diff --check"]
+        }
       }
     }
   },

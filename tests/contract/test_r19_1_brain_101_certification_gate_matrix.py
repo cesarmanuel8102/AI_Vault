@@ -100,15 +100,11 @@ def test_closeout_closes_r19_1_and_jit_binds_only_r19_2_without_runtime_actions(
         (ROOT / "docs/roadmap/evidence/BRAIN_101_R19_1_CERTIFICATION_GATE_MATRIX_CLOSEOUT.json").read_text(encoding="utf-8")
     )
     manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
-    scorecard = json.loads((ROOT / "docs/roadmap/BRAIN_101_SCORECARD.json").read_text(encoding="utf-8"))
     assert manifest["roadmap_items"]["R19.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    assert [item_id for item_id, item in manifest["roadmap_items"].items() if item["status"] == "AUTHORIZED_ACTIVE"] == ["R19.2"]
-    binding = manifest["roadmap_items"]["R19.2"]["automation"]
-    assert binding["front_id"] == "BRAIN-101-R19-2-ADVERSARIAL-RESILIENCE-RECOVERY-CERTIFICATION-01"
-    assert binding["work_branch"] == "control-plane/r19-2-adversarial-resilience-recovery-certification"
-    assert binding["deployment_mode"] == "NO_DEPLOY"
+    assert closeout["successor"] == {
+        "roadmap_item": "R19.2",
+        "front_id": "BRAIN-101-R19-2-ADVERSARIAL-RESILIENCE-RECOVERY-CERTIFICATION-01",
+        "deployment_mode": "NO_DEPLOY",
+    }
     assert closeout["implementation_merge"] == "e5a1fd2ead9e8d01026ea2d0150299c6b108b13d"
     assert all(value is False for value in closeout["runtime_actions"].values())
-    r19 = next(phase for phase in scorecard["phases"] if phase["id"] == "R19")
-    assert r19["percent"] == 33
-    assert r19["status"] == "OPEN"

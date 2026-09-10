@@ -1383,7 +1383,7 @@
     },
     {
       "id": "R19",
-      "percent": 33,
+      "percent": 67,
       "status": "OPEN",
       "evidence": [
         {
@@ -1403,6 +1403,23 @@
           "workflow_run": null,
           "command": "python -m pytest -q tests/contract/test_r19_1_brain_101_certification_gate_matrix.py",
           "result": "Certification matrix and exact-head CI passed with no runtime effects; R19.2 remains the sole active successor.",
+          "observed_at_utc": "2026-09-10T00:00:00Z"
+        },
+        {
+          "claim": "R19.2 records mandatory adversarial resilience and recovery certification evidence without claiming final BRAIN-101 certification.",
+          "classification": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+          "paths": [
+            "tmp_agent/brain_v9/core/brain_101_adversarial_resilience_recovery_certification.py",
+            "docs/roadmap/evidence/BRAIN_101_R19_2_ADVERSARIAL_RESILIENCE_RECOVERY_CERTIFICATION.json",
+            "docs/roadmap/evidence/BRAIN_101_R19_2_ADVERSARIAL_RESILIENCE_RECOVERY_CERTIFICATION_CLOSEOUT.json"
+          ],
+          "symbols": ["assess_adversarial_resilience_recovery_certification"],
+          "commit": "aca1929abb8e981dadc3caec377bc24bd46bd09d",
+          "issue": null,
+          "pr": 383,
+          "workflow_run": null,
+          "command": "python -m pytest -q tests/contract/test_r19_2_adversarial_resilience_recovery_certification.py",
+          "result": "Adversarial resilience and recovery certification plus exact-head CI passed with no runtime effects; R19.3 remains the sole active successor.",
           "observed_at_utc": "2026-09-10T00:00:00Z"
         }
       ]
