@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R18.3",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "decision": "ACCEPTANCE_VERIFIED",
+  "acceptance": {
+    "operator_workflow_accepted": true,
+    "accessibility_verified": true,
+    "responsive_behavior_verified": true,
+    "incident_ui_verified": true
+  },
+  "runtime_actions": {
+    "runtime_start": false,
+    "deployment": false,
+    "installation": false,
+    "scheduler_activation": false,
+    "network_call": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}
