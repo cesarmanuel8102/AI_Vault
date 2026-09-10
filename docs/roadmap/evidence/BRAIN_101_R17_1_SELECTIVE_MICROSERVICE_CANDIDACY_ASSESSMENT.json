@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R17.1",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "candidate": {
+    "component_id": "provider_gateway",
+    "candidate_eligible": true,
+    "recommended_action": "R17_2_CONTAINMENT_REVIEW",
+    "extraction_authorized": false,
+    "evidence": {
+      "ownership_stable": true,
+      "contract_e2e_verified": true,
+      "rollback_evidence_verified": true,
+      "operational_justification": true,
+      "economic_justification": true,
+      "shared_filesystem_dependency": false
+    }
+  },
+  "runtime_actions": {
+    "service_process_start": false,
+    "container_start": false,
+    "deployment": false,
+    "scheduler_activation": false,
+    "network_call": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}
