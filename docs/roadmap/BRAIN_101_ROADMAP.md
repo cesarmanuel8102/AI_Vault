@@ -1574,3 +1574,12 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Controller: CODEX_GOVERNED_CONTROLLER; implementation merged as 758836c1b467cf5898e16b92c86e4674813c2e1e through PR #369.
 - Verification: CODE_AND_CI_VERIFIED_NO_DEPLOY; all deployment, installation, scheduler, broker, provider, network, runtime, canonical sync, live trading, real money, and auto-merge actions remain disabled.
 - Status: R16.2 is CLOSED_RUNTIME_VERIFIED; sole successor R17.1 is AUTHORIZED_ACTIVE, JIT-bound NO_DEPLOY.
+
+## BRAIN-101 R17.1 - Selective Microservice Candidacy Assessment Closeout (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: implementation PR #371 merged as `b8308c0c82ee74bc660ace1c65ace5a436c0412e`.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R17_1_SELECTIVE_MICROSERVICE_CANDIDACY_ASSESSMENT_CLOSEOUT.json`, bound to an immutable provider-gateway candidacy receipt with stable ownership, contract E2E, rollback, operational, and economic evidence.
+- Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no service process, container, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, or auto-merge occurred.
+- Status: R17.1 is `CLOSED_RUNTIME_VERIFIED`; extraction remains unauthorized.
+- Authorized successor: exactly one R17.2, `BRAIN-101-R17-2-SELECTIVE-MICROSERVICE-DECISION-CONTAINMENT-01`, controller-governed `NO_DEPLOY` for evidence-bound extraction containment or justified deferral without a distributed runtime.

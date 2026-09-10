@@ -151,7 +151,7 @@ def test_closeout_closes_r16_2_and_binds_r17_1_without_deploy():
 
     assert manifest["roadmap_items"]["R16.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     successor = manifest["roadmap_items"]["R17.1"]
-    assert successor["status"] == "AUTHORIZED_ACTIVE"
+    assert successor["status"] in {"AUTHORIZED_ACTIVE", "CLOSED_RUNTIME_VERIFIED"}
     assert successor["automation"]["deployment_mode"] == "NO_DEPLOY"
     assert closeout["successor"]["roadmap_item"] == "R17.1"
     assert all(value is False for value in closeout["runtime_actions"].values())
