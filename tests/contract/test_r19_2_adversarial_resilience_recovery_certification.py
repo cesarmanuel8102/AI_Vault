@@ -110,7 +110,7 @@ def test_evidence_records_all_mandatory_gates_without_runtime_actions():
     assert all(value is False for value in evidence["runtime_actions"].values())
 
 
-def test_closeout_closes_r19_2_and_jit_binds_r19_3_without_final_certification():
+def test_closeout_preserves_r19_2_evidence_after_r19_3_final_certification():
     closeout = json.loads(
         (ROOT / "docs/roadmap/evidence/BRAIN_101_R19_2_ADVERSARIAL_RESILIENCE_RECOVERY_CERTIFICATION_CLOSEOUT.json").read_text(
             encoding="utf-8"
@@ -119,7 +119,9 @@ def test_closeout_closes_r19_2_and_jit_binds_r19_3_without_final_certification()
     manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
     scorecard = json.loads((ROOT / "docs/roadmap/BRAIN_101_SCORECARD.json").read_text(encoding="utf-8"))
     assert manifest["roadmap_items"]["R19.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    assert [item_id for item_id, item in manifest["roadmap_items"].items() if item["status"] == "AUTHORIZED_ACTIVE"] == ["R19.3"]
+    assert manifest["roadmap_items"]["R19.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    assert manifest["brain_101_certified"] is True
+    assert [item_id for item_id, item in manifest["roadmap_items"].items() if item["status"] == "AUTHORIZED_ACTIVE"] == []
     binding = manifest["roadmap_items"]["R19.3"]["automation"]
     assert binding["front_id"] == "BRAIN-101-R19-3-FINAL-EVIDENCE-CERTIFICATION-DECISION-01"
     assert binding["work_branch"] == "control-plane/r19-3-final-evidence-certification-decision"
@@ -129,5 +131,5 @@ def test_closeout_closes_r19_2_and_jit_binds_r19_3_without_final_certification()
     assert closeout["brain_101_certified"] is False
     assert all(value is False for value in closeout["runtime_actions"].values())
     r19 = next(phase for phase in scorecard["phases"] if phase["id"] == "R19")
-    assert r19["percent"] == 67
-    assert r19["status"] == "OPEN"
+    assert r19["percent"] == 100
+    assert r19["status"] == "CLOSED"

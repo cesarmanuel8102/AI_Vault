@@ -2,15 +2,15 @@
   "schema_version": 1,
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-  "status": "R13_2_CLOSED_RUNTIME_VERIFIED_R14_1_AUTHORIZED_ACTIVE",
+  "status": "BRAIN_101_CERTIFIED",
   "audit_baseline_head": "759edfb",
   "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
   "base_score": 44,
   "resilience_bonus": 0,
-  "certified_score": null,
-  "score_cap_applied": 69,
-  "score_cap_reason": "Critical functional blockers remain open.",
+  "certified_score": 101,
+  "score_cap_applied": 101,
+  "score_cap_reason": "All governed BRAIN-101 items are closed with explicit human final authority.",
   "domain_scores": [
     {
       "domain": "security_governance",
@@ -1383,8 +1383,8 @@
     },
     {
       "id": "R19",
-      "percent": 67,
-      "status": "OPEN",
+      "percent": 100,
+      "status": "CLOSED",
       "evidence": [
         {
           "claim": "R19.1 records the mandatory BRAIN-101 certification gate matrix without claiming final certification.",
@@ -1420,6 +1420,25 @@
           "workflow_run": null,
           "command": "python -m pytest -q tests/contract/test_r19_2_adversarial_resilience_recovery_certification.py",
           "result": "Adversarial resilience and recovery certification plus exact-head CI passed with no runtime effects; R19.3 remains the sole active successor.",
+          "observed_at_utc": "2026-09-10T00:00:00Z"
+        },
+        {
+          "claim": "R19.3 final evidence was merged and the Human Owner authorized BRAIN-101 certification without runtime activation.",
+          "classification": "HUMAN_FINAL_AUTHORITY_CERTIFIED_NO_DEPLOY",
+          "paths": [
+            "tmp_agent/brain_v9/core/brain_101_final_certification_decision.py",
+            "docs/roadmap/evidence/BRAIN_101_R19_3_FINAL_EVIDENCE_CERTIFICATION_DECISION.json",
+            "docs/roadmap/evidence/BRAIN_101_R19_3_FINAL_EVIDENCE_CERTIFICATION_DECISION_CLOSEOUT.json"
+          ],
+          "symbols": [
+            "assess_final_evidence_certification_decision"
+          ],
+          "commit": "9fcadfa198fac70ab3ea29d8e42891b17533596b",
+          "issue": null,
+          "pr": 385,
+          "workflow_run": null,
+          "command": "python -m pytest -q tests/contract/test_r19_3_final_evidence_certification_decision.py",
+          "result": "Final evidence and exact-head CI passed; the owner authorized certification while all runtime actions and persistent Agent Loop activation remained disabled.",
           "observed_at_utc": "2026-09-10T00:00:00Z"
         }
       ]

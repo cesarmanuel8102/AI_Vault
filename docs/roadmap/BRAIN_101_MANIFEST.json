@@ -1,9 +1,10 @@
 {
   "schema_version": 1,
   "roadmap_id": "BRAIN-101",
+  "brain_101_certified": true,
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "156e3c747f70f05e101cab0a65ad6b955d359ee2a812c7af07ab1c0d491a5dcb",
+  "roadmap_sha256": "74ac3e33d9bb10fd1c0fc8c2d2bc0e1835f604f4c4841e42efa25fa9165919db",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -6169,7 +6170,7 @@
       }
     },
     "R19.3": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R19",
       "title": "BRAIN-101 final evidence and certification decision",
       "dependencies": [
@@ -6214,7 +6215,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": true,
+        "dispatchable": false,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
