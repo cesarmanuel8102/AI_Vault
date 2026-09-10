@@ -9544,3 +9544,8 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R14_3_VALIDATION_LAB_ADVERSARIAL_STATISTICAL_RESILIENCE_CLOSEOUT.json`; deterministic local rejection receipts only.
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; all deployment, installation, scheduler, broker, order, provider, network, runtime, canonical-sync, live-trading, real-money, and auto-merge actions remain disabled.
 - Transition: R14.3 is `CLOSED_RUNTIME_VERIFIED`; R15.1 is sole `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` for simulated paper broker and market-data lifecycle receipts.
+## BRAIN-101 R15.1 Closeout - Simulated Paper Execution Lifecycle (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; implementation PR #361 merged as `d7b8a7b7fb4e5f505057f84adaf8c42c88f24567`.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; all broker, order, provider, network, runtime, scheduler, canonical-sync, live-trading, real-money, and auto-merge actions remain disabled.
+- Transition: R15.1 is `CLOSED_RUNTIME_VERIFIED`; R15.2 is sole `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` for simulated paper portfolio, compliance, risk, audit, and rollback integration.

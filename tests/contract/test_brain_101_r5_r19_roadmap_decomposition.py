@@ -76,12 +76,12 @@ def test_planned_backlog_has_unique_ids_acyclic_defined_and_phase_ordered_depend
             assert dependency_order <= PHASE_ORDER[item["phase"]]
 
 
-def test_governed_closeouts_preserve_history_and_hand_sole_authority_to_jit_bound_r15_1():
+def test_governed_closeouts_preserve_history_and_hand_sole_authority_to_jit_bound_r15_2():
     manifest = _manifest()
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R15.1"
+    assert active[0] == "R15.2"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -110,17 +110,18 @@ def test_governed_closeouts_preserve_history_and_hand_sole_authority_to_jit_boun
     assert items["R14.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R14.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R14.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
-    binding = items["R15.1"]["automation"]
+    assert items["R15.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    binding = items["R15.2"]["automation"]
     assert binding["dispatchable"] is True
     assert binding["jit_binding_completed"] is True
     assert binding["executor"] == "codex_control_plane"
     assert binding["deployment_mode"] == "NO_DEPLOY"
-    assert binding["front_id"] == "BRAIN-101-R15-1-PAPER-BROKER-MARKET-DATA-LIFECYCLE-01"
-    assert binding["work_branch"] == "control-plane/r15-1-paper-broker-market-data-lifecycle"
+    assert binding["front_id"] == "BRAIN-101-R15-2-PAPER-PORTFOLIO-COMPLIANCE-RISK-INTEGRATION-01"
+    assert binding["work_branch"] == "control-plane/r15-2-paper-portfolio-compliance-risk-integration"
     assert binding["allowed_paths"] == [
-        "tmp_agent/brain_v9/core/paper_execution_lifecycle.py",
-        "docs/roadmap/evidence/BRAIN_101_R15_1_PAPER_BROKER_MARKET_DATA_LIFECYCLE.json",
-        "tests/contract/test_r15_1_paper_broker_market_data_lifecycle.py",
+        "tmp_agent/brain_v9/core/paper_portfolio_compliance_risk_integration.py",
+        "docs/roadmap/evidence/BRAIN_101_R15_2_PAPER_PORTFOLIO_COMPLIANCE_RISK_INTEGRATION.json",
+        "tests/contract/test_r15_2_paper_portfolio_compliance_risk_integration.py",
     ]
 
 

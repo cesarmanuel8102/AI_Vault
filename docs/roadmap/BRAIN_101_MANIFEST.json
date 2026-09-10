@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "bf57b8c5f69ad73155ade5036eca124a6f33edf06579faa23a23cd5a0c59e44a",
+  "roadmap_sha256": "412e7bbe1a1612f5cc954585d7d829b6fbae2ba36b0b92af664a61f075f2f9c2",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -4922,7 +4922,7 @@
       }
     },
     "R15.1": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R15",
       "title": "Integrated paper broker and market-data lifecycle",
       "dependencies": [
@@ -5019,6 +5019,7 @@
             "ROADMAP_STATUS.json",
             "docs/MIGRATION_CONTROL_LEDGER.md",
             "docs/roadmap/evidence/BRAIN_101_R15_1_PAPER_BROKER_MARKET_DATA_LIFECYCLE_CLOSEOUT.json",
+            "tests/contract/test_r14_3_validation_lab_adversarial_statistical_resilience.py",
             "tests/contract/test_r15_1_paper_broker_market_data_lifecycle.py",
             "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
             "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts",
@@ -5048,7 +5049,7 @@
       }
     },
     "R15.2": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R15",
       "title": "Paper trading portfolio compliance risk integration",
       "dependencies": [
@@ -5093,7 +5094,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
+        "dispatchable": true,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
@@ -5104,7 +5105,34 @@
           "acceptance",
           "rollback",
           "evidence_path"
-        ]
+        ],
+        "jit_binding_completed": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R15-2-PAPER-PORTFOLIO-COMPLIANCE-RISK-INTEGRATION-01",
+        "objective": "Add deterministic simulated portfolio, compliance, risk, audit, and rollback receipts without broker, provider, network, runtime, scheduler, or trading action",
+        "work_branch": "control-plane/r15-2-paper-portfolio-compliance-risk-integration",
+        "executor": "codex_control_plane",
+        "risk": "CRITICAL",
+        "domain": "paper_trading",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/core/paper_portfolio_compliance_risk_integration.py",
+          "docs/roadmap/evidence/BRAIN_101_R15_2_PAPER_PORTFOLIO_COMPLIANCE_RISK_INTEGRATION.json",
+          "tests/contract/test_r15_2_paper_portfolio_compliance_risk_integration.py"
+        ],
+        "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+        "acceptance": [
+          "Validate deterministic simulated portfolio, compliance, risk, audit, and rollback receipts",
+          "Reject broker, provider, network, runtime, scheduler, live-trading, and real-money inputs",
+          "Preserve human final authority and prohibit live trading, real money, canonical sync, and auto-merge effects"
+        ],
+        "test_commands": [
+          "python -m pytest -q tests/contract/test_r15_2_paper_portfolio_compliance_risk_integration.py",
+          "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "rollback": ["Record deterministic simulated-paper rollback evidence without external or runtime mutation"],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R15_2_PAPER_PORTFOLIO_COMPLIANCE_RISK_INTEGRATION.json"
       }
     },
     "R15.3": {
