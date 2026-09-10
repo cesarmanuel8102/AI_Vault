@@ -80,8 +80,10 @@ def test_governed_closeouts_preserve_history_and_hand_sole_authority_to_jit_boun
     manifest = _manifest()
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
-    assert len(active) == 1
-    assert active[0] == "R19.3"
+    assert len(active) == 0
+    assert active == []
+    assert manifest["brain_101_certified"] is True
+    assert items["R19.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"

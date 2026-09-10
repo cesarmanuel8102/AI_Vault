@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R19.3",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "implementation_merge": "9fcadfa198fac70ab3ea29d8e42891b17533596b",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "implementation_evidence": "docs/roadmap/evidence/BRAIN_101_R19_3_FINAL_EVIDENCE_CERTIFICATION_DECISION.json",
+  "owner_final_authority": true,
+  "owner_decision": "BRAIN_101_CERTIFIED",
+  "brain_101_certified": true,
+  "closed_roadmap_items": "ALL",
+  "authorized_active_items": [],
+  "deferred_capabilities": ["persistent_agent_loop"],
+  "runtime_actions": {
+    "runtime_start": false,
+    "deployment": false,
+    "installation": false,
+    "scheduler_activation": false,
+    "network_call": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}

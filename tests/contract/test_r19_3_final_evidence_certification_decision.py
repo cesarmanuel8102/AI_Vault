@@ -84,3 +84,22 @@ def test_evidence_receipt_records_deferred_controls_without_a_final_certificatio
     assert evidence["human_final_authority_required"] is True
     assert evidence["deferred_capabilities"] == ["persistent_agent_loop"]
     assert all(value is False for value in evidence["runtime_actions"].values())
+
+
+def test_human_final_authority_closeout_certifies_without_enabling_runtime():
+    closeout = json.loads(
+        (ROOT / "docs/roadmap/evidence/BRAIN_101_R19_3_FINAL_EVIDENCE_CERTIFICATION_DECISION_CLOSEOUT.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+    scorecard = json.loads((ROOT / "docs/roadmap/BRAIN_101_SCORECARD.json").read_text(encoding="utf-8"))
+    assert closeout["implementation_merge"] == "9fcadfa198fac70ab3ea29d8e42891b17533596b"
+    assert closeout["owner_final_authority"] is True
+    assert closeout["brain_101_certified"] is True
+    assert all(value is False for value in closeout["runtime_actions"].values())
+    assert manifest["brain_101_certified"] is True
+    assert manifest["roadmap_items"]["R19.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    assert [item_id for item_id, item in manifest["roadmap_items"].items() if item["status"] == "AUTHORIZED_ACTIVE"] == []
+    assert scorecard["status"] == "BRAIN_101_CERTIFIED"
+    assert scorecard["certified_score"] == 101
