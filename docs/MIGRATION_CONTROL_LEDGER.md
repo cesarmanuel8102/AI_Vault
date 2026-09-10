@@ -9573,3 +9573,12 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Controller: CODEX_GOVERNED_CONTROLLER; implementation PR #369 merged as 758836c1b467cf5898e16b92c86e4674813c2e1e.
 - Classification: CODE_AND_CI_VERIFIED_NO_DEPLOY; all runtime, scheduler, broker, network, live-trading, real-money, canonical-sync, and auto-merge actions remain disabled.
 - Transition: R16.2 is CLOSED_RUNTIME_VERIFIED; R17.1 is sole AUTHORIZED_ACTIVE, JIT-bound NO_DEPLOY for a selective microservice candidacy assessment.
+
+## BRAIN-101 R17.1 Closeout - Selective Microservice Candidacy Assessment (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: implementation PR #371 merged as `b8308c0c82ee74bc660ace1c65ace5a436c0412e`.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R17_1_SELECTIVE_MICROSERVICE_CANDIDACY_ASSESSMENT_CLOSEOUT.json`, bound to deterministic provider-gateway ownership, E2E, rollback, operational, economic, and shared-filesystem-denial evidence.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no service process, container, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, or auto-merge occurred.
+- Transition: R17.1 is `CLOSED_RUNTIME_VERIFIED`; R17.2 is the sole `AUTHORIZED_ACTIVE` item, JIT-bound `NO_DEPLOY` for selective microservice decision and containment.
+- Preserved: HUMAN_FINAL_AUTHORITY=true; AUTO_MERGE=false; CANONICAL_LOCAL_SYNC=false; LIVE_TRADING=false; REAL_MONEY=false; persistent Agent Loop remains DEFERRED and Disabled.

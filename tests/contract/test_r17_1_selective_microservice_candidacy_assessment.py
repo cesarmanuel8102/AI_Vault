@@ -139,3 +139,33 @@ def test_module_is_pure_and_does_not_introduce_a_distributed_runtime():
         "from financial_autonomy",
     ):
         assert forbidden not in source
+
+
+def test_closeout_closes_r17_1_and_jit_binds_only_r17_2_without_deploy():
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/"
+            "BRAIN_101_R17_1_SELECTIVE_MICROSERVICE_CANDIDACY_ASSESSMENT_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+
+    assert manifest["roadmap_items"]["R17.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    active = [
+        item_id
+        for item_id, item in manifest["roadmap_items"].items()
+        if item["status"] == "AUTHORIZED_ACTIVE"
+    ]
+    assert active == ["R17.2"]
+    successor = manifest["roadmap_items"]["R17.2"]
+    binding = successor["automation"]
+    assert binding["front_id"] == "BRAIN-101-R17-2-SELECTIVE-MICROSERVICE-DECISION-CONTAINMENT-01"
+    assert binding["work_branch"] == "control-plane/r17-2-selective-microservice-decision-containment"
+    assert binding["deployment_mode"] == "NO_DEPLOY"
+    assert binding["closeout"]["work_branch"] == (
+        "control-plane/r17-2-selective-microservice-decision-containment-closeout"
+    )
+    assert closeout["implementation_merge"] == "b8308c0c82ee74bc660ace1c65ace5a436c0412e"
+    assert closeout["successor"]["roadmap_item"] == "R17.2"
+    assert all(value is False for value in closeout["runtime_actions"].values())

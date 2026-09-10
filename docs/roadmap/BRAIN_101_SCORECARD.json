@@ -1317,23 +1317,23 @@
     },
     {
       "id": "R17",
-      "percent": 10,
-      "status": "JUSTIFIABLY_DEFERRED",
+      "percent": 50,
+      "status": "IN_PROGRESS",
       "evidence": [
         {
-          "claim": "Selective microservices are deferred until modular ownership prerequisites close.",
-          "classification": "STATIC_VERIFIED",
+          "claim": "R17.1 records a no-deploy provider-gateway extraction candidacy; R17.2 remains required for containment or justified deferral.",
+          "classification": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
           "paths": [
-            "docs/roadmap/BRAIN_101_ROADMAP.md"
+            "docs/roadmap/evidence/BRAIN_101_R17_1_SELECTIVE_MICROSERVICE_CANDIDACY_ASSESSMENT.json"
           ],
           "symbols": [],
-          "commit": null,
+          "commit": "b8308c0c82ee74bc660ace1c65ace5a436c0412e",
           "issue": null,
-          "pr": 35,
+          "pr": 371,
           "workflow_run": null,
-          "command": null,
-          "result": "Deferral is explicit; extraction is not certified.",
-          "observed_at_utc": "2026-07-22T13:37:51Z"
+          "command": "python -m pytest -q tests/contract/test_r17_1_selective_microservice_candidacy_assessment.py",
+          "result": "Candidate eligibility is assessment-only; extraction and deployment remain unauthorized.",
+          "observed_at_utc": "2026-09-10T05:06:24Z"
         }
       ]
     },
