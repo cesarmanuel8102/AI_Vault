@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R18.2",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "decision": "SUPPORT_SURFACE_VERIFIED",
+  "support_surface": {
+    "install_runbook_documented": true,
+    "upgrade_runbook_documented": true,
+    "backup_runbook_documented": true,
+    "restore_rollback_documented": true,
+    "release_notes_documented": true,
+    "health_version_visible": true,
+    "support_bundle_redacted": true,
+    "actionable_errors_documented": true
+  },
+  "runtime_actions": {
+    "runtime_start": false,
+    "deployment": false,
+    "installation": false,
+    "scheduler_activation": false,
+    "network_call": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}
