@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R19.2",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "decision": "ADVERSARIAL_RESILIENCE_RECOVERY_VERIFIED",
+  "brain_101_certified": false,
+  "mandatory_gates": [
+    "secret_safety",
+    "p3_replay_scope",
+    "prompt_resilience",
+    "provider_resilience",
+    "github_resilience",
+    "broker_paper_resilience",
+    "disk_resilience",
+    "json_resilience",
+    "faiss_resilience",
+    "stale_data_resilience",
+    "duplicate_effect_resilience",
+    "crash_recovery",
+    "scheduler_resilience",
+    "rollback",
+    "restore",
+    "kill_switch"
+  ],
+  "deferred_capabilities": ["persistent_agent_loop"],
+  "runtime_actions": {
+    "runtime_start": false,
+    "deployment": false,
+    "installation": false,
+    "scheduler_activation": false,
+    "network_call": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}
