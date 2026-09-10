@@ -2,7 +2,7 @@
   "schema_version": 1,
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-  "status": "BRAIN_101_CERTIFIED",
+  "status": "BRAIN_101_REMEDIATION_REQUIRED",
   "audit_baseline_head": "759edfb",
   "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
@@ -11,6 +11,20 @@
   "certified_score": 101,
   "score_cap_applied": 101,
   "score_cap_reason": "All governed BRAIN-101 items are closed with explicit human final authority.",
+  "historical_internal_certified_score": 101,
+  "historical_internal_certification": {
+    "event": "RECORDED",
+    "historical_commit": "9abfb5e51eaed56ae6463426d5a297f476a13734",
+    "owner_authority": true
+  },
+  "external_certification": {
+    "accepted": false,
+    "status": "REJECTED_PENDING_REMEDIATION"
+  },
+  "current_program": {
+    "program": "BRAIN-101-REMEDIATION",
+    "status": "REMEDIATION_REQUIRED"
+  },
   "domain_scores": [
     {
       "domain": "security_governance",

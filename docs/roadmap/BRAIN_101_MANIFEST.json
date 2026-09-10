@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "roadmap_id": "BRAIN-101",
-  "brain_101_certified": true,
+  "brain_101_certified": false,
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "74ac3e33d9bb10fd1c0fc8c2d2bc0e1835f604f4c4841e42efa25fa9165919db",
+  "roadmap_sha256": "4c329c104cc5985484304ff1d607bb4e747eb9ea0a72a4a2a77187ef2d4b341e",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -37,7 +37,7 @@
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
   "approval_status": "HUMAN_ADOPTED",
   "r0_status": "CLOSED_HUMAN_ADOPTED",
-  "current_phase": "R10",
+  "current_phase": "BR0",
   "human_final_authority": true,
   "auto_merge": false,
   "canonical_local_sync": false,
@@ -46,7 +46,20 @@
   "executor_model": "ollama-cloud/kimi-k2.7-code",
   "supervisor": "Codex",
   "required_first_status": "READY_FOR_BRAIN_101_ROADMAP_ADOPTION",
-  "certification_status": "NOT_CERTIFIED",
+  "certification_status": "REJECTED_PENDING_REMEDIATION",
+  "historical_internal_certification": {
+    "event": "RECORDED",
+    "historical_commit": "9abfb5e51eaed56ae6463426d5a297f476a13734",
+    "owner_authority": true
+  },
+  "external_certification": {
+    "accepted": false,
+    "status": "REJECTED_PENDING_REMEDIATION"
+  },
+  "current_program": {
+    "program": "BRAIN-101-REMEDIATION",
+    "status": "REMEDIATION_REQUIRED"
+  },
   "phase_order": [
     "R0",
     "R1",

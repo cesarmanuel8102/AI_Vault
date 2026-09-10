@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "evidence_id": "BRAIN-101-BR0-CANONICAL-CERTIFICATION-RECONCILIATION",
+  "basis_canonical_sha": "9abfb5e51eaed56ae6463426d5a297f476a13734",
+  "classification": "DOCUMENTATION_SCHEMA_STATE_RECONCILIATION_ONLY",
+  "historical_receipts_rewritten": false,
+  "runtime_modified": false,
+  "historical_internal_certification": {
+    "event": "RECORDED",
+    "historical_commit": "9abfb5e51eaed56ae6463426d5a297f476a13734",
+    "owner_authority": true
+  },
+  "external_certification": {
+    "accepted": false,
+    "status": "REJECTED_PENDING_REMEDIATION"
+  },
+  "current_program": {
+    "program": "BRAIN-101-REMEDIATION",
+    "status": "REMEDIATION_REQUIRED"
+  },
+  "hard_limits": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "persistent_agent_loop": "DEFERRED"
+  }
+}
