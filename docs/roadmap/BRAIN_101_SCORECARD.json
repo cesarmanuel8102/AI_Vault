@@ -1341,11 +1341,11 @@
     },
     {
       "id": "R18",
-      "percent": 40,
-      "status": "PARTIALLY_CLOSED",
+      "percent": 60,
+      "status": "IN_PROGRESS",
       "evidence": [
         {
-          "claim": "Chat/dashboard/runbooks exist without complete product operations certification.",
+          "claim": "R18.1 establishes a verified no-deploy product and operator experience baseline; runbooks and support remain in R18.2.",
           "classification": "PRESENCE_ONLY",
           "paths": [
             "tmp_agent/brain_v9/dashboard",

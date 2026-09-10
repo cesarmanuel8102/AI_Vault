@@ -1592,3 +1592,10 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no service process, container, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, or auto-merge occurred.
 - Status: R17.2 is `CLOSED_RUNTIME_VERIFIED`; extraction remains unauthorized.
 - Authorized successor: exactly one R18.1, `BRAIN-101-R18-1-PRODUCT-OPERATOR-EXPERIENCE-BASELINE-01`, controller-governed `NO_DEPLOY` for a deterministic product and operator experience baseline.
+
+## BRAIN-101 R18.1 - Product and Operator Experience Baseline Closeout (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; source PR #375 merged as `61159db72982faa15a347075b62509310a6747fe`.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R18_1_PRODUCT_OPERATOR_EXPERIENCE_BASELINE_CLOSEOUT.json`; dashboard, trace, notification, operator inbox, approval, incident, and responsive-accessibility requirements are verified without exposing private reasoning.
+- Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no runtime start, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, or auto-merge occurred.
+- Status: R18.1 is `CLOSED_RUNTIME_VERIFIED`; exactly one successor R18.2 is JIT-bound `NO_DEPLOY` for operational runbooks and support surface requirements.

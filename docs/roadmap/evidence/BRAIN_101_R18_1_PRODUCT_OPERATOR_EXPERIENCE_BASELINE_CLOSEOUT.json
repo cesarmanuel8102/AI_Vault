@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R18.1",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "implementation_merge": "61159db72982faa15a347075b62509310a6747fe",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "implementation_evidence": "docs/roadmap/evidence/BRAIN_101_R18_1_PRODUCT_OPERATOR_EXPERIENCE_BASELINE.json",
+  "decision": "BASELINE_VERIFIED",
+  "successor": {
+    "roadmap_item": "R18.2",
+    "front_id": "BRAIN-101-R18-2-OPERATIONAL-RUNBOOKS-SUPPORT-SURFACE-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "runtime_actions": {
+    "runtime_start": false,
+    "deployment": false,
+    "installation": false,
+    "scheduler_activation": false,
+    "network_call": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}

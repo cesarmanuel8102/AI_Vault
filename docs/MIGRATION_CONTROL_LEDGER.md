@@ -9589,3 +9589,9 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R17_2_SELECTIVE_MICROSERVICE_DECISION_CONTAINMENT_CLOSEOUT.json`; the provider-gateway candidate is `JUSTIFIABLY_DEFERRED`, with feature-flag and versioned-API containment required.
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; extraction, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, and auto-merge remain disabled.
 - Transition: R17.2 is `CLOSED_RUNTIME_VERIFIED`; R18.1 is the sole `AUTHORIZED_ACTIVE` item, JIT-bound `NO_DEPLOY` for a deterministic product and operator experience baseline.
+
+## BRAIN-101 R18.1 Closeout - Product and Operator Experience Baseline (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; implementation PR #375 merged as `61159db72982faa15a347075b62509310a6747fe`.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; runtime start, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, and auto-merge remain disabled.
+- Transition: R18.1 is `CLOSED_RUNTIME_VERIFIED`; R18.2 is the sole `AUTHORIZED_ACTIVE` item, JIT-bound `NO_DEPLOY` for operational runbooks recovery and support surface requirements.
