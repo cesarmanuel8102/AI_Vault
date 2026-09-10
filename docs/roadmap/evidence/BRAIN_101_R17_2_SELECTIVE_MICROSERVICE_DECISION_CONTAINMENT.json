@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R17.2",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "source_evidence": "docs/roadmap/evidence/BRAIN_101_R17_1_SELECTIVE_MICROSERVICE_CANDIDACY_ASSESSMENT.json",
+  "decision": "JUSTIFIABLY_DEFERRED",
+  "containment": {
+    "component_id": "provider_gateway",
+    "candidate_eligible": true,
+    "feature_flag_required": true,
+    "versioned_api_required": true,
+    "shared_filesystem_dependency": false,
+    "extraction_authorized": false
+  },
+  "runtime_actions": {
+    "service_process_start": false,
+    "container_start": false,
+    "deployment": false,
+    "installation": false,
+    "scheduler_activation": false,
+    "network_call": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}
