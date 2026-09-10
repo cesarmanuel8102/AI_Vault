@@ -6248,7 +6248,7 @@
           "objective": "Record the final certification decision only after explicit human final-authority approval",
           "work_branch": "control-plane/r19-3-final-evidence-certification-decision-closeout",
           "executor": "codex_control_plane",
-          "risk": "CRITICAL",
+          "risk": "MEDIUM",
           "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R19_3_FINAL_EVIDENCE_CERTIFICATION_DECISION_CLOSEOUT.json", "tests/contract/test_r19_3_final_evidence_certification_decision.py", "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts", "tests/contract/operator_proxy/sequencer.test.ts"],
           "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
           "acceptance": ["Require explicit human final-authority approval before BRAIN-101 certification", "Preserve all constitutional limits and do not activate the persistent Agent Loop"],

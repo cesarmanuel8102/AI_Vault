@@ -124,6 +124,7 @@ def test_closeout_closes_r19_2_and_jit_binds_r19_3_without_final_certification()
     assert binding["front_id"] == "BRAIN-101-R19-3-FINAL-EVIDENCE-CERTIFICATION-DECISION-01"
     assert binding["work_branch"] == "control-plane/r19-3-final-evidence-certification-decision"
     assert binding["deployment_mode"] == "NO_DEPLOY"
+    assert binding["closeout"]["risk"] in {"LOW", "MEDIUM"}
     assert closeout["implementation_merge"] == "aca1929abb8e981dadc3caec377bc24bd46bd09d"
     assert closeout["brain_101_certified"] is False
     assert all(value is False for value in closeout["runtime_actions"].values())
