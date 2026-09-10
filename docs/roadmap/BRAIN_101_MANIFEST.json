@@ -5776,7 +5776,18 @@
         "test_commands": ["python -m pytest -q tests/contract/test_r18_1_product_operator_experience_baseline.py", "git diff --check"],
         "acceptance": ["Record deterministic operator-facing UX requirements without displaying private reasoning", "Preserve auditable human approval and incident visibility without runtime mutation"],
         "rollback": ["Record deterministic no-deploy baseline evidence without external mutation"],
-        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R18_1_PRODUCT_OPERATOR_EXPERIENCE_BASELINE.json"
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R18_1_PRODUCT_OPERATOR_EXPERIENCE_BASELINE.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R18-1-PRODUCT-OPERATOR-EXPERIENCE-BASELINE-CLOSEOUT-01",
+          "objective": "Record R18.1 product and operator experience evidence before authorizing one dependency-eligible successor",
+          "work_branch": "control-plane/r18-1-product-operator-experience-baseline-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R18_1_PRODUCT_OPERATOR_EXPERIENCE_BASELINE_CLOSEOUT.json", "tests/contract/test_r18_1_product_operator_experience_baseline.py", "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts", "tests/contract/operator_proxy/sequencer.test.ts"],
+          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+          "acceptance": ["Record exact R18.1 product and operator experience evidence", "Set R18.1 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged", "Preserve exactly one authorized next roadmap item", "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"],
+          "test_commands": ["python -m pytest -q tests/contract/test_r18_1_product_operator_experience_baseline.py", "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "git diff --check"]
+        }
       }
     },
     "R18.2": {
