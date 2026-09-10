@@ -5600,7 +5600,18 @@
         "test_commands": ["python -m pytest -q tests/contract/test_r17_1_selective_microservice_candidacy_assessment.py", "git diff --check"],
         "acceptance": ["Assess extraction candidacy without introducing a distributed runtime", "Preserve rollback and economic justification evidence without external effects"],
         "rollback": ["Record deterministic no-deploy assessment rollback evidence without external mutation"],
-        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R17_1_SELECTIVE_MICROSERVICE_CANDIDACY_ASSESSMENT.json"
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R17_1_SELECTIVE_MICROSERVICE_CANDIDACY_ASSESSMENT.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R17-1-SELECTIVE-MICROSERVICE-CANDIDACY-ASSESSMENT-CLOSEOUT-01",
+          "objective": "Record R17.1 candidacy evidence before authorizing one dependency-eligible successor",
+          "work_branch": "control-plane/r17-1-selective-microservice-candidacy-assessment-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R17_1_SELECTIVE_MICROSERVICE_CANDIDACY_ASSESSMENT_CLOSEOUT.json", "tests/contract/test_r17_1_selective_microservice_candidacy_assessment.py", "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts", "tests/contract/operator_proxy/sequencer.test.ts"],
+          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+          "acceptance": ["Record exact R17.1 candidacy evidence", "Set R17.1 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged", "Preserve exactly one authorized next roadmap item", "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"],
+          "test_commands": ["python -m pytest -q tests/contract/test_r17_1_selective_microservice_candidacy_assessment.py", "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "git diff --check"]
+        }
       }
     },
     "R17.2": {
