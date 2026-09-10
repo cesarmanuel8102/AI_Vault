@@ -1317,23 +1317,25 @@
     },
     {
       "id": "R17",
-      "percent": 50,
-      "status": "IN_PROGRESS",
+      "percent": 100,
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "evidence": [
         {
-          "claim": "R17.1 records a no-deploy provider-gateway extraction candidacy; R17.2 remains required for containment or justified deferral.",
+          "claim": "R17.1 candidacy and R17.2 justified deferral record provider-gateway containment without authorizing extraction or deployment.",
           "classification": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
           "paths": [
-            "docs/roadmap/evidence/BRAIN_101_R17_1_SELECTIVE_MICROSERVICE_CANDIDACY_ASSESSMENT.json"
+            "docs/roadmap/evidence/BRAIN_101_R17_1_SELECTIVE_MICROSERVICE_CANDIDACY_ASSESSMENT.json",
+            "docs/roadmap/evidence/BRAIN_101_R17_2_SELECTIVE_MICROSERVICE_DECISION_CONTAINMENT.json",
+            "docs/roadmap/evidence/BRAIN_101_R17_2_SELECTIVE_MICROSERVICE_DECISION_CONTAINMENT_CLOSEOUT.json"
           ],
           "symbols": [],
-          "commit": "b8308c0c82ee74bc660ace1c65ace5a436c0412e",
+          "commit": "b7e59e1a7ee2a4c3906ecf3746d303e270c41eb6",
           "issue": null,
-          "pr": 371,
+          "pr": 373,
           "workflow_run": null,
-          "command": "python -m pytest -q tests/contract/test_r17_1_selective_microservice_candidacy_assessment.py",
-          "result": "Candidate eligibility is assessment-only; extraction and deployment remain unauthorized.",
-          "observed_at_utc": "2026-09-10T05:06:24Z"
+          "command": "python -m pytest -q tests/contract/test_r17_2_selective_microservice_decision_containment.py",
+          "result": "Evidence-backed containment is justifiably deferred; extraction and deployment remain unauthorized.",
+          "observed_at_utc": "2026-09-10T05:43:59Z"
         }
       ]
     },

@@ -87,3 +87,30 @@ def test_evidence_records_justified_deferral_without_runtime_actions():
     assert evidence["containment"]["feature_flag_required"] is True
     assert evidence["containment"]["versioned_api_required"] is True
     assert all(value is False for value in evidence["runtime_actions"].values())
+
+
+def test_closeout_closes_r17_2_and_jit_binds_only_r18_1_without_deploy():
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/"
+            "BRAIN_101_R17_2_SELECTIVE_MICROSERVICE_DECISION_CONTAINMENT_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+
+    assert manifest["roadmap_items"]["R17.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    active = [
+        item_id
+        for item_id, item in manifest["roadmap_items"].items()
+        if item["status"] == "AUTHORIZED_ACTIVE"
+    ]
+    assert active == ["R18.1"]
+    successor = manifest["roadmap_items"]["R18.1"]
+    binding = successor["automation"]
+    assert binding["front_id"] == "BRAIN-101-R18-1-PRODUCT-OPERATOR-EXPERIENCE-BASELINE-01"
+    assert binding["work_branch"] == "control-plane/r18-1-product-operator-experience-baseline"
+    assert binding["deployment_mode"] == "NO_DEPLOY"
+    assert closeout["implementation_merge"] == "b7e59e1a7ee2a4c3906ecf3746d303e270c41eb6"
+    assert closeout["successor"]["roadmap_item"] == "R18.1"
+    assert all(value is False for value in closeout["runtime_actions"].values())

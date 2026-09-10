@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "8a39111242b3e65f6a7bf4c4f3bd2817c524ceb2efd0a350b1394a3aef9414ab",
+  "roadmap_sha256": "7c4245d19fe388b5b7915e5011103846414af06d62cbd131099791860e1b66e7",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -5615,7 +5615,7 @@
       }
     },
     "R17.2": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R17",
       "title": "Selective microservice decision and containment",
       "dependencies": [
@@ -5695,7 +5695,7 @@
           "work_branch": "control-plane/r17-2-selective-microservice-decision-containment-closeout",
           "executor": "codex_control_plane",
           "risk": "MEDIUM",
-          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R17_2_SELECTIVE_MICROSERVICE_DECISION_CONTAINMENT_CLOSEOUT.json", "tests/contract/test_r17_2_selective_microservice_decision_containment.py", "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts", "tests/contract/operator_proxy/sequencer.test.ts"],
+          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R17_2_SELECTIVE_MICROSERVICE_DECISION_CONTAINMENT_CLOSEOUT.json", "tests/contract/test_r17_1_selective_microservice_candidacy_assessment.py", "tests/contract/test_r17_2_selective_microservice_decision_containment.py", "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts", "tests/contract/operator_proxy/sequencer.test.ts"],
           "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
           "acceptance": ["Record exact R17.2 containment evidence", "Set R17.2 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged", "Preserve exactly one authorized next roadmap item", "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"],
           "test_commands": ["python -m pytest -q tests/contract/test_r17_2_selective_microservice_decision_containment.py", "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "git diff --check"]
@@ -5703,7 +5703,7 @@
       }
     },
     "R18.1": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R18",
       "title": "Product and operator experience baseline",
       "dependencies": [
@@ -5748,7 +5748,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
+        "dispatchable": true,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
@@ -5759,7 +5759,35 @@
           "acceptance",
           "rollback",
           "evidence_path"
-        ]
+        ],
+        "jit_binding_completed": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R18-1-PRODUCT-OPERATOR-EXPERIENCE-BASELINE-01",
+        "objective": "Record a deterministic product and operator experience baseline without changing the runtime or starting an external service",
+        "work_branch": "control-plane/r18-1-product-operator-experience-baseline",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "product_operations_ux",
+        "deployment_mode": "NO_DEPLOY",
+        "live_trading_enabled": false,
+        "real_money_enabled": false,
+        "allowed_paths": ["tmp_agent/brain_v9/core/product_operator_experience_baseline.py", "docs/roadmap/evidence/BRAIN_101_R18_1_PRODUCT_OPERATOR_EXPERIENCE_BASELINE.json", "tests/contract/test_r18_1_product_operator_experience_baseline.py"],
+        "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+        "test_commands": ["python -m pytest -q tests/contract/test_r18_1_product_operator_experience_baseline.py", "git diff --check"],
+        "acceptance": ["Record deterministic operator-facing UX requirements without displaying private reasoning", "Preserve auditable human approval and incident visibility without runtime mutation"],
+        "rollback": ["Record deterministic no-deploy baseline evidence without external mutation"],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R18_1_PRODUCT_OPERATOR_EXPERIENCE_BASELINE.json",
+        "closeout": {
+          "front_id": "BRAIN-101-R18-1-PRODUCT-OPERATOR-EXPERIENCE-BASELINE-CLOSEOUT-01",
+          "objective": "Record R18.1 product and operator experience evidence before authorizing one dependency-eligible successor",
+          "work_branch": "control-plane/r18-1-product-operator-experience-baseline-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R18_1_PRODUCT_OPERATOR_EXPERIENCE_BASELINE_CLOSEOUT.json", "tests/contract/test_r18_1_product_operator_experience_baseline.py", "tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "tests/contract/operator_proxy/r4_1_roadmap_contract.test.ts", "tests/contract/operator_proxy/sequencer.test.ts"],
+          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+          "acceptance": ["Record exact R18.1 product and operator experience evidence", "Set R18.1 to CLOSED_RUNTIME_VERIFIED only after implementation evidence is merged", "Preserve exactly one authorized next roadmap item", "Preserve human final authority and disabled scheduler, canonical local sync, live trading, real money, and auto-merge"],
+          "test_commands": ["python -m pytest -q tests/contract/test_r18_1_product_operator_experience_baseline.py", "python -m pytest -q tests/contract/test_brain_101_r5_r19_roadmap_decomposition.py", "git diff --check"]
+        }
       }
     },
     "R18.2": {

@@ -157,8 +157,9 @@ def test_closeout_closes_r17_1_and_jit_binds_only_r17_2_without_deploy():
         for item_id, item in manifest["roadmap_items"].items()
         if item["status"] == "AUTHORIZED_ACTIVE"
     ]
-    assert active == ["R17.2"]
+    assert active == ["R18.1"]
     successor = manifest["roadmap_items"]["R17.2"]
+    assert successor["status"] == "CLOSED_RUNTIME_VERIFIED"
     binding = successor["automation"]
     assert binding["front_id"] == "BRAIN-101-R17-2-SELECTIVE-MICROSERVICE-DECISION-CONTAINMENT-01"
     assert binding["work_branch"] == "control-plane/r17-2-selective-microservice-decision-containment"
