@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R16.1",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "scope": "deterministic disabled LiveTradingGate multi-factor preview and audit receipt contract",
+  "live_trading_enabled": false,
+  "real_money_enabled": false,
+  "runtime_actions": {
+    "deployment": false,
+    "installation": false,
+    "scheduler_activation": false,
+    "provider_call": false,
+    "network_call": false,
+    "broker_action": false,
+    "runtime_execution": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}
