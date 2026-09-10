@@ -1583,3 +1583,12 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no service process, container, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, or auto-merge occurred.
 - Status: R17.1 is `CLOSED_RUNTIME_VERIFIED`; extraction remains unauthorized.
 - Authorized successor: exactly one R17.2, `BRAIN-101-R17-2-SELECTIVE-MICROSERVICE-DECISION-CONTAINMENT-01`, controller-governed `NO_DEPLOY` for evidence-bound extraction containment or justified deferral without a distributed runtime.
+
+## BRAIN-101 R17.2 - Selective Microservice Decision and Containment Closeout (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; no Agent Loop execution is claimed.
+- Parent source: implementation PR #373 merged as `b7e59e1a7ee2a4c3906ecf3746d303e270c41eb6`.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R17_2_SELECTIVE_MICROSERVICE_DECISION_CONTAINMENT_CLOSEOUT.json`; the evidence-backed provider-gateway candidate is `JUSTIFIABLY_DEFERRED`, not extracted or deployed.
+- Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no service process, container, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, or auto-merge occurred.
+- Status: R17.2 is `CLOSED_RUNTIME_VERIFIED`; extraction remains unauthorized.
+- Authorized successor: exactly one R18.1, `BRAIN-101-R18-1-PRODUCT-OPERATOR-EXPERIENCE-BASELINE-01`, controller-governed `NO_DEPLOY` for a deterministic product and operator experience baseline.

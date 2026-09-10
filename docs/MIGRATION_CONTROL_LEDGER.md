@@ -9582,3 +9582,10 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no service process, container, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, or auto-merge occurred.
 - Transition: R17.1 is `CLOSED_RUNTIME_VERIFIED`; R17.2 is the sole `AUTHORIZED_ACTIVE` item, JIT-bound `NO_DEPLOY` for selective microservice decision and containment.
 - Preserved: HUMAN_FINAL_AUTHORITY=true; AUTO_MERGE=false; CANONICAL_LOCAL_SYNC=false; LIVE_TRADING=false; REAL_MONEY=false; persistent Agent Loop remains DEFERRED and Disabled.
+
+## BRAIN-101 R17.2 Closeout - Selective Microservice Decision and Containment (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; implementation PR #373 merged as `b7e59e1a7ee2a4c3906ecf3746d303e270c41eb6`.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R17_2_SELECTIVE_MICROSERVICE_DECISION_CONTAINMENT_CLOSEOUT.json`; the provider-gateway candidate is `JUSTIFIABLY_DEFERRED`, with feature-flag and versioned-API containment required.
+- Classification: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; extraction, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, and auto-merge remain disabled.
+- Transition: R17.2 is `CLOSED_RUNTIME_VERIFIED`; R18.1 is the sole `AUTHORIZED_ACTIVE` item, JIT-bound `NO_DEPLOY` for a deterministic product and operator experience baseline.

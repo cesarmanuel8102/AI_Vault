@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item": "R17.2",
+  "controller": "CODEX_GOVERNED_CONTROLLER",
+  "implementation_merge": "b7e59e1a7ee2a4c3906ecf3746d303e270c41eb6",
+  "verification_level": "CODE_AND_CI_VERIFIED_NO_DEPLOY",
+  "implementation_evidence": "docs/roadmap/evidence/BRAIN_101_R17_2_SELECTIVE_MICROSERVICE_DECISION_CONTAINMENT.json",
+  "decision": {
+    "component_id": "provider_gateway",
+    "decision": "JUSTIFIABLY_DEFERRED",
+    "containment_required": true,
+    "extraction_authorized": false,
+    "deployment_permitted": false
+  },
+  "successor": {
+    "roadmap_item": "R18.1",
+    "front_id": "BRAIN-101-R18-1-PRODUCT-OPERATOR-EXPERIENCE-BASELINE-01",
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "runtime_actions": {
+    "service_process_start": false,
+    "container_start": false,
+    "deployment": false,
+    "installation": false,
+    "scheduler_activation": false,
+    "network_call": false,
+    "canonical_local_sync": false,
+    "live_trading": false,
+    "real_money": false,
+    "auto_merge": false
+  }
+}
