@@ -1606,3 +1606,9 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R18_2_OPERATIONAL_RUNBOOKS_SUPPORT_SURFACE_CLOSEOUT.json`; installation, upgrade, backup, restore/rollback, release-note, health/version, redacted-support-bundle, and actionable-error requirements were verified as deterministic no-deploy evidence.
 - Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no restore, runtime start, deployment, installation, scheduler activation, network call, canonical local sync, live trading, real money, or auto-merge occurred.
 - Status: R18.2 is `CLOSED_RUNTIME_VERIFIED`; exactly one successor R18.3 is JIT-bound `NO_DEPLOY` for product operations acceptance and accessibility validation.
+
+## BRAIN-101 R18.3 - Product Operations Acceptance and Accessibility Validation Closeout (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; source PR #379 merged as `2366867af4ad67941808c4569ae0e4fb704c0bc7`.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R18_3_PRODUCT_OPERATIONS_ACCEPTANCE_ACCESSIBILITY_VALIDATION_CLOSEOUT.json`; operator workflow, accessibility, responsive behavior, and incident UI acceptance evidence is deterministic and no-deploy.
+- Status: R18.3 is `CLOSED_RUNTIME_VERIFIED`; exactly one successor R19.1 has `CERTIFICATION_ONLY` intent and is JIT-bound `NO_DEPLOY` for the BRAIN-101 certification gate matrix.

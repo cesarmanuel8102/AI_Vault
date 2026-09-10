@@ -81,7 +81,7 @@ def test_governed_closeouts_preserve_history_and_hand_sole_authority_to_jit_boun
     items = manifest["roadmap_items"]
     active = [item_id for item_id, item in items.items() if item["status"] == "AUTHORIZED_ACTIVE"]
     assert len(active) == 1
-    assert active[0] == "R18.3"
+    assert active[0] == "R19.1"
     assert items["R4.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.2"]["status"] == "CLOSED_RUNTIME_VERIFIED"
     assert items["R4.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
@@ -200,5 +200,5 @@ def test_financial_and_certification_backlog_preserve_constitutional_limits():
         assert limits["persistent_agent_loop"] == "DEFERRED"
     assert all(item["deployment_intent"] == "PAPER_ONLY" for item in planned.values() if item["phase"] in {"R11", "R12", "R13", "R14", "R15", "R16"})
     assert "JUSTIFIABLY_DEFERRED" in manifest["roadmap_items"]["R17.2"]["acceptance_intent"]
-    assert "mandatory_certification_gates" in planned["R19.1"]["acceptance_intent"]
-    assert "persistent_agent_loop_deferred" in planned["R19.1"]["negative_acceptance"]
+    assert "mandatory_certification_gates" in manifest["roadmap_items"]["R19.1"]["acceptance_intent"]
+    assert "persistent_agent_loop_deferred" in manifest["roadmap_items"]["R19.1"]["negative_acceptance"]
