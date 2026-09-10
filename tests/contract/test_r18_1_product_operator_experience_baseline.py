@@ -83,3 +83,19 @@ def test_evidence_records_operator_baseline_without_runtime_actions():
     assert evidence["decision"] == "BASELINE_VERIFIED"
     assert evidence["private_reasoning_exposed"] is False
     assert all(value is False for value in evidence["runtime_actions"].values())
+
+
+def test_closeout_closes_r18_1_and_jit_binds_only_r18_2_without_deploy():
+    closeout = json.loads(
+        (ROOT / "docs/roadmap/evidence/BRAIN_101_R18_1_PRODUCT_OPERATOR_EXPERIENCE_BASELINE_CLOSEOUT.json").read_text(encoding="utf-8")
+    )
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+    assert manifest["roadmap_items"]["R18.1"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    active = [item_id for item_id, item in manifest["roadmap_items"].items() if item["status"] == "AUTHORIZED_ACTIVE"]
+    assert active == ["R18.2"]
+    binding = manifest["roadmap_items"]["R18.2"]["automation"]
+    assert binding["front_id"] == "BRAIN-101-R18-2-OPERATIONAL-RUNBOOKS-SUPPORT-SURFACE-01"
+    assert binding["work_branch"] == "control-plane/r18-2-operational-runbooks-support-surface"
+    assert binding["deployment_mode"] == "NO_DEPLOY"
+    assert closeout["implementation_merge"] == "61159db72982faa15a347075b62509310a6747fe"
+    assert all(value is False for value in closeout["runtime_actions"].values())
