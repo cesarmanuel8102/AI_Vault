@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "3c265a20755f472ec6ebde4cbdc58b9674b153fae2e3c9c17899bb6f0da4105a",
+  "roadmap_sha256": "18676e60938dc51c89efa8988ac7a02b9a83d9848d0035d58d1d5e07700d27ad",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -5879,7 +5879,7 @@
       }
     },
     "R18.3": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R18",
       "title": "Product operations acceptance and accessibility validation",
       "dependencies": [
@@ -5967,7 +5967,7 @@
       }
     },
     "R19.1": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R19",
       "title": "BRAIN-101 certification gate matrix",
       "dependencies": [
@@ -6012,7 +6012,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
+        "dispatchable": true,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
@@ -6023,7 +6023,24 @@
           "acceptance",
           "rollback",
           "evidence_path"
-        ]
+        ],
+        "jit_binding_completed": true,
+        "expected_base_sha_source": "sequenceRoadmap resolves the exact live canonical integration-branch head at governed dispatch",
+        "front_id": "BRAIN-101-R19-1-CERTIFICATION-GATE-MATRIX-01",
+        "objective": "Record a deterministic certification gate matrix and truthful deferred-capability inventory without runtime actions",
+        "work_branch": "control-plane/r19-1-certification-gate-matrix",
+        "executor": "codex_control_plane",
+        "risk": "CRITICAL",
+        "domain": "certification",
+        "deployment_mode": "CERTIFICATION_ONLY",
+        "live_trading_enabled": false,
+        "real_money_enabled": false,
+        "allowed_paths": ["tmp_agent/brain_v9/core/brain_101_certification_gate_matrix.py", "docs/roadmap/evidence/BRAIN_101_R19_1_CERTIFICATION_GATE_MATRIX.json", "tests/contract/test_r19_1_brain_101_certification_gate_matrix.py"],
+        "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+        "test_commands": ["python -m pytest -q tests/contract/test_r19_1_brain_101_certification_gate_matrix.py", "git diff --check"],
+        "acceptance": ["Record mandatory certification gates and truthful deferred capability inventory", "Reject false certification, runtime actions, and constitutional-limit changes"],
+        "rollback": ["Record deterministic certification rollback evidence without external mutation"],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R19_1_CERTIFICATION_GATE_MATRIX.json"
       }
     },
     "R19.2": {

@@ -82,3 +82,31 @@ def test_evidence_records_acceptance_without_runtime_actions():
     assert evidence["decision"] == "ACCEPTANCE_VERIFIED"
     assert evidence["acceptance"]["accessibility_verified"] is True
     assert all(value is False for value in evidence["runtime_actions"].values())
+
+
+def test_closeout_closes_r18_3_and_jit_binds_only_r19_1_without_deploy():
+    closeout = json.loads(
+        (
+            ROOT
+            / "docs/roadmap/evidence/BRAIN_101_R18_3_PRODUCT_OPERATIONS_ACCEPTANCE_ACCESSIBILITY_VALIDATION_CLOSEOUT.json"
+        ).read_text(encoding="utf-8")
+    )
+    manifest = json.loads((ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json").read_text(encoding="utf-8"))
+    scorecard = json.loads((ROOT / "docs/roadmap/BRAIN_101_SCORECARD.json").read_text(encoding="utf-8"))
+    assert manifest["roadmap_items"]["R18.3"]["status"] == "CLOSED_RUNTIME_VERIFIED"
+    r18_score = next(phase for phase in scorecard["phases"] if phase["id"] == "R18")
+    assert r18_score["percent"] == 100
+    assert r18_score["status"] == "CLOSED_RUNTIME_VERIFIED"
+    active = [item_id for item_id, item in manifest["roadmap_items"].items() if item["status"] == "AUTHORIZED_ACTIVE"]
+    assert active == ["R19.1"]
+    binding = manifest["roadmap_items"]["R19.1"]["automation"]
+    assert binding["front_id"] == "BRAIN-101-R19-1-CERTIFICATION-GATE-MATRIX-01"
+    assert binding["work_branch"] == "control-plane/r19-1-certification-gate-matrix"
+    assert binding["deployment_mode"] == "CERTIFICATION_ONLY"
+    assert binding["allowed_paths"] == [
+        "tmp_agent/brain_v9/core/brain_101_certification_gate_matrix.py",
+        "docs/roadmap/evidence/BRAIN_101_R19_1_CERTIFICATION_GATE_MATRIX.json",
+        "tests/contract/test_r19_1_brain_101_certification_gate_matrix.py",
+    ]
+    assert closeout["implementation_merge"] == "2366867af4ad67941808c4569ae0e4fb704c0bc7"
+    assert all(value is False for value in closeout["runtime_actions"].values())

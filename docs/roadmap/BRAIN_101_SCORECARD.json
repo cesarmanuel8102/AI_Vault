@@ -1341,8 +1341,8 @@
     },
     {
       "id": "R18",
-      "percent": 60,
-      "status": "IN_PROGRESS",
+      "percent": 100,
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "evidence": [
         {
           "claim": "R18.1 establishes a verified no-deploy product and operator experience baseline; runbooks and support remain in R18.2.",
