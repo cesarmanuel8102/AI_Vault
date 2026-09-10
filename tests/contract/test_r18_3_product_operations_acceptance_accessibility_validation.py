@@ -97,8 +97,8 @@ def test_closeout_closes_r18_3_and_jit_binds_only_r19_1_without_deploy():
     r18_score = next(phase for phase in scorecard["phases"] if phase["id"] == "R18")
     assert r18_score["percent"] == 100
     assert r18_score["status"] == "CLOSED_RUNTIME_VERIFIED"
-    active = [item_id for item_id, item in manifest["roadmap_items"].items() if item["status"] == "AUTHORIZED_ACTIVE"]
-    assert active == ["R19.1"]
+    assert closeout["successor"]["roadmap_item"] == "R19.1"
+    assert closeout["successor"]["deployment_mode"] == "NO_DEPLOY"
     binding = manifest["roadmap_items"]["R19.1"]["automation"]
     assert binding["front_id"] == "BRAIN-101-R19-1-CERTIFICATION-GATE-MATRIX-01"
     assert binding["work_branch"] == "control-plane/r19-1-certification-gate-matrix"
