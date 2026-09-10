@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "26c57cdc7c35f64582be88663470a62f289bf79c11b63907d2cc798fb0044ef8",
+  "roadmap_sha256": "162088a52ae4d5d543c792c76269edaccdf6b953da2bd2759bbdad0b12293095",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -5176,7 +5176,7 @@
       }
     },
     "R15.3": {
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "phase": "R15",
       "title": "Paper trading soak and incident evidence",
       "dependencies": [
@@ -5295,7 +5295,7 @@
       }
     },
     "R16.1": {
-      "status": "PLANNED_UNBOUND",
+      "status": "AUTHORIZED_ACTIVE",
       "phase": "R16",
       "title": "Disabled LiveTradingGate multi-factor design",
       "dependencies": [
@@ -5340,7 +5340,7 @@
       },
       "automation": {
         "jit_binding_required": true,
-        "dispatchable": false,
+        "dispatchable": true,
         "activation_requires": [
           "expected_base_sha",
           "front_id",
@@ -5351,7 +5351,22 @@
           "acceptance",
           "rollback",
           "evidence_path"
-        ]
+        ],
+        "jit_binding_completed": true,
+        "front_id": "BRAIN-101-R16-1-DISABLED-LIVE-TRADING-GATE-DESIGN-01",
+        "work_branch": "control-plane/r16-1-disabled-live-trading-gate-design",
+        "executor": "codex_control_plane",
+        "risk": "CRITICAL",
+        "domain": "live_trading_gate",
+        "deployment_mode": "NO_DEPLOY",
+        "live_trading_enabled": false,
+        "real_money_enabled": false,
+        "allowed_paths": ["tmp_agent/brain_v9/core/live_trading_gate_design.py", "docs/roadmap/evidence/BRAIN_101_R16_1_DISABLED_LIVE_TRADING_GATE_DESIGN.json", "tests/contract/test_r16_1_disabled_live_trading_gate_design.py"],
+        "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+        "test_commands": ["python -m pytest -q tests/contract/test_r16_1_disabled_live_trading_gate_design.py", "git diff --check"],
+        "acceptance": ["Prove live trading and real money remain disabled", "Reject broker, network, runtime, scheduler, live-trading, and real-money effects"],
+        "rollback": ["Record deterministic disabled-gate rollback evidence without external mutation"],
+        "evidence_path": "docs/roadmap/evidence/BRAIN_101_R16_1_DISABLED_LIVE_TRADING_GATE_DESIGN.json"
       }
     },
     "R16.2": {
