@@ -1548,3 +1548,10 @@ The backlog covers Agent V2 runtime convergence; governed memory; visual trace a
 - Evidence: `docs/roadmap/evidence/BRAIN_101_R15_1_PAPER_BROKER_MARKET_DATA_LIFECYCLE_CLOSEOUT.json`; deterministic simulated lifecycle receipts only.
 - Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no deployment, installation, scheduler activation, market-data, broker, provider, network, runtime, order, canonical sync, live trading, real money, or auto-merge occurred.
 - Status: R15.1 is `CLOSED_RUNTIME_VERIFIED`; sole successor R15.2 is `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` for simulated portfolio, compliance, risk, audit, and rollback receipts.
+
+## BRAIN-101 R15.2 - Paper Portfolio Compliance Risk Integration Closeout (2026-09-10)
+
+- Controller: `CODEX_GOVERNED_CONTROLLER`; source `9157436da6db0a71bef91b005f4a8ad808859d87`, merged as `0b06d18ab6f043c778be3b992fb9ce4313ce01fc` through PR #363.
+- Evidence: `docs/roadmap/evidence/BRAIN_101_R15_2_PAPER_PORTFOLIO_COMPLIANCE_RISK_INTEGRATION_CLOSEOUT.json`; deterministic paper-only portfolio, compliance, risk, audit, and rollback receipts only.
+- Verification level: `CODE_AND_CI_VERIFIED_NO_DEPLOY`; no deployment, installation, scheduler activation, broker, provider, network, runtime, order, canonical sync, live trading, real money, or auto-merge occurred.
+- Status: R15.2 is `CLOSED_RUNTIME_VERIFIED`; sole successor R15.3 is `AUTHORIZED_ACTIVE`, JIT-bound `NO_DEPLOY` for deterministic paper soak and incident evidence.
