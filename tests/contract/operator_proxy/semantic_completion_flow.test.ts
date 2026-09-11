@@ -410,6 +410,14 @@ function fileAtBus(files:Record<string,string>,options?:{throwOnMissing?:boolean
   return {bus,calls:()=>calls};
 }
 
+/** Canonical semantic registry mapping the item to its authoritative paths. */
+const semanticRegistryPath="docs/roadmap/semantic/semantic_registry.json";
+const canonicalRegistry=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",roadmap_items:{[parentSpec.roadmap_item_id]:{requirements_path:requirementsPath,evidence_path:evidencePath}}});
+/** fileAtBus with the canonical registry pre-seeded (the default production case). */
+function registryFileAtBus(files:Record<string,string>){
+  return fileAtBus({[semanticRegistryPath]:canonicalRegistry,...files});
+}
+
 function productionEffectsWithBus(bus:any){
   const root=mkdtempSync(join(tmpdir(),"sem-prod-"));
   const boundary:any={assert:()=>{},bind:()=>{}};
@@ -419,7 +427,7 @@ function productionEffectsWithBus(bus:any){
 test("production resolver reads requirements and evidence at the exact bound merge SHA",()=>{
   const merge="f".repeat(40);
   const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]);
-  const {bus,calls}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
+  const {bus,calls}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   const decision=effects.resolveSemanticCompletion(parentSpec,merge);
   assert.equal(decision.decision,"PASS");
@@ -434,7 +442,7 @@ test("production resolver reads requirements and evidence at the exact bound mer
 test("production resolver does not require an externally bound semantic source",()=>{
   const merge="f".repeat(40);
   const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]);
-  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
+  const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   // No bindSemanticSource call: production must resolve canonically by itself.
   const decision=effects.resolveSemanticCompletion(parentSpec,merge);
@@ -444,7 +452,7 @@ test("production resolver does not require an externally bound semantic source",
 test("production resolver rejects caller-supplied artifact bytes by resolving from Git only",()=>{
   const merge="f".repeat(40);
   const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]);
-  const {bus,calls}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:"tampered-by-attacker"});
+  const {bus,calls}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:"tampered-by-attacker"});
   const effects=productionEffectsWithBus(bus);
   const decision=effects.resolveSemanticCompletion(parentSpec,merge);
   assert.equal(decision.decision,"BLOCK");
@@ -457,7 +465,7 @@ test("production resolver fails closed when canonical bytes are missing",()=>{
   for(const missing of [requirementsPath,evidencePath,artifactPath]){
     const files:Record<string,string>={[requirementsPath]:canonicalRequirementsJson,[evidencePath]:canonicalEvidenceJson,[artifactPath]:artifact};
     delete files[missing];
-    const {bus}=fileAtBus(files);
+    const {bus}=registryFileAtBus(files);
     const effects=productionEffectsWithBus(bus);
     assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic resolution failed/,missing);
   }
@@ -467,7 +475,7 @@ test("production resolver binds source_sha to the bound lifecycle merge SHA",()=
   const merge="f".repeat(40);
   // Evidence claims SHA "b" — stale against the bound merge SHA "f".
   const staleEvidence=JSON.stringify([{...canonicalEvidence,source_sha:"b".repeat(40),certified_implementation_sha:"b".repeat(40)}]);
-  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:staleEvidence,[artifactPath]:artifact});
+  const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:staleEvidence,[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   const decision=effects.resolveSemanticCompletion(parentSpec,merge);
   assert.equal(decision.decision,"BLOCK");
@@ -476,7 +484,7 @@ test("production resolver binds source_sha to the bound lifecycle merge SHA",()=
 
 test("production resolver never rewrites evidence SHA values",()=>{
   const merge="f".repeat(40);
-  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:canonicalEvidenceJson,[artifactPath]:artifact});
+  const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:canonicalEvidenceJson,[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   // Valid case: evidence SHA "a" == merge SHA "a"? No — evidence.source_sha is "a".repeat(40)
   // and the bound merge is "f".repeat(40); a mismatch must BLOCK (not be rewritten to PASS).
@@ -490,7 +498,7 @@ test("production resolver never rewrites evidence SHA values",()=>{
 test("production resolver accepts evidence whose SHA equals the bound merge SHA",()=>{
   const merge="f".repeat(40);
   const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]);
-  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
+  const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   const decision=effects.resolveSemanticCompletion(parentSpec,merge);
   assert.equal(decision.decision,"PASS");
@@ -503,7 +511,7 @@ test("NONCANONICAL_OBSERVED_AT_REJECTED at the trust boundary",()=>{
   for(const bad of ["September 10, 2026","09/10/2026","2026-09-10T00:00:00+02:00","2026-09-10 00:00:00Z","2026-09-10T00:00Z","2026-13-45T99:99:99.999Z","2026-02-30T00:00:00.000Z"]){
     const merge="f".repeat(40);
     const badEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge,observed_at_utc:bad}]);
-    const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:badEvidence,[artifactPath]:artifact});
+    const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:badEvidence,[artifactPath]:artifact});
     const effects=productionEffectsWithBus(bus);
     assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/not canonical UTC timestamp/,bad);
   }
@@ -514,7 +522,7 @@ test("NONCANONICAL_AUTHORIZED_AT_REJECTED at the trust boundary",()=>{
   const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]);
   const auth=JSON.stringify([{authorization_id:"AUTH-1",requirement_id:authoritativeRequirement.requirement_id,authorization_source_sha:sha("owner authorization"),authorized_by:"owner",scope:"BR1",authorized_at_utc:"09/10/2026"}]);
   // The evidence JSON needs a deferments+authorizations structure: pack both files.
-  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
+  const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   // Resolve through the exported trust-boundary function with a hostile source.
   const hostileSource=trustedSource();
@@ -525,7 +533,7 @@ test("NONCANONICAL_AUTHORIZED_AT_REJECTED at the trust boundary",()=>{
 test("CANONICAL_ALL_TIMESTAMPS_ACCEPTED at the trust boundary",()=>{
   const merge="f".repeat(40);
   const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge,observed_at_utc:"2026-09-10T00:00:00.000Z"}]);
-  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
+  const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   const decision=effects.resolveSemanticCompletion(parentSpec,merge);
   assert.equal(decision.decision,"PASS");
@@ -542,7 +550,7 @@ test("closeout parent evidence carries semantic_decision_sha256 for a semantic-b
   const decisionId=stableDecisionId(decisionKey);
   ledger.record({schema_version:2,decision_key:decisionKey,decision_id:decisionId,authorization_id:parentSpec.authorization_id,repository:parentSpec.repository,issue:77,pr:78,base_sha:parentSpec.expected_base_sha,head_sha:candidate,roadmap_id:parentSpec.roadmap_id,roadmap_item_id:parentSpec.roadmap_item_id,risk:"LOW",deterministic_gate:"PASS",codex_review:"PASS",review_findings_count:0,review_consistent:true,policy_decision:"APPROVE",allowed_action:"MERGE",policy_sha256:POLICY_SHA256,evidence_sha256:"e".repeat(64),created_utc:"2026-09-10T00:00:00.000Z"} as any);
   ledger.ensureConsumed(ledger.findByKey(decisionKey)!);
-  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
   const effects=new ProductionEffects(bus,ledger,root,root,{assert:()=>{},bind:()=>{}} as any);
   const semanticDecision=effects.resolveSemanticCompletion(parentSpec,merge);
   effects.bindLifecycle(parentSpec,{schema_version:1,front_id:parentSpec.front_id!,roadmap_item_id:parentSpec.roadmap_item_id,state:"CLOSEOUT_PENDING",issue:77,pr:78,base_sha:parentSpec.expected_base_sha,head_sha:merge,builder_session:"builder-parent",reviewer_session:"reviewer-parent",decision_id:decisionId,repair_cycles:0,deployment_mode:"DOCUMENTATION_CLOSEOUT",completed_effects:["issue:77",`build:${candidate}`,`merge:${merge}`,`semantic_completion:${semanticDecision.decision_artifact_sha256}`],updated_utc:"2026-09-10T00:00:00.000Z"});
@@ -570,4 +578,184 @@ test("closeout parent evidence fails closed with zero or conflicting semantic re
   store.save(conflicting);
   effects.bindLifecycle(parentSpec,conflicting);
   assert.throws(()=>(effects as any).closeoutParentEvidence(parentSpec,merge),/closeout parent semantic receipts conflict/);
+});
+
+// ---------------------------------------------------------------------------
+// FINAL REMEDIATION P1-1: canonical registry binding — the caller may name the
+// item but may never choose the authoritative registry paths.
+// ---------------------------------------------------------------------------
+
+test("hostile requirements_path substitution is rejected",()=>{
+  const merge="f".repeat(40);
+  const hostile={...parentSpec,semantic_completion:{requirements_path:"attacker/requirements.json",evidence_path:evidencePath}};
+  const {bus}=fileAtBus({[semanticRegistryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact,["attacker/requirements.json"]:JSON.stringify([{...authoritativeRequirement,minimum_evidence_level:"L0_PRESENCE"}])});
+  const effects=productionEffectsWithBus(bus);
+  assert.throws(()=>effects.resolveSemanticCompletion(hostile,merge),/SEMANTIC_CANONICAL_BINDING_MISMATCH|canonical semantic registry/);
+});
+
+test("hostile evidence_path substitution is rejected",()=>{
+  const merge="f".repeat(40);
+  const hostile={...parentSpec,semantic_completion:{requirements_path:requirementsPath,evidence_path:"attacker/evidence.json"}};
+  const {bus}=fileAtBus({[semanticRegistryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact,["attacker/evidence.json"]:JSON.stringify([{...canonicalEvidence,evidence_level:"L0_PRESENCE"}])});
+  const effects=productionEffectsWithBus(bus);
+  assert.throws(()=>effects.resolveSemanticCompletion(hostile,merge),/SEMANTIC_CANONICAL_BINDING_MISMATCH|canonical semantic registry/);
+});
+
+test("alternate weaker registry selected through spec paths is rejected",()=>{
+  const merge="f".repeat(40);
+  // Even if BOTH attacker files exist in the repo at the merge, the spec may
+  // not point at them: the canonical registry mapping is the only authority.
+  const hostile={...parentSpec,semantic_completion:{requirements_path:"attacker/weak-requirements.json",evidence_path:"attacker/weak-evidence.json"}};
+  const {bus}=fileAtBus({[semanticRegistryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact,["attacker/weak-requirements.json"]:JSON.stringify([{...authoritativeRequirement,minimum_evidence_level:"L0_PRESENCE"}]),["attacker/weak-evidence.json"]:JSON.stringify([{...canonicalEvidence,evidence_level:"L0_PRESENCE",source_sha:merge,certified_implementation_sha:merge}])});
+  const effects=productionEffectsWithBus(bus);
+  assert.throws(()=>effects.resolveSemanticCompletion(hostile,merge),/SEMANTIC_CANONICAL_BINDING_MISMATCH|canonical semantic registry/);
+});
+
+test("correct canonical registry mapping passes",()=>{
+  const merge="f".repeat(40);
+  const {bus}=fileAtBus({[semanticRegistryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  const decision=effects.resolveSemanticCompletion(parentSpec,merge);
+  assert.equal(decision.decision,"PASS");
+});
+
+test("unknown roadmap item in the canonical registry fails closed",()=>{
+  const merge="f".repeat(40);
+  const emptyRegistry=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",roadmap_items:{}});
+  const {bus}=fileAtBus({[semanticRegistryPath]:emptyRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
+});
+
+test("missing canonical registry file fails closed",()=>{
+  const merge="f".repeat(40);
+  // NO registry in the fixture — the registry file itself is absent.
+  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
+});
+
+// ---------------------------------------------------------------------------
+// FINAL REMEDIATION P1-2: no runtime source substitution inside ProductionEffects.
+// ---------------------------------------------------------------------------
+test("ProductionEffects exposes no runtime source injection API",()=>{
+  const effects=productionEffectsWithBus(fileAtBus({}).bus);
+  assert.equal("bindSemanticSource" in effects,false,"bindSemanticSource must not exist on the production class");
+  assert.equal((effects as any).semanticSource,undefined,"no injectable semantic source field may remain");
+});
+
+// ---------------------------------------------------------------------------
+// FINAL REMEDIATION P1-3: semantic decision idempotency at CLOSEOUT_PENDING.
+// ---------------------------------------------------------------------------
+function flowFixtureWithResolver(resolver:(spec:ProxySpec,merge:string)=>SemanticCompletionDecisionV1,closeoutResult:()=>"PASS"|"PENDING"){
+  let semanticCalls=0,closeoutCalls=0,nextCalls=0;
+  const effects:AutonomousEffects={
+    bindLifecycle:()=>{},
+    resolveSemanticCompletion:(spec,merge)=>{semanticCalls++;return resolver(spec,merge);},
+    ensureIssue:()=>70,
+    ensureBuild:(_s,_i,session)=>Promise.resolve({pr:71,head_sha:"b".repeat(40),session}),
+    ci:()=>"PASS",
+    review:(_p,head,session)=>({session:`actual-${session}`,output:{verdict:"PASS",head_sha:head,summary:"PASS",findings:[]} as ReviewerOutput}),
+    policy:()=>({outcome:"APPROVE",decision_id:"d".repeat(8)+"-4b3e-4c99-9f2e-1a2b3c4d5e6f"}),
+    ensureMerge:()=>"f".repeat(40),
+    ensureInstall:()=>"PASS",
+    ensureRuntimePilot:()=>"PASS",
+    ensureCloseout:()=>{closeoutCalls++;return Promise.resolve(closeoutResult());},
+    discoverNext:()=>{nextCalls++;},
+  };
+  return {effects,counts:()=>({semanticCalls,closeoutCalls,nextCalls})};
+}
+const fixedDecision={schema_version:1 as const,phase_or_item_id:parentSpec.roadmap_item_id,original_requirement_refs:Object.freeze([authoritativeRequirement.requirement_id]),requirements_total:1,requirements_satisfied:1,requirements_deferred_valid:0,requirements_blocked:0,evidence_refs:Object.freeze(["EVIDENCE-R15-001"]),decision:"PASS" as const,reason_codes:Object.freeze([]),source_sha:"f".repeat(40),evaluated_at_utc:"2026-09-10T00:00:00.000Z",decision_artifact_sha256:"a".repeat(64)};
+
+test("PASS then closeout PENDING retry reuses the receipt and never re-resolves",async()=>{
+  const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"sem-retry-")));
+  const resolverCalls:{hash:string}[]=[];
+  const f=flowFixtureWithResolver(()=>{
+    // Wall-clock drift simulation: each resolution returns a DIFFERENT hash.
+    const hash=sha("hash-"+resolverCalls.length);
+    resolverCalls.push({hash});
+    return {...fixedDecision,decision_artifact_sha256:hash};
+  },()=> "PENDING");
+  const flow=new AutonomousFlow(store,f.effects);
+  // Step manually until the semantic gate has run inside CLOSEOUT_PENDING
+  // (the state then still reports CLOSEOUT_PENDING after a PENDING closeout).
+  let state:LifecycleRecord=await flow.step(parentSpec);
+  for(let i=0;i<40&&state.state!=="BLOCKED"&&(state.state!=="CLOSEOUT_PENDING"||!state.completed_effects.some(e=>e.startsWith("semantic_completion:")));i++)state=await flow.step(parentSpec);
+  assert.equal(state.state,"CLOSEOUT_PENDING");
+  const receiptsAfterFirst=state.completed_effects.filter(e=>e.startsWith("semantic_completion:"));
+  assert.equal(receiptsAfterFirst.length,1);
+  // Retry: wall clock advanced → resolver would return a different hash, but
+  // the flow MUST NOT call it again.
+  state=await flow.step(parentSpec);
+  assert.equal(f.counts().semanticCalls,1,"semantic resolver must be called exactly once");
+  assert.equal(f.counts().closeoutCalls,2,"closeout retried");
+  const receiptsAfterRetry=state.completed_effects.filter(e=>e.startsWith("semantic_completion:"));
+  assert.equal(receiptsAfterRetry.length,1,"exactly one semantic receipt after retry");
+  assert.equal(receiptsAfterRetry[0],receiptsAfterFirst[0],"receipt unchanged after wall-clock drift");
+});
+
+test("closeout eventually PASSes after retries with exactly one receipt",async()=>{
+  const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"sem-retry-pass-")));
+  let pendingCount=0;
+  const f=flowFixtureWithResolver(()=>fixedDecision,()=> ++pendingCount<3?"PENDING":"PASS");
+  const flow=new AutonomousFlow(store,f.effects);
+  let state:LifecycleRecord=await drive(flow,parentSpec);
+  for(let i=0;i<5&&state.state==="CLOSEOUT_PENDING";i++)state=await flow.step(parentSpec);
+  assert.equal(state.state,"TERMINAL_COMPLETED");
+  const receipts=state.completed_effects.filter(e=>e.startsWith("semantic_completion:"));
+  assert.equal(receipts.length,1);
+  assert.equal(f.counts().semanticCalls,1,"resolver called exactly once across all retries");
+});
+
+test("existing single valid receipt skips semantic resolution entirely",async()=>{
+  const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"sem-retry-skip-")));
+  const head="f".repeat(40);
+  // Pre-persist a record already holding a receipt, sitting at CLOSEOUT_PENDING.
+  const seeded=semanticParentRecord(parentSpec);
+  store.save({...seeded,head_sha:head,completed_effects:[...seeded.completed_effects,`semantic_completion:${"c".repeat(64)}`]});
+  let resolverShouldNotBeCalled=false;
+  const f=flowFixtureWithResolver(()=>{if(resolverShouldNotBeCalled)throw new Error("resolver must not be called");return fixedDecision;},()=>"PASS");
+  resolverShouldNotBeCalled=true;
+  const flow=new AutonomousFlow(store,f.effects);
+  const state=await flow.step(parentSpec);
+  assert.equal(state.state,"CLOSEOUT_MERGED");
+  assert.equal(f.counts().semanticCalls,0);
+});
+
+test("multiple distinct pre-existing receipts fail closed before closeout",async()=>{
+  const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"sem-retry-conflict-")));
+  const head="f".repeat(40);
+  const base=semanticParentRecord(parentSpec);
+  store.save({...base,head_sha:head,completed_effects:[...base.completed_effects,`semantic_completion:${"a".repeat(64)}`,`semantic_completion:${"9".repeat(64)}`]});
+  const f=flowFixtureWithResolver(()=>fixedDecision,()=>"PASS");
+  const flow=new AutonomousFlow(store,f.effects);
+  const state=await flow.step(parentSpec);
+  assert.equal(state.state,"BLOCKED");
+  assert.equal(state.last_error,"SEMANTIC_COMPLETION_BLOCK");
+  assert.equal(f.counts().closeoutCalls,0,"no closeout may run on conflicting receipts");
+});
+
+test("malformed pre-existing receipt fails closed",async()=>{
+  const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"sem-retry-malformed-")));
+  const head="f".repeat(40);
+  const base=semanticParentRecord(parentSpec);
+  store.save({...base,head_sha:head,completed_effects:[...base.completed_effects,"semantic_completion:NOT-A-HASH"]});
+  const f=flowFixtureWithResolver(()=>fixedDecision,()=>"PASS");
+  const flow=new AutonomousFlow(store,f.effects);
+  const state=await flow.step(parentSpec);
+  assert.equal(state.state,"BLOCKED");
+  assert.equal(state.last_error,"SEMANTIC_COMPLETION_BLOCK");
+});
+
+test("BLOCK decision persists no receipt and blocks closeout",async()=>{
+  const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"sem-retry-block-")));
+  const blockedDecision={...fixedDecision,decision:"BLOCK" as const,reason_codes:Object.freeze(["INSUFFICIENT_EVIDENCE_LEVEL" as const])};
+  const f=flowFixtureWithResolver(()=>blockedDecision,()=>"PASS");
+  const flow=new AutonomousFlow(store,f.effects);
+  let state:LifecycleRecord=await flow.step(parentSpec);
+  for(let i=0;i<40&&state.state!=="BLOCKED"&&state.state!=="TERMINAL_COMPLETED";i++)state=await flow.step(parentSpec);
+  assert.equal(state.state,"BLOCKED");
+  assert.equal(state.last_error,"SEMANTIC_COMPLETION_BLOCK");
+  assert.equal(state.completed_effects.some(e=>e.startsWith("semantic_completion:")),false);
+  assert.equal(f.counts().closeoutCalls,0);
 });

@@ -118,10 +118,21 @@ export class AutonomousFlow {
       case "RUNTIME_VERIFIED": return this.store.advance(state,"CLOSEOUT_PENDING");
       case "CLOSEOUT_PENDING": {
         if(spec.semantic_completion){
-          if(!this.effects.resolveSemanticCompletion)return this.store.advance(state,"BLOCKED",{last_error:"SEMANTIC_COMPLETION_BLOCK"});
-          const decision=this.effects.resolveSemanticCompletion(spec,state.head_sha!);
-          if(decision.decision!=="PASS")return this.store.advance(state,"BLOCKED",{last_error:"SEMANTIC_COMPLETION_BLOCK"});
-          state=this.store.effect(state,`semantic_completion:${decision.decision_artifact_sha256}`);
+          // Idempotency: at most one authoritative semantic decision receipt
+          // per bound lifecycle. A persisted PASS receipt is REUSED on retry —
+          // the resolver is never re-invoked, so wall-clock drift cannot mint
+          // a second, conflicting decision hash for the same merge.
+          const receipts=state.completed_effects.filter(effect=>effect.startsWith("semantic_completion:")).map(effect=>effect.slice("semantic_completion:".length));
+          if(receipts.length===1){
+            if(!/^[0-9a-f]{64}$/.test(receipts[0]))return this.store.advance(state,"BLOCKED",{last_error:"SEMANTIC_COMPLETION_BLOCK"});
+          }else if(receipts.length>1){
+            return this.store.advance(state,"BLOCKED",{last_error:"SEMANTIC_COMPLETION_BLOCK"});
+          }else{
+            if(!this.effects.resolveSemanticCompletion)return this.store.advance(state,"BLOCKED",{last_error:"SEMANTIC_COMPLETION_BLOCK"});
+            const decision=this.effects.resolveSemanticCompletion(spec,state.head_sha!);
+            if(decision.decision!=="PASS")return this.store.advance(state,"BLOCKED",{last_error:"SEMANTIC_COMPLETION_BLOCK"});
+            state=this.store.effect(state,`semantic_completion:${decision.decision_artifact_sha256}`);
+          }
         }
         const result=await this.effects.ensureCloseout(spec,state.head_sha!);if(result==="PENDING")return state;state=this.store.effect(state,`closeout:${state.roadmap_item_id}`);return this.store.advance(state,"CLOSEOUT_MERGED");
       }

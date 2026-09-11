@@ -163,32 +163,51 @@ export function resolveSemanticInput(spec:ProxySpec,source:SemanticSourceV1):Sem
 /**
  * Canonical Git semantic source: resolves every byte the evaluator consumes
  * from GitHubBus.fileAt(path, merge_sha). This is the productive trust
- * boundary — the caller names the item and merge; the bytes come only from
- * canonical repository state at that exact ref.
+ * boundary — the caller names the item and merge; the authoritative registry
+ * paths come from the canonical semantic registry file keyed by
+ * roadmap_item_id, never from caller-controlled spec path strings.
  */
+const SEMANTIC_REGISTRY_PATH="docs/roadmap/semantic/semantic_registry.json";
 class CanonicalGitSemanticSource implements SemanticSourceV1 {
   constructor(private readonly bus:import("./github_bus.js").GitHubBus,private readonly spec:ProxySpec,private readonly merge:string){}
-  private resolve<T>(path:string,parse:(bytes:string)=>T):T{
+  private fetch(path:string):string{
     let bytes:string;
     try{bytes=this.bus.fileAt(path,this.merge);}catch{throw new Error(`canonical semantic resolution failed: ${path}@${this.merge}`);}
     if(typeof bytes!=="string"||bytes.length===0)throw new Error(`canonical semantic resolution failed: ${path}@${this.merge}`);
-    try{return parse(bytes);}catch{throw new Error(`canonical semantic resolution failed: ${path}@${this.merge}`);}
+    return bytes;
+  }
+  private resolve<T>(path:string,parse:(bytes:string)=>T):T{
+    let parsed:T;
+    try{parsed=parse(this.fetch(path));}catch{throw new Error(`canonical semantic resolution failed: ${path}@${this.merge}`);}
+    return parsed;
+  }
+  /**
+   * The authoritative registry mapping for this item. The spec's declared
+   * paths (if present) must equal the canonical mapping — a mismatch means
+   * the caller tried to substitute the authoritative universe.
+   */
+  private registryBinding():{requirements_path:string;evidence_path:string}{
+    let requirements_path:string,evidence_path:string;
+    try{
+      const value=JSON.parse(this.fetch(SEMANTIC_REGISTRY_PATH)) as {schema_version?:number;roadmap_items?:Record<string,{requirements_path?:unknown;evidence_path?:unknown}>};
+      if(!value||value.schema_version!==1||!value.roadmap_items||Object.getPrototypeOf(value.roadmap_items)!==Object.prototype)throw new Error("invalid");
+      const item=value.roadmap_items[this.spec.roadmap_item_id];
+      if(!item||typeof item.requirements_path!=="string"||typeof item.evidence_path!=="string"||!item.requirements_path||!item.evidence_path)throw new Error("invalid");
+      requirements_path=item.requirements_path;evidence_path=item.evidence_path;
+    }catch{throw new Error(`canonical semantic registry invalid: ${SEMANTIC_REGISTRY_PATH}@${this.merge}`);}
+    const declared=this.spec.semantic_completion;
+    if(declared&&(declared.requirements_path!==requirements_path||declared.evidence_path!==evidence_path))throw new Error("SEMANTIC_CANONICAL_BINDING_MISMATCH");
+    return {requirements_path,evidence_path};
   }
   semanticRequirements():SemanticCompletionInputV1["requirements"]{
-    const binding=this.spec.semantic_completion!;
-    return this.resolve(binding.requirements_path,bytes=>JSON.parse(bytes) as SemanticCompletionInputV1["requirements"]);
+    return this.resolve(this.registryBinding().requirements_path,bytes=>JSON.parse(bytes) as SemanticCompletionInputV1["requirements"]);
   }
   semanticEvidence():SemanticCompletionInputV1["evidence"]{
-    const binding=this.spec.semantic_completion!;
-    return this.resolve(binding.evidence_path,bytes=>JSON.parse(bytes) as SemanticCompletionInputV1["evidence"]);
+    return this.resolve(this.registryBinding().evidence_path,bytes=>JSON.parse(bytes) as SemanticCompletionInputV1["evidence"]);
   }
   semanticDeferments():SemanticCompletionInputV1["deferments"]{return [];}
   semanticDefermentAuthorizations():SemanticCompletionInputV1["deferment_authorizations"]{return [];}
-  artifactBytes(_item:string,artifactPath:string):string|undefined{
-    let bytes:string;
-    try{bytes=this.bus.fileAt(artifactPath,this.merge);}catch{throw new Error(`canonical semantic resolution failed: ${artifactPath}@${this.merge}`);}
-    return bytes;
-  }
+  artifactBytes(_item:string,artifactPath:string):string|undefined{return this.fetch(artifactPath);}
   canonicalSourceSha():string{return this.merge;}
   nowIsoUtc():string{return new Date().toISOString();}
 }
@@ -225,20 +244,17 @@ export class ProductionEffects implements AutonomousEffects {
   readonly builder:GovernedBuilder;readonly agentLoopBuilder:AgentLoopBuilderAdapter;
   private store:LifecycleStore;
   private activeSpec?:ProxySpec;private activeState?:import("./types.js").LifecycleRecord;
-  private semanticSource?:SemanticSourceV1;
   constructor(readonly bus:GitHubBus,readonly ledger:Ledger,readonly sourceRepo:string,readonly root:string,readonly boundary:ExternalEffectBoundary,readonly coordinator:LocalCoordinator=failClosedCoordinator){this.bus.setMutationGuard(this.boundary.assert.bind(this.boundary));this.builder=new GovernedBuilder(sourceRepo,join(root,"worktrees"),bus,this.boundary.assert.bind(this.boundary));this.agentLoopBuilder=new AgentLoopBuilderAdapter(bus);this.store=new LifecycleStore(join(root,"lifecycle"));}
-  /** Binds an explicit semantic source. Test seam only — production resolves canonically from Git. */
-  bindSemanticSource(source:SemanticSourceV1){this.semanticSource=source;}
   /**
    * Resolves the semantic decision for a bound spec through the single
-   * evaluator. Production resolves every byte from canonical Git at the exact
-   * bound lifecycle merge SHA; an explicitly bound source (test seam) takes
-   * precedence only when one was installed by the harness.
+   * evaluator. Production ALWAYS resolves every byte from canonical Git at
+   * the exact bound lifecycle merge SHA via the canonical semantic registry;
+   * there is no runtime source substitution path.
    */
   resolveSemanticCompletion(spec:ProxySpec,merge:string):SemanticCompletionDecisionV1{
     if(!spec.semantic_completion)throw new Error("semantic completion not bound to spec");
     if(!SHA1.test(merge))throw new Error("semantic completion bound merge SHA invalid");
-    const source=this.semanticSource??new CanonicalGitSemanticSource(this.bus,spec,merge);
+    const source=new CanonicalGitSemanticSource(this.bus,spec,merge);
     const input=resolveSemanticInput(spec,source);
     return evaluateSemanticCompletion(input,trustedArtifactBytes(spec,input,source));
   }
