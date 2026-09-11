@@ -2,10 +2,12 @@
 
 ## Scope and method
 
-This is a static, read-only source audit at the immutable parent snapshot
-`8c17580fe0d530b4af3f5a5be26dcc947d0a3d71`. It did not run QC, connect to a
-provider or broker, modify strategy code/configuration/datasets, create paper
-orders, read mutable paper results, or choose a strategy winner.
+This is a static, read-only source audit at the immutable audit source snapshot
+`8c17580fe0d530b4af3f5a5be26dcc947d0a3d71`. This snapshot is the evidence
+anchor for the audited bytes; it is not represented as the parent of this PR.
+The audit did not run QC, connect to a provider or broker, modify strategy
+code/configuration/datasets, create paper orders, read mutable paper results,
+or choose a strategy winner.
 
 ```text
 QC_EXECUTED=false
@@ -19,7 +21,7 @@ NO_WINNER_DECLARED=true
 
 | Source | SHA-256 | Role observed | Evidence classification |
 | --- | --- | --- | --- |
-| `tmp_agent/brain_v9/trading/strategy_selector.py` | `e444c6bdfab85406de7ea22d0d5d2e3e187b31adb56be64232637e474a32d1f6` | Deterministic ranking and exploit/explore/probation choice from supplied candidates. | RESEARCH_ONLY |
+| `tmp_agent/brain_v9/trading/strategy_selector.py` | `e444c6bdfab85406de7ea22d0d5d2e3e187b31adb56be64232637e474a32d1f6` | Heuristic ranking and exploit/explore/probation choice from supplied candidates; tied raw-dict fallback is unsafe. | RESEARCH_ONLY |
 | `tmp_agent/brain_v9/trading/active_strategy_catalog.py` | `56eb3bf1ef42b23d68f925f6ee581d1d02555b8ce581c2598801aa3a29c19d0f` | Builds venue/lane catalog snapshots from strategies, scorecards, and venue health. | PARTIAL_EVIDENCE |
 | `tmp_agent/brain_v9/trading/strategy_archive.py` | `eb0186284a6980d692ab5208d6bb4271d763397de3ea11e7e0b283374a73bba3` | Produces archive snapshots from strategy, scorecard, and hypothesis inputs. | ARCHIVED |
 | `tmp_agent/brain_v9/trading/strategy_scorecard.py` | `75d4f219d3d3276bb3c52abc76991319adb63d1f5a48c8154085b6b52e147f0d` | Maintains aggregate, symbol, and context scorecards and freeze/unfreeze states. | PARTIAL_EVIDENCE |
@@ -44,7 +46,7 @@ is evidence of source presence, not a performance claim or approval.
 ## Selector forensic findings
 
 ```text
-SELECTOR_DETERMINISM: DETERMINISTIC_FOR_IDENTICAL_INPUT
+SELECTOR_DETERMINISM: UNSAFE_ON_TIED_UNORDERABLE_CANDIDATES
 REGIME_DETECTION: PRECOMPUTED_INPUT_ONLY
 DOWNSIDE_CORRELATION: NOT_IMPLEMENTED
 PAPER_DEGRADATION: NOT_IMPLEMENTED
@@ -66,10 +68,13 @@ found no portfolio correlation matrix, downside-correlation model, marginal
 CVaR calculation, paper-execution degradation measure, `candidate_spec_sha256`,
 dataset SHA, trial ID, or OOS receipt bound into the ranking input.
 
-The selector has deterministic sorting and eligibility functions for identical
-input lists. `strategy_scorecard.py` can freeze, unfreeze, retire, and force
-unfreeze scorecards; this is not a validated allocation-reduction policy and
-does not establish safe selector-controlled paper capital.
+The selector sorts metric tuples that end with the raw candidate dictionary.
+When all preceding ranking keys tie, Python attempts to compare dictionaries
+and raises `TypeError`; therefore H0 does not claim total deterministic
+selection, even for identical supplied input lists. `strategy_scorecard.py` can
+freeze, unfreeze, retire, and force unfreeze scorecards; this is not a
+validated allocation-reduction policy and does not establish safe
+selector-controlled paper capital.
 
 ## Evidence and runtime inventory limits
 

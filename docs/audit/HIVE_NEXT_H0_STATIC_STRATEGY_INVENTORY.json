@@ -2,6 +2,7 @@
   "schema_version": 1,
   "audit_mode": "STATIC_READ_ONLY",
   "source_commit": "8c17580fe0d530b4af3f5a5be26dcc947d0a3d71",
+  "source_commit_role": "AUDIT_SOURCE_SNAPSHOT_NOT_PR_PARENT",
   "winner_declared": false,
   "candidate_count": 25,
   "candidate_scope": "tmp_agent/strategies/**/main.py",
