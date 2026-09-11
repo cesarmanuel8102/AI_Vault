@@ -193,11 +193,14 @@ export interface SemanticRequirementV1 {
   original_spec_sha256:string; requirement_text_sha256:string;
   minimum_evidence_level:EvidenceLevel; required_evidence_kinds:string[];
   runtime_binding_required:boolean; deferment_policy:"FORBIDDEN"|"EXPLICIT_AUTHORIZATION_REQUIRED";
+  parent_requirement_ids:string[]; required_environments:string[];
+  independent_verifier_required:boolean; minimum_duration_seconds:number; minimum_sample_size:number;
 }
 export interface EvidenceRefV1 {
   evidence_id:string; requirement_id:string; evidence_kind:string; evidence_level:EvidenceLevel;
   source_sha:string; certified_implementation_sha:string; artifact_path:string; artifact_sha256:string;
   environment:string; runtime_binding:string; observed_at_utc:string;
+  producer_id:string; assertion_type:"OBSERVATION"|"BOOLEAN";
   observation:{duration_seconds:number;sample_size:number};
   verifier:{verifier_id:string;source_sha:string;independent:boolean};
 }
@@ -208,6 +211,7 @@ export interface DefermentV1 {
 export interface SemanticCompletionInputV1 {
   schema_version:1; phase_or_item_id:string; source_sha:string; evaluated_at_utc:string;
   requirements:SemanticRequirementV1[]; evidence:EvidenceRefV1[]; deferments:DefermentV1[];
+  expected_requirement_ids:string[];
 }
 export type SemanticCompletionReasonCode =
   | "MISSING_REQUIREMENT" | "MISSING_EVIDENCE" | "INSUFFICIENT_EVIDENCE_LEVEL"
