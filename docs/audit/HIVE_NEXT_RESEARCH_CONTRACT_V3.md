@@ -112,21 +112,40 @@ No single ratio is sufficient.
 ## H3 sleeve admission contract
 
 An H2 survivor must demonstrate incremental portfolio value after costs. H3
-must compare a predeclared eligible portfolio without and with the candidate,
-including:
+must compare the same predeclared eligible portfolio or sleeve under both
+states:
 
 ```text
-standalone net return
-standalone Sharpe and Sortino
-maximum drawdown and tail behavior
-turnover and marginal costs
-capacity and capital competition
-linear and downside correlation
-regime correlation
-marginal return contribution
+PORTFOLIO_OR_SLEEVE_WITHOUT_CANDIDATE
+vs
+PORTFOLIO_OR_SLEEVE_WITH_CANDIDATE
+```
+
+The comparison must include, when economically applicable:
+
+```text
+marginal net return
+delta Sharpe
+delta Sortino
+delta max drawdown
+marginal volatility/risk contribution
+correlation
+downside correlation
+regime interaction
+marginal turnover
+marginal transaction/slippage cost
+capital competition
+capacity impact
 marginal risk contribution
 marginal drawdown contribution
+tail behavior
 ```
+
+Standalone net return, standalone Sharpe, standalone Sortino, standalone CAGR,
+and standalone drawdown may describe the candidate, but cannot substitute for
+marginal sleeve/portfolio contribution. A candidate may be
+`VALIDATED_STANDALONE` and still receive `REJECT` or `KEEP_RESEARCH_ONLY` at
+H3 when it does not improve the sleeve or portfolio after costs and risk.
 
 Only these outcomes are permitted:
 
@@ -137,8 +156,6 @@ ADD_TO_EXISTING_SLEEVE
 CREATE_NEW_SLEEVE_CANDIDATE
 ```
 
-A standalone Sharpe cannot substitute for this comparison.
-
 ## H4 selector SHADOW contract
 
 H4 consumes only H3-admitted sleeves. It is a shadow decision experiment, not
@@ -148,15 +165,22 @@ complexity against explicit baselines:
 ```text
 equal-weight eligible sleeves
 static best validated candidate
+STATIC_ALLOCATION_BASELINE
 simple trend or momentum allocation
 inverse-vol allocation where relevant
 cash/no-position baseline where relevant
 ```
 
+`STATIC_ALLOCATION_BASELINE` means a fixed multi-sleeve or multi-strategy allocation of the same eligible opportunities, with weights declared and frozen before the H4 evaluation period and with no dynamic selector switching during evaluation. It answers whether a dynamic selector adds incremental net
+value over simply holding a reasonable fixed allocation. It is distinct from a
+single static best strategy, equal weight, inverse-vol, and a simple
+trend/momentum rule.
+
 The selector is useful only if it delivers incremental, stable, net value over
-the simplest applicable baseline. It must bind candidate, data, evidence and
-decision versions; it cannot rely on unbound recent PnL or precomputed regime
-labels.
+the simplest applicable baseline and an appropriate
+`STATIC_ALLOCATION_BASELINE` after costs. It must bind candidate, data,
+evidence and decision versions; it cannot rely on unbound recent PnL or
+precomputed regime labels.
 
 ## H5 prospective paper contract
 
