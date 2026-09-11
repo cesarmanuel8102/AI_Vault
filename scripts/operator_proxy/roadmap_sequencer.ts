@@ -78,6 +78,9 @@ function assertCloseoutChild(bus:ExecutableFrontBus,parent:ProxySpec,child:Proxy
   const issue=record.issue,prNumber=record.pr;
   if(record.front_id!==child.front_id||record.roadmap_item_id!==parent.roadmap_item_id||typeof issue!=="number"||!Number.isInteger(issue)||issue<=0||typeof prNumber!=="number"||!Number.isInteger(prNumber)||prNumber<=0)throw new Error("closeout lifecycle binding invalid");
   const parsed=parseIssue(bus.issueSnapshot(issue).body),historical=parsed.spec;
+  // A semantic-bound parent must present its exact PASS receipt to close out:
+  // the child inherits a parent that was authorized by the single evaluator.
+  if(parent.semantic_completion&&!parentRecord.completed_effects.some(effect=>effect.startsWith("semantic_completion:")))throw new Error("closeout parent semantic receipt missing");
   const marker="\n\nPARENT_LIFECYCLE_EVIDENCE_JSON=",objective=historical.objective??"",markerIndex=objective.indexOf(marker),parentEvidence=markerIndex<0?undefined:objective.slice(markerIndex+marker.length);
   let evidence:any;try{evidence=parentEvidence?JSON.parse(parentEvidence):undefined;}catch{throw new Error("closeout parent evidence invalid");}
   const expectedInstruction=`Record this immutable parent lifecycle evidence exactly; do not infer, omit, or replace known values with null: ${parentEvidence}`;

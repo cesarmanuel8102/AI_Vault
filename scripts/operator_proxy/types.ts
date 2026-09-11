@@ -17,7 +17,7 @@ export interface CorrectionPayloadV1 {schema_version:1;requirements:ReadonlyArra
 export interface OwnerAuthorizedPayloadRepairGrant {schema_version:1;authorization_id:string;grant_key:string;owner_principal:string;repository:string;roadmap_id:string;roadmap_item_id:string;front_id:string;issue:number;pr:number;work_branch:string;canonical_base_sha:string;failed_head_sha:string;eligible_failure_class:"CI_FAILED";max_extra_builds:1;correction_payload:CorrectionPayloadV1;correction_payload_sha256:string;owner_comment_id:string;authorization_body_sha256:string}
 export interface OwnerAuthorizedCriticalMerge {schema_version:1;authorization_id:string;critical_merge_key:string;owner_principal:string;owner_comment_id:string;repository:string;issue:number;front_id:string;pr:number;base_branch:string;base_sha:string;head_branch:string;head_sha:string;policy_decision_id:string;policy_decision_key:string;policy_sha256:string;policy_outcome:"ESCALATE_TO_OWNER";ci_evidence_id:string;ci_evidence_sha256:string;review_receipt_id:string;review_receipt_sha256:string;reviewer_model:string;review_verdict:"PASS";review_findings_count:0;risk:"CRITICAL";action:"OWNER_AUTHORIZED_CRITICAL_MERGE";max_uses:1;authorization_body_sha256:string}
 export interface CloseoutMetadata {front_id:string;objective:string;work_branch:string;executor:"agent_loop"|"codex_control_plane";risk:"LOW"|"MEDIUM";allowed_paths:string[];forbidden_paths:string[];acceptance:string[];test_commands:string[];test_profile?:"roadmap-doc"|"test-only";max_executor_cycles?:number}
-export interface ProxySpec {schema_version:1;authorization_id:string;repository:string;roadmap_id:string;roadmap_version:string;roadmap_item_id:string;expected_base_sha:string;executor:"agent_loop"|"codex_control_plane";risk:Risk;allowed_paths:string[];forbidden_paths:string[];acceptance:string[];test_commands:string[];deployment_allowed:false;objective?:string;work_branch?:string;dependencies?:string[];deployment_mode?:DeploymentMode;install_target?:InstallTarget;front_id?:string;roadmap_sha256?:string;manifest_sha256?:string;test_profile?:"pilot"|"roadmap-doc"|"test-only";max_executor_cycles?:number;closeout?:CloseoutMetadata;closeout_only?:boolean}
+export interface ProxySpec {schema_version:1;authorization_id:string;repository:string;roadmap_id:string;roadmap_version:string;roadmap_item_id:string;expected_base_sha:string;executor:"agent_loop"|"codex_control_plane";risk:Risk;allowed_paths:string[];forbidden_paths:string[];acceptance:string[];test_commands:string[];deployment_allowed:false;objective?:string;work_branch?:string;dependencies?:string[];deployment_mode?:DeploymentMode;install_target?:InstallTarget;front_id?:string;roadmap_sha256?:string;manifest_sha256?:string;test_profile?:"pilot"|"roadmap-doc"|"test-only";max_executor_cycles?:number;closeout?:CloseoutMetadata;closeout_only?:boolean;semantic_completion?:SemanticCompletionBindingV1}
 export interface Evidence {issue:number;pr:number;base_sha:string;head_sha:string;head_branch:string;base_branch:string;author:string;state:string;draft:boolean;from_fork:boolean;mergeable:boolean;checks_terminal:boolean;checks_green:boolean;deterministic_gate:"PASS"|"FAIL";changed_files:string[];sensitive_files:string[];review:Review;review_session:string;builder_session:string;item_authorized:boolean;review_p0:boolean;review_p1:boolean;review_findings_count:number;review_consistent:boolean;repair_cycles:number}
 export interface LegacyDecisionV1 {schema_version:1;decision_id:string;authorization_id:string;repository:string;issue:number;pr:number;base_sha:string;head_sha:string;roadmap_id:string;roadmap_item_id:string;risk:Risk;deterministic_gate:"PASS"|"FAIL";codex_review:Review;policy_decision:PolicyDecision;allowed_action:"NONE"|"MARK_READY"|"MERGE"|"REQUEST_REPAIR"|"DEPLOY";policy_sha256:string;evidence_sha256:string;created_utc:string}
 export interface TransitionalKeyedDecisionV1 extends LegacyDecisionV1 {decision_key:string;review_findings_count:number;review_consistent:boolean}
@@ -228,4 +228,31 @@ export interface SemanticCompletionDecisionV1 {
   readonly requirements_total:number; readonly requirements_satisfied:number; readonly requirements_deferred_valid:number; readonly requirements_blocked:number;
   readonly evidence_refs:readonly string[]; readonly decision:"PASS"|"BLOCK"; readonly reason_codes:readonly SemanticCompletionReasonCode[];
   readonly source_sha:string; readonly decision_artifact_sha256:string; readonly evaluated_at_utc:string;
+}
+
+/** Declarative pointer telling ProductionEffects this front is semantic-bound. Paths are not trusted content. */
+export interface SemanticCompletionBindingV1 {
+  requirements_path:string;
+  evidence_path:string;
+}
+
+/**
+ * Trusted canonical source for every byte the semantic evaluator consumes.
+ * The closeout caller can name the target item but can never define the
+ * authoritative requirement universe, evidence, artifact bytes, or source SHA.
+ * Implementations must resolve content from canonical repository/state only.
+ */
+export interface SemanticSourceV1 {
+  /** Authoritative expected requirements for the bound roadmap item. */
+  semanticRequirements(item:string):SemanticRequirementV1[];
+  /** Evidence records discovered from canonical state for the bound item. */
+  semanticEvidence(item:string):EvidenceRefV1[];
+  semanticDeferments(item:string):DefermentV1[];
+  semanticDefermentAuthorizations(item:string):DefermentAuthorizationV1[];
+  /** Trusted canonical artifact bytes for an evidence artifact path. */
+  artifactBytes(item:string,artifactPath:string):string|undefined;
+  /** The canonical source SHA the item's evidence must be bound to. */
+  canonicalSourceSha(item:string):string;
+  /** Canonical UTC evaluation time; strict ISO-8601 UTC form required. */
+  nowIsoUtc():string;
 }

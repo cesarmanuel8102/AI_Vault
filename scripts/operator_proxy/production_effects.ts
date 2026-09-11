@@ -34,6 +34,8 @@ import {OwnerRepairRuntimeSupportLedger,type OwnerRepairRuntimeSupportEvent} fro
 import {discoverOwnerAuthorizedCriticalMerge} from "./owner_critical_merge_authorization.js";
 import {OwnerCriticalMergeReceiptLedger} from "./owner_critical_merge_receipt_ledger.js";
 import {executeOwnerAuthorizedCriticalMerge} from "./owner_critical_merge_executor.js";
+import {evaluateSemanticCompletion} from "./semantic_completion_gate.js";
+import type {SemanticCompletionDecisionV1,SemanticCompletionInputV1,SemanticSourceV1} from "./types.js";
 
 const FRESH_SUBJECT=(front:string)=>`feat(control-plane): complete ${front}`;
 const NEUTRALIZATION_SUBJECT=(front:string)=>`chore(control-plane): neutralize ${front} legacy baseline`;
@@ -95,6 +97,60 @@ const sameCriticalMergeAuthorization=(left:OwnerAuthorizedCriticalMerge,right:Ow
 
 function safe<T>(operation:()=>T):T|undefined{try{return operation();}catch{return undefined;}}
 
+// ---------------------------------------------------------------------------
+// Semantic completion trust boundary (BR1 Task 3).
+//
+// One authority only: the pure evaluator from semantic_completion_gate.ts.
+// This resolver exists purely to construct the evaluator's input from a
+// TRUSTED canonical source (SemanticSourceV1). The closeout caller names the
+// item; it can never define the authoritative requirement universe, inject
+// artifact bytes, supply artifact hashes, or assert a source SHA.
+// ---------------------------------------------------------------------------
+
+/** Strict canonical UTC form: YYYY-MM-DDTHH:mm:ss.sssZ. No offsets, no local time, no human formats. */
+const CANONICAL_UTC_TIMESTAMP=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+function assertCanonicalUtcTimestamp(value:string,label:string):string{
+  if(!CANONICAL_UTC_TIMESTAMP.test(value)||Number.isNaN(Date.parse(value)))throw new Error(`${label} not canonical UTC timestamp: ${value}`);
+  return value;
+}
+
+/**
+ * Builds evaluator input exclusively from the trusted source. The spec only
+ * identifies the item; every consumed byte originates from `source`.
+ * Exported for contract tests of the trust boundary itself.
+ */
+export function resolveSemanticInput(spec:ProxySpec,source:SemanticSourceV1):SemanticCompletionInputV1{
+  if(!spec.semantic_completion)throw new Error("semantic completion not bound to spec");
+  const item=spec.roadmap_item_id;
+  const requirements=source.semanticRequirements(item);
+  const evidence=source.semanticEvidence(item);
+  const deferments=source.semanticDeferments(item);
+  const defermentAuthorizations=source.semanticDefermentAuthorizations(item);
+  const evaluatedAt=assertCanonicalUtcTimestamp(source.nowIsoUtc(),"semantic evaluation time");
+  return {
+    schema_version:1,
+    phase_or_item_id:spec.roadmap_item_id,
+    source_sha:source.canonicalSourceSha(item),
+    evaluated_at_utc:evaluatedAt,
+    requirements:[...requirements],
+    evidence:[...evidence],
+    deferments:[...deferments],
+    expected_requirement_ids:requirements.map(requirement=>requirement.requirement_id),
+    expected_requirements:requirements.map(requirement=>({...requirement})),
+    deferment_authorizations:[...defermentAuthorizations],
+  };
+}
+
+/** Resolves trusted artifact bytes for every evidence record from the canonical source. */
+function trustedArtifactBytes(spec:ProxySpec,input:SemanticCompletionInputV1,source:SemanticSourceV1):ReadonlyMap<string,string>{
+  const bytes=new Map<string,string>();
+  for(const record of input.evidence){
+    const resolved=source.artifactBytes(spec.roadmap_item_id,record.artifact_path);
+    if(resolved!==undefined&&!bytes.has(record.artifact_path))bytes.set(record.artifact_path,resolved);
+  }
+  return bytes;
+}
+
 /** Proves the running installation against its clean, exact canonical mirror before Owner transport. */
 export function verifyOwnerRepairInstalledRuntime(root:string,sourceRepo:string,expectedTip:string):string {
   try {
@@ -116,7 +172,16 @@ export class ProductionEffects implements AutonomousEffects {
   readonly builder:GovernedBuilder;readonly agentLoopBuilder:AgentLoopBuilderAdapter;
   private store:LifecycleStore;
   private activeSpec?:ProxySpec;private activeState?:import("./types.js").LifecycleRecord;
+  private semanticSource?:SemanticSourceV1;
   constructor(readonly bus:GitHubBus,readonly ledger:Ledger,readonly sourceRepo:string,readonly root:string,readonly boundary:ExternalEffectBoundary,readonly coordinator:LocalCoordinator=failClosedCoordinator){this.bus.setMutationGuard(this.boundary.assert.bind(this.boundary));this.builder=new GovernedBuilder(sourceRepo,join(root,"worktrees"),bus,this.boundary.assert.bind(this.boundary));this.agentLoopBuilder=new AgentLoopBuilderAdapter(bus);this.store=new LifecycleStore(join(root,"lifecycle"));}
+  /** Binds the trusted canonical semantic source. Only production wiring (or a test harness) calls this. */
+  bindSemanticSource(source:SemanticSourceV1){this.semanticSource=source;}
+  /** Resolves the semantic decision for a bound spec from trusted canonical inputs through the single evaluator. */
+  resolveSemanticCompletion(spec:ProxySpec):SemanticCompletionDecisionV1{
+    if(!this.semanticSource)throw new Error("semantic completion source unavailable");
+    const input=resolveSemanticInput(spec,this.semanticSource);
+    return evaluateSemanticCompletion(input,trustedArtifactBytes(spec,input,this.semanticSource));
+  }
   bindLifecycle(spec:ProxySpec,state:import("./types.js").LifecycleRecord){this.activeSpec=spec;this.activeState=state;this.boundary.bind(spec,state);}
   ownerRepairRuntimeSha(expectedTip:string):string{return verifyOwnerRepairInstalledRuntime(this.root,this.sourceRepo,expectedTip);}
   private bindObservedBlockedCiHead(spec:ProxySpec,state:LifecycleRecord){

@@ -12,6 +12,12 @@ export interface AutonomousEffects {
   bindLifecycle(spec:ProxySpec,state:LifecycleRecord):void;
   /** Resolves a cryptographically validated effective execution spec after Owner adoption. */
   resolveOwnerPayloadExecutionSpec?(spec:ProxySpec,state:LifecycleRecord):ProxySpec;
+  /**
+   * Resolves the semantic completion decision for a semantic-bound spec from
+   * trusted canonical inputs through the single evaluator. Absent on
+   * non-semantic fronts; a bound spec without this effect fails closed.
+   */
+  resolveSemanticCompletion?(spec:ProxySpec):import("./types.js").SemanticCompletionDecisionV1;
   ensureIssue(spec:ProxySpec):number;
   ensureBuild(spec:ProxySpec,issue:number,session:string,repairCycle:number,previousHead?:string,retryReason?:"BUILDER_FAILURE"):Promise<BuildResult|"PENDING">;
   /** Dedicated Owner path; ordinary BUILDING never calls this operation. */
@@ -109,9 +115,23 @@ export class AutonomousFlow {
       case "RUNTIME_PILOT_PENDING": return this.store.advance(state,"RUNTIME_PILOT_RUNNING");
       case "RUNTIME_PILOT_RUNNING": {const result=this.effects.ensureRuntimePilot(spec,state.head_sha!);if(result==="PENDING")return state;state=this.store.effect(state,`pilot:${state.head_sha}`);return this.store.advance(state,"RUNTIME_VERIFIED");}
       case "RUNTIME_VERIFIED": return this.store.advance(state,"CLOSEOUT_PENDING");
-      case "CLOSEOUT_PENDING": {const result=await this.effects.ensureCloseout(spec,state.head_sha!);if(result==="PENDING")return state;state=this.store.effect(state,`closeout:${state.roadmap_item_id}`);return this.store.advance(state,"CLOSEOUT_MERGED");}
+      case "CLOSEOUT_PENDING": {
+        if(spec.semantic_completion){
+          if(!this.effects.resolveSemanticCompletion)return this.store.advance(state,"BLOCKED",{last_error:"SEMANTIC_COMPLETION_BLOCK"});
+          const decision=this.effects.resolveSemanticCompletion(spec);
+          if(decision.decision!=="PASS")return this.store.advance(state,"BLOCKED",{last_error:"SEMANTIC_COMPLETION_BLOCK"});
+          state=this.store.effect(state,`semantic_completion:${decision.decision_artifact_sha256}`);
+        }
+        const result=await this.effects.ensureCloseout(spec,state.head_sha!);if(result==="PENDING")return state;state=this.store.effect(state,`closeout:${state.roadmap_item_id}`);return this.store.advance(state,"CLOSEOUT_MERGED");
+      }
       case "CLOSEOUT_MERGED": return this.store.advance(state,"TERMINAL_COMPLETED");
-      case "TERMINAL_COMPLETED": this.effects.discoverNext(state.roadmap_item_id); return state;
+      case "TERMINAL_COMPLETED": {
+        if(spec.semantic_completion){
+          const receipt=state.completed_effects.find(effect=>effect.startsWith("semantic_completion:"));
+          if(!receipt)return this.store.advance(state,"BLOCKED",{last_error:"SEMANTIC_COMPLETION_BLOCK"});
+        }
+        this.effects.discoverNext(state.roadmap_item_id); return state;
+      }
       default:return state;
     }
   }
