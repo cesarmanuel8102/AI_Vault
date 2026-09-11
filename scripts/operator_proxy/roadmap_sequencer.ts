@@ -57,11 +57,11 @@ export function sequenceRoadmap(source:SequencerSource):SequencedItem {
   return {base_sha:base,manifest_sha256:manifestHash,spec:validateSpec(spec,true)};
 }
 
-/** Derives the only closeout child permitted by the immutable active item. */
+/** Derives the only closeout child permitted by the immutable active item. The child is never independently semantic-bound: its semantic authority is the parent's PASS receipt bound into its evidence. */
 export function closeoutSpec(parent:ProxySpec):ProxySpec {
   const closeout=parent.closeout;
   if(!closeout||!parent.front_id||!parent.work_branch)throw new Error("active item closeout metadata missing");
-  return validateSpec({...parent,executor:closeout.executor,risk:closeout.risk,allowed_paths:[...closeout.allowed_paths],forbidden_paths:[...closeout.forbidden_paths],acceptance:[...closeout.acceptance],test_commands:[...closeout.test_commands],objective:closeout.objective,work_branch:closeout.work_branch,deployment_mode:"NO_DEPLOY",install_target:undefined,front_id:closeout.front_id,test_profile:closeout.test_profile,max_executor_cycles:closeout.max_executor_cycles,closeout:undefined,closeout_only:true},true);
+  return validateSpec({...parent,executor:closeout.executor,risk:closeout.risk,allowed_paths:[...closeout.allowed_paths],forbidden_paths:[...closeout.forbidden_paths],acceptance:[...closeout.acceptance],test_commands:[...closeout.test_commands],objective:closeout.objective,work_branch:closeout.work_branch,deployment_mode:"NO_DEPLOY",install_target:undefined,front_id:closeout.front_id,test_profile:closeout.test_profile,max_executor_cycles:closeout.max_executor_cycles,closeout:undefined,closeout_only:true,semantic_completion:undefined},true);
 }
 
 const sameStrings=(left:readonly string[],right:readonly string[])=>left.length===right.length&&left.every((value,index)=>value===right[index]);
@@ -78,11 +78,21 @@ function assertCloseoutChild(bus:ExecutableFrontBus,parent:ProxySpec,child:Proxy
   const issue=record.issue,prNumber=record.pr;
   if(record.front_id!==child.front_id||record.roadmap_item_id!==parent.roadmap_item_id||typeof issue!=="number"||!Number.isInteger(issue)||issue<=0||typeof prNumber!=="number"||!Number.isInteger(prNumber)||prNumber<=0)throw new Error("closeout lifecycle binding invalid");
   const parsed=parseIssue(bus.issueSnapshot(issue).body),historical=parsed.spec;
-  // A semantic-bound parent must present its exact PASS receipt to close out:
-  // the child inherits a parent that was authorized by the single evaluator.
-  if(parent.semantic_completion&&!parentRecord.completed_effects.some(effect=>effect.startsWith("semantic_completion:")))throw new Error("closeout parent semantic receipt missing");
   const marker="\n\nPARENT_LIFECYCLE_EVIDENCE_JSON=",objective=historical.objective??"",markerIndex=objective.indexOf(marker),parentEvidence=markerIndex<0?undefined:objective.slice(markerIndex+marker.length);
   let evidence:any;try{evidence=parentEvidence?JSON.parse(parentEvidence):undefined;}catch{throw new Error("closeout parent evidence invalid");}
+  // A semantic-bound parent must present exactly one valid PASS receipt, and
+  // the closeout child must carry the SAME decision hash end-to-end.
+  if(parent.semantic_completion){
+    const receipts=parentRecord.completed_effects.filter(effect=>effect.startsWith("semantic_completion:")).map(effect=>effect.slice("semantic_completion:".length));
+    if(receipts.length===0)throw new Error("closeout parent semantic receipt missing");
+    if(new Set(receipts).size!==1)throw new Error("closeout parent semantic receipts conflict");
+    const receipt=receipts[0];
+    if(!/^[0-9a-f]{64}$/.test(receipt))throw new Error("closeout parent semantic receipt invalid");
+    const childHash=evidence?.semantic_decision_sha256;
+    if(childHash===undefined)throw new Error("closeout child semantic decision hash missing");
+    if(typeof childHash!=="string"||!/^[0-9a-f]{64}$/.test(childHash))throw new Error("closeout child semantic decision hash invalid");
+    if(childHash!==receipt)throw new Error("closeout child semantic decision hash mismatch");
+  }
   const expectedInstruction=`Record this immutable parent lifecycle evidence exactly; do not infer, omit, or replace known values with null: ${parentEvidence}`;
   const parentExact=parentRecord.front_id===parent.front_id&&parentRecord.roadmap_item_id===parent.roadmap_item_id&&parentRecord.state==="CLOSEOUT_PENDING"&&!!parentRecord.issue&&!!parentRecord.pr&&!!parentRecord.head_sha&&!!parentRecord.decision_id&&parentRecord.completed_effects.includes(`merge:${parentRecord.head_sha}`)&&evidence?.schema_version===1&&evidence.parent_front_id===parentRecord.front_id&&evidence.roadmap_id===parent.roadmap_id&&evidence.roadmap_item_id===parent.roadmap_item_id&&evidence.issue===parentRecord.issue&&evidence.pr===parentRecord.pr&&evidence.decision_id===parentRecord.decision_id&&evidence.closeout_base_sha===parentRecord.head_sha&&evidence.merge_commit===parentRecord.head_sha&&evidence.builder_session===parentRecord.builder_session&&evidence.reviewer_session===parentRecord.reviewer_session;
   const exact=parsed.pr===prNumber&&historical.front_id===child.front_id&&historical.closeout_only===true&&historical.repository===parent.repository&&historical.authorization_id===parent.authorization_id&&historical.roadmap_id===parent.roadmap_id&&historical.roadmap_item_id===parent.roadmap_item_id&&historical.work_branch===child.work_branch&&historical.executor===child.executor&&historical.risk===child.risk&&historical.deployment_mode==="NO_DEPLOY"&&sameStrings(historical.allowed_paths,child.allowed_paths)&&sameStrings(historical.forbidden_paths,child.forbidden_paths)&&sameStrings(historical.acceptance.slice(0,child.acceptance.length),child.acceptance)&&historical.acceptance.length===child.acceptance.length+1&&historical.acceptance.at(-1)===expectedInstruction&&historical.objective===`${child.objective!.trim()}${marker}${parentEvidence}`&&sameStrings(historical.test_commands,child.test_commands)&&parentExact;

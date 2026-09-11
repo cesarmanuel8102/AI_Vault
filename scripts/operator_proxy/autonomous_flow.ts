@@ -14,10 +14,11 @@ export interface AutonomousEffects {
   resolveOwnerPayloadExecutionSpec?(spec:ProxySpec,state:LifecycleRecord):ProxySpec;
   /**
    * Resolves the semantic completion decision for a semantic-bound spec from
-   * trusted canonical inputs through the single evaluator. Absent on
-   * non-semantic fronts; a bound spec without this effect fails closed.
+   * trusted canonical inputs (canonical Git at the bound lifecycle merge SHA)
+   * through the single evaluator. Absent on non-semantic fronts; a bound spec
+   * without this effect fails closed.
    */
-  resolveSemanticCompletion?(spec:ProxySpec):import("./types.js").SemanticCompletionDecisionV1;
+  resolveSemanticCompletion?(spec:ProxySpec,merge:string):import("./types.js").SemanticCompletionDecisionV1;
   ensureIssue(spec:ProxySpec):number;
   ensureBuild(spec:ProxySpec,issue:number,session:string,repairCycle:number,previousHead?:string,retryReason?:"BUILDER_FAILURE"):Promise<BuildResult|"PENDING">;
   /** Dedicated Owner path; ordinary BUILDING never calls this operation. */
@@ -118,7 +119,7 @@ export class AutonomousFlow {
       case "CLOSEOUT_PENDING": {
         if(spec.semantic_completion){
           if(!this.effects.resolveSemanticCompletion)return this.store.advance(state,"BLOCKED",{last_error:"SEMANTIC_COMPLETION_BLOCK"});
-          const decision=this.effects.resolveSemanticCompletion(spec);
+          const decision=this.effects.resolveSemanticCompletion(spec,state.head_sha!);
           if(decision.decision!=="PASS")return this.store.advance(state,"BLOCKED",{last_error:"SEMANTIC_COMPLETION_BLOCK"});
           state=this.store.effect(state,`semantic_completion:${decision.decision_artifact_sha256}`);
         }

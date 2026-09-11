@@ -107,16 +107,33 @@ function safe<T>(operation:()=>T):T|undefined{try{return operation();}catch{retu
 // artifact bytes, supply artifact hashes, or assert a source SHA.
 // ---------------------------------------------------------------------------
 
-/** Strict canonical UTC form: YYYY-MM-DDTHH:mm:ss.sssZ. No offsets, no local time, no human formats. */
+/**
+ * Strict canonical UTC form: YYYY-MM-DDTHH:mm:ss.sssZ. No offsets, no local
+ * time, no human formats, no rollover parsing of impossible calendar values.
+ */
 const CANONICAL_UTC_TIMESTAMP=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 function assertCanonicalUtcTimestamp(value:string,label:string):string{
-  if(!CANONICAL_UTC_TIMESTAMP.test(value)||Number.isNaN(Date.parse(value)))throw new Error(`${label} not canonical UTC timestamp: ${value}`);
+  if(typeof value!=="string"||!CANONICAL_UTC_TIMESTAMP.test(value)||Number.isNaN(Date.parse(value)))throw new Error(`${label} not canonical UTC timestamp: ${String(value)}`);
+  // Reject impossible calendar values that the regex shape could still admit
+  // (e.g. 2026-02-30) — Date.parse accepts rollover for some of these.
+  const [datePart,timePart]=value.split("T");
+  const [year,month,day]=datePart.split("-").map(Number);
+  const daysInMonth=new Date(Date.UTC(year,month,0)).getUTCDate();
+  if(month<1||month>12||day<1||day>daysInMonth)throw new Error(`${label} not canonical UTC timestamp: ${value}`);
+  const [hour,minute]=timePart.split(":");
+  if(Number(hour)>23||Number(minute)>59)throw new Error(`${label} not canonical UTC timestamp: ${value}`);
+  const seconds=timePart.split(":")[2].split(".")[0];
+  if(Number(seconds)>59)throw new Error(`${label} not canonical UTC timestamp: ${value}`);
   return value;
 }
+
+/** Strict SHA-1 for the bound merge SHA. */
+const SHA1=/^[0-9a-f]{40}$/;
 
 /**
  * Builds evaluator input exclusively from the trusted source. The spec only
  * identifies the item; every consumed byte originates from `source`.
+ * Every timestamp entering the trusted semantic input must be canonical UTC.
  * Exported for contract tests of the trust boundary itself.
  */
 export function resolveSemanticInput(spec:ProxySpec,source:SemanticSourceV1):SemanticCompletionInputV1{
@@ -127,6 +144,8 @@ export function resolveSemanticInput(spec:ProxySpec,source:SemanticSourceV1):Sem
   const deferments=source.semanticDeferments(item);
   const defermentAuthorizations=source.semanticDefermentAuthorizations(item);
   const evaluatedAt=assertCanonicalUtcTimestamp(source.nowIsoUtc(),"semantic evaluation time");
+  for(const record of evidence)assertCanonicalUtcTimestamp(record.observed_at_utc,"semantic evidence observed_at_utc");
+  for(const authorization of defermentAuthorizations)assertCanonicalUtcTimestamp(authorization.authorized_at_utc,"deferment authorization authorized_at_utc");
   return {
     schema_version:1,
     phase_or_item_id:spec.roadmap_item_id,
@@ -141,12 +160,46 @@ export function resolveSemanticInput(spec:ProxySpec,source:SemanticSourceV1):Sem
   };
 }
 
+/**
+ * Canonical Git semantic source: resolves every byte the evaluator consumes
+ * from GitHubBus.fileAt(path, merge_sha). This is the productive trust
+ * boundary — the caller names the item and merge; the bytes come only from
+ * canonical repository state at that exact ref.
+ */
+class CanonicalGitSemanticSource implements SemanticSourceV1 {
+  constructor(private readonly bus:import("./github_bus.js").GitHubBus,private readonly spec:ProxySpec,private readonly merge:string){}
+  private resolve<T>(path:string,parse:(bytes:string)=>T):T{
+    let bytes:string;
+    try{bytes=this.bus.fileAt(path,this.merge);}catch{throw new Error(`canonical semantic resolution failed: ${path}@${this.merge}`);}
+    if(typeof bytes!=="string"||bytes.length===0)throw new Error(`canonical semantic resolution failed: ${path}@${this.merge}`);
+    try{return parse(bytes);}catch{throw new Error(`canonical semantic resolution failed: ${path}@${this.merge}`);}
+  }
+  semanticRequirements():SemanticCompletionInputV1["requirements"]{
+    const binding=this.spec.semantic_completion!;
+    return this.resolve(binding.requirements_path,bytes=>JSON.parse(bytes) as SemanticCompletionInputV1["requirements"]);
+  }
+  semanticEvidence():SemanticCompletionInputV1["evidence"]{
+    const binding=this.spec.semantic_completion!;
+    return this.resolve(binding.evidence_path,bytes=>JSON.parse(bytes) as SemanticCompletionInputV1["evidence"]);
+  }
+  semanticDeferments():SemanticCompletionInputV1["deferments"]{return [];}
+  semanticDefermentAuthorizations():SemanticCompletionInputV1["deferment_authorizations"]{return [];}
+  artifactBytes(_item:string,artifactPath:string):string|undefined{
+    let bytes:string;
+    try{bytes=this.bus.fileAt(artifactPath,this.merge);}catch{throw new Error(`canonical semantic resolution failed: ${artifactPath}@${this.merge}`);}
+    return bytes;
+  }
+  canonicalSourceSha():string{return this.merge;}
+  nowIsoUtc():string{return new Date().toISOString();}
+}
+
 /** Resolves trusted artifact bytes for every evidence record from the canonical source. */
 function trustedArtifactBytes(spec:ProxySpec,input:SemanticCompletionInputV1,source:SemanticSourceV1):ReadonlyMap<string,string>{
   const bytes=new Map<string,string>();
   for(const record of input.evidence){
     const resolved=source.artifactBytes(spec.roadmap_item_id,record.artifact_path);
-    if(resolved!==undefined&&!bytes.has(record.artifact_path))bytes.set(record.artifact_path,resolved);
+    if(resolved===undefined)throw new Error(`canonical semantic resolution failed: ${record.artifact_path}`);
+    if(!bytes.has(record.artifact_path))bytes.set(record.artifact_path,resolved);
   }
   return bytes;
 }
@@ -174,13 +227,20 @@ export class ProductionEffects implements AutonomousEffects {
   private activeSpec?:ProxySpec;private activeState?:import("./types.js").LifecycleRecord;
   private semanticSource?:SemanticSourceV1;
   constructor(readonly bus:GitHubBus,readonly ledger:Ledger,readonly sourceRepo:string,readonly root:string,readonly boundary:ExternalEffectBoundary,readonly coordinator:LocalCoordinator=failClosedCoordinator){this.bus.setMutationGuard(this.boundary.assert.bind(this.boundary));this.builder=new GovernedBuilder(sourceRepo,join(root,"worktrees"),bus,this.boundary.assert.bind(this.boundary));this.agentLoopBuilder=new AgentLoopBuilderAdapter(bus);this.store=new LifecycleStore(join(root,"lifecycle"));}
-  /** Binds the trusted canonical semantic source. Only production wiring (or a test harness) calls this. */
+  /** Binds an explicit semantic source. Test seam only — production resolves canonically from Git. */
   bindSemanticSource(source:SemanticSourceV1){this.semanticSource=source;}
-  /** Resolves the semantic decision for a bound spec from trusted canonical inputs through the single evaluator. */
-  resolveSemanticCompletion(spec:ProxySpec):SemanticCompletionDecisionV1{
-    if(!this.semanticSource)throw new Error("semantic completion source unavailable");
-    const input=resolveSemanticInput(spec,this.semanticSource);
-    return evaluateSemanticCompletion(input,trustedArtifactBytes(spec,input,this.semanticSource));
+  /**
+   * Resolves the semantic decision for a bound spec through the single
+   * evaluator. Production resolves every byte from canonical Git at the exact
+   * bound lifecycle merge SHA; an explicitly bound source (test seam) takes
+   * precedence only when one was installed by the harness.
+   */
+  resolveSemanticCompletion(spec:ProxySpec,merge:string):SemanticCompletionDecisionV1{
+    if(!spec.semantic_completion)throw new Error("semantic completion not bound to spec");
+    if(!SHA1.test(merge))throw new Error("semantic completion bound merge SHA invalid");
+    const source=this.semanticSource??new CanonicalGitSemanticSource(this.bus,spec,merge);
+    const input=resolveSemanticInput(spec,source);
+    return evaluateSemanticCompletion(input,trustedArtifactBytes(spec,input,source));
   }
   bindLifecycle(spec:ProxySpec,state:import("./types.js").LifecycleRecord){this.activeSpec=spec;this.activeState=state;this.boundary.bind(spec,state);}
   ownerRepairRuntimeSha(expectedTip:string):string{return verifyOwnerRepairInstalledRuntime(this.root,this.sourceRepo,expectedTip);}
@@ -1096,10 +1156,22 @@ export class ProductionEffects implements AutonomousEffects {
       return undefined;
     }
   }
+  /** Resolves the single valid semantic PASS receipt hash from a semantic-bound parent record; fails closed on zero/conflict/malformed. */
+  private semanticReceiptHash(state:import("./types.js").LifecycleRecord):string{
+    const receipts=state.completed_effects.filter(effect=>effect.startsWith("semantic_completion:")).map(effect=>effect.slice("semantic_completion:".length));
+    if(receipts.length===0)throw new Error("closeout parent semantic receipt missing");
+    if(new Set(receipts).size!==1)throw new Error("closeout parent semantic receipts conflict");
+    if(!/^[0-9a-f]{64}$/.test(receipts[0]))throw new Error("closeout parent semantic receipt invalid");
+    return receipts[0];
+  }
   private closeoutParentEvidence(spec:ProxySpec,merge:string){
-    const state=this.activeState;
+    let state=this.activeState;
+    // A semantic-bound parent reloads its fresh persisted record: the semantic
+    // PASS receipt is persisted by the flow after bindLifecycle, so the bound
+    // snapshot may be stale by exactly that effect.
+    if(spec.semantic_completion&&state){const fresh=this.store.load(state.front_id);if(fresh)state=fresh;}
     if(!state||state.front_id!==spec.front_id||state.roadmap_item_id!==spec.roadmap_item_id||state.state!=="CLOSEOUT_PENDING"||state.head_sha!==merge||!state.completed_effects.includes(`merge:${merge}`)||!state.issue||!state.pr)throw new Error("closeout parent lifecycle evidence missing");
-    if(state.merge_reconciliation){const r=state.merge_reconciliation;if(r.source!=="GITHUB_EXTERNALLY_MERGED_PR"||r.issue!==state.issue||r.pr!==state.pr||r.merge_commit_sha!==merge||r.original_base_sha===spec.expected_base_sha||r.original_state_head_sha===r.candidate_head_sha||r.candidate_head_sha===merge||r.reviewer_check!=="review"||state.base_sha!==spec.expected_base_sha||!state.builder_session)throw new Error("external merge closeout evidence mismatch");return {schema_version:1,parent_front_id:state.front_id,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id,issue:state.issue,pr:state.pr,authorization_mode:"EXTERNAL_MERGE_RECONCILED",base_sha:r.original_base_sha,closeout_base_sha:merge,head_sha:r.candidate_head_sha,merge_commit:merge,builder_session:state.builder_session,reviewer_check:r.reviewer_check};}
+    if(state.merge_reconciliation){const r=state.merge_reconciliation;if(r.source!=="GITHUB_EXTERNALLY_MERGED_PR"||r.issue!==state.issue||r.pr!==state.pr||r.merge_commit_sha!==merge||r.original_base_sha===spec.expected_base_sha||r.original_state_head_sha===r.candidate_head_sha||r.candidate_head_sha===merge||r.reviewer_check!=="review"||state.base_sha!==spec.expected_base_sha||!state.builder_session)throw new Error("external merge closeout evidence mismatch");if(spec.semantic_completion)return {...{schema_version:1,parent_front_id:state.front_id,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id,issue:state.issue,pr:state.pr,authorization_mode:"EXTERNAL_MERGE_RECONCILED",base_sha:r.original_base_sha,closeout_base_sha:merge,head_sha:r.candidate_head_sha,merge_commit:merge,builder_session:state.builder_session,reviewer_check:r.reviewer_check},semantic_decision_sha256:this.semanticReceiptHash(state)};return {schema_version:1,parent_front_id:state.front_id,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id,issue:state.issue,pr:state.pr,authorization_mode:"EXTERNAL_MERGE_RECONCILED",base_sha:r.original_base_sha,closeout_base_sha:merge,head_sha:r.candidate_head_sha,merge_commit:merge,builder_session:state.builder_session,reviewer_check:r.reviewer_check};}
     if(!state.builder_session||!state.reviewer_session||!state.decision_id)throw new Error("closeout parent lifecycle evidence missing");
     const decision=this.ledger.load(state.decision_id);
     const baseBound=decision.base_sha===state.base_sha||this.bus.isAncestor(decision.base_sha,state.base_sha);
@@ -1109,8 +1181,9 @@ export class ProductionEffects implements AutonomousEffects {
     if(state.owner_critical_merge&&criticalReceipt?.phase==="MERGED_BOUND")criticalLedger!.assertMergedBoundToConsumedReceipt(state.owner_critical_merge.critical_merge_key,state.owner_critical_merge.consumed_event_sha256,merge);
     const ownerAuthorized="review_findings_count" in decision&&"review_consistent" in decision&&decision.risk==="CRITICAL"&&decision.deterministic_gate==="PASS"&&decision.codex_review==="PASS"&&decision.review_findings_count===0&&decision.review_consistent===true&&decision.policy_decision==="ESCALATE_TO_OWNER"&&decision.allowed_action==="NONE"&&criticalReceipt?.phase==="MERGED_BOUND"&&criticalReceipt.issue===state.issue&&criticalReceipt.pr===state.pr&&criticalReceipt.base_sha===decision.base_sha&&criticalReceipt.head_sha===decision.head_sha&&criticalReceipt.policy_decision_id===decision.decision_id&&criticalReceipt.merge_commit_sha===merge&&this.bus.verifyMerged(state.pr,decision.head_sha,decision.base_sha)===merge;
     if(!common||!policyApproved&&!ownerAuthorized)throw new Error("closeout parent decision evidence mismatch");
+    if(spec.semantic_completion)return {...{schema_version:1,parent_front_id:state.front_id,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id,issue:state.issue,pr:state.pr,decision_id:decision.decision_id,authorization_mode:ownerAuthorized?"OWNER_CONSTITUTIONAL":"POLICY_APPROVED",base_sha:decision.base_sha,closeout_base_sha:merge,head_sha:decision.head_sha,merge_commit:merge,builder_session:state.builder_session,reviewer_session:state.reviewer_session},semantic_decision_sha256:this.semanticReceiptHash(state)};
     return {schema_version:1,parent_front_id:state.front_id,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id,issue:state.issue,pr:state.pr,decision_id:decision.decision_id,authorization_mode:ownerAuthorized?"OWNER_CONSTITUTIONAL":"POLICY_APPROVED",base_sha:decision.base_sha,closeout_base_sha:merge,head_sha:decision.head_sha,merge_commit:merge,builder_session:state.builder_session,reviewer_session:state.reviewer_session};
   }
-  async ensureCloseout(spec:ProxySpec,merge:string){this.boundary.assert("closeout_create",{issue:undefined});if(!spec.closeout)return this.coordinator.closeout(spec,merge);const c=spec.closeout,parentEvidence=safeJson(this.closeoutParentEvidence(spec,merge)),evidenceInstruction=`Record this immutable parent lifecycle evidence exactly; do not infer, omit, or replace known values with null: ${parentEvidence}`;const closeout:ProxySpec={...spec,executor:c.executor,risk:c.risk,allowed_paths:c.allowed_paths,forbidden_paths:c.forbidden_paths,acceptance:[...c.acceptance,evidenceInstruction],test_commands:c.test_commands,objective:`${c.objective.trim()}\n\nPARENT_LIFECYCLE_EVIDENCE_JSON=${parentEvidence}`,work_branch:c.work_branch,deployment_mode:"NO_DEPLOY",install_target:undefined,front_id:c.front_id,test_profile:c.test_profile,max_executor_cycles:c.max_executor_cycles,closeout:undefined,closeout_only:true};const store=new LifecycleStore(join(this.root,"lifecycle"));let activeCloseout=closeout;const enterable=()=>{const current=store.load(closeout.front_id!);if(current?.owner_payload_repair?.effective_base_sha)activeCloseout=this.resolveOwnerPayloadExecutionSpec(activeCloseout,current);if(current&&current.base_sha!==activeCloseout.expected_base_sha){const frozen=this.resolveFrozenOwnerPayloadSpec(closeout,current);if(frozen!==closeout)activeCloseout=frozen;else this.reconcile(activeCloseout,current,store);}return store.load(closeout.front_id!);};enterable();const flow=new AutonomousFlow(store,this);let state=await flow.step(activeCloseout);for(let i=0;i<20;i++){if(["CI_PENDING","BLOCKED","ESCALATED","TERMINAL_COMPLETED"].includes(state.state))break;enterable();state=await flow.step(activeCloseout);}if(state.state==="BLOCKED"||state.state==="ESCALATED")throw new Error(`closeout ${state.state}: ${state.last_error??"unknown"}`);return state.state==="TERMINAL_COMPLETED"?"PASS":"PENDING";}
+  async ensureCloseout(spec:ProxySpec,merge:string){this.boundary.assert("closeout_create",{issue:undefined});if(!spec.closeout)return this.coordinator.closeout(spec,merge);const c=spec.closeout,parentEvidence=safeJson(this.closeoutParentEvidence(spec,merge)),evidenceInstruction=`Record this immutable parent lifecycle evidence exactly; do not infer, omit, or replace known values with null: ${parentEvidence}`;const closeout:ProxySpec={...spec,executor:c.executor,risk:c.risk,allowed_paths:c.allowed_paths,forbidden_paths:c.forbidden_paths,acceptance:[...c.acceptance,evidenceInstruction],test_commands:c.test_commands,objective:`${c.objective.trim()}\n\nPARENT_LIFECYCLE_EVIDENCE_JSON=${parentEvidence}`,work_branch:c.work_branch,deployment_mode:"NO_DEPLOY",install_target:undefined,front_id:c.front_id,test_profile:c.test_profile,max_executor_cycles:c.max_executor_cycles,closeout:undefined,closeout_only:true,semantic_completion:undefined};const store=new LifecycleStore(join(this.root,"lifecycle"));let activeCloseout=closeout;const enterable=()=>{const current=store.load(closeout.front_id!);if(current?.owner_payload_repair?.effective_base_sha)activeCloseout=this.resolveOwnerPayloadExecutionSpec(activeCloseout,current);if(current&&current.base_sha!==activeCloseout.expected_base_sha){const frozen=this.resolveFrozenOwnerPayloadSpec(closeout,current);if(frozen!==closeout)activeCloseout=frozen;else this.reconcile(activeCloseout,current,store);}return store.load(closeout.front_id!);};enterable();const flow=new AutonomousFlow(store,this);let state=await flow.step(activeCloseout);for(let i=0;i<20;i++){if(["CI_PENDING","BLOCKED","ESCALATED","TERMINAL_COMPLETED"].includes(state.state))break;enterable();state=await flow.step(activeCloseout);}if(state.state==="BLOCKED"||state.state==="ESCALATED")throw new Error(`closeout ${state.state}: ${state.last_error??"unknown"}`);return state.state==="TERMINAL_COMPLETED"?"PASS":"PENDING";}
   discoverNext(item:string){this.coordinator.discoverNext(item);}
 }

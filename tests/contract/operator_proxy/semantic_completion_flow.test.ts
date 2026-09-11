@@ -7,9 +7,11 @@ import {join} from "node:path";
 import {AutonomousFlow,newLifecycle,type AutonomousEffects} from "../../../scripts/operator_proxy/autonomous_flow.js";
 import {LifecycleStore} from "../../../scripts/operator_proxy/lifecycle_store.js";
 import {evaluateSemanticCompletion} from "../../../scripts/operator_proxy/semantic_completion_gate.js";
-import {resolveSemanticInput} from "../../../scripts/operator_proxy/production_effects.js";
+import {ProductionEffects,resolveSemanticInput} from "../../../scripts/operator_proxy/production_effects.js";
 import {closeoutSpec,resolveExecutableFront} from "../../../scripts/operator_proxy/roadmap_sequencer.js";
 import {issueBody} from "../../../scripts/operator_proxy/spec_contract.js";
+import {Ledger} from "../../../scripts/operator_proxy/decision_ledger.js";
+import {POLICY_SHA256,stableDecisionId} from "../../../scripts/operator_proxy/policy_engine.js";
 import type {LifecycleRecord,ProxySpec,ReviewerOutput,SemanticCompletionDecisionV1,SemanticCompletionInputV1} from "../../../scripts/operator_proxy/types.js";
 
 const sha=(value:string)=>createHash("sha256").update(value).digest("hex");
@@ -58,7 +60,7 @@ function semanticFixture(source:TrustedSource){
   let issueCalls=0,buildCalls=0,mergeCalls=0,closeoutCalls=0,nextCalls=0,semanticCalls=0;
   const effects:AutonomousEffects={
     bindLifecycle:()=>{},
-    resolveSemanticCompletion:(spec:ProxySpec)=>{semanticCalls++;return productionResolveSemanticCompletion(spec,source);},
+    resolveSemanticCompletion:(spec:ProxySpec,merge:string)=>{semanticCalls++;return productionResolveSemanticCompletion(spec,merge,source);},
     ensureIssue:()=>{issueCalls++;return 70;},
     ensureBuild:(_s,_i,session)=>{buildCalls++;return Promise.resolve({pr:71,head_sha:"b".repeat(40),session});},
     ci:()=>"PASS",
@@ -85,7 +87,7 @@ test("semantic PASS persists its decision hash and reaches terminal with success
   const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"sem-flow-")));
   const state=await drive(new AutonomousFlow(store,f.effects),parentSpec);
   assert.equal(state.state,"TERMINAL_COMPLETED");
-  assert.ok(state.completed_effects.includes(`semantic_completion:${productionResolveSemanticCompletion(parentSpec,trustedSource()).decision_artifact_sha256}`));
+  assert.ok(state.completed_effects.includes(`semantic_completion:${productionResolveSemanticCompletion(parentSpec,"f".repeat(40),trustedSource()).decision_artifact_sha256}`));
   assert.equal(f.counts().closeoutCalls,1);
   await new AutonomousFlow(store,f.effects).step(parentSpec);
   assert.equal(f.counts().nextCalls,1);
@@ -174,14 +176,14 @@ test("caller cannot self-assert expected requirement identities through the spec
 
 test("canonical artifact hash mismatch blocks through the trusted resolver",()=>{
   const source=trustedSource({artifactBytes:"tampered bytes"});
-  const decision=productionResolveSemanticCompletion(parentSpec,source);
+  const decision=productionResolveSemanticCompletion(parentSpec,"f".repeat(40),source);
   assert.equal(decision.decision,"BLOCK");
   assert.deepEqual([...decision.reason_codes],["ARTIFACT_HASH_MISMATCH"]);
 });
 
 test("missing canonical artifact bytes block",()=>{
   const source=trustedSource({artifactBytes:null});
-  const decision=productionResolveSemanticCompletion(parentSpec,source);
+  const decision=productionResolveSemanticCompletion(parentSpec,"f".repeat(40),source);
   assert.equal(decision.decision,"BLOCK");
   assert.ok(decision.reason_codes.includes("ARTIFACT_HASH_MISMATCH"));
 });
@@ -189,7 +191,7 @@ test("missing canonical artifact bytes block",()=>{
 test("stale noncanonical source SHA blocks",()=>{
   const staleSource=trustedSource();
   (staleSource as any).canonicalSourceSha=()=>"b".repeat(40);
-  const decision=productionResolveSemanticCompletion(parentSpec,staleSource);
+  const decision=productionResolveSemanticCompletion(parentSpec,"f".repeat(40),staleSource);
   assert.equal(decision.decision,"BLOCK");
   assert.deepEqual([...decision.reason_codes],["STALE_SOURCE_SHA"]);
 });
@@ -218,9 +220,9 @@ test("canonical UTC timestamps are accepted at the trust boundary",()=>{
 
 test("decision hash is bound and cannot be substituted downstream",()=>{
   const source=trustedSource();
-  const decision=productionResolveSemanticCompletion(parentSpec,source);
+  const decision=productionResolveSemanticCompletion(parentSpec,"f".repeat(40),source);
   const otherSource=trustedSource({evidence:{evidence_level:"L4_SIMULATED_INTEGRATION"}});
-  const other=productionResolveSemanticCompletion(parentSpec,otherSource);
+  const other=productionResolveSemanticCompletion(parentSpec,"f".repeat(40),otherSource);
   assert.notEqual(decision.decision_artifact_sha256,other.decision_artifact_sha256);
   assert.match(decision.decision_artifact_sha256,/^[0-9a-f]{64}$/);
   // The exact decision hash is what the flow persists (see PASS test above).
@@ -242,7 +244,7 @@ function evaluate(input:SemanticCompletionInputV1,source:TrustedSource):Semantic
 }
 
 /** Mirrors the production resolver contract until the real one exists (RED). */
-function productionResolveSemanticCompletion(spec:ProxySpec,source:TrustedSource):SemanticCompletionDecisionV1{
+function productionResolveSemanticCompletion(spec:ProxySpec,merge:string,source:TrustedSource):SemanticCompletionDecisionV1{
   const input=resolveSemanticInput(spec,source);
   const bytes=new Map<string,string>();
   for(const evidence of input.evidence){const resolved=source.artifactBytes();if(resolved!==undefined)bytes.set(evidence.artifact_path,resolved);}
@@ -257,8 +259,8 @@ function semanticParentWithCloseoutSpec():{parent:ProxySpec;child:ProxySpec}{
   const parent:ProxySpec={...parentSpec,closeout:{front_id:"BRAIN-101-R15-SEMANTIC-CLOSEOUT-01",objective:"closeout",work_branch:"control-plane/r15-closeout",executor:"codex_control_plane",risk:"MEDIUM",allowed_paths:["docs/roadmap/"],forbidden_paths:["trading/"],acceptance:["close"],test_commands:["git diff --check"]}};
   return {parent,child:closeoutSpec(parent)};
 }
-function persistedSemanticCloseoutSpec(child:ProxySpec,parentRecord:LifecycleRecord):ProxySpec{
-  const evidence={schema_version:1,parent_front_id:parentRecord.front_id,roadmap_id:"BRAIN-101",roadmap_item_id:parentRecord.roadmap_item_id,issue:parentRecord.issue,pr:parentRecord.pr,decision_id:parentRecord.decision_id,authorization_mode:"POLICY_APPROVED",base_sha:parentRecord.base_sha,closeout_base_sha:parentRecord.head_sha,head_sha:parentRecord.head_sha,merge_commit:parentRecord.head_sha,builder_session:parentRecord.builder_session,reviewer_session:parentRecord.reviewer_session};
+function persistedSemanticCloseoutSpec(child:ProxySpec,parentRecord:LifecycleRecord,semanticHash?:string):ProxySpec{
+  const evidence={schema_version:1,parent_front_id:parentRecord.front_id,roadmap_id:"BRAIN-101",roadmap_item_id:parentRecord.roadmap_item_id,issue:parentRecord.issue,pr:parentRecord.pr,decision_id:parentRecord.decision_id,authorization_mode:"POLICY_APPROVED",base_sha:parentRecord.base_sha,closeout_base_sha:parentRecord.head_sha,head_sha:parentRecord.head_sha,merge_commit:parentRecord.head_sha,builder_session:parentRecord.builder_session,reviewer_session:parentRecord.reviewer_session,...(semanticHash!==undefined?{semantic_decision_sha256:semanticHash}:{})};
   const serialized=JSON.stringify(evidence),instruction=`Record this immutable parent lifecycle evidence exactly; do not infer, omit, or replace known values with null: ${serialized}`;
   return {...child,objective:`${(child.objective??"").trim()}\n\nPARENT_LIFECYCLE_EVIDENCE_JSON=${serialized}`,acceptance:[...child.acceptance,instruction]};
 }
@@ -267,25 +269,101 @@ function closeoutPendingParentRecord(parent:ProxySpec,extraEffects:string[]=[]):
   const head="f".repeat(40);
   return {schema_version:1,front_id:parent.front_id!,roadmap_item_id:parent.roadmap_item_id,state:"CLOSEOUT_PENDING",base_sha:parent.expected_base_sha,head_sha:head,issue:246,pr:247,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:246",`build:${head}`,`merge:${head}`,...extraEffects],builder_session:"parent-builder",reviewer_session:"parent-reviewer",decision_id:"11111111-1111-4111-8111-111111111111",updated_utc:"2026-09-10T00:00:00.000Z"};
 }
-function childBusFixture(child:ProxySpec,parentRecord:LifecycleRecord,childHead:string,childBase="d".repeat(40)){
+function childBusFixture(child:ProxySpec,parentRecord:LifecycleRecord,childHead:string,childBase="d".repeat(40),semanticHash?:string){
   return {
-    issueSnapshot:()=>({body:`${issueBody(persistedSemanticCloseoutSpec(child,parentRecord)).trim()}\n\nOPERATOR_PROXY_PR: 249\n`}),
+    issueSnapshot:()=>({body:`${issueBody(persistedSemanticCloseoutSpec(child,parentRecord,semanticHash)).trim()}\n\nOPERATOR_PROXY_PR: 249\n`}),
     prIdentity:()=>({author:{login:"cesarmanuel8102"},baseRefName:"codex/own-capital-sustainable-return",baseRefOid:childBase,headRefName:child.work_branch,headRefOid:childHead,headRepository:{nameWithOwner:"cesarmanuel8102/AI_Vault"},isCrossRepository:false,isDraft:true,state:"OPEN"}),
     isAncestor:(left:string,right:string)=>left===right,
   };
 }
 
-test("semantic parent admits its closeout child only with the PASS receipt",()=>{
+test("MATCHING_PARENT_AND_CHILD_HASH admits the closeout child",()=>{
   const {parent,child}=semanticParentWithCloseoutSpec();
   const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"sem-child-")));
-  const decision=productionResolveSemanticCompletion(parent,trustedSource());
+  const decision=productionResolveSemanticCompletion(parent,"f".repeat(40),trustedSource());
   const withReceipt=closeoutPendingParentRecord(parent,[`semantic_completion:${decision.decision_artifact_sha256}`]);
   store.save(withReceipt);
   store.save({schema_version:1,front_id:child.front_id!,roadmap_item_id:parent.roadmap_item_id,state:"BUILDING",base_sha:"d".repeat(40),head_sha:"e".repeat(40),issue:248,pr:249,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:248","build:"+"e".repeat(40)],builder_session:"child-builder",updated_utc:"2026-09-10T00:00:00.000Z"});
-  const bus=childBusFixture(child,withReceipt,"e".repeat(40));
+  const bus=childBusFixture(child,withReceipt,"e".repeat(40),"d".repeat(40),decision.decision_artifact_sha256);
   const resolved=resolveExecutableFront(bus,store,parent);
   assert.equal(resolved.source,"NONTERMINAL_CLOSEOUT_CHILD");
   assert.equal(resolved.spec.front_id,child.front_id);
+  // The child must never be independently semantic-bound.
+  assert.equal(resolved.spec.semantic_completion,undefined);
+});
+
+test("MISSING_PARENT_RECEIPT rejects the closeout child",()=>{
+  const {parent,child}=semanticParentWithCloseoutSpec();
+  const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"sem-child-blocked-")));
+  const parentRecord=closeoutPendingParentRecord(parent); // no semantic receipt
+  store.save(parentRecord);
+  store.save({schema_version:1,front_id:child.front_id!,roadmap_item_id:parent.roadmap_item_id,state:"BUILDING",base_sha:"d".repeat(40),head_sha:"e".repeat(40),issue:248,pr:249,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:248","build:"+"e".repeat(40)],builder_session:"child-builder",updated_utc:"2026-09-10T00:00:00.000Z"});
+  const bus=childBusFixture(child,parentRecord,"e".repeat(40),"d".repeat(40),"a".repeat(64));
+  assert.throws(()=>resolveExecutableFront(bus,store,parent),/closeout parent semantic receipt missing/);
+});
+
+test("MISSING_CHILD_HASH rejects the closeout child",()=>{
+  const {parent,child}=semanticParentWithCloseoutSpec();
+  const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"sem-child-nohash-")));
+  const decision=productionResolveSemanticCompletion(parent,"f".repeat(40),trustedSource());
+  const withReceipt=closeoutPendingParentRecord(parent,[`semantic_completion:${decision.decision_artifact_sha256}`]);
+  store.save(withReceipt);
+  store.save({schema_version:1,front_id:child.front_id!,roadmap_item_id:parent.roadmap_item_id,state:"BUILDING",base_sha:"d".repeat(40),head_sha:"e".repeat(40),issue:248,pr:249,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:248","build:"+"e".repeat(40)],builder_session:"child-builder",updated_utc:"2026-09-10T00:00:00.000Z"});
+  const bus=childBusFixture(child,withReceipt,"e".repeat(40)); // no semantic hash in evidence
+  assert.throws(()=>resolveExecutableFront(bus,store,parent),/closeout child semantic decision hash missing/);
+});
+
+test("DIFFERENT_CHILD_HASH rejects the closeout child",()=>{
+  const {parent,child}=semanticParentWithCloseoutSpec();
+  const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"sem-child-diff-")));
+  const decision=productionResolveSemanticCompletion(parent,"f".repeat(40),trustedSource());
+  const withReceipt=closeoutPendingParentRecord(parent,[`semantic_completion:${decision.decision_artifact_sha256}`]);
+  store.save(withReceipt);
+  store.save({schema_version:1,front_id:child.front_id!,roadmap_item_id:parent.roadmap_item_id,state:"BUILDING",base_sha:"d".repeat(40),head_sha:"e".repeat(40),issue:248,pr:249,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:248","build:"+"e".repeat(40)],builder_session:"child-builder",updated_utc:"2026-09-10T00:00:00.000Z"});
+  const differentHash="9".repeat(64);
+  const bus=childBusFixture(child,withReceipt,"e".repeat(40),"d".repeat(40),differentHash);
+  assert.throws(()=>resolveExecutableFront(bus,store,parent),/closeout child semantic decision hash mismatch/);
+});
+
+test("MALFORMED_CHILD_HASH rejects the closeout child",()=>{
+  const {parent,child}=semanticParentWithCloseoutSpec();
+  const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"sem-child-malformed-")));
+  const decision=productionResolveSemanticCompletion(parent,"f".repeat(40),trustedSource());
+  const withReceipt=closeoutPendingParentRecord(parent,[`semantic_completion:${decision.decision_artifact_sha256}`]);
+  store.save(withReceipt);
+  store.save({schema_version:1,front_id:child.front_id!,roadmap_item_id:parent.roadmap_item_id,state:"BUILDING",base_sha:"d".repeat(40),head_sha:"e".repeat(40),issue:248,pr:249,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:248","build:"+"e".repeat(40)],builder_session:"child-builder",updated_utc:"2026-09-10T00:00:00.000Z"});
+  const bus=childBusFixture(child,withReceipt,"e".repeat(40),"d".repeat(40),"NOT-A-VALID-HASH");
+  assert.throws(()=>resolveExecutableFront(bus,store,parent),/closeout child semantic decision hash invalid/);
+});
+
+test("MULTIPLE_CONFLICTING_PARENT_RECEIPTS fail closed",()=>{
+  const {parent,child}=semanticParentWithCloseoutSpec();
+  const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"sem-child-conflict-")));
+  const decision=productionResolveSemanticCompletion(parent,"f".repeat(40),trustedSource());
+  const conflicting=closeoutPendingParentRecord(parent,[`semantic_completion:${decision.decision_artifact_sha256}`,`semantic_completion:${"9".repeat(64)}`]);
+  store.save(conflicting);
+  store.save({schema_version:1,front_id:child.front_id!,roadmap_item_id:parent.roadmap_item_id,state:"BUILDING",base_sha:"d".repeat(40),head_sha:"e".repeat(40),issue:248,pr:249,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:248","build:"+"e".repeat(40)],builder_session:"child-builder",updated_utc:"2026-09-10T00:00:00.000Z"});
+  const bus=childBusFixture(child,conflicting,"e".repeat(40),"d".repeat(40),decision.decision_artifact_sha256);
+  assert.throws(()=>resolveExecutableFront(bus,store,parent),/closeout parent semantic receipts conflict/);
+});
+
+test("closeout child never inherits semantic binding from its parent",()=>{
+  const {parent,child}=semanticParentWithCloseoutSpec();
+  assert.equal(parent.semantic_completion!==undefined,true);
+  assert.equal(child.semantic_completion,undefined,"closeoutSpec must strip semantic_completion from the child");
+  assert.equal(child.closeout_only,true);
+});
+
+test("non-semantic parent closeout child selection is unchanged",()=>{
+  const {parent,child}=semanticParentWithCloseoutSpec();
+  const plain={...parent,semantic_completion:undefined};
+  const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"sem-child-plain-")));
+  const parentRecord=closeoutPendingParentRecord(plain);
+  store.save(parentRecord);
+  store.save({schema_version:1,front_id:child.front_id!,roadmap_item_id:plain.roadmap_item_id,state:"BUILDING",base_sha:"d".repeat(40),head_sha:"e".repeat(40),issue:248,pr:249,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:248","build:"+"e".repeat(40)],builder_session:"child-builder",updated_utc:"2026-09-10T00:00:00.000Z"});
+  const bus=childBusFixture(child,parentRecord,"e".repeat(40));
+  const resolved=resolveExecutableFront(bus,store,plain);
+  assert.equal(resolved.source,"NONTERMINAL_CLOSEOUT_CHILD");
 });
 
 test("semantic parent without a semantic receipt cannot authorize a closeout child",()=>{
@@ -308,4 +386,188 @@ test("non-semantic parent closeout child selection is unchanged",()=>{
   const bus=childBusFixture(child,parentRecord,"e".repeat(40));
   const resolved=resolveExecutableFront(bus,store,plain);
   assert.equal(resolved.source,"NONTERMINAL_CLOSEOUT_CHILD");
+});
+// ---------------------------------------------------------------------------
+// P1-1: PRODUCTION canonical Git resolution via GitHubBus.fileAt(path, merge).
+// The productive resolver must not depend on an externally pre-bound source.
+// ---------------------------------------------------------------------------
+const requirementsPath="docs/roadmap/semantic/requirements.json";
+const evidencePath="docs/roadmap/semantic/evidence.json";
+const canonicalRequirementsJson=JSON.stringify([{...authoritativeRequirement}]);
+const canonicalEvidenceJson=JSON.stringify([{...canonicalEvidence}]);
+
+/** Fake GitHubBus recording exact (path, ref) calls. */
+function fileAtBus(files:Record<string,string>,options?:{throwOnMissing?:boolean}){
+  const calls:{path:string;ref:string}[]=[];
+  const bus:any={
+    setMutationGuard:()=>{},
+    fileAt:(path:string,ref:string)=>{
+      calls.push({path,ref});
+      if(!(path in files)){if(options?.throwOnMissing!==false)throw new Error("not found");return undefined;}
+      return files[path];
+    },
+  };
+  return {bus,calls:()=>calls};
+}
+
+function productionEffectsWithBus(bus:any){
+  const root=mkdtempSync(join(tmpdir(),"sem-prod-"));
+  const boundary:any={assert:()=>{},bind:()=>{}};
+  return new ProductionEffects(bus,new Ledger(join(root,"decisions")),root,root,boundary);
+}
+
+test("production resolver reads requirements and evidence at the exact bound merge SHA",()=>{
+  const merge="f".repeat(40);
+  const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]);
+  const {bus,calls}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  const decision=effects.resolveSemanticCompletion(parentSpec,merge);
+  assert.equal(decision.decision,"PASS");
+  const requirementReads=calls().filter(call=>call.path===requirementsPath);
+  const evidenceReads=calls().filter(call=>call.path===evidencePath);
+  const artifactReads=calls().filter(call=>call.path===artifactPath);
+  assert.equal(requirementReads.length,1);assert.equal(requirementReads[0].ref,merge);
+  assert.equal(evidenceReads.length,1);assert.equal(evidenceReads[0].ref,merge);
+  assert.equal(artifactReads.length,1);assert.equal(artifactReads[0].ref,merge);
+});
+
+test("production resolver does not require an externally bound semantic source",()=>{
+  const merge="f".repeat(40);
+  const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]);
+  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  // No bindSemanticSource call: production must resolve canonically by itself.
+  const decision=effects.resolveSemanticCompletion(parentSpec,merge);
+  assert.equal(decision.decision,"PASS");
+});
+
+test("production resolver rejects caller-supplied artifact bytes by resolving from Git only",()=>{
+  const merge="f".repeat(40);
+  const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]);
+  const {bus,calls}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:"tampered-by-attacker"});
+  const effects=productionEffectsWithBus(bus);
+  const decision=effects.resolveSemanticCompletion(parentSpec,merge);
+  assert.equal(decision.decision,"BLOCK");
+  assert.deepEqual([...decision.reason_codes],["ARTIFACT_HASH_MISMATCH"]);
+  assert.ok(calls().some(call=>call.path===artifactPath&&call.ref===merge));
+});
+
+test("production resolver fails closed when canonical bytes are missing",()=>{
+  const merge="f".repeat(40);
+  for(const missing of [requirementsPath,evidencePath,artifactPath]){
+    const files:Record<string,string>={[requirementsPath]:canonicalRequirementsJson,[evidencePath]:canonicalEvidenceJson,[artifactPath]:artifact};
+    delete files[missing];
+    const {bus}=fileAtBus(files);
+    const effects=productionEffectsWithBus(bus);
+    assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic resolution failed/,missing);
+  }
+});
+
+test("production resolver binds source_sha to the bound lifecycle merge SHA",()=>{
+  const merge="f".repeat(40);
+  // Evidence claims SHA "b" — stale against the bound merge SHA "f".
+  const staleEvidence=JSON.stringify([{...canonicalEvidence,source_sha:"b".repeat(40),certified_implementation_sha:"b".repeat(40)}]);
+  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:staleEvidence,[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  const decision=effects.resolveSemanticCompletion(parentSpec,merge);
+  assert.equal(decision.decision,"BLOCK");
+  assert.deepEqual([...decision.reason_codes],["STALE_SOURCE_SHA"]);
+});
+
+test("production resolver never rewrites evidence SHA values",()=>{
+  const merge="f".repeat(40);
+  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:canonicalEvidenceJson,[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  // Valid case: evidence SHA "a" == merge SHA "a"? No — evidence.source_sha is "a".repeat(40)
+  // and the bound merge is "f".repeat(40); a mismatch must BLOCK (not be rewritten to PASS).
+  const decision=effects.resolveSemanticCompletion(parentSpec,merge);
+  // The canonical fixture's evidence binds source_sha "a" — the merge is "f",
+  // so this must be STALE unless the fixture is rebuilt. This asserts no rewriting.
+  assert.equal(decision.decision,"BLOCK");
+  assert.deepEqual([...decision.reason_codes],["STALE_SOURCE_SHA"]);
+});
+
+test("production resolver accepts evidence whose SHA equals the bound merge SHA",()=>{
+  const merge="f".repeat(40);
+  const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]);
+  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  const decision=effects.resolveSemanticCompletion(parentSpec,merge);
+  assert.equal(decision.decision,"PASS");
+});
+
+// ---------------------------------------------------------------------------
+// P2-1: strict canonical timestamps for EVERY trusted-boundary timestamp.
+// ---------------------------------------------------------------------------
+test("NONCANONICAL_OBSERVED_AT_REJECTED at the trust boundary",()=>{
+  for(const bad of ["September 10, 2026","09/10/2026","2026-09-10T00:00:00+02:00","2026-09-10 00:00:00Z","2026-09-10T00:00Z","2026-13-45T99:99:99.999Z","2026-02-30T00:00:00.000Z"]){
+    const merge="f".repeat(40);
+    const badEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge,observed_at_utc:bad}]);
+    const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:badEvidence,[artifactPath]:artifact});
+    const effects=productionEffectsWithBus(bus);
+    assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/not canonical UTC timestamp/,bad);
+  }
+});
+
+test("NONCANONICAL_AUTHORIZED_AT_REJECTED at the trust boundary",()=>{
+  const merge="f".repeat(40);
+  const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]);
+  const auth=JSON.stringify([{authorization_id:"AUTH-1",requirement_id:authoritativeRequirement.requirement_id,authorization_source_sha:sha("owner authorization"),authorized_by:"owner",scope:"BR1",authorized_at_utc:"09/10/2026"}]);
+  // The evidence JSON needs a deferments+authorizations structure: pack both files.
+  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  // Resolve through the exported trust-boundary function with a hostile source.
+  const hostileSource=trustedSource();
+  (hostileSource as any).semanticDefermentAuthorizations=()=>JSON.parse(auth);
+  assert.throws(()=>resolveSemanticInput(parentSpec,hostileSource),/not canonical UTC timestamp/);
+});
+
+test("CANONICAL_ALL_TIMESTAMPS_ACCEPTED at the trust boundary",()=>{
+  const merge="f".repeat(40);
+  const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge,observed_at_utc:"2026-09-10T00:00:00.000Z"}]);
+  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  const decision=effects.resolveSemanticCompletion(parentSpec,merge);
+  assert.equal(decision.decision,"PASS");
+});
+
+// ---------------------------------------------------------------------------
+// closeoutParentEvidence binds semantic_decision_sha256 (P1-2 end-to-end).
+// ---------------------------------------------------------------------------
+test("closeout parent evidence carries semantic_decision_sha256 for a semantic-bound parent",()=>{
+  const root=mkdtempSync(join(tmpdir(),"sem-evidence-"));
+  const ledger=new Ledger(join(root,"decisions"));
+  const merge="f".repeat(40),candidate="9".repeat(40);
+  const decisionKey=sha("decision-key");
+  const decisionId=stableDecisionId(decisionKey);
+  ledger.record({schema_version:2,decision_key:decisionKey,decision_id:decisionId,authorization_id:parentSpec.authorization_id,repository:parentSpec.repository,issue:77,pr:78,base_sha:parentSpec.expected_base_sha,head_sha:candidate,roadmap_id:parentSpec.roadmap_id,roadmap_item_id:parentSpec.roadmap_item_id,risk:"LOW",deterministic_gate:"PASS",codex_review:"PASS",review_findings_count:0,review_consistent:true,policy_decision:"APPROVE",allowed_action:"MERGE",policy_sha256:POLICY_SHA256,evidence_sha256:"e".repeat(64),created_utc:"2026-09-10T00:00:00.000Z"} as any);
+  ledger.ensureConsumed(ledger.findByKey(decisionKey)!);
+  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const effects=new ProductionEffects(bus,ledger,root,root,{assert:()=>{},bind:()=>{}} as any);
+  const semanticDecision=effects.resolveSemanticCompletion(parentSpec,merge);
+  effects.bindLifecycle(parentSpec,{schema_version:1,front_id:parentSpec.front_id!,roadmap_item_id:parentSpec.roadmap_item_id,state:"CLOSEOUT_PENDING",issue:77,pr:78,base_sha:parentSpec.expected_base_sha,head_sha:merge,builder_session:"builder-parent",reviewer_session:"reviewer-parent",decision_id:decisionId,repair_cycles:0,deployment_mode:"DOCUMENTATION_CLOSEOUT",completed_effects:["issue:77",`build:${candidate}`,`merge:${merge}`,`semantic_completion:${semanticDecision.decision_artifact_sha256}`],updated_utc:"2026-09-10T00:00:00.000Z"});
+  const evidence=(effects as any).closeoutParentEvidence(parentSpec,merge);
+  assert.equal(evidence.semantic_decision_sha256,semanticDecision.decision_artifact_sha256);
+  assert.match(evidence.semantic_decision_sha256,/^[0-9a-f]{64}$/);
+});
+
+test("closeout parent evidence fails closed with zero or conflicting semantic receipts",()=>{
+  const root=mkdtempSync(join(tmpdir(),"sem-evidence-deny-"));
+  const ledger=new Ledger(join(root,"decisions"));
+  const merge="f".repeat(40),candidate="9".repeat(40);
+  const decisionKey=sha("decision-key-deny");
+  const decisionId=stableDecisionId(decisionKey);
+  ledger.record({schema_version:2,decision_key:decisionKey,decision_id:decisionId,authorization_id:parentSpec.authorization_id,repository:parentSpec.repository,issue:77,pr:78,base_sha:parentSpec.expected_base_sha,head_sha:candidate,roadmap_id:parentSpec.roadmap_id,roadmap_item_id:parentSpec.roadmap_item_id,risk:"LOW",deterministic_gate:"PASS",codex_review:"PASS",review_findings_count:0,review_consistent:true,policy_decision:"APPROVE",allowed_action:"MERGE",policy_sha256:POLICY_SHA256,evidence_sha256:"e".repeat(64),created_utc:"2026-09-10T00:00:00.000Z"} as any);
+  ledger.ensureConsumed(ledger.findByKey(decisionKey)!);
+  const {bus}=fileAtBus({});
+  const effects=new ProductionEffects(bus,ledger,root,root,{assert:()=>{},bind:()=>{}} as any);
+  // Zero receipts.
+  effects.bindLifecycle(parentSpec,{schema_version:1,front_id:parentSpec.front_id!,roadmap_item_id:parentSpec.roadmap_item_id,state:"CLOSEOUT_PENDING",issue:77,pr:78,base_sha:parentSpec.expected_base_sha,head_sha:merge,builder_session:"builder-parent",reviewer_session:"reviewer-parent",decision_id:decisionId,repair_cycles:0,deployment_mode:"DOCUMENTATION_CLOSEOUT",completed_effects:["issue:77",`build:${candidate}`,`merge:${merge}`],updated_utc:"2026-09-10T00:00:00.000Z"});
+  assert.throws(()=>(effects as any).closeoutParentEvidence(parentSpec,merge),/closeout parent semantic receipt missing/);
+  // Conflicting receipts.
+  const store=new LifecycleStore(join(root,"lifecycle"));
+  const conflicting={schema_version:1,front_id:parentSpec.front_id!,roadmap_item_id:parentSpec.roadmap_item_id,state:"CLOSEOUT_PENDING",issue:77,pr:78,base_sha:parentSpec.expected_base_sha,head_sha:merge,builder_session:"builder-parent",reviewer_session:"reviewer-parent",decision_id:decisionId,repair_cycles:0,deployment_mode:"DOCUMENTATION_CLOSEOUT",completed_effects:["issue:77",`build:${candidate}`,`merge:${merge}`,`semantic_completion:${"a".repeat(64)}`,`semantic_completion:${"9".repeat(64)}`],updated_utc:"2026-09-10T00:00:00.000Z"} as LifecycleRecord;
+  store.save(conflicting);
+  effects.bindLifecycle(parentSpec,conflicting);
+  assert.throws(()=>(effects as any).closeoutParentEvidence(parentSpec,merge),/closeout parent semantic receipts conflict/);
 });
