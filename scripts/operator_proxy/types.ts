@@ -196,7 +196,7 @@ export interface SemanticRequirementV1 {
 }
 export interface EvidenceRefV1 {
   evidence_id:string; requirement_id:string; evidence_kind:string; evidence_level:EvidenceLevel;
-  source_sha:string; certified_implementation_sha:string; artifact_path:string; artifact_sha256:string; artifact_bytes:string;
+  source_sha:string; certified_implementation_sha:string; artifact_path:string; artifact_sha256:string;
   environment:string; runtime_binding:string; observed_at_utc:string;
   observation:{duration_seconds:number;sample_size:number};
   verifier:{verifier_id:string;source_sha:string;independent:boolean};
@@ -216,8 +216,8 @@ export type SemanticCompletionReasonCode =
   | "SIMULATION_SUBSTITUTION" | "INVALID_DEFERMENT" | "PARENT_REQUIREMENT_UNSATISFIED"
   | "INDEPENDENT_AUDIT_MISSING";
 export interface SemanticCompletionDecisionV1 {
-  schema_version:1; phase_or_item_id:string; original_requirement_refs:string[];
-  requirements_total:number; requirements_satisfied:number; requirements_deferred_valid:number; requirements_blocked:number;
-  evidence_refs:string[]; decision:"PASS"|"BLOCK"; reason_codes:SemanticCompletionReasonCode[];
-  source_sha:string; decision_artifact_sha256:string; evaluated_at_utc:string;
+  readonly schema_version:1; readonly phase_or_item_id:string; readonly original_requirement_refs:readonly string[];
+  readonly requirements_total:number; readonly requirements_satisfied:number; readonly requirements_deferred_valid:number; readonly requirements_blocked:number;
+  readonly evidence_refs:readonly string[]; readonly decision:"PASS"|"BLOCK"; readonly reason_codes:readonly SemanticCompletionReasonCode[];
+  readonly source_sha:string; readonly decision_artifact_sha256:string; readonly evaluated_at_utc:string;
 }

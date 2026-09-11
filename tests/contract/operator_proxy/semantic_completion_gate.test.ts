@@ -19,15 +19,19 @@ function validInput():SemanticCompletionInputV1{
     requirements:[requirement],deferments:[],evidence:[{
       evidence_id:"EVIDENCE-R15-001",requirement_id:requirement.requirement_id,evidence_kind:"RUNTIME_OBSERVATION",
       evidence_level:"L6_RUNTIME",source_sha:sourceSha,certified_implementation_sha:sourceSha,
-      artifact_path:"docs/roadmap/evidence/runtime.json",artifact_sha256:artifactSha,artifact_bytes:artifact,
+      artifact_path:"docs/roadmap/evidence/runtime.json",artifact_sha256:artifactSha,
       environment:"PAPER_RUNTIME",runtime_binding:"paper-runtime:v1",observed_at_utc:"2026-09-10T00:00:00Z",
       observation:{duration_seconds:60,sample_size:1},verifier:{verifier_id:"independent-contract",source_sha:sourceSha,independent:true},
     }],
   };
 }
 
+function verifiedArtifacts():ReadonlyMap<string,string>{
+  return new Map([["docs/roadmap/evidence/runtime.json",artifact]]);
+}
+
 test("SR01 valid bound evidence produces PASS",()=>{
-  const decision=evaluateSemanticCompletion(validInput());
+  const decision=evaluateSemanticCompletion(validInput(),verifiedArtifacts());
   assert.equal(decision.decision,"PASS");
   assert.equal(decision.requirements_total,1);
   assert.equal(decision.requirements_satisfied,1);
@@ -36,11 +40,46 @@ test("SR01 valid bound evidence produces PASS",()=>{
 });
 
 test("rejects unknown input fields",()=>{
-  assert.throws(()=>evaluateSemanticCompletion({...validInput(),unknown:true} as any),/unknown semantic completion field/);
+  assert.throws(()=>evaluateSemanticCompletion({...validInput(),unknown:true} as any,verifiedArtifacts()),/unknown semantic completion field/);
 });
 
 test("rejects duplicate requirement identity",()=>{
   const input=validInput();
   input.requirements.push({...input.requirements[0]});
-  assert.throws(()=>evaluateSemanticCompletion(input),/duplicate semantic requirement/);
+  assert.throws(()=>evaluateSemanticCompletion(input,verifiedArtifacts()),/duplicate semantic requirement/);
+});
+
+test("rejects persisted artifact bytes in an evidence reference",()=>{
+  const input=validInput();
+  Object.assign(input.evidence[0],{artifact_bytes:artifact});
+  assert.throws(()=>evaluateSemanticCompletion(input,verifiedArtifacts()),/unknown semantic evidence field/);
+});
+
+test("rejects non-enumerable persisted artifact bytes in an evidence reference",()=>{
+  const input=validInput();
+  Object.defineProperty(input.evidence[0],"artifact_bytes",{value:artifact});
+  assert.throws(()=>evaluateSemanticCompletion(input,verifiedArtifacts()),/unknown semantic evidence field/);
+});
+
+test("rejects evidence records with an inherited prototype",()=>{
+  const input=validInput();
+  Object.setPrototypeOf(input.evidence[0],{artifact_bytes:artifact});
+  assert.throws(()=>evaluateSemanticCompletion(input,verifiedArtifacts()),/semantic evidence invalid/);
+});
+
+test("rejects symbol-keyed evidence fields",()=>{
+  const input=validInput();
+  Object.assign(input.evidence[0],{[Symbol("artifact_bytes")]:artifact});
+  assert.throws(()=>evaluateSemanticCompletion(input,verifiedArtifacts()),/unknown semantic evidence field/);
+});
+
+test("returns a frozen immutable decision",()=>{
+  const decision=evaluateSemanticCompletion(validInput(),verifiedArtifacts());
+  assert.equal(Object.isFrozen(decision),true);
+  assert.equal(Object.isFrozen(decision.reason_codes),true);
+  assert.equal(Object.isFrozen(decision.original_requirement_refs),true);
+  assert.equal(Object.isFrozen(decision.evidence_refs),true);
+  assert.throws(()=>{(decision as any).decision="BLOCK";},TypeError);
+  assert.throws(()=>{(decision.original_requirement_refs as string[]).push("MUTATION");},TypeError);
+  assert.throws(()=>{(decision.evidence_refs as string[]).push("MUTATION");},TypeError);
 });
