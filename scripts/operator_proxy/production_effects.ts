@@ -182,19 +182,32 @@ class CanonicalGitSemanticSource implements SemanticSourceV1 {
     return parsed;
   }
   /**
-   * The authoritative registry mapping for this item. The spec's declared
-   * paths (if present) must equal the canonical mapping — a mismatch means
-   * the caller tried to substitute the authoritative universe.
+   * The authoritative registry mapping for this item. Identity is bound by
+   * BOTH roadmap_id AND roadmap_item_id; the registry file has a closed
+   * shape; the spec's declared paths (if present) must equal the canonical
+   * mapping — any substitution attempt fails closed.
    */
   private registryBinding():{requirements_path:string;evidence_path:string}{
     let requirements_path:string,evidence_path:string;
     try{
-      const value=JSON.parse(this.fetch(SEMANTIC_REGISTRY_PATH)) as {schema_version?:number;roadmap_items?:Record<string,{requirements_path?:unknown;evidence_path?:unknown}>};
-      if(!value||value.schema_version!==1||!value.roadmap_items||Object.getPrototypeOf(value.roadmap_items)!==Object.prototype)throw new Error("invalid");
-      const item=value.roadmap_items[this.spec.roadmap_item_id];
-      if(!item||typeof item.requirements_path!=="string"||typeof item.evidence_path!=="string"||!item.requirements_path||!item.evidence_path)throw new Error("invalid");
+      const value=JSON.parse(this.fetch(SEMANTIC_REGISTRY_PATH)) as {schema_version?:unknown;roadmap_id?:unknown;roadmap_items?:unknown;extra?:unknown};
+      // Closed top-level shape: exactly the three governed keys.
+      const keys=Object.keys(value);
+      if(keys.length!==3||!keys.includes("schema_version")||!keys.includes("roadmap_id")||!keys.includes("roadmap_items"))throw new Error("invalid shape");
+      if(value.schema_version!==1||typeof value.roadmap_id!=="string"||value.roadmap_id.length===0)throw new Error("invalid schema");
+      if(value.roadmap_id!==this.spec.roadmap_id)throw new Error("identity mismatch");
+      const items=value.roadmap_items as Record<string,unknown>;
+      if(!items||Object.getPrototypeOf(items)!==Object.prototype)throw new Error("invalid items");
+      const item=items[this.spec.roadmap_item_id] as {requirements_path?:unknown;evidence_path?:unknown}|undefined;
+      if(!item||Object.getPrototypeOf(item)!==Object.prototype)throw new Error("missing item");
+      const itemKeys=Object.keys(item);
+      if(itemKeys.length!==2||!itemKeys.includes("requirements_path")||!itemKeys.includes("evidence_path"))throw new Error("invalid item shape");
+      if(typeof item.requirements_path!=="string"||typeof item.evidence_path!=="string"||!item.requirements_path||!item.evidence_path)throw new Error("invalid paths");
       requirements_path=item.requirements_path;evidence_path=item.evidence_path;
-    }catch{throw new Error(`canonical semantic registry invalid: ${SEMANTIC_REGISTRY_PATH}@${this.merge}`);}
+    }catch(error){
+      if(error instanceof Error&&error.message==="identity mismatch")throw new Error("SEMANTIC_CANONICAL_REGISTRY_IDENTITY_MISMATCH");
+      throw new Error(`canonical semantic registry invalid: ${SEMANTIC_REGISTRY_PATH}@${this.merge}`);
+    }
     const declared=this.spec.semantic_completion;
     if(declared&&(declared.requirements_path!==requirements_path||declared.evidence_path!==evidence_path))throw new Error("SEMANTIC_CANONICAL_BINDING_MISMATCH");
     return {requirements_path,evidence_path};

@@ -759,3 +759,114 @@ test("BLOCK decision persists no receipt and blocks closeout",async()=>{
   assert.equal(state.completed_effects.some(e=>e.startsWith("semantic_completion:")),false);
   assert.equal(f.counts().closeoutCalls,0);
 });
+
+// ---------------------------------------------------------------------------
+// FINAL P1-1/P1-2: canonical registry identity binding + closed shape +
+// real-Git integration.
+// ---------------------------------------------------------------------------
+const otherRoadmapRegistry=JSON.stringify({schema_version:1,roadmap_id:"OTHER-ROADMAP",roadmap_items:{[parentSpec.roadmap_item_id]:{requirements_path:requirementsPath,evidence_path:evidencePath}}});
+
+test("REGISTRY wrong roadmap_id with correct item is rejected (cross-roadmap collision)",()=>{
+  const merge="f".repeat(40);
+  const {bus}=fileAtBus({[semanticRegistryPath]:otherRoadmapRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/SEMANTIC_CANONICAL_REGISTRY_IDENTITY_MISMATCH|canonical semantic registry/);
+});
+
+test("REGISTRY correct roadmap_id with wrong item is rejected",()=>{
+  const merge="f".repeat(40);
+  const wrongItemRegistry=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",roadmap_items:{R99:{requirements_path:requirementsPath,evidence_path:evidencePath}}});
+  const {bus}=fileAtBus({[semanticRegistryPath]:wrongItemRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
+});
+
+test("REGISTRY missing roadmap_id is rejected",()=>{
+  const merge="f".repeat(40);
+  const noRoadmapId=JSON.stringify({schema_version:1,roadmap_items:{[parentSpec.roadmap_item_id]:{requirements_path:requirementsPath,evidence_path:evidencePath}}});
+  const {bus}=fileAtBus({[semanticRegistryPath]:noRoadmapId,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
+});
+
+test("REGISTRY wrong schema_version is rejected",()=>{
+  const merge="f".repeat(40);
+  const wrongSchema=JSON.stringify({schema_version:2,roadmap_id:"BRAIN-101",roadmap_items:{[parentSpec.roadmap_item_id]:{requirements_path:requirementsPath,evidence_path:evidencePath}}});
+  const {bus}=fileAtBus({[semanticRegistryPath]:wrongSchema,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
+});
+
+test("REGISTRY empty requirements_path is rejected",()=>{
+  const merge="f".repeat(40);
+  const emptyReq=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",roadmap_items:{[parentSpec.roadmap_item_id]:{requirements_path:"",evidence_path:evidencePath}}});
+  const {bus}=fileAtBus({[semanticRegistryPath]:emptyReq,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
+});
+
+test("REGISTRY empty evidence_path is rejected",()=>{
+  const merge="f".repeat(40);
+  const emptyEv=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",roadmap_items:{[parentSpec.roadmap_item_id]:{requirements_path:requirementsPath,evidence_path:""}}});
+  const {bus}=fileAtBus({[semanticRegistryPath]:emptyEv,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
+});
+
+test("REGISTRY wrong field types are rejected",()=>{
+  const merge="f".repeat(40);
+  const wrongTypes=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",roadmap_items:{[parentSpec.roadmap_item_id]:{requirements_path:42,evidence_path:true}}});
+  const {bus}=fileAtBus({[semanticRegistryPath]:wrongTypes,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
+});
+
+test("REGISTRY unknown extra top-level field is rejected (closed shape)",()=>{
+  const merge="f".repeat(40);
+  const extraField=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",extra:"attacker",roadmap_items:{[parentSpec.roadmap_item_id]:{requirements_path:requirementsPath,evidence_path:evidencePath}}});
+  const {bus}=fileAtBus({[semanticRegistryPath]:extraField,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
+});
+
+test("REGISTRY matching roadmap_id and item with canonical paths passes",()=>{
+  const merge="f".repeat(40);
+  const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const effects=productionEffectsWithBus(bus);
+  const decision=effects.resolveSemanticCompletion(parentSpec,merge);
+  assert.equal(decision.decision,"PASS");
+});
+
+// ---------------------------------------------------------------------------
+// REAL-GIT integration contract: reads the actual committed registry artifact
+// from the repository (no fake fileAt injection).
+// ---------------------------------------------------------------------------
+import {execFileSync} from "node:child_process";
+import {existsSync,readFileSync} from "node:fs";
+
+test("REAL_GIT_REGISTRY the committed canonical registry resolves BRAIN-101/R15 to the expected paths",()=>{
+  // The registry must exist as a tracked worktree artifact.
+  const registryPath="docs/roadmap/semantic/semantic_registry.json";
+  assert.equal(existsSync(registryPath),true,"canonical semantic registry must be a committed repository artifact");
+  const bytes=readFileSync(registryPath,"utf8");
+  // Real committed bytes parse and bind the governed item identity.
+  const registry=JSON.parse(bytes);
+  assert.equal(registry.schema_version,1);
+  assert.equal(registry.roadmap_id,"BRAIN-101");
+  const item=registry.roadmap_items[parentSpec.roadmap_item_id];
+  assert.ok(item,"registry must bind the governed roadmap item");
+  assert.equal(typeof item.requirements_path,"string");
+  assert.equal(typeof item.evidence_path,"string");
+  assert.ok(item.requirements_path.length>0);
+  assert.ok(item.evidence_path.length>0);
+  // The binding must satisfy the spec's declared paths exactly (they came
+  // from the same governed source).
+  assert.equal(item.requirements_path,requirementsPath);
+  assert.equal(item.evidence_path,evidencePath);
+  // The artifact must be tracked by Git (not just a stray worktree file).
+  const tracked=execFileSync("git",["ls-files","--",registryPath],{encoding:"utf8"}).trim();
+  assert.equal(tracked,registryPath,"registry must be tracked in Git");
+  // Closed shape on real bytes: exactly the four governed keys.
+  assert.deepEqual(Object.keys(registry).sort(),["roadmap_id","roadmap_items","schema_version"]);
+  assert.deepEqual(Object.keys(item).sort(),["evidence_path","requirements_path"]);
+});

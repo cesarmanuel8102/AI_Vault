@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_items": {
+    "R15": {
+      "requirements_path": "docs/roadmap/semantic/requirements.json",
+      "evidence_path": "docs/roadmap/semantic/evidence.json"
+    }
+  }
+}
