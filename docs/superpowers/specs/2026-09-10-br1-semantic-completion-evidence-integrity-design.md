@@ -115,4 +115,3 @@ scheduler.
 Hard limits remain `HUMAN_FINAL_AUTHORITY=true`, `AUTO_MERGE=false`,
 `CANONICAL_LOCAL_SYNC=false`, `LIVE_TRADING=false`, `REAL_MONEY=false`, and
 PERSISTENT_AGENT_LOOP=DEFERRED; schedulers disabled.
-
