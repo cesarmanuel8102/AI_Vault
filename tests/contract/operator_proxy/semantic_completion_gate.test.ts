@@ -17,7 +17,7 @@ function validInput():SemanticCompletionInputV1{
     minimum_duration_seconds:60,minimum_sample_size:1,
   };
   return {
-    schema_version:1,phase_or_item_id:"BR1",source_sha:sourceSha,evaluated_at_utc:"2026-09-10T00:00:00Z",expected_requirement_ids:[requirement.requirement_id],
+    schema_version:1,phase_or_item_id:"BR1",source_sha:sourceSha,evaluated_at_utc:"2026-09-10T00:00:00Z",expected_requirement_ids:[requirement.requirement_id],expected_requirements:[{...requirement}],deferment_authorizations:[],
     requirements:[requirement],deferments:[],evidence:[{
       evidence_id:"EVIDENCE-R15-001",requirement_id:requirement.requirement_id,evidence_kind:"RUNTIME_OBSERVATION",
       evidence_level:"L6_RUNTIME",source_sha:sourceSha,certified_implementation_sha:sourceSha,
@@ -33,7 +33,10 @@ function verifiedArtifacts():ReadonlyMap<string,string>{
 }
 
 function reasonFor(mutator:(input:SemanticCompletionInputV1)=>void){
-  const input=validInput();mutator(input);return evaluateSemanticCompletion(input,verifiedArtifacts()).reason_codes;
+  const input=validInput();mutator(input);
+  const decision=evaluateSemanticCompletion(input,verifiedArtifacts());
+  assert.equal(decision.decision,"BLOCK");
+  return decision.reason_codes;
 }
 
 test("SR01 valid bound evidence produces PASS",()=>{
@@ -85,7 +88,8 @@ test("returns a frozen immutable decision",()=>{
   assert.equal(Object.isFrozen(decision.reason_codes),true);
   assert.equal(Object.isFrozen(decision.original_requirement_refs),true);
   assert.equal(Object.isFrozen(decision.evidence_refs),true);
-  assert.throws(()=>{(decision as any).decision="BLOCK";},TypeError);
+  (decision as any).decision="BLOCK";
+  assert.equal(decision.decision,"PASS");
   assert.throws(()=>{(decision.original_requirement_refs as string[]).push("MUTATION");},TypeError);
   assert.throws(()=>{(decision.evidence_refs as string[]).push("MUTATION");},TypeError);
 });
@@ -114,9 +118,101 @@ test("SR10 invalid deferment blocks",()=>{
 });
 
 test("SR11 unsatisfied parent blocks",()=>{
-  assert.deepEqual(reasonFor(input=>{input.requirements[0].parent_requirement_ids=["PARENT"];}),["PARENT_REQUIREMENT_UNSATISFIED"]);
+  assert.deepEqual(reasonFor(input=>{input.requirements[0].parent_requirement_ids=["PARENT"];input.expected_requirements=[{...input.requirements[0]}];}),["PARENT_REQUIREMENT_UNSATISFIED"]);
 });
 
 test("SR16 simulation cannot substitute for required soak",()=>{
-  assert.deepEqual(reasonFor(input=>{input.requirements[0].minimum_evidence_level="L8_SOAK";input.evidence[0].evidence_level="L4_SIMULATED_INTEGRATION";}),["SIMULATION_SUBSTITUTION"]);
+  assert.deepEqual(reasonFor(input=>{input.requirements[0].minimum_evidence_level="L8_SOAK";input.expected_requirements=[{...input.requirements[0]}];input.evidence[0].evidence_level="L4_SIMULATED_INTEGRATION";}),["SIMULATION_SUBSTITUTION"]);
+});
+
+test("blocks a child when its existing parent is blocked",()=>{
+  const input=validInput(),parent={...input.requirements[0],requirement_id:"PARENT",minimum_evidence_level:"L8_SOAK" as const,parent_requirement_ids:[]};
+  input.requirements=[parent,{...input.requirements[0],parent_requirement_ids:[parent.requirement_id]}];
+  input.expected_requirements=input.requirements.map(requirement=>({...requirement}));
+  input.expected_requirement_ids=input.requirements.map(requirement=>requirement.requirement_id);
+  input.evidence[0].requirement_id=parent.requirement_id;input.evidence[0].evidence_level="L4_SIMULATED_INTEGRATION";
+  input.evidence.push({...input.evidence[0],evidence_id:"EVIDENCE-CHILD",requirement_id:"REQ-R15-SOAK-001",evidence_level:"L6_RUNTIME"});
+  const decision=evaluateSemanticCompletion(input,verifiedArtifacts());
+  assert.equal(decision.decision,"BLOCK");assert.ok(decision.reason_codes.includes("PARENT_REQUIREMENT_UNSATISFIED"));
+});
+
+test("rejects a material requirement identity mutation",()=>{
+  const input=validInput();input.requirements[0].original_spec_path="docs/other.md";
+  assert.throws(()=>evaluateSemanticCompletion(input,verifiedArtifacts()),/requirement identity mismatch/);
+});
+
+test("rejects duplicate evidence identifiers",()=>{
+  const input=validInput();input.evidence.push({...input.evidence[0]});
+  assert.throws(()=>evaluateSemanticCompletion(input,verifiedArtifacts()),/duplicate semantic evidence/);
+});
+
+test("valid deferment requires bound authorization and evidence",()=>{
+  const input=validInput();input.evidence=[];input.requirements[0].deferment_policy="EXPLICIT_AUTHORIZATION_REQUIRED";input.expected_requirements=[{...input.requirements[0]}];
+  input.deferments=[{deferment_id:"D1",requirement_id:input.requirements[0].requirement_id,authorization_source:"AUTH-1",reason:"future work",successor_owner:"owner",scope:"BR1",expiration_or_revisit_condition:"next",evidence_refs:["EVIDENCE-R15-001"]}];
+  const decision=evaluateSemanticCompletion(input,verifiedArtifacts());
+  assert.equal(decision.decision,"BLOCK");assert.ok(decision.reason_codes.includes("INVALID_DEFERMENT"));
+});
+
+test("accepts a policy-allowed deferment with bound authorization and evidence",()=>{
+  const input=validInput(),requirement=input.requirements[0];input.evidence=[{...input.evidence[0],evidence_id:"AUTH-E1",requirement_id:"AUTH-RECORD"}];
+  requirement.deferment_policy="EXPLICIT_AUTHORIZATION_REQUIRED";input.expected_requirements=[{...requirement}];
+  input.deferment_authorizations=[{authorization_id:"AUTH-1",requirement_id:requirement.requirement_id,authorization_source_sha:sha("owner authorization"),authorized_by:"owner",scope:"BR1",authorized_at_utc:"2026-09-10T00:00:00Z"}];
+  input.deferments=[{deferment_id:"D1",requirement_id:requirement.requirement_id,authorization_source:"AUTH-1",reason:"deferred by authorization",successor_owner:"owner",scope:"BR1",expiration_or_revisit_condition:"next",evidence_refs:["AUTH-E1"]}];
+  const decision=evaluateSemanticCompletion(input,verifiedArtifacts());
+  assert.equal(decision.decision,"PASS");assert.equal(decision.requirements_deferred_valid,1);
+});
+
+test("rejects duplicate authoritative requirement identities",()=>{
+  const input=validInput();input.expected_requirements.push({...input.expected_requirements[0]});
+  assert.throws(()=>evaluateSemanticCompletion(input,verifiedArtifacts()),/duplicate expected semantic requirement/);
+});
+
+test("rejects a cyclic requirement graph",()=>{
+  const input=validInput(),a={...input.requirements[0],requirement_id:"A",parent_requirement_ids:["B"]},b={...input.requirements[0],requirement_id:"B",parent_requirement_ids:["A"]};
+  input.requirements=[a,b];input.expected_requirements=[{...a},{...b}];input.expected_requirement_ids=["A","B"];input.evidence=[];
+  const decision=evaluateSemanticCompletion(input,verifiedArtifacts());
+  assert.equal(decision.decision,"BLOCK");assert.ok(decision.reason_codes.includes("CYCLIC_REQUIREMENT_DEPENDENCY" as any));
+});
+
+test("higher evidence level cannot replace a required evidence kind",()=>{
+  const input=validInput();input.requirements[0].minimum_evidence_level="L3_CONTRACT";input.requirements[0].required_evidence_kinds=["BROKER_RECONCILIATION"];input.expected_requirements=[{...input.requirements[0]}];input.evidence[0].evidence_level="L8_SOAK";input.evidence[0].evidence_kind="SIMULATION";
+  const decision=evaluateSemanticCompletion(input,verifiedArtifacts());
+  assert.equal(decision.decision,"BLOCK");assert.deepEqual(decision.reason_codes,["WRONG_EVIDENCE_KIND"]);
+});
+
+test("repeated equivalent evaluation is byte-equivalent",()=>{
+  const first=evaluateSemanticCompletion(validInput(),verifiedArtifacts()),second=evaluateSemanticCompletion(validInput(),verifiedArtifacts());
+  assert.deepEqual(first,second);
+});
+
+test("canonicalizes semantically unordered requirement collections",()=>{
+  const first=validInput(),second=validInput();
+  first.requirements[0].required_evidence_kinds=["RUNTIME_OBSERVATION","SECONDARY"];
+  first.expected_requirements=[{...first.requirements[0]}];
+  second.requirements[0].required_evidence_kinds=["SECONDARY","RUNTIME_OBSERVATION"];
+  second.expected_requirements=[{...second.requirements[0]}];
+  assert.deepEqual(evaluateSemanticCompletion(first,verifiedArtifacts()),evaluateSemanticCompletion(second,verifiedArtifacts()));
+});
+
+for(const [name,mutate,pattern] of [
+  ["rejects malformed input source sha",(input:SemanticCompletionInputV1)=>{input.source_sha="bad";},/semantic completion input invalid/],
+  ["rejects malformed evidence source sha",(input:SemanticCompletionInputV1)=>{input.evidence[0].source_sha="bad";},/semantic evidence invalid/],
+  ["rejects malformed certified implementation sha",(input:SemanticCompletionInputV1)=>{input.evidence[0].certified_implementation_sha="bad";},/semantic evidence invalid/],
+  ["rejects malformed artifact sha",(input:SemanticCompletionInputV1)=>{input.evidence[0].artifact_sha256="bad";},/semantic evidence invalid/],
+  ["rejects invalid evaluated timestamp",(input:SemanticCompletionInputV1)=>{input.evaluated_at_utc="never";},/timestamp invalid/],
+  ["rejects invalid observed timestamp",(input:SemanticCompletionInputV1)=>{input.evidence[0].observed_at_utc="never";},/timestamp invalid/],
+  ["rejects unknown evidence level",(input:SemanticCompletionInputV1)=>{(input.evidence[0] as any).evidence_level="L99";},/semantic evidence invalid/],
+  ["rejects unknown deferment policy",(input:SemanticCompletionInputV1)=>{(input.requirements[0] as any).deferment_policy="MAYBE";input.expected_requirements=[{...input.requirements[0]}];},/semantic requirement invalid/],
+] as const)test(name,()=>{const input=validInput();mutate(input);assert.throws(()=>evaluateSemanticCompletion(input,verifiedArtifacts()),pattern);});
+
+test("rejects malformed authoritative requirement hashes directly",()=>{
+  const input=validInput();input.expected_requirements[0].original_spec_sha256="bad";
+  assert.throws(()=>evaluateSemanticCompletion(input,verifiedArtifacts()),/semantic requirement invalid/);
+});
+
+test("rejects ambiguous deferment evidence references",()=>{
+  const input=validInput(),requirement=input.requirements[0];requirement.deferment_policy="EXPLICIT_AUTHORIZATION_REQUIRED";input.expected_requirements=[{...requirement}];input.evidence=[{...input.evidence[0],evidence_id:"E1",requirement_id:"OTHER"}];
+  input.deferment_authorizations=[{authorization_id:"AUTH-1",requirement_id:requirement.requirement_id,authorization_source_sha:sha("owner authorization"),authorized_by:"owner",scope:"BR1",authorized_at_utc:"2026-09-10T00:00:00Z"}];
+  input.deferments=[{deferment_id:"D1",requirement_id:requirement.requirement_id,authorization_source:"AUTH-1",reason:"deferred",successor_owner:"owner",scope:"BR1",expiration_or_revisit_condition:"next",evidence_refs:["E1","E1"]}];
+  const decision=evaluateSemanticCompletion(input,verifiedArtifacts());assert.equal(decision.decision,"BLOCK");assert.ok(decision.reason_codes.includes("INVALID_DEFERMENT"));
 });

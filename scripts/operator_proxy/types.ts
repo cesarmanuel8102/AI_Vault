@@ -208,17 +208,20 @@ export interface DefermentV1 {
   deferment_id:string; requirement_id:string; authorization_source:string; reason:string;
   successor_owner:string; scope:string; expiration_or_revisit_condition:string; evidence_refs:string[];
 }
+export interface DefermentAuthorizationV1 {authorization_id:string;requirement_id:string;authorization_source_sha:string;authorized_by:string;scope:string;authorized_at_utc:string;}
 export interface SemanticCompletionInputV1 {
   schema_version:1; phase_or_item_id:string; source_sha:string; evaluated_at_utc:string;
   requirements:SemanticRequirementV1[]; evidence:EvidenceRefV1[]; deferments:DefermentV1[];
   expected_requirement_ids:string[];
+  expected_requirements:SemanticRequirementV1[];
+  deferment_authorizations:DefermentAuthorizationV1[];
 }
 export type SemanticCompletionReasonCode =
   | "MISSING_REQUIREMENT" | "MISSING_EVIDENCE" | "INSUFFICIENT_EVIDENCE_LEVEL"
   | "WRONG_EVIDENCE_KIND" | "STALE_SOURCE_SHA" | "ARTIFACT_HASH_MISMATCH"
   | "RUNTIME_BINDING_MISSING" | "SELF_REFERENTIAL_EVIDENCE" | "NAKED_BOOLEAN_ASSERTION"
   | "SIMULATION_SUBSTITUTION" | "INVALID_DEFERMENT" | "PARENT_REQUIREMENT_UNSATISFIED"
-  | "INDEPENDENT_AUDIT_MISSING";
+  | "INDEPENDENT_AUDIT_MISSING" | "CYCLIC_REQUIREMENT_DEPENDENCY";
 export interface SemanticCompletionDecisionV1 {
   readonly schema_version:1; readonly phase_or_item_id:string; readonly original_requirement_refs:readonly string[];
   readonly requirements_total:number; readonly requirements_satisfied:number; readonly requirements_deferred_valid:number; readonly requirements_blocked:number;
