@@ -40,7 +40,7 @@ function validateRequirement(requirement:SemanticCompletionInputV1["requirements
   if(typeof requirement.independent_verifier_required!=="boolean"||typeof requirement.minimum_duration_seconds!=="number"||typeof requirement.minimum_sample_size!=="number")throw new Error("semantic requirement invalid");
 }
 
-function validateInput(input:SemanticCompletionInputV1):void{
+function validateInput(input:SemanticCompletionInputV1):Set<string>{
   const root=record(input,"semantic completion");
   assertExactKeys(root,inputKeys,"semantic completion");
   if(input.schema_version!==1||!input.phase_or_item_id||!sha40.test(input.source_sha))throw new Error("semantic completion input invalid");
@@ -54,10 +54,11 @@ function validateInput(input:SemanticCompletionInputV1):void{
   }
   const expectedIds=new Set<string>();
   for(const expected of input.expected_requirements){validateRequirement(expected);if(expectedIds.has(expected.requirement_id))throw new Error("duplicate expected semantic requirement");expectedIds.add(expected.requirement_id);}
-  if(input.expected_requirements.length!==input.requirements.length)throw new Error("requirement identity mismatch");
+  const identityMismatches=new Set<string>();
+  if(input.expected_requirements.length!==input.requirements.length)for(const requirement of [...input.requirements,...input.expected_requirements])identityMismatches.add(requirement.requirement_id);
   for(const requirement of input.requirements){
     const expected=input.expected_requirements.find(candidate=>candidate.requirement_id===requirement.requirement_id);
-    if(!expected||canonicalRequirement(expected)!==canonicalRequirement(requirement))throw new Error("requirement identity mismatch");
+    if(!expected||canonicalRequirement(expected)!==canonicalRequirement(requirement))identityMismatches.add(requirement.requirement_id);
   }
   const evidenceIds=new Set<string>();
   for(const evidence of input.evidence){
@@ -87,19 +88,21 @@ function validateInput(input:SemanticCompletionInputV1):void{
     if(!sha256.test(String(value.authorization_source_sha)))throw new Error("deferment authorization invalid");
     assertDate(String(value.authorized_at_utc),"deferment authorization");
   }
+  return identityMismatches;
 }
 
 export function evaluateSemanticCompletion(input:SemanticCompletionInputV1,verifiedArtifacts:ReadonlyMap<string,string>):SemanticCompletionDecisionV1 {
-  validateInput(input);
+  const identityMismatches=validateInput(input);
   const evidenceRefs:string[]=[];const reasonCodes=new Set<SemanticCompletionReasonCode>();let satisfied=0;
   for(const expected of input.expected_requirement_ids)if(!input.requirements.some(requirement=>requirement.requirement_id===expected))reasonCodes.add("MISSING_REQUIREMENT");
+  if(identityMismatches.size>0)reasonCodes.add("REQUIREMENT_IDENTITY_MISMATCH");
   const deferred=new Set<string>();
-  const evidenceIds=new Set(input.evidence.map(evidence=>evidence.evidence_id));
+  const evidenceById=new Map(input.evidence.map(evidence=>[evidence.evidence_id,evidence]));
   for(const deferment of input.deferments){
     const requirement=input.requirements.find(candidate=>candidate.requirement_id===deferment.requirement_id);
     const authorization=input.deferment_authorizations.find(candidate=>candidate.authorization_id===deferment.authorization_source&&candidate.requirement_id===deferment.requirement_id&&candidate.scope===deferment.scope);
     const referencedEvidenceIds=new Set(deferment.evidence_refs);
-    const referencesValid=referencedEvidenceIds.size>0&&referencedEvidenceIds.size===deferment.evidence_refs.length&&[...referencedEvidenceIds].every(reference=>evidenceIds.has(reference));
+    const referencesValid=referencedEvidenceIds.size>0&&referencedEvidenceIds.size===deferment.evidence_refs.length&&[...referencedEvidenceIds].every(reference=>evidenceById.get(reference)?.requirement_id===deferment.requirement_id);
     if(!requirement||requirement.deferment_policy!=="EXPLICIT_AUTHORIZATION_REQUIRED"||!authorization||!referencesValid)reasonCodes.add("INVALID_DEFERMENT");else deferred.add(requirement.requirement_id);
   }
   const results=new Map<string,boolean>(),pending=[...input.requirements].sort((left,right)=>left.requirement_id.localeCompare(right.requirement_id));
@@ -110,6 +113,7 @@ export function evaluateSemanticCompletion(input:SemanticCompletionInputV1,verif
       if(requirement.parent_requirement_ids.some(parentId=>!input.requirements.some(parent=>parent.requirement_id===parentId))){reasonCodes.add("PARENT_REQUIREMENT_UNSATISFIED");results.set(requirement.requirement_id,false);pending.splice(index,1);progress=true;continue;}
       if(requirement.parent_requirement_ids.some(parentId=>!results.has(parentId)))continue;
       if(requirement.parent_requirement_ids.some(parentId=>results.get(parentId)!==true)){reasonCodes.add("PARENT_REQUIREMENT_UNSATISFIED");results.set(requirement.requirement_id,false);pending.splice(index,1);progress=true;continue;}
+      if(deferred.has(requirement.requirement_id)){results.set(requirement.requirement_id,true);pending.splice(index,1);progress=true;continue;}
     const matching=input.evidence.filter(e=>e.requirement_id===requirement.requirement_id);
     if(matching.length===0){if(deferred.has(requirement.requirement_id)){results.set(requirement.requirement_id,true);}else{reasonCodes.add("MISSING_EVIDENCE");results.set(requirement.requirement_id,false);}pending.splice(index,1);progress=true;continue;}
     if(matching.length===1){
@@ -129,7 +133,7 @@ export function evaluateSemanticCompletion(input:SemanticCompletionInputV1,verif
     }
     if(!progress){for(const requirement of pending){reasonCodes.add("CYCLIC_REQUIREMENT_DEPENDENCY");results.set(requirement.requirement_id,false);}pending.length=0;}
   }
-  const order:SemanticCompletionReasonCode[]=["MISSING_REQUIREMENT","MISSING_EVIDENCE","INSUFFICIENT_EVIDENCE_LEVEL","WRONG_EVIDENCE_KIND","STALE_SOURCE_SHA","ARTIFACT_HASH_MISMATCH","RUNTIME_BINDING_MISSING","SELF_REFERENTIAL_EVIDENCE","NAKED_BOOLEAN_ASSERTION","SIMULATION_SUBSTITUTION","INVALID_DEFERMENT","PARENT_REQUIREMENT_UNSATISFIED","CYCLIC_REQUIREMENT_DEPENDENCY","INDEPENDENT_AUDIT_MISSING"];
+  const order:SemanticCompletionReasonCode[]=["MISSING_REQUIREMENT","REQUIREMENT_IDENTITY_MISMATCH","MISSING_EVIDENCE","INSUFFICIENT_EVIDENCE_LEVEL","WRONG_EVIDENCE_KIND","STALE_SOURCE_SHA","ARTIFACT_HASH_MISMATCH","RUNTIME_BINDING_MISSING","SELF_REFERENTIAL_EVIDENCE","NAKED_BOOLEAN_ASSERTION","SIMULATION_SUBSTITUTION","INVALID_DEFERMENT","PARENT_REQUIREMENT_UNSATISFIED","CYCLIC_REQUIREMENT_DEPENDENCY","INDEPENDENT_AUDIT_MISSING"];
   const ordered=order.filter(code=>reasonCodes.has(code));
   const base={schema_version:1 as const,phase_or_item_id:input.phase_or_item_id,original_requirement_refs:Object.freeze(input.requirements.map(r=>r.requirement_id).sort()),requirements_total:input.requirements.length,requirements_satisfied:satisfied,requirements_deferred_valid:deferred.size,requirements_blocked:input.requirements.length-satisfied-deferred.size,evidence_refs:Object.freeze(evidenceRefs.sort()),decision:satisfied+deferred.size===input.requirements.length&&ordered.length===0?"PASS" as const:"BLOCK" as const,reason_codes:Object.freeze(ordered),source_sha:input.source_sha,evaluated_at_utc:input.evaluated_at_utc};
   return Object.freeze({...base,decision_artifact_sha256:sha(canonical(base))});

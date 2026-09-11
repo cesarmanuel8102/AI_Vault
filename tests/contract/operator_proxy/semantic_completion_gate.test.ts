@@ -136,9 +136,17 @@ test("blocks a child when its existing parent is blocked",()=>{
   assert.equal(decision.decision,"BLOCK");assert.ok(decision.reason_codes.includes("PARENT_REQUIREMENT_UNSATISFIED"));
 });
 
-test("rejects a material requirement identity mutation",()=>{
+test("blocks a material requirement identity mutation",()=>{
   const input=validInput();input.requirements[0].original_spec_path="docs/other.md";
-  assert.throws(()=>evaluateSemanticCompletion(input,verifiedArtifacts()),/requirement identity mismatch/);
+  const decision=evaluateSemanticCompletion(input,verifiedArtifacts());
+  assert.equal(decision.decision,"BLOCK");assert.ok(decision.reason_codes.includes("REQUIREMENT_IDENTITY_MISMATCH"));
+});
+
+test("blocks an authoritative requirement downgrade",()=>{
+  const input=validInput();input.expected_requirements[0].minimum_evidence_level="L8_SOAK";
+  input.requirements[0].minimum_evidence_level="L4_SIMULATED_INTEGRATION";input.evidence[0].evidence_level="L4_SIMULATED_INTEGRATION";
+  const decision=evaluateSemanticCompletion(input,verifiedArtifacts());
+  assert.equal(decision.decision,"BLOCK");assert.ok(decision.reason_codes.includes("REQUIREMENT_IDENTITY_MISMATCH"));
 });
 
 test("rejects duplicate evidence identifiers",()=>{
@@ -154,7 +162,7 @@ test("valid deferment requires bound authorization and evidence",()=>{
 });
 
 test("accepts a policy-allowed deferment with bound authorization and evidence",()=>{
-  const input=validInput(),requirement=input.requirements[0];input.evidence=[{...input.evidence[0],evidence_id:"AUTH-E1",requirement_id:"AUTH-RECORD"}];
+  const input=validInput(),requirement=input.requirements[0];input.evidence=[{...input.evidence[0],evidence_id:"AUTH-E1"}];
   requirement.deferment_policy="EXPLICIT_AUTHORIZATION_REQUIRED";input.expected_requirements=[{...requirement}];
   input.deferment_authorizations=[{authorization_id:"AUTH-1",requirement_id:requirement.requirement_id,authorization_source_sha:sha("owner authorization"),authorized_by:"owner",scope:"BR1",authorized_at_utc:"2026-09-10T00:00:00Z"}];
   input.deferments=[{deferment_id:"D1",requirement_id:requirement.requirement_id,authorization_source:"AUTH-1",reason:"deferred by authorization",successor_owner:"owner",scope:"BR1",expiration_or_revisit_condition:"next",evidence_refs:["AUTH-E1"]}];
@@ -199,6 +207,7 @@ for(const [name,mutate,pattern] of [
   ["rejects malformed evidence source sha",(input:SemanticCompletionInputV1)=>{input.evidence[0].source_sha="bad";},/semantic evidence invalid/],
   ["rejects malformed certified implementation sha",(input:SemanticCompletionInputV1)=>{input.evidence[0].certified_implementation_sha="bad";},/semantic evidence invalid/],
   ["rejects malformed artifact sha",(input:SemanticCompletionInputV1)=>{input.evidence[0].artifact_sha256="bad";},/semantic evidence invalid/],
+  ["rejects malformed requirement text sha",(input:SemanticCompletionInputV1)=>{input.requirements[0].requirement_text_sha256="bad";input.expected_requirements=[{...input.requirements[0]}];},/semantic requirement invalid/],
   ["rejects invalid evaluated timestamp",(input:SemanticCompletionInputV1)=>{input.evaluated_at_utc="never";},/timestamp invalid/],
   ["rejects invalid observed timestamp",(input:SemanticCompletionInputV1)=>{input.evidence[0].observed_at_utc="never";},/timestamp invalid/],
   ["rejects unknown evidence level",(input:SemanticCompletionInputV1)=>{(input.evidence[0] as any).evidence_level="L99";},/semantic evidence invalid/],
@@ -215,4 +224,63 @@ test("rejects ambiguous deferment evidence references",()=>{
   input.deferment_authorizations=[{authorization_id:"AUTH-1",requirement_id:requirement.requirement_id,authorization_source_sha:sha("owner authorization"),authorized_by:"owner",scope:"BR1",authorized_at_utc:"2026-09-10T00:00:00Z"}];
   input.deferments=[{deferment_id:"D1",requirement_id:requirement.requirement_id,authorization_source:"AUTH-1",reason:"deferred",successor_owner:"owner",scope:"BR1",expiration_or_revisit_condition:"next",evidence_refs:["E1","E1"]}];
   const decision=evaluateSemanticCompletion(input,verifiedArtifacts());assert.equal(decision.decision,"BLOCK");assert.ok(decision.reason_codes.includes("INVALID_DEFERMENT"));
+});
+
+test("rejects cross-requirement deferment evidence",()=>{
+  const input=validInput(),requirement=input.requirements[0];requirement.deferment_policy="EXPLICIT_AUTHORIZATION_REQUIRED";input.expected_requirements=[{...requirement}];input.evidence=[{...input.evidence[0],evidence_id:"E1",requirement_id:"OTHER"}];
+  input.deferment_authorizations=[{authorization_id:"AUTH-1",requirement_id:requirement.requirement_id,authorization_source_sha:sha("owner authorization"),authorized_by:"owner",scope:"BR1",authorized_at_utc:"2026-09-10T00:00:00Z"}];
+  input.deferments=[{deferment_id:"D1",requirement_id:requirement.requirement_id,authorization_source:"AUTH-1",reason:"deferred",successor_owner:"owner",scope:"BR1",expiration_or_revisit_condition:"next",evidence_refs:["E1"]}];
+  const decision=evaluateSemanticCompletion(input,verifiedArtifacts());assert.equal(decision.decision,"BLOCK");assert.ok(decision.reason_codes.includes("INVALID_DEFERMENT"));
+});
+
+function setRequirements(input:SemanticCompletionInputV1,requirements:SemanticCompletionInputV1["requirements"]):void{
+  input.requirements=requirements;input.expected_requirements=requirements.map(requirement=>({...requirement}));input.expected_requirement_ids=requirements.map(requirement=>requirement.requirement_id);
+}
+function evidenceFor(input:SemanticCompletionInputV1,evidenceId:string,requirementId:string){return {...input.evidence[0],evidence_id:evidenceId,requirement_id:requirementId};}
+
+test("accepts a child whose parent and evidence both pass",()=>{
+  const input=validInput(),parent={...input.requirements[0],requirement_id:"A"},child={...input.requirements[0],requirement_id:"B",parent_requirement_ids:["A"]};
+  setRequirements(input,[parent,child]);input.evidence=[evidenceFor(input,"E-A","A"),evidenceFor(input,"E-B","B")];
+  const decision=evaluateSemanticCompletion(input,verifiedArtifacts());assert.equal(decision.decision,"PASS");assert.equal(decision.requirements_satisfied,2);
+});
+
+test("blocks every descendant of a blocked transitive parent",()=>{
+  const input=validInput(),a={...input.requirements[0],requirement_id:"A",minimum_evidence_level:"L8_SOAK" as const},b={...input.requirements[0],requirement_id:"B",parent_requirement_ids:["A"]},c={...input.requirements[0],requirement_id:"C",parent_requirement_ids:["B"]};
+  setRequirements(input,[a,b,c]);input.evidence=[{...evidenceFor(input,"E-A","A"),evidence_level:"L4_SIMULATED_INTEGRATION"},{...evidenceFor(input,"E-B","B")},{...evidenceFor(input,"E-C","C")}];
+  const decision=evaluateSemanticCompletion(input,verifiedArtifacts());assert.equal(decision.decision,"BLOCK");assert.ok(decision.reason_codes.includes("PARENT_REQUIREMENT_UNSATISFIED"));assert.equal(decision.requirements_blocked,3);
+});
+
+for(const [name,requirements] of [
+  ["self",[{...validInput().requirements[0],requirement_id:"A",parent_requirement_ids:["A"]}]],
+  ["three-node",[..."ABC"].map((requirement_id,index)=>({...validInput().requirements[0],requirement_id,parent_requirement_ids:[["C"],["A"],["B"]][index]}))],
+] as const)test(`blocks ${name} requirement cycles`,()=>{
+  const input=validInput();setRequirements(input,requirements as SemanticCompletionInputV1["requirements"]);input.evidence=[];
+  const decision=evaluateSemanticCompletion(input,verifiedArtifacts());assert.equal(decision.decision,"BLOCK");assert.deepEqual(decision.reason_codes,["CYCLIC_REQUIREMENT_DEPENDENCY"]);
+});
+
+test("blocks a deferment with authorization bound to another requirement",()=>{
+  const input=validInput(),requirement=input.requirements[0];requirement.deferment_policy="EXPLICIT_AUTHORIZATION_REQUIRED";input.expected_requirements=[{...requirement}];
+  input.deferment_authorizations=[{authorization_id:"AUTH-1",requirement_id:"OTHER",authorization_source_sha:sha("owner authorization"),authorized_by:"owner",scope:"BR1",authorized_at_utc:"2026-09-10T00:00:00Z"}];
+  input.deferments=[{deferment_id:"D1",requirement_id:requirement.requirement_id,authorization_source:"AUTH-1",reason:"deferred",successor_owner:"owner",scope:"BR1",expiration_or_revisit_condition:"next",evidence_refs:[input.evidence[0].evidence_id]}];
+  const decision=evaluateSemanticCompletion(input,verifiedArtifacts());assert.equal(decision.decision,"BLOCK");assert.ok(decision.reason_codes.includes("INVALID_DEFERMENT"));
+});
+
+test("blocks a forbidden deferment despite otherwise valid evidence and authorization",()=>{
+  const input=validInput(),requirement=input.requirements[0];
+  input.deferment_authorizations=[{authorization_id:"AUTH-1",requirement_id:requirement.requirement_id,authorization_source_sha:sha("owner authorization"),authorized_by:"owner",scope:"BR1",authorized_at_utc:"2026-09-10T00:00:00Z"}];
+  input.deferments=[{deferment_id:"D1",requirement_id:requirement.requirement_id,authorization_source:"AUTH-1",reason:"deferred",successor_owner:"owner",scope:"BR1",expiration_or_revisit_condition:"next",evidence_refs:[input.evidence[0].evidence_id]}];
+  const decision=evaluateSemanticCompletion(input,verifiedArtifacts());assert.equal(decision.decision,"BLOCK");assert.ok(decision.reason_codes.includes("INVALID_DEFERMENT"));
+});
+
+test("canonicalizes reordered semantic collections",()=>{
+  const build=(reverse:boolean)=>{const input=validInput(),a={...input.requirements[0],requirement_id:"A"},b={...input.requirements[0],requirement_id:"B",deferment_policy:"EXPLICIT_AUTHORIZATION_REQUIRED" as const},c={...input.requirements[0],requirement_id:"C",deferment_policy:"EXPLICIT_AUTHORIZATION_REQUIRED" as const};
+    const requirements=reverse?[c,b,a]:[a,b,c];setRequirements(input,requirements);input.evidence=[evidenceFor(input,"E-A","A"),evidenceFor(input,"E-B1","B"),evidenceFor(input,"E-B2","B"),evidenceFor(input,"E-C","C")];if(reverse)input.evidence.reverse();
+    input.deferment_authorizations=[{authorization_id:"AUTH-B",requirement_id:"B",authorization_source_sha:sha("owner B"),authorized_by:"owner",scope:"BR1",authorized_at_utc:"2026-09-10T00:00:00Z"},{authorization_id:"AUTH-C",requirement_id:"C",authorization_source_sha:sha("owner C"),authorized_by:"owner",scope:"BR1",authorized_at_utc:"2026-09-10T00:00:00Z"}];
+    input.deferments=[{deferment_id:"D-B",requirement_id:"B",authorization_source:"AUTH-B",reason:"deferred",successor_owner:"owner",scope:"BR1",expiration_or_revisit_condition:"next",evidence_refs:reverse?["E-B2","E-B1"]:["E-B1","E-B2"]},{deferment_id:"D-C",requirement_id:"C",authorization_source:"AUTH-C",reason:"deferred",successor_owner:"owner",scope:"BR1",expiration_or_revisit_condition:"next",evidence_refs:["E-C"]}];if(reverse){input.expected_requirements.reverse();input.expected_requirement_ids.reverse();input.deferment_authorizations.reverse();input.deferments.reverse();}return input;};
+  assert.deepEqual(evaluateSemanticCompletion(build(false),verifiedArtifacts()),evaluateSemanticCompletion(build(true),verifiedArtifacts()));
+});
+
+test("orders multiple semantic failure reasons independently of input order",()=>{
+  const build=(reverse:boolean)=>{const input=validInput(),a={...input.requirements[0],requirement_id:"A",minimum_evidence_level:"L8_SOAK" as const},b={...input.requirements[0],requirement_id:"B"};setRequirements(input,reverse?[b,a]:[a,b]);input.evidence=[{...evidenceFor(input,"E-A","A"),evidence_level:"L4_SIMULATED_INTEGRATION"},{...evidenceFor(input,"E-B","B"),evidence_kind:"OTHER"}];if(reverse){input.expected_requirements.reverse();input.expected_requirement_ids.reverse();input.evidence.reverse();}return input;};
+  const first=evaluateSemanticCompletion(build(false),verifiedArtifacts()),second=evaluateSemanticCompletion(build(true),verifiedArtifacts());assert.equal(first.decision,"BLOCK");assert.deepEqual(first.reason_codes,["WRONG_EVIDENCE_KIND","SIMULATION_SUBSTITUTION"]);assert.deepEqual(first,second);
 });
