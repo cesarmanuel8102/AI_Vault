@@ -75,7 +75,10 @@ def test_h0_static_strategy_inventory_is_complete_and_non_promotional():
         capture_output=True,
         text=True,
     ).stdout.splitlines()
-    assert sum(path.endswith("/main.py") for path in source_paths) == inventory["candidate_count"]
+    snapshot_candidate_paths = {path for path in source_paths if path.endswith("/main.py")}
+    inventory_candidate_paths = {candidate["source_path"] for candidate in inventory["candidates"]}
+    assert len(inventory_candidate_paths) == inventory["candidate_count"]
+    assert inventory_candidate_paths == snapshot_candidate_paths
 
     for candidate in inventory["candidates"]:
         completed = subprocess.run(
