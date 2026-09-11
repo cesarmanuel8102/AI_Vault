@@ -182,3 +182,42 @@ export interface ControllerRebaselinePlan {
   supersession_key?: string;
   reason?: string;
 }
+
+export type EvidenceLevel =
+  | "L0_PRESENCE" | "L1_STATIC" | "L2_UNIT" | "L3_CONTRACT"
+  | "L4_SIMULATED_INTEGRATION" | "L5_LOCAL_E2E" | "L6_RUNTIME"
+  | "L7_EXTERNAL_PAPER" | "L8_SOAK" | "L9_ADVERSARIAL_TARGET_ENVIRONMENT";
+
+export interface SemanticRequirementV1 {
+  requirement_id:string; parent_phase:string; original_spec_path:string;
+  original_spec_sha256:string; requirement_text_sha256:string;
+  minimum_evidence_level:EvidenceLevel; required_evidence_kinds:string[];
+  runtime_binding_required:boolean; deferment_policy:"FORBIDDEN"|"EXPLICIT_AUTHORIZATION_REQUIRED";
+}
+export interface EvidenceRefV1 {
+  evidence_id:string; requirement_id:string; evidence_kind:string; evidence_level:EvidenceLevel;
+  source_sha:string; certified_implementation_sha:string; artifact_path:string; artifact_sha256:string; artifact_bytes:string;
+  environment:string; runtime_binding:string; observed_at_utc:string;
+  observation:{duration_seconds:number;sample_size:number};
+  verifier:{verifier_id:string;source_sha:string;independent:boolean};
+}
+export interface DefermentV1 {
+  deferment_id:string; requirement_id:string; authorization_source:string; reason:string;
+  successor_owner:string; scope:string; expiration_or_revisit_condition:string; evidence_refs:string[];
+}
+export interface SemanticCompletionInputV1 {
+  schema_version:1; phase_or_item_id:string; source_sha:string; evaluated_at_utc:string;
+  requirements:SemanticRequirementV1[]; evidence:EvidenceRefV1[]; deferments:DefermentV1[];
+}
+export type SemanticCompletionReasonCode =
+  | "MISSING_REQUIREMENT" | "MISSING_EVIDENCE" | "INSUFFICIENT_EVIDENCE_LEVEL"
+  | "WRONG_EVIDENCE_KIND" | "STALE_SOURCE_SHA" | "ARTIFACT_HASH_MISMATCH"
+  | "RUNTIME_BINDING_MISSING" | "SELF_REFERENTIAL_EVIDENCE" | "NAKED_BOOLEAN_ASSERTION"
+  | "SIMULATION_SUBSTITUTION" | "INVALID_DEFERMENT" | "PARENT_REQUIREMENT_UNSATISFIED"
+  | "INDEPENDENT_AUDIT_MISSING";
+export interface SemanticCompletionDecisionV1 {
+  schema_version:1; phase_or_item_id:string; original_requirement_refs:string[];
+  requirements_total:number; requirements_satisfied:number; requirements_deferred_valid:number; requirements_blocked:number;
+  evidence_refs:string[]; decision:"PASS"|"BLOCK"; reason_codes:SemanticCompletionReasonCode[];
+  source_sha:string; decision_artifact_sha256:string; evaluated_at_utc:string;
+}
