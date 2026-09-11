@@ -393,8 +393,8 @@ test("non-semantic parent closeout child selection is unchanged",()=>{
 // ---------------------------------------------------------------------------
 const requirementsPath="docs/roadmap/semantic/requirements.json";
 const evidencePath="docs/roadmap/semantic/evidence.json";
-const canonicalRequirementsJson=JSON.stringify([{...authoritativeRequirement}]);
-const canonicalEvidenceJson=JSON.stringify([{...canonicalEvidence}]);
+const canonicalRequirementsJson=JSON.stringify({schema_version:1,requirements:[{...authoritativeRequirement}]});
+const canonicalEvidenceJson=JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence}]});
 
 /** Fake GitHubBus recording exact (path, ref) calls. */
 function fileAtBus(files:Record<string,string>,options?:{throwOnMissing?:boolean}){
@@ -426,7 +426,7 @@ function productionEffectsWithBus(bus:any){
 
 test("production resolver reads requirements and evidence at the exact bound merge SHA",()=>{
   const merge="f".repeat(40);
-  const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]);
+  const boundEvidence=JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]});
   const {bus,calls}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   const decision=effects.resolveSemanticCompletion(parentSpec,merge);
@@ -441,7 +441,7 @@ test("production resolver reads requirements and evidence at the exact bound mer
 
 test("production resolver does not require an externally bound semantic source",()=>{
   const merge="f".repeat(40);
-  const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]);
+  const boundEvidence=JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]});
   const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   // No bindSemanticSource call: production must resolve canonically by itself.
@@ -451,7 +451,7 @@ test("production resolver does not require an externally bound semantic source",
 
 test("production resolver rejects caller-supplied artifact bytes by resolving from Git only",()=>{
   const merge="f".repeat(40);
-  const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]);
+  const boundEvidence=JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]});
   const {bus,calls}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:"tampered-by-attacker"});
   const effects=productionEffectsWithBus(bus);
   const decision=effects.resolveSemanticCompletion(parentSpec,merge);
@@ -474,7 +474,7 @@ test("production resolver fails closed when canonical bytes are missing",()=>{
 test("production resolver binds source_sha to the bound lifecycle merge SHA",()=>{
   const merge="f".repeat(40);
   // Evidence claims SHA "b" — stale against the bound merge SHA "f".
-  const staleEvidence=JSON.stringify([{...canonicalEvidence,source_sha:"b".repeat(40),certified_implementation_sha:"b".repeat(40)}]);
+  const staleEvidence=JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:"b".repeat(40),certified_implementation_sha:"b".repeat(40)}]});
   const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:staleEvidence,[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   const decision=effects.resolveSemanticCompletion(parentSpec,merge);
@@ -497,7 +497,7 @@ test("production resolver never rewrites evidence SHA values",()=>{
 
 test("production resolver accepts evidence whose SHA equals the bound merge SHA",()=>{
   const merge="f".repeat(40);
-  const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]);
+  const boundEvidence=JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]});
   const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   const decision=effects.resolveSemanticCompletion(parentSpec,merge);
@@ -510,7 +510,7 @@ test("production resolver accepts evidence whose SHA equals the bound merge SHA"
 test("NONCANONICAL_OBSERVED_AT_REJECTED at the trust boundary",()=>{
   for(const bad of ["September 10, 2026","09/10/2026","2026-09-10T00:00:00+02:00","2026-09-10 00:00:00Z","2026-09-10T00:00Z","2026-13-45T99:99:99.999Z","2026-02-30T00:00:00.000Z"]){
     const merge="f".repeat(40);
-    const badEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge,observed_at_utc:bad}]);
+    const badEvidence=JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge,observed_at_utc:bad}]});
     const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:badEvidence,[artifactPath]:artifact});
     const effects=productionEffectsWithBus(bus);
     assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/not canonical UTC timestamp/,bad);
@@ -519,7 +519,7 @@ test("NONCANONICAL_OBSERVED_AT_REJECTED at the trust boundary",()=>{
 
 test("NONCANONICAL_AUTHORIZED_AT_REJECTED at the trust boundary",()=>{
   const merge="f".repeat(40);
-  const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]);
+  const boundEvidence=JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]});
   const auth=JSON.stringify([{authorization_id:"AUTH-1",requirement_id:authoritativeRequirement.requirement_id,authorization_source_sha:sha("owner authorization"),authorized_by:"owner",scope:"BR1",authorized_at_utc:"09/10/2026"}]);
   // The evidence JSON needs a deferments+authorizations structure: pack both files.
   const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
@@ -532,7 +532,7 @@ test("NONCANONICAL_AUTHORIZED_AT_REJECTED at the trust boundary",()=>{
 
 test("CANONICAL_ALL_TIMESTAMPS_ACCEPTED at the trust boundary",()=>{
   const merge="f".repeat(40);
-  const boundEvidence=JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge,observed_at_utc:"2026-09-10T00:00:00.000Z"}]);
+  const boundEvidence=JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge,observed_at_utc:"2026-09-10T00:00:00.000Z"}]});
   const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:boundEvidence,[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   const decision=effects.resolveSemanticCompletion(parentSpec,merge);
@@ -550,7 +550,7 @@ test("closeout parent evidence carries semantic_decision_sha256 for a semantic-b
   const decisionId=stableDecisionId(decisionKey);
   ledger.record({schema_version:2,decision_key:decisionKey,decision_id:decisionId,authorization_id:parentSpec.authorization_id,repository:parentSpec.repository,issue:77,pr:78,base_sha:parentSpec.expected_base_sha,head_sha:candidate,roadmap_id:parentSpec.roadmap_id,roadmap_item_id:parentSpec.roadmap_item_id,risk:"LOW",deterministic_gate:"PASS",codex_review:"PASS",review_findings_count:0,review_consistent:true,policy_decision:"APPROVE",allowed_action:"MERGE",policy_sha256:POLICY_SHA256,evidence_sha256:"e".repeat(64),created_utc:"2026-09-10T00:00:00.000Z"} as any);
   ledger.ensureConsumed(ledger.findByKey(decisionKey)!);
-  const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact});
   const effects=new ProductionEffects(bus,ledger,root,root,{assert:()=>{},bind:()=>{}} as any);
   const semanticDecision=effects.resolveSemanticCompletion(parentSpec,merge);
   effects.bindLifecycle(parentSpec,{schema_version:1,front_id:parentSpec.front_id!,roadmap_item_id:parentSpec.roadmap_item_id,state:"CLOSEOUT_PENDING",issue:77,pr:78,base_sha:parentSpec.expected_base_sha,head_sha:merge,builder_session:"builder-parent",reviewer_session:"reviewer-parent",decision_id:decisionId,repair_cycles:0,deployment_mode:"DOCUMENTATION_CLOSEOUT",completed_effects:["issue:77",`build:${candidate}`,`merge:${merge}`,`semantic_completion:${semanticDecision.decision_artifact_sha256}`],updated_utc:"2026-09-10T00:00:00.000Z"});
@@ -588,7 +588,7 @@ test("closeout parent evidence fails closed with zero or conflicting semantic re
 test("hostile requirements_path substitution is rejected",()=>{
   const merge="f".repeat(40);
   const hostile={...parentSpec,semantic_completion:{requirements_path:"attacker/requirements.json",evidence_path:evidencePath}};
-  const {bus}=fileAtBus({[semanticRegistryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact,["attacker/requirements.json"]:JSON.stringify([{...authoritativeRequirement,minimum_evidence_level:"L0_PRESENCE"}])});
+  const {bus}=fileAtBus({[semanticRegistryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact,["attacker/requirements.json"]:JSON.stringify([{...authoritativeRequirement,minimum_evidence_level:"L0_PRESENCE"}])});
   const effects=productionEffectsWithBus(bus);
   assert.throws(()=>effects.resolveSemanticCompletion(hostile,merge),/SEMANTIC_CANONICAL_BINDING_MISMATCH|canonical semantic registry/);
 });
@@ -596,7 +596,7 @@ test("hostile requirements_path substitution is rejected",()=>{
 test("hostile evidence_path substitution is rejected",()=>{
   const merge="f".repeat(40);
   const hostile={...parentSpec,semantic_completion:{requirements_path:requirementsPath,evidence_path:"attacker/evidence.json"}};
-  const {bus}=fileAtBus({[semanticRegistryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact,["attacker/evidence.json"]:JSON.stringify([{...canonicalEvidence,evidence_level:"L0_PRESENCE"}])});
+  const {bus}=fileAtBus({[semanticRegistryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact,["attacker/evidence.json"]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,evidence_level:"L0_PRESENCE"}]})});
   const effects=productionEffectsWithBus(bus);
   assert.throws(()=>effects.resolveSemanticCompletion(hostile,merge),/SEMANTIC_CANONICAL_BINDING_MISMATCH|canonical semantic registry/);
 });
@@ -606,14 +606,14 @@ test("alternate weaker registry selected through spec paths is rejected",()=>{
   // Even if BOTH attacker files exist in the repo at the merge, the spec may
   // not point at them: the canonical registry mapping is the only authority.
   const hostile={...parentSpec,semantic_completion:{requirements_path:"attacker/weak-requirements.json",evidence_path:"attacker/weak-evidence.json"}};
-  const {bus}=fileAtBus({[semanticRegistryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact,["attacker/weak-requirements.json"]:JSON.stringify([{...authoritativeRequirement,minimum_evidence_level:"L0_PRESENCE"}]),["attacker/weak-evidence.json"]:JSON.stringify([{...canonicalEvidence,evidence_level:"L0_PRESENCE",source_sha:merge,certified_implementation_sha:merge}])});
+  const {bus}=fileAtBus({[semanticRegistryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact,["attacker/weak-requirements.json"]:JSON.stringify([{...authoritativeRequirement,minimum_evidence_level:"L0_PRESENCE"}]),["attacker/weak-evidence.json"]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,evidence_level:"L0_PRESENCE",source_sha:merge,certified_implementation_sha:merge}]})});
   const effects=productionEffectsWithBus(bus);
   assert.throws(()=>effects.resolveSemanticCompletion(hostile,merge),/SEMANTIC_CANONICAL_BINDING_MISMATCH|canonical semantic registry/);
 });
 
 test("correct canonical registry mapping passes",()=>{
   const merge="f".repeat(40);
-  const {bus}=fileAtBus({[semanticRegistryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const {bus}=fileAtBus({[semanticRegistryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   const decision=effects.resolveSemanticCompletion(parentSpec,merge);
   assert.equal(decision.decision,"PASS");
@@ -622,7 +622,7 @@ test("correct canonical registry mapping passes",()=>{
 test("unknown roadmap item in the canonical registry fails closed",()=>{
   const merge="f".repeat(40);
   const emptyRegistry=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",roadmap_items:{}});
-  const {bus}=fileAtBus({[semanticRegistryPath]:emptyRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const {bus}=fileAtBus({[semanticRegistryPath]:emptyRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
 });
@@ -630,7 +630,7 @@ test("unknown roadmap item in the canonical registry fails closed",()=>{
 test("missing canonical registry file fails closed",()=>{
   const merge="f".repeat(40);
   // NO registry in the fixture — the registry file itself is absent.
-  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const {bus}=fileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
 });
@@ -768,7 +768,7 @@ const otherRoadmapRegistry=JSON.stringify({schema_version:1,roadmap_id:"OTHER-RO
 
 test("REGISTRY wrong roadmap_id with correct item is rejected (cross-roadmap collision)",()=>{
   const merge="f".repeat(40);
-  const {bus}=fileAtBus({[semanticRegistryPath]:otherRoadmapRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const {bus}=fileAtBus({[semanticRegistryPath]:otherRoadmapRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/SEMANTIC_CANONICAL_REGISTRY_IDENTITY_MISMATCH|canonical semantic registry/);
 });
@@ -776,7 +776,7 @@ test("REGISTRY wrong roadmap_id with correct item is rejected (cross-roadmap col
 test("REGISTRY correct roadmap_id with wrong item is rejected",()=>{
   const merge="f".repeat(40);
   const wrongItemRegistry=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",roadmap_items:{R99:{requirements_path:requirementsPath,evidence_path:evidencePath}}});
-  const {bus}=fileAtBus({[semanticRegistryPath]:wrongItemRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const {bus}=fileAtBus({[semanticRegistryPath]:wrongItemRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
 });
@@ -784,7 +784,7 @@ test("REGISTRY correct roadmap_id with wrong item is rejected",()=>{
 test("REGISTRY missing roadmap_id is rejected",()=>{
   const merge="f".repeat(40);
   const noRoadmapId=JSON.stringify({schema_version:1,roadmap_items:{[parentSpec.roadmap_item_id]:{requirements_path:requirementsPath,evidence_path:evidencePath}}});
-  const {bus}=fileAtBus({[semanticRegistryPath]:noRoadmapId,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const {bus}=fileAtBus({[semanticRegistryPath]:noRoadmapId,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
 });
@@ -792,7 +792,7 @@ test("REGISTRY missing roadmap_id is rejected",()=>{
 test("REGISTRY wrong schema_version is rejected",()=>{
   const merge="f".repeat(40);
   const wrongSchema=JSON.stringify({schema_version:2,roadmap_id:"BRAIN-101",roadmap_items:{[parentSpec.roadmap_item_id]:{requirements_path:requirementsPath,evidence_path:evidencePath}}});
-  const {bus}=fileAtBus({[semanticRegistryPath]:wrongSchema,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const {bus}=fileAtBus({[semanticRegistryPath]:wrongSchema,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
 });
@@ -800,7 +800,7 @@ test("REGISTRY wrong schema_version is rejected",()=>{
 test("REGISTRY empty requirements_path is rejected",()=>{
   const merge="f".repeat(40);
   const emptyReq=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",roadmap_items:{[parentSpec.roadmap_item_id]:{requirements_path:"",evidence_path:evidencePath}}});
-  const {bus}=fileAtBus({[semanticRegistryPath]:emptyReq,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const {bus}=fileAtBus({[semanticRegistryPath]:emptyReq,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
 });
@@ -808,7 +808,7 @@ test("REGISTRY empty requirements_path is rejected",()=>{
 test("REGISTRY empty evidence_path is rejected",()=>{
   const merge="f".repeat(40);
   const emptyEv=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",roadmap_items:{[parentSpec.roadmap_item_id]:{requirements_path:requirementsPath,evidence_path:""}}});
-  const {bus}=fileAtBus({[semanticRegistryPath]:emptyEv,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const {bus}=fileAtBus({[semanticRegistryPath]:emptyEv,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
 });
@@ -816,7 +816,7 @@ test("REGISTRY empty evidence_path is rejected",()=>{
 test("REGISTRY wrong field types are rejected",()=>{
   const merge="f".repeat(40);
   const wrongTypes=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",roadmap_items:{[parentSpec.roadmap_item_id]:{requirements_path:42,evidence_path:true}}});
-  const {bus}=fileAtBus({[semanticRegistryPath]:wrongTypes,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const {bus}=fileAtBus({[semanticRegistryPath]:wrongTypes,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
 });
@@ -824,14 +824,14 @@ test("REGISTRY wrong field types are rejected",()=>{
 test("REGISTRY unknown extra top-level field is rejected (closed shape)",()=>{
   const merge="f".repeat(40);
   const extraField=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",extra:"attacker",roadmap_items:{[parentSpec.roadmap_item_id]:{requirements_path:requirementsPath,evidence_path:evidencePath}}});
-  const {bus}=fileAtBus({[semanticRegistryPath]:extraField,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const {bus}=fileAtBus({[semanticRegistryPath]:extraField,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   assert.throws(()=>effects.resolveSemanticCompletion(parentSpec,merge),/canonical semantic registry/);
 });
 
 test("REGISTRY matching roadmap_id and item with canonical paths passes",()=>{
   const merge="f".repeat(40);
-  const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify([{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]),[artifactPath]:artifact});
+  const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   const decision=effects.resolveSemanticCompletion(parentSpec,merge);
   assert.equal(decision.decision,"PASS");
@@ -869,4 +869,120 @@ test("REAL_GIT_REGISTRY the committed canonical registry resolves BRAIN-101/R15 
   // Closed shape on real bytes: exactly the four governed keys.
   assert.deepEqual(Object.keys(registry).sort(),["roadmap_id","roadmap_items","schema_version"]);
   assert.deepEqual(Object.keys(item).sort(),["evidence_path","requirements_path"]);
+});
+
+// ---------------------------------------------------------------------------
+// REAL-GIT FULL ARTIFACT CHAIN: registry → requirements → evidence →
+// artifact bytes at exact candidate-commit SHAs. No fake-bus injection.
+// ---------------------------------------------------------------------------
+const registryPath="docs/roadmap/semantic/semantic_registry.json";
+
+test("CHAIN registry pointing to missing requirements fails closed",()=>{
+  const merge="f".repeat(40);
+  const orphanRegistry=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",roadmap_items:{R15:{requirements_path:"docs/roadmap/semantic/absent-requirements.json",evidence_path:evidencePath}}});
+  const {bus}=fileAtBus({[registryPath]:orphanRegistry,[evidencePath]:JSON.stringify({schema_version:1,evidence:[]})});
+  const effects=productionEffectsWithBus(bus);
+  const specWithoutDeclared={...parentSpec,semantic_completion:undefined};
+  assert.throws(()=>effects.resolveSemanticCompletion({...specWithoutDeclared,semantic_completion:{requirements_path:"docs/roadmap/semantic/absent-requirements.json",evidence_path:evidencePath}},merge),/canonical semantic resolution failed/);
+});
+
+test("CHAIN registry pointing to missing evidence fails closed",()=>{
+  const merge="f".repeat(40);
+  const orphanRegistry=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",roadmap_items:{R15:{requirements_path:requirementsPath,evidence_path:"docs/roadmap/semantic/absent-evidence.json"}}});
+  const {bus}=fileAtBus({[registryPath]:orphanRegistry,[requirementsPath]:canonicalRequirementsJson});
+  const specWithoutDeclared={...parentSpec,semantic_completion:undefined};
+  assert.throws(()=>productionEffectsWithBus(bus).resolveSemanticCompletion({...specWithoutDeclared,semantic_completion:{requirements_path:requirementsPath,evidence_path:"docs/roadmap/semantic/absent-evidence.json"}},merge),/canonical semantic resolution failed/);
+});
+
+test("CHAIN malformed requirements fail closed",()=>{
+  const merge="f".repeat(40);
+  const {bus}=fileAtBus({[registryPath]:canonicalRegistry,[requirementsPath]:"{not-json",[evidencePath]:JSON.stringify({schema_version:1,evidence:[]})});
+  const specWithoutDeclared={...parentSpec,semantic_completion:undefined};
+  assert.throws(()=>productionEffectsWithBus(bus).resolveSemanticCompletion({...specWithoutDeclared,semantic_completion:{requirements_path:requirementsPath,evidence_path:evidencePath}},merge),/canonical semantic resolution failed/);
+});
+
+test("CHAIN malformed evidence fails closed",()=>{
+  const merge="f".repeat(40);
+  const {bus}=fileAtBus({[registryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:"[[[bad"});
+  const specWithoutDeclared={...parentSpec,semantic_completion:undefined};
+  assert.throws(()=>productionEffectsWithBus(bus).resolveSemanticCompletion({...specWithoutDeclared,semantic_completion:{requirements_path:requirementsPath,evidence_path:evidencePath}},merge),/canonical semantic resolution failed/);
+});
+
+test("CHAIN evidence artifact missing at source SHA fails closed",()=>{
+  const merge="f".repeat(40);
+  // Evidence references an artifact path that does not exist at the merge.
+  const evidenceWithGhostArtifact=JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge,artifact_path:"docs/roadmap/evidence/ghost.json",artifact_sha256:sha("ghost")}]});
+  const {bus}=fileAtBus({[registryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:evidenceWithGhostArtifact});
+  const specWithoutDeclared={...parentSpec,semantic_completion:undefined};
+  assert.throws(()=>productionEffectsWithBus(bus).resolveSemanticCompletion({...specWithoutDeclared,semantic_completion:{requirements_path:requirementsPath,evidence_path:evidencePath}},merge),/canonical semantic resolution failed/);
+});
+
+test("CHAIN evidence artifact hash mismatch blocks",()=>{
+  const merge="f".repeat(40);
+  const evidenceTampered=JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge,artifact_sha256:sha("tampered-not-real")}]});
+  const {bus}=fileAtBus({[registryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:evidenceTampered,[artifactPath]:artifact});
+  const specWithoutDeclared={...parentSpec,semantic_completion:undefined};
+  const decision=productionEffectsWithBus(bus).resolveSemanticCompletion({...specWithoutDeclared,semantic_completion:{requirements_path:requirementsPath,evidence_path:evidencePath}},merge);
+  assert.equal(decision.decision,"BLOCK");
+  assert.deepEqual([...decision.reason_codes],["ARTIFACT_HASH_MISMATCH"]);
+});
+
+test("REAL_GIT_FULL_CHAIN canonical artifacts at the real commit resolve the complete authority tree",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const show=(path:string)=>execFileSync("git",["show",`${candidate}:${path}`],{encoding:"utf8"});
+  // Immutable candidate-commit reads — not worktree state.
+  const registryBytes=show(registryPath);
+  const registry=JSON.parse(registryBytes);
+  assert.equal(registry.schema_version,1);
+  assert.equal(registry.roadmap_id,"BRAIN-101");
+  assert.ok(registry.roadmap_items.R15,"registry must bind R15");
+  const binding=registry.roadmap_items.R15;
+  assert.equal(binding.requirements_path,"docs/roadmap/semantic/requirements.json");
+  assert.equal(binding.evidence_path,"docs/roadmap/semantic/evidence.json");
+  // Leaf artifacts exist AT THE CANDIDATE COMMIT.
+  const requirementsBytes=show(binding.requirements_path);
+  const requirementsDoc=JSON.parse(requirementsBytes);
+  assert.equal(requirementsDoc.schema_version,1);
+  assert.ok(Array.isArray(requirementsDoc.requirements)&&requirementsDoc.requirements.length>0);
+  // Every requirement binds to real roadmap bytes and real requirement text.
+  const roadmapBytes=show("docs/roadmap/BRAIN_101_ROADMAP.md");
+  const roadmapSha=createHash("sha256").update(roadmapBytes).digest("hex");
+  for(const requirement of requirementsDoc.requirements){
+    assert.equal(requirement.original_spec_path,"docs/roadmap/BRAIN_101_ROADMAP.md");
+    assert.equal(requirement.original_spec_sha256,roadmapSha,"requirement must bind the real roadmap bytes at the candidate commit");
+    assert.match(requirement.requirement_text_sha256,/^[0-9a-f]{64}$/);
+    assert.ok(requirement.minimum_duration_seconds>0);
+  }
+  // The exact requirement text is present in the roadmap bytes.
+  const evidenceBytes=show(binding.evidence_path);
+  const evidenceDoc=JSON.parse(evidenceBytes);
+  assert.equal(evidenceDoc.schema_version,1);
+  assert.ok(Array.isArray(evidenceDoc.evidence));
+  // Every real evidence artifact must exist at ITS bound source SHA with matching hash.
+  for(const record of evidenceDoc.evidence){
+    const artifactBytes=execFileSync("git",["show",`${record.source_sha}:${record.artifact_path}`],{encoding:"utf8"});
+    assert.equal(createHash("sha256").update(artifactBytes).digest("hex"),record.artifact_sha256,"evidence artifact hash must match the exact Git bytes at its source SHA");
+  }
+  // The productive resolver consumes those exact Git bytes end-to-end.
+  const gitReadBus={setMutationGuard:()=>{},fileAt:(path:string,ref:string)=>execFileSync("git",["show",`${ref}:${path}`],{encoding:"utf8"})} as any;
+  const effects=productionEffectsWithBus(gitReadBus);
+  const realSpec={...parentSpec,roadmap_id:"BRAIN-101",roadmap_item_id:"R15",semantic_completion:{requirements_path:binding.requirements_path,evidence_path:binding.evidence_path}};
+  const decision=effects.resolveSemanticCompletion(realSpec,candidate);
+  assert.equal(decision.decision,"BLOCK");
+  assert.deepEqual([...decision.reason_codes],["MISSING_EVIDENCE"],"truthful canonical decision: the real R15 soak requirement has no qualifying canonical evidence yet");
+});
+
+test("REAL_GIT_FULL_CHAIN decision matches the actual repository evidence state",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const show=(path:string)=>execFileSync("git",["show",`${candidate}:${path}`],{encoding:"utf8"});
+  const registry=JSON.parse(show(registryPath));
+  const binding=registry.roadmap_items.R15;
+  const requirementsDoc=JSON.parse(show(binding.requirements_path));
+  const evidenceDoc=JSON.parse(show(binding.evidence_path));
+  // Truthful cross-check: decision BLOCK iff evidence array cannot satisfy requirements.
+  assert.equal(evidenceDoc.evidence.length===0&&requirementsDoc.requirements.length>0,true,"current truthful state: no canonical evidence, real requirements present");
+  const gitReadBus={setMutationGuard:()=>{},fileAt:(path:string,ref:string)=>execFileSync("git",["show",`${ref}:${path}`],{encoding:"utf8"})} as any;
+  const decision=productionEffectsWithBus(gitReadBus).resolveSemanticCompletion({...parentSpec,roadmap_id:"BRAIN-101",roadmap_item_id:"R15",semantic_completion:{requirements_path:binding.requirements_path,evidence_path:binding.evidence_path}},candidate);
+  assert.equal(decision.decision,"BLOCK");
+  assert.ok(decision.reason_codes.includes("MISSING_EVIDENCE"));
 });

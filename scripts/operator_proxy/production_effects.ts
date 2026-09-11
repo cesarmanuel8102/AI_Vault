@@ -212,11 +212,23 @@ class CanonicalGitSemanticSource implements SemanticSourceV1 {
     if(declared&&(declared.requirements_path!==requirements_path||declared.evidence_path!==evidence_path))throw new Error("SEMANTIC_CANONICAL_BINDING_MISMATCH");
     return {requirements_path,evidence_path};
   }
+  /** Closed-shape requirements document: {schema_version:1, requirements:[...]}. */
   semanticRequirements():SemanticCompletionInputV1["requirements"]{
-    return this.resolve(this.registryBinding().requirements_path,bytes=>JSON.parse(bytes) as SemanticCompletionInputV1["requirements"]);
+    const path=this.registryBinding().requirements_path;
+    return this.resolve(path,bytes=>{
+      const value=JSON.parse(bytes) as {schema_version?:unknown;requirements?:unknown};
+      if(!value||typeof value!=="object"||Array.isArray(value)||value.schema_version!==1||!Array.isArray(value.requirements))throw new Error("invalid requirements document");
+      return value.requirements as SemanticCompletionInputV1["requirements"];
+    });
   }
+  /** Closed-shape evidence document: {schema_version:1, evidence:[...]}. */
   semanticEvidence():SemanticCompletionInputV1["evidence"]{
-    return this.resolve(this.registryBinding().evidence_path,bytes=>JSON.parse(bytes) as SemanticCompletionInputV1["evidence"]);
+    const path=this.registryBinding().evidence_path;
+    return this.resolve(path,bytes=>{
+      const value=JSON.parse(bytes) as {schema_version?:unknown;evidence?:unknown};
+      if(!value||typeof value!=="object"||Array.isArray(value)||value.schema_version!==1||!Array.isArray(value.evidence))throw new Error("invalid evidence document");
+      return value.evidence as SemanticCompletionInputV1["evidence"];
+    });
   }
   semanticDeferments():SemanticCompletionInputV1["deferments"]{return [];}
   semanticDefermentAuthorizations():SemanticCompletionInputV1["deferment_authorizations"]{return [];}

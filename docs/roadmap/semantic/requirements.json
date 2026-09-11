@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "requirements": [
+    {
+      "requirement_id": "REQ-BRAIN-101-R15-SOAK-30D",
+      "parent_phase": "R15",
+      "original_spec_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
+      "original_spec_sha256": "4c329c104cc5985484304ff1d607bb4e747eb9ea0a72a4a2a77187ef2d4b341e",
+      "requirement_text_sha256": "139b10a2015cc6e579f7d35afdce313a94063f343a6f5bb4d222709bcaf6672e",
+      "minimum_evidence_level": "L8_SOAK",
+      "required_evidence_kinds": ["RUNTIME_OBSERVATION"],
+      "runtime_binding_required": true,
+      "deferment_policy": "FORBIDDEN",
+      "parent_requirement_ids": [],
+      "required_environments": ["PAPER_RUNTIME"],
+      "independent_verifier_required": true,
+      "minimum_duration_seconds": 2592000,
+      "minimum_sample_size": 1
+    }
+  ]
+}
