@@ -195,6 +195,13 @@ export interface SemanticRequirementV1 {
   runtime_binding_required:boolean; deferment_policy:"FORBIDDEN"|"EXPLICIT_AUTHORIZATION_REQUIRED";
   parent_requirement_ids:string[]; required_environments:string[];
   independent_verifier_required:boolean; minimum_duration_seconds:number; minimum_sample_size:number;
+  /**
+   * Governed evidence cohort identity (BR1 Task 3): when two requirements
+   * carry the same cohort_group, their evidence MUST bind the identical
+   * soak_execution_id — proving properties of ONE governed execution.
+   * Absent on non-cohort requirements.
+   */
+  cohort_group?:string;
 }
 export interface EvidenceRefV1 {
   evidence_id:string; requirement_id:string; evidence_kind:string; evidence_level:EvidenceLevel;
@@ -203,6 +210,25 @@ export interface EvidenceRefV1 {
   producer_id:string; assertion_type:"OBSERVATION"|"BOOLEAN";
   observation:{duration_seconds:number;sample_size:number};
   verifier:{verifier_id:string;source_sha:string;independent:boolean};
+  /**
+   * Governed soak execution identity (BR1 Task 3): the single governed
+   * execution/window this observation belongs to. Required for requirements
+   * carrying cohort_group; every cohort member must bind the identical value.
+   */
+  soak_execution_id?:string;
+}
+/**
+ * Governed evidence-kind contract document (BR1 Task 3), resolved from
+ * immutable Git. Every kind used by canonical requirements must exist exactly
+ * once with deterministic semantics; the decision binds the document bytes.
+ */
+export interface EvidenceKindContractsV1 {
+  schema_version:1; roadmap_id:string;
+  calendar_day_policy:"UTC_24H_DAY";
+  minimum_regime_count_for_multiple:number;
+  kinds:Record<string,{assertion_contract:string;attestation_model:string;zero_condition:boolean;tested_runtime_execution:boolean}>;
+  /** SHA-256 of the exact governed document bytes (set by the trusted resolver). */
+  evidence_kind_contracts_sha256?:string;
 }
 export interface DefermentV1 {
   deferment_id:string; requirement_id:string; authorization_source:string; reason:string;
@@ -222,18 +248,23 @@ export type SemanticCompletionReasonCode =
   | "RUNTIME_BINDING_MISSING" | "SELF_REFERENTIAL_EVIDENCE" | "NAKED_BOOLEAN_ASSERTION"
   | "SIMULATION_SUBSTITUTION" | "AMBIGUOUS_EVIDENCE" | "EVIDENCE_TIMESTAMP_IN_FUTURE"
   | "INVALID_DEFERMENT" | "PARENT_REQUIREMENT_UNSATISFIED"
-  | "INDEPENDENT_AUDIT_MISSING" | "CYCLIC_REQUIREMENT_DEPENDENCY";
+  | "INDEPENDENT_AUDIT_MISSING" | "CYCLIC_REQUIREMENT_DEPENDENCY"
+  | "EVIDENCE_COHORT_MISMATCH";
 export interface SemanticCompletionDecisionV1 {
   readonly schema_version:1; readonly phase_or_item_id:string; readonly original_requirement_refs:readonly string[];
   readonly requirements_total:number; readonly requirements_satisfied:number; readonly requirements_deferred_valid:number; readonly requirements_blocked:number;
   readonly evidence_refs:readonly string[]; readonly decision:"PASS"|"BLOCK"; readonly reason_codes:readonly SemanticCompletionReasonCode[];
   readonly source_sha:string; readonly decision_artifact_sha256:string; readonly evaluated_at_utc:string;
+  /** SHA-256 of the governed evidence-kind contract bytes that interpreted the evidence (BR1 Task 3). */
+  readonly evidence_kind_contracts_sha256?:string;
 }
 
 /** Declarative pointer telling ProductionEffects this front is semantic-bound. Paths are not trusted content. */
 export interface SemanticCompletionBindingV1 {
   requirements_path:string;
   evidence_path:string;
+  /** Optional declared kind-contract path; must equal the canonical governed path when present. */
+  evidence_kind_contracts_path?:string;
 }
 
 /**

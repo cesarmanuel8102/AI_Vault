@@ -168,6 +168,7 @@ export function resolveSemanticInput(spec:ProxySpec,source:SemanticSourceV1):Sem
  * roadmap_item_id, never from caller-controlled spec path strings.
  */
 const SEMANTIC_REGISTRY_PATH="docs/roadmap/semantic/semantic_registry.json";
+const KIND_CONTRACTS_PATH="docs/roadmap/semantic/evidence_kind_contracts.json";
 class CanonicalGitSemanticSource implements SemanticSourceV1 {
   constructor(private readonly bus:import("./github_bus.js").GitHubBus,private readonly spec:ProxySpec,private readonly merge:string){}
   private fetch(path:string):string{
@@ -235,6 +236,31 @@ class CanonicalGitSemanticSource implements SemanticSourceV1 {
   artifactBytes(_item:string,artifactPath:string):string|undefined{return this.fetch(artifactPath);}
   canonicalSourceSha():string{return this.merge;}
   nowIsoUtc():string{return new Date().toISOString();}
+  /**
+   * The governed evidence-kind contract document (BR1 Task 3): closed shape,
+   * roadmap identity, calendar-day policy, and per-kind semantics. Its exact
+   * bytes are hash-bound into the semantic decision. Any substitution,
+   * unknown kind, or malformed contract fails closed.
+   */
+  evidenceKindContracts():import("./types.js").EvidenceKindContractsV1{
+    const bytes=this.fetch(KIND_CONTRACTS_PATH);
+    let contracts:import("./types.js").EvidenceKindContractsV1;
+    try{
+      const value=JSON.parse(bytes) as Record<string,unknown>;
+      const keys=Object.keys(value);
+      if(keys.length!==5||!keys.includes("schema_version")||!keys.includes("roadmap_id")||!keys.includes("calendar_day_policy")||!keys.includes("minimum_regime_count_for_multiple")||!keys.includes("kinds"))throw new Error("invalid shape");
+      const regimeMinimum=value.minimum_regime_count_for_multiple;
+      if(value.schema_version!==1||value.calendar_day_policy!=="UTC_24H_DAY"||typeof value.roadmap_id!=="string"||value.roadmap_id!==this.spec.roadmap_id||typeof regimeMinimum!=="number"||!Number.isInteger(regimeMinimum)||regimeMinimum<2)throw new Error("invalid contract");
+      const kinds=value.kinds as Record<string,Record<string,unknown>>;
+      if(!kinds||Object.getPrototypeOf(kinds)!==Object.prototype)throw new Error("invalid kinds");
+      for(const [kind,contract] of Object.entries(kinds)){
+        const contractKeys=Object.keys(contract);
+        if(contractKeys.length!==4||typeof contract.assertion_contract!=="string"||!contract.assertion_contract||typeof contract.attestation_model!=="string"||!contract.attestation_model||typeof contract.zero_condition!=="boolean"||typeof contract.tested_runtime_execution!=="boolean")throw new Error(`invalid kind: ${kind}`);
+      }
+      contracts={schema_version:1,roadmap_id:value.roadmap_id as string,calendar_day_policy:"UTC_24H_DAY",minimum_regime_count_for_multiple:value.minimum_regime_count_for_multiple as number,kinds:kinds as import("./types.js").EvidenceKindContractsV1["kinds"]};
+    }catch{throw new Error(`canonical semantic evidence kind contract invalid: ${KIND_CONTRACTS_PATH}@${this.merge}`);}
+    return {...contracts,evidence_kind_contracts_sha256:createHash("sha256").update(bytes,"utf8").digest("hex")};
+  }
 }
 
 /** Resolves trusted artifact bytes for every evidence record from the canonical source. */
@@ -281,7 +307,11 @@ export class ProductionEffects implements AutonomousEffects {
     if(!SHA1.test(merge))throw new Error("semantic completion bound merge SHA invalid");
     const source=new CanonicalGitSemanticSource(this.bus,spec,merge);
     const input=resolveSemanticInput(spec,source);
-    return evaluateSemanticCompletion(input,trustedArtifactBytes(spec,input,source));
+    const kindContracts=(source as CanonicalGitSemanticSource).evidenceKindContracts();
+    // Caller may not substitute the governed kind-contract path.
+    const declaredPath=spec.semantic_completion.evidence_kind_contracts_path;
+    if(declaredPath!==undefined&&declaredPath!==KIND_CONTRACTS_PATH)throw new Error("SEMANTIC_CANONICAL_BINDING_MISMATCH");
+    return evaluateSemanticCompletion(input,trustedArtifactBytes(spec,input,source),kindContracts);
   }
   bindLifecycle(spec:ProxySpec,state:import("./types.js").LifecycleRecord){this.activeSpec=spec;this.activeState=state;this.boundary.bind(spec,state);}
   ownerRepairRuntimeSha(expectedTip:string):string{return verifyOwnerRepairInstalledRuntime(this.root,this.sourceRepo,expectedTip);}

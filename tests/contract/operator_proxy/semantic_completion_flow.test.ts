@@ -413,9 +413,19 @@ function fileAtBus(files:Record<string,string>,options?:{throwOnMissing?:boolean
 /** Canonical semantic registry mapping the item to its authoritative paths. */
 const semanticRegistryPath="docs/roadmap/semantic/semantic_registry.json";
 const canonicalRegistry=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",roadmap_items:{[parentSpec.roadmap_item_id]:{requirements_path:requirementsPath,evidence_path:evidencePath}}});
-/** fileAtBus with the canonical registry pre-seeded (the default production case). */
+/** Governed evidence-kind contract bytes used by registry-backed fixtures. */
+const fixtureKindContracts=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",calendar_day_policy:"UTC_24H_DAY",minimum_regime_count_for_multiple:2,kinds:{
+  RUNTIME_OBSERVATION:{assertion_contract:"runtime observation artifact",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true},
+  REGIME_COVERAGE:{assertion_contract:"distinct regime enumeration",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true},
+  BYPASS_AUDIT:{assertion_contract:"zero bypass attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true},
+  LEDGER_RECONCILIATION:{assertion_contract:"zero ledger inconsistency attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true},
+  DUPLICATE_ORDER_AUDIT:{assertion_contract:"zero duplicate order attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true},
+  KILL_SWITCH_TEST:{assertion_contract:"executed kill-switch test",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true},
+  RECOVERY_TEST:{assertion_contract:"executed recovery test",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true},
+}});
+/** fileAtBus with the canonical registry + kind contracts pre-seeded (the default production case). */
 function registryFileAtBus(files:Record<string,string>){
-  return fileAtBus({[semanticRegistryPath]:canonicalRegistry,...files});
+  return fileAtBus({[semanticRegistryPath]:canonicalRegistry,[kindContractsPath]:fixtureKindContracts,...files});
 }
 
 function productionEffectsWithBus(bus:any){
@@ -613,7 +623,7 @@ test("alternate weaker registry selected through spec paths is rejected",()=>{
 
 test("correct canonical registry mapping passes",()=>{
   const merge="f".repeat(40);
-  const {bus}=fileAtBus({[semanticRegistryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact});
+  const {bus}=registryFileAtBus({[requirementsPath]:canonicalRequirementsJson,[evidencePath]:JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge}]}),[artifactPath]:artifact});
   const effects=productionEffectsWithBus(bus);
   const decision=effects.resolveSemanticCompletion(parentSpec,merge);
   assert.equal(decision.decision,"PASS");
@@ -920,7 +930,7 @@ test("CHAIN evidence artifact missing at source SHA fails closed",()=>{
 test("CHAIN evidence artifact hash mismatch blocks",()=>{
   const merge="f".repeat(40);
   const evidenceTampered=JSON.stringify({schema_version:1,evidence:[{...canonicalEvidence,source_sha:merge,certified_implementation_sha:merge,artifact_sha256:sha("tampered-not-real")}]});
-  const {bus}=fileAtBus({[registryPath]:canonicalRegistry,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:evidenceTampered,[artifactPath]:artifact});
+  const {bus}=fileAtBus({[registryPath]:canonicalRegistry,[kindContractsPath]:fixtureKindContracts,[requirementsPath]:canonicalRequirementsJson,[evidencePath]:evidenceTampered,[artifactPath]:artifact});
   const specWithoutDeclared={...parentSpec,semantic_completion:undefined};
   const decision=productionEffectsWithBus(bus).resolveSemanticCompletion({...specWithoutDeclared,semantic_completion:{requirements_path:requirementsPath,evidence_path:evidencePath}},merge);
   assert.equal(decision.decision,"BLOCK");
@@ -1081,10 +1091,13 @@ test("REQ_SEMANTICS a generic 30-day runtime observation alone cannot close R15"
     return execFileSync("git",["show",`${ref}:${path}`],{encoding:"utf8"});
   }} as any;
   const decision=productionEffectsWithBus(gitReadBus).resolveSemanticCompletion({...parentSpec,roadmap_id:"BRAIN-101",roadmap_item_id:"R15",semantic_completion:{requirements_path:binding.requirements_path,evidence_path:binding.evidence_path}},candidate);
-  assert.equal(decision.decision,"BLOCK","generic 30d evidence closes only the duration clause; six clauses remain");
-  assert.equal(decision.requirements_blocked,6);
-  assert.equal(decision.requirements_satisfied,1,"only the duration requirement is satisfied");
-  assert.deepEqual([...decision.reason_codes],["MISSING_EVIDENCE"]);
+  assert.equal(decision.decision,"BLOCK","generic 30d evidence cannot close R15: without a governed soak cohort binding it cannot even satisfy the duration clause");
+  assert.equal(decision.requirements_blocked,7);
+  assert.equal(decision.requirements_satisfied,0);
+  // The un-cohorted generic artifact fails the duration clause; every other
+  // clause then fails through its unsatisfied parent.
+  assert.ok(decision.reason_codes.includes("EVIDENCE_COHORT_MISMATCH"),"the generic artifact is not bound to the governed soak cohort");
+  assert.ok(decision.reason_codes.includes("PARENT_REQUIREMENT_UNSATISFIED"));
 });
 
 test("REQ_SEMANTICS SIMULATED_30D substitution against the L8 soak duration clause remains blocked",()=>{
@@ -1107,36 +1120,191 @@ test("REQ_SEMANTICS SIMULATED_30D substitution against the L8 soak duration clau
 });
 
 test("REQ_SEMANTICS positive synthetic contract: a complete qualifying evidence set satisfies all atomic requirements",()=>{
-  const {candidate,binding}=realSemanticArtifacts();
+  const {candidate}=realSemanticArtifacts();
   // Purely synthetic evaluator proof — NOT canonical R15 evidence.
-  const now="2026-09-10T00:00:00.000Z";
-  const kinds=[
-    ["REQ-BRAIN-101-R15-SOAK-DURATION","RUNTIME_OBSERVATION","L8_SOAK",2592000,30],
-    ["REQ-BRAIN-101-R15-SOAK-REGIMES","REGIME_COVERAGE","L8_SOAK",2592000,5],
-    ["REQ-BRAIN-101-R15-SOAK-ZERO-BYPASS","BYPASS_AUDIT","L8_SOAK",2592000,1],
-    ["REQ-BRAIN-101-R15-SOAK-LEDGER-CONSISTENCY","LEDGER_RECONCILIATION","L8_SOAK",2592000,1],
-    ["REQ-BRAIN-101-R15-SOAK-ZERO-DUPLICATE-ORDERS","DUPLICATE_ORDER_AUDIT","L8_SOAK",2592000,1],
-    ["REQ-BRAIN-101-R15-SOAK-KILL-SWITCH","KILL_SWITCH_TEST","L8_SOAK",2592000,1],
-    ["REQ-BRAIN-101-R15-SOAK-RECOVERY","RECOVERY_TEST","L8_SOAK",2592000,1],
-  ] as const;
-  const evidence=kinds.map(([id,kind],index)=>{
-    const artifactBytes=JSON.stringify({requirement:id,kind,index,qualifying:true});
-    return {evidence_id:`EVIDENCE-SYN-${index}`,requirement_id:id,evidence_kind:kind,evidence_level:"L8_SOAK" as const,
-      source_sha:candidate,certified_implementation_sha:candidate,artifact_path:`docs/roadmap/semantic/synthetic-${index}.json`,
-      artifact_sha256:createHash("sha256").update(artifactBytes).digest("hex"),environment:"PAPER_RUNTIME",runtime_binding:"paper-runtime:v1",
-      observed_at_utc:now,producer_id:"synthetic-probe",assertion_type:"OBSERVATION" as const,
-      observation:{duration_seconds:2592000,sample_size:index===1?5:30},verifier:{verifier_id:"independent-verifier",source_sha:candidate,independent:true}};
-  });
-  const artifacts=new Map(evidence.map((record,index)=>[record.artifact_path,JSON.stringify({requirement:record.requirement_id,kind:kinds[index][1],index,qualifying:true})]));
-  const input={schema_version:1 as const,phase_or_item_id:"R15",source_sha:candidate,evaluated_at_utc:now,
-    requirements:realSemanticArtifacts().requirementsDoc.requirements,
-    expected_requirement_ids:realSemanticArtifacts().requirementsDoc.requirements.map((r:{requirement_id:string})=>r.requirement_id),
-    expected_requirements:realSemanticArtifacts().requirementsDoc.requirements,
+  // Complete qualifying set: same governed soak cohort, full-window audits.
+  const {evidence,artifacts}=cohortEvidenceSet(candidate,{});
+  const requirementsDoc=realSemanticArtifacts().requirementsDoc;
+  const input={schema_version:1 as const,phase_or_item_id:"R15",source_sha:candidate,evaluated_at_utc:"2026-09-10T00:00:00.000Z",
+    requirements:requirementsDoc.requirements,
+    expected_requirement_ids:requirementsDoc.requirements.map((r:{requirement_id:string})=>r.requirement_id),
+    expected_requirements:requirementsDoc.requirements,
     evidence,deferments:[],deferment_authorizations:[]};
   const decision=evaluateSemanticCompletion(input,artifacts);
-  assert.equal(decision.decision,"PASS","the schema is expressive enough: complete qualifying evidence satisfies every atomic clause");
+  assert.equal(decision.decision,"PASS","the schema is expressive enough: a complete same-cohort qualifying set satisfies every atomic clause");
   assert.equal(decision.requirements_satisfied,7);
   assert.deepEqual([...decision.reason_codes],[]);
   // Canonical evidence remains empty — this synthetic set lives only in tests.
   assert.equal(JSON.parse(execFileSync("git",["show",`${candidate}:docs/roadmap/semantic/evidence.json`],{encoding:"utf8"})).evidence.length,0);
 });
+
+// ---------------------------------------------------------------------------
+// SOAK COHORT SEMANTICS (external-review P1-1/P1-2/P1-3 + P2-1/P2-2).
+// All R15 soak evidence must bind to ONE governed soak execution cohort.
+// ---------------------------------------------------------------------------
+
+/** Builds a complete 7-clause synthetic evidence set with per-clause overrides. */
+function cohortEvidenceSet(candidate:string,overrides:{cohort?:(index:number)=>string;duration?:(index:number)=>number;assertion?:(index:number)=>"OBSERVATION"|"BOOLEAN";kind?:(index:number)=>string}={}){
+  const now="2026-09-10T00:00:00.000Z";
+  const kinds=[
+    ["REQ-BRAIN-101-R15-SOAK-DURATION","RUNTIME_OBSERVATION"],
+    ["REQ-BRAIN-101-R15-SOAK-REGIMES","REGIME_COVERAGE"],
+    ["REQ-BRAIN-101-R15-SOAK-ZERO-BYPASS","BYPASS_AUDIT"],
+    ["REQ-BRAIN-101-R15-SOAK-LEDGER-CONSISTENCY","LEDGER_RECONCILIATION"],
+    ["REQ-BRAIN-101-R15-SOAK-ZERO-DUPLICATE-ORDERS","DUPLICATE_ORDER_AUDIT"],
+    ["REQ-BRAIN-101-R15-SOAK-KILL-SWITCH","KILL_SWITCH_TEST"],
+    ["REQ-BRAIN-101-R15-SOAK-RECOVERY","RECOVERY_TEST"],
+  ] as const;
+  const defaultCohort="SOAK-EXEC-R15-001";
+  const evidence=kinds.map(([id,kind],index)=>{
+    const artifactBytes=JSON.stringify({requirement:id,kind,index,qualifying:true,soak_execution_id:overrides.cohort?overrides.cohort(index):defaultCohort});
+    return {evidence_id:`EVIDENCE-SYN-${index}`,requirement_id:id,evidence_kind:overrides.kind?overrides.kind(index):kind,evidence_level:"L8_SOAK" as const,
+      source_sha:candidate,certified_implementation_sha:candidate,artifact_path:`docs/roadmap/semantic/synthetic-${index}.json`,
+      artifact_sha256:createHash("sha256").update(artifactBytes).digest("hex"),environment:"PAPER_RUNTIME",runtime_binding:"paper-runtime:v1",
+      observed_at_utc:now,producer_id:"synthetic-probe",assertion_type:overrides.assertion?overrides.assertion(index):"OBSERVATION" as const,
+      soak_execution_id:overrides.cohort?overrides.cohort(index):defaultCohort,
+      observation:{duration_seconds:overrides.duration?overrides.duration(index):2592000,sample_size:index===1?5:30},verifier:{verifier_id:"independent-verifier",source_sha:candidate,independent:true}};
+  });
+  const artifacts=new Map(evidence.map((record,index)=>[record.artifact_path,JSON.stringify({requirement:record.requirement_id,kind:kinds[index][1],index,qualifying:true,soak_execution_id:record.soak_execution_id})]));
+  return {evidence,artifacts};
+}
+function cohortInput(candidate:string,evidence:ReturnType<typeof cohortEvidenceSet>["evidence"]){
+  const requirementsDoc=realSemanticArtifacts().requirementsDoc;
+  return {schema_version:1 as const,phase_or_item_id:"R15",source_sha:candidate,evaluated_at_utc:"2026-09-10T00:00:00.000Z",
+    requirements:requirementsDoc.requirements,
+    expected_requirement_ids:requirementsDoc.requirements.map((r:{requirement_id:string})=>r.requirement_id),
+    expected_requirements:requirementsDoc.requirements,
+    evidence,deferments:[],deferment_authorizations:[]};
+}
+
+test("R1 DIFFERENT_SOAK_COHORTS_BLOCKED",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const cohorts=["SOAK-A","SOAK-B","SOAK-C","SOAK-D","SOAK-E","SOAK-F","SOAK-G"];
+  const {evidence,artifacts}=cohortEvidenceSet(candidate,{cohort:index=>cohorts[index]});
+  const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts);
+  assert.equal(decision.decision,"BLOCK","seven individually perfect records from seven different soaks are NOT one governed soak");
+  assert.ok(decision.reason_codes.includes("EVIDENCE_COHORT_MISMATCH"));
+});
+
+test("R2 SAME_COHORT_COMPLETE_SYNTHETIC_PASS",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const {evidence,artifacts}=cohortEvidenceSet(candidate,{});
+  const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts);
+  assert.equal(decision.decision,"PASS");
+  assert.equal(decision.requirements_satisfied,7);
+  assert.deepEqual([...decision.reason_codes],[]);
+});
+
+test("R3 BYPASS_SHORT_WINDOW_BLOCKED",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const {evidence,artifacts}=cohortEvidenceSet(candidate,{duration:index=>index===2?300:2592000});
+  const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts);
+  assert.equal(decision.decision,"BLOCK","a 5-minute bypass audit cannot attest zero violations across a 30-day soak window");
+  assert.ok(decision.reason_codes.includes("INSUFFICIENT_EVIDENCE_LEVEL"));
+});
+
+test("R4 LEDGER_SHORT_WINDOW_BLOCKED",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const {evidence,artifacts}=cohortEvidenceSet(candidate,{duration:index=>index===3?300:2592000});
+  const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts);
+  assert.equal(decision.decision,"BLOCK");
+  assert.ok(decision.reason_codes.includes("INSUFFICIENT_EVIDENCE_LEVEL"));
+});
+
+test("R5 DUPLICATE_ORDER_SHORT_WINDOW_BLOCKED",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const {evidence,artifacts}=cohortEvidenceSet(candidate,{duration:index=>index===4?300:2592000});
+  const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts);
+  assert.equal(decision.decision,"BLOCK");
+  assert.ok(decision.reason_codes.includes("INSUFFICIENT_EVIDENCE_LEVEL"));
+});
+
+test("R6 KILL_SWITCH_DIFFERENT_COHORT_BLOCKED",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const {evidence,artifacts}=cohortEvidenceSet(candidate,{cohort:index=>index===5?"SOAK-OTHER":undefined!});
+  const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts);
+  assert.equal(decision.decision,"BLOCK","a kill-switch test executed in a different soak cohort does not prove this soak");
+  assert.ok(decision.reason_codes.includes("EVIDENCE_COHORT_MISMATCH"));
+});
+
+test("R7 RECOVERY_DIFFERENT_COHORT_BLOCKED",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const {evidence,artifacts}=cohortEvidenceSet(candidate,{cohort:index=>index===6?"SOAK-OTHER":undefined!});
+  const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts);
+  assert.equal(decision.decision,"BLOCK");
+  assert.ok(decision.reason_codes.includes("EVIDENCE_COHORT_MISMATCH"));
+});
+
+test("R8 STATIC_KILL_SWITCH_PRESENCE_NOT_TEST",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const {evidence,artifacts}=cohortEvidenceSet(candidate,{assertion:index=>index===5?"BOOLEAN":"OBSERVATION"});
+  const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts);
+  assert.equal(decision.decision,"BLOCK","a naked boolean claim of kill-switch presence is not an executed test");
+  assert.ok(decision.reason_codes.includes("NAKED_BOOLEAN_ASSERTION"));
+});
+
+test("R9 STATIC_RECOVERY_PRESENCE_NOT_TEST",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const {evidence,artifacts}=cohortEvidenceSet(candidate,{assertion:index=>index===6?"BOOLEAN":"OBSERVATION"});
+  const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts);
+  assert.equal(decision.decision,"BLOCK");
+  assert.ok(decision.reason_codes.includes("NAKED_BOOLEAN_ASSERTION"));
+});
+
+test("R10 KIND_CONTRACT_SUBSTITUTION_CHANGES_DECISION_IDENTITY",()=>{
+  const {candidate,show}=realSemanticArtifacts();
+  const realContractBytes=show(kindContractsPath);
+  const mutated=JSON.parse(realContractBytes);
+  mutated.kinds.RUNTIME_OBSERVATION.assertion_contract="weakened: any string counts as a runtime observation";
+  const decisionWithReal=runRealResolverDecision(candidate);
+  const decisionWithMutated=runRealResolverDecision(candidate,JSON.stringify(mutated));
+  // Different governed kind-contract bytes MUST change the decision identity
+  // (or fail closed at the canonical path). Same bytes → same identity.
+  assert.ok(decisionWithReal.evidence_kind_contracts_sha256!==decisionWithMutated.evidence_kind_contracts_sha256||decisionWithReal.decision_artifact_sha256!==decisionWithMutated.decision_artifact_sha256,"decision identity must depend on the governed kind-contract bytes");
+});
+
+test("R11 KIND_CONTRACT_PATH_SUBSTITUTION_BLOCKED",()=>{
+  const {candidate}=realSemanticArtifacts();
+  const hostile={...parentSpec,roadmap_id:"BRAIN-101",roadmap_item_id:"R15",semantic_completion:{requirements_path:"docs/roadmap/semantic/requirements.json",evidence_path:"docs/roadmap/semantic/evidence.json",evidence_kind_contracts_path:"attacker/kind-contracts.json"}};
+  const gitReadBus={setMutationGuard:()=>{},fileAt:(path:string,ref:string)=>execFileSync("git",["show",`${ref}:${path}`],{encoding:"utf8"})} as any;
+  assert.throws(()=>productionEffectsWithBus(gitReadBus).resolveSemanticCompletion(hostile,candidate),/SEMANTIC_CANONICAL_BINDING_MISMATCH|canonical semantic registry/);
+});
+
+test("R12 UNKNOWN_KIND_CONTRACT_BLOCKED",()=>{
+  const {candidate,show}=realSemanticArtifacts();
+  const mutated=JSON.parse(show(kindContractsPath));
+  delete mutated.kinds.BYPASS_AUDIT; // canonical requirement kind now ungoverned
+  const gitReadBus={setMutationGuard:()=>{},fileAt:(path:string,ref:string)=>{
+    if(path===kindContractsPath)return JSON.stringify(mutated);
+    return execFileSync("git",["show",`${ref}:${path}`],{encoding:"utf8"});
+  }} as any;
+  const effects=productionEffectsWithBus(gitReadBus);
+  const realSpec={...parentSpec,roadmap_id:"BRAIN-101",roadmap_item_id:"R15",semantic_completion:{requirements_path:"docs/roadmap/semantic/requirements.json",evidence_path:"docs/roadmap/semantic/evidence.json"}};
+  assert.throws(()=>effects.resolveSemanticCompletion(realSpec,candidate),/canonical semantic evidence kind contract/);
+});
+
+test("R13 29_CALENDAR_DAYS_BLOCKED",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const {evidence,artifacts}=cohortEvidenceSet(candidate,{duration:()=>2505600});
+  const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts);
+  assert.equal(decision.decision,"BLOCK","29 UTC calendar days is not 30");
+  assert.ok(decision.reason_codes.includes("INSUFFICIENT_EVIDENCE_LEVEL"));
+});
+
+test("R14 30_CALENDAR_DAYS_ELIGIBLE",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const {evidence,artifacts}=cohortEvidenceSet(candidate,{});
+  const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts);
+  assert.equal(decision.decision,"PASS","30 consecutive UTC calendar days (2592000s) satisfies the duration clause");
+});
+
+/** Runs the production resolver with real Git bytes; optionally overrides the kind-contract file bytes. */
+function runRealResolverDecision(candidate:string,contractBytesOverride?:string){
+  const {binding}=realSemanticArtifacts();
+  const gitReadBus={setMutationGuard:()=>{},fileAt:(path:string,ref:string)=>{
+    if(path===kindContractsPath&&contractBytesOverride!==undefined)return contractBytesOverride;
+    return execFileSync("git",["show",`${ref}:${path}`],{encoding:"utf8"});
+  }} as any;
+  const realSpec={...parentSpec,roadmap_id:"BRAIN-101",roadmap_item_id:"R15",semantic_completion:{requirements_path:binding.requirements_path,evidence_path:binding.evidence_path}};
+  return productionEffectsWithBus(gitReadBus).resolveSemanticCompletion(realSpec,candidate);
+}
