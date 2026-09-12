@@ -8,14 +8,19 @@
       "original_spec_sha256": "4c329c104cc5985484304ff1d607bb4e747eb9ea0a72a4a2a77187ef2d4b341e",
       "requirement_text_sha256": "1aa5e0d775d745e1d5176d17c8291325bc5abfcebe897ba32bb184fed10f0518",
       "minimum_evidence_level": "L8_SOAK",
-      "required_evidence_kinds": ["RUNTIME_OBSERVATION"],
+      "required_evidence_kinds": [
+        "RUNTIME_OBSERVATION"
+      ],
       "runtime_binding_required": true,
       "deferment_policy": "FORBIDDEN",
       "parent_requirement_ids": [],
-      "required_environments": ["PAPER_RUNTIME"],
+      "required_environments": [
+        "PAPER_RUNTIME"
+      ],
       "independent_verifier_required": true,
       "minimum_duration_seconds": 2592000,
-      "minimum_sample_size": 1
+      "minimum_sample_size": 1,
+      "cohort_group": "R15-SOAK-COHORT"
     },
     {
       "requirement_id": "REQ-BRAIN-101-R15-SOAK-REGIMES",
@@ -24,14 +29,21 @@
       "original_spec_sha256": "4c329c104cc5985484304ff1d607bb4e747eb9ea0a72a4a2a77187ef2d4b341e",
       "requirement_text_sha256": "148ff0a1a9777d599402e8c9d23cc78e817e1214b6da111c6aa98b9bd8072f62",
       "minimum_evidence_level": "L8_SOAK",
-      "required_evidence_kinds": ["REGIME_COVERAGE"],
+      "required_evidence_kinds": [
+        "REGIME_COVERAGE"
+      ],
       "runtime_binding_required": true,
       "deferment_policy": "FORBIDDEN",
-      "parent_requirement_ids": ["REQ-BRAIN-101-R15-SOAK-DURATION"],
-      "required_environments": ["PAPER_RUNTIME"],
+      "parent_requirement_ids": [
+        "REQ-BRAIN-101-R15-SOAK-DURATION"
+      ],
+      "required_environments": [
+        "PAPER_RUNTIME"
+      ],
       "independent_verifier_required": true,
       "minimum_duration_seconds": 0,
-      "minimum_sample_size": 2
+      "minimum_sample_size": 2,
+      "cohort_group": "R15-SOAK-COHORT"
     },
     {
       "requirement_id": "REQ-BRAIN-101-R15-SOAK-ZERO-BYPASS",
@@ -40,14 +52,21 @@
       "original_spec_sha256": "4c329c104cc5985484304ff1d607bb4e747eb9ea0a72a4a2a77187ef2d4b341e",
       "requirement_text_sha256": "da8f133f73df3cd32f077f6597ca10cfb5c948258378730015a0253450266549",
       "minimum_evidence_level": "L8_SOAK",
-      "required_evidence_kinds": ["BYPASS_AUDIT"],
+      "required_evidence_kinds": [
+        "BYPASS_AUDIT"
+      ],
       "runtime_binding_required": true,
       "deferment_policy": "FORBIDDEN",
-      "parent_requirement_ids": ["REQ-BRAIN-101-R15-SOAK-DURATION"],
-      "required_environments": ["PAPER_RUNTIME"],
+      "parent_requirement_ids": [
+        "REQ-BRAIN-101-R15-SOAK-DURATION"
+      ],
+      "required_environments": [
+        "PAPER_RUNTIME"
+      ],
       "independent_verifier_required": true,
-      "minimum_duration_seconds": 0,
-      "minimum_sample_size": 1
+      "minimum_duration_seconds": 2592000,
+      "minimum_sample_size": 1,
+      "cohort_group": "R15-SOAK-COHORT"
     },
     {
       "requirement_id": "REQ-BRAIN-101-R15-SOAK-LEDGER-CONSISTENCY",
@@ -56,14 +75,21 @@
       "original_spec_sha256": "4c329c104cc5985484304ff1d607bb4e747eb9ea0a72a4a2a77187ef2d4b341e",
       "requirement_text_sha256": "3fd188c22d7294444c90593d25d9e7e83c39f0bbb40c63f495e6dfbb57ad80ff",
       "minimum_evidence_level": "L8_SOAK",
-      "required_evidence_kinds": ["LEDGER_RECONCILIATION"],
+      "required_evidence_kinds": [
+        "LEDGER_RECONCILIATION"
+      ],
       "runtime_binding_required": true,
       "deferment_policy": "FORBIDDEN",
-      "parent_requirement_ids": ["REQ-BRAIN-101-R15-SOAK-DURATION"],
-      "required_environments": ["PAPER_RUNTIME"],
+      "parent_requirement_ids": [
+        "REQ-BRAIN-101-R15-SOAK-DURATION"
+      ],
+      "required_environments": [
+        "PAPER_RUNTIME"
+      ],
       "independent_verifier_required": true,
-      "minimum_duration_seconds": 0,
-      "minimum_sample_size": 1
+      "minimum_duration_seconds": 2592000,
+      "minimum_sample_size": 1,
+      "cohort_group": "R15-SOAK-COHORT"
     },
     {
       "requirement_id": "REQ-BRAIN-101-R15-SOAK-ZERO-DUPLICATE-ORDERS",
@@ -72,14 +98,21 @@
       "original_spec_sha256": "4c329c104cc5985484304ff1d607bb4e747eb9ea0a72a4a2a77187ef2d4b341e",
       "requirement_text_sha256": "f124fd1958a6b0302042710cb2d4c59cb1c9b98a314ed165a4b1d8d56a6a5af9",
       "minimum_evidence_level": "L8_SOAK",
-      "required_evidence_kinds": ["DUPLICATE_ORDER_AUDIT"],
+      "required_evidence_kinds": [
+        "DUPLICATE_ORDER_AUDIT"
+      ],
       "runtime_binding_required": true,
       "deferment_policy": "FORBIDDEN",
-      "parent_requirement_ids": ["REQ-BRAIN-101-R15-SOAK-DURATION"],
-      "required_environments": ["PAPER_RUNTIME"],
+      "parent_requirement_ids": [
+        "REQ-BRAIN-101-R15-SOAK-DURATION"
+      ],
+      "required_environments": [
+        "PAPER_RUNTIME"
+      ],
       "independent_verifier_required": true,
-      "minimum_duration_seconds": 0,
-      "minimum_sample_size": 1
+      "minimum_duration_seconds": 2592000,
+      "minimum_sample_size": 1,
+      "cohort_group": "R15-SOAK-COHORT"
     },
     {
       "requirement_id": "REQ-BRAIN-101-R15-SOAK-KILL-SWITCH",
@@ -88,14 +121,21 @@
       "original_spec_sha256": "4c329c104cc5985484304ff1d607bb4e747eb9ea0a72a4a2a77187ef2d4b341e",
       "requirement_text_sha256": "345a38a2c0879e9d3fd10ec61e26abb1aa127a535d38a11b532577435801ad76",
       "minimum_evidence_level": "L8_SOAK",
-      "required_evidence_kinds": ["KILL_SWITCH_TEST"],
+      "required_evidence_kinds": [
+        "KILL_SWITCH_TEST"
+      ],
       "runtime_binding_required": true,
       "deferment_policy": "FORBIDDEN",
-      "parent_requirement_ids": ["REQ-BRAIN-101-R15-SOAK-DURATION"],
-      "required_environments": ["PAPER_RUNTIME"],
+      "parent_requirement_ids": [
+        "REQ-BRAIN-101-R15-SOAK-DURATION"
+      ],
+      "required_environments": [
+        "PAPER_RUNTIME"
+      ],
       "independent_verifier_required": true,
       "minimum_duration_seconds": 0,
-      "minimum_sample_size": 1
+      "minimum_sample_size": 1,
+      "cohort_group": "R15-SOAK-COHORT"
     },
     {
       "requirement_id": "REQ-BRAIN-101-R15-SOAK-RECOVERY",
@@ -104,14 +144,21 @@
       "original_spec_sha256": "4c329c104cc5985484304ff1d607bb4e747eb9ea0a72a4a2a77187ef2d4b341e",
       "requirement_text_sha256": "345a38a2c0879e9d3fd10ec61e26abb1aa127a535d38a11b532577435801ad76",
       "minimum_evidence_level": "L8_SOAK",
-      "required_evidence_kinds": ["RECOVERY_TEST"],
+      "required_evidence_kinds": [
+        "RECOVERY_TEST"
+      ],
       "runtime_binding_required": true,
       "deferment_policy": "FORBIDDEN",
-      "parent_requirement_ids": ["REQ-BRAIN-101-R15-SOAK-DURATION"],
-      "required_environments": ["PAPER_RUNTIME"],
+      "parent_requirement_ids": [
+        "REQ-BRAIN-101-R15-SOAK-DURATION"
+      ],
+      "required_environments": [
+        "PAPER_RUNTIME"
+      ],
       "independent_verifier_required": true,
       "minimum_duration_seconds": 0,
-      "minimum_sample_size": 1
+      "minimum_sample_size": 1,
+      "cohort_group": "R15-SOAK-COHORT"
     }
   ]
 }

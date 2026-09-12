@@ -2,12 +2,6 @@
   "schema_version": 1,
   "roadmap_id": "BRAIN-101",
   "minimum_regime_count_for_multiple": 2,
-  "sample_size_semantics": {
-    "default": "number of independent observations in the bound artifact",
-    "per_kind": {
-      "REGIME_COVERAGE": "number of distinct validated regimes recorded in the bound artifact"
-    }
-  },
   "kinds": {
     "RUNTIME_OBSERVATION": {
       "assertion_contract": "Artifact records a continuous runtime observation of the bound environment for at least the required duration.",
@@ -51,5 +45,6 @@
       "zero_condition": false,
       "tested_runtime_execution": true
     }
-  }
+  },
+  "calendar_day_policy": "UTC_24H_DAY"
 }
