@@ -986,3 +986,149 @@ test("REAL_GIT_FULL_CHAIN decision matches the actual repository evidence state"
   assert.equal(decision.decision,"BLOCK");
   assert.ok(decision.reason_codes.includes("MISSING_EVIDENCE"));
 });
+
+// ---------------------------------------------------------------------------
+// REQUIREMENT SEMANTIC FIDELITY: the canonical R15 soak sentence decomposes
+// atomically; each clause binds its exact roadmap bytes; a generic 30-day
+// runtime observation alone can never close R15.
+// ---------------------------------------------------------------------------
+const realRegistryPath="docs/roadmap/semantic/semantic_registry.json";
+const kindContractsPath="docs/roadmap/semantic/evidence_kind_contracts.json";
+
+/** Reads real committed artifacts from the candidate commit (immutable Git reads). */
+function realSemanticArtifacts(){
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const show=(path:string)=>execFileSync("git",["show",`${candidate}:${path}`],{encoding:"utf8"});
+  const registry=JSON.parse(show(realRegistryPath));
+  const binding=registry.roadmap_items.R15;
+  return {candidate,show,registry,binding,requirementsDoc:JSON.parse(show(binding.requirements_path)),evidenceDoc:JSON.parse(show(binding.evidence_path))};
+}
+
+test("REQ_SEMANTICS canonical requirements decompose the soak sentence atomically",()=>{
+  const {requirementsDoc}=realSemanticArtifacts();
+  assert.equal(requirementsDoc.schema_version,1);
+  const ids=requirementsDoc.requirements.map((r:{requirement_id:string})=>r.requirement_id);
+  // Every clause of the canonical sentence must be independently machine-bound.
+  const expected=[
+    ["REQ-BRAIN-101-R15-SOAK-DURATION",  "1aa5e0d775d745e1d5176d17c8291325bc5abfcebe897ba32bb184fed10f0518"],
+    ["REQ-BRAIN-101-R15-SOAK-REGIMES",   "148ff0a1a9777d599402e8c9d23cc78e817e1214b6da111c6aa98b9bd8072f62"],
+    ["REQ-BRAIN-101-R15-SOAK-ZERO-BYPASS", "da8f133f73df3cd32f077f6597ca10cfb5c948258378730015a0253450266549"],
+    ["REQ-BRAIN-101-R15-SOAK-LEDGER-CONSISTENCY", "3fd188c22d7294444c90593d25d9e7e83c39f0bbb40c63f495e6dfbb57ad80ff"],
+    ["REQ-BRAIN-101-R15-SOAK-ZERO-DUPLICATE-ORDERS", "f124fd1958a6b0302042710cb2d4c59cb1c9b98a314ed165a4b1d8d56a6a5af9"],
+    ["REQ-BRAIN-101-R15-SOAK-KILL-SWITCH", "345a38a2c0879e9d3fd10ec61e26abb1aa127a535d38a11b532577435801ad76"],
+    ["REQ-BRAIN-101-R15-SOAK-RECOVERY",   "345a38a2c0879e9d3fd10ec61e26abb1aa127a535d38a11b532577435801ad76"],
+  ] as const;
+  assert.equal(requirementsDoc.requirements.length,7,"the seven canonical clauses are separate atomic requirements");
+  for(const [id,textSha] of expected){
+    assert.ok(ids.includes(id),`missing atomic requirement ${id}`);
+    const requirement=requirementsDoc.requirements.find((r:{requirement_id:string})=>r.requirement_id===id)!;
+    assert.equal(requirement.requirement_text_sha256,textSha,`${id} must bind its exact clause bytes`);
+    assert.equal(requirement.original_spec_path,"docs/roadmap/BRAIN_101_ROADMAP.md");
+    assert.equal(requirement.original_spec_sha256,"4c329c104cc5985484304ff1d607bb4e747eb9ea0a72a4a2a77187ef2d4b341e","must bind real roadmap bytes");
+    assert.equal(requirement.parent_requirement_ids.includes("REQ-BRAIN-101-R15-SOAK-DURATION"),id!=="REQ-BRAIN-101-R15-SOAK-DURATION","every clause depends on the soak duration");
+  }
+  // Multi-regime must NOT be satisfiable by a single sample: "múltiples" >= 2.
+  const regimes=requirementsDoc.requirements.find((r:{requirement_id:string})=>r.requirement_id==="REQ-BRAIN-101-R15-SOAK-REGIMES")!;
+  assert.equal(regimes.minimum_sample_size>=2,true,"multiple regimes means at least 2 distinct validated regimes");
+  assert.ok(regimes.required_evidence_kinds.includes("REGIME_COVERAGE"),"regime clause requires the governed REGIME_COVERAGE kind");
+});
+
+test("REQ_SEMANTICS evidence kind contracts are governed and closed",()=>{
+  const {show}=realSemanticArtifacts();
+  const contracts=JSON.parse(show(kindContractsPath));
+  assert.equal(contracts.schema_version,1);
+  assert.equal(contracts.minimum_regime_count_for_multiple,2,"'múltiples regímenes' is formally at least 2");
+  for(const [kind,contract] of Object.entries(contracts.kinds) as [string,{assertion_contract:string;attestation_model:string;zero_condition:boolean;tested_runtime_execution:boolean}][]){
+    assert.equal(typeof contract.assertion_contract,"string");
+    assert.equal(typeof contract.attestation_model,"string");
+    assert.equal(typeof contract.zero_condition,"boolean");
+    assert.equal(typeof contract.tested_runtime_execution,"boolean");
+    assert.ok(contract.assertion_contract.length>0);
+    assert.ok(contract.attestation_model.includes("artifact"),`${kind} attestation must be artifact-bound`);
+    if(kind==="KILL_SWITCH_TEST"||kind==="RECOVERY_TEST")assert.equal(contract.tested_runtime_execution,true,`${kind} requires tested runtime execution, not code presence`);
+  }
+  // The kinds used by the requirements must exist in the governed contract set.
+  const {requirementsDoc}=realSemanticArtifacts();
+  const governedKinds=new Set(Object.keys(contracts.kinds));
+  for(const requirement of requirementsDoc.requirements)for(const kind of requirement.required_evidence_kinds)assert.ok(governedKinds.has(kind),`requirement kind ${kind} must be governed`);
+});
+
+test("REQ_SEMANTICS a generic 30-day runtime observation alone cannot close R15",()=>{
+  const {candidate,show,binding}=realSemanticArtifacts();
+  const requirementsDoc=JSON.parse(show(binding.requirements_path));
+  // Adversarial synthetic evidence: a PERFECT generic 30-day runtime soak —
+  // correct duration, correct source, correct artifact hash, independent
+  // verifier, runtime bound — but NO proof of regimes/bypass/ledger/duplicates/
+  // kill-switch/recovery. It satisfies ONLY the duration clause.
+  const genericArtifact=JSON.stringify({observation:"generic 30d paper runtime",regimes:null,bypass_count:null,ledger_reconciliation:null,duplicate_orders:null,kill_switch_test:null,recovery_test:null});
+  const genericArtifactSha=createHash("sha256").update(genericArtifact).digest("hex");
+  const genericEvidence={schema_version:1,evidence:[{
+    evidence_id:"EVIDENCE-GENERIC-30D",requirement_id:"REQ-BRAIN-101-R15-SOAK-DURATION",evidence_kind:"RUNTIME_OBSERVATION",
+    evidence_level:"L8_SOAK" as const,source_sha:candidate,certified_implementation_sha:candidate,
+    artifact_path:"docs/roadmap/semantic/generic-soak.json",artifact_sha256:genericArtifactSha,environment:"PAPER_RUNTIME",runtime_binding:"paper-runtime:v1",
+    observed_at_utc:"2026-09-10T00:00:00.000Z",producer_id:"runtime-probe",assertion_type:"OBSERVATION" as const,
+    observation:{duration_seconds:2592000,sample_size:30},verifier:{verifier_id:"independent-verifier",source_sha:candidate,independent:true},
+  }]};
+  const gitReadBus={setMutationGuard:()=>{},fileAt:(path:string,ref:string)=>{
+    if(path===binding.evidence_path)return JSON.stringify(genericEvidence);
+    return execFileSync("git",["show",`${ref}:${path}`],{encoding:"utf8"});
+  }} as any;
+  const decision=productionEffectsWithBus(gitReadBus).resolveSemanticCompletion({...parentSpec,roadmap_id:"BRAIN-101",roadmap_item_id:"R15",semantic_completion:{requirements_path:binding.requirements_path,evidence_path:binding.evidence_path}},candidate);
+  assert.equal(decision.decision,"BLOCK","generic 30d evidence closes only the duration clause; six clauses remain");
+  assert.equal(decision.requirements_blocked,6);
+  assert.equal(decision.requirements_satisfied,1,"only the duration requirement is satisfied");
+  assert.deepEqual([...decision.reason_codes],["MISSING_EVIDENCE"]);
+});
+
+test("REQ_SEMANTICS SIMULATED_30D substitution against the L8 soak duration clause remains blocked",()=>{
+  const {candidate,binding}=realSemanticArtifacts();
+  const simulatedEvidence={schema_version:1,evidence:[{
+    evidence_id:"EVIDENCE-SIM-30D",requirement_id:"REQ-BRAIN-101-R15-SOAK-DURATION",evidence_kind:"SIMULATED_30D",
+    evidence_level:"L4_SIMULATED_INTEGRATION" as const,source_sha:candidate,certified_implementation_sha:candidate,
+    artifact_path:"docs/roadmap/semantic/generic-soak.json",artifact_sha256:createHash("sha256").update("sim").digest("hex"),environment:"PAPER_RUNTIME",runtime_binding:"paper-runtime:v1",
+    observed_at_utc:"2026-09-10T00:00:00.000Z",producer_id:"runtime-probe",assertion_type:"OBSERVATION" as const,
+    observation:{duration_seconds:2592000,sample_size:30},verifier:{verifier_id:"independent-verifier",source_sha:candidate,independent:true},
+  }]};
+  const gitReadBus={setMutationGuard:()=>{},fileAt:(path:string,ref:string)=>{
+    if(path===binding.evidence_path)return JSON.stringify(simulatedEvidence);
+    return execFileSync("git",["show",`${ref}:${path}`],{encoding:"utf8"});
+  }} as any;
+  const decision=productionEffectsWithBus(gitReadBus).resolveSemanticCompletion({...parentSpec,roadmap_id:"BRAIN-101",roadmap_item_id:"R15",semantic_completion:{requirements_path:binding.requirements_path,evidence_path:binding.evidence_path}},candidate);
+  assert.equal(decision.decision,"BLOCK");
+  assert.ok(decision.reason_codes.includes("SIMULATION_SUBSTITUTION"));
+});
+
+test("REQ_SEMANTICS positive synthetic contract: a complete qualifying evidence set satisfies all atomic requirements",()=>{
+  const {candidate,binding}=realSemanticArtifacts();
+  // Purely synthetic evaluator proof — NOT canonical R15 evidence.
+  const now="2026-09-10T00:00:00.000Z";
+  const kinds=[
+    ["REQ-BRAIN-101-R15-SOAK-DURATION","RUNTIME_OBSERVATION","L8_SOAK",2592000,30],
+    ["REQ-BRAIN-101-R15-SOAK-REGIMES","REGIME_COVERAGE","L8_SOAK",2592000,5],
+    ["REQ-BRAIN-101-R15-SOAK-ZERO-BYPASS","BYPASS_AUDIT","L8_SOAK",2592000,1],
+    ["REQ-BRAIN-101-R15-SOAK-LEDGER-CONSISTENCY","LEDGER_RECONCILIATION","L8_SOAK",2592000,1],
+    ["REQ-BRAIN-101-R15-SOAK-ZERO-DUPLICATE-ORDERS","DUPLICATE_ORDER_AUDIT","L8_SOAK",2592000,1],
+    ["REQ-BRAIN-101-R15-SOAK-KILL-SWITCH","KILL_SWITCH_TEST","L8_SOAK",2592000,1],
+    ["REQ-BRAIN-101-R15-SOAK-RECOVERY","RECOVERY_TEST","L8_SOAK",2592000,1],
+  ] as const;
+  const evidence=kinds.map(([id,kind],index)=>{
+    const artifactBytes=JSON.stringify({requirement:id,kind,index,qualifying:true});
+    return {evidence_id:`EVIDENCE-SYN-${index}`,requirement_id:id,evidence_kind:kind,evidence_level:"L8_SOAK" as const,
+      source_sha:candidate,certified_implementation_sha:candidate,artifact_path:`docs/roadmap/semantic/synthetic-${index}.json`,
+      artifact_sha256:createHash("sha256").update(artifactBytes).digest("hex"),environment:"PAPER_RUNTIME",runtime_binding:"paper-runtime:v1",
+      observed_at_utc:now,producer_id:"synthetic-probe",assertion_type:"OBSERVATION" as const,
+      observation:{duration_seconds:2592000,sample_size:index===1?5:30},verifier:{verifier_id:"independent-verifier",source_sha:candidate,independent:true}};
+  });
+  const artifacts=new Map(evidence.map(record=>[record.artifact_path,JSON.stringify({requirement:record.requirement_id,qualifying:true,index:Number(record.evidence_id.split("-").pop())})]));
+  const input={schema_version:1 as const,phase_or_item_id:"R15",source_sha:candidate,evaluated_at_utc:now,
+    requirements:realSemanticArtifacts().requirementsDoc.requirements,
+    expected_requirement_ids:realSemanticArtifacts().requirementsDoc.requirements.map((r:{requirement_id:string})=>r.requirement_id),
+    expected_requirements:realSemanticArtifacts().requirementsDoc.requirements,
+    evidence,deferments:[],deferment_authorizations:[]};
+  const decision=evaluateSemanticCompletion(input,artifacts);
+  assert.equal(decision.decision,"PASS","the schema is expressive enough: complete qualifying evidence satisfies every atomic clause");
+  assert.equal(decision.requirements_satisfied,7);
+  assert.deepEqual([...decision.reason_codes],[]);
+  // Canonical evidence remains empty — this synthetic set lives only in tests.
+  assert.equal(JSON.parse(execFileSync("git",["show",`${candidate}:docs/roadmap/semantic/evidence.json`],{encoding:"utf8"})).evidence.length,0);
+});
