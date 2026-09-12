@@ -4,7 +4,10 @@
   "roadmap_items": {
     "R15": {
       "requirements_path": "docs/roadmap/semantic/requirements.json",
-      "evidence_path": "docs/roadmap/semantic/evidence.json"
+      "evidence_path": "docs/roadmap/semantic/evidence.json",
+      "evidence_kind_contracts_path": "docs/roadmap/semantic/evidence_kind_contracts.json",
+      "soak_execution_manifest_path": "docs/roadmap/semantic/soak_execution_manifest.json",
+      "regime_classifier_contract_path": "docs/roadmap/semantic/regime_classifier_contract.json"
     }
   }
 }
