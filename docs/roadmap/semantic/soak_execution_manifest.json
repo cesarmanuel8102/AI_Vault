@@ -12,5 +12,5 @@
   "regime_classifier_id": "BRAIN-101-R15-REGIME-CLASSIFIER",
   "regime_classifier_version": "0.1.0-preregistered",
   "regime_classifier_contract_path": "docs/roadmap/semantic/regime_classifier_contract.json",
-  "regime_classifier_contract_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  "regime_classifier_contract_sha256": "22e24771d2a89d42285a40a9929579f511289ea9e76c704c4aedd98c605719c4"
 }
