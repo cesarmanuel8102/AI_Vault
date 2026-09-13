@@ -1670,3 +1670,149 @@ test("P2-2 REGIME_SEMANTICS come from the governed contract, not gate constants"
   assert.equal(decision.decision,"BLOCK","contract demanding 5 distinct regimes rejects a 3-regime observation");
   assert.ok(decision.reason_codes.includes("REGIME_ID_COUNT_MISMATCH"));
 });
+
+// ---------------------------------------------------------------------------
+// EXECUTION LIFECYCLE + SOURCE + MATERIALIZATION AUTHORITY (external review
+// round 2): completion state, soak window span, evidence-in-window binding,
+// classifier definition materialization, and execution source SHA authority.
+// ---------------------------------------------------------------------------
+
+/** Kind-contract document bytes including the governed requires_regime_identity flag. */
+function fixtureKindContractsWithFlag(requiresRegimeIdentity:boolean){
+  return JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",calendar_day_policy:"UTC_24H_DAY",minimum_regime_count_for_multiple:2,kinds:{
+    RUNTIME_OBSERVATION:{assertion_contract:"runtime observation artifact",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity},
+    REGIME_COVERAGE:{assertion_contract:"distinct regime enumeration",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity},
+    BYPASS_AUDIT:{assertion_contract:"zero bypass attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true,requires_regime_identity},
+    LEDGER_RECONCILIATION:{assertion_contract:"zero ledger inconsistency attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true,requires_regime_identity},
+    DUPLICATE_ORDER_AUDIT:{assertion_contract:"zero duplicate order attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true,requires_regime_identity},
+    KILL_SWITCH_TEST:{assertion_contract:"executed kill-switch test",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity},
+    RECOVERY_TEST:{assertion_contract:"executed recovery test",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity},
+  }});
+}
+
+test("Q1 SOAK_STARTED_BUT_NOT_COMPLETED cannot authorize evidence",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  // A soak that started but has NOT completed cannot yet have full-window
+  // qualifying evidence: 30-day window evidence implies the window closed.
+  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  assert.equal(authorities.governedManifest.started_at_utc!==null,true);
+  assert.equal(authorities.governedManifest.ended_at_utc,null);
+  const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{regimeIds:index=>index===1?["REGIME-A","REGIME-B"]:undefined,authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
+  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
+  assert.equal(decision.decision,"BLOCK","a started-but-never-ended soak cannot vouch a completed 30-day observation");
+  assert.ok(decision.reason_codes.includes("SOAK_EXECUTION_NOT_COMPLETED"));
+});
+
+test("Q2 COMPLETED_SOAK_WITH_SHORT_WINDOW cannot authorize full-window evidence",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
+  // The governed window spans only 15 days (1296000s) — evidence claiming a
+  // 30-day (2592000s) observation cannot have occurred INSIDE this window.
+  const shortWindowManifestBase={...authorities.governedManifest,ended_at_utc:"2026-09-25T00:00:00.000Z"};
+  const shortWindowManifest={...shortWindowManifestBase,soak_execution_manifest_sha256:createHash("sha256").update(JSON.stringify(shortWindowManifestBase),"utf8").digest("hex")};
+  const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{regimeIds:index=>index===1?["REGIME-A","REGIME-B"]:undefined,authorities:{manifest:shortWindowManifest,classifier:authorities.governedClassifier}});
+  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,undefined,shortWindowManifest,authorities.governedClassifier);
+  assert.equal(decision.decision,"BLOCK","a 30-day observation cannot fit a 15-day governed window");
+  assert.ok(decision.reason_codes.includes("EVIDENCE_OUTSIDE_SOAK_WINDOW"));
+});
+
+test("Q3 evidence observed OUTSIDE the governed soak window is rejected",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
+  // All evidence is INSIDE the window except the kill-switch test, which
+  // claims an execution date before the soak started.
+  const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{regimeIds:index=>index===1?["REGIME-A","REGIME-B"]:undefined,authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
+  const outsideWindow=evidence.map((record,index)=>index===5?{...record,observed_at_utc:"2025-01-01T00:00:00.000Z"}:record);
+  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,outsideWindow),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
+  assert.equal(decision.decision,"BLOCK","a kill-switch test executed before the soak window does not prove this soak");
+  assert.ok(decision.reason_codes.includes("EVIDENCE_OUTSIDE_SOAK_WINDOW"));
+});
+
+test("Q4 COMPLETED_FULL_WINDOW soak authorizes the complete qualifying set",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
+  const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{regimeIds:index=>index===1?["REGIME-A","REGIME-B"]:undefined,authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
+  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
+  assert.equal(decision.decision,"PASS","a completed 30-day governed window with in-window evidence satisfies every clause");
+  assert.equal(decision.requirements_satisfied,7);
+});
+
+test("Q5 CLASSIFIER_DEFINITION_MATERIALIZATION is proven by the resolver from Git",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  // The REAL canonical classifier declares definition_path=null — the
+  // resolver must load it and the gate must fail closed on regime evidence.
+  // (Materialization authority = the definition artifact exists in Git at
+  // the bound SHA with the declared bytes.)
+  const spec={...parentSpec,roadmap_id:"BRAIN-101",roadmap_item_id:"R15",semantic_completion:{requirements_path:"docs/roadmap/semantic/requirements.json",evidence_path:"docs/roadmap/semantic/evidence.json"}};
+  const {manifest}=governedSemanticAuthorities();
+  const evidenceWithRegime={schema_version:1,evidence:[
+    {evidence_id:"E-DUR",requirement_id:"REQ-BRAIN-101-R15-SOAK-DURATION",evidence_kind:"RUNTIME_OBSERVATION",evidence_level:"L8_SOAK" as const,source_sha:candidate,certified_implementation_sha:candidate,artifact_path:artifactPath,artifact_sha256:sha(artifact),environment:"PAPER_RUNTIME",runtime_binding:"paper-runtime:v1",observed_at_utc:"2026-09-10T00:00:00.000Z",producer_id:"p",assertion_type:"OBSERVATION" as const,soak_execution_id:manifest.soak_execution_id,observation:{duration_seconds:2592000,sample_size:30},verifier:{verifier_id:"v",source_sha:candidate,independent:true}},
+    {evidence_id:"E-REG",requirement_id:"REQ-BRAIN-101-R15-SOAK-REGIMES",evidence_kind:"REGIME_COVERAGE",evidence_level:"L8_SOAK" as const,source_sha:candidate,certified_implementation_sha:candidate,artifact_path:artifactPath,artifact_sha256:sha(artifact),environment:"PAPER_RUNTIME",runtime_binding:"paper-runtime:v1",observed_at_utc:"2026-09-10T00:00:00.000Z",producer_id:"p",assertion_type:"OBSERVATION" as const,soak_execution_id:manifest.soak_execution_id,observed_regime_ids:["REGIME-A","REGIME-B"],classifier_id:"BRAIN-101-R15-REGIME-CLASSIFIER",classifier_version:"0.1.0-preregistered",classifier_contract_sha256:manifest.regime_classifier_contract_sha256,observation:{duration_seconds:2592000,sample_size:2},verifier:{verifier_id:"v",source_sha:candidate,independent:true}},
+  ]};
+  const gitReadBus={setMutationGuard:()=>{},fileAt:(path:string,ref:string)=>{
+    if(path==="docs/roadmap/semantic/evidence.json")return JSON.stringify(evidenceWithRegime);
+    return execFileSync("git",["show",`${ref}:${path}`],{encoding:"utf8"});
+  }} as any;
+  const decision=productionEffectsWithBus(gitReadBus).resolveSemanticCompletion(spec,candidate);
+  assert.equal(decision.decision,"BLOCK","the canonical classifier is PREREGISTERED with no materialized definition: regime evidence cannot pass");
+  assert.ok(decision.reason_codes.includes("REGIME_CLASSIFIER_NOT_MATERIALIZED"));
+});
+
+test("Q5b FORGED classifier definition is rejected by definition byte verification",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
+  // A classifier that DECLARES a materialized definition whose bytes differ
+  // from the declared SHA is a forged materialization.
+  const forgedDefinitionClassifierBase={...authorities.governedClassifier,definition_sha256:"9".repeat(64)};
+  const forgedSha=createHash("sha256").update(JSON.stringify(forgedDefinitionClassifierBase),"utf8").digest("hex");
+  const forgedClassifier={...forgedDefinitionClassifierBase,regime_classifier_contract_sha256:forgedSha};
+  const forgedManifestBase={...authorities.governedManifest,regime_classifier_contract_sha256:forgedSha};
+  const forgedManifest={...forgedManifestBase,soak_execution_manifest_sha256:createHash("sha256").update(JSON.stringify(forgedManifestBase),"utf8").digest("hex")};
+  assert.throws(()=>evaluateSemanticCompletion(authoritativeInput(candidate,[]),new Map(),undefined,forgedManifest,forgedClassifier),/classifier definition not materialized|regime classifier definition/i);
+});
+
+test("Q6 PLACEHOLDER execution source_sha fails closed",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  // A manifest with an all-zeros placeholder source_sha (the PRE-remediation
+  // canonical state) must fail closed structurally at the resolver.
+  const spec={...parentSpec,roadmap_id:"BRAIN-101",roadmap_item_id:"R15",semantic_completion:{requirements_path:"docs/roadmap/semantic/requirements.json",evidence_path:"docs/roadmap/semantic/evidence.json"}};
+  const rawManifest=JSON.parse(execFileSync("git",["show",`${candidate}:docs/roadmap/semantic/soak_execution_manifest.json`],{encoding:"utf8"}));
+  const evidenceWithCohort={schema_version:1,evidence:[{...canonicalEvidence,requirement_id:"REQ-BRAIN-101-R15-SOAK-DURATION",evidence_kind:"RUNTIME_OBSERVATION",evidence_level:"L8_SOAK" as const,source_sha:candidate,certified_implementation_sha:candidate,artifact_path:artifactPath,artifact_sha256:sha(artifact),environment:"PAPER_RUNTIME",runtime_binding:"paper-runtime:v1",observed_at_utc:"2026-09-10T00:00:00.000Z",producer_id:"p",assertion_type:"OBSERVATION" as const,soak_execution_id:rawManifest.soak_execution_id,observation:{duration_seconds:2592000,sample_size:30},verifier:{verifier_id:"v",source_sha:candidate,independent:true}}]};
+  const hostileBus={setMutationGuard:()=>{},fileAt:(path:string,ref:string)=>{
+    if(path===manifestPath)return JSON.stringify({...rawManifest,source_sha:"0".repeat(40)});
+    if(path==="docs/roadmap/semantic/evidence.json")return JSON.stringify(evidenceWithCohort);
+    return execFileSync("git",["show",`${ref}:${path}`],{encoding:"utf8"});
+  }} as any;
+  assert.throws(()=>productionEffectsWithBus(hostileBus).resolveSemanticCompletion(spec,candidate),/soak execution source not bound|placeholder source/i);
+});
+
+test("Q6b REAL canonical manifest binds the actual evaluation source_sha",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const rawManifest=JSON.parse(execFileSync("git",["show",`${candidate}:docs/roadmap/semantic/soak_execution_manifest.json`],{encoding:"utf8"}));
+  assert.notEqual(rawManifest.source_sha,"0".repeat(40),"the canonical manifest must no longer declare a placeholder source");
+  assert.match(rawManifest.source_sha,/^[0-9a-f]{40}$/);
+});
+
+test("Q7 REGIME_IDENTITY trigger is governed by the kind contract, not the kind string",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
+  const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{regimeIds:index=>index===1?["REGIME-A","REGIME-B"]:undefined,authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
+  const input=authoritativeInput(candidate,evidence);
+  // Contract set WITHOUT regime-identity requirement: the same REGIME_COVERAGE
+  // evidence must NOT be subjected to regime authority checks — decoupling
+  // proven: the trigger comes from the contract flag, not the kind name.
+  const contractsWithoutRegime={schema_version:1 as const,roadmap_id:"BRAIN-101",calendar_day_policy:"UTC_24H_DAY" as const,minimum_regime_count_for_multiple:2,kinds:Object.fromEntries(Object.entries({
+    RUNTIME_OBSERVATION:{assertion_contract:"a",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true},
+    REGIME_COVERAGE:{assertion_contract:"a",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true},
+    BYPASS_AUDIT:{assertion_contract:"a",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true},
+    LEDGER_RECONCILIATION:{assertion_contract:"a",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true},
+    DUPLICATE_ORDER_AUDIT:{assertion_contract:"a",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true},
+    KILL_SWITCH_TEST:{assertion_contract:"a",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true},
+    RECOVERY_TEST:{assertion_contract:"a",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true},
+  }).map(([kind,contract])=>[kind,{...contract,requires_regime_identity:false}]))} as any;
+  // The evidence REGIME record binds the governed classifier; with the
+  // contract flag OFF the classifier check must not fire at all (PASS),
+  // proving the trigger is contract-driven.
+  const decision=evaluateSemanticCompletion(input,artifacts,contractsWithoutRegime,authorities.governedManifest,authorities.governedClassifier);
+  assert.equal(decision.decision,"PASS","without the contract's regime-identity flag, no regime authority check fires");
+});
