@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_item_id": "R15",
   "soak_execution_id": "SOAK-EXEC-R15-2026-PREREGISTERED-001",
-  "source_sha": "0000000000000000000000000000000000000000",
+  "source_sha": "9067a4da2ba2168fca9ec88a012c16becfda39b0",
   "environment": "PAPER_RUNTIME",
   "started_at_utc": null,
   "ended_at_utc": null,
@@ -12,5 +12,5 @@
   "regime_classifier_id": "BRAIN-101-R15-REGIME-CLASSIFIER",
   "regime_classifier_version": "0.1.0-preregistered",
   "regime_classifier_contract_path": "docs/roadmap/semantic/regime_classifier_contract.json",
-  "regime_classifier_contract_sha256": "22e24771d2a89d42285a40a9929579f511289ea9e76c704c4aedd98c605719c4"
+  "regime_classifier_contract_sha256": "1cec4a99c8c60804f800713518f80afa2cb0008a0d02bf878e28ab8fad60125a"
 }
