@@ -144,9 +144,12 @@ export function evaluateSemanticCompletion(input:SemanticCompletionInputV1,verif
   }
   // Governed soak execution authority: when requirements carry a cohort_group,
   // the authoritative soak identity is the Git-bound manifest — evidence
-  // strings alone can never authorize cohort membership.
+  // strings alone can never authorize cohort membership. A manifest and a
+  // classifier are only accepted together: the manifest must ACTUALLY bind
+  // the classifier contract's exact bytes (id + version + contract SHA).
   if(soakManifest){
     if(soakManifest.schema_version!==1||soakManifest.calendar_day_policy!=="UTC_24H_DAY"||typeof soakManifest.soak_execution_id!=="string"||!soakManifest.soak_execution_id)throw new Error("governed soak execution manifest invalid");
+    if(regimeClassifier&&(soakManifest.regime_classifier_id!==regimeClassifier.classifier_id||soakManifest.regime_classifier_version!==regimeClassifier.classifier_version||soakManifest.regime_classifier_contract_sha256!==regimeClassifier.regime_classifier_contract_sha256))throw new Error("governed soak execution manifest: regime classifier contract not bound");
   }
   // Governed regime classifier authority: preregistered identity that regime
   // evidence must match exactly (id + version + contract SHA).
@@ -218,18 +221,19 @@ export function evaluateSemanticCompletion(input:SemanticCompletionInputV1,verif
       else if(Date.parse(evidence.observed_at_utc)>Date.parse(input.evaluated_at_utc))code="EVIDENCE_TIMESTAMP_IN_FUTURE";
       else if(evidence.observation.duration_seconds<expected.minimum_duration_seconds||evidence.observation.sample_size<expected.minimum_sample_size)code="INSUFFICIENT_EVIDENCE_LEVEL";
       else if(expected.cohort_group!==undefined&&evidence.soak_execution_id===undefined)code="MISSING_EVIDENCE_COHORT_ID";
+      else if(expected.cohort_group!==undefined&&soakManifest!==undefined&&soakManifest.started_at_utc===null)code="SOAK_EXECUTION_NOT_STARTED";
       else if(expected.cohort_group!==undefined&&soakManifest!==undefined&&evidence.soak_execution_id!==soakManifest.soak_execution_id)code="EVIDENCE_COHORT_AUTHORITY_MISMATCH";
       else if(expected.cohort_group!==undefined&&soakManifest===undefined&&cohortGroups.has(expected.cohort_group)&&!cohortConsistent.get(expected.cohort_group))code="EVIDENCE_COHORT_MISMATCH";
       else if(expected.required_evidence_kinds.includes("REGIME_COVERAGE")){
         const governedClassifier=regimeClassifier;
-        if(governedClassifier!==undefined){
-          if(evidence.classifier_id!==governedClassifier.classifier_id||evidence.classifier_version!==governedClassifier.classifier_version||evidence.classifier_contract_sha256!==governedClassifier.regime_classifier_contract_sha256)code="REGIME_CLASSIFIER_AUTHORITY_MISMATCH";
-          else if(!Array.isArray(evidence.observed_regime_ids))code="REGIME_ID_COUNT_MISMATCH";
-          else{
-            const distinct=new Set(evidence.observed_regime_ids);
-            if(evidence.observation.sample_size!==distinct.size||distinct.size<governedClassifier.minimum_distinct_regimes)code="REGIME_ID_COUNT_MISMATCH";
-          }
-        }else if(!Array.isArray(evidence.observed_regime_ids)||new Set(evidence.observed_regime_ids).size<2||evidence.observation.sample_size!==new Set(evidence.observed_regime_ids).size)code="REGIME_ID_COUNT_MISMATCH";
+        if(governedClassifier===undefined)code="REGIME_CLASSIFIER_NOT_MATERIALIZED";
+        else if(governedClassifier.definition_sha256===null||governedClassifier.state!=="OBSERVED")code="REGIME_CLASSIFIER_NOT_MATERIALIZED";
+        else if(evidence.classifier_id!==governedClassifier.classifier_id||evidence.classifier_version!==governedClassifier.classifier_version||evidence.classifier_contract_sha256!==governedClassifier.regime_classifier_contract_sha256)code="REGIME_CLASSIFIER_AUTHORITY_MISMATCH";
+        else if(!Array.isArray(evidence.observed_regime_ids))code="REGIME_ID_COUNT_MISMATCH";
+        else{
+          const distinct=new Set(evidence.observed_regime_ids);
+          if(evidence.observation.sample_size!==distinct.size||distinct.size<governedClassifier.minimum_distinct_regimes)code="REGIME_ID_COUNT_MISMATCH";
+        }
       }
       if(code){reasonCodes.add(code);blockRequirement(expected.requirement_id);}else{evidenceRefs.push(evidence.evidence_id);satisfyRequirement(expected.requirement_id);}pending.splice(index,1);progress=true;
     }
@@ -248,7 +252,7 @@ export function evaluateSemanticCompletion(input:SemanticCompletionInputV1,verif
     else blocked++;
   }
   if(satisfied+deferredValid+blocked!==input.expected_requirements.length)throw new Error("semantic completion counter partition violated");
-  const order:SemanticCompletionReasonCode[]=["MISSING_REQUIREMENT","REQUIREMENT_IDENTITY_MISMATCH","MISSING_EVIDENCE","INSUFFICIENT_EVIDENCE_LEVEL","WRONG_EVIDENCE_KIND","STALE_SOURCE_SHA","ARTIFACT_HASH_MISMATCH","RUNTIME_BINDING_MISSING","EVIDENCE_TIMESTAMP_IN_FUTURE","SELF_REFERENTIAL_EVIDENCE","NAKED_BOOLEAN_ASSERTION","SIMULATION_SUBSTITUTION","AMBIGUOUS_EVIDENCE","INVALID_DEFERMENT","PARENT_REQUIREMENT_UNSATISFIED","CYCLIC_REQUIREMENT_DEPENDENCY","INDEPENDENT_AUDIT_MISSING","MISSING_EVIDENCE_COHORT_ID","EVIDENCE_COHORT_AUTHORITY_MISMATCH","EVIDENCE_COHORT_MISMATCH","REGIME_CLASSIFIER_AUTHORITY_MISMATCH","REGIME_ID_COUNT_MISMATCH"];
+  const order:SemanticCompletionReasonCode[]=["MISSING_REQUIREMENT","REQUIREMENT_IDENTITY_MISMATCH","MISSING_EVIDENCE","INSUFFICIENT_EVIDENCE_LEVEL","WRONG_EVIDENCE_KIND","STALE_SOURCE_SHA","ARTIFACT_HASH_MISMATCH","RUNTIME_BINDING_MISSING","EVIDENCE_TIMESTAMP_IN_FUTURE","SELF_REFERENTIAL_EVIDENCE","NAKED_BOOLEAN_ASSERTION","SIMULATION_SUBSTITUTION","AMBIGUOUS_EVIDENCE","INVALID_DEFERMENT","PARENT_REQUIREMENT_UNSATISFIED","CYCLIC_REQUIREMENT_DEPENDENCY","INDEPENDENT_AUDIT_MISSING","MISSING_EVIDENCE_COHORT_ID","SOAK_EXECUTION_NOT_STARTED","EVIDENCE_COHORT_AUTHORITY_MISMATCH","EVIDENCE_COHORT_MISMATCH","REGIME_CLASSIFIER_NOT_MATERIALIZED","REGIME_CLASSIFIER_AUTHORITY_MISMATCH","REGIME_ID_COUNT_MISMATCH"];
   const ordered=order.filter(code=>reasonCodes.has(code));
   const base={schema_version:1 as const,phase_or_item_id:input.phase_or_item_id,original_requirement_refs:Object.freeze([...expectedById.keys()].sort()),requirements_total:input.expected_requirements.length,requirements_satisfied:satisfied,requirements_deferred_valid:deferredValid,requirements_blocked:blocked,evidence_refs:Object.freeze(evidenceRefs.sort()),decision:satisfied+deferredValid===input.expected_requirements.length&&ordered.length===0?"PASS" as const:"BLOCK" as const,reason_codes:Object.freeze(ordered),source_sha:input.source_sha,evaluated_at_utc:input.evaluated_at_utc,...(kindContracts!==undefined?{evidence_kind_contracts_sha256:kindContracts.evidence_kind_contracts_sha256}:{}),...(soakManifest!==undefined?{soak_execution_manifest_sha256:soakManifest.soak_execution_manifest_sha256}:{}),...(regimeClassifier!==undefined?{regime_classifier_contract_sha256:regimeClassifier.regime_classifier_contract_sha256}:{})};
   return Object.freeze({...base,decision_artifact_sha256:sha(canonical(base))});

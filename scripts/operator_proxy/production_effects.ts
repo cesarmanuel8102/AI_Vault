@@ -367,11 +367,17 @@ export class ProductionEffects implements AutonomousEffects {
     if(declaredKindPath!==undefined&&declaredKindPath!==KIND_CONTRACTS_PATH)throw new Error("SEMANTIC_CANONICAL_BINDING_MISMATCH");
     // Governed soak execution manifest + regime classifier contract: loaded
     // from immutable Git; their exact bytes bind into the decision identity.
+    // The manifest must ACTUALLY bind the classifier contract bytes — an
+    // unbound placeholder SHA fails closed before any evidence is authorized.
     let soakManifest:import("./types.js").GovernedSoakExecutionManifestV1|undefined;
     let regimeClassifier:import("./types.js").GovernedRegimeClassifierContractV1|undefined;
     const requirementsCohorted=input.requirements.some(requirement=>requirement.cohort_group!==undefined);
-    if(requirementsCohorted)soakManifest=canonicalSource.soakExecutionManifest();
-    if(input.requirements.some(requirement=>requirement.required_evidence_kinds.includes("REGIME_COVERAGE")))regimeClassifier=canonicalSource.regimeClassifierContract();
+    const requirementsRegime=input.requirements.some(requirement=>requirement.required_evidence_kinds.includes("REGIME_COVERAGE"));
+    if(requirementsCohorted||requirementsRegime){
+      soakManifest=canonicalSource.soakExecutionManifest();
+      regimeClassifier=canonicalSource.regimeClassifierContract();
+      if(soakManifest.regime_classifier_id!==regimeClassifier.classifier_id||soakManifest.regime_classifier_version!==regimeClassifier.classifier_version||soakManifest.regime_classifier_contract_sha256!==regimeClassifier.regime_classifier_contract_sha256)throw new Error(`governed soak execution manifest: regime classifier contract not bound (${SOAK_MANIFEST_PATH}@${merge})`);
+    }
     return evaluateSemanticCompletion(input,trustedArtifactBytes(spec,input,source),kindContracts,soakManifest,regimeClassifier);
   }
   bindLifecycle(spec:ProxySpec,state:import("./types.js").LifecycleRecord){this.activeSpec=spec;this.activeState=state;this.boundary.bind(spec,state);}

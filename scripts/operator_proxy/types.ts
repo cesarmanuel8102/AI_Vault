@@ -287,7 +287,8 @@ export type SemanticCompletionReasonCode =
   | "INVALID_DEFERMENT" | "PARENT_REQUIREMENT_UNSATISFIED"
   | "INDEPENDENT_AUDIT_MISSING" | "CYCLIC_REQUIREMENT_DEPENDENCY"
   | "EVIDENCE_COHORT_MISMATCH" | "MISSING_EVIDENCE_COHORT_ID" | "EVIDENCE_COHORT_AUTHORITY_MISMATCH"
-  | "REGIME_CLASSIFIER_AUTHORITY_MISMATCH" | "REGIME_ID_COUNT_MISMATCH";
+  | "REGIME_CLASSIFIER_AUTHORITY_MISMATCH" | "REGIME_ID_COUNT_MISMATCH"
+  | "SOAK_EXECUTION_NOT_STARTED" | "REGIME_CLASSIFIER_NOT_MATERIALIZED";
 export interface SemanticCompletionDecisionV1 {
   readonly schema_version:1; readonly phase_or_item_id:string; readonly original_requirement_refs:readonly string[];
   readonly requirements_total:number; readonly requirements_satisfied:number; readonly requirements_deferred_valid:number; readonly requirements_blocked:number;
