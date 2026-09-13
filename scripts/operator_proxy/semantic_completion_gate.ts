@@ -6,7 +6,7 @@ const sha40=/^[0-9a-f]{40}$/;
 const sha256=/^[0-9a-f]{64}$/;
 const inputKeys=["schema_version","phase_or_item_id","source_sha","evaluated_at_utc","requirements","evidence","deferments","expected_requirement_ids","expected_requirements","deferment_authorizations"];
 const requirementKeys=["requirement_id","parent_phase","original_spec_path","original_spec_sha256","requirement_text_sha256","minimum_evidence_level","required_evidence_kinds","runtime_binding_required","deferment_policy","parent_requirement_ids","required_environments","independent_verifier_required","minimum_duration_seconds","minimum_sample_size","cohort_group"];
-const evidenceKeys=["evidence_id","requirement_id","evidence_kind","evidence_level","source_sha","certified_implementation_sha","artifact_path","artifact_sha256","environment","runtime_binding","observed_at_utc","producer_id","assertion_type","observation","verifier","soak_execution_id"];
+const evidenceKeys=["evidence_id","requirement_id","evidence_kind","evidence_level","source_sha","certified_implementation_sha","artifact_path","artifact_sha256","environment","runtime_binding","observed_at_utc","producer_id","assertion_type","observation","verifier","soak_execution_id","observed_regime_ids","classifier_id","classifier_version","classifier_contract_sha256"];
 const observationKeys=["duration_seconds","sample_size"];
 const verifierKeys=["verifier_id","source_sha","independent"];
 const defermentKeys=["deferment_id","requirement_id","authorization_source","reason","successor_owner","scope","expiration_or_revisit_condition","evidence_refs"];
@@ -75,7 +75,7 @@ function validateInput(input:SemanticCompletionInputV1):Set<string>{
   const evidenceIds=new Set<string>();
   for(const evidence of input.evidence){
     const value=record(evidence,"semantic evidence");
-    assertExactKeys(value,evidenceKeys,"semantic evidence",["soak_execution_id"]);
+    assertExactKeys(value,evidenceKeys,"semantic evidence",["soak_execution_id","observed_regime_ids","classifier_id","classifier_version","classifier_contract_sha256"]);
     if(!levels.includes(evidence.evidence_level)||!sha40.test(evidence.source_sha)||!sha40.test(evidence.certified_implementation_sha)||!sha256.test(evidence.artifact_sha256))throw new Error("semantic evidence invalid");
     if(evidenceIds.has(evidence.evidence_id))throw new Error("duplicate semantic evidence");
     evidenceIds.add(evidence.evidence_id);
@@ -89,6 +89,8 @@ function validateInput(input:SemanticCompletionInputV1):Set<string>{
     const verifier=record(evidence.verifier,"semantic verifier");assertExactKeys(verifier,verifierKeys,"semantic verifier");
     if(typeof verifier.verifier_id!=="string"||!sha40.test(String(verifier.source_sha))||typeof verifier.independent!=="boolean")throw new Error("semantic verifier invalid");
     if(evidence.soak_execution_id!==undefined&&typeof evidence.soak_execution_id!=="string")throw new Error("semantic evidence invalid");
+    if(evidence.observed_regime_ids!==undefined&&(!Array.isArray(evidence.observed_regime_ids)||evidence.observed_regime_ids.some(id=>typeof id!=="string"||id.length===0)))throw new Error("semantic evidence invalid");
+    for(const field of ["classifier_id","classifier_version","classifier_contract_sha256"] as const)if((evidence as unknown as Record<string,unknown>)[field]!==undefined&&typeof (evidence as unknown as Record<string,unknown>)[field]!=="string")throw new Error("semantic evidence invalid");
     if(!expectedIds.has(evidence.requirement_id))throw new Error("orphan semantic evidence");
   }
   // Cohort validation: requirements sharing a cohort_group must all be bound
@@ -127,7 +129,7 @@ function validateInput(input:SemanticCompletionInputV1):Set<string>{
 
 type Outcome="SATISFIED"|"DEFERRED_VALID"|"BLOCKED";
 
-export function evaluateSemanticCompletion(input:SemanticCompletionInputV1,verifiedArtifacts:ReadonlyMap<string,string>,kindContracts?:import("./types.js").EvidenceKindContractsV1):SemanticCompletionDecisionV1 {
+export function evaluateSemanticCompletion(input:SemanticCompletionInputV1,verifiedArtifacts:ReadonlyMap<string,string>,kindContracts?:import("./types.js").EvidenceKindContractsV1,soakManifest?:import("./types.js").GovernedSoakExecutionManifestV1,regimeClassifier?:import("./types.js").GovernedRegimeClassifierContractV1):SemanticCompletionDecisionV1 {
   const identityMismatches=validateInput(input);
   const evidenceRefs:string[]=[];const reasonCodes=new Set<SemanticCompletionReasonCode>();
   // Governed kind-contract authority: every kind used by a requirement must
@@ -140,6 +142,17 @@ export function evaluateSemanticCompletion(input:SemanticCompletionInputV1,verif
       if(!contract||Object.keys(contract).length!==4||typeof contract.assertion_contract!=="string"||typeof contract.attestation_model!=="string"||typeof contract.zero_condition!=="boolean"||typeof contract.tested_runtime_execution!=="boolean")throw new Error(`canonical semantic evidence kind contract invalid: ${kind}`);
     }
   }
+  // Governed soak execution authority: when requirements carry a cohort_group,
+  // the authoritative soak identity is the Git-bound manifest — evidence
+  // strings alone can never authorize cohort membership.
+  if(soakManifest){
+    if(soakManifest.schema_version!==1||soakManifest.calendar_day_policy!=="UTC_24H_DAY"||typeof soakManifest.soak_execution_id!=="string"||!soakManifest.soak_execution_id)throw new Error("governed soak execution manifest invalid");
+  }
+  // Governed regime classifier authority: preregistered identity that regime
+  // evidence must match exactly (id + version + contract SHA).
+  if(regimeClassifier){
+    if(regimeClassifier.schema_version!==1||typeof regimeClassifier.classifier_id!=="string"||typeof regimeClassifier.classifier_version!=="string"||!Number.isInteger(regimeClassifier.minimum_distinct_regimes)||regimeClassifier.minimum_distinct_regimes<2)throw new Error("governed regime classifier contract invalid");
+  }
   // Cohort identity map: evidence grouped by the governed execution they claim.
   const cohortAssignments=new Map<string,Map<string,string>>(); // cohort_group -> requirement_id -> soak_execution_id
   for(const evidence of input.evidence){
@@ -151,8 +164,12 @@ export function evaluateSemanticCompletion(input:SemanticCompletionInputV1,verif
   }
   // A cohort group is consistent iff every evidenced member binds the SAME
   // soak execution identity. Unevidenced members are handled at evaluation.
+  // (Used only when no governed manifest was supplied — the manifest is the
+  // authoritative identity in production.)
+  const cohortGroups=new Set<string>();
   const cohortConsistent=new Map<string,boolean>();
   for(const [group,members] of cohortAssignments){
+    cohortGroups.add(group);
     const identities=new Set(members.values());
     cohortConsistent.set(group,identities.size<=1);
   }
@@ -200,7 +217,20 @@ export function evaluateSemanticCompletion(input:SemanticCompletionInputV1,verif
       else if(levels.indexOf(evidence.evidence_level)<levels.indexOf(expected.minimum_evidence_level))code=expected.minimum_evidence_level==="L8_SOAK"&&evidence.evidence_level==="L4_SIMULATED_INTEGRATION"?"SIMULATION_SUBSTITUTION":"INSUFFICIENT_EVIDENCE_LEVEL";
       else if(Date.parse(evidence.observed_at_utc)>Date.parse(input.evaluated_at_utc))code="EVIDENCE_TIMESTAMP_IN_FUTURE";
       else if(evidence.observation.duration_seconds<expected.minimum_duration_seconds||evidence.observation.sample_size<expected.minimum_sample_size)code="INSUFFICIENT_EVIDENCE_LEVEL";
-      else if(expected.cohort_group!==undefined&&(evidence.soak_execution_id===undefined||!cohortConsistent.get(expected.cohort_group)))code="EVIDENCE_COHORT_MISMATCH";
+      else if(expected.cohort_group!==undefined&&evidence.soak_execution_id===undefined)code="MISSING_EVIDENCE_COHORT_ID";
+      else if(expected.cohort_group!==undefined&&soakManifest!==undefined&&evidence.soak_execution_id!==soakManifest.soak_execution_id)code="EVIDENCE_COHORT_AUTHORITY_MISMATCH";
+      else if(expected.cohort_group!==undefined&&soakManifest===undefined&&cohortGroups.has(expected.cohort_group)&&!cohortConsistent.get(expected.cohort_group))code="EVIDENCE_COHORT_MISMATCH";
+      else if(expected.required_evidence_kinds.includes("REGIME_COVERAGE")){
+        const governedClassifier=regimeClassifier;
+        if(governedClassifier!==undefined){
+          if(evidence.classifier_id!==governedClassifier.classifier_id||evidence.classifier_version!==governedClassifier.classifier_version||evidence.classifier_contract_sha256!==governedClassifier.regime_classifier_contract_sha256)code="REGIME_CLASSIFIER_AUTHORITY_MISMATCH";
+          else if(!Array.isArray(evidence.observed_regime_ids))code="REGIME_ID_COUNT_MISMATCH";
+          else{
+            const distinct=new Set(evidence.observed_regime_ids);
+            if(evidence.observation.sample_size!==distinct.size||distinct.size<governedClassifier.minimum_distinct_regimes)code="REGIME_ID_COUNT_MISMATCH";
+          }
+        }else if(!Array.isArray(evidence.observed_regime_ids)||new Set(evidence.observed_regime_ids).size<2||evidence.observation.sample_size!==new Set(evidence.observed_regime_ids).size)code="REGIME_ID_COUNT_MISMATCH";
+      }
       if(code){reasonCodes.add(code);blockRequirement(expected.requirement_id);}else{evidenceRefs.push(evidence.evidence_id);satisfyRequirement(expected.requirement_id);}pending.splice(index,1);progress=true;
     }
     }
@@ -218,8 +248,8 @@ export function evaluateSemanticCompletion(input:SemanticCompletionInputV1,verif
     else blocked++;
   }
   if(satisfied+deferredValid+blocked!==input.expected_requirements.length)throw new Error("semantic completion counter partition violated");
-  const order:SemanticCompletionReasonCode[]=["MISSING_REQUIREMENT","REQUIREMENT_IDENTITY_MISMATCH","MISSING_EVIDENCE","INSUFFICIENT_EVIDENCE_LEVEL","WRONG_EVIDENCE_KIND","STALE_SOURCE_SHA","ARTIFACT_HASH_MISMATCH","RUNTIME_BINDING_MISSING","EVIDENCE_TIMESTAMP_IN_FUTURE","SELF_REFERENTIAL_EVIDENCE","NAKED_BOOLEAN_ASSERTION","SIMULATION_SUBSTITUTION","AMBIGUOUS_EVIDENCE","INVALID_DEFERMENT","PARENT_REQUIREMENT_UNSATISFIED","CYCLIC_REQUIREMENT_DEPENDENCY","INDEPENDENT_AUDIT_MISSING","EVIDENCE_COHORT_MISMATCH"];
+  const order:SemanticCompletionReasonCode[]=["MISSING_REQUIREMENT","REQUIREMENT_IDENTITY_MISMATCH","MISSING_EVIDENCE","INSUFFICIENT_EVIDENCE_LEVEL","WRONG_EVIDENCE_KIND","STALE_SOURCE_SHA","ARTIFACT_HASH_MISMATCH","RUNTIME_BINDING_MISSING","EVIDENCE_TIMESTAMP_IN_FUTURE","SELF_REFERENTIAL_EVIDENCE","NAKED_BOOLEAN_ASSERTION","SIMULATION_SUBSTITUTION","AMBIGUOUS_EVIDENCE","INVALID_DEFERMENT","PARENT_REQUIREMENT_UNSATISFIED","CYCLIC_REQUIREMENT_DEPENDENCY","INDEPENDENT_AUDIT_MISSING","MISSING_EVIDENCE_COHORT_ID","EVIDENCE_COHORT_AUTHORITY_MISMATCH","EVIDENCE_COHORT_MISMATCH","REGIME_CLASSIFIER_AUTHORITY_MISMATCH","REGIME_ID_COUNT_MISMATCH"];
   const ordered=order.filter(code=>reasonCodes.has(code));
-  const base={schema_version:1 as const,phase_or_item_id:input.phase_or_item_id,original_requirement_refs:Object.freeze([...expectedById.keys()].sort()),requirements_total:input.expected_requirements.length,requirements_satisfied:satisfied,requirements_deferred_valid:deferredValid,requirements_blocked:blocked,evidence_refs:Object.freeze(evidenceRefs.sort()),decision:satisfied+deferredValid===input.expected_requirements.length&&ordered.length===0?"PASS" as const:"BLOCK" as const,reason_codes:Object.freeze(ordered),source_sha:input.source_sha,evaluated_at_utc:input.evaluated_at_utc,...(kindContracts!==undefined?{evidence_kind_contracts_sha256:kindContracts.evidence_kind_contracts_sha256}:{})};
+  const base={schema_version:1 as const,phase_or_item_id:input.phase_or_item_id,original_requirement_refs:Object.freeze([...expectedById.keys()].sort()),requirements_total:input.expected_requirements.length,requirements_satisfied:satisfied,requirements_deferred_valid:deferredValid,requirements_blocked:blocked,evidence_refs:Object.freeze(evidenceRefs.sort()),decision:satisfied+deferredValid===input.expected_requirements.length&&ordered.length===0?"PASS" as const:"BLOCK" as const,reason_codes:Object.freeze(ordered),source_sha:input.source_sha,evaluated_at_utc:input.evaluated_at_utc,...(kindContracts!==undefined?{evidence_kind_contracts_sha256:kindContracts.evidence_kind_contracts_sha256}:{}),...(soakManifest!==undefined?{soak_execution_manifest_sha256:soakManifest.soak_execution_manifest_sha256}:{}),...(regimeClassifier!==undefined?{regime_classifier_contract_sha256:regimeClassifier.regime_classifier_contract_sha256}:{})};
   return Object.freeze({...base,decision_artifact_sha256:sha(canonical(base))});
 }

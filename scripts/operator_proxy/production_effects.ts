@@ -169,6 +169,8 @@ export function resolveSemanticInput(spec:ProxySpec,source:SemanticSourceV1):Sem
  */
 const SEMANTIC_REGISTRY_PATH="docs/roadmap/semantic/semantic_registry.json";
 const KIND_CONTRACTS_PATH="docs/roadmap/semantic/evidence_kind_contracts.json";
+const SOAK_MANIFEST_PATH="docs/roadmap/semantic/soak_execution_manifest.json";
+const REGIME_CLASSIFIER_PATH="docs/roadmap/semantic/regime_classifier_contract.json";
 class CanonicalGitSemanticSource implements SemanticSourceV1 {
   constructor(private readonly bus:import("./github_bus.js").GitHubBus,private readonly spec:ProxySpec,private readonly merge:string){}
   private fetch(path:string):string{
@@ -199,12 +201,16 @@ class CanonicalGitSemanticSource implements SemanticSourceV1 {
       if(value.roadmap_id!==this.spec.roadmap_id)throw new Error("identity mismatch");
       const items=value.roadmap_items as Record<string,unknown>;
       if(!items||Object.getPrototypeOf(items)!==Object.prototype)throw new Error("invalid items");
-      const item=items[this.spec.roadmap_item_id] as {requirements_path?:unknown;evidence_path?:unknown}|undefined;
+      const item=items[this.spec.roadmap_item_id] as Record<string,unknown>|undefined;
       if(!item||Object.getPrototypeOf(item)!==Object.prototype)throw new Error("missing item");
       const itemKeys=Object.keys(item);
-      if(itemKeys.length!==2||!itemKeys.includes("requirements_path")||!itemKeys.includes("evidence_path"))throw new Error("invalid item shape");
-      if(typeof item.requirements_path!=="string"||typeof item.evidence_path!=="string"||!item.requirements_path||!item.evidence_path)throw new Error("invalid paths");
-      requirements_path=item.requirements_path;evidence_path=item.evidence_path;
+      // Closed item shape: exactly the five governed authority paths.
+      const governedItemKeys=["requirements_path","evidence_path","evidence_kind_contracts_path","soak_execution_manifest_path","regime_classifier_contract_path"];
+      if(itemKeys.length!==governedItemKeys.length||!governedItemKeys.every(key=>itemKeys.includes(key)))throw new Error("invalid item shape");
+      for(const key of governedItemKeys)if(typeof item[key]!=="string"||!(item[key] as string))throw new Error("invalid paths");
+      // The registry's manifest/classifier paths must equal the canonical governed locations.
+      if(item.evidence_kind_contracts_path!==KIND_CONTRACTS_PATH||item.soak_execution_manifest_path!==SOAK_MANIFEST_PATH||item.regime_classifier_contract_path!==REGIME_CLASSIFIER_PATH)throw new Error("invalid authority paths");
+      requirements_path=String(item.requirements_path);evidence_path=String(item.evidence_path);
     }catch(error){
       if(error instanceof Error&&error.message==="identity mismatch")throw new Error("SEMANTIC_CANONICAL_REGISTRY_IDENTITY_MISMATCH");
       throw new Error(`canonical semantic registry invalid: ${SEMANTIC_REGISTRY_PATH}@${this.merge}`);
@@ -261,6 +267,53 @@ class CanonicalGitSemanticSource implements SemanticSourceV1 {
     }catch{throw new Error(`canonical semantic evidence kind contract invalid: ${KIND_CONTRACTS_PATH}@${this.merge}`);}
     return {...contracts,evidence_kind_contracts_sha256:createHash("sha256").update(bytes,"utf8").digest("hex")};
   }
+  /**
+   * The governed soak execution manifest (BR1 Task 3): the AUTHORITATIVE soak
+   * identity for cohorted requirements, resolved from immutable Git. Its exact
+   * bytes are hash-bound into the semantic decision. Closed shape; preregistered
+   * not-started state (null started/ended) is a truthful representation.
+   */
+  soakExecutionManifest():import("./types.js").GovernedSoakExecutionManifestV1{
+    const bytes=this.fetch(SOAK_MANIFEST_PATH);
+    let manifest:import("./types.js").GovernedSoakExecutionManifestV1;
+    try{
+      const value=JSON.parse(bytes) as Record<string,unknown>;
+      const expected=["schema_version","roadmap_id","roadmap_item_id","soak_execution_id","source_sha","environment","started_at_utc","ended_at_utc","calendar_day_policy","runtime_binding","regime_classifier_id","regime_classifier_version","regime_classifier_contract_path","regime_classifier_contract_sha256"];
+      const keys=Object.keys(value);
+      if(keys.length!==expected.length||!expected.every(key=>keys.includes(key)))throw new Error("invalid shape");
+      if(value.schema_version!==1||value.roadmap_id!==this.spec.roadmap_id||value.roadmap_item_id!==this.spec.roadmap_item_id||typeof value.soak_execution_id!=="string"||!value.soak_execution_id||value.environment!=="PAPER_RUNTIME"||value.calendar_day_policy!=="UTC_24H_DAY")throw new Error("invalid manifest");
+      if(!SHA1.test(String(value.source_sha)))throw new Error("invalid source");
+      if(value.started_at_utc!==null&&typeof value.started_at_utc!=="string")throw new Error("invalid start");
+      if(value.ended_at_utc!==null&&typeof value.ended_at_utc!=="string")throw new Error("invalid end");
+      if(typeof value.runtime_binding!=="string"||typeof value.regime_classifier_id!=="string"||typeof value.regime_classifier_version!=="string"||typeof value.regime_classifier_contract_path!=="string"||typeof value.regime_classifier_contract_sha256!=="string"||!/^[0-9a-f]{64}$/.test(String(value.regime_classifier_contract_sha256)))throw new Error("invalid classifier binding");
+      manifest={schema_version:1,roadmap_id:String(value.roadmap_id),roadmap_item_id:String(value.roadmap_item_id),soak_execution_id:String(value.soak_execution_id),source_sha:String(value.source_sha),environment:String(value.environment),started_at_utc:value.started_at_utc===null?null:String(value.started_at_utc),ended_at_utc:value.ended_at_utc===null?null:String(value.ended_at_utc),calendar_day_policy:"UTC_24H_DAY",runtime_binding:String(value.runtime_binding),regime_classifier_id:String(value.regime_classifier_id),regime_classifier_version:String(value.regime_classifier_version),regime_classifier_contract_path:String(value.regime_classifier_contract_path),regime_classifier_contract_sha256:String(value.regime_classifier_contract_sha256)};
+    }catch{throw new Error(`canonical soak execution manifest invalid: ${SOAK_MANIFEST_PATH}@${this.merge}`);}
+    return {...manifest,soak_execution_manifest_sha256:createHash("sha256").update(bytes,"utf8").digest("hex")};
+  }
+  /**
+   * The governed regime classifier contract (BR1 Task 3): preregisters WHICH
+   * classifier identity defines regime distinctness, frozen before soak
+   * evidence. Closed shape; no regime labels invented here.
+   */
+  regimeClassifierContract():import("./types.js").GovernedRegimeClassifierContractV1{
+    const bytes=this.fetch(REGIME_CLASSIFIER_PATH);
+    let contract:import("./types.js").GovernedRegimeClassifierContractV1;
+    try{
+      const value=JSON.parse(bytes) as Record<string,unknown>;
+      const expected=["schema_version","classifier_id","classifier_version","roadmap_id","roadmap_item_id","definition_path","definition_sha256","output_identity_semantics","minimum_distinct_regimes","frozen_source_sha","state"];
+      const keys=Object.keys(value);
+      if(keys.length!==expected.length||!expected.every(key=>keys.includes(key)))throw new Error("invalid shape");
+      if(value.schema_version!==1||typeof value.classifier_id!=="string"||!value.classifier_id||typeof value.classifier_version!=="string"||!value.classifier_version||value.roadmap_id!==this.spec.roadmap_id||value.roadmap_item_id!==this.spec.roadmap_item_id)throw new Error("invalid identity");
+      if(typeof value.output_identity_semantics!=="string"||!value.output_identity_semantics)throw new Error("invalid semantics");
+      if(!Number.isInteger(value.minimum_distinct_regimes)||value.minimum_distinct_regimes as number<2)throw new Error("invalid minimum");
+      if(value.definition_path!==null&&typeof value.definition_path!=="string")throw new Error("invalid definition");
+      if(value.definition_sha256!==null&&(typeof value.definition_sha256!=="string"||!/^[0-9a-f]{64}$/.test(String(value.definition_sha256))))throw new Error("invalid definition hash");
+      if(!SHA1.test(String(value.frozen_source_sha)))throw new Error("invalid frozen source");
+      if(value.state!=="PREREGISTERED_NOT_YET_OBSERVED"&&value.state!=="OBSERVED")throw new Error("invalid state");
+      contract={schema_version:1,classifier_id:String(value.classifier_id),classifier_version:String(value.classifier_version),roadmap_id:String(value.roadmap_id),roadmap_item_id:String(value.roadmap_item_id),definition_path:value.definition_path===null?null:String(value.definition_path),definition_sha256:value.definition_sha256===null?null:String(value.definition_sha256),output_identity_semantics:String(value.output_identity_semantics),minimum_distinct_regimes:value.minimum_distinct_regimes as number,frozen_source_sha:String(value.frozen_source_sha),state:value.state as "PREREGISTERED_NOT_YET_OBSERVED"|"OBSERVED"};
+    }catch{throw new Error(`canonical regime classifier contract invalid: ${REGIME_CLASSIFIER_PATH}@${this.merge}`);}
+    return {...contract,regime_classifier_contract_sha256:createHash("sha256").update(bytes,"utf8").digest("hex")};
+  }
 }
 
 /** Resolves trusted artifact bytes for every evidence record from the canonical source. */
@@ -307,11 +360,19 @@ export class ProductionEffects implements AutonomousEffects {
     if(!SHA1.test(merge))throw new Error("semantic completion bound merge SHA invalid");
     const source=new CanonicalGitSemanticSource(this.bus,spec,merge);
     const input=resolveSemanticInput(spec,source);
-    const kindContracts=(source as CanonicalGitSemanticSource).evidenceKindContracts();
+    const canonicalSource=source as CanonicalGitSemanticSource;
+    const kindContracts=canonicalSource.evidenceKindContracts();
     // Caller may not substitute the governed kind-contract path.
-    const declaredPath=spec.semantic_completion.evidence_kind_contracts_path;
-    if(declaredPath!==undefined&&declaredPath!==KIND_CONTRACTS_PATH)throw new Error("SEMANTIC_CANONICAL_BINDING_MISMATCH");
-    return evaluateSemanticCompletion(input,trustedArtifactBytes(spec,input,source),kindContracts);
+    const declaredKindPath=spec.semantic_completion.evidence_kind_contracts_path;
+    if(declaredKindPath!==undefined&&declaredKindPath!==KIND_CONTRACTS_PATH)throw new Error("SEMANTIC_CANONICAL_BINDING_MISMATCH");
+    // Governed soak execution manifest + regime classifier contract: loaded
+    // from immutable Git; their exact bytes bind into the decision identity.
+    let soakManifest:import("./types.js").GovernedSoakExecutionManifestV1|undefined;
+    let regimeClassifier:import("./types.js").GovernedRegimeClassifierContractV1|undefined;
+    const requirementsCohorted=input.requirements.some(requirement=>requirement.cohort_group!==undefined);
+    if(requirementsCohorted)soakManifest=canonicalSource.soakExecutionManifest();
+    if(input.requirements.some(requirement=>requirement.required_evidence_kinds.includes("REGIME_COVERAGE")))regimeClassifier=canonicalSource.regimeClassifierContract();
+    return evaluateSemanticCompletion(input,trustedArtifactBytes(spec,input,source),kindContracts,soakManifest,regimeClassifier);
   }
   bindLifecycle(spec:ProxySpec,state:import("./types.js").LifecycleRecord){this.activeSpec=spec;this.activeState=state;this.boundary.bind(spec,state);}
   ownerRepairRuntimeSha(expectedTip:string):string{return verifyOwnerRepairInstalledRuntime(this.root,this.sourceRepo,expectedTip);}

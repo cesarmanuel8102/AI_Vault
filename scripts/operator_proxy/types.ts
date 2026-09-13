@@ -213,9 +213,15 @@ export interface EvidenceRefV1 {
   /**
    * Governed soak execution identity (BR1 Task 3): the single governed
    * execution/window this observation belongs to. Required for requirements
-   * carrying cohort_group; every cohort member must bind the identical value.
+   * carrying cohort_group; the AUTHORITATIVE value comes from the governed
+   * soak execution manifest — evidence strings alone cannot authorize it.
    */
   soak_execution_id?:string;
+  /** Regime evidence fields (BR1 Task 3): bound to the governed classifier. */
+  observed_regime_ids?:string[];
+  classifier_id?:string;
+  classifier_version?:string;
+  classifier_contract_sha256?:string;
 }
 /**
  * Governed evidence-kind contract document (BR1 Task 3), resolved from
@@ -229,6 +235,37 @@ export interface EvidenceKindContractsV1 {
   kinds:Record<string,{assertion_contract:string;attestation_model:string;zero_condition:boolean;tested_runtime_execution:boolean}>;
   /** SHA-256 of the exact governed document bytes (set by the trusted resolver). */
   evidence_kind_contracts_sha256?:string;
+}
+/**
+ * Governed soak execution manifest (BR1 Task 3): the AUTHORITATIVE identity
+ * of the one governed soak execution for an item. Evidence records cannot
+ * self-authorize soak identity — they must match this Git-bound manifest.
+ * Preregistration state (started/ended null) is a truthful representation
+ * of a not-yet-executed soak.
+ */
+export interface GovernedSoakExecutionManifestV1 {
+  schema_version:1; roadmap_id:string; roadmap_item_id:string;
+  soak_execution_id:string; source_sha:string; environment:string;
+  started_at_utc:string|null; ended_at_utc:string|null;
+  calendar_day_policy:"UTC_24H_DAY"; runtime_binding:string;
+  regime_classifier_id:string; regime_classifier_version:string;
+  regime_classifier_contract_path:string; regime_classifier_contract_sha256:string;
+  /** SHA-256 of the exact governed manifest bytes (set by the trusted resolver). */
+  soak_execution_manifest_sha256?:string;
+}
+/**
+ * Governed regime classifier contract (BR1 Task 3): preregisters WHICH
+ * classifier identity defines regime distinctness for an item, frozen
+ * before soak evidence exists. No regime labels are invented here.
+ */
+export interface GovernedRegimeClassifierContractV1 {
+  schema_version:1; classifier_id:string; classifier_version:string;
+  roadmap_id:string; roadmap_item_id:string;
+  definition_path:string|null; definition_sha256:string|null;
+  output_identity_semantics:string; minimum_distinct_regimes:number;
+  frozen_source_sha:string; state:"PREREGISTERED_NOT_YET_OBSERVED"|"OBSERVED";
+  /** SHA-256 of the exact governed contract bytes (set by the trusted resolver). */
+  regime_classifier_contract_sha256?:string;
 }
 export interface DefermentV1 {
   deferment_id:string; requirement_id:string; authorization_source:string; reason:string;
@@ -249,7 +286,8 @@ export type SemanticCompletionReasonCode =
   | "SIMULATION_SUBSTITUTION" | "AMBIGUOUS_EVIDENCE" | "EVIDENCE_TIMESTAMP_IN_FUTURE"
   | "INVALID_DEFERMENT" | "PARENT_REQUIREMENT_UNSATISFIED"
   | "INDEPENDENT_AUDIT_MISSING" | "CYCLIC_REQUIREMENT_DEPENDENCY"
-  | "EVIDENCE_COHORT_MISMATCH";
+  | "EVIDENCE_COHORT_MISMATCH" | "MISSING_EVIDENCE_COHORT_ID" | "EVIDENCE_COHORT_AUTHORITY_MISMATCH"
+  | "REGIME_CLASSIFIER_AUTHORITY_MISMATCH" | "REGIME_ID_COUNT_MISMATCH";
 export interface SemanticCompletionDecisionV1 {
   readonly schema_version:1; readonly phase_or_item_id:string; readonly original_requirement_refs:readonly string[];
   readonly requirements_total:number; readonly requirements_satisfied:number; readonly requirements_deferred_valid:number; readonly requirements_blocked:number;
@@ -257,6 +295,10 @@ export interface SemanticCompletionDecisionV1 {
   readonly source_sha:string; readonly decision_artifact_sha256:string; readonly evaluated_at_utc:string;
   /** SHA-256 of the governed evidence-kind contract bytes that interpreted the evidence (BR1 Task 3). */
   readonly evidence_kind_contracts_sha256?:string;
+  /** SHA-256 of the governed soak execution manifest bytes (BR1 Task 3 execution authority). */
+  readonly soak_execution_manifest_sha256?:string;
+  /** SHA-256 of the governed regime classifier contract bytes (BR1 Task 3 regime authority). */
+  readonly regime_classifier_contract_sha256?:string;
 }
 
 /** Declarative pointer telling ProductionEffects this front is semantic-bound. Paths are not trusted content. */
