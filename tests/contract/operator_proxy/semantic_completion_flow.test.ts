@@ -2018,3 +2018,54 @@ test("SR16 positive control: genuinely eligible evidence is not blocked by the c
   assert.equal(result.successor_authorization,"PASS");
   assert.equal(result.agent_loop_semantic_gate_certification,"PASS");
 });
+
+// ---------------------------------------------------------------------------
+// MANIFEST TEMPORAL TRUST BOUNDARY (ChatGPT review P1-1): the governed soak
+// manifest must fail closed on invalid lifecycle timestamps. The production
+// resolver must reject them structurally — Date.parse("INVALID") is NaN and
+// NaN comparisons are false, so an unvalidated string could bypass the
+// window protections downstream. Same strict canonical authority, no
+// parallel parser.
+// ---------------------------------------------------------------------------
+
+/** Runs the production resolver against a hostile manifest override. */
+function resolveWithManifestOverride(manifestOverride:Record<string,unknown>){
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const rawManifest=JSON.parse(execFileSync("git",["show",`${candidate}:docs/roadmap/semantic/soak_execution_manifest.json`],{encoding:"utf8"}));
+  const spec={...parentSpec,roadmap_id:"BRAIN-101",roadmap_item_id:"R15",semantic_completion:{requirements_path:"docs/roadmap/semantic/requirements.json",evidence_path:"docs/roadmap/semantic/evidence.json"}};
+  const hostileBus={setMutationGuard:()=>{},fileAt:(path:string,ref:string)=>{
+    if(path===manifestPath)return JSON.stringify({...rawManifest,...manifestOverride});
+    if(path==="docs/roadmap/semantic/evidence.json")return JSON.stringify({schema_version:1,evidence:[]});
+    return execFileSync("git",["show",`${ref}:${path}`],{encoding:"utf8"});
+  }} as any;
+  return productionEffectsWithBus(hostileBus).resolveSemanticCompletion(spec,candidate);
+}
+
+test("INVALID_MANIFEST_START_TIMESTAMP_REJECTED",()=>{
+  assert.throws(()=>resolveWithManifestOverride({started_at_utc:"INVALID",ended_at_utc:"2026-10-10T00:00:00.000Z"}),/canonical soak execution manifest invalid|lifecycle|window/i);
+});
+
+test("INVALID_MANIFEST_END_TIMESTAMP_REJECTED",()=>{
+  assert.throws(()=>resolveWithManifestOverride({started_at_utc:"2026-09-10T00:00:00.000Z",ended_at_utc:"INVALID"}),/canonical soak execution manifest invalid|lifecycle|window/i);
+});
+
+test("MANIFEST_END_BEFORE_START_REJECTED",()=>{
+  assert.throws(()=>resolveWithManifestOverride({started_at_utc:"2026-10-10T00:00:00.000Z",ended_at_utc:"2026-09-10T00:00:00.000Z"}),/canonical soak execution manifest invalid|lifecycle|window/i);
+});
+
+test("ENDED_WITHOUT_STARTED_REJECTED",()=>{
+  assert.throws(()=>resolveWithManifestOverride({started_at_utc:null,ended_at_utc:"2026-10-10T00:00:00.000Z"}),/canonical soak execution manifest invalid|lifecycle|window/i);
+});
+
+test("MANIFEST lifecycle positive structural controls: NOT_STARTED/EXECUTING/COMPLETED accepted",()=>{
+  // NOT_STARTED (null/null): the truthful canonical preregistration.
+  const notStarted=resolveWithManifestOverride({started_at_utc:null,ended_at_utc:null});
+  assert.equal(notStarted.decision,"BLOCK","empty canonical evidence stays BLOCK, but the manifest loads structurally");
+  // EXECUTING (valid started, null ended): loads structurally; the gate later
+  // classifies evidence as SOAK_EXECUTION_NOT_COMPLETED.
+  const executing=resolveWithManifestOverride({started_at_utc:"2026-09-10T00:00:00.000Z",ended_at_utc:null});
+  assert.equal(executing.decision,"BLOCK");
+  // COMPLETED (valid/valid, ended >= started): loads structurally.
+  const completed=resolveWithManifestOverride({started_at_utc:"2026-09-10T00:00:00.000Z",ended_at_utc:"2026-10-10T00:00:00.000Z"});
+  assert.equal(completed.decision,"BLOCK","no evidence means BLOCK regardless; the structural load succeeds");
+});

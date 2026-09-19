@@ -288,6 +288,19 @@ class CanonicalGitSemanticSource implements SemanticSourceV1 {
       if(/^0{40}$/.test(String(value.source_sha)))throw new Error("placeholder source");
       if(value.started_at_utc!==null&&typeof value.started_at_utc!=="string")throw new Error("invalid start");
       if(value.ended_at_utc!==null&&typeof value.ended_at_utc!=="string")throw new Error("invalid end");
+      // Temporal trust boundary: lifecycle timestamps must use the SAME
+      // strict canonical UTC authority as every other trusted timestamp —
+      // Date.parse of an unvalidated string is NaN and NaN comparisons are
+      // false, which would silently bypass the window protections.
+      if(value.started_at_utc!==null)assertCanonicalUtcTimestamp(String(value.started_at_utc),"soak execution manifest started_at_utc");
+      if(value.ended_at_utc!==null)assertCanonicalUtcTimestamp(String(value.ended_at_utc),"soak execution manifest ended_at_utc");
+      // Lifecycle ordering: ended-without-start and end-before-start are
+      // structurally invalid windows. No duration is hardcoded here — the
+      // minimum soak duration remains governed by requirement/evidence in the
+      // gate. null/null = NOT_STARTED; valid/null = EXECUTING; valid/valid
+      // with ended >= started = COMPLETED.
+      if(value.started_at_utc===null&&value.ended_at_utc!==null)throw new Error("invalid lifecycle: ended without started");
+      if(value.started_at_utc!==null&&value.ended_at_utc!==null&&Date.parse(String(value.ended_at_utc))<Date.parse(String(value.started_at_utc)))throw new Error("invalid lifecycle: ended before started");
       if(typeof value.runtime_binding!=="string"||typeof value.regime_classifier_id!=="string"||typeof value.regime_classifier_version!=="string"||typeof value.regime_classifier_contract_path!=="string"||typeof value.regime_classifier_contract_sha256!=="string"||!/^[0-9a-f]{64}$/.test(String(value.regime_classifier_contract_sha256)))throw new Error("invalid classifier binding");
       manifest={schema_version:1,roadmap_id:String(value.roadmap_id),roadmap_item_id:String(value.roadmap_item_id),soak_execution_id:String(value.soak_execution_id),source_sha:String(value.source_sha),environment:String(value.environment),started_at_utc:value.started_at_utc===null?null:String(value.started_at_utc),ended_at_utc:value.ended_at_utc===null?null:String(value.ended_at_utc),calendar_day_policy:"UTC_24H_DAY",runtime_binding:String(value.runtime_binding),regime_classifier_id:String(value.regime_classifier_id),regime_classifier_version:String(value.regime_classifier_version),regime_classifier_contract_path:String(value.regime_classifier_contract_path),regime_classifier_contract_sha256:String(value.regime_classifier_contract_sha256)};
     }catch{throw new Error(`canonical soak execution manifest invalid: ${SOAK_MANIFEST_PATH}@${this.merge}`);}
