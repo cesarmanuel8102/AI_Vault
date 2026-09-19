@@ -12,5 +12,8 @@ jobs:
         working-directory: scripts/operator_proxy
       - run: npm run typecheck
         working-directory: scripts/operator_proxy
+      - name: Semantic completion regression
+        run: npm run test:semantic-completion
+        working-directory: scripts/operator_proxy
       - run: npm test
         working-directory: scripts/operator_proxy

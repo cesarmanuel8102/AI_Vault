@@ -858,8 +858,11 @@ import {execFileSync} from "node:child_process";
 import {existsSync,readFileSync} from "node:fs";
 
 test("REAL_GIT_REGISTRY the committed canonical registry resolves BRAIN-101/R15 to the expected paths",()=>{
+  // Resolve the repository root from Git so the contract is cwd-independent
+  // (CI runs the semantic suite from scripts/operator_proxy).
+  const repoRoot=execFileSync("git",["rev-parse","--show-toplevel"],{encoding:"utf8"}).trim();
   // The registry must exist as a tracked worktree artifact.
-  const registryPath="docs/roadmap/semantic/semantic_registry.json";
+  const registryPath=join(repoRoot,"docs/roadmap/semantic/semantic_registry.json");
   assert.equal(existsSync(registryPath),true,"canonical semantic registry must be a committed repository artifact");
   const bytes=readFileSync(registryPath,"utf8");
   // Real committed bytes parse and bind the governed item identity.
@@ -877,8 +880,8 @@ test("REAL_GIT_REGISTRY the committed canonical registry resolves BRAIN-101/R15 
   assert.equal(item.requirements_path,requirementsPath);
   assert.equal(item.evidence_path,evidencePath);
   // The artifact must be tracked by Git (not just a stray worktree file).
-  const tracked=execFileSync("git",["ls-files","--",registryPath],{encoding:"utf8"}).trim();
-  assert.equal(tracked,registryPath,"registry must be tracked in Git");
+  const tracked=execFileSync("git",["ls-files","--","docs/roadmap/semantic/semantic_registry.json"],{encoding:"utf8",cwd:repoRoot}).trim();
+  assert.equal(tracked,"docs/roadmap/semantic/semantic_registry.json","registry must be tracked in Git");
   // Closed shape on real bytes: exactly the governed keys.
   assert.deepEqual(Object.keys(registry).sort(),["roadmap_id","roadmap_items","schema_version"]);
   assert.deepEqual(Object.keys(item).sort(),["evidence_kind_contracts_path","evidence_path","regime_classifier_contract_path","requirements_path","soak_execution_manifest_path"]);
@@ -1910,4 +1913,108 @@ test("Q7 REGIME_IDENTITY trigger is governed by the kind contract, not the kind 
   // proving the trigger is contract-driven.
   const decision=evaluateSemanticCompletion(input,artifacts,contractsWithoutRegime,authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"PASS","without the contract's regime-identity flag, no regime authority check fires");
+});
+
+// ---------------------------------------------------------------------------
+// TASK 4 — SYNTHETIC AGENT LOOP CERTIFICATION (SR16).
+// A bounded, in-memory, TEST-ONLY simulation of the Agent Loop integration:
+// it routes a synthetic front through the REAL semantic completion path and
+// asserts that a simulated 30-day claim can never close an L8 soak parent
+// even when CI, review, and contracts all appear PASS. No worker, scheduler,
+// GitHub, broker, provider, network, filesystem runtime, or deployment is
+// imported or started; the loop is bounded and returns, never persistent.
+// ---------------------------------------------------------------------------
+
+/** Shape of the bounded synthetic Agent Loop result (test-only). */
+interface SyntheticAgentLoopResult{
+  semantic_completion:"PASS"|"BLOCK";
+  closeout:"PASS"|"BLOCK";
+  successor_authorization:"PASS"|"BLOCK";
+  agent_loop_semantic_gate_certification:"PASS"|"BLOCK";
+}
+
+/** Builds a synthetic soak-parent requirement for the SR16 scenario. */
+function srRequirement(minimumEvidenceLevel:"L8_SOAK"|"L4_SIMULATED_INTEGRATION"){
+  return {requirement_id:"REQ-SR16-SOAK-PARENT",parent_phase:"R15",original_spec_path:"docs/roadmap/BRAIN_101_ROADMAP.md",
+    original_spec_sha256:sha("sr16 roadmap bytes"),requirement_text_sha256:sha("SR16 synthetic soak parent"),
+    minimum_evidence_level:minimumEvidenceLevel,required_evidence_kinds:["RUNTIME_OBSERVATION"],
+    runtime_binding_required:true,deferment_policy:"FORBIDDEN" as const,parent_requirement_ids:[],
+    required_environments:["PAPER_RUNTIME"],independent_verifier_required:true,
+    minimum_duration_seconds:2592000,minimum_sample_size:1,cohort_group:undefined};
+}
+
+/**
+ * TEST-ONLY bounded synthetic Agent Loop (SR16). Simulates the conceptual
+ * integration of the autonomous flow — build → CI → review → contracts →
+ * semantic completion → closeout → successor — entirely in memory, routing
+ * the semantic decision through the REAL evaluateSemanticCompletion() gate.
+ * No worker, scheduler, GitHub client, broker, provider, network call,
+ * filesystem runtime, deployment, or persistent loop is involved: the loop
+ * is a single bounded await that returns a result and terminates.
+ *
+ * The certification field means "the gate correctly prevented the false
+ * completion", NOT that the requirement was satisfied.
+ */
+async function runBoundedSyntheticAgentLoop(scenario:{
+  parent:ReturnType<typeof srRequirement>;
+  child:{evidence_level:"L8_SOAK"|"L4_SIMULATED_INTEGRATION";environment:"PAPER_RUNTIME"|"SIMULATOR";duration_seconds?:number};
+  ci:"PASS"|"BLOCK";review:"PASS"|"BLOCK";contracts:"PASS"|"BLOCK";
+}):Promise<SyntheticAgentLoopResult>{
+  // In-memory synthetic artifact bytes for the child claim.
+  const artifactBytes=JSON.stringify({claim:"SR16 synthetic child evidence",level:scenario.child.evidence_level,environment:scenario.child.environment,duration_seconds:scenario.child.duration_seconds??2592000});
+  const artifacts=new Map([["docs/roadmap/semantic/sr16-child.json",artifactBytes]]);
+  const sourceSha="a".repeat(40);
+  const now="2026-09-10T00:00:00.000Z";
+  // Build the semantic input entirely in memory around the synthetic parent.
+  const input={schema_version:1 as const,phase_or_item_id:"R15",source_sha:sourceSha,evaluated_at_utc:now,
+    requirements:[scenario.parent],
+    expected_requirement_ids:[scenario.parent.requirement_id],
+    expected_requirements:[{...scenario.parent}],
+    evidence:[{evidence_id:"EVIDENCE-SR16-CHILD",requirement_id:scenario.parent.requirement_id,evidence_kind:"RUNTIME_OBSERVATION",
+      evidence_level:scenario.child.evidence_level,source_sha:sourceSha,certified_implementation_sha:sourceSha,
+      artifact_path:"docs/roadmap/semantic/sr16-child.json",artifact_sha256:createHash("sha256").update(artifactBytes,"utf8").digest("hex"),
+      environment:scenario.child.environment,runtime_binding:"paper-runtime:v1",
+      observed_at_utc:now,producer_id:"synthetic-agent-loop",assertion_type:"OBSERVATION" as const,
+      observation:{duration_seconds:scenario.child.duration_seconds??2592000,sample_size:1},
+      verifier:{verifier_id:"independent-synthetic-verifier",source_sha:sourceSha,independent:true}}],
+    deferments:[],deferment_authorizations:[]};
+  // THE semantic authority: the single gate decides PASS/BLOCK. CI, review,
+  // and contracts being "PASS" are deliberately ignored by the gate — the
+  // loop routes its closeout and successor decisions through it.
+  const decision=evaluateSemanticCompletion(input,artifacts);
+  const semanticCompletion:SyntheticAgentLoopResult["semantic_completion"]=decision.decision;
+  // Closeout may only proceed when the semantic decision is PASS.
+  const closeout:SyntheticAgentLoopResult["closeout"]=semanticCompletion==="PASS"&&scenario.ci==="PASS"&&scenario.review==="PASS"&&scenario.contracts==="PASS"?"PASS":"BLOCK";
+  // Successor authorization may only proceed after closeout PASS.
+  const successorAuthorization:SyntheticAgentLoopResult["successor_authorization"]=closeout==="PASS"?"PASS":"BLOCK";
+  // The certification PASSes when the gate outcome was correctly enforced
+  // end-to-end: BLOCK prevented closeout and successor; PASS allowed them.
+  const certification:SyntheticAgentLoopResult["agent_loop_semantic_gate_certification"]=
+    (semanticCompletion==="BLOCK"&&closeout==="BLOCK"&&successorAuthorization==="BLOCK")||
+    (semanticCompletion==="PASS"&&closeout==="PASS"&&successorAuthorization==="PASS")?"PASS":"BLOCK";
+  return {semantic_completion:semanticCompletion,closeout,successor_authorization:successorAuthorization,agent_loop_semantic_gate_certification:certification};
+}
+
+test("SR16 simulated 30D cannot close an L8 soak parent",async()=>{
+  const result=await runBoundedSyntheticAgentLoop({
+    parent:srRequirement("L8_SOAK"),
+    child:{evidence_level:"L4_SIMULATED_INTEGRATION",environment:"SIMULATOR"},
+    ci:"PASS",review:"PASS",contracts:"PASS",
+  });
+  assert.equal(result.semantic_completion,"BLOCK");
+  assert.equal(result.closeout,"BLOCK");
+  assert.equal(result.successor_authorization,"BLOCK");
+  assert.equal(result.agent_loop_semantic_gate_certification,"PASS");
+});
+
+test("SR16 positive control: genuinely eligible evidence is not blocked by the certification",async()=>{
+  const result=await runBoundedSyntheticAgentLoop({
+    parent:srRequirement("L8_SOAK"),
+    child:{evidence_level:"L8_SOAK",environment:"PAPER_RUNTIME",duration_seconds:2592000},
+    ci:"PASS",review:"PASS",contracts:"PASS",
+  });
+  assert.equal(result.semantic_completion,"PASS");
+  assert.equal(result.closeout,"PASS");
+  assert.equal(result.successor_authorization,"PASS");
+  assert.equal(result.agent_loop_semantic_gate_certification,"PASS");
 });
