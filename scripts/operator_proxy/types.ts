@@ -232,7 +232,7 @@ export interface EvidenceKindContractsV1 {
   schema_version:1; roadmap_id:string;
   calendar_day_policy:"UTC_24H_DAY";
   minimum_regime_count_for_multiple:number;
-  kinds:Record<string,{assertion_contract:string;attestation_model:string;zero_condition:boolean;tested_runtime_execution:boolean}>;
+  kinds:Record<string,{assertion_contract:string;attestation_model:string;zero_condition:boolean;tested_runtime_execution:boolean;requires_regime_identity:boolean}>;
   /** SHA-256 of the exact governed document bytes (set by the trusted resolver). */
   evidence_kind_contracts_sha256?:string;
 }
@@ -288,7 +288,8 @@ export type SemanticCompletionReasonCode =
   | "INDEPENDENT_AUDIT_MISSING" | "CYCLIC_REQUIREMENT_DEPENDENCY"
   | "EVIDENCE_COHORT_MISMATCH" | "MISSING_EVIDENCE_COHORT_ID" | "EVIDENCE_COHORT_AUTHORITY_MISMATCH"
   | "REGIME_CLASSIFIER_AUTHORITY_MISMATCH" | "REGIME_ID_COUNT_MISMATCH"
-  | "SOAK_EXECUTION_NOT_STARTED" | "REGIME_CLASSIFIER_NOT_MATERIALIZED";
+  | "SOAK_EXECUTION_NOT_STARTED" | "REGIME_CLASSIFIER_NOT_MATERIALIZED"
+  | "SOAK_EXECUTION_NOT_COMPLETED" | "EVIDENCE_OUTSIDE_SOAK_WINDOW";
 export interface SemanticCompletionDecisionV1 {
   readonly schema_version:1; readonly phase_or_item_id:string; readonly original_requirement_refs:readonly string[];
   readonly requirements_total:number; readonly requirements_satisfied:number; readonly requirements_deferred_valid:number; readonly requirements_blocked:number;

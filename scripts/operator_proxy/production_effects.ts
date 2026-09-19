@@ -261,7 +261,7 @@ class CanonicalGitSemanticSource implements SemanticSourceV1 {
       if(!kinds||Object.getPrototypeOf(kinds)!==Object.prototype)throw new Error("invalid kinds");
       for(const [kind,contract] of Object.entries(kinds)){
         const contractKeys=Object.keys(contract);
-        if(contractKeys.length!==4||typeof contract.assertion_contract!=="string"||!contract.assertion_contract||typeof contract.attestation_model!=="string"||!contract.attestation_model||typeof contract.zero_condition!=="boolean"||typeof contract.tested_runtime_execution!=="boolean")throw new Error(`invalid kind: ${kind}`);
+        if(contractKeys.length!==5||typeof contract.assertion_contract!=="string"||!contract.assertion_contract||typeof contract.attestation_model!=="string"||!contract.attestation_model||typeof contract.zero_condition!=="boolean"||typeof contract.tested_runtime_execution!=="boolean"||typeof contract.requires_regime_identity!=="boolean")throw new Error(`invalid kind: ${kind}`);
       }
       contracts={schema_version:1,roadmap_id:value.roadmap_id as string,calendar_day_policy:"UTC_24H_DAY",minimum_regime_count_for_multiple:value.minimum_regime_count_for_multiple as number,kinds:kinds as import("./types.js").EvidenceKindContractsV1["kinds"]};
     }catch{throw new Error(`canonical semantic evidence kind contract invalid: ${KIND_CONTRACTS_PATH}@${this.merge}`);}
@@ -283,6 +283,9 @@ class CanonicalGitSemanticSource implements SemanticSourceV1 {
       if(keys.length!==expected.length||!expected.every(key=>keys.includes(key)))throw new Error("invalid shape");
       if(value.schema_version!==1||value.roadmap_id!==this.spec.roadmap_id||value.roadmap_item_id!==this.spec.roadmap_item_id||typeof value.soak_execution_id!=="string"||!value.soak_execution_id||value.environment!=="PAPER_RUNTIME"||value.calendar_day_policy!=="UTC_24H_DAY")throw new Error("invalid manifest");
       if(!SHA1.test(String(value.source_sha)))throw new Error("invalid source");
+      // The manifest's execution source must be a REAL governed commit, not a
+      // placeholder: an all-zeros SHA means the execution source is unbound.
+      if(/^0{40}$/.test(String(value.source_sha)))throw new Error("placeholder source");
       if(value.started_at_utc!==null&&typeof value.started_at_utc!=="string")throw new Error("invalid start");
       if(value.ended_at_utc!==null&&typeof value.ended_at_utc!=="string")throw new Error("invalid end");
       if(typeof value.runtime_binding!=="string"||typeof value.regime_classifier_id!=="string"||typeof value.regime_classifier_version!=="string"||typeof value.regime_classifier_contract_path!=="string"||typeof value.regime_classifier_contract_sha256!=="string"||!/^[0-9a-f]{64}$/.test(String(value.regime_classifier_contract_sha256)))throw new Error("invalid classifier binding");
@@ -310,6 +313,14 @@ class CanonicalGitSemanticSource implements SemanticSourceV1 {
       if(value.definition_sha256!==null&&(typeof value.definition_sha256!=="string"||!/^[0-9a-f]{64}$/.test(String(value.definition_sha256))))throw new Error("invalid definition hash");
       if(!SHA1.test(String(value.frozen_source_sha)))throw new Error("invalid frozen source");
       if(value.state!=="PREREGISTERED_NOT_YET_OBSERVED"&&value.state!=="OBSERVED")throw new Error("invalid state");
+      // Materialization authority: a declared definition must ACTUALLY exist
+      // in Git at the bound SHA with the exact declared bytes.
+      if(value.state==="OBSERVED"){
+        if(value.definition_path===null||value.definition_sha256===null)throw new Error("definition not materialized");
+        let definitionBytes:string;
+        try{definitionBytes=this.fetch(String(value.definition_path));}catch{throw new Error("definition not materialized");}
+        if(createHash("sha256").update(definitionBytes,"utf8").digest("hex")!==String(value.definition_sha256))throw new Error("definition not materialized");
+      }
       contract={schema_version:1,classifier_id:String(value.classifier_id),classifier_version:String(value.classifier_version),roadmap_id:String(value.roadmap_id),roadmap_item_id:String(value.roadmap_item_id),definition_path:value.definition_path===null?null:String(value.definition_path),definition_sha256:value.definition_sha256===null?null:String(value.definition_sha256),output_identity_semantics:String(value.output_identity_semantics),minimum_distinct_regimes:value.minimum_distinct_regimes as number,frozen_source_sha:String(value.frozen_source_sha),state:value.state as "PREREGISTERED_NOT_YET_OBSERVED"|"OBSERVED"};
     }catch{throw new Error(`canonical regime classifier contract invalid: ${REGIME_CLASSIFIER_PATH}@${this.merge}`);}
     return {...contract,regime_classifier_contract_sha256:createHash("sha256").update(bytes,"utf8").digest("hex")};
@@ -372,7 +383,9 @@ export class ProductionEffects implements AutonomousEffects {
     let soakManifest:import("./types.js").GovernedSoakExecutionManifestV1|undefined;
     let regimeClassifier:import("./types.js").GovernedRegimeClassifierContractV1|undefined;
     const requirementsCohorted=input.requirements.some(requirement=>requirement.cohort_group!==undefined);
-    const requirementsRegime=input.requirements.some(requirement=>requirement.required_evidence_kinds.includes("REGIME_COVERAGE"));
+    // Regime authority is needed iff any required kind carries the governed
+    // requires_regime_identity flag — never a hardcoded kind-string literal.
+    const requirementsRegime=input.requirements.some(requirement=>requirement.required_evidence_kinds.some(kind=>kindContracts.kinds[kind]?.requires_regime_identity===true));
     if(requirementsCohorted||requirementsRegime){
       soakManifest=canonicalSource.soakExecutionManifest();
       regimeClassifier=canonicalSource.regimeClassifierContract();

@@ -418,13 +418,13 @@ const fixtureManifest=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",ro
 const fixtureClassifier=JSON.stringify({schema_version:1,classifier_id:"BRAIN-101-R15-REGIME-CLASSIFIER",classifier_version:"0.1.0-preregistered",roadmap_id:"BRAIN-101",roadmap_item_id:"R15",definition_path:null,definition_sha256:null,output_identity_semantics:"stable string regime IDs within one classifier identity",minimum_distinct_regimes:2,frozen_source_sha:"a".repeat(40),state:"PREREGISTERED_NOT_YET_OBSERVED"});
 /** Governed evidence-kind contract bytes used by registry-backed fixtures. */
 const fixtureKindContracts=JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",calendar_day_policy:"UTC_24H_DAY",minimum_regime_count_for_multiple:2,kinds:{
-  RUNTIME_OBSERVATION:{assertion_contract:"runtime observation artifact",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true},
-  REGIME_COVERAGE:{assertion_contract:"distinct regime enumeration",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true},
-  BYPASS_AUDIT:{assertion_contract:"zero bypass attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true},
-  LEDGER_RECONCILIATION:{assertion_contract:"zero ledger inconsistency attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true},
-  DUPLICATE_ORDER_AUDIT:{assertion_contract:"zero duplicate order attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true},
-  KILL_SWITCH_TEST:{assertion_contract:"executed kill-switch test",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true},
-  RECOVERY_TEST:{assertion_contract:"executed recovery test",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true},
+  RUNTIME_OBSERVATION:{assertion_contract:"runtime observation artifact",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity:false},
+  REGIME_COVERAGE:{assertion_contract:"distinct regime enumeration",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity:true},
+  BYPASS_AUDIT:{assertion_contract:"zero bypass attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true,requires_regime_identity:false},
+  LEDGER_RECONCILIATION:{assertion_contract:"zero ledger inconsistency attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true,requires_regime_identity:false},
+  DUPLICATE_ORDER_AUDIT:{assertion_contract:"zero duplicate order attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true,requires_regime_identity:false},
+  KILL_SWITCH_TEST:{assertion_contract:"executed kill-switch test",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity:false},
+  RECOVERY_TEST:{assertion_contract:"executed recovery test",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity:false},
 }});
 /** fileAtBus with the canonical registry + kind contracts + manifest + classifier pre-seeded (the default production case). */
 function registryFileAtBus(files:Record<string,string>){
@@ -1127,7 +1127,7 @@ test("REQ_SEMANTICS positive synthetic contract: a complete qualifying evidence 
   const {candidate}=realSemanticArtifacts();
   // Purely synthetic evaluator proof — NOT canonical R15 evidence.
   // Complete qualifying set: same governed soak cohort, full-window audits.
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=cohortEvidenceSet(candidate,{authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
   const requirementsDoc=realSemanticArtifacts().requirementsDoc;
   const input={schema_version:1 as const,phase_or_item_id:"R15",source_sha:candidate,evaluated_at_utc:"2026-09-10T00:00:00.000Z",
@@ -1198,7 +1198,7 @@ function cohortInput(candidate:string,evidence:ReturnType<typeof cohortEvidenceS
 test("R1 DIFFERENT_SOAK_COHORTS_BLOCKED",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
   const cohorts=["SOAK-A","SOAK-B","SOAK-C","SOAK-D","SOAK-E","SOAK-F","SOAK-G"];
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=cohortEvidenceSet(candidate,{authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier},cohort:index=>cohorts[index]});
   const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"BLOCK","seven individually perfect records from seven different soaks are NOT one governed soak");
@@ -1207,7 +1207,7 @@ test("R1 DIFFERENT_SOAK_COHORTS_BLOCKED",()=>{
 
 test("R2 SAME_COHORT_COMPLETE_SYNTHETIC_PASS",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=cohortEvidenceSet(candidate,{authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier},});
   const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"PASS");
@@ -1217,7 +1217,7 @@ test("R2 SAME_COHORT_COMPLETE_SYNTHETIC_PASS",()=>{
 
 test("R3 BYPASS_SHORT_WINDOW_BLOCKED",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=cohortEvidenceSet(candidate,{authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier},duration:index=>index===2?300:2592000});
   const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"BLOCK","a 5-minute bypass audit cannot attest zero violations across a 30-day soak window");
@@ -1226,7 +1226,7 @@ test("R3 BYPASS_SHORT_WINDOW_BLOCKED",()=>{
 
 test("R4 LEDGER_SHORT_WINDOW_BLOCKED",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=cohortEvidenceSet(candidate,{authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier},duration:index=>index===3?300:2592000});
   const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"BLOCK");
@@ -1235,7 +1235,7 @@ test("R4 LEDGER_SHORT_WINDOW_BLOCKED",()=>{
 
 test("R5 DUPLICATE_ORDER_SHORT_WINDOW_BLOCKED",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=cohortEvidenceSet(candidate,{authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier},duration:index=>index===4?300:2592000});
   const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"BLOCK");
@@ -1244,7 +1244,7 @@ test("R5 DUPLICATE_ORDER_SHORT_WINDOW_BLOCKED",()=>{
 
 test("R6 KILL_SWITCH_DIFFERENT_COHORT_BLOCKED",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=cohortEvidenceSet(candidate,{authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier},cohort:index=>index===5?"SOAK-OTHER":undefined!});
   const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"BLOCK","a kill-switch test executed in a different soak cohort does not prove this soak");
@@ -1253,7 +1253,7 @@ test("R6 KILL_SWITCH_DIFFERENT_COHORT_BLOCKED",()=>{
 
 test("R7 RECOVERY_DIFFERENT_COHORT_BLOCKED",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=cohortEvidenceSet(candidate,{authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier},cohort:index=>index===6?"SOAK-OTHER":undefined!});
   const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"BLOCK");
@@ -1262,7 +1262,7 @@ test("R7 RECOVERY_DIFFERENT_COHORT_BLOCKED",()=>{
 
 test("R8 STATIC_KILL_SWITCH_PRESENCE_NOT_TEST",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=cohortEvidenceSet(candidate,{authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier},assertion:index=>index===5?"BOOLEAN":"OBSERVATION"});
   const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"BLOCK","a naked boolean claim of kill-switch presence is not an executed test");
@@ -1271,7 +1271,7 @@ test("R8 STATIC_KILL_SWITCH_PRESENCE_NOT_TEST",()=>{
 
 test("R9 STATIC_RECOVERY_PRESENCE_NOT_TEST",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=cohortEvidenceSet(candidate,{authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier},assertion:index=>index===6?"BOOLEAN":"OBSERVATION"});
   const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"BLOCK");
@@ -1312,7 +1312,7 @@ test("R12 UNKNOWN_KIND_CONTRACT_BLOCKED",()=>{
 
 test("R13 29_CALENDAR_DAYS_BLOCKED",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=cohortEvidenceSet(candidate,{authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier},duration:()=>2505600});
   const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"BLOCK","29 UTC calendar days is not 30");
@@ -1321,7 +1321,7 @@ test("R13 29_CALENDAR_DAYS_BLOCKED",()=>{
 
 test("R14 30_CALENDAR_DAYS_ELIGIBLE",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=cohortEvidenceSet(candidate,{authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier},});
   const decision=evaluateSemanticCompletion(cohortInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"PASS","30 consecutive UTC calendar days (2592000s) satisfies the duration clause");
@@ -1400,12 +1400,27 @@ function authoritativeInput(candidate:string,evidence:ReturnType<typeof authorit
     evidence,deferments:[],deferment_authorizations:[]};
 }
 
+
+/** Synthetic governed kind-contract document for pure-evaluator regime tests (P2-1 decoupling). */
+function syntheticKindContracts(){
+  const kinds:Record<string,{assertion_contract:string;attestation_model:string;zero_condition:boolean;tested_runtime_execution:boolean;requires_regime_identity:boolean}>={
+    RUNTIME_OBSERVATION:{assertion_contract:"runtime observation",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity:false},
+    REGIME_COVERAGE:{assertion_contract:"regime enumeration",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity:true},
+    BYPASS_AUDIT:{assertion_contract:"zero bypass",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true,requires_regime_identity:false},
+    LEDGER_RECONCILIATION:{assertion_contract:"zero ledger inconsistency",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true,requires_regime_identity:false},
+    DUPLICATE_ORDER_AUDIT:{assertion_contract:"zero duplicate orders",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true,requires_regime_identity:false},
+    KILL_SWITCH_TEST:{assertion_contract:"executed kill-switch test",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity:false},
+    RECOVERY_TEST:{assertion_contract:"executed recovery test",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity:false},
+  };
+  return {schema_version:1 as const,roadmap_id:"BRAIN-101",calendar_day_policy:"UTC_24H_DAY" as const,minimum_regime_count_for_multiple:2,kinds};
+}
+
 test("R15 SAME_STRING_DIFFERENT_EXECUTIONS_BLOCKED: evidence strings cannot self-authorize",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
   // Every record claims the SAME label "SOAK-X" — but the governed manifest
   // declares a different authoritative execution identity. String agreement
   // among evidence is insufficient: the authority is the Git-bound manifest.
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{soakId:()=>"SOAK-X",authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
   assert.notEqual(authorities.governedManifest.soak_execution_id,"SOAK-X");
   const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
@@ -1415,7 +1430,7 @@ test("R15 SAME_STRING_DIFFERENT_EXECUTIONS_BLOCKED: evidence strings cannot self
 
 test("R16 EVIDENCE_SOAK_ID_DIFFERS_FROM_MANIFEST yields authority mismatch",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{soakId:index=>index===0?"SOAK-REAL-A":undefined,authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
   const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"BLOCK");
@@ -1448,52 +1463,52 @@ test("R18 MISSING_SOAK_EXECUTION_ID_WITH_EVIDENCE yields the precise missing-coh
 
 test("R19 CLASSIFIER_ID_SUBSTITUTION_BLOCKED",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{classifierId:"CLASSIFIER-B",authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
-  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
+  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,syntheticKindContracts(),authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"BLOCK");
   assert.ok(decision.reason_codes.includes("REGIME_CLASSIFIER_AUTHORITY_MISMATCH"));
 });
 
 test("R20 CLASSIFIER_VERSION_SUBSTITUTION_BLOCKED",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{classifierVersion:"99.0.0-forged",authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
-  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
+  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,syntheticKindContracts(),authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"BLOCK");
   assert.ok(decision.reason_codes.includes("REGIME_CLASSIFIER_AUTHORITY_MISMATCH"));
 });
 
 test("R21 CLASSIFIER_HASH_SUBSTITUTION_BLOCKED",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{classifierSha:"f".repeat(64),authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
-  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
+  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,syntheticKindContracts(),authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"BLOCK");
   assert.ok(decision.reason_codes.includes("REGIME_CLASSIFIER_AUTHORITY_MISMATCH"));
 });
 
 test("R22 SAMPLE_SIZE_REGIME_ID_MISMATCH_BLOCKED: sample_size=2 with one regime ID",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{regimeIds:index=>index===1?["REGIME-A"]:undefined,sampleSize:index=>index===1?2:30,authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
-  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
+  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,syntheticKindContracts(),authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"BLOCK","claiming 2 regimes while observing 1 distinct ID is spoofing");
   assert.ok(decision.reason_codes.includes("REGIME_ID_COUNT_MISMATCH"));
 });
 
 test("R23 DUPLICATE_REGIME_IDS_DO_NOT_COUNT: ['R1','R1'] is one regime",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{regimeIds:index=>index===1?["R1","R1"]:undefined,authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
-  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
+  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,syntheticKindContracts(),authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"BLOCK");
   assert.ok(decision.reason_codes.includes("REGIME_ID_COUNT_MISMATCH"));
 });
 
 test("R24 TWO_DISTINCT_GOVERNED_REGIME_IDS_ELIGIBLE",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{regimeIds:index=>index===1?["REGIME-A","REGIME-B"]:undefined,authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
   const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"PASS","two distinct regime IDs under the governed classifier satisfy 'múltiples regímenes'");
@@ -1502,7 +1517,7 @@ test("R24 TWO_DISTINCT_GOVERNED_REGIME_IDS_ELIGIBLE",()=>{
 
 test("R25 SOAK_MANIFEST_SUBSTITUTION_CHANGES_DECISION_IDENTITY",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{regimeIds:index=>index===1?["REGIME-A","REGIME-B"]:undefined,authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
   const input=authoritativeInput(candidate,evidence);
   const real=evaluateSemanticCompletion(input,artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
@@ -1517,7 +1532,7 @@ test("R25 SOAK_MANIFEST_SUBSTITUTION_CHANGES_DECISION_IDENTITY",()=>{
 
 test("R26 CLASSIFIER_CONTRACT_SUBSTITUTION_CHANGES_DECISION_IDENTITY",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const byteDifferentClassifier={...authorities.governedClassifier,note:"byte-different"};
   const mutatedClassifierSha=createHash("sha256").update(JSON.stringify(byteDifferentClassifier),"utf8").digest("hex");
   const mutatedPairClassifier={...byteDifferentClassifier,regime_classifier_contract_sha256:mutatedClassifierSha};
@@ -1536,7 +1551,7 @@ test("R26 CLASSIFIER_CONTRACT_SUBSTITUTION_CHANGES_DECISION_IDENTITY",()=>{
 
 test("SAME_GOVERNED_SOAK_COMPLETE_SYNTHETIC_PASS: one manifest + one classifier + 7 authoritative records",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{regimeIds:index=>index===1?["REGIME-A","REGIME-B","REGIME-C"]:undefined,authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
   const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,undefined,authorities.governedManifest,authorities.governedClassifier);
   assert.equal(decision.decision,"PASS");
@@ -1562,30 +1577,38 @@ function governedSemanticArtifactsFixture(){
 // ---------------------------------------------------------------------------
 
 /** Builds a governed-state synthetic authority pair derived from the REAL committed artifacts. */
-function syntheticGovernedAuthorities(state:"NOT_STARTED"|"EXECUTING"){
-  const {manifest,classifier}=governedSemanticAuthorities();
+function syntheticGovernedAuthorities(state:"NOT_STARTED"|"EXECUTING"|"COMPLETED"){
+  const {manifest,classifier,candidate}=governedSemanticAuthorities();
   // A fully materialized synthetic classifier definition (test-only bytes).
   const definitionBytes=JSON.stringify({classifier:classifier.classifier_id,version:classifier.classifier_version,definition:"synthetic governed classifier definition for tests",regime_id_space:"TEST-REGIME"});
   const definitionSha=createHash("sha256").update(definitionBytes,"utf8").digest("hex");
-  const executing=state==="EXECUTING";
+  const materialized=state!=="NOT_STARTED";
   // The synthetic classifier in OBSERVED state with a materialized definition.
   const governedClassifier={...classifier,
-    definition_path:executing?"docs/roadmap/semantic/synthetic-classifier-definition.json":null,
-    definition_sha256:executing?definitionSha:null,
-    state:(executing?"OBSERVED":"PREREGISTERED_NOT_YET_OBSERVED") as "OBSERVED"|"PREREGISTERED_NOT_YET_OBSERVED"};
+    definition_path:materialized?"docs/roadmap/semantic/synthetic-classifier-definition.json":null,
+    definition_sha256:materialized?definitionSha:null,
+    state:(materialized?"OBSERVED":"PREREGISTERED_NOT_YET_OBSERVED") as "OBSERVED"|"PREREGISTERED_NOT_YET_OBSERVED"};
   // The classifier contract's own byte SHA changes with its bytes.
   const governedClassifierBytes=JSON.stringify(governedClassifier);
   const governedClassifierSha=createHash("sha256").update(governedClassifierBytes,"utf8").digest("hex");
-  // The manifest binds the EXACT synthetic classifier contract bytes and
-  // (when executing) declares a started soak window.
-  const governedManifest={...manifest,
+  // The manifest binds the EXACT synthetic classifier contract bytes, aligns
+  // its execution source with the evaluated candidate (source authority), and
+  // declares the truthful window for its state: NOT_STARTED = null/null,
+  // EXECUTING = started/not-ended, COMPLETED = started + ended 30 days later
+  // (2026-09-10 → 2026-10-10: a full 30-day governed soak window).
+  const window=state==="NOT_STARTED"?{started_at_utc:null,ended_at_utc:null}:state==="EXECUTING"?{started_at_utc:"2026-09-10T00:00:00.000Z",ended_at_utc:null}:{started_at_utc:"2026-09-10T00:00:00.000Z",ended_at_utc:"2026-10-10T00:00:00.000Z"};
+  const {soak_execution_manifest_sha256:_dropped,...manifestWithoutSha}=manifest;
+  const governedManifestBase={...manifestWithoutSha,
+    source_sha:candidate,
     regime_classifier_id:governedClassifier.classifier_id,
     regime_classifier_version:governedClassifier.classifier_version,
     regime_classifier_contract_sha256:governedClassifierSha,
-    ...(executing?{started_at_utc:"2026-09-10T00:00:00.000Z",ended_at_utc:null}:{})};
-  const governedManifestBytes=JSON.stringify(governedManifest);
+    ...window};
+  const governedManifestBytes=JSON.stringify(governedManifestBase);
   const governedManifestSha=createHash("sha256").update(governedManifestBytes,"utf8").digest("hex");
-  return {governedManifest:{...governedManifest,soak_execution_manifest_sha256:governedManifestSha},governedClassifier:{...governedClassifier,regime_classifier_contract_sha256:governedClassifierSha},classifierSha:governedClassifierSha,manifestBytes:governedManifestBytes,classifierBytes:governedClassifierBytes};
+  // loaderManifestBytes: closed 14-key shape for the resolver's loader (no sha field).
+  // governedManifest: the evaluator-facing object WITH its byte sha attached.
+  return {governedManifest:{...governedManifestBase,soak_execution_manifest_sha256:governedManifestSha},loaderManifestBytes:governedManifestBytes,governedClassifier:{...governedClassifier,regime_classifier_contract_sha256:governedClassifierSha},loaderClassifierBytes:governedClassifierBytes,classifierSha:governedClassifierSha,manifestBytes:governedManifestBytes,classifierBytes:governedClassifierBytes,definitionBytes,definitionSha};
 }
 
 test("P1-1 NOT_STARTED_SOAK_MANIFEST cannot authorize evidence",()=>{
@@ -1599,15 +1622,17 @@ test("P1-1 NOT_STARTED_SOAK_MANIFEST cannot authorize evidence",()=>{
 
 test("P1-2 PLACEHOLDER_CLASSIFIER cannot authorize regime evidence",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  // Executing soak, but the classifier remains a non-materialized placeholder.
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
-  const nonMaterializedBase={...authorities.governedClassifier,definition_path:null,definition_sha256:null,state:"PREREGISTERED_NOT_YET_OBSERVED" as const};
+  // Completed soak, but the classifier remains a non-materialized placeholder.
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
+  const classifierBase=authorities.governedClassifier;
+  const {regime_classifier_contract_sha256:_clsShaDrop,...classifierWithoutSha}=classifierBase;
+  const nonMaterializedBase={...classifierWithoutSha,definition_path:null,definition_sha256:null,state:"PREREGISTERED_NOT_YET_OBSERVED" as const} as typeof classifierBase;
   const nonMaterializedSha=createHash("sha256").update(JSON.stringify(nonMaterializedBase),"utf8").digest("hex");
   const coherentManifestBase={...authorities.governedManifest,regime_classifier_contract_sha256:nonMaterializedSha};
   const coherentManifest={...coherentManifestBase,soak_execution_manifest_sha256:createHash("sha256").update(JSON.stringify(coherentManifestBase),"utf8").digest("hex")};
   const coherentClassifier={...nonMaterializedBase,regime_classifier_contract_sha256:nonMaterializedSha};
   const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{regimeIds:index=>index===1?["REGIME-A","REGIME-B"]:undefined,authorities:{manifest:coherentManifest,classifier:coherentClassifier}});
-  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,undefined,coherentManifest,coherentClassifier);
+  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,syntheticKindContracts(),coherentManifest,coherentClassifier);
   assert.equal(decision.decision,"BLOCK","a non-materialized classifier cannot produce regime observations");
   assert.ok(decision.reason_codes.includes("REGIME_CLASSIFIER_NOT_MATERIALIZED"));
 });
@@ -1641,7 +1666,7 @@ test("P1-3 unbound classifier SHA in the manifest fails closed structurally",()=
 
 test("P2-1 BYTE_HASH_BINDING is isolated: same semantics, different bytes => different decision hash",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   // Manifest-only byte difference (note): the classifier — and therefore the
   // evidence coherence — is UNTOUCHED. Identical semantics, different bytes.
   const byteDifferentManifestBase={...authorities.governedManifest,note:"byte-different"};
@@ -1657,7 +1682,7 @@ test("P2-1 BYTE_HASH_BINDING is isolated: same semantics, different bytes => dif
 
 test("P2-2 REGIME_SEMANTICS come from the governed contract, not gate constants",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  const authorities=syntheticGovernedAuthorities("EXECUTING");
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
   // A coherent pair whose contract demands MORE distinct regimes than the
   // evidence provides: the threshold must be read from the CONTRACT bytes.
   const demandingClassifierBase={...authorities.governedClassifier,minimum_distinct_regimes:5};
@@ -1666,7 +1691,7 @@ test("P2-2 REGIME_SEMANTICS come from the governed contract, not gate constants"
   const demandingManifestBase={...authorities.governedManifest,regime_classifier_contract_sha256:demandingClassifierSha};
   const demandingManifest={...demandingManifestBase,soak_execution_manifest_sha256:createHash("sha256").update(JSON.stringify(demandingManifestBase),"utf8").digest("hex")};
   const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{regimeIds:index=>index===1?["REGIME-A","REGIME-B","REGIME-C"]:undefined,authorities:{manifest:demandingManifest,classifier:demandingClassifier}});
-  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,undefined,demandingManifest,demandingClassifier);
+  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,syntheticKindContracts(),demandingManifest,demandingClassifier);
   assert.equal(decision.decision,"BLOCK","contract demanding 5 distinct regimes rejects a 3-regime observation");
   assert.ok(decision.reason_codes.includes("REGIME_ID_COUNT_MISMATCH"));
 });
@@ -1680,13 +1705,13 @@ test("P2-2 REGIME_SEMANTICS come from the governed contract, not gate constants"
 /** Kind-contract document bytes including the governed requires_regime_identity flag. */
 function fixtureKindContractsWithFlag(requiresRegimeIdentity:boolean){
   return JSON.stringify({schema_version:1,roadmap_id:"BRAIN-101",calendar_day_policy:"UTC_24H_DAY",minimum_regime_count_for_multiple:2,kinds:{
-    RUNTIME_OBSERVATION:{assertion_contract:"runtime observation artifact",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity},
-    REGIME_COVERAGE:{assertion_contract:"distinct regime enumeration",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity},
-    BYPASS_AUDIT:{assertion_contract:"zero bypass attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true,requires_regime_identity},
-    LEDGER_RECONCILIATION:{assertion_contract:"zero ledger inconsistency attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true,requires_regime_identity},
-    DUPLICATE_ORDER_AUDIT:{assertion_contract:"zero duplicate order attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true,requires_regime_identity},
-    KILL_SWITCH_TEST:{assertion_contract:"executed kill-switch test",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity},
-    RECOVERY_TEST:{assertion_contract:"executed recovery test",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity},
+    RUNTIME_OBSERVATION:{assertion_contract:"runtime observation artifact",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity:requiresRegimeIdentity},
+    REGIME_COVERAGE:{assertion_contract:"distinct regime enumeration",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity:requiresRegimeIdentity},
+    BYPASS_AUDIT:{assertion_contract:"zero bypass attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true,requires_regime_identity:requiresRegimeIdentity},
+    LEDGER_RECONCILIATION:{assertion_contract:"zero ledger inconsistency attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true,requires_regime_identity:requiresRegimeIdentity},
+    DUPLICATE_ORDER_AUDIT:{assertion_contract:"zero duplicate order attestation",attestation_model:"artifact bytes + independent verifier",zero_condition:true,tested_runtime_execution:true,requires_regime_identity:requiresRegimeIdentity},
+    KILL_SWITCH_TEST:{assertion_contract:"executed kill-switch test",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity:requiresRegimeIdentity},
+    RECOVERY_TEST:{assertion_contract:"executed recovery test",attestation_model:"artifact bytes + independent verifier",zero_condition:false,tested_runtime_execution:true,requires_regime_identity:requiresRegimeIdentity},
   }});
 }
 
@@ -1739,36 +1764,89 @@ test("Q4 COMPLETED_FULL_WINDOW soak authorizes the complete qualifying set",()=>
 
 test("Q5 CLASSIFIER_DEFINITION_MATERIALIZATION is proven by the resolver from Git",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
-  // The REAL canonical classifier declares definition_path=null — the
-  // resolver must load it and the gate must fail closed on regime evidence.
-  // (Materialization authority = the definition artifact exists in Git at
-  // the bound SHA with the declared bytes.)
+  const manifestLoaderForQ5=()=>JSON.parse(authorities.loaderManifestBytes);
+  // The REAL canonical classifier is truthfully PREREGISTERED with no
+  // materialized definition — documented separately from this isolation test.
+  const {classifier:realClassifier}=governedSemanticAuthorities();
+  assert.equal(realClassifier.state,"PREREGISTERED_NOT_YET_OBSERVED");
+  assert.equal(realClassifier.definition_sha256,null);
+  // ISOLATION (per review): a COMPLETED governed soak + coherent pair whose
+  // classifier is NOT materialized. Regime evidence must fail closed on
+  // materialization — NOT masked by soak lifecycle codes.
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
+  const classifierBase=authorities.governedClassifier;
+  const {regime_classifier_contract_sha256:_clsShaDrop,...classifierWithoutSha}=classifierBase;
+  const nonMaterializedBase={...classifierWithoutSha,definition_path:null,definition_sha256:null,state:"PREREGISTERED_NOT_YET_OBSERVED" as const} as typeof classifierBase;
+  const nonMaterializedLoaderBytes=JSON.stringify(nonMaterializedBase);
+  const nonMaterializedSha=createHash("sha256").update(nonMaterializedLoaderBytes,"utf8").digest("hex");
+  const coherentClassifier={...nonMaterializedBase,regime_classifier_contract_sha256:nonMaterializedSha};
+  const coherentManifestBase={...manifestLoaderForQ5(),regime_classifier_contract_sha256:nonMaterializedSha};
+  const {soak_execution_manifest_sha256:_shaDrop,...coherentLoader}=coherentManifestBase as Record<string,unknown>;
+  const coherentManifest={...coherentManifestBase,soak_execution_manifest_sha256:createHash("sha256").update(JSON.stringify(coherentLoader),"utf8").digest("hex")};
   const spec={...parentSpec,roadmap_id:"BRAIN-101",roadmap_item_id:"R15",semantic_completion:{requirements_path:"docs/roadmap/semantic/requirements.json",evidence_path:"docs/roadmap/semantic/evidence.json"}};
-  const {manifest}=governedSemanticAuthorities();
   const evidenceWithRegime={schema_version:1,evidence:[
-    {evidence_id:"E-DUR",requirement_id:"REQ-BRAIN-101-R15-SOAK-DURATION",evidence_kind:"RUNTIME_OBSERVATION",evidence_level:"L8_SOAK" as const,source_sha:candidate,certified_implementation_sha:candidate,artifact_path:artifactPath,artifact_sha256:sha(artifact),environment:"PAPER_RUNTIME",runtime_binding:"paper-runtime:v1",observed_at_utc:"2026-09-10T00:00:00.000Z",producer_id:"p",assertion_type:"OBSERVATION" as const,soak_execution_id:manifest.soak_execution_id,observation:{duration_seconds:2592000,sample_size:30},verifier:{verifier_id:"v",source_sha:candidate,independent:true}},
-    {evidence_id:"E-REG",requirement_id:"REQ-BRAIN-101-R15-SOAK-REGIMES",evidence_kind:"REGIME_COVERAGE",evidence_level:"L8_SOAK" as const,source_sha:candidate,certified_implementation_sha:candidate,artifact_path:artifactPath,artifact_sha256:sha(artifact),environment:"PAPER_RUNTIME",runtime_binding:"paper-runtime:v1",observed_at_utc:"2026-09-10T00:00:00.000Z",producer_id:"p",assertion_type:"OBSERVATION" as const,soak_execution_id:manifest.soak_execution_id,observed_regime_ids:["REGIME-A","REGIME-B"],classifier_id:"BRAIN-101-R15-REGIME-CLASSIFIER",classifier_version:"0.1.0-preregistered",classifier_contract_sha256:manifest.regime_classifier_contract_sha256,observation:{duration_seconds:2592000,sample_size:2},verifier:{verifier_id:"v",source_sha:candidate,independent:true}},
+    {evidence_id:"E-DUR",requirement_id:"REQ-BRAIN-101-R15-SOAK-DURATION",evidence_kind:"RUNTIME_OBSERVATION",evidence_level:"L8_SOAK" as const,source_sha:candidate,certified_implementation_sha:candidate,artifact_path:artifactPath,artifact_sha256:sha(artifact),environment:"PAPER_RUNTIME",runtime_binding:"paper-runtime:v1",observed_at_utc:"2026-09-10T00:00:00.000Z",producer_id:"p",assertion_type:"OBSERVATION" as const,soak_execution_id:coherentManifest.soak_execution_id,observation:{duration_seconds:2592000,sample_size:30},verifier:{verifier_id:"v",source_sha:candidate,independent:true}},
+    {evidence_id:"E-REG",requirement_id:"REQ-BRAIN-101-R15-SOAK-REGIMES",evidence_kind:"REGIME_COVERAGE",evidence_level:"L8_SOAK" as const,source_sha:candidate,certified_implementation_sha:candidate,artifact_path:artifactPath,artifact_sha256:sha(artifact),environment:"PAPER_RUNTIME",runtime_binding:"paper-runtime:v1",observed_at_utc:"2026-09-10T00:00:00.000Z",producer_id:"p",assertion_type:"OBSERVATION" as const,soak_execution_id:coherentManifest.soak_execution_id,observed_regime_ids:["REGIME-A","REGIME-B"],classifier_id:coherentClassifier.classifier_id,classifier_version:coherentClassifier.classifier_version,classifier_contract_sha256:nonMaterializedSha,observation:{duration_seconds:2592000,sample_size:2},verifier:{verifier_id:"v",source_sha:candidate,independent:true}},
   ]};
-  const gitReadBus={setMutationGuard:()=>{},fileAt:(path:string,ref:string)=>{
+  const isolationBus={setMutationGuard:()=>{},fileAt:(path:string,ref:string)=>{
+    if(path===manifestPath)return JSON.stringify(coherentLoader);
+    if(path===classifierPath)return nonMaterializedLoaderBytes;
     if(path==="docs/roadmap/semantic/evidence.json")return JSON.stringify(evidenceWithRegime);
+    if(path===artifactPath)return artifact;
     return execFileSync("git",["show",`${ref}:${path}`],{encoding:"utf8"});
   }} as any;
-  const decision=productionEffectsWithBus(gitReadBus).resolveSemanticCompletion(spec,candidate);
-  assert.equal(decision.decision,"BLOCK","the canonical classifier is PREREGISTERED with no materialized definition: regime evidence cannot pass");
+  const decision=productionEffectsWithBus(isolationBus).resolveSemanticCompletion(spec,candidate);
+  assert.equal(decision.decision,"BLOCK","a non-materialized classifier can never authorize regime observations, even under a completed soak");
   assert.ok(decision.reason_codes.includes("REGIME_CLASSIFIER_NOT_MATERIALIZED"));
+  assert.ok(!decision.reason_codes.includes("SOAK_EXECUTION_NOT_STARTED"),"materialization must not be masked by lifecycle codes");
+  assert.ok(!decision.reason_codes.includes("SOAK_EXECUTION_NOT_COMPLETED"),"materialization must not be masked by lifecycle codes");
 });
 
-test("Q5b FORGED classifier definition is rejected by definition byte verification",()=>{
+test("Q5b FORGED classifier definition is rejected by the PRODUCTION resolver's byte verification",()=>{
   const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
   const authorities=syntheticGovernedAuthorities("COMPLETED");
-  // A classifier that DECLARES a materialized definition whose bytes differ
-  // from the declared SHA is a forged materialization.
-  const forgedDefinitionClassifierBase={...authorities.governedClassifier,definition_sha256:"9".repeat(64)};
-  const forgedSha=createHash("sha256").update(JSON.stringify(forgedDefinitionClassifierBase),"utf8").digest("hex");
-  const forgedClassifier={...forgedDefinitionClassifierBase,regime_classifier_contract_sha256:forgedSha};
-  const forgedManifestBase={...authorities.governedManifest,regime_classifier_contract_sha256:forgedSha};
-  const forgedManifest={...forgedManifestBase,soak_execution_manifest_sha256:createHash("sha256").update(JSON.stringify(forgedManifestBase),"utf8").digest("hex")};
-  assert.throws(()=>evaluateSemanticCompletion(authoritativeInput(candidate,[]),new Map(),undefined,forgedManifest,forgedClassifier),/classifier definition not materialized|regime classifier definition/i);
+  // OBSERVED classifier declaring a materialized definition — but the bus
+  // serves bytes that DIFFER from the declared SHA: forged materialization.
+  const declaredDefinitionSha=createHash("sha256").update("legitimate definition bytes","utf8").digest("hex");
+  const forgedClassifierBase={...authorities.governedClassifier,definition_path:"docs/roadmap/semantic/synthetic-classifier-definition.json",definition_sha256:declaredDefinitionSha,state:"OBSERVED" as const};
+  const forgedLoaderBytes=JSON.stringify(forgedClassifierBase);
+  const forgedClassifierSha=createHash("sha256").update(forgedLoaderBytes,"utf8").digest("hex");
+  const forgedClassifier={...forgedClassifierBase,regime_classifier_contract_sha256:forgedClassifierSha};
+  const {soak_execution_manifest_sha256:_drop2,...manifestLoader}=authorities.governedManifest as Record<string,unknown>;
+  const forgedManifestLoader={...manifestLoader,regime_classifier_contract_sha256:forgedClassifierSha};
+  const forgedManifest={...forgedManifestLoader,soak_execution_manifest_sha256:createHash("sha256").update(JSON.stringify(forgedManifestLoader),"utf8").digest("hex")};
+  const spec={...parentSpec,roadmap_id:"BRAIN-101",roadmap_item_id:"R15",semantic_completion:{requirements_path:"docs/roadmap/semantic/requirements.json",evidence_path:"docs/roadmap/semantic/evidence.json"}};
+  const forgedBus={setMutationGuard:()=>{},fileAt:(path:string,ref:string)=>{
+    if(path===manifestPath)return JSON.stringify(forgedManifestLoader);
+    if(path===classifierPath)return forgedLoaderBytes;
+    if(path==="docs/roadmap/semantic/synthetic-classifier-definition.json")return "FORGED definition bytes that do not hash to the declared SHA";
+    if(path==="docs/roadmap/semantic/evidence.json")return JSON.stringify({schema_version:1,evidence:[]});
+    return execFileSync("git",["show",`${ref}:${path}`],{encoding:"utf8"});
+  }} as any;
+  assert.throws(()=>productionEffectsWithBus(forgedBus).resolveSemanticCompletion(spec,candidate),/definition not materialized|canonical regime classifier contract invalid/i);
+});
+
+test("Q5c MISSING classifier definition artifact fails closed at the resolver",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
+  // OBSERVED classifier declaring a definition that does not exist in the bus.
+  const declaredDefinitionSha=createHash("sha256").update("definition bytes","utf8").digest("hex");
+  const missingDefinitionClassifierBase={...authorities.governedClassifier,definition_path:"docs/roadmap/semantic/absent-definition.json",definition_sha256:declaredDefinitionSha,state:"OBSERVED" as const};
+  const missingLoaderBytes=JSON.stringify(missingDefinitionClassifierBase);
+  const missingClassifierSha=createHash("sha256").update(missingLoaderBytes,"utf8").digest("hex");
+  const missingClassifier={...missingDefinitionClassifierBase,regime_classifier_contract_sha256:missingClassifierSha};
+  const {soak_execution_manifest_sha256:_drop3,...manifestLoader3}=authorities.governedManifest as Record<string,unknown>;
+  const missingManifestLoader={...manifestLoader3,regime_classifier_contract_sha256:missingClassifierSha};
+  const missingManifest={...missingManifestLoader,soak_execution_manifest_sha256:createHash("sha256").update(JSON.stringify(missingManifestLoader),"utf8").digest("hex")};
+  const spec={...parentSpec,roadmap_id:"BRAIN-101",roadmap_item_id:"R15",semantic_completion:{requirements_path:"docs/roadmap/semantic/requirements.json",evidence_path:"docs/roadmap/semantic/evidence.json"}};
+  const missingBus={setMutationGuard:()=>{},fileAt:(path:string,ref:string)=>{
+    if(path===manifestPath)return JSON.stringify(missingManifestLoader);
+    if(path===classifierPath)return missingLoaderBytes;
+    if(path==="docs/roadmap/semantic/absent-definition.json")throw new Error("not found");
+    if(path==="docs/roadmap/semantic/evidence.json")return JSON.stringify({schema_version:1,evidence:[]});
+    return execFileSync("git",["show",`${ref}:${path}`],{encoding:"utf8"});
+  }} as any;
+  assert.throws(()=>productionEffectsWithBus(missingBus).resolveSemanticCompletion(spec,candidate),/definition not materialized|canonical regime classifier contract invalid/i);
 });
 
 test("Q6 PLACEHOLDER execution source_sha fails closed",()=>{
@@ -1781,9 +1859,10 @@ test("Q6 PLACEHOLDER execution source_sha fails closed",()=>{
   const hostileBus={setMutationGuard:()=>{},fileAt:(path:string,ref:string)=>{
     if(path===manifestPath)return JSON.stringify({...rawManifest,source_sha:"0".repeat(40)});
     if(path==="docs/roadmap/semantic/evidence.json")return JSON.stringify(evidenceWithCohort);
+    if(path===artifactPath)return artifact;
     return execFileSync("git",["show",`${ref}:${path}`],{encoding:"utf8"});
   }} as any;
-  assert.throws(()=>productionEffectsWithBus(hostileBus).resolveSemanticCompletion(spec,candidate),/soak execution source not bound|placeholder source/i);
+  assert.throws(()=>productionEffectsWithBus(hostileBus).resolveSemanticCompletion(spec,candidate),/canonical soak execution manifest invalid/i);
 });
 
 test("Q6b REAL canonical manifest binds the actual evaluation source_sha",()=>{
@@ -1791,6 +1870,22 @@ test("Q6b REAL canonical manifest binds the actual evaluation source_sha",()=>{
   const rawManifest=JSON.parse(execFileSync("git",["show",`${candidate}:docs/roadmap/semantic/soak_execution_manifest.json`],{encoding:"utf8"}));
   assert.notEqual(rawManifest.source_sha,"0".repeat(40),"the canonical manifest must no longer declare a placeholder source");
   assert.match(rawManifest.source_sha,/^[0-9a-f]{40}$/);
+});
+
+test("Q8 EXECUTION_SOURCE AUTHORITY: manifest source_sha must equal the evaluated source for cohort evidence",()=>{
+  const candidate=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  // COMPLETED governed soak, coherent classifier, perfect evidence bound to
+  // the CANDIDATE source — but the manifest declares a DIFFERENT valid source
+  // SHA. The execution authority chain (evidence.source_sha ↔ input source ↔
+  // manifest.source_sha) is broken: must BLOCK, not authorize.
+  const authorities=syntheticGovernedAuthorities("COMPLETED");
+  const foreignSource="9".repeat(40);
+  const foreignManifestBase={...authorities.governedManifest,source_sha:foreignSource};
+  const foreignManifest={...foreignManifestBase,soak_execution_manifest_sha256:createHash("sha256").update(JSON.stringify(foreignManifestBase),"utf8").digest("hex")};
+  const {evidence,artifacts}=authoritativeEvidenceSet(candidate,{regimeIds:index=>index===1?["REGIME-A","REGIME-B"]:undefined,authorities:{manifest:authorities.governedManifest,classifier:authorities.governedClassifier}});
+  const decision=evaluateSemanticCompletion(authoritativeInput(candidate,evidence),artifacts,undefined,foreignManifest,authorities.governedClassifier);
+  assert.equal(decision.decision,"BLOCK","cohort evidence cannot be authorized by a soak bound to a different execution source");
+  assert.ok(decision.reason_codes.includes("EVIDENCE_COHORT_AUTHORITY_MISMATCH"),"the manifest's execution source must match the evaluated source");
 });
 
 test("Q7 REGIME_IDENTITY trigger is governed by the kind contract, not the kind string",()=>{
