@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "classifier_id": "BRAIN-101-R15-REGIME-CLASSIFIER",
+  "classifier_version": "0.1.0-preregistered",
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R15",
+  "definition_path": null,
+  "definition_sha256": null,
+  "output_identity_semantics": "Regime identity is a stable string ID emitted by the classifier identified by classifier_id+classifier_version. Distinctness is defined by exact string inequality of regime IDs within one classifier identity. The classifier implementation is not yet materialized; until a governed definition exists, this preregistered contract fixes WHICH classifier identity future regime evidence must bind. No regime labels are invented here.",
+  "minimum_distinct_regimes": 2,
+  "frozen_source_sha": "0000000000000000000000000000000000000000",
+  "state": "PREREGISTERED_NOT_YET_OBSERVED"
+}

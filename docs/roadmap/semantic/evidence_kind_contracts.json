@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "minimum_regime_count_for_multiple": 2,
+  "kinds": {
+    "RUNTIME_OBSERVATION": {
+      "assertion_contract": "Artifact records a continuous runtime observation of the bound environment for at least the required duration.",
+      "attestation_model": "evidence_kind + artifact bytes at bound source SHA + independent verifier; duration/sample read from artifact observation",
+      "zero_condition": false,
+      "tested_runtime_execution": true,
+      "requires_regime_identity": false
+    },
+    "REGIME_COVERAGE": {
+      "assertion_contract": "Artifact enumerates distinct validated regimes; sample_size is the count of distinct regimes and must be >= 2 for 'múltiples regímenes'.",
+      "attestation_model": "evidence_kind + artifact bytes at bound source SHA + independent verifier; regime count read from artifact observation sample_size",
+      "zero_condition": false,
+      "tested_runtime_execution": true,
+      "requires_regime_identity": true
+    },
+    "BYPASS_AUDIT": {
+      "assertion_contract": "Artifact is an independent audit attesting zero bypass events during the bound window.",
+      "attestation_model": "evidence_kind + artifact bytes at bound source SHA + independent verifier; zero condition attested by the independent audit artifact itself",
+      "zero_condition": true,
+      "tested_runtime_execution": true,
+      "requires_regime_identity": false
+    },
+    "LEDGER_RECONCILIATION": {
+      "assertion_contract": "Artifact is an independent reconciliation attesting zero ledger inconsistencies during the bound window.",
+      "attestation_model": "evidence_kind + artifact bytes at bound source SHA + independent verifier; zero condition attested by the independent reconciliation artifact itself",
+      "zero_condition": true,
+      "tested_runtime_execution": true,
+      "requires_regime_identity": false
+    },
+    "DUPLICATE_ORDER_AUDIT": {
+      "assertion_contract": "Artifact is an independent audit attesting zero duplicate orders during the bound window.",
+      "attestation_model": "evidence_kind + artifact bytes at bound source SHA + independent verifier; zero condition attested by the independent audit artifact itself",
+      "zero_condition": true,
+      "tested_runtime_execution": true,
+      "requires_regime_identity": false
+    },
+    "KILL_SWITCH_TEST": {
+      "assertion_contract": "Artifact records an executed kill-switch test during runtime operation, not code presence.",
+      "attestation_model": "evidence_kind + artifact bytes at bound source SHA + independent verifier; tested execution recorded in the artifact",
+      "zero_condition": false,
+      "tested_runtime_execution": true,
+      "requires_regime_identity": false
+    },
+    "RECOVERY_TEST": {
+      "assertion_contract": "Artifact records an executed recovery test during runtime operation, not code presence.",
+      "attestation_model": "evidence_kind + artifact bytes at bound source SHA + independent verifier; tested execution recorded in the artifact",
+      "zero_condition": false,
+      "tested_runtime_execution": true,
+      "requires_regime_identity": false
+    }
+  },
+  "calendar_day_policy": "UTC_24H_DAY"
+}

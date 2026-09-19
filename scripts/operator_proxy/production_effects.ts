@@ -34,6 +34,8 @@ import {OwnerRepairRuntimeSupportLedger,type OwnerRepairRuntimeSupportEvent} fro
 import {discoverOwnerAuthorizedCriticalMerge} from "./owner_critical_merge_authorization.js";
 import {OwnerCriticalMergeReceiptLedger} from "./owner_critical_merge_receipt_ledger.js";
 import {executeOwnerAuthorizedCriticalMerge} from "./owner_critical_merge_executor.js";
+import {evaluateSemanticCompletion} from "./semantic_completion_gate.js";
+import type {SemanticCompletionDecisionV1,SemanticCompletionInputV1,SemanticSourceV1} from "./types.js";
 
 const FRESH_SUBJECT=(front:string)=>`feat(control-plane): complete ${front}`;
 const NEUTRALIZATION_SUBJECT=(front:string)=>`chore(control-plane): neutralize ${front} legacy baseline`;
@@ -95,6 +97,260 @@ const sameCriticalMergeAuthorization=(left:OwnerAuthorizedCriticalMerge,right:Ow
 
 function safe<T>(operation:()=>T):T|undefined{try{return operation();}catch{return undefined;}}
 
+// ---------------------------------------------------------------------------
+// Semantic completion trust boundary (BR1 Task 3).
+//
+// One authority only: the pure evaluator from semantic_completion_gate.ts.
+// This resolver exists purely to construct the evaluator's input from a
+// TRUSTED canonical source (SemanticSourceV1). The closeout caller names the
+// item; it can never define the authoritative requirement universe, inject
+// artifact bytes, supply artifact hashes, or assert a source SHA.
+// ---------------------------------------------------------------------------
+
+/**
+ * Strict canonical UTC form: YYYY-MM-DDTHH:mm:ss.sssZ. No offsets, no local
+ * time, no human formats, no rollover parsing of impossible calendar values.
+ */
+const CANONICAL_UTC_TIMESTAMP=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+function assertCanonicalUtcTimestamp(value:string,label:string):string{
+  if(typeof value!=="string"||!CANONICAL_UTC_TIMESTAMP.test(value)||Number.isNaN(Date.parse(value)))throw new Error(`${label} not canonical UTC timestamp: ${String(value)}`);
+  // Reject impossible calendar values that the regex shape could still admit
+  // (e.g. 2026-02-30) — Date.parse accepts rollover for some of these.
+  const [datePart,timePart]=value.split("T");
+  const [year,month,day]=datePart.split("-").map(Number);
+  const daysInMonth=new Date(Date.UTC(year,month,0)).getUTCDate();
+  if(month<1||month>12||day<1||day>daysInMonth)throw new Error(`${label} not canonical UTC timestamp: ${value}`);
+  const [hour,minute]=timePart.split(":");
+  if(Number(hour)>23||Number(minute)>59)throw new Error(`${label} not canonical UTC timestamp: ${value}`);
+  const seconds=timePart.split(":")[2].split(".")[0];
+  if(Number(seconds)>59)throw new Error(`${label} not canonical UTC timestamp: ${value}`);
+  return value;
+}
+
+/** Strict SHA-1 for the bound merge SHA. */
+const SHA1=/^[0-9a-f]{40}$/;
+
+/**
+ * Builds evaluator input exclusively from the trusted source. The spec only
+ * identifies the item; every consumed byte originates from `source`.
+ * Every timestamp entering the trusted semantic input must be canonical UTC.
+ * Exported for contract tests of the trust boundary itself.
+ */
+export function resolveSemanticInput(spec:ProxySpec,source:SemanticSourceV1):SemanticCompletionInputV1{
+  if(!spec.semantic_completion)throw new Error("semantic completion not bound to spec");
+  const item=spec.roadmap_item_id;
+  const requirements=source.semanticRequirements(item);
+  const evidence=source.semanticEvidence(item);
+  const deferments=source.semanticDeferments(item);
+  const defermentAuthorizations=source.semanticDefermentAuthorizations(item);
+  const evaluatedAt=assertCanonicalUtcTimestamp(source.nowIsoUtc(),"semantic evaluation time");
+  for(const record of evidence)assertCanonicalUtcTimestamp(record.observed_at_utc,"semantic evidence observed_at_utc");
+  for(const authorization of defermentAuthorizations)assertCanonicalUtcTimestamp(authorization.authorized_at_utc,"deferment authorization authorized_at_utc");
+  return {
+    schema_version:1,
+    phase_or_item_id:spec.roadmap_item_id,
+    source_sha:source.canonicalSourceSha(item),
+    evaluated_at_utc:evaluatedAt,
+    requirements:[...requirements],
+    evidence:[...evidence],
+    deferments:[...deferments],
+    expected_requirement_ids:requirements.map(requirement=>requirement.requirement_id),
+    expected_requirements:requirements.map(requirement=>({...requirement})),
+    deferment_authorizations:[...defermentAuthorizations],
+  };
+}
+
+/**
+ * Canonical Git semantic source: resolves every byte the evaluator consumes
+ * from GitHubBus.fileAt(path, merge_sha). This is the productive trust
+ * boundary — the caller names the item and merge; the authoritative registry
+ * paths come from the canonical semantic registry file keyed by
+ * roadmap_item_id, never from caller-controlled spec path strings.
+ */
+const SEMANTIC_REGISTRY_PATH="docs/roadmap/semantic/semantic_registry.json";
+const KIND_CONTRACTS_PATH="docs/roadmap/semantic/evidence_kind_contracts.json";
+const SOAK_MANIFEST_PATH="docs/roadmap/semantic/soak_execution_manifest.json";
+const REGIME_CLASSIFIER_PATH="docs/roadmap/semantic/regime_classifier_contract.json";
+class CanonicalGitSemanticSource implements SemanticSourceV1 {
+  constructor(private readonly bus:import("./github_bus.js").GitHubBus,private readonly spec:ProxySpec,private readonly merge:string){}
+  private fetch(path:string):string{
+    let bytes:string;
+    try{bytes=this.bus.fileAt(path,this.merge);}catch{throw new Error(`canonical semantic resolution failed: ${path}@${this.merge}`);}
+    if(typeof bytes!=="string"||bytes.length===0)throw new Error(`canonical semantic resolution failed: ${path}@${this.merge}`);
+    return bytes;
+  }
+  private resolve<T>(path:string,parse:(bytes:string)=>T):T{
+    let parsed:T;
+    try{parsed=parse(this.fetch(path));}catch{throw new Error(`canonical semantic resolution failed: ${path}@${this.merge}`);}
+    return parsed;
+  }
+  /**
+   * The authoritative registry mapping for this item. Identity is bound by
+   * BOTH roadmap_id AND roadmap_item_id; the registry file has a closed
+   * shape; the spec's declared paths (if present) must equal the canonical
+   * mapping — any substitution attempt fails closed.
+   */
+  private registryBinding():{requirements_path:string;evidence_path:string}{
+    let requirements_path:string,evidence_path:string;
+    try{
+      const value=JSON.parse(this.fetch(SEMANTIC_REGISTRY_PATH)) as {schema_version?:unknown;roadmap_id?:unknown;roadmap_items?:unknown;extra?:unknown};
+      // Closed top-level shape: exactly the three governed keys.
+      const keys=Object.keys(value);
+      if(keys.length!==3||!keys.includes("schema_version")||!keys.includes("roadmap_id")||!keys.includes("roadmap_items"))throw new Error("invalid shape");
+      if(value.schema_version!==1||typeof value.roadmap_id!=="string"||value.roadmap_id.length===0)throw new Error("invalid schema");
+      if(value.roadmap_id!==this.spec.roadmap_id)throw new Error("identity mismatch");
+      const items=value.roadmap_items as Record<string,unknown>;
+      if(!items||Object.getPrototypeOf(items)!==Object.prototype)throw new Error("invalid items");
+      const item=items[this.spec.roadmap_item_id] as Record<string,unknown>|undefined;
+      if(!item||Object.getPrototypeOf(item)!==Object.prototype)throw new Error("missing item");
+      const itemKeys=Object.keys(item);
+      // Closed item shape: exactly the five governed authority paths.
+      const governedItemKeys=["requirements_path","evidence_path","evidence_kind_contracts_path","soak_execution_manifest_path","regime_classifier_contract_path"];
+      if(itemKeys.length!==governedItemKeys.length||!governedItemKeys.every(key=>itemKeys.includes(key)))throw new Error("invalid item shape");
+      for(const key of governedItemKeys)if(typeof item[key]!=="string"||!(item[key] as string))throw new Error("invalid paths");
+      // The registry's manifest/classifier paths must equal the canonical governed locations.
+      if(item.evidence_kind_contracts_path!==KIND_CONTRACTS_PATH||item.soak_execution_manifest_path!==SOAK_MANIFEST_PATH||item.regime_classifier_contract_path!==REGIME_CLASSIFIER_PATH)throw new Error("invalid authority paths");
+      requirements_path=String(item.requirements_path);evidence_path=String(item.evidence_path);
+    }catch(error){
+      if(error instanceof Error&&error.message==="identity mismatch")throw new Error("SEMANTIC_CANONICAL_REGISTRY_IDENTITY_MISMATCH");
+      throw new Error(`canonical semantic registry invalid: ${SEMANTIC_REGISTRY_PATH}@${this.merge}`);
+    }
+    const declared=this.spec.semantic_completion;
+    if(declared&&(declared.requirements_path!==requirements_path||declared.evidence_path!==evidence_path))throw new Error("SEMANTIC_CANONICAL_BINDING_MISMATCH");
+    return {requirements_path,evidence_path};
+  }
+  /** Closed-shape requirements document: {schema_version:1, requirements:[...]}. */
+  semanticRequirements():SemanticCompletionInputV1["requirements"]{
+    const path=this.registryBinding().requirements_path;
+    return this.resolve(path,bytes=>{
+      const value=JSON.parse(bytes) as {schema_version?:unknown;requirements?:unknown};
+      if(!value||typeof value!=="object"||Array.isArray(value)||value.schema_version!==1||!Array.isArray(value.requirements))throw new Error("invalid requirements document");
+      return value.requirements as SemanticCompletionInputV1["requirements"];
+    });
+  }
+  /** Closed-shape evidence document: {schema_version:1, evidence:[...]}. */
+  semanticEvidence():SemanticCompletionInputV1["evidence"]{
+    const path=this.registryBinding().evidence_path;
+    return this.resolve(path,bytes=>{
+      const value=JSON.parse(bytes) as {schema_version?:unknown;evidence?:unknown};
+      if(!value||typeof value!=="object"||Array.isArray(value)||value.schema_version!==1||!Array.isArray(value.evidence))throw new Error("invalid evidence document");
+      return value.evidence as SemanticCompletionInputV1["evidence"];
+    });
+  }
+  semanticDeferments():SemanticCompletionInputV1["deferments"]{return [];}
+  semanticDefermentAuthorizations():SemanticCompletionInputV1["deferment_authorizations"]{return [];}
+  artifactBytes(_item:string,artifactPath:string):string|undefined{return this.fetch(artifactPath);}
+  canonicalSourceSha():string{return this.merge;}
+  nowIsoUtc():string{return new Date().toISOString();}
+  /**
+   * The governed evidence-kind contract document (BR1 Task 3): closed shape,
+   * roadmap identity, calendar-day policy, and per-kind semantics. Its exact
+   * bytes are hash-bound into the semantic decision. Any substitution,
+   * unknown kind, or malformed contract fails closed.
+   */
+  evidenceKindContracts():import("./types.js").EvidenceKindContractsV1{
+    const bytes=this.fetch(KIND_CONTRACTS_PATH);
+    let contracts:import("./types.js").EvidenceKindContractsV1;
+    try{
+      const value=JSON.parse(bytes) as Record<string,unknown>;
+      const keys=Object.keys(value);
+      if(keys.length!==5||!keys.includes("schema_version")||!keys.includes("roadmap_id")||!keys.includes("calendar_day_policy")||!keys.includes("minimum_regime_count_for_multiple")||!keys.includes("kinds"))throw new Error("invalid shape");
+      const regimeMinimum=value.minimum_regime_count_for_multiple;
+      if(value.schema_version!==1||value.calendar_day_policy!=="UTC_24H_DAY"||typeof value.roadmap_id!=="string"||value.roadmap_id!==this.spec.roadmap_id||typeof regimeMinimum!=="number"||!Number.isInteger(regimeMinimum)||regimeMinimum<2)throw new Error("invalid contract");
+      const kinds=value.kinds as Record<string,Record<string,unknown>>;
+      if(!kinds||Object.getPrototypeOf(kinds)!==Object.prototype)throw new Error("invalid kinds");
+      for(const [kind,contract] of Object.entries(kinds)){
+        const contractKeys=Object.keys(contract);
+        if(contractKeys.length!==5||typeof contract.assertion_contract!=="string"||!contract.assertion_contract||typeof contract.attestation_model!=="string"||!contract.attestation_model||typeof contract.zero_condition!=="boolean"||typeof contract.tested_runtime_execution!=="boolean"||typeof contract.requires_regime_identity!=="boolean")throw new Error(`invalid kind: ${kind}`);
+      }
+      contracts={schema_version:1,roadmap_id:value.roadmap_id as string,calendar_day_policy:"UTC_24H_DAY",minimum_regime_count_for_multiple:value.minimum_regime_count_for_multiple as number,kinds:kinds as import("./types.js").EvidenceKindContractsV1["kinds"]};
+    }catch{throw new Error(`canonical semantic evidence kind contract invalid: ${KIND_CONTRACTS_PATH}@${this.merge}`);}
+    return {...contracts,evidence_kind_contracts_sha256:createHash("sha256").update(bytes,"utf8").digest("hex")};
+  }
+  /**
+   * The governed soak execution manifest (BR1 Task 3): the AUTHORITATIVE soak
+   * identity for cohorted requirements, resolved from immutable Git. Its exact
+   * bytes are hash-bound into the semantic decision. Closed shape; preregistered
+   * not-started state (null started/ended) is a truthful representation.
+   */
+  soakExecutionManifest():import("./types.js").GovernedSoakExecutionManifestV1{
+    const bytes=this.fetch(SOAK_MANIFEST_PATH);
+    let manifest:import("./types.js").GovernedSoakExecutionManifestV1;
+    try{
+      const value=JSON.parse(bytes) as Record<string,unknown>;
+      const expected=["schema_version","roadmap_id","roadmap_item_id","soak_execution_id","source_sha","environment","started_at_utc","ended_at_utc","calendar_day_policy","runtime_binding","regime_classifier_id","regime_classifier_version","regime_classifier_contract_path","regime_classifier_contract_sha256"];
+      const keys=Object.keys(value);
+      if(keys.length!==expected.length||!expected.every(key=>keys.includes(key)))throw new Error("invalid shape");
+      if(value.schema_version!==1||value.roadmap_id!==this.spec.roadmap_id||value.roadmap_item_id!==this.spec.roadmap_item_id||typeof value.soak_execution_id!=="string"||!value.soak_execution_id||value.environment!=="PAPER_RUNTIME"||value.calendar_day_policy!=="UTC_24H_DAY")throw new Error("invalid manifest");
+      if(!SHA1.test(String(value.source_sha)))throw new Error("invalid source");
+      // The manifest's execution source must be a REAL governed commit, not a
+      // placeholder: an all-zeros SHA means the execution source is unbound.
+      if(/^0{40}$/.test(String(value.source_sha)))throw new Error("placeholder source");
+      if(value.started_at_utc!==null&&typeof value.started_at_utc!=="string")throw new Error("invalid start");
+      if(value.ended_at_utc!==null&&typeof value.ended_at_utc!=="string")throw new Error("invalid end");
+      // Temporal trust boundary: lifecycle timestamps must use the SAME
+      // strict canonical UTC authority as every other trusted timestamp —
+      // Date.parse of an unvalidated string is NaN and NaN comparisons are
+      // false, which would silently bypass the window protections.
+      if(value.started_at_utc!==null)assertCanonicalUtcTimestamp(String(value.started_at_utc),"soak execution manifest started_at_utc");
+      if(value.ended_at_utc!==null)assertCanonicalUtcTimestamp(String(value.ended_at_utc),"soak execution manifest ended_at_utc");
+      // Lifecycle ordering: ended-without-start and end-before-start are
+      // structurally invalid windows. No duration is hardcoded here — the
+      // minimum soak duration remains governed by requirement/evidence in the
+      // gate. null/null = NOT_STARTED; valid/null = EXECUTING; valid/valid
+      // with ended >= started = COMPLETED.
+      if(value.started_at_utc===null&&value.ended_at_utc!==null)throw new Error("invalid lifecycle: ended without started");
+      if(value.started_at_utc!==null&&value.ended_at_utc!==null&&Date.parse(String(value.ended_at_utc))<Date.parse(String(value.started_at_utc)))throw new Error("invalid lifecycle: ended before started");
+      if(typeof value.runtime_binding!=="string"||typeof value.regime_classifier_id!=="string"||typeof value.regime_classifier_version!=="string"||typeof value.regime_classifier_contract_path!=="string"||typeof value.regime_classifier_contract_sha256!=="string"||!/^[0-9a-f]{64}$/.test(String(value.regime_classifier_contract_sha256)))throw new Error("invalid classifier binding");
+      manifest={schema_version:1,roadmap_id:String(value.roadmap_id),roadmap_item_id:String(value.roadmap_item_id),soak_execution_id:String(value.soak_execution_id),source_sha:String(value.source_sha),environment:String(value.environment),started_at_utc:value.started_at_utc===null?null:String(value.started_at_utc),ended_at_utc:value.ended_at_utc===null?null:String(value.ended_at_utc),calendar_day_policy:"UTC_24H_DAY",runtime_binding:String(value.runtime_binding),regime_classifier_id:String(value.regime_classifier_id),regime_classifier_version:String(value.regime_classifier_version),regime_classifier_contract_path:String(value.regime_classifier_contract_path),regime_classifier_contract_sha256:String(value.regime_classifier_contract_sha256)};
+    }catch{throw new Error(`canonical soak execution manifest invalid: ${SOAK_MANIFEST_PATH}@${this.merge}`);}
+    return {...manifest,soak_execution_manifest_sha256:createHash("sha256").update(bytes,"utf8").digest("hex")};
+  }
+  /**
+   * The governed regime classifier contract (BR1 Task 3): preregisters WHICH
+   * classifier identity defines regime distinctness, frozen before soak
+   * evidence. Closed shape; no regime labels invented here.
+   */
+  regimeClassifierContract():import("./types.js").GovernedRegimeClassifierContractV1{
+    const bytes=this.fetch(REGIME_CLASSIFIER_PATH);
+    let contract:import("./types.js").GovernedRegimeClassifierContractV1;
+    try{
+      const value=JSON.parse(bytes) as Record<string,unknown>;
+      const expected=["schema_version","classifier_id","classifier_version","roadmap_id","roadmap_item_id","definition_path","definition_sha256","output_identity_semantics","minimum_distinct_regimes","frozen_source_sha","state"];
+      const keys=Object.keys(value);
+      if(keys.length!==expected.length||!expected.every(key=>keys.includes(key)))throw new Error("invalid shape");
+      if(value.schema_version!==1||typeof value.classifier_id!=="string"||!value.classifier_id||typeof value.classifier_version!=="string"||!value.classifier_version||value.roadmap_id!==this.spec.roadmap_id||value.roadmap_item_id!==this.spec.roadmap_item_id)throw new Error("invalid identity");
+      if(typeof value.output_identity_semantics!=="string"||!value.output_identity_semantics)throw new Error("invalid semantics");
+      if(!Number.isInteger(value.minimum_distinct_regimes)||value.minimum_distinct_regimes as number<2)throw new Error("invalid minimum");
+      if(value.definition_path!==null&&typeof value.definition_path!=="string")throw new Error("invalid definition");
+      if(value.definition_sha256!==null&&(typeof value.definition_sha256!=="string"||!/^[0-9a-f]{64}$/.test(String(value.definition_sha256))))throw new Error("invalid definition hash");
+      if(!SHA1.test(String(value.frozen_source_sha)))throw new Error("invalid frozen source");
+      if(value.state!=="PREREGISTERED_NOT_YET_OBSERVED"&&value.state!=="OBSERVED")throw new Error("invalid state");
+      // Materialization authority: a declared definition must ACTUALLY exist
+      // in Git at the bound SHA with the exact declared bytes.
+      if(value.state==="OBSERVED"){
+        if(value.definition_path===null||value.definition_sha256===null)throw new Error("definition not materialized");
+        let definitionBytes:string;
+        try{definitionBytes=this.fetch(String(value.definition_path));}catch{throw new Error("definition not materialized");}
+        if(createHash("sha256").update(definitionBytes,"utf8").digest("hex")!==String(value.definition_sha256))throw new Error("definition not materialized");
+      }
+      contract={schema_version:1,classifier_id:String(value.classifier_id),classifier_version:String(value.classifier_version),roadmap_id:String(value.roadmap_id),roadmap_item_id:String(value.roadmap_item_id),definition_path:value.definition_path===null?null:String(value.definition_path),definition_sha256:value.definition_sha256===null?null:String(value.definition_sha256),output_identity_semantics:String(value.output_identity_semantics),minimum_distinct_regimes:value.minimum_distinct_regimes as number,frozen_source_sha:String(value.frozen_source_sha),state:value.state as "PREREGISTERED_NOT_YET_OBSERVED"|"OBSERVED"};
+    }catch{throw new Error(`canonical regime classifier contract invalid: ${REGIME_CLASSIFIER_PATH}@${this.merge}`);}
+    return {...contract,regime_classifier_contract_sha256:createHash("sha256").update(bytes,"utf8").digest("hex")};
+  }
+}
+
+/** Resolves trusted artifact bytes for every evidence record from the canonical source. */
+function trustedArtifactBytes(spec:ProxySpec,input:SemanticCompletionInputV1,source:SemanticSourceV1):ReadonlyMap<string,string>{
+  const bytes=new Map<string,string>();
+  for(const record of input.evidence){
+    const resolved=source.artifactBytes(spec.roadmap_item_id,record.artifact_path);
+    if(resolved===undefined)throw new Error(`canonical semantic resolution failed: ${record.artifact_path}`);
+    if(!bytes.has(record.artifact_path))bytes.set(record.artifact_path,resolved);
+  }
+  return bytes;
+}
+
 /** Proves the running installation against its clean, exact canonical mirror before Owner transport. */
 export function verifyOwnerRepairInstalledRuntime(root:string,sourceRepo:string,expectedTip:string):string {
   try {
@@ -117,6 +373,39 @@ export class ProductionEffects implements AutonomousEffects {
   private store:LifecycleStore;
   private activeSpec?:ProxySpec;private activeState?:import("./types.js").LifecycleRecord;
   constructor(readonly bus:GitHubBus,readonly ledger:Ledger,readonly sourceRepo:string,readonly root:string,readonly boundary:ExternalEffectBoundary,readonly coordinator:LocalCoordinator=failClosedCoordinator){this.bus.setMutationGuard(this.boundary.assert.bind(this.boundary));this.builder=new GovernedBuilder(sourceRepo,join(root,"worktrees"),bus,this.boundary.assert.bind(this.boundary));this.agentLoopBuilder=new AgentLoopBuilderAdapter(bus);this.store=new LifecycleStore(join(root,"lifecycle"));}
+  /**
+   * Resolves the semantic decision for a bound spec through the single
+   * evaluator. Production ALWAYS resolves every byte from canonical Git at
+   * the exact bound lifecycle merge SHA via the canonical semantic registry;
+   * there is no runtime source substitution path.
+   */
+  resolveSemanticCompletion(spec:ProxySpec,merge:string):SemanticCompletionDecisionV1{
+    if(!spec.semantic_completion)throw new Error("semantic completion not bound to spec");
+    if(!SHA1.test(merge))throw new Error("semantic completion bound merge SHA invalid");
+    const source=new CanonicalGitSemanticSource(this.bus,spec,merge);
+    const input=resolveSemanticInput(spec,source);
+    const canonicalSource=source as CanonicalGitSemanticSource;
+    const kindContracts=canonicalSource.evidenceKindContracts();
+    // Caller may not substitute the governed kind-contract path.
+    const declaredKindPath=spec.semantic_completion.evidence_kind_contracts_path;
+    if(declaredKindPath!==undefined&&declaredKindPath!==KIND_CONTRACTS_PATH)throw new Error("SEMANTIC_CANONICAL_BINDING_MISMATCH");
+    // Governed soak execution manifest + regime classifier contract: loaded
+    // from immutable Git; their exact bytes bind into the decision identity.
+    // The manifest must ACTUALLY bind the classifier contract bytes — an
+    // unbound placeholder SHA fails closed before any evidence is authorized.
+    let soakManifest:import("./types.js").GovernedSoakExecutionManifestV1|undefined;
+    let regimeClassifier:import("./types.js").GovernedRegimeClassifierContractV1|undefined;
+    const requirementsCohorted=input.requirements.some(requirement=>requirement.cohort_group!==undefined);
+    // Regime authority is needed iff any required kind carries the governed
+    // requires_regime_identity flag — never a hardcoded kind-string literal.
+    const requirementsRegime=input.requirements.some(requirement=>requirement.required_evidence_kinds.some(kind=>kindContracts.kinds[kind]?.requires_regime_identity===true));
+    if(requirementsCohorted||requirementsRegime){
+      soakManifest=canonicalSource.soakExecutionManifest();
+      regimeClassifier=canonicalSource.regimeClassifierContract();
+      if(soakManifest.regime_classifier_id!==regimeClassifier.classifier_id||soakManifest.regime_classifier_version!==regimeClassifier.classifier_version||soakManifest.regime_classifier_contract_sha256!==regimeClassifier.regime_classifier_contract_sha256)throw new Error(`governed soak execution manifest: regime classifier contract not bound (${SOAK_MANIFEST_PATH}@${merge})`);
+    }
+    return evaluateSemanticCompletion(input,trustedArtifactBytes(spec,input,source),kindContracts,soakManifest,regimeClassifier);
+  }
   bindLifecycle(spec:ProxySpec,state:import("./types.js").LifecycleRecord){this.activeSpec=spec;this.activeState=state;this.boundary.bind(spec,state);}
   ownerRepairRuntimeSha(expectedTip:string):string{return verifyOwnerRepairInstalledRuntime(this.root,this.sourceRepo,expectedTip);}
   private bindObservedBlockedCiHead(spec:ProxySpec,state:LifecycleRecord){
@@ -1031,10 +1320,22 @@ export class ProductionEffects implements AutonomousEffects {
       return undefined;
     }
   }
+  /** Resolves the single valid semantic PASS receipt hash from a semantic-bound parent record; fails closed on zero/conflict/malformed. */
+  private semanticReceiptHash(state:import("./types.js").LifecycleRecord):string{
+    const receipts=state.completed_effects.filter(effect=>effect.startsWith("semantic_completion:")).map(effect=>effect.slice("semantic_completion:".length));
+    if(receipts.length===0)throw new Error("closeout parent semantic receipt missing");
+    if(new Set(receipts).size!==1)throw new Error("closeout parent semantic receipts conflict");
+    if(!/^[0-9a-f]{64}$/.test(receipts[0]))throw new Error("closeout parent semantic receipt invalid");
+    return receipts[0];
+  }
   private closeoutParentEvidence(spec:ProxySpec,merge:string){
-    const state=this.activeState;
+    let state=this.activeState;
+    // A semantic-bound parent reloads its fresh persisted record: the semantic
+    // PASS receipt is persisted by the flow after bindLifecycle, so the bound
+    // snapshot may be stale by exactly that effect.
+    if(spec.semantic_completion&&state){const fresh=this.store.load(state.front_id);if(fresh)state=fresh;}
     if(!state||state.front_id!==spec.front_id||state.roadmap_item_id!==spec.roadmap_item_id||state.state!=="CLOSEOUT_PENDING"||state.head_sha!==merge||!state.completed_effects.includes(`merge:${merge}`)||!state.issue||!state.pr)throw new Error("closeout parent lifecycle evidence missing");
-    if(state.merge_reconciliation){const r=state.merge_reconciliation;if(r.source!=="GITHUB_EXTERNALLY_MERGED_PR"||r.issue!==state.issue||r.pr!==state.pr||r.merge_commit_sha!==merge||r.original_base_sha===spec.expected_base_sha||r.original_state_head_sha===r.candidate_head_sha||r.candidate_head_sha===merge||r.reviewer_check!=="review"||state.base_sha!==spec.expected_base_sha||!state.builder_session)throw new Error("external merge closeout evidence mismatch");return {schema_version:1,parent_front_id:state.front_id,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id,issue:state.issue,pr:state.pr,authorization_mode:"EXTERNAL_MERGE_RECONCILED",base_sha:r.original_base_sha,closeout_base_sha:merge,head_sha:r.candidate_head_sha,merge_commit:merge,builder_session:state.builder_session,reviewer_check:r.reviewer_check};}
+    if(state.merge_reconciliation){const r=state.merge_reconciliation;if(r.source!=="GITHUB_EXTERNALLY_MERGED_PR"||r.issue!==state.issue||r.pr!==state.pr||r.merge_commit_sha!==merge||r.original_base_sha===spec.expected_base_sha||r.original_state_head_sha===r.candidate_head_sha||r.candidate_head_sha===merge||r.reviewer_check!=="review"||state.base_sha!==spec.expected_base_sha||!state.builder_session)throw new Error("external merge closeout evidence mismatch");if(spec.semantic_completion)return {...{schema_version:1,parent_front_id:state.front_id,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id,issue:state.issue,pr:state.pr,authorization_mode:"EXTERNAL_MERGE_RECONCILED",base_sha:r.original_base_sha,closeout_base_sha:merge,head_sha:r.candidate_head_sha,merge_commit:merge,builder_session:state.builder_session,reviewer_check:r.reviewer_check},semantic_decision_sha256:this.semanticReceiptHash(state)};return {schema_version:1,parent_front_id:state.front_id,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id,issue:state.issue,pr:state.pr,authorization_mode:"EXTERNAL_MERGE_RECONCILED",base_sha:r.original_base_sha,closeout_base_sha:merge,head_sha:r.candidate_head_sha,merge_commit:merge,builder_session:state.builder_session,reviewer_check:r.reviewer_check};}
     if(!state.builder_session||!state.reviewer_session||!state.decision_id)throw new Error("closeout parent lifecycle evidence missing");
     const decision=this.ledger.load(state.decision_id);
     const baseBound=decision.base_sha===state.base_sha||this.bus.isAncestor(decision.base_sha,state.base_sha);
@@ -1044,8 +1345,9 @@ export class ProductionEffects implements AutonomousEffects {
     if(state.owner_critical_merge&&criticalReceipt?.phase==="MERGED_BOUND")criticalLedger!.assertMergedBoundToConsumedReceipt(state.owner_critical_merge.critical_merge_key,state.owner_critical_merge.consumed_event_sha256,merge);
     const ownerAuthorized="review_findings_count" in decision&&"review_consistent" in decision&&decision.risk==="CRITICAL"&&decision.deterministic_gate==="PASS"&&decision.codex_review==="PASS"&&decision.review_findings_count===0&&decision.review_consistent===true&&decision.policy_decision==="ESCALATE_TO_OWNER"&&decision.allowed_action==="NONE"&&criticalReceipt?.phase==="MERGED_BOUND"&&criticalReceipt.issue===state.issue&&criticalReceipt.pr===state.pr&&criticalReceipt.base_sha===decision.base_sha&&criticalReceipt.head_sha===decision.head_sha&&criticalReceipt.policy_decision_id===decision.decision_id&&criticalReceipt.merge_commit_sha===merge&&this.bus.verifyMerged(state.pr,decision.head_sha,decision.base_sha)===merge;
     if(!common||!policyApproved&&!ownerAuthorized)throw new Error("closeout parent decision evidence mismatch");
+    if(spec.semantic_completion)return {...{schema_version:1,parent_front_id:state.front_id,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id,issue:state.issue,pr:state.pr,decision_id:decision.decision_id,authorization_mode:ownerAuthorized?"OWNER_CONSTITUTIONAL":"POLICY_APPROVED",base_sha:decision.base_sha,closeout_base_sha:merge,head_sha:decision.head_sha,merge_commit:merge,builder_session:state.builder_session,reviewer_session:state.reviewer_session},semantic_decision_sha256:this.semanticReceiptHash(state)};
     return {schema_version:1,parent_front_id:state.front_id,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id,issue:state.issue,pr:state.pr,decision_id:decision.decision_id,authorization_mode:ownerAuthorized?"OWNER_CONSTITUTIONAL":"POLICY_APPROVED",base_sha:decision.base_sha,closeout_base_sha:merge,head_sha:decision.head_sha,merge_commit:merge,builder_session:state.builder_session,reviewer_session:state.reviewer_session};
   }
-  async ensureCloseout(spec:ProxySpec,merge:string){this.boundary.assert("closeout_create",{issue:undefined});if(!spec.closeout)return this.coordinator.closeout(spec,merge);const c=spec.closeout,parentEvidence=safeJson(this.closeoutParentEvidence(spec,merge)),evidenceInstruction=`Record this immutable parent lifecycle evidence exactly; do not infer, omit, or replace known values with null: ${parentEvidence}`;const closeout:ProxySpec={...spec,executor:c.executor,risk:c.risk,allowed_paths:c.allowed_paths,forbidden_paths:c.forbidden_paths,acceptance:[...c.acceptance,evidenceInstruction],test_commands:c.test_commands,objective:`${c.objective.trim()}\n\nPARENT_LIFECYCLE_EVIDENCE_JSON=${parentEvidence}`,work_branch:c.work_branch,deployment_mode:"NO_DEPLOY",install_target:undefined,front_id:c.front_id,test_profile:c.test_profile,max_executor_cycles:c.max_executor_cycles,closeout:undefined,closeout_only:true};const store=new LifecycleStore(join(this.root,"lifecycle"));let activeCloseout=closeout;const enterable=()=>{const current=store.load(closeout.front_id!);if(current?.owner_payload_repair?.effective_base_sha)activeCloseout=this.resolveOwnerPayloadExecutionSpec(activeCloseout,current);if(current&&current.base_sha!==activeCloseout.expected_base_sha){const frozen=this.resolveFrozenOwnerPayloadSpec(closeout,current);if(frozen!==closeout)activeCloseout=frozen;else this.reconcile(activeCloseout,current,store);}return store.load(closeout.front_id!);};enterable();const flow=new AutonomousFlow(store,this);let state=await flow.step(activeCloseout);for(let i=0;i<20;i++){if(["CI_PENDING","BLOCKED","ESCALATED","TERMINAL_COMPLETED"].includes(state.state))break;enterable();state=await flow.step(activeCloseout);}if(state.state==="BLOCKED"||state.state==="ESCALATED")throw new Error(`closeout ${state.state}: ${state.last_error??"unknown"}`);return state.state==="TERMINAL_COMPLETED"?"PASS":"PENDING";}
+  async ensureCloseout(spec:ProxySpec,merge:string){this.boundary.assert("closeout_create",{issue:undefined});if(!spec.closeout)return this.coordinator.closeout(spec,merge);const c=spec.closeout,parentEvidence=safeJson(this.closeoutParentEvidence(spec,merge)),evidenceInstruction=`Record this immutable parent lifecycle evidence exactly; do not infer, omit, or replace known values with null: ${parentEvidence}`;const closeout:ProxySpec={...spec,executor:c.executor,risk:c.risk,allowed_paths:c.allowed_paths,forbidden_paths:c.forbidden_paths,acceptance:[...c.acceptance,evidenceInstruction],test_commands:c.test_commands,objective:`${c.objective.trim()}\n\nPARENT_LIFECYCLE_EVIDENCE_JSON=${parentEvidence}`,work_branch:c.work_branch,deployment_mode:"NO_DEPLOY",install_target:undefined,front_id:c.front_id,test_profile:c.test_profile,max_executor_cycles:c.max_executor_cycles,closeout:undefined,closeout_only:true,semantic_completion:undefined};const store=new LifecycleStore(join(this.root,"lifecycle"));let activeCloseout=closeout;const enterable=()=>{const current=store.load(closeout.front_id!);if(current?.owner_payload_repair?.effective_base_sha)activeCloseout=this.resolveOwnerPayloadExecutionSpec(activeCloseout,current);if(current&&current.base_sha!==activeCloseout.expected_base_sha){const frozen=this.resolveFrozenOwnerPayloadSpec(closeout,current);if(frozen!==closeout)activeCloseout=frozen;else this.reconcile(activeCloseout,current,store);}return store.load(closeout.front_id!);};enterable();const flow=new AutonomousFlow(store,this);let state=await flow.step(activeCloseout);for(let i=0;i<20;i++){if(["CI_PENDING","BLOCKED","ESCALATED","TERMINAL_COMPLETED"].includes(state.state))break;enterable();state=await flow.step(activeCloseout);}if(state.state==="BLOCKED"||state.state==="ESCALATED")throw new Error(`closeout ${state.state}: ${state.last_error??"unknown"}`);return state.state==="TERMINAL_COMPLETED"?"PASS":"PENDING";}
   discoverNext(item:string){this.coordinator.discoverNext(item);}
 }
