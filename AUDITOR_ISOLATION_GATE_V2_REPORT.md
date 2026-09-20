@@ -10,10 +10,10 @@ Accepted receipt: NONE
 
 | Name | Path | SHA-256 |
 |---|---|---|
-| consolidated_probe_source | auditor_runtime/AUDITOR_GATE_V2_PROBE.ps1 | 3ad4481bb2267e9160aa820f7728aa6bf120b06423797b4be20e0dfc785cb0d6 |
+| consolidated_probe_source | auditor_runtime/AUDITOR_GATE_V2_PROBE.ps1 | e3bff31fa4b0643aa23b011eea2393879a455108c380fbce394d2db278ab75d8 |
 | deployment_checkpoint | AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1 | d363559e362aa7f1d6bfc7af743ae641151f6f6a33379e507da7098d5d802f46 |
-| prospective_deployment_manifest | C:\ProgramData\CodexAuditorV1\provisioning\AUDITOR_RUNTIME_V2_DEPLOYMENT_MANIFEST.json | e5101ebb3731febea2c39089af257af17a41d818a11dc3b95046fbac2f2536d6 |
-| prospective_runtime_manifest | C:\ProgramData\CodexAuditorV1\runtime\AUDITOR_RUNTIME_MANIFEST_V2.json | 56ff39cfd6971ca303f966969d27fafce67762d52a8672775f4ff7440ac8721e |
+| prospective_deployment_manifest | C:\ProgramData\CodexAuditorV1\provisioning\AUDITOR_RUNTIME_V2_DEPLOYMENT_MANIFEST.json | 9d33bd0db11c2b5c30094e6d432c61ea110445a576cee5d4c968ab1a57bcfecc |
+| prospective_runtime_manifest | C:\ProgramData\CodexAuditorV1\runtime\AUDITOR_RUNTIME_MANIFEST_V2.json | 3a64c6c662bcd50bdeec62f49cc2528cb8fb4f4e0a19db4fb7e0c292601deec7 |
 
 ## Runtime Predicates
 

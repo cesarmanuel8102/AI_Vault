@@ -54,9 +54,42 @@ function Get-TextSha256 {
 function Read-StrictJson {
     param([string]$LiteralPath)
     $Text = [IO.File]::ReadAllText($LiteralPath)
-    $Seen = New-Object 'Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
-    foreach ($Match in [regex]::Matches($Text, '"(?<key>(?:\\.|[^"\\])*)"\s*:')) {
-        if (-not $Seen.Add($Match.Groups['key'].Value)) { throw "DUPLICATE_JSON_KEY" }
+    $Scopes = New-Object Collections.Stack
+    for ($Index = 0; $Index -lt $Text.Length; $Index++) {
+        $Character = $Text[$Index]
+        if ($Character -eq '{') {
+            $Scopes.Push((New-Object 'Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)))
+            continue
+        }
+        if ($Character -eq '[') {
+            $Scopes.Push("ARRAY")
+            continue
+        }
+        if ($Character -eq '}' -or $Character -eq ']') {
+            if ($Scopes.Count -eq 0) { throw "JSON_SCOPE_INVALID" }
+            [void]$Scopes.Pop()
+            continue
+        }
+        if ($Character -ne '"') { continue }
+
+        $Start = $Index
+        $Escaped = $false
+        for ($Index = $Index + 1; $Index -lt $Text.Length; $Index++) {
+            $Character = $Text[$Index]
+            if ($Escaped) { $Escaped = $false; continue }
+            if ($Character -eq '\') { $Escaped = $true; continue }
+            if ($Character -eq '"') { break }
+        }
+        if ($Index -ge $Text.Length) { throw "JSON_STRING_INVALID" }
+        $After = $Index + 1
+        while ($After -lt $Text.Length -and [char]::IsWhiteSpace($Text[$After])) { $After++ }
+        if ($After -ge $Text.Length -or $Text[$After] -ne ':') { continue }
+        if ($Scopes.Count -eq 0 -or $Scopes.Peek() -isnot [Collections.Generic.HashSet[string]]) {
+            throw "JSON_OBJECT_KEY_CONTEXT_INVALID"
+        }
+        $RawKey = $Text.Substring($Start, $Index - $Start + 1)
+        $Key = [string]($RawKey | ConvertFrom-Json)
+        if (-not $Scopes.Peek().Add($Key)) { throw "DUPLICATE_JSON_KEY" }
     }
     return ($Text | ConvertFrom-Json)
 }

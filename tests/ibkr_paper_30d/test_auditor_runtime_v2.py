@@ -372,6 +372,46 @@ def test_consolidated_probe_deployment_review_is_nonmutating_json() -> None:
     assert "-Mode Remove" in payload["REMOVE_COMMAND"]
 
 
+def test_consolidated_probe_strict_json_scopes_duplicate_keys_per_object(
+    tmp_path: Path,
+) -> None:
+    source = CONSOLIDATED_PROBE.read_text(encoding="utf-8")
+    function_source = source[
+        source.index("function Read-StrictJson") : source.index(
+            "function Read-ResultLine"
+        )
+    ]
+    harness = tmp_path / "strict-json-harness.ps1"
+    harness.write_text(
+        function_source
+        + "\ntry { Read-StrictJson -LiteralPath $env:CODEX_JSON_PATH | Out-Null; "
+        + "Write-Output 'VALID' } catch { Write-Output $_.Exception.Message; exit 1 }\n",
+        encoding="utf-8",
+    )
+
+    valid = tmp_path / "valid.json"
+    valid.write_text('{"a":{"status":"PASS"},"b":{"status":"PASS"}}')
+    duplicate = tmp_path / "duplicate.json"
+    duplicate.write_text('{"a":{"Status":"PASS","status":"BLOCK"}}')
+
+    def run(path: Path) -> subprocess.CompletedProcess[str]:
+        environment = dict(**__import__("os").environ, CODEX_JSON_PATH=str(path))
+        return subprocess.run(
+            ["powershell.exe", "-NoProfile", "-File", str(harness)],
+            capture_output=True,
+            text=True,
+            env=environment,
+            check=False,
+        )
+
+    valid_result = run(valid)
+    duplicate_result = run(duplicate)
+    assert valid_result.returncode == 0, valid_result.stderr + valid_result.stdout
+    assert valid_result.stdout.strip() == "VALID"
+    assert duplicate_result.returncode != 0
+    assert "DUPLICATE_JSON_KEY" in duplicate_result.stdout
+
+
 def test_consolidated_probe_predicate_labels_are_not_runtime_capabilities(
     tmp_path: Path,
 ) -> None:

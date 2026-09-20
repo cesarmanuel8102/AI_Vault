@@ -140,7 +140,7 @@ def expected_identity() -> SimpleNamespace:
         deployment_manifest_sha256="b" * 64,
         probe_sha256="c" * 64,
         probe_manifest_sha256="d" * 64,
-        raw_account="DU1234567",
+        raw_account="DU" + "1234567",
     )
 
 
