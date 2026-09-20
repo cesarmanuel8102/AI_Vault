@@ -31,6 +31,33 @@ _TOP_LEVEL_FIELDS = frozenset(
         "output",
     }
 )
+TARGET_NAMES = (
+    "SECRETS_READ",
+    "IBKR_SECRET_READ",
+    "SMTP_SECRET_READ",
+    "EXECUTION_LOCK_ACCESS",
+    "LIVE_DATABASE_MUTATION",
+    "BROKER_WRITE_PATH_ACCESS",
+    "TRADER_CONTEXT_ACCESS",
+    "AUDIT_INPUT_MUTATION",
+    "IMMUTABLE_EXPORT_READ",
+    "AUDITOR_REPORT_WRITE",
+)
+APPROVED_CAPABILITY_OUTCOMES = {
+    **{name: "DENIED" for name in TARGET_NAMES},
+    "BROKER_WRITE_PATH_ACCESS": "ALLOWED",
+    "IMMUTABLE_EXPORT_READ": "ALLOWED",
+    "AUDITOR_REPORT_WRITE": "ALLOWED",
+}
+STRUCTURAL_PREDICATES = (
+    "BROKER_MODULE_AVAILABLE",
+    "ORDER_WRITE_SYMBOL_AVAILABLE",
+    "EXECUTION_ADAPTER_AVAILABLE",
+    "EXECUTION_LOCK_CLIENT_AVAILABLE",
+    "TRADER_IPC_CLIENT_AVAILABLE",
+    "BROKER_CREDENTIAL_SOURCE_AVAILABLE",
+    "ORDER_WRITE_MODULE_AVAILABLE",
+)
 
 
 class ReceiptValidationError(ValueError):
@@ -193,4 +220,194 @@ def parse_auditor_gate_v2_receipt(source: bytes | str) -> AuditorGateV2Receipt:
         paper_identity=_freeze(payload["paper_identity"]),
         network_facts=_freeze(payload["network_facts"]),
         output=_freeze(payload["output"]),
+    )
+
+
+def _identity_value(expected: object, name: str) -> object:
+    if isinstance(expected, Mapping):
+        return expected.get(name)
+    return getattr(expected, name, None)
+
+
+def _nested_utc(value: object) -> datetime | None:
+    try:
+        return _parse_utc(value, "nested")
+    except ReceiptValidationError:
+        return None
+
+
+def _exact_keys(value: Mapping[str, object], expected: set[str]) -> bool:
+    return set(value) == expected
+
+
+def _evaluate_predicates(
+    receipt: AuditorGateV2Receipt, expected_paper_identity: object, now: datetime
+) -> list[str]:
+    reasons: list[str] = []
+    if now.tzinfo is None or now.utcoffset() != timedelta(0):
+        reasons.append("NOW_NOT_UTC")
+    elif receipt.completed_at_utc > now:
+        reasons.append("RECEIPT_FROM_FUTURE")
+    elif now - receipt.completed_at_utc > RECEIPT_MAX_AGE:
+        reasons.append("RECEIPT_STALE")
+    if receipt.effective_sid != EXPECTED_AUDITOR_SID:
+        reasons.append("AUDITOR_SID_MISMATCH")
+    if receipt.token_elevated is not False:
+        reasons.append("AUDITOR_TOKEN_ELEVATED")
+    if receipt.separate_process is not True:
+        reasons.append("AUDITOR_SEPARATE_PROCESS_NOT_PROVEN")
+
+    runtime = receipt.runtime_integrity
+    runtime_keys = {
+        "status",
+        "runtime_manifest_sha256",
+        "deployment_manifest_sha256",
+        "probe_sha256",
+        "probe_manifest_sha256",
+        "exact_fileset",
+        "verified_at_utc",
+        "predicates",
+    }
+    if not _exact_keys(runtime, runtime_keys):
+        reasons.append("RUNTIME_INTEGRITY_SCHEMA_INVALID")
+    if runtime.get("status") != "PASS" or runtime.get("exact_fileset") is not True:
+        reasons.append("RUNTIME_INTEGRITY_BLOCK")
+    predicates = runtime.get("predicates")
+    if not isinstance(predicates, Mapping) or set(predicates) != set(
+        STRUCTURAL_PREDICATES
+    ):
+        reasons.append("RUNTIME_CAPABILITY_SET_INVALID")
+    elif any(predicates[name] is not False for name in STRUCTURAL_PREDICATES):
+        reasons.append("RUNTIME_FORBIDDEN_CAPABILITY_PRESENT")
+
+    rows = receipt.target_validation_matrix
+    row_names: list[object] = []
+    if len(rows) != len(TARGET_NAMES):
+        reasons.append("TARGET_VALIDATION_COUNT_INVALID")
+    for row in rows:
+        if not isinstance(row, Mapping) or not _exact_keys(
+            row, {"run_id", "probe", "valid"}
+        ):
+            reasons.append("TARGET_VALIDATION_ROW_INVALID")
+            continue
+        row_names.append(row.get("probe"))
+        if row.get("run_id") != receipt.run_id:
+            reasons.append("MIXED_RUN_EVIDENCE")
+        if row.get("valid") is not True:
+            reasons.append("TARGET_VALIDATION_FAILED")
+    if set(row_names) != set(TARGET_NAMES) or len(set(row_names)) != len(TARGET_NAMES):
+        reasons.append("TARGET_VALIDATION_SET_INVALID")
+    if dict(receipt.capability_outcomes) != APPROVED_CAPABILITY_OUTCOMES:
+        reasons.append("CAPABILITY_OUTCOMES_INVALID")
+
+    functional = receipt.functional_auditor
+    if not _exact_keys(
+        functional, {"run_id", "status", "bundle_id", "manifest_sha256"}
+    ):
+        reasons.append("FUNCTIONAL_AUDITOR_SCHEMA_INVALID")
+    if functional.get("run_id") != receipt.run_id:
+        reasons.append("MIXED_RUN_EVIDENCE")
+    if functional.get("status") != "PASS":
+        reasons.append("FUNCTIONAL_AUDITOR_BLOCK")
+    for field in ("bundle_id", "manifest_sha256"):
+        value = functional.get(field)
+        if not isinstance(value, str) or not _SHA256_RE.fullmatch(value):
+            reasons.append("IMMUTABLE_BUNDLE_IDENTITY_INVALID")
+
+    identity = receipt.paper_identity
+    identity_keys = {
+        "run_id",
+        "expected_account_identity_hash",
+        "identity_receipt_sha256",
+        "environment_reference",
+        "broker_session_environment_reference",
+        "verified_at_utc",
+        "paper_identity_gate",
+        "readonly_identity_gate",
+        "broker_reconciliation_gate",
+        "paper_only",
+        "live_allowed",
+        "real_money_allowed",
+    }
+    if not _exact_keys(identity, identity_keys):
+        reasons.append("PAPER_IDENTITY_SCHEMA_INVALID")
+    if identity.get("run_id") != receipt.run_id:
+        reasons.append("MIXED_RUN_EVIDENCE")
+    if identity.get("expected_account_identity_hash") != _identity_value(
+        expected_paper_identity, "expected_account_hash"
+    ):
+        reasons.append("PAPER_ACCOUNT_IDENTITY_MISMATCH")
+    if identity.get("identity_receipt_sha256") != _identity_value(
+        expected_paper_identity, "receipt_sha256"
+    ):
+        reasons.append("PAPER_IDENTITY_RECEIPT_MISMATCH")
+    for gate in (
+        "paper_identity_gate",
+        "readonly_identity_gate",
+        "broker_reconciliation_gate",
+    ):
+        if identity.get(gate) != "PASS":
+            reasons.append("BROKER_DERIVED_PAPER_IDENTITY_BLOCK")
+    if (
+        identity.get("paper_only") is not True
+        or identity.get("live_allowed") is not False
+        or identity.get("real_money_allowed") is not False
+    ):
+        reasons.append("MONTH1_PAPER_SCOPE_INVALID")
+
+    paper_verified = _nested_utc(identity.get("verified_at_utc"))
+    runtime_verified = _nested_utc(runtime.get("verified_at_utc"))
+    if paper_verified is None or paper_verified > receipt.started_at_utc:
+        reasons.append("PAPER_IDENTITY_TIME_INVALID")
+    if runtime_verified is None or runtime_verified > receipt.started_at_utc:
+        reasons.append("RUNTIME_VERIFICATION_TIME_INVALID")
+
+    network = receipt.network_facts
+    expected_network = {
+        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": True,
+        "AUDITOR_NETWORK_ISOLATION_REQUIRED": False,
+        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": True,
+        "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
+    }
+    if not _exact_keys(network, set(expected_network) | {"endpoints"}):
+        reasons.append("NETWORK_FACT_SCHEMA_INVALID")
+    if any(network.get(key) is not value for key, value in expected_network.items()):
+        reasons.append("NETWORK_FACT_MISMATCH")
+    if not isinstance(network.get("endpoints"), Mapping):
+        reasons.append("NETWORK_ENDPOINT_EVIDENCE_INVALID")
+
+    output = receipt.output
+    if not _exact_keys(
+        output,
+        {"run_id", "report_path", "created", "report_sha256", "evidence_origin"},
+    ):
+        reasons.append("OUTPUT_SCHEMA_INVALID")
+    if output.get("run_id") != receipt.run_id:
+        reasons.append("MIXED_RUN_EVIDENCE")
+    if output.get("created") is not True or output.get("evidence_origin") != (
+        "REAL_RESTRICTED_TOKEN"
+    ):
+        reasons.append("REAL_REPORT_OUTPUT_NOT_PROVEN")
+    report_hash = output.get("report_sha256")
+    if not isinstance(report_hash, str) or not _SHA256_RE.fullmatch(report_hash):
+        reasons.append("REPORT_HASH_INVALID")
+    report_path = output.get("report_path")
+    if not isinstance(report_path, str) or not report_path:
+        reasons.append("REPORT_PATH_INVALID")
+
+    return list(dict.fromkeys(reasons))
+
+
+def evaluate_auditor_gate_v2(
+    receipt: AuditorGateV2Receipt,
+    expected_paper_identity: object,
+    now: datetime,
+) -> AuditorGateV2Evaluation:
+    reasons = tuple(_evaluate_predicates(receipt, expected_paper_identity, now))
+    status = "PASS" if not reasons else "BLOCK"
+    return AuditorGateV2Evaluation(
+        canonical_gate=status,
+        compatibility_gate=status,
+        gate_version="V2",
+        reason_codes=reasons,
     )

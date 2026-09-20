@@ -11,6 +11,7 @@ from ibkr_paper_30d.auditor_gate_v2 import (
     AuditorGateV2Evaluation,
     AuditorGateV2Receipt,
     ReceiptValidationError,
+    evaluate_auditor_gate_v2,
     parse_auditor_gate_v2_receipt,
 )
 from ibkr_paper_30d.auditor_v2_artifacts import (
@@ -45,6 +46,7 @@ def now() -> datetime:
 def complete_receipt(now: datetime) -> dict[str, object]:
     run_id = "run-v2-001"
     outcomes = {name: "DENIED" for name in TARGET_NAMES}
+    outcomes["BROKER_WRITE_PATH_ACCESS"] = "ALLOWED"
     outcomes["IMMUTABLE_EXPORT_READ"] = "ALLOWED"
     outcomes["AUDITOR_REPORT_WRITE"] = "ALLOWED"
     return {
@@ -63,6 +65,7 @@ def complete_receipt(now: datetime) -> dict[str, object]:
             "probe_sha256": "c" * 64,
             "probe_manifest_sha256": "d" * 64,
             "exact_fileset": True,
+            "verified_at_utc": "2026-09-20T15:57:30Z",
             "predicates": {
                 "BROKER_MODULE_AVAILABLE": False,
                 "ORDER_WRITE_SYMBOL_AVAILABLE": False,
@@ -184,6 +187,19 @@ def test_v2_receipt_rejects_wrong_types_and_non_utc_time(complete_receipt) -> No
     non_utc["completed_at_utc"] = "2026-09-20T11:59:00-04:00"
     with pytest.raises(ReceiptValidationError, match="TIMESTAMP_NOT_UTC"):
         parse_auditor_gate_v2_receipt(canonical_bytes(non_utc))
+
+
+def test_gate_v2_passes_only_one_complete_coherent_receipt(
+    complete_receipt, expected_identity, now
+) -> None:
+    receipt = parse_auditor_gate_v2_receipt(canonical_bytes(complete_receipt))
+
+    result = evaluate_auditor_gate_v2(receipt, expected_identity, now)
+
+    assert result.canonical_gate == "PASS"
+    assert result.compatibility_gate == "PASS"
+    assert result.gate_version == "V2"
+    assert result.reason_codes == ()
 
 
 def test_residual_risk_binds_paper_identity_without_cleartext_account(
