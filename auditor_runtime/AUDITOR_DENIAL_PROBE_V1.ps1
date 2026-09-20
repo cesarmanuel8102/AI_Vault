@@ -191,31 +191,35 @@ function Test-MutationCapability {
 }
 
 function Test-BrokerNetworkCapability {
-    $Outcomes = @()
-    foreach ($Port in @(4001, 4002)) {
-        $Client = New-Object Net.Sockets.TcpClient
-        try {
-            $Pending = $Client.BeginConnect("127.0.0.1", $Port, $null, $null)
-            if (-not $Pending.AsyncWaitHandle.WaitOne(500)) {
-                $Outcomes += "DENIED"
+    $Outcomes = [ordered]@{}
+    foreach ($Address in @("127.0.0.1", "::1")) {
+        $IpAddress = [Net.IPAddress]::Parse($Address)
+        foreach ($Port in @(4001, 4002)) {
+            $Endpoint = $(if ($Address -eq "::1") { "[$Address]:$Port" } else { "$Address`:$Port" })
+            $Client = New-Object Net.Sockets.TcpClient($IpAddress.AddressFamily)
+            try {
+                $Pending = $Client.BeginConnect($Address, $Port, $null, $null)
+                if (-not $Pending.AsyncWaitHandle.WaitOne(500)) {
+                    $Outcomes[$Endpoint] = "DENIED"
+                }
+                else {
+                    $Client.EndConnect($Pending)
+                    $Outcomes[$Endpoint] = "ALLOWED"
+                }
             }
-            else {
-                $Client.EndConnect($Pending)
-                $Outcomes += "ALLOWED"
+            catch [Net.Sockets.SocketException] {
+                if ($_.Exception.SocketErrorCode -eq [Net.Sockets.SocketError]::AccessDenied) {
+                    $Outcomes[$Endpoint] = "DENIED"
+                }
+                else { $Outcomes[$Endpoint] = "NOT_PROVEN" }
             }
+            catch { $Outcomes[$Endpoint] = "NOT_PROVEN" }
+            finally { $Client.Dispose() }
         }
-        catch [Net.Sockets.SocketException] {
-            if ($_.Exception.SocketErrorCode -eq [Net.Sockets.SocketError]::AccessDenied) {
-                $Outcomes += "DENIED"
-            }
-            else { $Outcomes += "NOT_PROVEN" }
-        }
-        catch { $Outcomes += "NOT_PROVEN" }
-        finally { $Client.Dispose() }
     }
-    if ($Outcomes -contains "ALLOWED") { return "ALLOWED" }
-    if (($Outcomes | Where-Object { $_ -ne "DENIED" }).Count -eq 0) { return "DENIED" }
-    return "NOT_PROVEN"
+    $Values = @($Outcomes.Values)
+    $Status = $(if ($Values -contains "ALLOWED") { "ALLOWED" } elseif (($Values | Where-Object { $_ -ne "DENIED" }).Count -eq 0) { "DENIED" } else { "NOT_PROVEN" })
+    return [ordered]@{ status = $Status; network_endpoints = $Outcomes }
 }
 
 $Runtime = Test-RuntimeManifest
@@ -272,6 +276,7 @@ catch {
 }
 
 $Results = [ordered]@{}
+$NetworkEndpoints = [ordered]@{}
 foreach ($Name in $RequiredTargets) {
     if ($Name -in @("SECRETS_READ", "IBKR_SECRET_READ", "SMTP_SECRET_READ", "IMMUTABLE_EXPORT_READ")) {
         $Results[$Name] = Test-ReadCapability -Target $Resolved[$Name]
@@ -279,8 +284,9 @@ foreach ($Name in $RequiredTargets) {
     elseif ($Name -eq "BROKER_WRITE_PATH_ACCESS") {
         $FileResult = Test-MutationCapability -Target $Resolved[$Name]
         $NetworkResult = Test-BrokerNetworkCapability
-        if ($FileResult -eq "ALLOWED" -or $NetworkResult -eq "ALLOWED") { $Results[$Name] = "ALLOWED" }
-        elseif ($FileResult -eq "DENIED" -and $NetworkResult -eq "DENIED") { $Results[$Name] = "DENIED" }
+        $NetworkEndpoints = $NetworkResult.network_endpoints
+        if ($FileResult -eq "ALLOWED" -or $NetworkResult.status -eq "ALLOWED") { $Results[$Name] = "ALLOWED" }
+        elseif ($FileResult -eq "DENIED" -and $NetworkResult.status -eq "DENIED") { $Results[$Name] = "DENIED" }
         else { $Results[$Name] = "NOT_PROVEN" }
     }
     elseif ($Name -ne "AUDITOR_REPORT_WRITE") {
@@ -317,6 +323,7 @@ $Report = [ordered]@{
     runtime_manifest_sha256 = $Runtime.manifest_sha256
     input_manifest_sha256 = Get-Sha256Hex -LiteralPath $TargetManifestPath
     results = $Results
+    network_endpoints = $NetworkEndpoints
     report_path = $ReportPath
 }
 try {

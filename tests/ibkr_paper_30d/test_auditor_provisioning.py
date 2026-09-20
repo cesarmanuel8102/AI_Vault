@@ -9,7 +9,15 @@ import pytest
 
 ROOT = Path(__file__).parents[2]
 SCRIPT = ROOT / "AUDITOR_WINDOWS_PROVISIONING_V1.ps1"
+PROBE_SCRIPT = ROOT / "auditor_runtime" / "AUDITOR_DENIAL_PROBE_V1.ps1"
 PROGRAM_ROOT = Path("C:/ProgramData/CodexAuditorV1")
+LIVE_STATE_ROOT = r"C:\AI_VAULT\state\ibkr_paper_30d"
+LEGACY_EPHEMERAL_PATHS = {
+    rf"{LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3",
+    rf"{LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3-wal",
+    rf"{LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3-shm",
+    rf"{LIVE_STATE_ROOT}\execution.lock",
+}
 APPROVED_AUDITOR_PATHS = {
     r"C:\ProgramData\CodexAuditorV1\runtime",
     r"C:\ProgramData\CodexAuditorV1\exports",
@@ -17,10 +25,7 @@ APPROVED_AUDITOR_PATHS = {
     r"C:\ProgramData\CodexAuditorV1\provisioning",
     r"C:\AI_VAULT\Secrets",
     r"C:\Jts",
-    r"C:\AI_VAULT\state\ibkr_paper_30d\reports\real_codex_invocations.sqlite3",
-    r"C:\AI_VAULT\state\ibkr_paper_30d\reports\real_codex_invocations.sqlite3-wal",
-    r"C:\AI_VAULT\state\ibkr_paper_30d\reports\real_codex_invocations.sqlite3-shm",
-    r"C:\AI_VAULT\state\ibkr_paper_30d\execution.lock",
+    LIVE_STATE_ROOT,
     r"C:\AI_VAULT\ibkr_paper_30d\broker.py",
     r"C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py",
 }
@@ -29,6 +34,11 @@ APPROVED_AUDITOR_PATHS = {
 @pytest.fixture
 def script_text() -> str:
     return SCRIPT.read_text(encoding="utf-8")
+
+
+@pytest.fixture
+def probe_script_text() -> str:
+    return PROBE_SCRIPT.read_text(encoding="utf-8")
 
 
 @pytest.fixture(scope="module")
@@ -154,3 +164,107 @@ def test_review_manifest_contains_validation_and_rollback(review_manifest) -> No
     )
     assert review_manifest["validation_commands"]
     assert review_manifest["acl_changes"]
+
+
+def test_partial_apply_firewall_failure_has_recognized_recovery_contract(
+    review_manifest,
+) -> None:
+    recovery = review_manifest["partial_apply_recovery"]
+    assert recovery["recognized_predecessor_script_sha256"] == (
+        "899d262124bbf24e0dbd4661b8df41f93aeb6993dacfe9a200264ad2e9ed6eb7"
+    )
+    assert recovery["change_manifest_may_be_missing"] is True
+    assert recovery["repair_probe_manifest"] is True
+    assert recovery["upgrade_runtime_files"] is True
+
+
+def test_apply_rerun_repairs_only_recognized_partial_state(script_text) -> None:
+    assert "Test-RecognizedLegacyProbeManifest" in script_text
+    assert "Test-RecognizedLegacyRuntimeManifest" in script_text
+    assert "PARTIAL_STATE_UNRECOGNIZED" in script_text
+    assert "Replace-FileAtomically" in script_text
+
+
+@pytest.mark.parametrize(
+    "leaf_name",
+    [
+        "real_codex_invocations.sqlite3-wal",
+        "real_codex_invocations.sqlite3-shm",
+        "execution.lock",
+    ],
+)
+def test_missing_ephemeral_leaf_is_not_an_apply_target(
+    review_manifest, leaf_name
+) -> None:
+    protected_denies = {
+        change["path"]
+        for change in review_manifest["acl_changes"]
+        if change["type"] == "Deny" and change["rights"] == "FullControl"
+    }
+    assert LIVE_STATE_ROOT in protected_denies
+    assert not any(path.endswith(leaf_name) for path in protected_denies)
+
+
+def test_live_state_parent_denial_inherits_to_future_files(review_manifest) -> None:
+    parent_change = next(
+        change
+        for change in review_manifest["acl_changes"]
+        if change["path"] == LIVE_STATE_ROOT
+    )
+    assert parent_change == {
+        "path": LIVE_STATE_ROOT,
+        "rights": "FullControl",
+        "type": "Deny",
+        "directory": True,
+        "identity": "CodexAuditorV1",
+    }
+    inheritance = review_manifest["live_state_inheritance"]
+    assert inheritance["flags"] == ["ContainerInherit", "ObjectInherit"]
+    assert inheritance["propagation"] == "None"
+    assert inheritance["preserves_unrelated_aces"] is True
+
+
+def test_firewall_avoids_unsupported_ipv6_loopback_literal(review_manifest) -> None:
+    firewall = review_manifest["firewall_rule"]
+    assert firewall["remote_addresses"] == ["Any"]
+    assert set(firewall["address_families"]) == {"IPv4", "IPv6"}
+    assert "::1" not in firewall["remote_addresses"]
+
+
+def test_actual_auditor_broker_denial_requires_dual_stack_probe(
+    review_manifest, probe_script_text
+) -> None:
+    required = set(review_manifest["firewall_rule"]["required_probe_endpoints"])
+    assert required == {
+        "127.0.0.1:4001",
+        "127.0.0.1:4002",
+        "[::1]:4001",
+        "[::1]:4002",
+    }
+    assert '"127.0.0.1"' in probe_script_text
+    assert '"::1"' in probe_script_text
+    assert "[Net.IPAddress]::Parse($Address)" in probe_script_text
+    assert "TcpClient($IpAddress.AddressFamily)" in probe_script_text
+    assert "network_endpoints" in probe_script_text
+    assert "NOT_PROVEN" in probe_script_text
+
+
+def test_acl_remediation_preserves_unrelated_aces(script_text) -> None:
+    assert "AddAccessRule" in script_text
+    assert "RemoveAccessRuleSpecific" in script_text
+    assert "SetAccessRuleProtection" not in script_text
+    assert "PurgeAccessRules" not in script_text
+    assert "SetAccessRule(" not in script_text
+
+
+def test_rollback_after_partial_apply_removes_only_subsystem_owned_changes(
+    review_manifest, script_text
+) -> None:
+    legacy_paths = {
+        change["path"] for change in review_manifest["legacy_acl_changes"]
+    }
+    assert legacy_paths == LEGACY_EPHEMERAL_PATHS
+    assert "PROVISIONING_MANIFEST_MISSING" not in script_text
+    assert "Get-PartialRollbackManifest" in script_text
+    assert "RemoveAccessRuleSpecific" in script_text
+    assert "Remove-LocalUser -Name $AccountName" in script_text

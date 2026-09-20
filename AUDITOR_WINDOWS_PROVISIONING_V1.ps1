@@ -21,19 +21,36 @@ $RuntimeManifestPath = "$RuntimePath\AUDITOR_RUNTIME_MANIFEST_V1.json"
 $ProbeTargetManifestPath = "$ProvisioningPath\AUDITOR_PROBE_TARGET_MANIFEST_V1.json"
 $RuntimeSourcePath = Join-Path $PSScriptRoot "auditor_runtime"
 $RuntimeFileNames = @("CODEX_DECISION_AUDITOR_V1.ps1", "AUDITOR_DENIAL_PROBE_V1.ps1")
+$PredecessorScriptHash = "899d262124bbf24e0dbd4661b8df41f93aeb6993dacfe9a200264ad2e9ed6eb7"
+$PredecessorRuntimeHashes = @{
+    "CODEX_DECISION_AUDITOR_V1.ps1" = "660cec2f87052edf68ed84e001516e0be7694ed0794337ba4252545d41c71bf4"
+    "AUDITOR_DENIAL_PROBE_V1.ps1" = "26d4dc93cdf45ceeae3f40f39248edfe00f749072c4d1b36bd04971bb4a8dbf9"
+}
+$LiveStateRoot = "C:\AI_VAULT\state\ibkr_paper_30d"
+$LegacyEphemeralPaths = @(
+    "$LiveStateRoot\reports\real_codex_invocations.sqlite3",
+    "$LiveStateRoot\reports\real_codex_invocations.sqlite3-wal",
+    "$LiveStateRoot\reports\real_codex_invocations.sqlite3-shm",
+    "$LiveStateRoot\execution.lock"
+)
 
 $ProtectedPaths = @(
     "C:\AI_VAULT\Secrets",
     "C:\Jts",
-    "C:\AI_VAULT\state\ibkr_paper_30d\reports\real_codex_invocations.sqlite3",
-    "C:\AI_VAULT\state\ibkr_paper_30d\reports\real_codex_invocations.sqlite3-wal",
-    "C:\AI_VAULT\state\ibkr_paper_30d\reports\real_codex_invocations.sqlite3-shm",
-    "C:\AI_VAULT\state\ibkr_paper_30d\execution.lock",
+    $LiveStateRoot,
     "C:\AI_VAULT\ibkr_paper_30d\broker.py",
     "C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py"
 )
 $ManagedPaths = @($RuntimePath, $ExportPath, $ReportPath, $ProvisioningPath)
 $ApprovedPaths = @($ManagedPaths + $ProtectedPaths)
+$LegacyApprovedPaths = @($ManagedPaths + @(
+    "C:\AI_VAULT\Secrets",
+    "C:\Jts",
+    $LegacyEphemeralPaths,
+    "C:\AI_VAULT\ibkr_paper_30d\broker.py",
+    "C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py"
+))
+$RemovalApprovedPaths = @($ApprovedPaths + $LegacyEphemeralPaths | Select-Object -Unique)
 
 function Get-Sha256Hex {
     param([string]$LiteralPath)
@@ -89,7 +106,11 @@ $AclChanges = @(
     (New-AclChange -Path $ProvisioningPath -Rights "Write,Delete,ChangePermissions,TakeOwnership" -Type "Deny" -Directory $true)
 )
 foreach ($Path in $ProtectedPaths) {
-    $AclChanges += New-AclChange -Path $Path -Rights "FullControl" -Type "Deny" -Directory (Test-Path -LiteralPath $Path -PathType Container)
+    $AclChanges += New-AclChange -Path $Path -Rights "FullControl" -Type "Deny" -Directory ($Path -eq $LiveStateRoot -or (Test-Path -LiteralPath $Path -PathType Container))
+}
+$LegacyAclChanges = @()
+foreach ($Path in $LegacyEphemeralPaths) {
+    $LegacyAclChanges += New-AclChange -Path $Path -Rights "FullControl" -Type "Deny" -Directory $false
 }
 
 $ScriptHash = Get-Sha256Hex -LiteralPath $PSCommandPath
@@ -120,10 +141,27 @@ $Manifest = [ordered]@{
         direction = "Outbound"
         action = "Block"
         protocol = "TCP"
-        remote_addresses = @("127.0.0.1", "::1")
+        remote_addresses = @("Any")
+        address_families = @("IPv4", "IPv6")
+        required_probe_endpoints = @("127.0.0.1:4001", "127.0.0.1:4002", "[::1]:4001", "[::1]:4002")
         account_sid_scope = "RESOLVE_ON_APPLY"
     }
     acl_changes = $AclChanges
+    legacy_acl_changes = $LegacyAclChanges
+    live_state_inheritance = [ordered]@{
+        root = $LiveStateRoot
+        flags = @("ContainerInherit", "ObjectInherit")
+        propagation = "None"
+        preserves_unrelated_aces = $true
+        scope = "Existing and future descendants of the IBKR paper experiment live-state directory only"
+    }
+    partial_apply_recovery = [ordered]@{
+        recognized_predecessor_script_sha256 = $PredecessorScriptHash
+        change_manifest_may_be_missing = $true
+        repair_probe_manifest = $true
+        upgrade_runtime_files = $true
+        reject_unrecognized_state = $true
+    }
     runtime_files = $RuntimeFiles
     probe_targets = $ProbeTargets
     validation_commands = @(
@@ -218,7 +256,7 @@ function Remove-ManifestAce {
         [object]$Change,
         [Security.Principal.SecurityIdentifier]$Sid
     )
-    if (-not ($ApprovedPaths -contains [string]$Change.path)) {
+    if (-not ($RemovalApprovedPaths -contains [string]$Change.path)) {
         throw "UNAPPROVED_PATH"
     }
     if (-not (Test-Path -LiteralPath $Change.path)) {
@@ -229,6 +267,86 @@ function Remove-ManifestAce {
     [void]$Acl.RemoveAccessRuleSpecific($Rule)
     Set-Acl -LiteralPath $Change.path -AclObject $Acl
     return "REMOVED"
+}
+
+function Replace-FileAtomically {
+    param(
+        [string]$SourcePath,
+        [string]$DestinationPath
+    )
+    $TemporaryPath = "$DestinationPath.$([Guid]::NewGuid().ToString('N')).tmp"
+    try {
+        [IO.File]::Copy($SourcePath, $TemporaryPath, $false)
+        if (Test-Path -LiteralPath $DestinationPath -PathType Leaf) {
+            [IO.File]::Replace($TemporaryPath, $DestinationPath, $null, $true)
+        }
+        else {
+            [IO.File]::Move($TemporaryPath, $DestinationPath)
+        }
+    }
+    finally {
+        if (Test-Path -LiteralPath $TemporaryPath) {
+            Remove-Item -LiteralPath $TemporaryPath -Force
+        }
+    }
+}
+
+function Write-TextAtomically {
+    param(
+        [string]$DestinationPath,
+        [string]$Text
+    )
+    $TemporaryPath = "$DestinationPath.$([Guid]::NewGuid().ToString('N')).tmp"
+    $Utf8 = New-Object Text.UTF8Encoding($false)
+    try {
+        [IO.File]::WriteAllText($TemporaryPath, $Text, $Utf8)
+        if (Test-Path -LiteralPath $DestinationPath -PathType Leaf) {
+            [IO.File]::Replace($TemporaryPath, $DestinationPath, $null, $true)
+        }
+        else {
+            [IO.File]::Move($TemporaryPath, $DestinationPath)
+        }
+    }
+    finally {
+        if (Test-Path -LiteralPath $TemporaryPath) {
+            Remove-Item -LiteralPath $TemporaryPath -Force
+        }
+    }
+}
+
+function Test-StringSetEqual {
+    param([object[]]$Left, [object[]]$Right)
+    return (($Left | ForEach-Object { [string]$_ } | Sort-Object) -join '|') -ceq (($Right | ForEach-Object { [string]$_ } | Sort-Object) -join '|')
+}
+
+function Test-RecognizedLegacyRuntimeManifest {
+    param([string]$Text)
+    try { $Legacy = $Text | ConvertFrom-Json }
+    catch { return $false }
+    if ($Legacy.schema -ne "AUDITOR_RUNTIME_MANIFEST_V1" -or $Legacy.runtime_root -ne $RuntimePath) { return $false }
+    $Properties = @($Legacy.files.PSObject.Properties)
+    if ($Properties.Count -ne $PredecessorRuntimeHashes.Count) { return $false }
+    foreach ($Name in $PredecessorRuntimeHashes.Keys) {
+        if ([string]$Legacy.files.$Name -ne $PredecessorRuntimeHashes[$Name]) { return $false }
+    }
+    return $true
+}
+
+function Test-RecognizedLegacyProbeManifest {
+    param(
+        [string]$Text,
+        [Security.Principal.SecurityIdentifier]$Sid
+    )
+    try { $Legacy = $Text | ConvertFrom-Json }
+    catch { return $false }
+    if (
+        $Legacy.schema -ne "AUDITOR_PROBE_TARGET_MANIFEST_V1" -or
+        $Legacy.expected_sid -ne $Sid.Value -or
+        -not (Test-StringSetEqual -Left @($Legacy.approved_roots) -Right $LegacyApprovedPaths)
+    ) { return $false }
+    $ExpectedTargets = $ProbeTargets | ConvertTo-Json -Depth 5 -Compress
+    $ActualTargets = $Legacy.targets | ConvertTo-Json -Depth 5 -Compress
+    return $ActualTargets -ceq $ExpectedTargets
 }
 
 function Write-ExclusiveManifest {
@@ -250,13 +368,26 @@ function Write-ExclusiveManifest {
 }
 
 function Install-RuntimeFiles {
+    $ExistingRuntimeManifest = $null
+    $LegacyRuntimeRecognized = $false
+    if (Test-Path -LiteralPath $RuntimeManifestPath -PathType Leaf) {
+        $ExistingRuntimeManifest = [IO.File]::ReadAllText($RuntimeManifestPath)
+        $LegacyRuntimeRecognized = Test-RecognizedLegacyRuntimeManifest -Text $ExistingRuntimeManifest
+    }
     $Hashes = [ordered]@{}
     foreach ($RuntimeFile in $RuntimeFiles) {
         $Source = Join-Path $RuntimeSourcePath $RuntimeFile.name
         $Destination = Join-Path $RuntimePath $RuntimeFile.name
         if (Test-Path -LiteralPath $Destination) {
-            if ((Get-Sha256Hex -LiteralPath $Destination) -ne $RuntimeFile.sha256) {
-                throw "RUNTIME_DESTINATION_CONFLICT:$($RuntimeFile.name)"
+            $DestinationHash = Get-Sha256Hex -LiteralPath $Destination
+            if ($DestinationHash -ne $RuntimeFile.sha256) {
+                if (
+                    -not $LegacyRuntimeRecognized -or
+                    $DestinationHash -ne $PredecessorRuntimeHashes[$RuntimeFile.name]
+                ) {
+                    throw "PARTIAL_STATE_UNRECOGNIZED:RUNTIME_DESTINATION:$($RuntimeFile.name)"
+                }
+                Replace-FileAtomically -SourcePath $Source -DestinationPath $Destination
             }
         }
         else {
@@ -271,7 +402,10 @@ function Install-RuntimeFiles {
     } | ConvertTo-Json -Depth 5 -Compress
     if (Test-Path -LiteralPath $RuntimeManifestPath) {
         if ([IO.File]::ReadAllText($RuntimeManifestPath) -ne $RuntimeManifest) {
-            throw "RUNTIME_MANIFEST_CONFLICT"
+            if (-not $LegacyRuntimeRecognized) {
+                throw "PARTIAL_STATE_UNRECOGNIZED:RUNTIME_MANIFEST"
+            }
+            Write-TextAtomically -DestinationPath $RuntimeManifestPath -Text $RuntimeManifest
         }
     }
     else {
@@ -295,8 +429,12 @@ function Write-ProbeTargetManifest {
         targets = $Manifest.probe_targets
     } | ConvertTo-Json -Depth 7 -Compress
     if (Test-Path -LiteralPath $ProbeTargetManifestPath) {
-        if ([IO.File]::ReadAllText($ProbeTargetManifestPath) -ne $ProbeManifest) {
-            throw "PROBE_TARGET_MANIFEST_CONFLICT"
+        $Existing = [IO.File]::ReadAllText($ProbeTargetManifestPath)
+        if ($Existing -ne $ProbeManifest) {
+            if (-not (Test-RecognizedLegacyProbeManifest -Text $Existing -Sid $Sid)) {
+                throw "PARTIAL_STATE_UNRECOGNIZED:PROBE_TARGET_MANIFEST"
+            }
+            Write-TextAtomically -DestinationPath $ProbeTargetManifestPath -Text $ProbeManifest
         }
         return
     }
@@ -308,6 +446,28 @@ function Write-ProbeTargetManifest {
         finally { $Writer.Dispose() }
     }
     finally { $Stream.Dispose() }
+}
+
+function Assert-FirewallRuleMatches {
+    param(
+        [object]$Rule,
+        [string]$LocalUserSddl
+    )
+    $PortFilter = $Rule | Get-NetFirewallPortFilter
+    $AddressFilter = $Rule | Get-NetFirewallAddressFilter
+    $SecurityFilter = $Rule | Get-NetFirewallSecurityFilter
+    $RemotePorts = @($PortFilter.RemotePort | ForEach-Object { [string]$_ })
+    $RemoteAddresses = @($AddressFilter.RemoteAddress | ForEach-Object { [string]$_ })
+    if (
+        [string]$Rule.Direction -ne "Outbound" -or
+        [string]$Rule.Action -ne "Block" -or
+        [string]$PortFilter.Protocol -notin @("TCP", "6") -or
+        -not (Test-StringSetEqual -Left $RemotePorts -Right @("4001", "4002")) -or
+        -not (Test-StringSetEqual -Left $RemoteAddresses -Right @("Any")) -or
+        [string]$SecurityFilter.LocalUser -ne $LocalUserSddl
+    ) {
+        throw "FIREWALL_RULE_CONFLICT"
+    }
 }
 
 function Invoke-Apply {
@@ -330,12 +490,16 @@ function Invoke-Apply {
     foreach ($Change in $AclChanges) {
         $Results += [ordered]@{ path = $Change.path; result = (Add-ManifestAce -Change $Change -Sid $User.SID) }
     }
-    $Rule = Get-NetFirewallRule -Name $FirewallRuleName -ErrorAction SilentlyContinue
-    if ($null -eq $Rule) {
-        $Rule = New-NetFirewallRule -Name $FirewallRuleName -DisplayName $FirewallRuleName -Direction Outbound -Action Block -Protocol TCP -RemotePort 4001,4002 -RemoteAddress 127.0.0.1,::1 -Profile Any
+    foreach ($LegacyChange in $LegacyAclChanges) {
+        $Results += [ordered]@{ path = $LegacyChange.path; result = (Remove-ManifestAce -Change $LegacyChange -Sid $User.SID); legacy_cleanup = $true }
     }
     $LocalUserSddl = "D:(A;;CC;;;$($User.SID.Value))"
-    $Rule | Set-NetFirewallRule -LocalUser $LocalUserSddl -Enabled True
+    $Rule = Get-NetFirewallRule -Name $FirewallRuleName -ErrorAction SilentlyContinue
+    if ($null -eq $Rule) {
+        $Rule = New-NetFirewallRule -Name $FirewallRuleName -DisplayName $FirewallRuleName -Direction Outbound -Action Block -Protocol TCP -RemotePort 4001,4002 -RemoteAddress Any -Profile Any
+        $Rule | Set-NetFirewallRule -LocalUser $LocalUserSddl -Enabled True
+    }
+    Assert-FirewallRuleMatches -Rule $Rule -LocalUserSddl $LocalUserSddl
     Write-ExclusiveManifest
     $Log = [ordered]@{
         schema = "AUDITOR_PROVISIONING_LOG_V1"
@@ -348,23 +512,74 @@ function Invoke-Apply {
     [IO.File]::AppendAllText("$ProvisioningPath\apply.jsonl", $Log + [Environment]::NewLine)
 }
 
+function Get-PartialRollbackManifest {
+    param([object]$User)
+    $ExistingRule = Get-NetFirewallRule -Name $FirewallRuleName -ErrorAction SilentlyContinue
+    if ($null -eq $User -and -not (Test-Path -LiteralPath $ProgramRoot) -and $null -eq $ExistingRule) {
+        return [pscustomobject]@{ acl_changes = @() }
+    }
+    if ($null -eq $User -or $User.Description -ne "Restricted decision evidence auditor") {
+        throw "PARTIAL_STATE_UNRECOGNIZED:ACCOUNT"
+    }
+    if (
+        -not (Test-Path -LiteralPath $RuntimeManifestPath -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $ProbeTargetManifestPath -PathType Leaf)
+    ) {
+        throw "PARTIAL_STATE_UNRECOGNIZED:MANIFESTS"
+    }
+    $RuntimeText = [IO.File]::ReadAllText($RuntimeManifestPath)
+    $RuntimeIsLegacy = Test-RecognizedLegacyRuntimeManifest -Text $RuntimeText
+    $RuntimeIsCurrent = $true
+    try { $RuntimeValue = $RuntimeText | ConvertFrom-Json }
+    catch { $RuntimeIsCurrent = $false }
+    if ($RuntimeIsCurrent) {
+        foreach ($RuntimeFile in $RuntimeFiles) {
+            if ([string]$RuntimeValue.files.($RuntimeFile.name) -ne $RuntimeFile.sha256) {
+                $RuntimeIsCurrent = $false
+                break
+            }
+        }
+    }
+    $ProbeText = [IO.File]::ReadAllText($ProbeTargetManifestPath)
+    $ProbeIsLegacy = Test-RecognizedLegacyProbeManifest -Text $ProbeText -Sid $User.SID
+    $ProbeIsCurrent = $false
+    try {
+        $ProbeValue = $ProbeText | ConvertFrom-Json
+        $ProbeIsCurrent = (
+            $ProbeValue.schema -eq "AUDITOR_PROBE_TARGET_MANIFEST_V1" -and
+            $ProbeValue.expected_sid -eq $User.SID.Value -and
+            (Test-StringSetEqual -Left @($ProbeValue.approved_roots) -Right $ApprovedPaths) -and
+            (($ProbeValue.targets | ConvertTo-Json -Depth 5 -Compress) -ceq ($ProbeTargets | ConvertTo-Json -Depth 5 -Compress))
+        )
+    }
+    catch { $ProbeIsCurrent = $false }
+    if ((-not $RuntimeIsLegacy -and -not $RuntimeIsCurrent) -or (-not $ProbeIsLegacy -and -not $ProbeIsCurrent)) {
+        throw "PARTIAL_STATE_UNRECOGNIZED:MANIFEST_CONTENT"
+    }
+    return [pscustomobject]@{ acl_changes = @($AclChanges + $LegacyAclChanges) }
+}
+
 function Invoke-Rollback {
     if (-not $ConfirmRollback) { throw "ROLLBACK_CONFIRMATION_REQUIRED" }
-    if (-not (Test-Path -LiteralPath $ChangeManifestPath -PathType Leaf)) {
-        throw "PROVISIONING_MANIFEST_MISSING"
-    }
-    $AppliedManifest = [IO.File]::ReadAllText($ChangeManifestPath) | ConvertFrom-Json
-    if (
-        $AppliedManifest.schema -ne "AUDITOR_WINDOWS_PROVISIONING_MANIFEST_V1" -or
-        $AppliedManifest.script_sha256 -ne $ScriptHash -or
-        $AppliedManifest.account_name -ne $AccountName -or
-        $AppliedManifest.firewall_rule.name -ne $FirewallRuleName
-    ) {
-        throw "PROVISIONING_MANIFEST_MISMATCH"
-    }
     $User = Get-LocalUser -Name $AccountName -ErrorAction SilentlyContinue
+    if (Test-Path -LiteralPath $ChangeManifestPath -PathType Leaf) {
+        $AppliedManifest = [IO.File]::ReadAllText($ChangeManifestPath) | ConvertFrom-Json
+        if (
+            $AppliedManifest.schema -ne "AUDITOR_WINDOWS_PROVISIONING_MANIFEST_V1" -or
+            $AppliedManifest.script_sha256 -ne $ScriptHash -or
+            $AppliedManifest.account_name -ne $AccountName -or
+            $AppliedManifest.firewall_rule.name -ne $FirewallRuleName
+        ) {
+            throw "PROVISIONING_MANIFEST_MISMATCH"
+        }
+        $RollbackChanges = @($AppliedManifest.acl_changes) + @($LegacyAclChanges)
+    }
+    else {
+        $AppliedManifest = Get-PartialRollbackManifest -User $User
+        $RollbackChanges = @($AppliedManifest.acl_changes)
+    }
     if ($null -ne $User) {
-        foreach ($Change in $AppliedManifest.acl_changes) {
+        foreach ($Change in $RollbackChanges) {
             [void](Remove-ManifestAce -Change $Change -Sid $User.SID)
         }
     }
