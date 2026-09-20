@@ -13,6 +13,7 @@ import re
 
 
 _IDENTIFIER = re.compile(r"^[a-z][a-z0-9_]{2,63}$")
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _BPS = 10_000
 _PAPER_ELIGIBLE = "PAPER_ELIGIBLE"
 _FORBIDDEN_EFFECTS = frozenset(
@@ -42,6 +43,8 @@ class PaperEligibleStrategyValidationReceipt:
     asset_bucket: str
     correlation_group: str
     expected_attribution_bps: int
+    issuer_id: str
+    validation_evidence_sha256: str
 
 
 @dataclass(frozen=True)
@@ -125,6 +128,11 @@ def _validated_receipts(
         _validate_identifier(receipt.asset_bucket, "asset_bucket")
         _validate_identifier(receipt.correlation_group, "correlation_group")
         _validate_bps(receipt.expected_attribution_bps, "expected_attribution_bps")
+        _validate_identifier(receipt.issuer_id, "issuer_id")
+        if not isinstance(receipt.validation_evidence_sha256, str) or not _SHA256.fullmatch(
+            receipt.validation_evidence_sha256
+        ):
+            raise ValueError("invalid_validation_evidence_sha256")
         if receipt.eligibility != _PAPER_ELIGIBLE:
             raise ValueError("receipt_not_paper_eligible")
         if receipt.receipt_id in receipt_ids:

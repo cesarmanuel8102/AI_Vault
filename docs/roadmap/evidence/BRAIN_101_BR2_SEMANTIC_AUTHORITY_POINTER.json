@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "record_type": "SEMANTIC_AUTHORITY_POINTER",
+  "front_id": "BRAIN-101-BR2-SEMANTIC-AUTHORITY-POINTER-01",
+  "track": "BRAIN",
+  "single_semantic_authority": "evaluateSemanticCompletion",
+  "authority_module": "scripts/operator_proxy/semantic_completion_gate.ts",
+  "merged_pr": 391,
+  "merge_commit": "ae3be637fa7642b735c92a1b4b16aa20b92ac1b8",
+  "routing_rule": "Any semantic PASS/BLOCK question about roadmap requirement completion must route through the BR1 gate and its governed canonical artifacts; Brain never re-evaluates, duplicates, or overrides it.",
+  "brain_re_evaluates_semantics": false,
+  "governed_authority_artifacts": [
+    "docs/roadmap/semantic/semantic_registry.json",
+    "docs/roadmap/semantic/requirements.json",
+    "docs/roadmap/semantic/evidence.json",
+    "docs/roadmap/semantic/soak_execution_manifest.json",
+    "docs/roadmap/semantic/regime_classifier_contract.json"
+  ],
+  "current_r15_semantic_truth": {
+    "decision": "BLOCK",
+    "reason_codes": ["MISSING_EVIDENCE", "PARENT_REQUIREMENT_UNSATISFIED"],
+    "canonical_evidence_empty": true,
+    "soak_started": false,
+    "note": "Truthful infrastructure result: the R15 30-day soak has no qualifying canonical evidence. BR2 does not fabricate or start that soak."
+  },
+  "future_hive_integration_note": "When the Owner authorizes Brain-HIVE integration, HIVE-produced immutable receipts (StrategyValidationReceipt, PaperExecutionReceipt) are consumed through tmp_agent/brain_v9/core/hive_receipt_boundary.py. Raw strategy code, mutable QC experiment state, HIVE optimizer state, and selector implementations must never cross the boundary.",
+  "runtime_actions": {}
+}
