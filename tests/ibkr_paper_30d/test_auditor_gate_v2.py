@@ -2,14 +2,22 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import pytest
 
 from ibkr_paper_30d.auditor_gate_v2 import (
     EXPECTED_AUDITOR_SID,
+    AuditorGateV2Evaluation,
     AuditorGateV2Receipt,
     ReceiptValidationError,
     parse_auditor_gate_v2_receipt,
+)
+from ibkr_paper_30d.auditor_v2_artifacts import (
+    ArtifactValidationError,
+    build_residual_risk_acceptance,
+    verify_immutable_json,
+    write_immutable_json,
 )
 from ibkr_paper_30d.canonical import canonical_bytes
 
@@ -86,6 +94,9 @@ def complete_receipt(now: datetime) -> dict[str, object]:
             "paper_identity_gate": "PASS",
             "readonly_identity_gate": "PASS",
             "broker_reconciliation_gate": "PASS",
+            "paper_only": True,
+            "live_allowed": False,
+            "real_money_allowed": False,
         },
         "network_facts": {
             "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": True,
@@ -99,7 +110,32 @@ def complete_receipt(now: datetime) -> dict[str, object]:
             "report_path": r"C:\ProgramData\CodexAuditorV1\reports\v2.json",
             "created": True,
             "report_sha256": "3" * 64,
+            "evidence_origin": "REAL_RESTRICTED_TOKEN",
         },
+    }
+
+
+@pytest.fixture
+def pass_evaluation() -> AuditorGateV2Evaluation:
+    return AuditorGateV2Evaluation("PASS", "PASS", "V2", ())
+
+
+@pytest.fixture
+def expected_identity() -> SimpleNamespace:
+    return SimpleNamespace(
+        expected_account_hash="1" * 64,
+        receipt_sha256="2" * 64,
+        raw_account="DU1234567",
+    )
+
+
+@pytest.fixture
+def owner_decision() -> dict[str, object]:
+    return {
+        "decision": "OWNER_AUTHORIZATION_IMPLEMENT_AUDITOR_GATE_V2",
+        "design_commit": "322a79cb",
+        "plan_commit": "7e8d4689",
+        "month1_paper_only": True,
     }
 
 
@@ -148,3 +184,71 @@ def test_v2_receipt_rejects_wrong_types_and_non_utc_time(complete_receipt) -> No
     non_utc["completed_at_utc"] = "2026-09-20T11:59:00-04:00"
     with pytest.raises(ReceiptValidationError, match="TIMESTAMP_NOT_UTC"):
         parse_auditor_gate_v2_receipt(canonical_bytes(non_utc))
+
+
+def test_residual_risk_binds_paper_identity_without_cleartext_account(
+    complete_receipt, pass_evaluation, expected_identity, owner_decision
+) -> None:
+    receipt = parse_auditor_gate_v2_receipt(canonical_bytes(complete_receipt))
+    artifact = build_residual_risk_acceptance(
+        receipt, pass_evaluation, owner_decision
+    )
+
+    assert artifact["EXPECTED_PAPER_ACCOUNT_IDENTITY_HASH"] == (
+        expected_identity.expected_account_hash
+    )
+    assert artifact["PAPER_IDENTITY_RECEIPT_SHA256"] == expected_identity.receipt_sha256
+    assert artifact["AUDITOR_TECHNICAL_SOCKET_REACHABILITY"] is True
+    assert artifact["AUDITOR_NETWORK_ISOLATION_REQUIRED"] is False
+    assert artifact["AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE"] is True
+    assert artifact["AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED"] is True
+    assert artifact["AUDITOR_ORDER_AUTHORITY_GRANTED"] is False
+    assert artifact["AUDITOR_BROKER_CONTROL_PATH_AUTHORIZED"] is False
+    assert expected_identity.raw_account not in canonical_bytes(artifact).decode("ascii")
+    assert len(artifact["EXPIRATION_TRIGGERS"]) == 7
+
+
+def test_residual_risk_is_write_once_canonical_and_tamper_evident(
+    tmp_path, complete_receipt, pass_evaluation, owner_decision, expected_identity
+) -> None:
+    receipt = parse_auditor_gate_v2_receipt(canonical_bytes(complete_receipt))
+    artifact = build_residual_risk_acceptance(
+        receipt, pass_evaluation, owner_decision
+    )
+    path = tmp_path / "risk.json"
+
+    digest = write_immutable_json(path, artifact)
+
+    assert path.read_bytes() == canonical_bytes(artifact)
+    assert verify_immutable_json(path, digest) is True
+    assert expected_identity.raw_account.encode("ascii") not in path.read_bytes()
+    assert b"IBKR_PASSWORD" not in path.read_bytes()
+    with pytest.raises(FileExistsError):
+        write_immutable_json(path, artifact)
+    path.write_bytes(path.read_bytes() + b" ")
+    assert verify_immutable_json(path, digest) is False
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("paper_only", False), ("live_allowed", True), ("real_money_allowed", True)],
+)
+def test_residual_risk_rejects_non_paper_or_live_scope(
+    complete_receipt, pass_evaluation, owner_decision, field, value
+) -> None:
+    complete_receipt["paper_identity"][field] = value
+    receipt = parse_auditor_gate_v2_receipt(canonical_bytes(complete_receipt))
+
+    with pytest.raises(ArtifactValidationError, match="MONTH1_PAPER_SCOPE_INVALID"):
+        build_residual_risk_acceptance(receipt, pass_evaluation, owner_decision)
+
+
+def test_residual_risk_rejects_synthetic_or_nonpassing_receipt(
+    complete_receipt, owner_decision
+) -> None:
+    complete_receipt["output"]["evidence_origin"] = "SYNTHETIC"
+    receipt = parse_auditor_gate_v2_receipt(canonical_bytes(complete_receipt))
+    blocked = AuditorGateV2Evaluation("BLOCK", "BLOCK", "V2", ("TEST",))
+
+    with pytest.raises(ArtifactValidationError, match="REAL_RECEIPT_REQUIRED"):
+        build_residual_risk_acceptance(receipt, blocked, owner_decision)
