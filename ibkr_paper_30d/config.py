@@ -21,4 +21,3 @@ class Settings(BaseModel, frozen=True):
         if env.get("BROKER_WRITE_AUTHORIZED", "false").lower() != "false":
             raise ValueError("broker writes are outside current authority")
         return cls()
-

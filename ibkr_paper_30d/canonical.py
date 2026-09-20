@@ -38,4 +38,3 @@ def canonical_bytes(value: object) -> bytes:
 
 def sha256_json(value: object) -> str:
     return hashlib.sha256(canonical_bytes(value)).hexdigest()
-

@@ -12,4 +12,3 @@ _ASSIGNMENT = re.compile(
 def redact_text(text: str) -> str:
     redacted = _ACCOUNT.sub("[REDACTED_ACCOUNT]", text)
     return _ASSIGNMENT.sub(lambda match: f"{match.group(1)}=[REDACTED]", redacted)
-

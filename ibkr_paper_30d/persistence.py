@@ -289,4 +289,3 @@ class Database:
             raise
         else:
             self.connection.commit()
-
