@@ -21,7 +21,16 @@ $RuntimeManifestPath = "$RuntimePath\AUDITOR_RUNTIME_MANIFEST_V1.json"
 $ProbeTargetManifestPath = "$ProvisioningPath\AUDITOR_PROBE_TARGET_MANIFEST_V1.json"
 $RuntimeSourcePath = Join-Path $PSScriptRoot "auditor_runtime"
 $RuntimeFileNames = @("CODEX_DECISION_AUDITOR_V1.ps1", "AUDITOR_DENIAL_PROBE_V1.ps1")
-$PredecessorScriptHash = "899d262124bbf24e0dbd4661b8df41f93aeb6993dacfe9a200264ad2e9ed6eb7"
+$AtomicDestinationPaths = @(
+    (Join-Path $RuntimePath "CODEX_DECISION_AUDITOR_V1.ps1"),
+    (Join-Path $RuntimePath "AUDITOR_DENIAL_PROBE_V1.ps1"),
+    $RuntimeManifestPath,
+    $ProbeTargetManifestPath
+)
+$PredecessorScriptHashes = @(
+    "899d262124bbf24e0dbd4661b8df41f93aeb6993dacfe9a200264ad2e9ed6eb7",
+    "ba6ab5e885c6da54141cfaef85a59ae7e9e6cb2102b23607ae91fdaadfbb057c"
+)
 $PredecessorRuntimeHashes = @{
     "CODEX_DECISION_AUDITOR_V1.ps1" = "660cec2f87052edf68ed84e001516e0be7694ed0794337ba4252545d41c71bf4"
     "AUDITOR_DENIAL_PROBE_V1.ps1" = "26d4dc93cdf45ceeae3f40f39248edfe00f749072c4d1b36bd04971bb4a8dbf9"
@@ -156,7 +165,18 @@ $Manifest = [ordered]@{
         scope = "Existing and future descendants of the IBKR paper experiment live-state directory only"
     }
     partial_apply_recovery = [ordered]@{
-        recognized_predecessor_script_sha256 = $PredecessorScriptHash
+        recognized_predecessor_script_sha256 = $PredecessorScriptHashes
+        recognized_states = @(
+            "FRESH",
+            "FIRST_FIREWALL_FAILURE_PARTIAL",
+            "SECOND_REPLACE_FAILURE_PARTIAL",
+            "CURRENT_COMPLETE_RERUN"
+        )
+        rollback_supported_states = @(
+            "FIRST_FIREWALL_FAILURE_PARTIAL",
+            "SECOND_REPLACE_FAILURE_PARTIAL",
+            "CURRENT_COMPLETE_RERUN"
+        )
         change_manifest_may_be_missing = $true
         repair_probe_manifest = $true
         upgrade_runtime_files = $true
@@ -274,11 +294,45 @@ function Replace-FileAtomically {
         [string]$SourcePath,
         [string]$DestinationPath
     )
-    $TemporaryPath = "$DestinationPath.$([Guid]::NewGuid().ToString('N')).tmp"
+    if ([string]::IsNullOrWhiteSpace($SourcePath) -or [string]::IsNullOrWhiteSpace($DestinationPath)) {
+        throw "ATOMIC_REPLACE_PATH_EMPTY"
+    }
+    $SourcePath = [IO.Path]::GetFullPath($SourcePath)
+    $DestinationPath = [IO.Path]::GetFullPath($DestinationPath)
+    $ApprovedFullPaths = @($AtomicDestinationPaths | ForEach-Object { [IO.Path]::GetFullPath([string]$_) })
+    if (-not ($ApprovedFullPaths -contains $DestinationPath)) {
+        throw "ATOMIC_REPLACE_DESTINATION_UNAPPROVED"
+    }
+    if (-not (Test-Path -LiteralPath $SourcePath -PathType Leaf)) {
+        throw "ATOMIC_REPLACE_SOURCE_MISSING"
+    }
+    $DestinationDirectory = [IO.Path]::GetDirectoryName($DestinationPath)
+    if (-not (Test-Path -LiteralPath $DestinationDirectory -PathType Container)) {
+        throw "ATOMIC_REPLACE_DESTINATION_DIRECTORY_MISSING"
+    }
+    $Nonce = [Guid]::NewGuid().ToString('N')
+    $TemporaryPath = [IO.Path]::GetFullPath("$DestinationPath.$Nonce.tmp")
+    $BackupPath = "$DestinationPath.$Nonce.bak"
+    if ([string]::IsNullOrWhiteSpace($BackupPath)) {
+        throw "ATOMIC_REPLACE_BACKUP_PATH_EMPTY"
+    }
+    $BackupPath = [IO.Path]::GetFullPath($BackupPath)
+    if (
+        [IO.Path]::GetDirectoryName($TemporaryPath) -ine $DestinationDirectory -or
+        [IO.Path]::GetDirectoryName($BackupPath) -ine $DestinationDirectory -or
+        $TemporaryPath -ieq $DestinationPath -or
+        $BackupPath -ieq $DestinationPath -or
+        $TemporaryPath -ieq $BackupPath
+    ) {
+        throw "ATOMIC_REPLACE_PATH_INVALID"
+    }
     try {
         [IO.File]::Copy($SourcePath, $TemporaryPath, $false)
         if (Test-Path -LiteralPath $DestinationPath -PathType Leaf) {
-            [IO.File]::Replace($TemporaryPath, $DestinationPath, $null, $true)
+            if (Test-Path -LiteralPath $BackupPath) {
+                throw "ATOMIC_REPLACE_BACKUP_CONFLICT"
+            }
+            [IO.File]::Replace($TemporaryPath, $DestinationPath, $BackupPath, $true)
         }
         else {
             [IO.File]::Move($TemporaryPath, $DestinationPath)
@@ -287,6 +341,9 @@ function Replace-FileAtomically {
     finally {
         if (Test-Path -LiteralPath $TemporaryPath) {
             Remove-Item -LiteralPath $TemporaryPath -Force
+        }
+        if (Test-Path -LiteralPath $BackupPath) {
+            Remove-Item -LiteralPath $BackupPath -Force
         }
     }
 }
@@ -296,20 +353,19 @@ function Write-TextAtomically {
         [string]$DestinationPath,
         [string]$Text
     )
-    $TemporaryPath = "$DestinationPath.$([Guid]::NewGuid().ToString('N')).tmp"
+    if ([string]::IsNullOrWhiteSpace($DestinationPath)) {
+        throw "ATOMIC_TEXT_DESTINATION_EMPTY"
+    }
+    $DestinationPath = [IO.Path]::GetFullPath($DestinationPath)
+    $SourcePath = [IO.Path]::GetFullPath("$DestinationPath.$([Guid]::NewGuid().ToString('N')).input")
     $Utf8 = New-Object Text.UTF8Encoding($false)
     try {
-        [IO.File]::WriteAllText($TemporaryPath, $Text, $Utf8)
-        if (Test-Path -LiteralPath $DestinationPath -PathType Leaf) {
-            [IO.File]::Replace($TemporaryPath, $DestinationPath, $null, $true)
-        }
-        else {
-            [IO.File]::Move($TemporaryPath, $DestinationPath)
-        }
+        [IO.File]::WriteAllText($SourcePath, $Text, $Utf8)
+        Replace-FileAtomically -SourcePath $SourcePath -DestinationPath $DestinationPath
     }
     finally {
-        if (Test-Path -LiteralPath $TemporaryPath) {
-            Remove-Item -LiteralPath $TemporaryPath -Force
+        if (Test-Path -LiteralPath $SourcePath) {
+            Remove-Item -LiteralPath $SourcePath -Force
         }
     }
 }

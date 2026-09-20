@@ -170,12 +170,30 @@ def test_partial_apply_firewall_failure_has_recognized_recovery_contract(
     review_manifest,
 ) -> None:
     recovery = review_manifest["partial_apply_recovery"]
-    assert recovery["recognized_predecessor_script_sha256"] == (
-        "899d262124bbf24e0dbd4661b8df41f93aeb6993dacfe9a200264ad2e9ed6eb7"
-    )
+    assert set(recovery["recognized_predecessor_script_sha256"]) == {
+        "899d262124bbf24e0dbd4661b8df41f93aeb6993dacfe9a200264ad2e9ed6eb7",
+        "ba6ab5e885c6da54141cfaef85a59ae7e9e6cb2102b23607ae91fdaadfbb057c",
+    }
     assert recovery["change_manifest_may_be_missing"] is True
     assert recovery["repair_probe_manifest"] is True
     assert recovery["upgrade_runtime_files"] is True
+
+
+def test_recovery_contract_covers_fresh_both_partial_and_rerun_states(
+    review_manifest,
+) -> None:
+    recovery = review_manifest["partial_apply_recovery"]
+    assert set(recovery["recognized_states"]) == {
+        "FRESH",
+        "FIRST_FIREWALL_FAILURE_PARTIAL",
+        "SECOND_REPLACE_FAILURE_PARTIAL",
+        "CURRENT_COMPLETE_RERUN",
+    }
+    assert set(recovery["rollback_supported_states"]) == {
+        "FIRST_FIREWALL_FAILURE_PARTIAL",
+        "SECOND_REPLACE_FAILURE_PARTIAL",
+        "CURRENT_COMPLETE_RERUN",
+    }
 
 
 def test_apply_rerun_repairs_only_recognized_partial_state(script_text) -> None:
@@ -268,3 +286,104 @@ def test_rollback_after_partial_apply_removes_only_subsystem_owned_changes(
     assert "Get-PartialRollbackManifest" in script_text
     assert "RemoveAccessRuleSpecific" in script_text
     assert "Remove-LocalUser -Name $AccountName" in script_text
+
+
+def run_atomic_replace_case(
+    tmp_path: Path, *, destination_exists: bool
+) -> subprocess.CompletedProcess[str]:
+    root = str(tmp_path).replace("'", "''")
+    script = str(SCRIPT).replace("'", "''")
+    destination_setup = (
+        "[IO.File]::WriteAllText($destination, 'old');"
+        if destination_exists
+        else ""
+    )
+    command = (
+        "$tokens=$null;$errors=$null;"
+        "$ast=[Management.Automation.Language.Parser]::ParseFile("
+        f"'{script}',[ref]$tokens,[ref]$errors);"
+        "$fn=$ast.Find({param($node) "
+        "$node -is [Management.Automation.Language.FunctionDefinitionAst] -and "
+        "$node.Name -eq 'Replace-FileAtomically'},$true);"
+        "Invoke-Expression $fn.Extent.Text;"
+        f"$root='{root}';"
+        "$source=Join-Path $root 'source.tmp';"
+        "$destination=Join-Path $root 'destination.txt';"
+        "$script:AtomicDestinationPaths=@($destination);"
+        "[IO.File]::WriteAllText($source,'new');"
+        f"{destination_setup}"
+        "Replace-FileAtomically -SourcePath $source -DestinationPath $destination;"
+        "if([IO.File]::ReadAllText($destination) -cne 'new'){throw 'CONTENT_MISMATCH'};"
+        "if([IO.File]::ReadAllText($source) -cne 'new'){throw 'SOURCE_CHANGED'};"
+        "$debris=@(Get-ChildItem -LiteralPath $root -File | "
+        "Where-Object {$_.FullName -ne $source -and "
+        "($_.Name -like '*.tmp' -or $_.Name -like '*.bak')});"
+        "if($debris.Count){throw 'ATOMIC_REPLACE_DEBRIS'};"
+        "Write-Output 'ATOMIC_REPLACE_PASS'"
+    )
+    return subprocess.run(
+        ["powershell.exe", "-NoProfile", "-Command", command],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+
+
+def test_atomic_replace_existing_destination_works_on_windows_powershell_51(
+    tmp_path,
+) -> None:
+    result = run_atomic_replace_case(tmp_path, destination_exists=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "ATOMIC_REPLACE_PASS" in result.stdout
+
+
+def test_atomic_replace_missing_destination_uses_safe_create_path(tmp_path) -> None:
+    result = run_atomic_replace_case(tmp_path, destination_exists=False)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "ATOMIC_REPLACE_PASS" in result.stdout
+
+
+def test_atomic_replace_validates_nonempty_absolute_backup_path(script_text) -> None:
+    assert "GetFullPath($BackupPath)" in script_text
+    assert "[string]::IsNullOrWhiteSpace($BackupPath)" in script_text
+    assert "Test-Path -LiteralPath $DestinationPath -PathType Leaf" in script_text
+    assert "[IO.File]::Replace($TemporaryPath, $DestinationPath, $BackupPath, $true)" in script_text
+
+
+def test_atomic_text_replace_existing_destination_uses_validated_primitive(
+    tmp_path,
+) -> None:
+    root = str(tmp_path).replace("'", "''")
+    script = str(SCRIPT).replace("'", "''")
+    command = (
+        "$tokens=$null;$errors=$null;"
+        "$ast=[Management.Automation.Language.Parser]::ParseFile("
+        f"'{script}',[ref]$tokens,[ref]$errors);"
+        "$names=@('Replace-FileAtomically','Write-TextAtomically');"
+        "$functions=$ast.FindAll({param($node) "
+        "$node -is [Management.Automation.Language.FunctionDefinitionAst] -and "
+        "$node.Name -in $names},$true);"
+        "$functions | ForEach-Object {Invoke-Expression $_.Extent.Text};"
+        f"$root='{root}';"
+        "$destination=Join-Path $root 'manifest.json';"
+        "$script:AtomicDestinationPaths=@($destination);"
+        "[IO.File]::WriteAllText($destination,'old');"
+        "Write-TextAtomically -DestinationPath $destination -Text 'new';"
+        "if([IO.File]::ReadAllText($destination) -cne 'new'){throw 'CONTENT_MISMATCH'};"
+        "$debris=@(Get-ChildItem -LiteralPath $root -File | "
+        "Where-Object {$_.Name -like '*.tmp' -or $_.Name -like '*.bak'});"
+        "if($debris.Count){throw 'ATOMIC_REPLACE_DEBRIS'};"
+        "Write-Output 'ATOMIC_TEXT_REPLACE_PASS'"
+    )
+    result = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-Command", command],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "ATOMIC_TEXT_REPLACE_PASS" in result.stdout
