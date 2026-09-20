@@ -33,6 +33,8 @@ def _receipt(
         "asset_bucket": asset_bucket,
         "correlation_group": correlation_group,
         "expected_attribution_bps": expected_attribution_bps,
+        "issuer_id": "hive_strategy_validation_authority",
+        "validation_evidence_sha256": "a" * 64,
     }
 
 
@@ -127,6 +129,8 @@ def test_non_paper_eligible_receipt_is_rejected_before_allocation():
         asset_bucket="equities",
         correlation_group="growth",
         expected_attribution_bps=120,
+        issuer_id="hive_strategy_validation_authority",
+        validation_evidence_sha256="a" * 64,
     )
 
     with pytest.raises(ValueError, match="receipt_not_paper_eligible"):
