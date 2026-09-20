@@ -392,6 +392,28 @@ class WindowsEventLogChannel:
         )
         return f"Application:{self.source}:{event_id}"
 
+    def verify_alert(self, alert_id: str) -> bool:
+        import win32evtlog
+
+        expected_id = int(hashlib.sha256(alert_id.encode()).hexdigest()[:7], 16)
+        handle = win32evtlog.OpenEventLog(None, "Application")
+        flags = (
+            win32evtlog.EVENTLOG_BACKWARDS_READ
+            | win32evtlog.EVENTLOG_SEQUENTIAL_READ
+        )
+        try:
+            for _ in range(20):
+                events = win32evtlog.ReadEventLog(handle, flags, 0)
+                if not events:
+                    break
+                for event in events:
+                    event_id = int(event.EventID) & 0x3FFFFFFF
+                    if event.SourceName == self.source and event_id == expected_id:
+                        return True
+        finally:
+            win32evtlog.CloseEventLog(handle)
+        return False
+
 
 def load_smtp_channel(path: str | Path) -> SMTPChannel:
     values = _read_env(path)

@@ -1,0 +1,157 @@
+from __future__ import annotations
+
+import hashlib
+from datetime import datetime, timezone
+from pathlib import Path
+
+from ibkr_paper_30d.cli import (
+    build_capability_matrix,
+    build_implementation_status,
+    inspect_readonly,
+)
+from ibkr_paper_30d.ibkr_readonly import (
+    IBKRReadOnlyAdapter,
+    ReadOnlySessionSnapshot,
+    expected_identity_hash,
+)
+
+
+NOW = datetime(2026, 9, 20, 16, 30, tzinfo=timezone.utc)
+ACCOUNT = "DU123456"
+
+
+def session(**updates) -> ReadOnlySessionSnapshot:
+    values = {
+        "port": 4002,
+        "connected": True,
+        "authenticated": True,
+        "paper_trading_mode": True,
+        "managed_accounts": (ACCOUNT,),
+        "connector_account_hash": expected_identity_hash(ACCOUNT),
+        "cash": "512.70",
+        "settled_cash": "512.70",
+        "position_count": 0,
+        "open_order_count": 0,
+        "execution_visibility": "AVAILABLE",
+        "market_data_entitlements": "UNKNOWN",
+        "server_timestamp_utc": NOW,
+        "heartbeat_ok": True,
+    }
+    values.update(updates)
+    return ReadOnlySessionSnapshot(**values)
+
+
+def adapter() -> IBKRReadOnlyAdapter:
+    return IBKRReadOnlyAdapter(expected_identity_hash(ACCOUNT))
+
+
+def test_readonly_adapter_exposes_no_write_methods() -> None:
+    public = set(dir(IBKRReadOnlyAdapter))
+
+    assert "submit_order" not in public
+    assert "cancel_order" not in public
+    assert "modify_order" not in public
+    assert "client" not in public
+
+
+def test_readonly_source_contains_no_write_symbols_or_order_import() -> None:
+    source = (
+        Path(__file__).parents[2] / "ibkr_paper_30d" / "ibkr_readonly.py"
+    ).read_text(encoding="utf-8")
+    forbidden = (
+        "place" + "Order",
+        "cancel" + "Order",
+        "reqGlobal" + "Cancel",
+        "from ibapi.order import " + "Order",
+    )
+
+    assert all(symbol not in source for symbol in forbidden)
+
+
+def test_port_4002_wrong_account_is_blocked() -> None:
+    evidence = adapter().prove_identity(
+        session(
+            managed_accounts=("DU999999",),
+            connector_account_hash=expected_identity_hash("DU999999"),
+        )
+    )
+
+    assert evidence.paper_identity_proven is False
+    assert evidence.event_type == "POSSIBLE_LIVE_CONNECTION"
+    assert "ACCOUNT_IDENTITY_MISMATCH" in evidence.reason_codes
+
+
+def test_identity_requires_all_independent_factors() -> None:
+    good = adapter().prove_identity(session())
+
+    assert good.paper_identity_proven is True
+    assert good.event_type == "PAPER_IDENTITY_PROVEN"
+    assert good.account_fingerprint != ACCOUNT
+    assert len(good.account_fingerprint) == 16
+
+
+def test_wrong_port_or_nonpaper_signal_blocks() -> None:
+    wrong_port = adapter().prove_identity(session(port=7497))
+    nonpaper = adapter().prove_identity(session(paper_trading_mode=False))
+
+    assert "PAPER_PORT_MISMATCH" in wrong_port.reason_codes
+    assert "PAPER_MODE_NOT_PROVEN" in nonpaper.reason_codes
+
+
+def test_multiple_accounts_or_connector_mismatch_blocks() -> None:
+    multiple = adapter().prove_identity(
+        session(managed_accounts=(ACCOUNT, "DU654321"))
+    )
+    connector = adapter().prove_identity(
+        session(connector_account_hash=expected_identity_hash("DU654321"))
+    )
+
+    assert "MANAGED_ACCOUNT_COUNT_INVALID" in multiple.reason_codes
+    assert "CONNECTOR_IDENTITY_MISMATCH" in connector.reason_codes
+
+
+def test_sanitized_inspection_contains_capabilities_but_no_account_id() -> None:
+    report = adapter().inspect(session())
+    serialized = str(report)
+
+    assert report.status == "PASS"
+    assert report.position_count == 0
+    assert report.cash == "512.70"
+    assert ACCOUNT not in serialized
+    assert report.identity.account_fingerprint in serialized
+
+
+def test_identity_hash_is_normalized_and_one_way() -> None:
+    digest = expected_identity_hash(" du123456 ")
+
+    assert digest == hashlib.sha256(ACCOUNT.encode("ascii")).hexdigest()
+    assert ACCOUNT not in digest
+
+
+def test_unavailable_gateway_writes_block_report_without_starting(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr("ibkr_paper_30d.cli._port_is_open", lambda host, port: False)
+    output = tmp_path / "readonly.json"
+
+    report = inspect_readonly(
+        host="127.0.0.1",
+        port=4002,
+        expected_account_hash=expected_identity_hash(ACCOUNT),
+        output_path=output,
+    )
+
+    assert report["status"] == "BLOCK"
+    assert report["reason_codes"] == ["GATEWAY_UNAVAILABLE"]
+    assert output.exists()
+
+
+def test_capability_matrix_and_status_never_enable_trading() -> None:
+    readonly_report = {"status": "BLOCK", "reason_codes": ["GATEWAY_UNAVAILABLE"]}
+
+    matrix = build_capability_matrix(readonly_report)
+    status = build_implementation_status(test_count=173, test_failures=0)
+
+    assert "| Real IBKR read-only identity | UNAVAILABLE |" in matrix
+    assert status["AUTONOMOUS_TRADING_STATUS"] == "BLOCKED"
+    assert status["REAL_PAPER_ORDER_WRITE_AUTHORIZED"] is False
+    assert status["TEST_ORDER_AUTHORIZED"] is False
+    assert status["DIRECTIONAL_TRADING_AUTHORIZED"] is False
