@@ -22,6 +22,7 @@ from ibkr_paper_30d.auditor_gate_v2 import (
 from ibkr_paper_30d.auditor_v2_artifacts import (
     ArtifactValidationError,
     build_residual_risk_acceptance,
+    render_auditor_gate_v2_report,
     verify_immutable_json,
     write_immutable_json,
 )
@@ -545,3 +546,58 @@ def test_acceptance_expiration_keeps_exact_month1_context_active() -> None:
 
     assert result.status == "ACTIVE"
     assert result.reason_codes == ()
+
+
+def test_gate_report_renders_all_v2_evidence_without_account_identity(
+    complete_receipt, expected_identity, now
+) -> None:
+    receipt = parse_auditor_gate_v2_receipt(canonical_bytes(complete_receipt))
+    evaluation = evaluate_auditor_gate_v2(receipt, expected_identity, now)
+
+    report = render_auditor_gate_v2_report(
+        receipt,
+        evaluation,
+        {
+            "receipt": {
+                "path": r"C:\ProgramData\CodexAuditorV1\reports\v2.json",
+                "sha256": "4" * 64,
+            },
+            "deployment_review": {
+                "path": "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1",
+                "sha256": "5" * 64,
+            },
+        },
+    )
+
+    for value in (
+        "AUDITOR_LEAST_PRIVILEGE_AND_RUNTIME_INTEGRITY_GATE_V2: PASS",
+        "AUDITOR_ISOLATION_GATE_V2: PASS",
+        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY: true",
+        "AUDITOR_NETWORK_ISOLATION_REQUIRED: false",
+        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE: true",
+        "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED: true",
+        "LEGACY_FIREWALL_CONTROL: INEFFECTIVE_FOR_LOOPBACK_REQUIREMENT",
+        "WFP_AUDITOR_FRONT: DEFERRED",
+        "EXPECTED_PAPER_ACCOUNT_IDENTITY_HASH",
+        "PAPER_ENVIRONMENT_REFERENCE",
+        "BROKER_MODULE_AVAILABLE",
+        "receipt",
+    ):
+        assert value in report
+    assert expected_identity.raw_account not in report
+
+
+def test_gate_report_is_blocked_when_real_receipt_is_absent() -> None:
+    evaluation = AuditorGateV2Evaluation(
+        "BLOCK", "BLOCK", "V2", ("NEW_ADMIN_ACTION_REQUIRED",)
+    )
+
+    report = render_auditor_gate_v2_report(
+        None,
+        evaluation,
+        {"deployment_review": {"sha256": "5" * 64}},
+    )
+
+    assert "AUDITOR_LEAST_PRIVILEGE_AND_RUNTIME_INTEGRITY_GATE_V2: BLOCK" in report
+    assert "NEW_ADMIN_ACTION_REQUIRED" in report
+    assert "Accepted receipt: NONE" in report

@@ -148,3 +148,119 @@ def verify_immutable_json(path: Path | str, expected_sha256: str) -> bool:
     except OSError:
         return False
     return hashlib.sha256(data).hexdigest() == expected_sha256
+
+
+def _display(value: object) -> str:
+    if value is True:
+        return "true"
+    if value is False:
+        return "false"
+    if value is None:
+        return "NONE"
+    return str(value)
+
+
+def render_auditor_gate_v2_report(
+    receipt: AuditorGateV2Receipt | None,
+    evaluation: AuditorGateV2Evaluation,
+    evidence_hashes: Mapping[str, object],
+) -> str:
+    canonical = evaluation.canonical_gate if receipt is not None else "BLOCK"
+    compatibility = evaluation.compatibility_gate if receipt is not None else "BLOCK"
+    lines = [
+        "# Auditor Isolation Gate V2 Report",
+        "",
+        f"AUDITOR_LEAST_PRIVILEGE_AND_RUNTIME_INTEGRITY_GATE_V2: {canonical}",
+        f"AUDITOR_ISOLATION_GATE_V2: {compatibility}",
+        "gate_version: V2",
+        "",
+    ]
+    receipt_evidence = evidence_hashes.get("receipt")
+    accepted_path = (
+        receipt_evidence.get("path")
+        if receipt is not None and isinstance(receipt_evidence, Mapping)
+        else None
+    )
+    lines.extend(
+        [
+            f"Accepted receipt: {_display(accepted_path)}",
+            "",
+            "## Evidence",
+            "",
+            "| Name | Path | SHA-256 |",
+            "|---|---|---|",
+        ]
+    )
+    for name in sorted(evidence_hashes):
+        item = evidence_hashes[name]
+        if isinstance(item, Mapping):
+            path = item.get("path")
+            digest = item.get("sha256")
+        else:
+            path = None
+            digest = item
+        lines.append(f"| {name} | {_display(path)} | {_display(digest)} |")
+
+    lines.extend(["", "## Predicates", "", "| Predicate | Observed |", "|---|---|"])
+    if receipt is not None:
+        runtime_predicates = receipt.runtime_integrity.get("predicates", {})
+        if isinstance(runtime_predicates, Mapping):
+            for name in sorted(runtime_predicates):
+                lines.append(f"| {name} | {_display(runtime_predicates[name])} |")
+        for name in sorted(receipt.capability_outcomes):
+            lines.append(
+                f"| {name} | {_display(receipt.capability_outcomes[name])} |"
+            )
+        identity = receipt.paper_identity
+        lines.extend(
+            [
+                "",
+                "## Paper Identity Binding",
+                "",
+                "| Field | Value |",
+                "|---|---|",
+                "| EXPECTED_PAPER_ACCOUNT_IDENTITY_HASH | "
+                f"{_display(identity.get('expected_account_identity_hash'))} |",
+                "| PAPER_IDENTITY_RECEIPT_SHA256 | "
+                f"{_display(identity.get('identity_receipt_sha256'))} |",
+                "| PAPER_ENVIRONMENT_REFERENCE | "
+                f"{_display(identity.get('environment_reference'))} |",
+                "| BROKER_SESSION_ENVIRONMENT_REFERENCE | "
+                f"{_display(identity.get('broker_session_environment_reference'))} |",
+            ]
+        )
+        network = receipt.network_facts
+    else:
+        network = {
+            "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": True,
+            "AUDITOR_NETWORK_ISOLATION_REQUIRED": False,
+            "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": True,
+            "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
+        }
+    lines.extend(["", "## Network And Containment", ""])
+    for name in (
+        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY",
+        "AUDITOR_NETWORK_ISOLATION_REQUIRED",
+        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE",
+        "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED",
+    ):
+        lines.append(f"{name}: {_display(network.get(name))}")
+    lines.extend(
+        [
+            "LEGACY_FIREWALL_CONTROL: INEFFECTIVE_FOR_LOOPBACK_REQUIREMENT",
+            "WFP_AUDITOR_FRONT: DEFERRED",
+            "",
+            (
+                "The authenticated local IB Gateway may technically accept another "
+                "local API client."
+            ),
+            "",
+            "## Unresolved Reasons",
+            "",
+        ]
+    )
+    if evaluation.reason_codes:
+        lines.extend(f"- {reason}" for reason in sorted(evaluation.reason_codes))
+    else:
+        lines.append("- NONE")
+    return "\n".join(lines) + "\n"
