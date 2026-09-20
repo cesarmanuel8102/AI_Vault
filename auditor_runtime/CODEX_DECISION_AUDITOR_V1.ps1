@@ -108,14 +108,20 @@ function Test-RuntimeManifest {
     $Read = Read-StrictJson -LiteralPath $RuntimeManifestPath
     if ($Read.status -ne "PASS") { return [ordered]@{ status = "RUNTIME_MANIFEST_INVALID" } }
     $Manifest = $Read.value
-    if ($Manifest.schema -ne "AUDITOR_RUNTIME_MANIFEST_V1" -or $null -eq $Manifest.files) {
+    if (
+        $Manifest.schema -notin @("AUDITOR_RUNTIME_MANIFEST_V1", "AUDITOR_RUNTIME_MANIFEST_V2") -or
+        $null -eq $Manifest.files
+    ) {
         return [ordered]@{ status = "RUNTIME_MANIFEST_INVALID" }
     }
-    $RuntimeRoot = [IO.Path]::GetFullPath([string]$Manifest.runtime_root).TrimEnd('\')
     $ActualRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSCommandPath)).TrimEnd('\')
     $ManifestRoot = [IO.Path]::GetFullPath((Split-Path -Parent $RuntimeManifestPath)).TrimEnd('\')
-    if ($RuntimeRoot -ine $ActualRoot -or $ManifestRoot -ine $ActualRoot) {
+    if ($ManifestRoot -ine $ActualRoot) {
         return [ordered]@{ status = "RUNTIME_ROOT_MISMATCH" }
+    }
+    if ($Manifest.schema -eq "AUDITOR_RUNTIME_MANIFEST_V1") {
+        $RuntimeRoot = [IO.Path]::GetFullPath([string]$Manifest.runtime_root).TrimEnd('\')
+        if ($RuntimeRoot -ine $ActualRoot) { return [ordered]@{ status = "RUNTIME_ROOT_MISMATCH" } }
     }
     if (Test-PathChainReparse -LiteralPath $ActualRoot) {
         return [ordered]@{ status = "RUNTIME_PATH_REDIRECTED" }
@@ -123,8 +129,19 @@ function Test-RuntimeManifest {
     $Properties = @($Manifest.files.PSObject.Properties)
     $Names = @($Properties | ForEach-Object { $_.Name })
     if (Test-CaseCollision -Names $Names) { return [ordered]@{ status = "RUNTIME_CASE_COLLISION" } }
+    if (
+        $Manifest.schema -eq "AUDITOR_RUNTIME_MANIFEST_V2" -and
+        -not (Compare-ExactNames -Expected @(
+            "AUDITOR_DENIAL_PROBE_V1.ps1",
+            "AUDITOR_GATE_V2_PROBE.ps1",
+            "CODEX_DECISION_AUDITOR_V1.ps1"
+        ) -Actual $Names)
+    ) { return [ordered]@{ status = "RUNTIME_FILE_SET_MISMATCH" } }
     foreach ($Name in $Names) {
-        if ([IO.Path]::GetFileName($Name) -cne $Name -or $Name -eq "AUDITOR_RUNTIME_MANIFEST_V1.json") {
+        if (
+            [IO.Path]::GetFileName($Name) -cne $Name -or
+            $Name -in @("AUDITOR_RUNTIME_MANIFEST_V1.json", "AUDITOR_RUNTIME_MANIFEST_V2.json")
+        ) {
             return [ordered]@{ status = "RUNTIME_UNSAFE_PATH" }
         }
     }

@@ -6,6 +6,7 @@ import os
 import re
 import subprocess
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
 
@@ -21,6 +22,18 @@ RUNTIME_PAYLOAD_ALLOWLIST = (
 _RUNTIME_SCHEMA = "AUDITOR_RUNTIME_MANIFEST_V2"
 _DEPLOYMENT_SCHEMA = "AUDITOR_RUNTIME_DEPLOYMENT_MANIFEST_V2"
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_TARGET_NAMES = (
+    "SECRETS_READ",
+    "IBKR_SECRET_READ",
+    "SMTP_SECRET_READ",
+    "EXECUTION_LOCK_ACCESS",
+    "LIVE_DATABASE_MUTATION",
+    "BROKER_WRITE_PATH_ACCESS",
+    "TRADER_CONTEXT_ACCESS",
+    "AUDIT_INPUT_MUTATION",
+    "IMMUTABLE_EXPORT_READ",
+    "AUDITOR_REPORT_WRITE",
+)
 
 
 @dataclass(frozen=True)
@@ -314,6 +327,18 @@ def _narrow_tcp_classifier_allowed(path: Path, source: str) -> bool:
     )
 
 
+def _fixed_child_orchestrator_allowed(path: Path, source: str) -> bool:
+    if path.name != "AUDITOR_GATE_V2_PROBE.ps1":
+        return False
+    header = source.split(")", 1)[0]
+    return (
+        '"AUDITOR_DENIAL_PROBE_V1.ps1"' in source
+        and '"CODEX_DECISION_AUDITOR_V1.ps1"' in source
+        and "ScriptPath" not in header
+        and "ExecutablePath" not in header
+    )
+
+
 def assess_runtime_capabilities(
     runtime_root: Path | str,
 ) -> RuntimeCapabilityAssessment:
@@ -364,12 +389,25 @@ def assess_runtime_capabilities(
                     reasons.append("POWERSHELL_AST_OUTPUT_INVALID")
                     continue
                 values.update(str(item).casefold() for item in items if item is not None)
+            values.difference_update(
+                name.casefold()
+                for name in (
+                    *_STRUCTURAL_PATTERNS,
+                    "ORDER_WRITE_MODULE_AVAILABLE",
+                    *_TARGET_NAMES,
+                )
+            )
             symbols = "\n".join(sorted(values))
             for predicate, patterns in _STRUCTURAL_PATTERNS.items():
                 if any(pattern in symbols for pattern in patterns):
                     predicates[predicate] = True
-            if values & _GENERIC_PROCESS_SYMBOLS:
-                reasons.append("GENERIC_PROCESS_HELPER_AVAILABLE")
+            process_symbols = values & _GENERIC_PROCESS_SYMBOLS
+            if process_symbols:
+                source = path.read_text(encoding="utf-8")
+                if process_symbols != {"powershell.exe"} or not (
+                    _fixed_child_orchestrator_allowed(path, source)
+                ):
+                    reasons.append("GENERIC_PROCESS_HELPER_AVAILABLE")
             if values & _GENERIC_NETWORK_SYMBOLS:
                 reasons.append("GENERIC_NETWORK_HELPER_AVAILABLE")
             tcp_present = any("tcpclient" in value for value in values)
@@ -403,3 +441,76 @@ def assess_runtime_capabilities(
         predicates=predicates,
         reason_codes=unique_reasons,
     )
+
+
+def _utc_text(value: datetime) -> str:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("CONSOLIDATED_TIMESTAMP_NOT_UTC")
+    return value.isoformat().replace("+00:00", "Z")
+
+
+def consolidate_probe_results_v2(
+    *,
+    run_id: str,
+    started_at: datetime,
+    completed_at: datetime,
+    identity: Mapping[str, object],
+    runtime: Mapping[str, object],
+    denial: Mapping[str, object],
+    functional: Mapping[str, object],
+    paper: Mapping[str, object],
+    output: Mapping[str, object],
+) -> dict[str, object]:
+    if not run_id or completed_at < started_at:
+        raise ValueError("CONSOLIDATED_RUN_INVALID")
+    if (
+        runtime.get("status") != "PASS"
+        or denial.get("status") != "COMPLETE"
+        or functional.get("status") != "PASS"
+    ):
+        raise ValueError("CONSOLIDATED_CHILD_FAILURE")
+    rows = denial.get("target_validation_matrix")
+    outcomes = denial.get("results")
+    if not isinstance(rows, list) or not isinstance(outcomes, Mapping):
+        raise ValueError("CONSOLIDATED_CHILD_FAILURE")
+    row_names = [row.get("probe") for row in rows if isinstance(row, Mapping)]
+    if (
+        len(rows) != len(_TARGET_NAMES)
+        or set(row_names) != set(_TARGET_NAMES)
+        or set(outcomes) != set(_TARGET_NAMES)
+        or any(row.get("run_id") != run_id for row in rows)
+        or denial.get("run_id") != run_id
+        or functional.get("run_id") != run_id
+        or paper.get("run_id") != run_id
+        or output.get("run_id") != run_id
+    ):
+        raise ValueError("CONSOLIDATED_MIXED_OR_PARTIAL_RUN")
+    endpoints = denial.get("network_endpoints")
+    if not isinstance(endpoints, Mapping):
+        raise ValueError("CONSOLIDATED_CHILD_FAILURE")
+    reachable = "CONNECTED" in endpoints.values()
+    if not reachable:
+        raise ValueError("CONSOLIDATED_NETWORK_FACT_MISMATCH")
+    return {
+        "schema": "AUDITOR_GATE_V2_RECEIPT_V1",
+        "gate_version": "V2",
+        "run_id": run_id,
+        "started_at_utc": _utc_text(started_at),
+        "completed_at_utc": _utc_text(completed_at),
+        "effective_sid": identity.get("effective_sid"),
+        "token_elevated": identity.get("token_elevated"),
+        "separate_process": identity.get("separate_process"),
+        "runtime_integrity": dict(runtime),
+        "target_validation_matrix": rows,
+        "capability_outcomes": dict(outcomes),
+        "functional_auditor": dict(functional),
+        "paper_identity": dict(paper),
+        "network_facts": {
+            "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": True,
+            "AUDITOR_NETWORK_ISOLATION_REQUIRED": False,
+            "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": True,
+            "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
+            "endpoints": dict(endpoints),
+        },
+        "output": dict(output),
+    }
