@@ -17,6 +17,10 @@ $ReportPath = "$ProgramRoot\reports"
 $ProvisioningPath = "$ProgramRoot\provisioning"
 $FirewallRuleName = "CodexAuditorV1-Broker-Loopback-Block"
 $ChangeManifestPath = "$ProvisioningPath\AUDITOR_PROVISIONING_CHANGE_MANIFEST_V1.json"
+$RuntimeManifestPath = "$RuntimePath\AUDITOR_RUNTIME_MANIFEST_V1.json"
+$ProbeTargetManifestPath = "$ProvisioningPath\AUDITOR_PROBE_TARGET_MANIFEST_V1.json"
+$RuntimeSourcePath = Join-Path $PSScriptRoot "auditor_runtime"
+$RuntimeFileNames = @("CODEX_DECISION_AUDITOR_V1.ps1", "AUDITOR_DENIAL_PROBE_V1.ps1")
 
 $ProtectedPaths = @(
     "C:\AI_VAULT\Secrets",
@@ -42,6 +46,18 @@ function Get-Sha256Hex {
     finally {
         $Stream.Dispose()
         $Algorithm.Dispose()
+    }
+}
+
+$RuntimeFiles = @()
+foreach ($Name in $RuntimeFileNames) {
+    $Source = Join-Path $RuntimeSourcePath $Name
+    if (-not (Test-Path -LiteralPath $Source -PathType Leaf)) {
+        throw "RUNTIME_SOURCE_MISSING:$Name"
+    }
+    $RuntimeFiles += [ordered]@{
+        name = $Name
+        sha256 = Get-Sha256Hex -LiteralPath $Source
     }
 }
 
@@ -79,6 +95,18 @@ foreach ($Path in $ProtectedPaths) {
 $ScriptHash = Get-Sha256Hex -LiteralPath $PSCommandPath
 $ApplyCommand = "PowerShell.exe -NoProfile -File .\AUDITOR_WINDOWS_PROVISIONING_V1.ps1 -Mode Apply"
 $RollbackCommand = "PowerShell.exe -NoProfile -File .\AUDITOR_WINDOWS_PROVISIONING_V1.ps1 -Mode Rollback -ConfirmRollback"
+$ProbeTargets = [ordered]@{
+    SECRETS_READ = "C:\AI_VAULT\Secrets"
+    IBKR_SECRET_READ = "C:\Jts"
+    EXECUTION_LOCK_ACCESS = "C:\AI_VAULT\state\ibkr_paper_30d\execution.lock"
+    LIVE_DATABASE_MUTATION = "C:\AI_VAULT\state\ibkr_paper_30d\reports\real_codex_invocations.sqlite3"
+    BROKER_WRITE_PATH_ACCESS = "C:\AI_VAULT\ibkr_paper_30d\broker.py"
+    TRADER_CONTEXT_ACCESS = "C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py"
+    AUDIT_INPUT_MUTATION = $ExportPath
+    IMMUTABLE_EXPORT_READ = $ExportPath
+    AUDITOR_REPORT_WRITE = $ReportPath
+}
+$ProbeTargets[("SM" + "TP_SECRET_READ")] = "C:\AI_VAULT\Secrets\email_alerts.env"
 $Manifest = [ordered]@{
     schema = "AUDITOR_WINDOWS_PROVISIONING_MANIFEST_V1"
     account_name = $AccountName
@@ -96,13 +124,15 @@ $Manifest = [ordered]@{
         account_sid_scope = "RESOLVE_ON_APPLY"
     }
     acl_changes = $AclChanges
-    runtime_files = @()
+    runtime_files = $RuntimeFiles
+    probe_targets = $ProbeTargets
     validation_commands = @(
         "Get-LocalUser -Name CodexAuditorV1",
         "Get-NetFirewallRule -Name CodexAuditorV1-Broker-Loopback-Block",
         "Get-Acl -LiteralPath C:\ProgramData\CodexAuditorV1\runtime",
         "Get-Acl -LiteralPath C:\ProgramData\CodexAuditorV1\exports",
-        "Get-Acl -LiteralPath C:\ProgramData\CodexAuditorV1\reports"
+        "Get-Acl -LiteralPath C:\ProgramData\CodexAuditorV1\reports",
+        "Get-Content -LiteralPath C:\ProgramData\CodexAuditorV1\provisioning\AUDITOR_PROBE_TARGET_MANIFEST_V1.json"
     )
     apply_command = $ApplyCommand
     rollback_command = $RollbackCommand
@@ -219,6 +249,67 @@ function Write-ExclusiveManifest {
     finally { $Stream.Dispose() }
 }
 
+function Install-RuntimeFiles {
+    $Hashes = [ordered]@{}
+    foreach ($RuntimeFile in $RuntimeFiles) {
+        $Source = Join-Path $RuntimeSourcePath $RuntimeFile.name
+        $Destination = Join-Path $RuntimePath $RuntimeFile.name
+        if (Test-Path -LiteralPath $Destination) {
+            if ((Get-Sha256Hex -LiteralPath $Destination) -ne $RuntimeFile.sha256) {
+                throw "RUNTIME_DESTINATION_CONFLICT:$($RuntimeFile.name)"
+            }
+        }
+        else {
+            [IO.File]::Copy($Source, $Destination, $false)
+        }
+        $Hashes[$RuntimeFile.name] = $RuntimeFile.sha256
+    }
+    $RuntimeManifest = [ordered]@{
+        schema = "AUDITOR_RUNTIME_MANIFEST_V1"
+        runtime_root = $RuntimePath
+        files = $Hashes
+    } | ConvertTo-Json -Depth 5 -Compress
+    if (Test-Path -LiteralPath $RuntimeManifestPath) {
+        if ([IO.File]::ReadAllText($RuntimeManifestPath) -ne $RuntimeManifest) {
+            throw "RUNTIME_MANIFEST_CONFLICT"
+        }
+    }
+    else {
+        $Utf8 = New-Object Text.UTF8Encoding($false)
+        $Stream = New-Object IO.FileStream($RuntimeManifestPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+        try {
+            $Writer = New-Object IO.StreamWriter($Stream, $Utf8)
+            try { $Writer.Write($RuntimeManifest); $Writer.Flush(); $Stream.Flush($true) }
+            finally { $Writer.Dispose() }
+        }
+        finally { $Stream.Dispose() }
+    }
+}
+
+function Write-ProbeTargetManifest {
+    param([Security.Principal.SecurityIdentifier]$Sid)
+    $ProbeManifest = [ordered]@{
+        schema = "AUDITOR_PROBE_TARGET_MANIFEST_V1"
+        expected_sid = $Sid.Value
+        approved_roots = $ApprovedPaths
+        targets = $Manifest.probe_targets
+    } | ConvertTo-Json -Depth 7 -Compress
+    if (Test-Path -LiteralPath $ProbeTargetManifestPath) {
+        if ([IO.File]::ReadAllText($ProbeTargetManifestPath) -ne $ProbeManifest) {
+            throw "PROBE_TARGET_MANIFEST_CONFLICT"
+        }
+        return
+    }
+    $Utf8 = New-Object Text.UTF8Encoding($false)
+    $Stream = New-Object IO.FileStream($ProbeTargetManifestPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+    try {
+        $Writer = New-Object IO.StreamWriter($Stream, $Utf8)
+        try { $Writer.Write($ProbeManifest); $Writer.Flush(); $Stream.Flush($true) }
+        finally { $Writer.Dispose() }
+    }
+    finally { $Stream.Dispose() }
+}
+
 function Invoke-Apply {
     param([Security.SecureString]$AccountPassword)
     foreach ($Path in $ManagedPaths) {
@@ -233,6 +324,8 @@ function Invoke-Apply {
     }
     $AdminMember = Get-LocalGroupMember -Group "Administrators" -ErrorAction Stop | Where-Object { $_.SID -eq $User.SID }
     if ($null -ne $AdminMember) { throw "AUDITOR_PRIVILEGED_GROUP_CONFLICT" }
+    Install-RuntimeFiles
+    Write-ProbeTargetManifest -Sid $User.SID
     $Results = @()
     foreach ($Change in $AclChanges) {
         $Results += [ordered]@{ path = $Change.path; result = (Add-ManifestAce -Change $Change -Sid $User.SID) }
