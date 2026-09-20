@@ -29,8 +29,10 @@ $AtomicDestinationPaths = @(
 )
 $PredecessorScriptHashes = @(
     "899d262124bbf24e0dbd4661b8df41f93aeb6993dacfe9a200264ad2e9ed6eb7",
-    "ba6ab5e885c6da54141cfaef85a59ae7e9e6cb2102b23607ae91fdaadfbb057c"
+    "ba6ab5e885c6da54141cfaef85a59ae7e9e6cb2102b23607ae91fdaadfbb057c",
+    "75bc653b002dbb41cc9087aa1ef113d3b320646d880f35f7af46231bbe3f47c1"
 )
+$ExpectedLegacyProbeManifestHash = "eceb33b1846f33eff92e03d67fc03c03e271b3c69f98ab744565767f40c22102"
 $PredecessorRuntimeHashes = @{
     "CODEX_DECISION_AUDITOR_V1.ps1" = "660cec2f87052edf68ed84e001516e0be7694ed0794337ba4252545d41c71bf4"
     "AUDITOR_DENIAL_PROBE_V1.ps1" = "26d4dc93cdf45ceeae3f40f39248edfe00f749072c4d1b36bd04971bb4a8dbf9"
@@ -54,8 +56,8 @@ $ManagedPaths = @($RuntimePath, $ExportPath, $ReportPath, $ProvisioningPath)
 $ApprovedPaths = @($ManagedPaths + $ProtectedPaths)
 $LegacyApprovedPaths = @($ManagedPaths + @(
     "C:\AI_VAULT\Secrets",
-    "C:\Jts",
-    $LegacyEphemeralPaths,
+    "C:\Jts"
+) + $LegacyEphemeralPaths + @(
     "C:\AI_VAULT\ibkr_paper_30d\broker.py",
     "C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py"
 ))
@@ -71,6 +73,18 @@ function Get-Sha256Hex {
     }
     finally {
         $Stream.Dispose()
+        $Algorithm.Dispose()
+    }
+}
+
+function Get-TextSha256Hex {
+    param([string]$Text)
+    $Algorithm = [Security.Cryptography.SHA256]::Create()
+    try {
+        $Bytes = [Text.Encoding]::UTF8.GetBytes($Text)
+        return ([BitConverter]::ToString($Algorithm.ComputeHash($Bytes))).Replace("-", "").ToLowerInvariant()
+    }
+    finally {
         $Algorithm.Dispose()
     }
 }
@@ -170,13 +184,17 @@ $Manifest = [ordered]@{
             "FRESH",
             "FIRST_FIREWALL_FAILURE_PARTIAL",
             "SECOND_REPLACE_FAILURE_PARTIAL",
+            "THIRD_PROBE_MANIFEST_CLASSIFICATION_PARTIAL",
             "CURRENT_COMPLETE_RERUN"
         )
         rollback_supported_states = @(
             "FIRST_FIREWALL_FAILURE_PARTIAL",
             "SECOND_REPLACE_FAILURE_PARTIAL",
+            "THIRD_PROBE_MANIFEST_CLASSIFICATION_PARTIAL",
             "CURRENT_COMPLETE_RERUN"
         )
+        recognized_probe_manifest_sha256 = @($ExpectedLegacyProbeManifestHash)
+        probe_manifest_migration = "VALIDATE_EXACT_SHA_SCHEMA_SID_ROOTS_TARGETS_THEN_ATOMIC_REPLACE"
         change_manifest_may_be_missing = $true
         repair_probe_manifest = $true
         upgrade_runtime_files = $true
@@ -393,6 +411,9 @@ function Test-RecognizedLegacyProbeManifest {
         [string]$Text,
         [Security.Principal.SecurityIdentifier]$Sid
     )
+    if ((Get-TextSha256Hex -Text $Text) -ne $ExpectedLegacyProbeManifestHash) {
+        return $false
+    }
     try { $Legacy = $Text | ConvertFrom-Json }
     catch { return $false }
     if (

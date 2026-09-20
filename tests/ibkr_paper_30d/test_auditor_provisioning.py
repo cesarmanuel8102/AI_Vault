@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import copy
+import hashlib
 import json
 import subprocess
 from pathlib import Path
@@ -18,6 +20,37 @@ LEGACY_EPHEMERAL_PATHS = {
     rf"{LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3-shm",
     rf"{LIVE_STATE_ROOT}\execution.lock",
 }
+LEGACY_APPROVED_ROOTS = [
+    r"C:\ProgramData\CodexAuditorV1\runtime",
+    r"C:\ProgramData\CodexAuditorV1\exports",
+    r"C:\ProgramData\CodexAuditorV1\reports",
+    r"C:\ProgramData\CodexAuditorV1\provisioning",
+    r"C:\AI_VAULT\Secrets",
+    r"C:\Jts",
+    rf"{LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3",
+    rf"{LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3-wal",
+    rf"{LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3-shm",
+    rf"{LIVE_STATE_ROOT}\execution.lock",
+    r"C:\AI_VAULT\ibkr_paper_30d\broker.py",
+    r"C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py",
+]
+LEGACY_PROBE_TARGETS = {
+    "SECRETS_READ": r"C:\AI_VAULT\Secrets",
+    "IBKR_SECRET_READ": r"C:\Jts",
+    "EXECUTION_LOCK_ACCESS": rf"{LIVE_STATE_ROOT}\execution.lock",
+    "LIVE_DATABASE_MUTATION": (
+        rf"{LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3"
+    ),
+    "BROKER_WRITE_PATH_ACCESS": r"C:\AI_VAULT\ibkr_paper_30d\broker.py",
+    "TRADER_CONTEXT_ACCESS": r"C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py",
+    "AUDIT_INPUT_MUTATION": r"C:\ProgramData\CodexAuditorV1\exports",
+    "IMMUTABLE_EXPORT_READ": r"C:\ProgramData\CodexAuditorV1\exports",
+    "AUDITOR_REPORT_WRITE": r"C:\ProgramData\CodexAuditorV1\reports",
+    "SMTP_SECRET_READ": r"C:\AI_VAULT\Secrets\email_alerts.env",
+}
+LEGACY_PROBE_MANIFEST_SHA256 = (
+    "eceb33b1846f33eff92e03d67fc03c03e271b3c69f98ab744565767f40c22102"
+)
 APPROVED_AUDITOR_PATHS = {
     r"C:\ProgramData\CodexAuditorV1\runtime",
     r"C:\ProgramData\CodexAuditorV1\exports",
@@ -173,10 +206,17 @@ def test_partial_apply_firewall_failure_has_recognized_recovery_contract(
     assert set(recovery["recognized_predecessor_script_sha256"]) == {
         "899d262124bbf24e0dbd4661b8df41f93aeb6993dacfe9a200264ad2e9ed6eb7",
         "ba6ab5e885c6da54141cfaef85a59ae7e9e6cb2102b23607ae91fdaadfbb057c",
+        "75bc653b002dbb41cc9087aa1ef113d3b320646d880f35f7af46231bbe3f47c1",
     }
     assert recovery["change_manifest_may_be_missing"] is True
     assert recovery["repair_probe_manifest"] is True
     assert recovery["upgrade_runtime_files"] is True
+    assert recovery["recognized_probe_manifest_sha256"] == [
+        LEGACY_PROBE_MANIFEST_SHA256
+    ]
+    assert recovery["probe_manifest_migration"] == (
+        "VALIDATE_EXACT_SHA_SCHEMA_SID_ROOTS_TARGETS_THEN_ATOMIC_REPLACE"
+    )
 
 
 def test_recovery_contract_covers_fresh_both_partial_and_rerun_states(
@@ -187,11 +227,13 @@ def test_recovery_contract_covers_fresh_both_partial_and_rerun_states(
         "FRESH",
         "FIRST_FIREWALL_FAILURE_PARTIAL",
         "SECOND_REPLACE_FAILURE_PARTIAL",
+        "THIRD_PROBE_MANIFEST_CLASSIFICATION_PARTIAL",
         "CURRENT_COMPLETE_RERUN",
     }
     assert set(recovery["rollback_supported_states"]) == {
         "FIRST_FIREWALL_FAILURE_PARTIAL",
         "SECOND_REPLACE_FAILURE_PARTIAL",
+        "THIRD_PROBE_MANIFEST_CLASSIFICATION_PARTIAL",
         "CURRENT_COMPLETE_RERUN",
     }
 
@@ -387,3 +429,109 @@ def test_atomic_text_replace_existing_destination_uses_validated_primitive(
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "ATOMIC_TEXT_REPLACE_PASS" in result.stdout
+
+
+def legacy_probe_manifest() -> dict[str, object]:
+    return {
+        "schema": "AUDITOR_PROBE_TARGET_MANIFEST_V1",
+        "expected_sid": "S-1-5-21-214160970-1890373857-4055601883-1012",
+        "approved_roots": LEGACY_APPROVED_ROOTS,
+        "targets": LEGACY_PROBE_TARGETS,
+    }
+
+
+def run_legacy_probe_classifier(
+    tmp_path: Path, manifest: dict[str, object]
+) -> subprocess.CompletedProcess[str]:
+    manifest_text = json.dumps(manifest, separators=(",", ":"))
+    fixture = tmp_path / "probe-manifest.json"
+    fixture.write_text(manifest_text, encoding="utf-8")
+    script = str(SCRIPT).replace("'", "''")
+    fixture_path = str(fixture).replace("'", "''")
+    expected_targets = json.dumps(LEGACY_PROBE_TARGETS, separators=(",", ":")).replace(
+        "'", "''"
+    )
+    command = (
+        "$tokens=$null;$errors=$null;"
+        "$ast=[Management.Automation.Language.Parser]::ParseFile("
+        f"'{script}',[ref]$tokens,[ref]$errors);"
+        "$names=@('Get-TextSha256Hex','Test-StringSetEqual',"
+        "'Test-RecognizedLegacyProbeManifest');"
+        "$functions=$ast.FindAll({param($node) "
+        "$node -is [Management.Automation.Language.FunctionDefinitionAst] -and "
+        "$node.Name -in $names},$true);"
+        "$functions | Sort-Object {$_.Extent.StartOffset} | "
+        "ForEach-Object {Invoke-Expression $_.Extent.Text};"
+        "$ManagedPaths=@('C:\\ProgramData\\CodexAuditorV1\\runtime',"
+        "'C:\\ProgramData\\CodexAuditorV1\\exports',"
+        "'C:\\ProgramData\\CodexAuditorV1\\reports',"
+        "'C:\\ProgramData\\CodexAuditorV1\\provisioning');"
+        "$LegacyEphemeralPaths=@("
+        "'C:\\AI_VAULT\\state\\ibkr_paper_30d\\reports\\real_codex_invocations.sqlite3',"
+        "'C:\\AI_VAULT\\state\\ibkr_paper_30d\\reports\\real_codex_invocations.sqlite3-wal',"
+        "'C:\\AI_VAULT\\state\\ibkr_paper_30d\\reports\\real_codex_invocations.sqlite3-shm',"
+        "'C:\\AI_VAULT\\state\\ibkr_paper_30d\\execution.lock');"
+        "$assignment=$ast.Find({param($node) "
+        "$node -is [Management.Automation.Language.AssignmentStatementAst] -and "
+        "$node.Left.Extent.Text -eq '$LegacyApprovedPaths'},$true);"
+        "Invoke-Expression $assignment.Extent.Text;"
+        f"$ProbeTargets=('{expected_targets}'|ConvertFrom-Json);"
+        f"$ExpectedLegacyProbeManifestHash='{LEGACY_PROBE_MANIFEST_SHA256}';"
+        f"$text=[IO.File]::ReadAllText('{fixture_path}');"
+        "$sid=New-Object Security.Principal.SecurityIdentifier("
+        "'S-1-5-21-214160970-1890373857-4055601883-1012');"
+        "$result=Test-RecognizedLegacyProbeManifest -Text $text -Sid $sid;"
+        "Write-Output ('CLASSIFIED='+$result.ToString().ToLowerInvariant())"
+    )
+    return subprocess.run(
+        ["powershell.exe", "-NoProfile", "-Command", command],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+
+
+def test_exact_authorized_probe_predecessor_is_classified(tmp_path) -> None:
+    manifest = legacy_probe_manifest()
+    manifest_text = json.dumps(manifest, separators=(",", ":"))
+    assert hashlib.sha256(manifest_text.encode()).hexdigest() == (
+        LEGACY_PROBE_MANIFEST_SHA256
+    )
+    result = run_legacy_probe_classifier(tmp_path, manifest)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "CLASSIFIED=true" in result.stdout
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "wrong_sid",
+        "one_key",
+        "wrong_probe_path",
+        "extra_target",
+        "missing_target",
+        "case_variant_target",
+        "foreign_schema",
+    ],
+)
+def test_modified_probe_predecessors_remain_rejected(tmp_path, mutation) -> None:
+    manifest = copy.deepcopy(legacy_probe_manifest())
+    if mutation == "wrong_sid":
+        manifest["expected_sid"] = "S-1-5-21-1-2-3-1001"
+    elif mutation == "one_key":
+        manifest["unexpected"] = True
+    elif mutation == "wrong_probe_path":
+        manifest["approved_roots"][6] = r"C:\foreign"
+    elif mutation == "extra_target":
+        manifest["targets"]["EXTRA"] = r"C:\foreign"
+    elif mutation == "missing_target":
+        del manifest["targets"]["SECRETS_READ"]
+    elif mutation == "case_variant_target":
+        manifest["targets"]["SECRETS_READ"] = r"c:\AI_VAULT\Secrets"
+    elif mutation == "foreign_schema":
+        manifest["schema"] = "FOREIGN"
+    result = run_legacy_probe_classifier(tmp_path, manifest)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "CLASSIFIED=false" in result.stdout
