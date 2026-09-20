@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from types import MappingProxyType
+from pathlib import Path
 from typing import Mapping, Sequence
 
 from .canonical import sha256_json
@@ -585,3 +586,29 @@ def evaluate_acceptance_expiration(
         status="EXPIRED" if unique else "ACTIVE",
         reason_codes=unique,
     )
+
+
+def load_and_evaluate_auditor_gate_v2(
+    source: Path | bytes,
+    expected_paper_identity: object,
+    now: datetime,
+) -> AuditorGateV2Evaluation:
+    try:
+        if isinstance(source, Path):
+            if not source.is_file():
+                raise ReceiptValidationError("RECEIPT_ABSENT")
+            raw = source.read_bytes()
+        elif isinstance(source, bytes):
+            raw = source
+        else:
+            raise ReceiptValidationError("RECEIPT_SOURCE_INVALID")
+        receipt = parse_auditor_gate_v2_receipt(raw)
+        return evaluate_auditor_gate_v2(receipt, expected_paper_identity, now)
+    except (OSError, ReceiptValidationError) as exc:
+        reason = str(exc).split(":", 1)[0] or "RECEIPT_INVALID"
+        return AuditorGateV2Evaluation(
+            canonical_gate="BLOCK",
+            compatibility_gate="BLOCK",
+            gate_version="V2",
+            reason_codes=(reason,),
+        )

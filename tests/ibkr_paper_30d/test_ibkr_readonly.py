@@ -12,6 +12,11 @@ from ibkr_paper_30d.cli import (
     build_implementation_status,
     inspect_readonly,
 )
+from ibkr_paper_30d.auditor_gate_v2 import (
+    AuditorGateV2Evaluation,
+    load_and_evaluate_auditor_gate_v2,
+)
+from ibkr_paper_30d.canonical import canonical_bytes
 from ibkr_paper_30d.ibkr_readonly_session import QuoteObservation
 from ibkr_paper_30d.ibkr_readonly import (
     IBKRReadOnlyAdapter,
@@ -215,6 +220,42 @@ def test_local_tests_cannot_promote_real_broker_reconciliation() -> None:
 
     assert status["BROKER_RECONCILIATION_GATE"] == "BLOCK"
     assert status["REAL_IBKR_READ_ONLY_IDENTITY_GATE"] == "BLOCK"
+
+
+def test_auditor_status_ignores_bare_or_v1_pass() -> None:
+    evaluation = load_and_evaluate_auditor_gate_v2(
+        canonical_bytes({"gate": "PASS"}), object(), NOW
+    )
+
+    status = build_implementation_status(
+        test_count=200,
+        test_failures=0,
+        auditor_report={"gate": "PASS"},
+        auditor_v2_evaluation=evaluation,
+    )
+
+    assert status["AUDITOR_LEAST_PRIVILEGE_AND_RUNTIME_INTEGRITY_GATE_V2"] == "BLOCK"
+    assert status["AUDITOR_ISOLATION_GATE_V2"] == "BLOCK"
+    assert status["AUDITOR_ISOLATION_GATE"] == "BLOCK"
+    assert status["AUDITOR_GATE_VERSION"] == "V2"
+
+
+def test_auditor_status_uses_v2_evaluation_but_never_authorizes_orders() -> None:
+    evaluation = AuditorGateV2Evaluation("PASS", "PASS", "V2", ())
+
+    status = build_implementation_status(
+        test_count=200,
+        test_failures=0,
+        auditor_v2_evaluation=evaluation,
+    )
+
+    assert status["AUDITOR_LEAST_PRIVILEGE_AND_RUNTIME_INTEGRITY_GATE_V2"] == "PASS"
+    assert status["AUDITOR_ISOLATION_GATE_V2"] == "PASS"
+    assert status["AUDITOR_ISOLATION_GATE"] == "PASS"
+    assert status["READY_FOR_HARMLESS_PAPER_LIFECYCLE_TEST"] is False
+    assert status["REAL_PAPER_ORDER_WRITE_AUTHORIZED"] is False
+    assert status["AUDITOR_TECHNICAL_SOCKET_REACHABILITY"] is True
+    assert status["AUDITOR_NETWORK_ISOLATION_REQUIRED"] is False
 
 
 def test_market_behavior_requires_an_actual_quote_value() -> None:

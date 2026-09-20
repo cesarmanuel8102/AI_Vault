@@ -6,7 +6,7 @@ import json
 import os
 import socket
 import re
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Sequence
@@ -23,6 +23,18 @@ from .alerts import (
     load_smtp_channel,
 )
 from .auditor import write_isolation_report
+from .auditor_gate_v2 import (
+    AuditorGateV2Evaluation,
+    IdentityBindingError,
+    PaperIdentityBinding,
+    load_and_evaluate_auditor_gate_v2,
+    parse_auditor_gate_v2_receipt,
+)
+from .auditor_v2_artifacts import (
+    build_residual_risk_acceptance,
+    render_auditor_gate_v2_report,
+    write_immutable_json,
+)
 from .ibkr_readonly import IBKRReadOnlyAdapter, ReadOnlySessionSnapshot
 from .ibkr_readonly_session import (
     ExpectedPaperIdentityStore,
@@ -64,6 +76,9 @@ ALERT_REPORT = REPORT_ROOT / "alert_delivery_simulation.json"
 GATE_REPORT = REPORT_ROOT / "updated_gate_matrix.json"
 REAL_CODEX_REPORT = REPORT_ROOT / "real_codex_trader_invocation.json"
 AUDITOR_REPORT = REPORT_ROOT / "auditor_isolation_probe.json"
+AUDITOR_V2_RECEIPT = REPORT_ROOT / "auditor_gate_v2_receipt.json"
+AUDITOR_V2_REPORT = Path("AUDITOR_ISOLATION_GATE_V2_REPORT.md")
+AUDITOR_V2_ACCEPTANCE = Path("AUDITOR_MONTH1_PAPER_RESIDUAL_RISK_ACCEPTANCE_V1.json")
 CAPABILITY_MATRIX = Path("IBKR_CAPABILITY_MATRIX_V1.md")
 MARKET_LEDGER = REPORT_ROOT / "market_observations.jsonl"
 MARKET_OBSERVATION_REPORT = REPORT_ROOT / "market_observation.json"
@@ -95,6 +110,7 @@ def inspect_readonly(
             "reason_codes": reasons,
             "gateway_started_by_codex": False,
             "broker_calls_made": 0,
+            "expected_account_identity_hash": expected_account_hash,
             "raw_account_identity_persisted": False,
             "real_order_writes_attempted": 0,
         }
@@ -197,6 +213,7 @@ def inspect_readonly(
         "real_ibkr_read_only_identity_gate": "PASS" if identity_pass else "BLOCK",
         "broker_reconciliation_gate": "PASS" if reconciliation_pass else "BLOCK",
         "expected_account_identity_bound": identity_store.path.exists(),
+        "expected_account_identity_hash": configured_hash,
         "account_fingerprint": inspection.identity.account_fingerprint,
         "identity_factor_count": inspection.identity.factor_count,
         "connector_comparison": "UNAVAILABLE",
@@ -620,6 +637,7 @@ def build_implementation_status(
     alert_report: dict[str, object] | None = None,
     real_codex_report: dict[str, object] | None = None,
     auditor_report: dict[str, object] | None = None,
+    auditor_v2_evaluation: AuditorGateV2Evaluation | None = None,
     implementation_head: str = "",
 ) -> dict[str, object]:
     local_pass = test_failures == 0 and test_count > 0
@@ -627,6 +645,12 @@ def build_implementation_status(
     alert_report = alert_report or {}
     real_codex_report = real_codex_report or {}
     auditor_report = auditor_report or {}
+    auditor_v2_evaluation = auditor_v2_evaluation or AuditorGateV2Evaluation(
+        canonical_gate="BLOCK",
+        compatibility_gate="BLOCK",
+        gate_version="V2",
+        reason_codes=("V2_RECEIPT_NOT_VALIDATED",),
+    )
     alert_events = {
         result.get("event_type")
         for result in alert_report.get("results", [])
@@ -659,7 +683,12 @@ def build_implementation_status(
         else "BLOCK"
     )
     codex_gate = "PASS" if real_codex_report.get("gate") == "PASS" else "BLOCK"
-    auditor_gate = "PASS" if auditor_report.get("gate") == "PASS" else "BLOCK"
+    auditor_gate = (
+        "PASS"
+        if auditor_v2_evaluation.canonical_gate == "PASS"
+        and auditor_v2_evaluation.compatibility_gate == "PASS"
+        else "BLOCK"
+    )
     market_policy_frozen = bool(
         readonly_report.get("market_data_policy_frozen", False)
     )
@@ -699,7 +728,17 @@ def build_implementation_status(
         "OWNER_ALERT_GATE": owner_alert_gate,
         "ORCHESTRATOR_GATE": "PASS" if local_pass else "BLOCK",
         "RECOVERY_GATE": "PASS" if local_pass else "BLOCK",
+        "AUDITOR_LEAST_PRIVILEGE_AND_RUNTIME_INTEGRITY_GATE_V2": auditor_gate,
+        "AUDITOR_ISOLATION_GATE_V2": auditor_gate,
         "AUDITOR_ISOLATION_GATE": auditor_gate,
+        "AUDITOR_GATE_VERSION": "V2",
+        "AUDITOR_V2_REASON_CODES": list(auditor_v2_evaluation.reason_codes),
+        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": True,
+        "AUDITOR_NETWORK_ISOLATION_REQUIRED": False,
+        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": True,
+        "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
+        "LEGACY_FIREWALL_CONTROL": "INEFFECTIVE_FOR_LOOPBACK_REQUIREMENT",
+        "WFP_AUDITOR_FRONT": "DEFERRED",
         "FAULT_INJECTION_GATE": "PASS" if local_pass else "BLOCK",
         "IBKR_GATEWAY_RUNNING": bool(
             readonly_report.get("heartbeat_ok")
@@ -887,6 +926,99 @@ def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _load_auditor_v2_evaluation(
+    receipt_path: Path = AUDITOR_V2_RECEIPT,
+) -> tuple[AuditorGateV2Evaluation, PaperIdentityBinding | None]:
+    now = datetime.now(timezone.utc)
+    if not receipt_path.is_file():
+        return load_and_evaluate_auditor_gate_v2(receipt_path, object(), now), None
+    try:
+        readonly_bytes = READONLY_REPORT.read_bytes()
+        binding = PaperIdentityBinding.from_readonly_receipt(
+            json.loads(readonly_bytes), readonly_bytes
+        )
+        binding = replace(
+            binding,
+            runtime_manifest_sha256=os.environ.get(
+                "AUDITOR_RUNTIME_MANIFEST_V2_SHA256"
+            ),
+            deployment_manifest_sha256=os.environ.get(
+                "AUDITOR_RUNTIME_DEPLOYMENT_MANIFEST_V2_SHA256"
+            ),
+            probe_sha256=os.environ.get("AUDITOR_GATE_V2_PROBE_SHA256"),
+            probe_manifest_sha256=os.environ.get(
+                "AUDITOR_PROBE_TARGET_MANIFEST_SHA256"
+            ),
+        )
+    except (OSError, json.JSONDecodeError, IdentityBindingError) as exc:
+        return (
+            AuditorGateV2Evaluation(
+                "BLOCK",
+                "BLOCK",
+                "V2",
+                (f"PAPER_BINDING_INVALID:{type(exc).__name__}",),
+            ),
+            None,
+        )
+    return load_and_evaluate_auditor_gate_v2(receipt_path, binding, now), binding
+
+
+def _atomic_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
+    try:
+        with temporary.open("x", encoding="utf-8", newline="\n") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+
+def write_auditor_v2_artifacts(
+    *,
+    receipt_path: Path = AUDITOR_V2_RECEIPT,
+    report_path: Path = AUDITOR_V2_REPORT,
+    acceptance_path: Path = AUDITOR_V2_ACCEPTANCE,
+) -> dict[str, object]:
+    evaluation, _ = _load_auditor_v2_evaluation(receipt_path)
+    receipt = None
+    evidence: dict[str, object] = {}
+    if receipt_path.is_file():
+        raw = receipt_path.read_bytes()
+        evidence["receipt"] = {
+            "path": str(receipt_path),
+            "sha256": hashlib.sha256(raw).hexdigest(),
+        }
+        if evaluation.canonical_gate == "PASS":
+            receipt = parse_auditor_gate_v2_receipt(raw)
+    report = render_auditor_gate_v2_report(receipt, evaluation, evidence)
+    _atomic_text(report_path, report)
+    acceptance_created = False
+    if receipt is not None:
+        acceptance = build_residual_risk_acceptance(
+            receipt,
+            evaluation,
+            {
+                "decision": "OWNER_AUTHORIZATION_IMPLEMENT_AUDITOR_GATE_V2",
+                "design_commit": "322a79cb",
+                "plan_commit": "7e8d4689",
+                "month1_paper_only": True,
+            },
+        )
+        write_immutable_json(acceptance_path, acceptance)
+        acceptance_created = True
+    return {
+        "gate": evaluation.canonical_gate,
+        "gate_version": "V2",
+        "reason_codes": list(evaluation.reason_codes),
+        "report_path": str(report_path),
+        "acceptance_created": acceptance_created,
+    }
+
+
 def _junit_counts(path: Path) -> tuple[int, int]:
     root = ET.parse(path).getroot()
     nodes = [root] if root.tag == "testsuite" else list(root.findall("testsuite"))
@@ -908,6 +1040,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     alert_parser.add_argument("--events", nargs="+", required=True)
     commands.add_parser("write-capability-matrix")
     commands.add_parser("write-implementation-status")
+    auditor_v2_parser = commands.add_parser("write-auditor-v2-artifacts")
+    auditor_v2_parser.add_argument("--receipt", type=Path, default=AUDITOR_V2_RECEIPT)
+    auditor_v2_parser.add_argument("--report", type=Path, default=AUDITOR_V2_REPORT)
+    auditor_v2_parser.add_argument(
+        "--acceptance", type=Path, default=AUDITOR_V2_ACCEPTANCE
+    )
     commands.add_parser("write-local-reports")
     commands.add_parser("probe-auditor-isolation")
     codex_parser = commands.add_parser("invoke-real-codex-test")
@@ -985,8 +1123,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         print(str(CAPABILITY_MATRIX))
         return 0
+    elif args.command == "write-auditor-v2-artifacts":
+        report = write_auditor_v2_artifacts(
+            receipt_path=args.receipt,
+            report_path=args.report,
+            acceptance_path=args.acceptance,
+        )
     elif args.command == "write-implementation-status":
         tests, failures = _junit_counts(REPORT_ROOT / "pytest.xml")
+        auditor_v2_evaluation, _ = _load_auditor_v2_evaluation()
         report = build_implementation_status(
             test_count=tests,
             test_failures=failures,
@@ -994,6 +1139,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             alert_report=_read_json(ALERT_REPORT),
             real_codex_report=_read_json(REAL_CODEX_REPORT),
             auditor_report=_read_json(AUDITOR_REPORT),
+            auditor_v2_evaluation=auditor_v2_evaluation,
             implementation_head=os.environ.get("IMPLEMENTATION_HEAD", ""),
         )
         _atomic_json(GATE_REPORT, report)
