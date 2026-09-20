@@ -42,6 +42,9 @@ class ReadOnlyMessageGuard:
             OUT.REQ_MKT_DATA,
             OUT.CANCEL_MKT_DATA,
             OUT.REQ_MARKET_DATA_TYPE,
+            OUT.REQ_CONTRACT_DATA,
+            OUT.REQ_TICK_BY_TICK_DATA,
+            OUT.CANCEL_TICK_BY_TICK_DATA,
         }
     )
 

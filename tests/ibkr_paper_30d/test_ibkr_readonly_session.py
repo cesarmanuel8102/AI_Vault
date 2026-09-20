@@ -33,13 +33,16 @@ def wire_message(message_id: int) -> str:
         OUT.REQ_MKT_DATA,
         OUT.CANCEL_MKT_DATA,
         OUT.REQ_MARKET_DATA_TYPE,
+        OUT.REQ_CONTRACT_DATA,
+        OUT.REQ_TICK_BY_TICK_DATA,
+        OUT.CANCEL_TICK_BY_TICK_DATA,
     ],
 )
 def test_readonly_wire_guard_accepts_only_declared_read_messages(message_id) -> None:
     assert ReadOnlyMessageGuard.validate(wire_message(message_id)) == message_id
 
 
-@pytest.mark.parametrize("message_id", [3, 4, 8, 9, 15, 66])
+@pytest.mark.parametrize("message_id", [3, 4, 5, 8, 15, 66])
 def test_readonly_wire_guard_rejects_every_non_allowlisted_message(message_id) -> None:
     with pytest.raises(ReadOnlyTransportViolation, match="message id"):
         ReadOnlyMessageGuard.validate(wire_message(message_id))
