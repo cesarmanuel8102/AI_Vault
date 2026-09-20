@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from types import MappingProxyType
 from typing import Mapping, Sequence
+
+from .canonical import sha256_json
 
 
 EXPECTED_AUDITOR_SID = "S-1-5-21-214160970-1890373857-4055601883-1012"
@@ -64,6 +67,10 @@ class ReceiptValidationError(ValueError):
     """Raised when Auditor V2 evidence is not structurally trustworthy."""
 
 
+class IdentityBindingError(ValueError):
+    """Raised when read-only broker evidence cannot bind a PAPER identity."""
+
+
 @dataclass(frozen=True)
 class AuditorGateV2Receipt:
     schema: str
@@ -88,6 +95,92 @@ class AuditorGateV2Evaluation:
     canonical_gate: str
     compatibility_gate: str
     gate_version: str
+    reason_codes: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class PaperIdentityBinding:
+    expected_account_hash: str
+    receipt_sha256: str
+    environment_reference: str
+    broker_session_environment_reference: str
+    verified_at_utc: str
+    paper_identity_gate: str
+    readonly_identity_gate: str
+    broker_reconciliation_gate: str
+    raw_account_identity_persisted: bool
+    runtime_manifest_sha256: str | None = None
+    deployment_manifest_sha256: str | None = None
+    probe_sha256: str | None = None
+    probe_manifest_sha256: str | None = None
+
+    @classmethod
+    def from_readonly_receipt(
+        cls, readonly_payload: Mapping[str, object], receipt_bytes: bytes
+    ) -> "PaperIdentityBinding":
+        if readonly_payload.get("schema") != "REAL_IBKR_READ_ONLY_RECONCILIATION_V1":
+            raise IdentityBindingError("READONLY_RECEIPT_SCHEMA_INVALID")
+        try:
+            parsed_bytes = json.loads(receipt_bytes, object_pairs_hook=_strict_object)
+        except (json.JSONDecodeError, UnicodeDecodeError, ReceiptValidationError) as exc:
+            raise IdentityBindingError("READONLY_RECEIPT_BYTES_INVALID") from exc
+        if parsed_bytes != dict(readonly_payload):
+            raise IdentityBindingError("READONLY_RECEIPT_BYTES_MISMATCH")
+        gates = (
+            readonly_payload.get("paper_account_identity_gate"),
+            readonly_payload.get("real_ibkr_read_only_identity_gate"),
+            readonly_payload.get("broker_reconciliation_gate"),
+        )
+        if readonly_payload.get("status") != "PASS" or gates != (
+            "PASS",
+            "PASS",
+            "PASS",
+        ):
+            raise IdentityBindingError("BROKER_DERIVED_PAPER_IDENTITY_BLOCK")
+        expected_hash = readonly_payload.get("expected_account_identity_hash")
+        if not isinstance(expected_hash, str) or not _SHA256_RE.fullmatch(
+            expected_hash
+        ):
+            raise IdentityBindingError("EXPECTED_PAPER_IDENTITY_HASH_INVALID")
+        if (
+            readonly_payload.get("expected_account_identity_bound") is not True
+            or readonly_payload.get("raw_account_identity_persisted") is not False
+            or readonly_payload.get("gateway_mode") != "PAPER"
+            or readonly_payload.get("port") != 4002
+        ):
+            raise IdentityBindingError("PAPER_ENVIRONMENT_NOT_PROVEN")
+        verified_at = readonly_payload.get("server_timestamp_utc")
+        if _nested_utc(verified_at) is None:
+            raise IdentityBindingError("PAPER_IDENTITY_TIMESTAMP_INVALID")
+        paper_environment = {
+            "host": readonly_payload.get("host"),
+            "port": readonly_payload.get("port"),
+            "gateway_mode": readonly_payload.get("gateway_mode"),
+            "expected_account_identity_hash": expected_hash,
+        }
+        session_environment = {
+            "server_version": readonly_payload.get("server_version"),
+            "connection_time": readonly_payload.get("connection_time"),
+            "server_timestamp_utc": verified_at,
+        }
+        return cls(
+            expected_account_hash=expected_hash,
+            receipt_sha256=hashlib.sha256(receipt_bytes).hexdigest(),
+            environment_reference=f"PAPER:{sha256_json(paper_environment)}",
+            broker_session_environment_reference=(
+                f"PAPER-SESSION:{sha256_json(session_environment)}"
+            ),
+            verified_at_utc=str(verified_at),
+            paper_identity_gate="PASS",
+            readonly_identity_gate="PASS",
+            broker_reconciliation_gate="PASS",
+            raw_account_identity_persisted=False,
+        )
+
+
+@dataclass(frozen=True)
+class AcceptanceExpirationEvaluation:
+    status: str
     reason_codes: tuple[str, ...]
 
 
@@ -429,4 +522,66 @@ def evaluate_auditor_gate_v2(
         compatibility_gate=status,
         gate_version="V2",
         reason_codes=reasons,
+    )
+
+
+def evaluate_acceptance_expiration(
+    acceptance: Mapping[str, object], current_context: Mapping[str, object]
+) -> AcceptanceExpirationEvaluation:
+    reasons: list[str] = []
+    comparisons = (
+        (
+            "EXPECTED_PAPER_ACCOUNT_IDENTITY_HASH",
+            "expected_account_hash",
+            "PAPER_ACCOUNT_IDENTITY_CHANGED",
+        ),
+        (
+            "PAPER_IDENTITY_RECEIPT_SHA256",
+            "receipt_sha256",
+            "PAPER_IDENTITY_RECEIPT_CHANGED",
+        ),
+        (
+            "PAPER_ENVIRONMENT_REFERENCE",
+            "paper_environment_reference",
+            "PAPER_ENVIRONMENT_CHANGED",
+        ),
+        (
+            "BROKER_SESSION_ENVIRONMENT_REFERENCE",
+            "broker_session_environment_reference",
+            "BROKER_SESSION_ENVIRONMENT_CHANGED",
+        ),
+    )
+    for accepted_name, current_name, reason in comparisons:
+        if acceptance.get(accepted_name) != current_context.get(current_name):
+            reasons.append(reason)
+    if (
+        acceptance.get("RUNTIME_MANIFEST_SHA256")
+        != current_context.get("runtime_manifest_sha256")
+        or acceptance.get("DEPLOYMENT_MANIFEST_SHA256")
+        != current_context.get("deployment_manifest_sha256")
+    ):
+        reasons.append("AUDITOR_RUNTIME_CHANGED")
+    if (
+        acceptance.get("AUDITOR_SID") != current_context.get("auditor_sid")
+        or current_context.get("token_elevated") is not False
+    ):
+        reasons.append("AUDITOR_PRIVILEGE_BOUNDARY_CHANGED")
+    if (
+        acceptance.get("PAPER_ONLY") is not True
+        or current_context.get("paper_only") is not True
+    ):
+        reasons.append("PAPER_ONLY_EXPIRED")
+    if (
+        acceptance.get("LIVE_ALLOWED") is not False
+        or acceptance.get("REAL_MONEY_ALLOWED") is not False
+        or current_context.get("live_allowed") is not False
+        or current_context.get("real_money_allowed") is not False
+    ):
+        reasons.append("LIVE_OR_REAL_MONEY_REQUESTED")
+    if current_context.get("experiment_state") != "ACTIVE":
+        reasons.append("MONTH1_EXPERIMENT_ENDED")
+    unique = tuple(dict.fromkeys(reasons))
+    return AcceptanceExpirationEvaluation(
+        status="EXPIRED" if unique else "ACTIVE",
+        reason_codes=unique,
     )

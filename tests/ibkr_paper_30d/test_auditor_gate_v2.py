@@ -2,16 +2,21 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import datetime, timezone
+import hashlib
+import json
 from types import SimpleNamespace
 
 import pytest
 
 from ibkr_paper_30d.auditor_gate_v2 import (
     EXPECTED_AUDITOR_SID,
+    IdentityBindingError,
+    PaperIdentityBinding,
     AuditorGateV2Evaluation,
     AuditorGateV2Receipt,
     ReceiptValidationError,
     evaluate_auditor_gate_v2,
+    evaluate_acceptance_expiration,
     parse_auditor_gate_v2_receipt,
 )
 from ibkr_paper_30d.auditor_v2_artifacts import (
@@ -146,6 +151,33 @@ def owner_decision() -> dict[str, object]:
         "plan_commit": "7e8d4689",
         "month1_paper_only": True,
     }
+
+
+@pytest.fixture
+def expected_hash() -> str:
+    return "1" * 64
+
+
+@pytest.fixture
+def readonly_receipt_bytes(expected_hash: str) -> bytes:
+    return canonical_bytes(
+        {
+            "schema": "REAL_IBKR_READ_ONLY_RECONCILIATION_V1",
+            "status": "PASS",
+            "paper_account_identity_gate": "PASS",
+            "real_ibkr_read_only_identity_gate": "PASS",
+            "broker_reconciliation_gate": "PASS",
+            "expected_account_identity_bound": True,
+            "expected_account_identity_hash": expected_hash,
+            "raw_account_identity_persisted": False,
+            "host": "127.0.0.1",
+            "port": 4002,
+            "gateway_mode": "PAPER",
+            "server_version": 180,
+            "connection_time": "20260920 11:57:00 EST",
+            "server_timestamp_utc": "2026-09-20T15:57:00Z",
+        }
+    )
 
 
 def test_v2_receipt_parses_complete_canonical_document(complete_receipt) -> None:
@@ -394,3 +426,122 @@ def test_unsafe_target_and_configuration_only_evidence_remain_blocked(
 
     with pytest.raises(ReceiptValidationError):
         parse_auditor_gate_v2_receipt(canonical_bytes({"gate": "PASS", "PAPER_ONLY": True}))
+
+
+def test_paper_binding_uses_hashes_and_broker_derived_gate(
+    readonly_receipt_bytes, expected_hash
+) -> None:
+    binding = PaperIdentityBinding.from_readonly_receipt(
+        json.loads(readonly_receipt_bytes), readonly_receipt_bytes
+    )
+
+    assert binding.expected_account_hash == expected_hash
+    assert binding.receipt_sha256 == hashlib.sha256(readonly_receipt_bytes).hexdigest()
+    assert binding.paper_identity_gate == "PASS"
+    assert binding.raw_account_identity_persisted is False
+    assert binding.environment_reference.startswith("PAPER:")
+    assert binding.broker_session_environment_reference.startswith("PAPER-SESSION:")
+
+
+def test_paper_binding_rejects_configuration_only_or_failed_broker_gate(
+    readonly_receipt_bytes,
+) -> None:
+    payload = json.loads(readonly_receipt_bytes)
+    payload["paper_account_identity_gate"] = "BLOCK"
+    with pytest.raises(IdentityBindingError, match="BROKER_DERIVED_PAPER_IDENTITY_BLOCK"):
+        PaperIdentityBinding.from_readonly_receipt(payload, canonical_bytes(payload))
+
+    with pytest.raises(IdentityBindingError, match="READONLY_RECEIPT_SCHEMA_INVALID"):
+        PaperIdentityBinding.from_readonly_receipt(
+            {"PAPER_ONLY": True}, canonical_bytes({"PAPER_ONLY": True})
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "reason"),
+    [
+        ("expected_account_hash", "9" * 64, "PAPER_ACCOUNT_IDENTITY_CHANGED"),
+        ("receipt_sha256", "8" * 64, "PAPER_IDENTITY_RECEIPT_CHANGED"),
+        ("paper_environment_reference", "PAPER:changed", "PAPER_ENVIRONMENT_CHANGED"),
+        (
+            "broker_session_environment_reference",
+            "PAPER-SESSION:changed",
+            "BROKER_SESSION_ENVIRONMENT_CHANGED",
+        ),
+        ("runtime_manifest_sha256", "7" * 64, "AUDITOR_RUNTIME_CHANGED"),
+        ("deployment_manifest_sha256", "6" * 64, "AUDITOR_RUNTIME_CHANGED"),
+        ("auditor_sid", "S-1-5-18", "AUDITOR_PRIVILEGE_BOUNDARY_CHANGED"),
+        ("experiment_state", "COMPLETED", "MONTH1_EXPERIMENT_ENDED"),
+        ("live_allowed", True, "LIVE_OR_REAL_MONEY_REQUESTED"),
+        ("real_money_allowed", True, "LIVE_OR_REAL_MONEY_REQUESTED"),
+    ],
+)
+def test_acceptance_expiration_detects_every_material_boundary_change(
+    field, value, reason
+) -> None:
+    acceptance = {
+        "EXPECTED_PAPER_ACCOUNT_IDENTITY_HASH": "1" * 64,
+        "PAPER_IDENTITY_RECEIPT_SHA256": "2" * 64,
+        "PAPER_ENVIRONMENT_REFERENCE": "PAPER:env",
+        "BROKER_SESSION_ENVIRONMENT_REFERENCE": "PAPER-SESSION:env",
+        "RUNTIME_MANIFEST_SHA256": "a" * 64,
+        "DEPLOYMENT_MANIFEST_SHA256": "b" * 64,
+        "AUDITOR_SID": EXPECTED_AUDITOR_SID,
+        "PAPER_ONLY": True,
+        "LIVE_ALLOWED": False,
+        "REAL_MONEY_ALLOWED": False,
+    }
+    current = {
+        "expected_account_hash": "1" * 64,
+        "receipt_sha256": "2" * 64,
+        "paper_environment_reference": "PAPER:env",
+        "broker_session_environment_reference": "PAPER-SESSION:env",
+        "runtime_manifest_sha256": "a" * 64,
+        "deployment_manifest_sha256": "b" * 64,
+        "auditor_sid": EXPECTED_AUDITOR_SID,
+        "token_elevated": False,
+        "paper_only": True,
+        "live_allowed": False,
+        "real_money_allowed": False,
+        "experiment_state": "ACTIVE",
+    }
+    current[field] = value
+
+    result = evaluate_acceptance_expiration(acceptance, current)
+
+    assert result.status == "EXPIRED"
+    assert reason in result.reason_codes
+
+
+def test_acceptance_expiration_keeps_exact_month1_context_active() -> None:
+    acceptance = {
+        "EXPECTED_PAPER_ACCOUNT_IDENTITY_HASH": "1" * 64,
+        "PAPER_IDENTITY_RECEIPT_SHA256": "2" * 64,
+        "PAPER_ENVIRONMENT_REFERENCE": "PAPER:env",
+        "BROKER_SESSION_ENVIRONMENT_REFERENCE": "PAPER-SESSION:env",
+        "RUNTIME_MANIFEST_SHA256": "a" * 64,
+        "DEPLOYMENT_MANIFEST_SHA256": "b" * 64,
+        "AUDITOR_SID": EXPECTED_AUDITOR_SID,
+        "PAPER_ONLY": True,
+        "LIVE_ALLOWED": False,
+        "REAL_MONEY_ALLOWED": False,
+    }
+    current = {
+        "expected_account_hash": "1" * 64,
+        "receipt_sha256": "2" * 64,
+        "paper_environment_reference": "PAPER:env",
+        "broker_session_environment_reference": "PAPER-SESSION:env",
+        "runtime_manifest_sha256": "a" * 64,
+        "deployment_manifest_sha256": "b" * 64,
+        "auditor_sid": EXPECTED_AUDITOR_SID,
+        "token_elevated": False,
+        "paper_only": True,
+        "live_allowed": False,
+        "real_money_allowed": False,
+        "experiment_state": "ACTIVE",
+    }
+
+    result = evaluate_acceptance_expiration(acceptance, current)
+
+    assert result.status == "ACTIVE"
+    assert result.reason_codes == ()
