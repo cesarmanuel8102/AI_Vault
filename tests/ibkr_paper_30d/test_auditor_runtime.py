@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+import socket
 import stat
 import subprocess
 from pathlib import Path
@@ -305,6 +306,236 @@ def current_sid() -> str:
         check=True,
     )
     return result.stdout.strip()
+
+
+def target_manifest(expected_sid: str, approved_root: Path, reports: Path) -> dict:
+    targets = {
+        "SECRETS_READ": str(approved_root / "secrets"),
+        "IBKR_SECRET_READ": str(approved_root / "jts"),
+        "SMTP_SECRET_READ": str(approved_root / "secrets" / "email_alerts.env"),
+        "EXECUTION_LOCK_ACCESS": str(approved_root / "state" / "execution.lock"),
+        "LIVE_DATABASE_MUTATION": str(approved_root / "state" / "live.sqlite3"),
+        "BROKER_WRITE_PATH_ACCESS": str(approved_root / "broker.py"),
+        "TRADER_CONTEXT_ACCESS": str(approved_root / "trader_invocation.py"),
+        "AUDIT_INPUT_MUTATION": str(approved_root / "exports"),
+        "IMMUTABLE_EXPORT_READ": str(approved_root / "exports"),
+        "AUDITOR_REPORT_WRITE": str(reports),
+    }
+    return {
+        "schema": "AUDITOR_PROBE_TARGET_MANIFEST_V1",
+        "expected_sid": expected_sid,
+        "approved_roots": [str(approved_root.resolve()), str(reports.resolve())],
+        "targets": targets,
+    }
+
+
+def run_target_validation(tmp_path: Path, manifest: dict):
+    runtime, runtime_manifest = stage_runtime(tmp_path / "staged")
+    target_path = tmp_path / "targets.json"
+    target_path.write_text(compact_json(manifest), encoding="utf-8")
+    return run_script(
+        runtime / PROBE_NAME,
+        [
+            "-TargetManifestPath",
+            str(target_path),
+            "-ReportDirectory",
+            str(tmp_path / "reports"),
+            "-RuntimeManifestPath",
+            str(runtime_manifest),
+            "-ExpectedSid",
+            current_sid(),
+            "-ValidateTargetsOnly",
+        ],
+    )
+
+
+def test_target_validation_accepts_all_ten_approved_paths(tmp_path) -> None:
+    root = tmp_path / "approved"
+    reports = tmp_path / "reports"
+    root.mkdir()
+    reports.mkdir()
+    manifest = target_manifest(current_sid(), root, reports)
+
+    result, payload = run_target_validation(tmp_path, manifest)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert payload["status"] == "TARGET_VALIDATION_COMPLETE"
+    assert len(payload["target_validation_matrix"]) == 10
+    assert all(row["valid"] for row in payload["target_validation_matrix"])
+
+
+def test_target_validation_reports_access_denied_path_without_calling_it_unsafe(
+    tmp_path,
+) -> None:
+    (tmp_path / "approved" / "secrets").mkdir(parents=True)
+    probe = str(RUNTIME_SOURCE / PROBE_NAME).replace("'", "''")
+    target = str(tmp_path / "approved" / "secrets").replace("'", "''")
+    root = str(tmp_path / "approved").replace("'", "''")
+    command = rf"""
+$tokens=$null
+$errors=$null
+$ast=[Management.Automation.Language.Parser]::ParseFile('{probe}',[ref]$tokens,[ref]$errors)
+$function=$ast.Find({{param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Get-PathValidation'}},$true)
+Invoke-Expression $function.Extent.Text
+$script:DeniedTarget='{target}'
+function Get-Item {{
+    param([string]$LiteralPath,[switch]$Force,[object]$ErrorAction)
+    if ($LiteralPath -ieq $script:DeniedTarget) {{ throw [UnauthorizedAccessException]::new('simulated ACL denial') }}
+    Microsoft.PowerShell.Management\Get-Item -LiteralPath $LiteralPath -Force -ErrorAction Stop
+}}
+Get-PathValidation -Target $script:DeniedTarget -ApprovedRoots @('{root}') | ConvertTo-Json -Depth 8 -Compress
+"""
+    result = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-Command", command],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    payload = json.loads(result.stdout.strip())
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert payload["valid"] is True
+    assert payload["reason"] == "ACCESS_DENIED_AT_TARGET"
+
+
+def test_target_validation_rejects_outside_root_and_reparse_path(tmp_path) -> None:
+    root = tmp_path / "approved"
+    reports = tmp_path / "reports"
+    root.mkdir()
+    reports.mkdir()
+    manifest = target_manifest(current_sid(), root, reports)
+    manifest["targets"]["SECRETS_READ"] = str(tmp_path / "outside")
+
+    outside_result, outside = run_target_validation(tmp_path / "outside-run", manifest)
+
+    assert outside_result.returncode == 23
+    outside_row = next(
+        item
+        for item in outside["target_validation_matrix"]
+        if item["probe"] == "SECRETS_READ"
+    )
+    assert outside_row["reason"] == "TARGET_OUTSIDE_APPROVED_ROOT"
+
+    real = root / "real"
+    real.mkdir()
+    junction = root / "redirected"
+    creation = subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-Command",
+            f"New-Item -ItemType Junction -Path '{junction}' -Target '{real}' | Out-Null",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    if creation.returncode != 0:
+        pytest.skip(f"junction creation unavailable: {creation.stderr}")
+    manifest["targets"]["SECRETS_READ"] = str(junction)
+
+    reparse_result, reparse = run_target_validation(tmp_path / "reparse-run", manifest)
+
+    junction.rmdir()
+    assert reparse_result.returncode == 23
+    reparse_row = next(
+        item
+        for item in reparse["target_validation_matrix"]
+        if item["probe"] == "SECRETS_READ"
+    )
+    assert reparse_row["reason"] == "TARGET_REPARSE_POINT"
+
+
+def test_endpoint_classifier_has_truthful_four_state_contract() -> None:
+    source = (RUNTIME_SOURCE / PROBE_NAME).read_text(encoding="utf-8")
+
+    assert '"CONNECTED"' in source
+    assert '"NO_LISTENER"' in source
+    assert '"DENIED"' in source
+    assert '"OTHER"' in source
+    assert 'SocketError]::ConnectionRefused' in source
+    assert 'SocketError]::AccessDenied' in source
+    assert 'WaitOne(500)' not in source
+    assert 'WaitOne(5000)) { return "OTHER" }' in source
+
+
+def test_active_dual_stack_listener_is_classified_connected(tmp_path) -> None:
+    listener = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    listener.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+    listener.bind(("::", 0))
+    listener.listen()
+    port = listener.getsockname()[1]
+    runtime, runtime_manifest = stage_runtime(tmp_path / "staged")
+    root = tmp_path / "approved"
+    reports = tmp_path / "reports"
+    root.mkdir()
+    reports.mkdir()
+    manifest = target_manifest(current_sid(), root, reports)
+    target_path = tmp_path / "targets.json"
+    target_path.write_text(compact_json(manifest), encoding="utf-8")
+
+    try:
+        result, payload = run_script(
+            runtime / PROBE_NAME,
+            [
+                "-TargetManifestPath",
+                str(target_path),
+                "-ReportDirectory",
+                str(reports),
+                "-RuntimeManifestPath",
+                str(runtime_manifest),
+                "-ExpectedSid",
+                current_sid(),
+                "-ClassifyEndpointsOnly",
+                "-BrokerPorts",
+                str(port),
+            ],
+        )
+    finally:
+        listener.close()
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert payload["network_endpoints"][f"127.0.0.1:{port}"] == "CONNECTED"
+    assert payload["network_endpoints"][f"[::1]:{port}"] == "CONNECTED"
+
+
+def test_closed_dual_stack_port_is_classified_no_listener(tmp_path) -> None:
+    reservation = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    reservation.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+    reservation.bind(("::", 0))
+    port = reservation.getsockname()[1]
+    reservation.close()
+    runtime, runtime_manifest = stage_runtime(tmp_path / "staged")
+    root = tmp_path / "approved"
+    reports = tmp_path / "reports"
+    root.mkdir()
+    reports.mkdir()
+    manifest = target_manifest(current_sid(), root, reports)
+    target_path = tmp_path / "targets.json"
+    target_path.write_text(compact_json(manifest), encoding="utf-8")
+
+    result, payload = run_script(
+        runtime / PROBE_NAME,
+        [
+            "-TargetManifestPath",
+            str(target_path),
+            "-ReportDirectory",
+            str(reports),
+            "-RuntimeManifestPath",
+            str(runtime_manifest),
+            "-ExpectedSid",
+            current_sid(),
+            "-ClassifyEndpointsOnly",
+            "-BrokerPorts",
+            str(port),
+        ],
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert payload["network_endpoints"][f"127.0.0.1:{port}"] == "NO_LISTENER"
+    assert payload["network_endpoints"][f"[::1]:{port}"] == "NO_LISTENER"
 
 
 def test_probe_report_binds_effective_sid_and_elevation_state(tmp_path) -> None:

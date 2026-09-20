@@ -8,7 +8,11 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$RuntimeManifestPath,
     [Parameter(Mandatory = $true)]
-    [string]$ExpectedSid
+    [string]$ExpectedSid,
+    [switch]$ValidateTargetsOnly,
+    [switch]$ClassifyEndpointsOnly,
+    [ValidateRange(1, 65535)]
+    [int[]]$BrokerPorts = @(4001, 4002)
 )
 
 Set-StrictMode -Version Latest
@@ -133,20 +137,102 @@ function Test-RuntimeManifest {
     }
 }
 
-function Resolve-ApprovedTarget {
+function Get-PathValidation {
     param([string]$Target, [string[]]$ApprovedRoots)
-    $Full = [IO.Path]::GetFullPath($Target).TrimEnd('\')
+    try { $Full = [IO.Path]::GetFullPath($Target).TrimEnd('\') }
+    catch {
+        return [ordered]@{
+            normalized_path = $null
+            approved_root = $null
+            reparse_state = "NOT_EVALUATED"
+            path_chain = @()
+            valid = $false
+            reason = "TARGET_PATH_INVALID"
+        }
+    }
     $MatchedRoot = $null
     foreach ($RootValue in $ApprovedRoots) {
-        $Root = [IO.Path]::GetFullPath($RootValue).TrimEnd('\')
+        try { $Root = [IO.Path]::GetFullPath($RootValue).TrimEnd('\') }
+        catch { continue }
         if ($Full -ieq $Root -or $Full.StartsWith($Root + '\', [StringComparison]::OrdinalIgnoreCase)) {
             $MatchedRoot = $Root
             break
         }
     }
-    if ($null -eq $MatchedRoot) { throw "TARGET_OUTSIDE_APPROVED_ROOT" }
-    if (Test-PathChainReparse -LiteralPath $Full) { throw "TARGET_REPARSE_POINT" }
-    return $Full
+    if ($null -eq $MatchedRoot) {
+        return [ordered]@{
+            normalized_path = $Full
+            approved_root = $null
+            reparse_state = "NOT_EVALUATED"
+            path_chain = @()
+            valid = $false
+            reason = "TARGET_OUTSIDE_APPROVED_ROOT"
+        }
+    }
+
+    $RootPath = [IO.Path]::GetPathRoot($Full).TrimEnd('\') + '\'
+    $Relative = $Full.Substring($RootPath.Length)
+    $Cursor = $RootPath
+    $PathChain = @()
+    foreach ($Part in @($Relative.Split('\') | Where-Object { $_ -ne '' })) {
+        $Cursor = Join-Path $Cursor $Part
+        try {
+            $Item = Get-Item -LiteralPath $Cursor -Force -ErrorAction Stop
+            $IsReparse = [bool]($Item.Attributes -band [IO.FileAttributes]::ReparsePoint)
+            $PathChain += [ordered]@{ path = $Cursor; state = $(if ($IsReparse) { "REPARSE" } else { "DIRECT" }) }
+            if ($IsReparse) {
+                return [ordered]@{
+                    normalized_path = $Full
+                    approved_root = $MatchedRoot
+                    reparse_state = "REPARSE_DETECTED"
+                    path_chain = $PathChain
+                    valid = $false
+                    reason = "TARGET_REPARSE_POINT"
+                }
+            }
+        }
+        catch [UnauthorizedAccessException] {
+            $PathChain += [ordered]@{ path = $Cursor; state = "ACCESS_DENIED" }
+            return [ordered]@{
+                normalized_path = $Full
+                approved_root = $MatchedRoot
+                reparse_state = "OPAQUE_AFTER_OS_DENIAL"
+                path_chain = $PathChain
+                valid = $true
+                reason = $(if ($Cursor -ieq $Full) { "ACCESS_DENIED_AT_TARGET" } else { "ACCESS_DENIED_AT_ANCESTOR" })
+            }
+        }
+        catch [System.Management.Automation.ItemNotFoundException] {
+            $PathChain += [ordered]@{ path = $Cursor; state = "NOT_FOUND" }
+            break
+        }
+        catch {
+            $PathChain += [ordered]@{ path = $Cursor; state = "UNINSPECTABLE" }
+            return [ordered]@{
+                normalized_path = $Full
+                approved_root = $MatchedRoot
+                reparse_state = "NOT_PROVEN"
+                path_chain = $PathChain
+                valid = $false
+                reason = "TARGET_INSPECTION_FAILED"
+            }
+        }
+    }
+    return [ordered]@{
+        normalized_path = $Full
+        approved_root = $MatchedRoot
+        reparse_state = "NO_REPARSE_DETECTED"
+        path_chain = $PathChain
+        valid = $true
+        reason = "ACCEPTED"
+    }
+}
+
+function Resolve-ApprovedTarget {
+    param([string]$Target, [string[]]$ApprovedRoots)
+    $Validation = Get-PathValidation -Target $Target -ApprovedRoots $ApprovedRoots
+    if (-not $Validation.valid) { throw $Validation.reason }
+    return $Validation.normalized_path
 }
 
 function Test-ReadCapability {
@@ -190,35 +276,35 @@ function Test-MutationCapability {
     catch { return "NOT_PROVEN" }
 }
 
+function Test-TcpEndpoint {
+    param([string]$Address, [int]$Port)
+    $IpAddress = [Net.IPAddress]::Parse($Address)
+    $Client = New-Object Net.Sockets.TcpClient($IpAddress.AddressFamily)
+    try {
+        $Pending = $Client.BeginConnect($IpAddress, $Port, $null, $null)
+        if (-not $Pending.AsyncWaitHandle.WaitOne(5000)) { return "OTHER" }
+        $Client.EndConnect($Pending)
+        return "CONNECTED"
+    }
+    catch [Net.Sockets.SocketException] {
+        if ($_.Exception.SocketErrorCode -eq [Net.Sockets.SocketError]::AccessDenied) { return "DENIED" }
+        if ($_.Exception.SocketErrorCode -eq [Net.Sockets.SocketError]::ConnectionRefused) { return "NO_LISTENER" }
+        return "OTHER"
+    }
+    catch { return "OTHER" }
+    finally { $Client.Dispose() }
+}
+
 function Test-BrokerNetworkCapability {
     $Outcomes = [ordered]@{}
     foreach ($Address in @("127.0.0.1", "::1")) {
-        $IpAddress = [Net.IPAddress]::Parse($Address)
-        foreach ($Port in @(4001, 4002)) {
+        foreach ($Port in $BrokerPorts) {
             $Endpoint = $(if ($Address -eq "::1") { "[$Address]:$Port" } else { "$Address`:$Port" })
-            $Client = New-Object Net.Sockets.TcpClient($IpAddress.AddressFamily)
-            try {
-                $Pending = $Client.BeginConnect($Address, $Port, $null, $null)
-                if (-not $Pending.AsyncWaitHandle.WaitOne(500)) {
-                    $Outcomes[$Endpoint] = "DENIED"
-                }
-                else {
-                    $Client.EndConnect($Pending)
-                    $Outcomes[$Endpoint] = "ALLOWED"
-                }
-            }
-            catch [Net.Sockets.SocketException] {
-                if ($_.Exception.SocketErrorCode -eq [Net.Sockets.SocketError]::AccessDenied) {
-                    $Outcomes[$Endpoint] = "DENIED"
-                }
-                else { $Outcomes[$Endpoint] = "NOT_PROVEN" }
-            }
-            catch { $Outcomes[$Endpoint] = "NOT_PROVEN" }
-            finally { $Client.Dispose() }
+            $Outcomes[$Endpoint] = Test-TcpEndpoint -Address $Address -Port $Port
         }
     }
     $Values = @($Outcomes.Values)
-    $Status = $(if ($Values -contains "ALLOWED") { "ALLOWED" } elseif (($Values | Where-Object { $_ -ne "DENIED" }).Count -eq 0) { "DENIED" } else { "NOT_PROVEN" })
+    $Status = $(if ($Values -contains "CONNECTED") { "ALLOWED" } elseif (($Values | Where-Object { $_ -ne "DENIED" }).Count -eq 0) { "DENIED" } else { "NOT_PROVEN" })
     return [ordered]@{ status = $Status; network_endpoints = $Outcomes }
 }
 
@@ -239,6 +325,18 @@ if ($Identity.User.Value -ne $ExpectedSid -or $Elevated) {
         results = [ordered]@{}
     })
     exit 21
+}
+
+if ($ClassifyEndpointsOnly) {
+    $NetworkOnly = Test-BrokerNetworkCapability
+    Write-ResultLine -Value ([ordered]@{
+        schema = "AUDITOR_DENIAL_PROBE_REPORT_V1"
+        status = "ENDPOINT_CLASSIFICATION_COMPLETE"
+        effective_sid = $Identity.User.Value
+        token_elevated = $Elevated
+        network_endpoints = $NetworkOnly.network_endpoints
+    })
+    exit 0
 }
 
 $Read = Read-StrictJson -LiteralPath $TargetManifestPath
@@ -265,14 +363,39 @@ if ($ActualTargetSet -cne $RequiredTargetSet) {
 }
 
 $Resolved = @{}
-try {
-    foreach ($Property in $Manifest.targets.PSObject.Properties) {
-        $Resolved[$Property.Name] = Resolve-ApprovedTarget -Target ([string]$Property.Value) -ApprovedRoots @($Manifest.approved_roots)
+$TargetValidationMatrix = @()
+foreach ($Property in $Manifest.targets.PSObject.Properties) {
+    $Validation = Get-PathValidation -Target ([string]$Property.Value) -ApprovedRoots @($Manifest.approved_roots)
+    $TargetValidationMatrix += [ordered]@{
+        probe = $Property.Name
+        path = [string]$Property.Value
+        expected_root = $Validation.approved_root
+        normalized_path = $Validation.normalized_path
+        reparse_state = $Validation.reparse_state
+        path_chain = $Validation.path_chain
+        valid = $Validation.valid
+        reason = $Validation.reason
     }
+    if ($Validation.valid) { $Resolved[$Property.Name] = $Validation.normalized_path }
 }
-catch {
-    Write-ResultLine -Value ([ordered]@{ schema = "AUDITOR_DENIAL_PROBE_REPORT_V1"; status = "UNSAFE_TARGET_PATH" })
+$InvalidTargets = @($TargetValidationMatrix | Where-Object { -not $_.valid })
+if ($InvalidTargets.Count -ne 0) {
+    Write-ResultLine -Value ([ordered]@{
+        schema = "AUDITOR_DENIAL_PROBE_REPORT_V1"
+        status = "UNSAFE_TARGET_PATH"
+        target_validation_matrix = $TargetValidationMatrix
+    })
     exit 23
+}
+if ($ValidateTargetsOnly) {
+    Write-ResultLine -Value ([ordered]@{
+        schema = "AUDITOR_DENIAL_PROBE_REPORT_V1"
+        status = "TARGET_VALIDATION_COMPLETE"
+        effective_sid = $Identity.User.Value
+        token_elevated = $Elevated
+        target_validation_matrix = $TargetValidationMatrix
+    })
+    exit 0
 }
 
 $Results = [ordered]@{}
@@ -324,6 +447,7 @@ $Report = [ordered]@{
     input_manifest_sha256 = Get-Sha256Hex -LiteralPath $TargetManifestPath
     results = $Results
     network_endpoints = $NetworkEndpoints
+    target_validation_matrix = $TargetValidationMatrix
     report_path = $ReportPath
 }
 try {
