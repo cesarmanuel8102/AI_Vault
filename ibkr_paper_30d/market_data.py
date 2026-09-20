@@ -156,9 +156,16 @@ class MarketDataGate:
                 _add_reason(reasons, "SOURCE_UNHEALTHY")
             if (
                 decision_class is DecisionClass.NEW_TRADE
-                and quote.market_session == "CLOSED"
+                and quote.market_session != "REGULAR"
             ):
-                _add_reason(reasons, "MARKET_SESSION_CLOSED")
+                _add_reason(
+                    reasons,
+                    (
+                        "MARKET_SESSION_CLOSED"
+                        if quote.market_session == "CLOSED"
+                        else "MARKET_SESSION_NOT_REGULAR"
+                    ),
+                )
 
             prices = (quote.bid, quote.ask, quote.last)
             if any(value is not None and not _valid_price(value) for value in prices):
