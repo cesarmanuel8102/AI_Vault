@@ -1,0 +1,66 @@
+from __future__ import annotations
+
+import secrets
+import time
+import uuid
+from enum import Enum
+
+
+class SystemState(str, Enum):
+    BOOTING = "SYSTEM_BOOTING"
+    PREFLIGHT = "SYSTEM_PREFLIGHT"
+    BLOCKED = "SYSTEM_BLOCKED"
+    READY = "SYSTEM_READY"
+    PAUSED = "SYSTEM_PAUSED"
+    RECOVERING = "SYSTEM_RECOVERING"
+    STOPPED = "SYSTEM_STOPPED"
+
+
+class BrokerState(str, Enum):
+    UNKNOWN = "BROKER_UNKNOWN"
+    DISCONNECTED = "BROKER_DISCONNECTED"
+    CONNECTING = "BROKER_CONNECTING"
+    CONNECTED_UNVERIFIED = "BROKER_CONNECTED_UNVERIFIED"
+    TWO_FACTOR_REQUIRED = "BROKER_2FA_REAUTH_REQUIRED"
+    AUTH_FAILED = "BROKER_AUTH_FAILED"
+    RECONCILIATION_REQUIRED = "BROKER_RECONCILIATION_REQUIRED"
+    READY = "BROKER_READY"
+    BLOCKED = "BROKER_BLOCKED"
+
+
+class ExecutionState(str, Enum):
+    IDLE = "EXECUTION_IDLE"
+    LOCK_ACQUIRED = "EXECUTION_LOCK_ACQUIRED"
+    DECISION_PENDING = "DECISION_PENDING"
+    DECISION_FROZEN = "DECISION_FROZEN"
+    RISK_GATE_PENDING = "RISK_GATE_PENDING"
+    RISK_BLOCKED = "RISK_BLOCKED"
+    ORDER_PENDING_SUBMIT = "ORDER_PENDING_SUBMIT"
+    ORDER_SUBMIT_UNKNOWN = "ORDER_SUBMIT_UNKNOWN"
+    ORDER_ACKNOWLEDGED = "ORDER_ACKNOWLEDGED"
+    ORDER_WORKING = "ORDER_WORKING"
+    ORDER_PARTIALLY_FILLED = "ORDER_PARTIALLY_FILLED"
+    ORDER_FILLED = "ORDER_FILLED"
+    ORDER_CANCEL_PENDING = "ORDER_CANCEL_PENDING"
+    ORDER_CANCELLED = "ORDER_CANCELLED"
+    ORDER_REJECTED = "ORDER_REJECTED"
+    ORDER_STATE_UNCERTAIN = "ORDER_STATE_UNCERTAIN"
+    RECONCILIATION_REQUIRED = "RECONCILIATION_REQUIRED"
+
+
+class KillSwitchState(str, Enum):
+    CLEAR = "KILL_SWITCH_CLEAR"
+    TRIGGERED = "KILL_SWITCH_TRIGGERED"
+    RECOVERY_REVIEW = "KILL_SWITCH_RECOVERY_REVIEW"
+
+
+def new_uuid7(now_ms: int | None = None) -> uuid.UUID:
+    timestamp = int(time.time_ns() // 1_000_000 if now_ms is None else now_ms)
+    if not 0 <= timestamp < 1 << 48:
+        raise ValueError("UUIDv7 timestamp is outside 48-bit range")
+    random_bits = secrets.randbits(74)
+    value = (timestamp << 80) | (0x7 << 76)
+    value |= ((random_bits >> 62) & 0xFFF) << 64
+    value |= 0b10 << 62
+    value |= random_bits & ((1 << 62) - 1)
+    return uuid.UUID(int=value)
