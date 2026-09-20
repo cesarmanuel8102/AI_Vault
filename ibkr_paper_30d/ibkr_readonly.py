@@ -132,8 +132,8 @@ class IBKRReadOnlyAdapter:
             if account_hash != self.expected_account_hash:
                 reasons.append("ACCOUNT_IDENTITY_MISMATCH")
         if (
-            session.connector_account_hash is None
-            or session.connector_account_hash != self.expected_account_hash
+            session.connector_account_hash is not None
+            and session.connector_account_hash != self.expected_account_hash
         ):
             reasons.append("CONNECTOR_IDENTITY_MISMATCH")
         if not session.heartbeat_ok:

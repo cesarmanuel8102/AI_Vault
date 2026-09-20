@@ -72,6 +72,7 @@ def test_all_required_state_enums_are_present() -> None:
         "SYSTEM_STOPPED",
     }
     assert "BROKER_READY" in {state.value for state in BrokerState}
+    assert "BROKER_RECONNECTING" in {state.value for state in BrokerState}
     assert "ORDER_SUBMIT_UNKNOWN" in {state.value for state in ExecutionState}
     assert {state.value for state in KillSwitchState} == {
         "KILL_SWITCH_CLEAR",

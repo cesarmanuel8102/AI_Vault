@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import tempfile
 from decimal import Decimal
 from enum import Enum
+from pathlib import Path
 from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from .canonical import canonical_bytes, sha256_json
 from .persistence import Database
+from .redaction import redact_text
 from .repositories import utc_now
 from .types import new_uuid7
 
@@ -127,6 +132,185 @@ class TraderProvider(Protocol):
     ) -> ProviderResponse: ...
 
 
+class CodexCLIProvider:
+    is_real_codex_provider = True
+    TOOL_ITEM_TYPES = frozenset(
+        {"command_execution", "mcp_tool_call", "file_change", "web_search"}
+    )
+
+    def __init__(self, *, runner: Any = subprocess.run):
+        self.runner = runner
+        self.last_event_count = 0
+        self.last_tool_activity_detected = False
+        self.last_failure_code: str | None = None
+        self.last_failure_detail: str | None = None
+        self.last_failure_diagnostic: str | None = None
+
+    def invoke(
+        self, request: InvocationRequest, bundle: TraderInputBundle
+    ) -> ProviderResponse:
+        with tempfile.TemporaryDirectory(prefix="codex-trader-v1-") as raw_dir:
+            workdir = Path(raw_dir)
+            schema_path = workdir / "trader_output_schema.json"
+            output_path = workdir / "trader_output.json"
+            schema_path.write_text(
+                json.dumps(self.strict_output_schema(), sort_keys=True),
+                encoding="utf-8",
+            )
+            command = [
+                "codex",
+                "exec",
+                "--ephemeral",
+                "--ignore-rules",
+                "--ignore-user-config",
+                "--skip-git-repo-check",
+                "--sandbox",
+                "read-only",
+                "--json",
+                "--model",
+                request.requested_model,
+                "-c",
+                f'model_reasoning_effort="{request.reasoning_effort.lower()}"',
+                "--output-schema",
+                str(schema_path),
+                "--output-last-message",
+                str(output_path),
+                "-",
+            ]
+            try:
+                completed = self.runner(
+                    command,
+                    input=self._prompt(request, bundle),
+                    text=True,
+                    capture_output=True,
+                    timeout=request.timeout_seconds,
+                    cwd=workdir,
+                    env=self._sanitized_environment(),
+                    check=False,
+                )
+            except subprocess.TimeoutExpired as exc:
+                self.last_failure_code = "TIMEOUT"
+                raise TimeoutError("Codex provider timed out") from exc
+            if completed.returncode != 0:
+                self.last_failure_code = f"RETURN_CODE_{completed.returncode}"
+                self.last_failure_detail = self._classify_stderr(completed.stderr)
+                diagnostic = completed.stderr[-1000:] or completed.stdout[-1000:]
+                self.last_failure_diagnostic = redact_text(diagnostic)
+                raise RuntimeError(
+                    f"CODEX_PROVIDER_FAILED:returncode={completed.returncode}"
+                )
+            try:
+                self.last_event_count = self._verify_no_tool_activity(completed.stdout)
+            except RuntimeError:
+                self.last_failure_code = "EVENT_AUDIT_FAILED"
+                raise
+            try:
+                structured = json.loads(output_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                self.last_failure_code = "OUTPUT_UNREADABLE"
+                raise RuntimeError("CODEX_STRUCTURED_OUTPUT_UNREADABLE") from exc
+            self.last_failure_code = None
+            self.last_failure_detail = None
+            self.last_failure_diagnostic = None
+            return ProviderResponse(
+                actual_model=request.requested_model,
+                fallback_reason=None,
+                structured_output=structured,
+            )
+
+    @staticmethod
+    def _prompt(request: InvocationRequest, bundle: TraderInputBundle) -> str:
+        payload = {
+            "schema": "TRADER_INPUT_BUNDLE_TEST_V1",
+            "non_trading_test": True,
+            "order_authority": False,
+            "request": request.model_dump(mode="json"),
+            "bundle": bundle.model_dump(mode="json"),
+        }
+        return (
+            "Return only a JSON object conforming to the supplied output schema. "
+            "This is a synthetic non-trading validation. Do not call tools, read files, "
+            "inspect the environment, access a broker, or access an execution lock. "
+            "Return decision NO_TRADE, proposal null, confidence 1.0, and reason code "
+            "SYNTHETIC_NON_TRADING_TEST. Copy decision_cycle_id, invocation_id, and "
+            "input_bundle_sha256 exactly from the request. Use the request utc_timestamp.\n"
+            + canonical_bytes(payload).decode("utf-8")
+        )
+
+    @staticmethod
+    def strict_output_schema() -> dict[str, Any]:
+        schema = TraderOutput.model_json_schema()
+
+        def normalize(node: object) -> None:
+            if isinstance(node, dict):
+                node.pop("pattern", None)
+                properties = node.get("properties")
+                if isinstance(properties, dict):
+                    node["required"] = list(properties)
+                    node["additionalProperties"] = False
+                for value in node.values():
+                    normalize(value)
+            elif isinstance(node, list):
+                for value in node:
+                    normalize(value)
+
+        normalize(schema)
+        return schema
+
+    def _verify_no_tool_activity(self, output: str) -> int:
+        event_count = 0
+        for line in output.splitlines():
+            if not line.strip():
+                continue
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError as exc:
+                raise RuntimeError("CODEX_EVENT_STREAM_INVALID") from exc
+            item = event.get("item") if isinstance(event, dict) else None
+            item_type = item.get("type") if isinstance(item, dict) else None
+            if item_type in self.TOOL_ITEM_TYPES:
+                self.last_tool_activity_detected = True
+                raise RuntimeError(f"CODEX_TOOL_ACTIVITY_DETECTED:{item_type}")
+            event_count += 1
+        return event_count
+
+    @staticmethod
+    def _sanitized_environment() -> dict[str, str]:
+        allowed = (
+            "SYSTEMROOT",
+            "WINDIR",
+            "PATH",
+            "USERPROFILE",
+            "CODEX_HOME",
+            "LOCALAPPDATA",
+            "APPDATA",
+            "TEMP",
+            "TMP",
+            "HOME",
+            "SSL_CERT_FILE",
+            "HTTPS_PROXY",
+            "HTTP_PROXY",
+            "NO_PROXY",
+        )
+        return {name: os.environ[name] for name in allowed if name in os.environ}
+
+    @staticmethod
+    def _classify_stderr(stderr: str) -> str:
+        lowered = stderr.lower()
+        classifiers = (
+            ("unknown variant `max`", "MODEL_CATALOG_COMPATIBILITY_ERROR"),
+            ("invalid schema", "OUTPUT_SCHEMA_REJECTED"),
+            ("json schema", "OUTPUT_SCHEMA_REJECTED"),
+            ("not logged in", "CODEX_AUTH_UNAVAILABLE"),
+            ("authentication", "CODEX_AUTH_UNAVAILABLE"),
+            ("model", "MODEL_UNAVAILABLE"),
+        )
+        for needle, reason in classifiers:
+            if needle in lowered:
+                return reason
+        return "UNCLASSIFIED_PROVIDER_ERROR"
+
+
 class ValidatedTraderResult(BaseModel, frozen=True):
     accepted: bool
     validation: str
@@ -235,6 +419,8 @@ class TraderInvocationAdapter:
         self.last_result = result
         if accepted:
             self.local_gate_status = "PASS"
+            if getattr(self.provider, "is_real_codex_provider", False):
+                self.real_codex_gate_status = "PASS"
         return result
 
     def _invalid(

@@ -5,10 +5,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ibkr_paper_30d.cli import (
+    _market_behavior,
+    _required_summary_complete,
+    _settled_cash,
     build_capability_matrix,
     build_implementation_status,
     inspect_readonly,
 )
+from ibkr_paper_30d.ibkr_readonly_session import QuoteObservation
 from ibkr_paper_30d.ibkr_readonly import (
     IBKRReadOnlyAdapter,
     ReadOnlySessionSnapshot,
@@ -110,6 +114,13 @@ def test_multiple_accounts_or_connector_mismatch_blocks() -> None:
     assert "CONNECTOR_IDENTITY_MISMATCH" in connector.reason_codes
 
 
+def test_unavailable_connector_does_not_override_local_multifactor_proof() -> None:
+    evidence = adapter().prove_identity(session(connector_account_hash=None))
+
+    assert evidence.paper_identity_proven is True
+    assert "CONNECTOR_IDENTITY_MISMATCH" not in evidence.reason_codes
+
+
 def test_sanitized_inspection_contains_capabilities_but_no_account_id() -> None:
     report = adapter().inspect(session())
     serialized = str(report)
@@ -155,3 +166,78 @@ def test_capability_matrix_and_status_never_enable_trading() -> None:
     assert status["REAL_PAPER_ORDER_WRITE_AUTHORIZED"] is False
     assert status["TEST_ORDER_AUTHORIZED"] is False
     assert status["DIRECTIONAL_TRADING_AUTHORIZED"] is False
+
+
+def test_implementation_status_uses_real_gate_receipts() -> None:
+    readonly = {
+        "status": "PASS",
+        "paper_account_identity_gate": "PASS",
+        "real_ibkr_read_only_identity_gate": "PASS",
+        "broker_reconciliation_gate": "PASS",
+        "market_data_policy_frozen": False,
+    }
+    codex = {"gate": "PASS"}
+    auditor = {"gate": "BLOCK"}
+    alerts = {
+        "gate": "PASS",
+        "results": [
+            {"event_type": "BROKER_2FA_REAUTH_REQUIRED"},
+            {"event_type": "KILL_SWITCH_TRIGGERED"},
+            {"event_type": "BROKER_HEARTBEAT_TIMEOUT"},
+        ],
+    }
+
+    status = build_implementation_status(
+        test_count=200,
+        test_failures=0,
+        readonly_report=readonly,
+        alert_report=alerts,
+        real_codex_report=codex,
+        auditor_report=auditor,
+    )
+
+    assert status["PAPER_ACCOUNT_IDENTITY_GATE"] == "PASS"
+    assert status["REAL_IBKR_READ_ONLY_IDENTITY_GATE"] == "PASS"
+    assert status["BROKER_RECONCILIATION_GATE"] == "PASS"
+    assert status["MARKET_DATA_POLICY_FROZEN"] is False
+    assert status["MARKET_DATA_GATE"] == "BLOCK"
+    assert status["TRADER_INVOCATION_REAL_CODEX_GATE"] == "PASS"
+    assert status["AUDITOR_ISOLATION_GATE"] == "BLOCK"
+    assert status["OWNER_ALERT_GATE"] == "PASS"
+    assert status["READY_FOR_HARMLESS_PAPER_LIFECYCLE_TEST"] is False
+    assert "AUDITOR_ISOLATION_GATE" in status["UNRESOLVED_BLOCKERS"]
+    assert "MARKET_DATA_POLICY_FROZEN" in status["UNRESOLVED_BLOCKERS"]
+    assert status["AUTONOMOUS_TRADING_STATUS"] == "BLOCKED"
+
+
+def test_local_tests_cannot_promote_real_broker_reconciliation() -> None:
+    status = build_implementation_status(test_count=200, test_failures=0)
+
+    assert status["BROKER_RECONCILIATION_GATE"] == "BLOCK"
+    assert status["REAL_IBKR_READ_ONLY_IDENTITY_GATE"] == "BLOCK"
+
+
+def test_market_behavior_requires_an_actual_quote_value() -> None:
+    quotes = (
+        QuoteObservation("SPY", 1, None, None, None, None, True),
+        QuoteObservation("QQQ", 1, None, None, None, None, True),
+    )
+
+    assert _market_behavior(quotes) == "UNAVAILABLE"
+
+
+def test_reconciliation_requires_all_authorized_account_summary_fields() -> None:
+    complete = {
+        "TotalCashValue": "500.00",
+        "SettledCash": "500.00",
+        "BuyingPower": "500.00",
+        "NetLiquidation": "500.00",
+    }
+
+    assert _required_summary_complete(complete) is True
+    del complete["SettledCash"]
+    assert _required_summary_complete(complete) is False
+
+    complete["SettledCashByDate"] = "20260920:500.00"
+    assert _required_summary_complete(complete) is True
+    assert _settled_cash(complete) == "500.00"

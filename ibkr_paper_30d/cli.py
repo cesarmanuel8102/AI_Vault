@@ -5,12 +5,14 @@ import hashlib
 import json
 import os
 import socket
-import xml.etree.ElementTree as ET
+import re
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Sequence
 from uuid import uuid4
+
+from defusedxml import ElementTree as ET
 
 from .alerts import (
     AlertEvent,
@@ -20,14 +22,30 @@ from .alerts import (
     WindowsEventLogChannel,
     load_smtp_channel,
 )
+from .auditor import write_isolation_report
+from .ibkr_readonly import IBKRReadOnlyAdapter, ReadOnlySessionSnapshot
+from .ibkr_readonly_session import (
+    ExpectedPaperIdentityStore,
+    IBKRReadOnlySessionCollector,
+    ReadOnlyMessageGuard,
+)
 from .persistence import Database
+from .redaction import redact_text
 from .reporting import FAULT_SCENARIOS, FaultInjectionHarness, write_local_reports
+from .trader_invocation import (
+    CodexCLIProvider,
+    InvocationRequest,
+    TraderInputBundle,
+    TraderInvocationAdapter,
+)
 
 
 REPORT_ROOT = Path("state/ibkr_paper_30d/reports")
 READONLY_REPORT = REPORT_ROOT / "read_only_real_paper_reconciliation.json"
 ALERT_REPORT = REPORT_ROOT / "alert_delivery_simulation.json"
 GATE_REPORT = REPORT_ROOT / "updated_gate_matrix.json"
+REAL_CODEX_REPORT = REPORT_ROOT / "real_codex_trader_invocation.json"
+AUDITOR_REPORT = REPORT_ROOT / "auditor_isolation_probe.json"
 CAPABILITY_MATRIX = Path("IBKR_CAPABILITY_MATRIX_V1.md")
 
 
@@ -41,20 +59,152 @@ def inspect_readonly(
     reasons: list[str] = []
     if port != 4002:
         reasons.append("PAPER_PORT_MISMATCH")
-    if not expected_account_hash:
-        reasons.append("EXPECTED_ACCOUNT_IDENTITY_NOT_CONFIGURED")
     if not _port_is_open(host, port):
         reasons.append("GATEWAY_UNAVAILABLE")
-    if not reasons:
-        reasons.append("SAFE_READ_ONLY_SESSION_CAPTURE_UNAVAILABLE")
+    if reasons:
+        if not expected_account_hash:
+            reasons.insert(0, "EXPECTED_ACCOUNT_IDENTITY_NOT_CONFIGURED")
+        report = {
+            "schema": "REAL_IBKR_READ_ONLY_RECONCILIATION_V1",
+            "status": "BLOCK",
+            "host": host,
+            "port": port,
+            "reason_codes": reasons,
+            "gateway_started_by_codex": False,
+            "broker_calls_made": 0,
+            "raw_account_identity_persisted": False,
+            "real_order_writes_attempted": 0,
+        }
+        _atomic_json(Path(output_path), report)
+        return report
+
+    gateway_mode, gateway_config_consistent = _gateway_mode()
+    evidence = IBKRReadOnlySessionCollector().collect(host=host, port=port)
+    identity_store = ExpectedPaperIdentityStore(
+        Path("Secrets/expected_paper_account_identity_v1.json")
+    )
+    configured_hash = expected_account_hash
+    binding_receipt = None
+    if configured_hash is None and identity_store.path.exists():
+        configured_hash = identity_store.load_hash()
+    if configured_hash is None and len(evidence.managed_accounts) == 1:
+        binding_receipt = identity_store.bind(
+            evidence.managed_accounts[0],
+            host=host,
+            port=port,
+            gateway_mode=gateway_mode,
+            managed_account_count=len(evidence.managed_accounts),
+        )
+        configured_hash = binding_receipt.account_sha256
+    if configured_hash is None:
+        raise RuntimeError("expected paper identity could not be bound")
+
+    summary_accounts = set(evidence.account_summary)
+    managed_accounts = set(evidence.managed_accounts)
+    account_summary_consistent = bool(summary_accounts) and summary_accounts.issubset(
+        managed_accounts
+    )
+    selected_summary = (
+        evidence.account_summary.get(evidence.managed_accounts[0], {})
+        if len(evidence.managed_accounts) == 1
+        else {}
+    )
+    snapshot = ReadOnlySessionSnapshot(
+        port=port,
+        connected=evidence.connected,
+        authenticated=evidence.authenticated,
+        paper_trading_mode=gateway_mode == "p" and gateway_config_consistent,
+        managed_accounts=evidence.managed_accounts,
+        connector_account_hash=None,
+        cash=selected_summary.get("TotalCashValue"),
+        settled_cash=_settled_cash(selected_summary),
+        position_count=len(evidence.positions),
+        open_order_count=len(evidence.open_orders),
+        execution_visibility=(
+            "AVAILABLE"
+            if evidence.query_completeness.get("executions")
+            else "UNAVAILABLE"
+        ),
+        market_data_entitlements=_market_behavior(evidence.quotes),
+        server_timestamp_utc=(
+            datetime.fromisoformat(evidence.server_timestamp_utc.replace("Z", "+00:00"))
+            if evidence.server_timestamp_utc
+            else None
+        ),
+        heartbeat_ok=evidence.heartbeat_ok,
+    )
+    inspection = IBKRReadOnlyAdapter(configured_hash).inspect(snapshot)
+    query_complete = all(evidence.query_completeness.values())
+    critical_errors = [
+        item for item in evidence.errors if int(item.get("code", 0)) in {326, 502, 503, 504, 1100, 1300}
+    ]
+    summary_complete = _required_summary_complete(selected_summary)
+    identity_pass = (
+        inspection.identity.paper_identity_proven
+        and account_summary_consistent
+        and gateway_config_consistent
+        and bool(binding_receipt is None or binding_receipt.acl_protected)
+    )
+    reconciliation_pass = (
+        identity_pass and query_complete and summary_complete and not critical_errors
+    )
+    report_reasons = list(inspection.reason_codes)
+    if not gateway_config_consistent:
+        report_reasons.append("GATEWAY_CONFIG_MODE_CONFLICT")
+    if not account_summary_consistent:
+        report_reasons.append("ACCOUNT_SUMMARY_IDENTITY_MISMATCH")
+    if not query_complete:
+        report_reasons.append("BROKER_QUERY_INCOMPLETE")
+    if not summary_complete:
+        report_reasons.append("ACCOUNT_SUMMARY_FIELDS_INCOMPLETE")
+    if critical_errors:
+        report_reasons.append("BROKER_CRITICAL_ERROR")
+    behavior = _market_behavior(evidence.quotes)
     report = {
-        "schema": "IBKR_READ_ONLY_RECONCILIATION_V1",
-        "status": "BLOCK",
+        "schema": "REAL_IBKR_READ_ONLY_RECONCILIATION_V1",
+        "status": "PASS" if reconciliation_pass else ("PARTIAL" if identity_pass else "BLOCK"),
+        "reason_codes": sorted(set(report_reasons)),
         "host": host,
         "port": port,
-        "reason_codes": reasons,
-        "gateway_started_by_codex": False,
-        "broker_calls_made": 0,
+        "gateway_mode": "PAPER" if gateway_mode == "p" else "UNPROVEN",
+        "gateway_config_consistent": gateway_config_consistent,
+        "server_version": evidence.server_version,
+        "connection_time": evidence.connection_time,
+        "paper_account_identity_gate": "PASS" if identity_pass else "BLOCK",
+        "real_ibkr_read_only_identity_gate": "PASS" if identity_pass else "BLOCK",
+        "broker_reconciliation_gate": "PASS" if reconciliation_pass else "BLOCK",
+        "expected_account_identity_bound": identity_store.path.exists(),
+        "account_fingerprint": inspection.identity.account_fingerprint,
+        "identity_factor_count": inspection.identity.factor_count,
+        "connector_comparison": "UNAVAILABLE",
+        "account_summary_consistent": account_summary_consistent,
+        "account_summary_complete": summary_complete,
+        "cash": snapshot.cash,
+        "settled_cash": snapshot.settled_cash,
+        "buying_power": selected_summary.get("BuyingPower"),
+        "net_liquidation": selected_summary.get("NetLiquidation"),
+        "position_count": len(evidence.positions),
+        "positions": [
+            {key: value for key, value in position.items() if key != "account"}
+            for position in evidence.positions
+        ],
+        "open_order_count": len(evidence.open_orders),
+        "open_orders": list(evidence.open_orders),
+        "execution_count": len(evidence.executions),
+        "executions": list(evidence.executions),
+        "execution_visibility": snapshot.execution_visibility,
+        "market_data_behavior": behavior,
+        "market_data_policy_frozen": False,
+        "quotes": [asdict(quote) for quote in evidence.quotes],
+        "server_timestamp_utc": evidence.server_timestamp_utc,
+        "heartbeat_ok": evidence.heartbeat_ok,
+        "query_completeness": evidence.query_completeness,
+        "broker_errors": _redacted_errors(evidence.errors),
+        "outbound_message_ids": list(evidence.outbound_message_ids),
+        "outbound_allowlist_only": all(
+            message_id in ReadOnlyMessageGuard.ALLOWED_MESSAGE_IDS
+            for message_id in evidence.outbound_message_ids
+        ),
         "raw_account_identity_persisted": False,
         "real_order_writes_attempted": 0,
     }
@@ -62,7 +212,74 @@ def inspect_readonly(
     return report
 
 
-def build_capability_matrix(readonly_report: dict[str, object]) -> str:
+def _gateway_mode() -> tuple[str, bool]:
+    paths = (Path("C:/Jts/jts.ini"), Path("C:/Jts/ibgateway/1044/jts.ini"))
+    modes = []
+    for path in paths:
+        if not path.exists():
+            continue
+        match = re.search(
+            r"(?im)^tradingMode\s*=\s*([pl])\s*$",
+            path.read_text(encoding="utf-8", errors="replace"),
+        )
+        if match:
+            modes.append(match.group(1).lower())
+    return (modes[0] if modes else "unknown", bool(modes) and set(modes) == {"p"})
+
+
+def _market_behavior(quotes: Sequence[object]) -> str:
+    if not any(
+        getattr(quote, field, None) is not None
+        for quote in quotes
+        for field in ("bid", "ask", "last")
+    ):
+        return "UNAVAILABLE"
+    types = {getattr(quote, "market_data_type", None) for quote in quotes}
+    types.discard(None)
+    if not types:
+        return "UNAVAILABLE"
+    if types <= {1}:
+        return "REALTIME"
+    if types <= {3, 4}:
+        return "DELAYED"
+    return "MIXED"
+
+
+def _required_summary_complete(summary: dict[str, str]) -> bool:
+    return {
+        "TotalCashValue",
+        "BuyingPower",
+        "NetLiquidation",
+    }.issubset(summary) and _settled_cash(summary) is not None
+
+
+def _settled_cash(summary: dict[str, str]) -> str | None:
+    direct = summary.get("SettledCash")
+    if direct:
+        return direct
+    dated = summary.get("SettledCashByDate", "")
+    match = re.fullmatch(r"\d{8}:([-+]?\d+(?:\.\d+)?)", dated)
+    return match.group(1) if match else None
+
+
+def _redacted_errors(errors: Sequence[dict[str, object]]) -> list[dict[str, object]]:
+    return [
+        {
+            "request_id": item.get("request_id"),
+            "code": item.get("code"),
+            "message": redact_text(str(item.get("message", ""))),
+        }
+        for item in errors
+    ]
+
+
+def build_capability_matrix(
+    readonly_report: dict[str, object],
+    real_codex_report: dict[str, object] | None = None,
+    auditor_report: dict[str, object] | None = None,
+) -> str:
+    real_codex_report = real_codex_report or {}
+    auditor_report = auditor_report or {}
     readonly_status = (
         "AVAILABLE" if readonly_report.get("status") == "PASS" else "UNAVAILABLE"
     )
@@ -73,8 +290,16 @@ def build_capability_matrix(readonly_report: dict[str, object]) -> str:
         ("Real IBKR read-only identity", readonly_status, readonly_evidence),
         ("Real IBKR order writes", "UNAVAILABLE", "Hard-disabled by authorization"),
         ("Test order lifecycle", "UNAVAILABLE", "Not authorized"),
-        ("Real Codex Trader invocation", "UNKNOWN", "Not tested"),
-        ("Auditor OS isolation", "PARTIAL", "Restricted token and ACLs unproven"),
+        (
+            "Real Codex Trader invocation",
+            "AVAILABLE" if real_codex_report.get("gate") == "PASS" else "UNAVAILABLE",
+            "Synthetic non-trading provider receipt",
+        ),
+        (
+            "Auditor OS isolation",
+            "AVAILABLE" if auditor_report.get("gate") == "PASS" else "UNAVAILABLE",
+            ", ".join(auditor_report.get("reason_codes", [])) or "Not proven",
+        ),
         ("30-day experiment start", "UNAVAILABLE", "Owner authorization required"),
     )
     lines = [
@@ -101,10 +326,69 @@ def build_implementation_status(
     test_failures: int,
     readonly_report: dict[str, object] | None = None,
     alert_report: dict[str, object] | None = None,
+    real_codex_report: dict[str, object] | None = None,
+    auditor_report: dict[str, object] | None = None,
+    implementation_head: str = "",
 ) -> dict[str, object]:
     local_pass = test_failures == 0 and test_count > 0
+    readonly_report = readonly_report or {}
+    alert_report = alert_report or {}
+    real_codex_report = real_codex_report or {}
+    auditor_report = auditor_report or {}
+    alert_events = {
+        result.get("event_type")
+        for result in alert_report.get("results", [])
+        if isinstance(result, dict)
+    }
+    required_alert_events = {
+        "BROKER_2FA_REAUTH_REQUIRED",
+        "KILL_SWITCH_TRIGGERED",
+        "BROKER_HEARTBEAT_TIMEOUT",
+    }
+    owner_alert_gate = (
+        "PASS"
+        if alert_report.get("gate") == "PASS"
+        and required_alert_events.issubset(alert_events)
+        else "BLOCK"
+    )
+    identity_gate = (
+        "PASS"
+        if readonly_report.get("real_ibkr_read_only_identity_gate") == "PASS"
+        else "BLOCK"
+    )
+    paper_identity_gate = (
+        "PASS"
+        if readonly_report.get("paper_account_identity_gate") == "PASS"
+        else "BLOCK"
+    )
+    reconciliation_gate = (
+        "PASS"
+        if readonly_report.get("broker_reconciliation_gate") == "PASS"
+        else "BLOCK"
+    )
+    codex_gate = "PASS" if real_codex_report.get("gate") == "PASS" else "BLOCK"
+    auditor_gate = "PASS" if auditor_report.get("gate") == "PASS" else "BLOCK"
+    market_policy_frozen = bool(
+        readonly_report.get("market_data_policy_frozen", False)
+    )
+    two_factor_validated = (
+        local_pass and "BROKER_2FA_REAUTH_REQUIRED" in alert_events
+    )
+    unresolved = []
+    checks = (
+        ("PAPER_ACCOUNT_IDENTITY_GATE", paper_identity_gate == "PASS"),
+        ("REAL_IBKR_READ_ONLY_IDENTITY_GATE", identity_gate == "PASS"),
+        ("BROKER_RECONCILIATION_GATE", reconciliation_gate == "PASS"),
+        ("MARKET_DATA_POLICY_FROZEN", market_policy_frozen),
+        ("TRADER_INVOCATION_REAL_CODEX_GATE", codex_gate == "PASS"),
+        ("AUDITOR_ISOLATION_GATE", auditor_gate == "PASS"),
+        ("OWNER_ALERT_GATE", owner_alert_gate == "PASS"),
+        ("2FA_STATE_MACHINE_VALIDATED", two_factor_validated),
+    )
+    unresolved.extend(name for name, passed in checks if not passed)
     return {
         "schema": "CODEX_IBKR_PAPER_IMPLEMENTATION_STATUS_V1",
+        "IMPLEMENTATION_HEAD": implementation_head,
         "TEST_COUNT": test_count,
         "PASS": test_count - test_failures,
         "FAIL": test_failures,
@@ -115,20 +399,31 @@ def build_implementation_status(
         "SUBLEDGER_GATE": "PASS" if local_pass else "BLOCK",
         "PRETRADE_FREEZE_GATE": "PASS" if local_pass else "BLOCK",
         "TRADER_INVOCATION_LOCAL_GATE": "PASS" if local_pass else "BLOCK",
-        "TRADER_INVOCATION_REAL_CODEX_GATE": "NOT_TESTED",
-        "MARKET_DATA_GATE": "PASS" if local_pass else "BLOCK",
+        "TRADER_INVOCATION_REAL_CODEX_GATE": codex_gate,
+        "MARKET_DATA_GATE": "PASS" if market_policy_frozen else "BLOCK",
         "ALERT_GATE": (
-            "PASS" if alert_report and alert_report.get("gate") == "PASS" else "BLOCK"
+            "PASS" if alert_report.get("gate") == "PASS" else "BLOCK"
         ),
+        "OWNER_ALERT_GATE": owner_alert_gate,
         "ORCHESTRATOR_GATE": "PASS" if local_pass else "BLOCK",
-        "AUDITOR_ISOLATION_GATE": "BLOCK",
+        "RECOVERY_GATE": "PASS" if local_pass else "BLOCK",
+        "AUDITOR_ISOLATION_GATE": auditor_gate,
         "FAULT_INJECTION_GATE": "PASS" if local_pass else "BLOCK",
-        "REAL_IBKR_READ_ONLY_IDENTITY_GATE": (
-            "PASS"
-            if readonly_report and readonly_report.get("status") == "PASS"
-            else "BLOCK"
+        "IBKR_GATEWAY_RUNNING": bool(
+            readonly_report.get("heartbeat_ok")
+            and readonly_report.get("status") in {"PASS", "PARTIAL"}
         ),
-        "BROKER_RECONCILIATION_GATE": "PASS" if local_pass else "BLOCK",
+        "PAPER_IDENTITY_PROVEN": paper_identity_gate == "PASS",
+        "EXPECTED_ACCOUNT_IDENTITY_BOUND": bool(
+            readonly_report.get("expected_account_identity_bound", False)
+        ),
+        "REAL_IBKR_READ_ONLY_IDENTITY_GATE": identity_gate,
+        "PAPER_ACCOUNT_IDENTITY_GATE": paper_identity_gate,
+        "BROKER_RECONCILIATION_GATE": reconciliation_gate,
+        "MARKET_DATA_POLICY_FROZEN": market_policy_frozen,
+        "2FA_STATE_MACHINE_VALIDATED": two_factor_validated,
+        "UNRESOLVED_BLOCKERS": unresolved,
+        "READY_FOR_HARMLESS_PAPER_LIFECYCLE_TEST": False,
         "REAL_PAPER_ORDER_WRITE_AUTHORIZED": False,
         "TEST_ORDER_AUTHORIZED": False,
         "DIRECTIONAL_TRADING_AUTHORIZED": False,
@@ -136,6 +431,94 @@ def build_implementation_status(
         "REAL_MONEY_ALLOWED": False,
         "AUTONOMOUS_TRADING_STATUS": "BLOCKED",
     }
+
+
+def invoke_real_codex_test(
+    *,
+    model: str,
+    reasoning_effort: str,
+    timeout_seconds: int,
+) -> dict[str, object]:
+    REPORT_ROOT.mkdir(parents=True, exist_ok=True)
+    run_id = uuid4().hex
+    cycle_id = f"real-codex-test-{run_id}"
+    invocation_id = f"invocation-{run_id}"
+    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    bundle = TraderInputBundle(
+        decision_cycle_id=cycle_id,
+        utc_timestamp=now,
+        market_session_state="SYNTHETIC_NON_TRADING",
+        reconciliation_receipt={"status": "SYNTHETIC", "sha256": "r" * 64},
+        experiment_subledger_snapshot={"equity": "500.00", "synthetic": True},
+        broker_account_snapshot={"synthetic": True, "account_identity": None},
+        positions_snapshot=[],
+        open_orders_snapshot=[],
+        risk_snapshot={"status": "BLOCK", "order_authority": False},
+        kill_switch_state="KILL_SWITCH_TRIGGERED",
+        market_data_snapshot={"gate_status": "PASS", "synthetic": True},
+        candidate_screen_results=[],
+        relevant_previous_immutable_decisions=[],
+        process_policy_version="PROCESS_TEST_V1",
+        execution_realism_version="NON_EXECUTABLE_TEST_V1",
+        benchmark_state={"synthetic": True},
+    )
+    request = InvocationRequest(
+        decision_cycle_id=cycle_id,
+        invocation_id=invocation_id,
+        utc_timestamp=now,
+        requested_model=model,
+        actual_model=model,
+        model_configuration={"provider": "codex-cli", "synthetic": True},
+        reasoning_effort=reasoning_effort,
+        input_bundle_sha256=bundle.sha256,
+        risk_policy_version="MONTH1_V1",
+        experiment_id="prelifecycle-provider-test",
+        invocation_trigger="OWNER_AUTHORIZED_NON_TRADING_TEST",
+        timeout_seconds=timeout_seconds,
+    )
+    provider = CodexCLIProvider()
+    database = Database.open(REPORT_ROOT / "real_codex_invocations.sqlite3")
+    try:
+        adapter = TraderInvocationAdapter(database, provider)
+        result = adapter.invoke(request, bundle)
+    finally:
+        database.close()
+    gate = (
+        "PASS"
+        if result.accepted
+        and result.effective_decision == "NO_TRADE"
+        and result.order_authority is False
+        and adapter.real_codex_gate_status == "PASS"
+        and not provider.last_tool_activity_detected
+        else "BLOCK"
+    )
+    report = {
+        "schema": "CODEX_TRADER_INVOCATION_REAL_V1",
+        "gate": gate,
+        "requested_model": model,
+        "actual_model": model,
+        "reasoning_effort": reasoning_effort,
+        "input_bundle_sha256": bundle.sha256,
+        "decision_cycle_id": cycle_id,
+        "invocation_id": invocation_id,
+        "structured_output_valid": result.validation == "PASS",
+        "effective_decision": result.effective_decision,
+        "reason_codes": list(result.reason_codes),
+        "order_authority": result.order_authority,
+        "tool_activity_detected": provider.last_tool_activity_detected,
+        "provider_event_count": provider.last_event_count,
+        "provider_failure_code": provider.last_failure_code,
+        "provider_failure_detail": provider.last_failure_detail,
+        "provider_failure_diagnostic": provider.last_failure_diagnostic,
+        "broker_access": False,
+        "execution_lock_access": False,
+    }
+    encoded = json.dumps(report, sort_keys=True, separators=(",", ":"))
+    report["secret_scan"] = "PASS" if redact_text(encoded) == encoded else "BLOCK"
+    if report["secret_scan"] != "PASS":
+        report["gate"] = "BLOCK"
+    _atomic_json(REAL_CODEX_REPORT, report)
+    return report
 
 
 def simulate_alerts(events: Sequence[str]) -> dict[str, object]:
@@ -234,6 +617,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     commands.add_parser("write-capability-matrix")
     commands.add_parser("write-implementation-status")
     commands.add_parser("write-local-reports")
+    commands.add_parser("probe-auditor-isolation")
+    codex_parser = commands.add_parser("invoke-real-codex-test")
+    codex_parser.add_argument("--model", default="gpt-5.5")
+    codex_parser.add_argument("--reasoning-effort", default="medium")
+    codex_parser.add_argument("--timeout-seconds", type=int, default=120)
     args = parser.parse_args(argv)
 
     if args.command == "inspect-ibkr-readonly":
@@ -244,10 +632,29 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     elif args.command == "simulate-alerts":
         report = simulate_alerts(args.events)
+    elif args.command == "invoke-real-codex-test":
+        report = invoke_real_codex_test(
+            model=args.model,
+            reasoning_effort=args.reasoning_effort,
+            timeout_seconds=args.timeout_seconds,
+        )
+    elif args.command == "probe-auditor-isolation":
+        report = write_isolation_report(
+            secrets_dir=Path("Secrets"),
+            live_db=REPORT_ROOT / "real_codex_invocations.sqlite3",
+            output_path=AUDITOR_REPORT,
+            provisioning_status="ACCESS_DENIED_NON_ADMIN",
+        )
     elif args.command == "write-capability-matrix":
         report = _read_json(READONLY_REPORT)
         CAPABILITY_MATRIX.write_text(
-            build_capability_matrix(report), encoding="utf-8", newline="\n"
+            build_capability_matrix(
+                report,
+                _read_json(REAL_CODEX_REPORT),
+                _read_json(AUDITOR_REPORT),
+            ),
+            encoding="utf-8",
+            newline="\n",
         )
         print(str(CAPABILITY_MATRIX))
         return 0
@@ -258,6 +665,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             test_failures=failures,
             readonly_report=_read_json(READONLY_REPORT),
             alert_report=_read_json(ALERT_REPORT),
+            real_codex_report=_read_json(REAL_CODEX_REPORT),
+            auditor_report=_read_json(AUDITOR_REPORT),
+            implementation_head=os.environ.get("IMPLEMENTATION_HEAD", ""),
         )
         _atomic_json(GATE_REPORT, report)
     else:

@@ -164,6 +164,16 @@ def test_auth_failure_pauses_and_alerts() -> None:
     assert subject.last_alert.event_type == "BROKER_AUTH_FAILED"
 
 
+def test_reconnecting_remains_paused_without_order_authority() -> None:
+    subject, _, _, _ = build()
+
+    subject.handle(BrokerEvent.RECONNECTING)
+
+    assert subject.system_state == SystemState.PAUSED
+    assert subject.broker_state == BrokerState.RECONNECTING
+    assert not hasattr(subject, "submit_order")
+
+
 def test_heartbeat_timeout_freezes_authority_and_alerts() -> None:
     subject, _, _, _ = build()
 

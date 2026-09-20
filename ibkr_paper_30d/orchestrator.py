@@ -10,6 +10,7 @@ from .types import BrokerState, SystemState
 class BrokerEvent(str, Enum):
     CONNECTED = "CONNECTED"
     DISCONNECTED = "DISCONNECTED"
+    RECONNECTING = "RECONNECTING"
     TWO_FACTOR_REQUIRED = "TWO_FACTOR_REQUIRED"
     AUTHENTICATED = "AUTHENTICATED"
     AUTH_FAILED = "AUTH_FAILED"
@@ -143,6 +144,10 @@ class PaperOrchestrator:
             self.broker_state = BrokerState.DISCONNECTED
             self.system_state = SystemState.PAUSED
             self._alert("BROKER_STATE_UNCERTAIN")
+            return
+        if event is BrokerEvent.RECONNECTING:
+            self.broker_state = BrokerState.RECONNECTING
+            self.system_state = SystemState.PAUSED
             return
         if event is BrokerEvent.RUNTIME_RESTARTED:
             self.system_state = SystemState.RECOVERING

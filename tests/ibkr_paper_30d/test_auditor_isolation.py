@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from ibkr_paper_30d.auditor import Auditor
+from ibkr_paper_30d.auditor import Auditor, write_isolation_report
 from ibkr_paper_30d.auditor_export import AuditExporter
 
 
@@ -149,3 +149,27 @@ def test_sanitized_environment_keeps_only_explicit_runtime_values() -> None:
     )
 
     assert env == {"PATH": "safe-path", "SYSTEMROOT": "C:\\Windows"}
+
+
+def test_isolation_report_stays_blocked_when_forbidden_capabilities_exist(
+    tmp_path,
+) -> None:
+    secrets = tmp_path / "Secrets"
+    secrets.mkdir()
+    (secrets / "credential.env").write_text("SECRET=fake", encoding="utf-8")
+    live_db = tmp_path / "live.sqlite3"
+    live_db.write_bytes(b"not-a-real-db")
+    output = tmp_path / "auditor-isolation.json"
+
+    report = write_isolation_report(
+        secrets_dir=secrets,
+        live_db=live_db,
+        output_path=output,
+        provisioning_status="ACCESS_DENIED",
+    )
+
+    assert report["schema"] == "CODEX_DECISION_AUDITOR_ISOLATION_V1"
+    assert report["gate"] == "BLOCK"
+    assert report["os_level_denials_proven"] is False
+    assert report["dedicated_account_provisioning"] == "ACCESS_DENIED"
+    assert output.exists()

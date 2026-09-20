@@ -148,3 +148,37 @@ class Auditor:
             return "MANIFEST_MISMATCH", ("BUNDLE_ID_MISMATCH",), manifest, ""
         manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
         return "PASS", (), manifest, manifest_sha256
+
+
+def write_isolation_report(
+    *,
+    secrets_dir: str | Path,
+    live_db: str | Path,
+    output_path: str | Path,
+    provisioning_status: str,
+) -> dict[str, object]:
+    probe = Auditor().probe_environment(secrets_dir=secrets_dir, live_db=live_db)
+    report = {
+        "schema": "CODEX_DECISION_AUDITOR_ISOLATION_V1",
+        "gate": probe.status,
+        "os_level_denials_proven": False,
+        "dedicated_account_provisioning": provisioning_status,
+        "can_read_secrets": probe.can_read_secrets,
+        "can_import_broker_adapter": probe.can_import_broker_adapter,
+        "can_acquire_execution_lock": probe.can_acquire_execution_lock,
+        "can_mutate_live_database": probe.can_mutate_live_database,
+        "reason_codes": list(probe.reasons),
+    }
+    destination = Path(output_path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_name(f".{destination.name}.{uuid4().hex}.tmp")
+    try:
+        with temporary.open("x", encoding="utf-8", newline="\n") as handle:
+            json.dump(report, handle, sort_keys=True, separators=(",", ":"))
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, destination)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+    return report
