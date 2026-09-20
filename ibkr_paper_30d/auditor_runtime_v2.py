@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
@@ -31,6 +33,107 @@ class RuntimeIntegrityResult:
     @classmethod
     def block(cls, *reasons: str) -> "RuntimeIntegrityResult":
         return cls("BLOCK", tuple(dict.fromkeys(reasons)))
+
+
+@dataclass(frozen=True)
+class RuntimeCapabilityAssessment:
+    status: str
+    predicates: Mapping[str, bool]
+    reason_codes: tuple[str, ...]
+
+
+_STRUCTURAL_PATTERNS = {
+    "BROKER_MODULE_AVAILABLE": (
+        "ibapi",
+        "ib_insync",
+        "eclientsocket",
+        "ewrapper",
+        "twsapi",
+    ),
+    "ORDER_WRITE_SYMBOL_AVAILABLE": (
+        "placeorder",
+        "cancelorder",
+        "reqglobalcancel",
+        "modifyorder",
+    ),
+    "EXECUTION_ADAPTER_AVAILABLE": (
+        "ibkr_paper_30d.broker",
+        "executionadapter",
+        "execution adapter",
+    ),
+    "EXECUTION_LOCK_CLIENT_AVAILABLE": (
+        "acquire-executionlock",
+        "execution_lock",
+        "executionlockclient",
+    ),
+    "TRADER_IPC_CLIENT_AVAILABLE": (
+        "namedpipeclientstream",
+        "trader_invocation",
+        "traderipcclient",
+    ),
+    "BROKER_CREDENTIAL_SOURCE_AVAILABLE": (
+        "ibkr_password",
+        "ibkr_username",
+        "brokercredential",
+        "broker credential",
+    ),
+}
+_GENERIC_PROCESS_SYMBOLS = {
+    "start-process",
+    "invoke-expression",
+    "add-type",
+    "powershell.exe",
+    "pwsh.exe",
+    "python.exe",
+    "python3.exe",
+    "system.diagnostics.process",
+}
+_GENERIC_NETWORK_SYMBOLS = {
+    "invoke-webrequest",
+    "invoke-restmethod",
+    "system.net.http.httpclient",
+    "net.http.httpclient",
+    "system.net.webclient",
+    "net.webclient",
+    "system.net.sockets.socket",
+    "net.sockets.socket",
+}
+_AST_SCANNER = r"""
+$rows = @()
+$inputDocument = $env:CODEX_AUDITOR_AST_PATHS | ConvertFrom-Json
+foreach ($path in @($inputDocument.paths)) {
+    $tokens = $null
+    $errors = $null
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile(
+        $path, [ref]$tokens, [ref]$errors
+    )
+    $commands = @($ast.FindAll({
+        param($node) $node -is [System.Management.Automation.Language.CommandAst]
+    }, $true) | ForEach-Object { $_.GetCommandName() } | Where-Object { $null -ne $_ })
+    $types = @($ast.FindAll({
+        param($node) $node -is [System.Management.Automation.Language.TypeExpressionAst]
+    }, $true) | ForEach-Object { $_.TypeName.FullName })
+    $members = @($ast.FindAll({
+        param($node) $node -is [System.Management.Automation.Language.MemberExpressionAst]
+    }, $true) | ForEach-Object { $_.Member.Value })
+    $strings = @($ast.FindAll({
+        param($node) $node -is [System.Management.Automation.Language.StringConstantExpressionAst]
+    }, $true) | ForEach-Object { $_.Value })
+    $variables = @($ast.FindAll({
+        param($node) $node -is [System.Management.Automation.Language.VariableExpressionAst]
+    }, $true) | ForEach-Object { $_.VariablePath.UserPath })
+    $rows += [ordered]@{
+        path = $path
+        errors = @($errors | ForEach-Object { $_.Message })
+        commands = $commands
+        types = $types
+        members = $members
+        strings = $strings
+        variables = $variables
+    }
+}
+ConvertTo-Json -InputObject @($rows) -Depth 5 -Compress
+"""
 
 
 def _file_sha256(path: Path) -> str:
@@ -194,4 +297,109 @@ def verify_runtime_fileset_v2(
         reason_codes=(),
         runtime_manifest_sha256=_file_sha256(root / RUNTIME_MANIFEST_NAME),
         deployment_manifest_sha256=deployment_self_hash,
+    )
+
+
+def _narrow_tcp_classifier_allowed(path: Path, source: str) -> bool:
+    if path.name != "AUDITOR_DENIAL_PROBE_V1.ps1":
+        return False
+    required = (
+        "function Test-TcpEndpoint",
+        "127.0.0.1",
+        "::1",
+    )
+    compact = re.sub(r"\s+", "", source)
+    return all(fragment in source for fragment in required) and (
+        "ValidateRange(1,65535)" in compact
+    )
+
+
+def assess_runtime_capabilities(
+    runtime_root: Path | str,
+) -> RuntimeCapabilityAssessment:
+    root = Path(runtime_root)
+    paths = [root / name for name in RUNTIME_PAYLOAD_ALLOWLIST]
+    predicates = {name: False for name in _STRUCTURAL_PATTERNS}
+    predicates["ORDER_WRITE_MODULE_AVAILABLE"] = False
+    reasons: list[str] = []
+    try:
+        if any(not path.is_file() or _is_reparse(path) for path in paths):
+            raise ValueError("RUNTIME_FILESET_NOT_VERIFIED")
+        command = [
+            "powershell.exe",
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            _AST_SCANNER,
+        ]
+        environment = os.environ.copy()
+        environment["CODEX_AUDITOR_AST_PATHS"] = json.dumps(
+            {"paths": [str(path.resolve()) for path in paths]}
+        )
+        completed = subprocess.run(  # noqa: S603 - fixed executable and script
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="strict",
+            timeout=30,
+            env=environment,
+        )
+        if completed.returncode != 0:
+            raise ValueError("POWERSHELL_AST_UNAVAILABLE")
+        rows = json.loads(completed.stdout)
+        if isinstance(rows, dict):
+            rows = [rows]
+        if not isinstance(rows, list) or len(rows) != len(paths):
+            raise ValueError("POWERSHELL_AST_OUTPUT_INVALID")
+        for path, row in zip(paths, rows, strict=True):
+            if not isinstance(row, dict) or row.get("errors"):
+                reasons.append("POWERSHELL_AST_PARSE_ERROR")
+                continue
+            values: set[str] = set()
+            for key in ("commands", "types", "members", "strings", "variables"):
+                items = row.get(key, [])
+                if not isinstance(items, list):
+                    reasons.append("POWERSHELL_AST_OUTPUT_INVALID")
+                    continue
+                values.update(str(item).casefold() for item in items if item is not None)
+            symbols = "\n".join(sorted(values))
+            for predicate, patterns in _STRUCTURAL_PATTERNS.items():
+                if any(pattern in symbols for pattern in patterns):
+                    predicates[predicate] = True
+            if values & _GENERIC_PROCESS_SYMBOLS:
+                reasons.append("GENERIC_PROCESS_HELPER_AVAILABLE")
+            if values & _GENERIC_NETWORK_SYMBOLS:
+                reasons.append("GENERIC_NETWORK_HELPER_AVAILABLE")
+            tcp_present = any("tcpclient" in value for value in values)
+            if tcp_present:
+                source = path.read_text(encoding="utf-8")
+                if not _narrow_tcp_classifier_allowed(path, source):
+                    reasons.append("GENERIC_NETWORK_HELPER_AVAILABLE")
+            if "import-module" in values:
+                reasons.append("BROAD_MODULE_IMPORT_AVAILABLE")
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        json.JSONDecodeError,
+        subprocess.SubprocessError,
+    ) as exc:
+        reasons.append(str(exc) or "RUNTIME_CAPABILITY_SCAN_FAILED")
+
+    predicates["ORDER_WRITE_MODULE_AVAILABLE"] = any(
+        predicates[name]
+        for name in (
+            "BROKER_MODULE_AVAILABLE",
+            "ORDER_WRITE_SYMBOL_AVAILABLE",
+            "EXECUTION_ADAPTER_AVAILABLE",
+        )
+    )
+    reasons.extend(name for name, present in predicates.items() if present)
+    unique_reasons = tuple(dict.fromkeys(reasons))
+    return RuntimeCapabilityAssessment(
+        status="BLOCK" if unique_reasons else "PASS",
+        predicates=predicates,
+        reason_codes=unique_reasons,
     )

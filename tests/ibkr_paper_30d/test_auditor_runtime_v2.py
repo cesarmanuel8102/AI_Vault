@@ -8,6 +8,7 @@ import pytest
 from ibkr_paper_30d.auditor_runtime_v2 import (
     RUNTIME_MANIFEST_NAME,
     RUNTIME_PAYLOAD_ALLOWLIST,
+    assess_runtime_capabilities,
     build_deployment_manifest_v2,
     build_runtime_manifest_v2,
     verify_runtime_fileset_v2,
@@ -98,3 +99,95 @@ def test_runtime_v2_rejects_non_file_runtime_entry(staged_runtime: Path) -> None
 
     assert result.status == "BLOCK"
     assert "RUNTIME_FILESET_MISMATCH" in result.reason_codes
+
+
+def _inject_into_probe(runtime: Path, payload: str) -> None:
+    target = runtime / "AUDITOR_GATE_V2_PROBE.ps1"
+    target.write_text(target.read_text(encoding="utf-8") + payload + "\n", encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    ("payload", "predicate"),
+    [
+        ("Import-Module ibapi", "BROKER_MODULE_AVAILABLE"),
+        ("placeOrder", "ORDER_WRITE_SYMBOL_AVAILABLE"),
+        ("'ibkr_paper_30d.broker'", "EXECUTION_ADAPTER_AVAILABLE"),
+        ("Acquire-ExecutionLock", "EXECUTION_LOCK_CLIENT_AVAILABLE"),
+        (
+            "New-Object IO.Pipes.NamedPipeClientStream",
+            "TRADER_IPC_CLIENT_AVAILABLE",
+        ),
+        ("$env:IBKR_PASSWORD", "BROKER_CREDENTIAL_SOURCE_AVAILABLE"),
+    ],
+)
+def test_capability_scanner_fails_closed_on_forbidden_runtime_surface(
+    staged_runtime: Path, payload: str, predicate: str
+) -> None:
+    _inject_into_probe(staged_runtime, payload)
+
+    result = assess_runtime_capabilities(staged_runtime)
+
+    assert result.status == "BLOCK"
+    assert result.predicates[predicate] is True
+    if predicate in {
+        "BROKER_MODULE_AVAILABLE",
+        "ORDER_WRITE_SYMBOL_AVAILABLE",
+        "EXECUTION_ADAPTER_AVAILABLE",
+    }:
+        assert result.predicates["ORDER_WRITE_MODULE_AVAILABLE"] is True
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "cancelOrder",
+        "modifyOrder",
+        "reqGlobalCancel",
+        "New-Object IBApi.EClientSocket",
+        "Start-Process python.exe",
+        "Invoke-Expression 'Get-Date'",
+        "Add-Type -TypeDefinition 'public class X {}'",
+        "powershell.exe -File arbitrary.ps1",
+        "python.exe arbitrary.py",
+        "New-Object Net.Sockets.Socket",
+        "Import-Module C:\\broad\\execution.psm1",
+    ],
+)
+def test_capability_scanner_blocks_order_protocol_process_and_network_helpers(
+    staged_runtime: Path, payload: str
+) -> None:
+    _inject_into_probe(staged_runtime, payload)
+
+    result = assess_runtime_capabilities(staged_runtime)
+
+    assert result.status == "BLOCK"
+    assert result.reason_codes
+
+
+def test_capability_scanner_accepts_minimal_runtime_and_derives_order_aggregate(
+    staged_runtime: Path,
+) -> None:
+    result = assess_runtime_capabilities(staged_runtime)
+
+    assert result.status == "PASS"
+    assert all(value is False for value in result.predicates.values())
+
+
+def test_capability_scanner_allows_only_narrow_loopback_tcp_classifier(
+    staged_runtime: Path,
+) -> None:
+    denial_probe = staged_runtime / "AUDITOR_DENIAL_PROBE_V1.ps1"
+    denial_probe.write_text(
+        """
+function Test-TcpEndpoint {
+    param([ValidateSet('127.0.0.1','::1')][string]$Address, [ValidateRange(1,65535)][int]$Port)
+    $client = New-Object Net.Sockets.TcpClient
+}
+Test-TcpEndpoint -Address '127.0.0.1' -Port 4002
+""".strip(),
+        encoding="utf-8",
+    )
+
+    result = assess_runtime_capabilities(staged_runtime)
+
+    assert result.status == "PASS"
