@@ -29,6 +29,24 @@ from .ibkr_readonly_session import (
     IBKRReadOnlySessionCollector,
     ReadOnlyMessageGuard,
 )
+from .canonical import canonical_bytes
+from .market_data import (
+    DecisionClass,
+    MarketDataGate,
+    MarketDataPolicy,
+    MarketDataSnapshot,
+    QuoteSnapshot,
+)
+from .market_observation_collector import (
+    IBKRMarketDataSource,
+    MarketDataSource,
+    MarketObservationCollector,
+    ObservationAborted,
+    ObservationConfig,
+    ObservationPrerequisites,
+)
+from .market_observation_ledger import MarketObservationLedger
+from .market_policy import MarketPolicyFreezer, load_verified_policy
 from .persistence import Database
 from .redaction import redact_text
 from .reporting import FAULT_SCENARIOS, FaultInjectionHarness, write_local_reports
@@ -47,6 +65,11 @@ GATE_REPORT = REPORT_ROOT / "updated_gate_matrix.json"
 REAL_CODEX_REPORT = REPORT_ROOT / "real_codex_trader_invocation.json"
 AUDITOR_REPORT = REPORT_ROOT / "auditor_isolation_probe.json"
 CAPABILITY_MATRIX = Path("IBKR_CAPABILITY_MATRIX_V1.md")
+MARKET_LEDGER = REPORT_ROOT / "market_observations.jsonl"
+MARKET_OBSERVATION_REPORT = REPORT_ROOT / "market_observation.json"
+MARKET_POLICY = REPORT_ROOT / "market_data_policy_v1.json"
+MARKET_POLICY_REPORT = REPORT_ROOT / "market_policy_freeze.json"
+MARKET_VALIDATION_REPORT = REPORT_ROOT / "market_data_validation.json"
 
 
 def inspect_readonly(
@@ -210,6 +233,275 @@ def inspect_readonly(
     }
     _atomic_json(Path(output_path), report)
     return report
+
+
+def observe_market_data(
+    *,
+    readonly_report: dict[str, object],
+    output_root: str | Path = REPORT_ROOT,
+    source: MarketDataSource | None = None,
+    expected_account_hash: str | None = None,
+    symbols: Sequence[str] = ("SPY", "QQQ", "IEF"),
+    cadence_seconds: float = 5,
+    window_seconds: float = 300,
+    now_utc=None,
+) -> dict[str, object]:
+    root = Path(output_root)
+    report_path = root / "market_observation.json"
+    prerequisite_reasons = _market_prerequisite_reasons(readonly_report)
+    if not expected_account_hash:
+        prerequisite_reasons.append("EXPECTED_ACCOUNT_IDENTITY_NOT_CONFIGURED")
+    if prerequisite_reasons:
+        report = _blocked_market_report(
+            "MARKET_DATA_OBSERVATION_V1", prerequisite_reasons
+        )
+        _write_market_report(report_path, report)
+        return report
+
+    assert expected_account_hash is not None
+    reconciliation_hash = hashlib.sha256(
+        canonical_bytes(readonly_report)
+    ).hexdigest()
+    data_source = source or IBKRMarketDataSource()
+    collector = MarketObservationCollector(data_source, now_utc=now_utc)
+    try:
+        window = collector.collect_window(
+            ObservationConfig(
+                symbols=tuple(symbols),
+                cadence_seconds=cadence_seconds,
+                window_seconds=window_seconds,
+            ),
+            ObservationPrerequisites(
+                identity_receipt_sha256=expected_account_hash,
+                reconciliation_receipt_sha256=reconciliation_hash,
+                paper_identity_proven=True,
+                broker_reconciliation_gate="PASS",
+            ),
+        )
+        receipt = MarketObservationLedger(
+            root / "market_observations.jsonl"
+        ).append_window(window)
+    except (ObservationAborted, OSError, RuntimeError, ValueError) as exc:
+        reason = redact_text(str(exc)).split(":", 1)[0] or type(exc).__name__
+        report = _blocked_market_report("MARKET_DATA_OBSERVATION_V1", [reason])
+        report["broker_calls_made"] = _market_source_call_count(data_source)
+        _write_market_report(report_path, report)
+        return report
+
+    accepted = sum(item.accepted for item in window.observations)
+    report = {
+        "schema": "MARKET_DATA_OBSERVATION_V1",
+        "status": "PASS",
+        "reason_codes": [],
+        "window_id": window.window_id,
+        "observation_count": len(window.observations),
+        "accepted_observation_count": accepted,
+        "rejected_observation_count": len(window.observations) - accepted,
+        "ledger_window_sha256": receipt.window_sha256,
+        "ledger_last_record_sha256": receipt.last_record_sha256,
+        "identity_receipt_sha256": expected_account_hash,
+        "reconciliation_receipt_sha256": reconciliation_hash,
+        "broker_calls_made": _market_source_call_count(data_source),
+        "market_data_policy_frozen": False,
+        "market_data_gate": "BLOCK",
+        "new_order_authority": "FROZEN",
+        "real_order_writes_attempted": 0,
+        "autonomous_trading_status": "BLOCKED",
+    }
+    _write_market_report(report_path, report)
+    return report
+
+
+def freeze_market_policy(
+    ledger: MarketObservationLedger | str | Path,
+    destination: str | Path,
+    *,
+    output_path: str | Path | None = None,
+) -> dict[str, object]:
+    subject = (
+        ledger
+        if isinstance(ledger, MarketObservationLedger)
+        else MarketObservationLedger(ledger)
+    )
+    result = MarketPolicyFreezer().freeze(subject, destination)
+    frozen = result.status in {"PASS", "ALREADY_FROZEN"}
+    report = {
+        "schema": "MARKET_DATA_POLICY_FREEZE_REPORT_V1",
+        "status": result.status,
+        "reason_codes": list(result.reason_codes),
+        "market_data_policy_frozen": frozen,
+        "market_data_gate": "BLOCK",
+        "policy_sha256": result.artifact_sha256,
+        "policy_version": result.policy.version if result.policy else None,
+        "broker_calls_made": 0,
+        "new_order_authority": "FROZEN",
+        "real_order_writes_attempted": 0,
+        "autonomous_trading_status": "BLOCKED",
+    }
+    if output_path is not None:
+        _write_market_report(Path(output_path), report)
+    return report
+
+
+def validate_market_observation(
+    policy: MarketDataPolicy,
+    quotes: Sequence[QuoteSnapshot],
+    *,
+    now: datetime,
+) -> dict[str, object]:
+    if not quotes:
+        return _blocked_market_report(
+            "REAL_MARKET_DATA_VALIDATION_V1", ["MARKET_QUOTES_MISSING"]
+        )
+    snapshot = MarketDataSnapshot.freeze(quotes, created_at_utc=now)
+    result = MarketDataGate(policy).evaluate(
+        snapshot, DecisionClass.NEW_TRADE, now=now
+    )
+    return {
+        "schema": "REAL_MARKET_DATA_VALIDATION_V1",
+        "status": result.status,
+        "market_data_gate": result.status,
+        "reason_codes": list(result.reason_codes),
+        "market_data_snapshot_id": result.market_data_snapshot_id,
+        "market_data_snapshot_sha256": result.market_data_snapshot_sha256,
+        "policy_version": result.market_data_policy_version,
+        "market_data_policy_frozen": True,
+        "symbol_count": len(quotes),
+        "broker_calls_made": 0,
+        "new_order_authority": "FROZEN",
+        "real_order_writes_attempted": 0,
+        "autonomous_trading_status": "BLOCKED",
+    }
+
+
+def validate_real_market_data(
+    *,
+    readonly_report: dict[str, object],
+    policy_path: str | Path,
+    output_path: str | Path = MARKET_VALIDATION_REPORT,
+    source: MarketDataSource | None = None,
+    expected_account_hash: str | None = None,
+    now_utc=None,
+) -> dict[str, object]:
+    reasons = _market_prerequisite_reasons(readonly_report)
+    if not expected_account_hash:
+        reasons.append("EXPECTED_ACCOUNT_IDENTITY_NOT_CONFIGURED")
+    try:
+        policy = load_verified_policy(policy_path)
+    except ValueError:
+        policy = None
+        reasons.append("MARKET_POLICY_INVALID")
+    if reasons:
+        report = _blocked_market_report("REAL_MARKET_DATA_VALIDATION_V1", reasons)
+        report["market_data_policy_frozen"] = policy is not None
+        _write_market_report(Path(output_path), report)
+        return report
+
+    assert expected_account_hash is not None and policy is not None
+    data_source = source or IBKRMarketDataSource()
+    clock = now_utc or (lambda: datetime.now(timezone.utc))
+    reconciliation_hash = hashlib.sha256(
+        canonical_bytes(readonly_report)
+    ).hexdigest()
+    try:
+        window = MarketObservationCollector(data_source, now_utc=clock).collect_window(
+            ObservationConfig(
+                symbols=("SPY", "QQQ", "IEF"),
+                cadence_seconds=5,
+                window_seconds=0,
+            ),
+            ObservationPrerequisites(
+                identity_receipt_sha256=expected_account_hash,
+                reconciliation_receipt_sha256=reconciliation_hash,
+                paper_identity_proven=True,
+                broker_reconciliation_gate="PASS",
+            ),
+        )
+        quotes = [
+            QuoteSnapshot(
+                symbol=item.symbol,
+                contract_id=item.contract_id,
+                source=item.source,
+                bid=item.bid,
+                ask=item.ask,
+                last=item.last,
+                bid_size=item.bid_size,
+                ask_size=item.ask_size,
+                last_size=item.last_size,
+                quote_timestamp=item.broker_quote_timestamp,
+                local_receipt_timestamp=item.local_receipt_timestamp,
+                market_session=item.market_session.value,
+                realtime_or_delayed=item.realtime_or_delayed,
+                data_entitlement_status=item.entitlement_state,
+                declared_quote_age_ms=item.corrected_quote_age_ms,
+                source_health=item.source_health,
+            )
+            for item in window.observations
+        ]
+        report = validate_market_observation(policy, quotes, now=clock())
+        direct_reasons = list(report["reason_codes"])
+        if any(
+            item.clock_skew_ms is None
+            or abs(item.clock_skew_ms) > policy.max_clock_skew_ms
+            for item in window.observations
+        ):
+            direct_reasons.append("CLOCK_SKEW")
+        if direct_reasons:
+            report["status"] = "BLOCK"
+            report["market_data_gate"] = "BLOCK"
+            report["reason_codes"] = list(dict.fromkeys(direct_reasons))
+        report["broker_calls_made"] = _market_source_call_count(data_source)
+    except (ObservationAborted, OSError, RuntimeError, ValueError) as exc:
+        reason = redact_text(str(exc)).split(":", 1)[0] or type(exc).__name__
+        report = _blocked_market_report("REAL_MARKET_DATA_VALIDATION_V1", [reason])
+        report["broker_calls_made"] = _market_source_call_count(data_source)
+    _write_market_report(Path(output_path), report)
+    return report
+
+
+def _market_prerequisite_reasons(
+    readonly_report: dict[str, object]
+) -> list[str]:
+    reasons = []
+    if readonly_report.get("status") != "PASS":
+        reasons.append("READ_ONLY_RECONCILIATION_REQUIRED")
+    if readonly_report.get("paper_account_identity_gate") != "PASS":
+        reasons.append("PAPER_IDENTITY_REQUIRED")
+    if readonly_report.get("broker_reconciliation_gate") != "PASS":
+        reasons.append("BROKER_RECONCILIATION_REQUIRED")
+    if readonly_report.get("heartbeat_ok") is not True:
+        reasons.append("BROKER_HEARTBEAT_REQUIRED")
+    return reasons
+
+
+def _blocked_market_report(schema: str, reasons: Sequence[str]) -> dict[str, object]:
+    return {
+        "schema": schema,
+        "status": "BLOCK",
+        "reason_codes": list(dict.fromkeys(reasons)),
+        "broker_calls_made": 0,
+        "market_data_policy_frozen": False,
+        "market_data_gate": "BLOCK",
+        "new_order_authority": "FROZEN",
+        "real_order_writes_attempted": 0,
+        "autonomous_trading_status": "BLOCKED",
+    }
+
+
+def _market_source_call_count(source: MarketDataSource) -> int:
+    client = getattr(source, "client", None)
+    outbound = getattr(client, "outbound_message_ids", None)
+    if isinstance(outbound, list):
+        return len(outbound)
+    starts = getattr(source, "start_calls", 0)
+    return int(starts) if isinstance(starts, int) else 0
+
+
+def _write_market_report(path: Path, report: dict[str, object]) -> None:
+    encoded = json.dumps(report, sort_keys=True, separators=(",", ":"), default=str)
+    if redact_text(encoded) != encoded:
+        raise ValueError("MARKET_REPORT_SECRET_SCAN_FAILED")
+    _atomic_json(path, report)
 
 
 def _gateway_mode() -> tuple[str, bool]:
@@ -622,6 +914,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     codex_parser.add_argument("--model", default="gpt-5.5")
     codex_parser.add_argument("--reasoning-effort", default="medium")
     codex_parser.add_argument("--timeout-seconds", type=int, default=120)
+    observe_parser = commands.add_parser("observe-market-data")
+    observe_parser.add_argument("--host", default="127.0.0.1")
+    observe_parser.add_argument("--port", type=int, default=4002)
+    observe_parser.add_argument("--symbols", nargs="+", default=["SPY", "QQQ", "IEF"])
+    observe_parser.add_argument("--cadence-seconds", type=float, default=5)
+    observe_parser.add_argument("--window-seconds", type=float, default=300)
+    freeze_parser = commands.add_parser("freeze-market-policy")
+    freeze_parser.add_argument("--ledger", type=Path, default=MARKET_LEDGER)
+    freeze_parser.add_argument("--destination", type=Path, default=MARKET_POLICY)
+    validate_parser = commands.add_parser("validate-real-market-data")
+    validate_parser.add_argument("--host", default="127.0.0.1")
+    validate_parser.add_argument("--port", type=int, default=4002)
+    validate_parser.add_argument("--policy", type=Path, default=MARKET_POLICY)
     args = parser.parse_args(argv)
 
     if args.command == "inspect-ibkr-readonly":
@@ -637,6 +942,28 @@ def main(argv: Sequence[str] | None = None) -> int:
             model=args.model,
             reasoning_effort=args.reasoning_effort,
             timeout_seconds=args.timeout_seconds,
+        )
+    elif args.command == "observe-market-data":
+        report = observe_market_data(
+            readonly_report=_read_json(READONLY_REPORT),
+            source=IBKRMarketDataSource(host=args.host, port=args.port),
+            expected_account_hash=_configured_paper_account_hash(),
+            symbols=args.symbols,
+            cadence_seconds=args.cadence_seconds,
+            window_seconds=args.window_seconds,
+        )
+    elif args.command == "freeze-market-policy":
+        report = freeze_market_policy(
+            args.ledger,
+            args.destination,
+            output_path=MARKET_POLICY_REPORT,
+        )
+    elif args.command == "validate-real-market-data":
+        report = validate_real_market_data(
+            readonly_report=_read_json(READONLY_REPORT),
+            policy_path=args.policy,
+            source=IBKRMarketDataSource(host=args.host, port=args.port),
+            expected_account_hash=_configured_paper_account_hash(),
         )
     elif args.command == "probe-auditor-isolation":
         report = write_isolation_report(
@@ -686,6 +1013,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         report = asdict(receipts)
     print(json.dumps(report, sort_keys=True, default=str))
     return 0
+
+
+def _configured_paper_account_hash() -> str | None:
+    configured = os.environ.get("IBKR_PAPER_ACCOUNT_SHA256")
+    if configured:
+        return configured
+    store = ExpectedPaperIdentityStore(
+        Path("Secrets/expected_paper_account_identity_v1.json")
+    )
+    return store.load_hash() if store.path.exists() else None
 
 
 if __name__ == "__main__":
