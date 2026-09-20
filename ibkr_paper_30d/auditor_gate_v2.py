@@ -272,6 +272,19 @@ def _evaluate_predicates(
         reasons.append("RUNTIME_INTEGRITY_SCHEMA_INVALID")
     if runtime.get("status") != "PASS" or runtime.get("exact_fileset") is not True:
         reasons.append("RUNTIME_INTEGRITY_BLOCK")
+    runtime_expectations = {
+        "runtime_manifest_sha256": "runtime_manifest_sha256",
+        "deployment_manifest_sha256": "deployment_manifest_sha256",
+        "probe_sha256": "probe_sha256",
+        "probe_manifest_sha256": "probe_manifest_sha256",
+    }
+    if any(
+        _identity_value(expected_paper_identity, expected_name) is None
+        or runtime.get(receipt_name)
+        != _identity_value(expected_paper_identity, expected_name)
+        for receipt_name, expected_name in runtime_expectations.items()
+    ):
+        reasons.append("RUNTIME_EXPECTATION_MISMATCH")
     predicates = runtime.get("predicates")
     if not isinstance(predicates, Mapping) or set(predicates) != set(
         STRUCTURAL_PREDICATES
@@ -341,6 +354,12 @@ def _evaluate_predicates(
         expected_paper_identity, "receipt_sha256"
     ):
         reasons.append("PAPER_IDENTITY_RECEIPT_MISMATCH")
+    if identity.get("environment_reference") != _identity_value(
+        expected_paper_identity, "environment_reference"
+    ) or identity.get("broker_session_environment_reference") != _identity_value(
+        expected_paper_identity, "broker_session_environment_reference"
+    ):
+        reasons.append("PAPER_ENVIRONMENT_MISMATCH")
     for gate in (
         "paper_identity_gate",
         "readonly_identity_gate",

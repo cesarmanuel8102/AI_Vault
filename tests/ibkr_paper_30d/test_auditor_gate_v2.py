@@ -128,6 +128,12 @@ def expected_identity() -> SimpleNamespace:
     return SimpleNamespace(
         expected_account_hash="1" * 64,
         receipt_sha256="2" * 64,
+        environment_reference="PAPER:gateway:4002",
+        broker_session_environment_reference="PAPER:session:4002",
+        runtime_manifest_sha256="a" * 64,
+        deployment_manifest_sha256="b" * 64,
+        probe_sha256="c" * 64,
+        probe_manifest_sha256="d" * 64,
         raw_account="DU1234567",
     )
 
@@ -268,3 +274,123 @@ def test_residual_risk_rejects_synthetic_or_nonpassing_receipt(
 
     with pytest.raises(ArtifactValidationError, match="REAL_RECEIPT_REQUIRED"):
         build_residual_risk_acceptance(receipt, blocked, owner_decision)
+
+
+NEGATIVE_GATE_CASES = (
+    ("v1_only", "SCHEMA_INVALID"),
+    ("partial", "MISSING_FIELD"),
+    ("stale", "RECEIPT_STALE"),
+    ("mixed_run", "MIXED_RUN_EVIDENCE"),
+    ("wrong_sid", "AUDITOR_SID_MISMATCH"),
+    ("elevated", "AUDITOR_TOKEN_ELEVATED"),
+    ("wrong_paper_account_hash", "PAPER_ACCOUNT_IDENTITY_MISMATCH"),
+    ("wrong_paper_identity_receipt", "PAPER_IDENTITY_RECEIPT_MISMATCH"),
+    ("paper_environment_change", "PAPER_ENVIRONMENT_MISMATCH"),
+    ("runtime_extra_file", "RUNTIME_INTEGRITY_BLOCK"),
+    ("runtime_missing_file", "RUNTIME_INTEGRITY_BLOCK"),
+    ("runtime_hash_mismatch", "RUNTIME_EXPECTATION_MISMATCH"),
+    ("broker_module_introduced", "RUNTIME_FORBIDDEN_CAPABILITY_PRESENT"),
+    ("order_symbol_introduced", "RUNTIME_FORBIDDEN_CAPABILITY_PRESENT"),
+    ("execution_lock_code_introduced", "RUNTIME_FORBIDDEN_CAPABILITY_PRESENT"),
+    ("trader_ipc_introduced", "RUNTIME_FORBIDDEN_CAPABILITY_PRESENT"),
+    ("missing_target_row", "TARGET_VALIDATION_COUNT_INVALID"),
+    ("missing_capability_outcome", "CAPABILITY_OUTCOMES_INVALID"),
+    ("broadened_runtime_bundle", "RUNTIME_INTEGRITY_BLOCK"),
+    ("residual_risk_artifact_tamper", "ARTIFACT_TAMPERED"),
+    ("live_allowed_true", "MONTH1_PAPER_SCOPE_INVALID"),
+    ("real_money_allowed_true", "MONTH1_PAPER_SCOPE_INVALID"),
+)
+
+
+def _apply_negative_mutation(name: str, payload: dict[str, object]) -> None:
+    if name == "v1_only":
+        payload["schema"] = "CODEX_DECISION_AUDITOR_ISOLATION_V1"
+    elif name == "partial":
+        del payload["runtime_integrity"]
+    elif name == "stale":
+        payload["started_at_utc"] = "2026-09-18T15:58:00Z"
+        payload["completed_at_utc"] = "2026-09-18T15:59:00Z"
+    elif name == "mixed_run":
+        payload["target_validation_matrix"][0]["run_id"] = "other-run"
+    elif name == "wrong_sid":
+        payload["effective_sid"] = "S-1-5-18"
+    elif name == "elevated":
+        payload["token_elevated"] = True
+    elif name == "wrong_paper_account_hash":
+        payload["paper_identity"]["expected_account_identity_hash"] = "9" * 64
+    elif name == "wrong_paper_identity_receipt":
+        payload["paper_identity"]["identity_receipt_sha256"] = "8" * 64
+    elif name == "paper_environment_change":
+        payload["paper_identity"]["environment_reference"] = "LIVE:gateway:4001"
+    elif name in {"runtime_extra_file", "runtime_missing_file", "broadened_runtime_bundle"}:
+        payload["runtime_integrity"]["exact_fileset"] = False
+    elif name == "runtime_hash_mismatch":
+        payload["runtime_integrity"]["runtime_manifest_sha256"] = "9" * 64
+    elif name == "broker_module_introduced":
+        payload["runtime_integrity"]["predicates"]["BROKER_MODULE_AVAILABLE"] = True
+    elif name == "order_symbol_introduced":
+        payload["runtime_integrity"]["predicates"]["ORDER_WRITE_SYMBOL_AVAILABLE"] = True
+    elif name == "execution_lock_code_introduced":
+        payload["runtime_integrity"]["predicates"]["EXECUTION_LOCK_CLIENT_AVAILABLE"] = True
+    elif name == "trader_ipc_introduced":
+        payload["runtime_integrity"]["predicates"]["TRADER_IPC_CLIENT_AVAILABLE"] = True
+    elif name == "missing_target_row":
+        payload["target_validation_matrix"].pop()
+    elif name == "missing_capability_outcome":
+        del payload["capability_outcomes"]["SECRETS_READ"]
+    elif name == "live_allowed_true":
+        payload["paper_identity"]["live_allowed"] = True
+    elif name == "real_money_allowed_true":
+        payload["paper_identity"]["real_money_allowed"] = True
+
+
+@pytest.mark.parametrize(
+    ("mutation", "reason_code"),
+    NEGATIVE_GATE_CASES,
+    ids=[case[0] for case in NEGATIVE_GATE_CASES],
+)
+def test_every_negative_v2_mutation_blocks(
+    tmp_path,
+    complete_receipt,
+    expected_identity,
+    now,
+    pass_evaluation,
+    owner_decision,
+    mutation,
+    reason_code,
+) -> None:
+    payload = deepcopy(complete_receipt)
+    if mutation == "residual_risk_artifact_tamper":
+        receipt = parse_auditor_gate_v2_receipt(canonical_bytes(payload))
+        artifact = build_residual_risk_acceptance(
+            receipt, pass_evaluation, owner_decision
+        )
+        path = tmp_path / "acceptance.json"
+        digest = write_immutable_json(path, artifact)
+        path.write_bytes(path.read_bytes() + b" ")
+        assert verify_immutable_json(path, digest) is False
+        return
+
+    _apply_negative_mutation(mutation, payload)
+    try:
+        receipt = parse_auditor_gate_v2_receipt(canonical_bytes(payload))
+    except ReceiptValidationError as exc:
+        assert reason_code in str(exc)
+        return
+
+    result = evaluate_auditor_gate_v2(receipt, expected_identity, now)
+
+    assert result.canonical_gate == "BLOCK"
+    assert reason_code in result.reason_codes
+
+
+def test_unsafe_target_and_configuration_only_evidence_remain_blocked(
+    complete_receipt, expected_identity, now
+) -> None:
+    unsafe = deepcopy(complete_receipt)
+    unsafe["target_validation_matrix"][0]["valid"] = False
+    unsafe_receipt = parse_auditor_gate_v2_receipt(canonical_bytes(unsafe))
+    assert evaluate_auditor_gate_v2(unsafe_receipt, expected_identity, now).canonical_gate == "BLOCK"
+
+    with pytest.raises(ReceiptValidationError):
+        parse_auditor_gate_v2_receipt(canonical_bytes({"gate": "PASS", "PAPER_ONLY": True}))
