@@ -276,3 +276,39 @@ def test_prerequisite_primary_exchange_mapping_matches_ibkr() -> None:
         "QQQ": "NASDAQ",
         "IEF": "NASDAQ",
     }
+
+
+def test_broker_timestamp_advances_to_latest_tick_and_never_regresses() -> None:
+    client = _IBKRMarketDataClient(now_utc=lambda: NOW, monotonic_ns=lambda: 42)
+    client.register_request(7200, "SPY", 1, "20260921:0930-20260921:1600", "US/Eastern")
+
+    client.tickByTickBidAsk(
+        7200,
+        int((NOW - timedelta(seconds=2)).timestamp()),
+        500.0,
+        500.02,
+        100,
+        120,
+        None,
+    )
+    client.tickByTickBidAsk(
+        7200,
+        int(NOW.timestamp()),
+        500.01,
+        500.03,
+        100,
+        120,
+        None,
+    )
+    client.tickByTickBidAsk(
+        7200,
+        int((NOW - timedelta(seconds=1)).timestamp()),
+        500.0,
+        500.02,
+        100,
+        120,
+        None,
+    )
+
+    raw = client.raw_quote("SPY")
+    assert raw.broker_quote_timestamp == NOW
