@@ -5,7 +5,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Iterable
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .canonical import sha256_json
 
@@ -34,6 +34,15 @@ class QuoteSnapshot(BaseModel, frozen=True):
     data_entitlement_status: str
     declared_quote_age_ms: int | None = None
     source_health: str
+
+    @model_validator(mode="after")
+    def timestamps_must_be_timezone_aware(self) -> "QuoteSnapshot":
+        for value in (self.quote_timestamp, self.local_receipt_timestamp):
+            if value is not None and (
+                value.tzinfo is None or value.utcoffset() is None
+            ):
+                raise ValueError("quote timestamps must be timezone-aware")
+        return self
 
     @property
     def mid(self) -> Decimal | None:

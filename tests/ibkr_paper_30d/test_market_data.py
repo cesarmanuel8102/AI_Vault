@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 
@@ -12,6 +13,7 @@ from ibkr_paper_30d.market_data import (
     MarketDataSnapshot,
     QuoteSnapshot,
 )
+from ibkr_paper_30d.runtime_integrity import RuntimeMarketDataGate
 
 
 NOW = datetime(2026, 9, 20, 14, 30, 0, tzinfo=timezone.utc)
@@ -189,3 +191,91 @@ def test_gate_reports_oldest_and_latest_quote_timestamps(gate, fresh_quote) -> N
     assert result.quote_timestamp == older.quote_timestamp
     assert result.oldest_quote_timestamp == older.quote_timestamp
     assert result.latest_quote_timestamp == newer.quote_timestamp
+
+def test_quote_snapshot_rejects_naive_timestamps(fresh_quote) -> None:
+    with pytest.raises(ValueError, match="timezone-aware"):
+        fresh_quote.model_copy(
+            update={"quote_timestamp": datetime(2026, 9, 20, 14, 29, 59)}
+        ).model_validate(
+            fresh_quote.model_copy(
+                update={"quote_timestamp": datetime(2026, 9, 20, 14, 29, 59)}
+            ).model_dump()
+        )
+
+def test_runtime_gate_surfaces_oldest_and_latest_quote_timestamps(
+    monkeypatch, policy
+) -> None:
+    older_ts = NOW - timedelta(milliseconds=900)
+    newer_ts = NOW - timedelta(milliseconds=100)
+    observations = [
+        SimpleNamespace(
+            accepted=True,
+            reason_codes=(),
+            symbol="SPY",
+            contract_id=1,
+            source="IBKR",
+            bid=Decimal("500.00"),
+            ask=Decimal("500.02"),
+            last=Decimal("500.01"),
+            bid_size=Decimal("10"),
+            ask_size=Decimal("10"),
+            last_size=Decimal("1"),
+            broker_quote_timestamp=older_ts,
+            local_receipt_timestamp=NOW - timedelta(milliseconds=850),
+            market_session=SimpleNamespace(value="REGULAR"),
+            realtime_or_delayed="REALTIME",
+            entitlement_state="AVAILABLE",
+            corrected_quote_age_ms=900,
+            source_health="HEALTHY",
+        ),
+        SimpleNamespace(
+            accepted=True,
+            reason_codes=(),
+            symbol="QQQ",
+            contract_id=2,
+            source="IBKR",
+            bid=Decimal("400.00"),
+            ask=Decimal("400.02"),
+            last=Decimal("400.01"),
+            bid_size=Decimal("10"),
+            ask_size=Decimal("10"),
+            last_size=Decimal("1"),
+            broker_quote_timestamp=newer_ts,
+            local_receipt_timestamp=NOW - timedelta(milliseconds=90),
+            market_session=SimpleNamespace(value="REGULAR"),
+            realtime_or_delayed="REALTIME",
+            entitlement_state="AVAILABLE",
+            corrected_quote_age_ms=100,
+            source_health="HEALTHY",
+        ),
+    ]
+
+    class FakeCollector:
+        def __init__(self, source, now_utc):
+            self.source = source
+            self.now_utc = now_utc
+
+        def collect_window(self, config, prerequisites):
+            return SimpleNamespace(observations=observations)
+
+    monkeypatch.setattr(
+        "ibkr_paper_30d.runtime_integrity.load_verified_policy",
+        lambda path: policy,
+    )
+    monkeypatch.setattr(
+        "ibkr_paper_30d.runtime_integrity.MarketObservationCollector",
+        FakeCollector,
+    )
+
+    gate = RuntimeMarketDataGate(
+        policy_path=__import__("pathlib").Path("unused.json"),
+        expected_account_hash="a" * 64,
+        source_factory=lambda: object(),
+        now_utc=lambda: NOW,
+    )
+    result = gate.evaluate(DecisionClass.NEW_TRADE)
+
+    assert result["gate_status"] == "PASS"
+    assert result["oldest_quote_timestamp"] == older_ts.isoformat()
+    assert result["latest_quote_timestamp"] == newer_ts.isoformat()
+

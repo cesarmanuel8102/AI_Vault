@@ -274,25 +274,16 @@ class AutonomousStateBuilder:
 
     @staticmethod
     def _broker_snapshot(account: dict[str, Any], equity: Decimal) -> dict[str, Any]:
-        summary = account.get("summary", {}) or {}
-        limits: list[Decimal] = [max(equity, Decimal("0"))]
-        for key in ("BuyingPower", "AvailableFunds", "ExcessLiquidity", "SettledCash"):
-            raw = summary.get(key)
-            if raw is None:
-                continue
-            try:
-                value = Decimal(str(raw))
-            except Exception:
-                continue
-            if value.is_finite() and value >= 0:
-                limits.append(value)
-        experiment_buying_power = min(limits) if limits else Decimal("0")
+        experiment_buying_power = max(equity, Decimal("0"))
         return {
             "paper_account": bool(account.get("paper_account")),
             "declared_options_level": account.get("declared_options_level"),
             "experiment_buying_power": str(experiment_buying_power),
             "global_broker_balances_redacted": True,
-            "note": "Buying power is capped to isolated experiment equity and broker constraints.",
+            "note": (
+                "Model-facing buying power is limited to isolated experiment equity; "
+                "broker feasibility is enforced separately by per-order what-if validation."
+            ),
         }
 
     def build(

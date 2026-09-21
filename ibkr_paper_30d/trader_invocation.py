@@ -133,6 +133,75 @@ class TraderProvider(Protocol):
     ) -> ProviderResponse: ...
 
 
+
+_CODEX_MODEL_KEYS = frozenset(
+    {"model", "model_name", "model_id", "effective_model", "actual_model"}
+)
+
+
+def _assert_codex_actual_model(
+    output: object,
+    requested_model: str,
+    *,
+    error_prefix: str = "CODEX_MODEL_ATTESTATION_FAILED",
+) -> str:
+    """Authenticate the model reported by Codex JSONL; absence is a hard failure."""
+    if not isinstance(requested_model, str) or not requested_model.strip():
+        raise RuntimeError(f"{error_prefix}:requested_model_invalid")
+    requested = requested_model.strip()
+    if not isinstance(output, str) or not output.strip():
+        raise RuntimeError(f"{error_prefix}:actual_model_missing")
+
+    observed: set[str] = set()
+    actual_models: list[str] = []
+
+    def strict_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
+        result: dict[str, object] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"DUPLICATE_JSON_KEY:{key}")
+            result[key] = value
+        return result
+
+    def collect(value: object) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if key in _CODEX_MODEL_KEYS:
+                    if not isinstance(child, str) or not child.strip():
+                        raise RuntimeError(
+                            f"{error_prefix}:invalid_model_field:{key}"
+                        )
+                    model = child.strip()
+                    observed.add(model)
+                    if key == "actual_model":
+                        actual_models.append(model)
+                collect(child)
+        elif isinstance(value, list):
+            for child in value:
+                collect(child)
+
+    saw_event = False
+    for line in output.splitlines():
+        if not line.strip():
+            continue
+        saw_event = True
+        try:
+            event = json.loads(line, object_pairs_hook=strict_object)
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise RuntimeError(f"{error_prefix}:invalid_jsonl") from exc
+        collect(event)
+
+    if not saw_event or not actual_models:
+        raise RuntimeError(f"{error_prefix}:actual_model_missing")
+
+    mismatches = sorted(model for model in observed if model != requested)
+    if mismatches:
+        raise RuntimeError(f"{error_prefix}:" + ",".join(mismatches))
+    if any(model != requested for model in actual_models):
+        raise RuntimeError(f"{error_prefix}:actual_model_mismatch")
+    return requested
+
+
 class CodexCLIProvider:
     is_real_codex_provider = True
     TOOL_ITEM_TYPES = frozenset(
@@ -201,6 +270,14 @@ class CodexCLIProvider:
                     f"CODEX_PROVIDER_FAILED:returncode={completed.returncode}"
                 )
             try:
+                attested_model = _assert_codex_actual_model(
+                    completed.stdout,
+                    request.requested_model,
+                )
+            except RuntimeError:
+                self.last_failure_code = "MODEL_ATTESTATION_FAILED"
+                raise
+            try:
                 self.last_event_count = self._verify_no_tool_activity(completed.stdout)
             except RuntimeError:
                 self.last_failure_code = "EVENT_AUDIT_FAILED"
@@ -214,7 +291,7 @@ class CodexCLIProvider:
             self.last_failure_detail = None
             self.last_failure_diagnostic = None
             return ProviderResponse(
-                actual_model=request.requested_model,
+                actual_model=attested_model,
                 fallback_reason=None,
                 structured_output=structured,
             )

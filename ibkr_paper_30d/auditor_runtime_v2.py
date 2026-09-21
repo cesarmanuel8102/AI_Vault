@@ -488,10 +488,16 @@ def consolidate_probe_results_v2(
     endpoints = denial.get("network_endpoints")
     if not isinstance(endpoints, Mapping):
         raise ValueError("CONSOLIDATED_CHILD_FAILURE")
-    endpoint_values = {str(value) for value in endpoints.values()}
-    if "CONNECTED" in endpoint_values or "OTHER" in endpoint_values:
-        raise ValueError("CONSOLIDATED_NETWORK_FACT_MISMATCH")
-    if endpoint_values != {"DENIED"}:
+    expected_endpoints = {
+        "127.0.0.1:4001": "DENIED",
+        "127.0.0.1:4002": "DENIED",
+        "[::1]:4001": "DENIED",
+        "[::1]:4002": "DENIED",
+    }
+    normalized_endpoints = {
+        str(key): str(value) for key, value in endpoints.items()
+    }
+    if normalized_endpoints != expected_endpoints:
         raise ValueError("CONSOLIDATED_NETWORK_FACT_MISMATCH")
     return {
         "schema": "AUDITOR_GATE_V2_RECEIPT_V1",

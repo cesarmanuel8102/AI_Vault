@@ -324,3 +324,29 @@ def test_policy_frozen_with_stale_collector_version_is_rejected(tmp_path) -> Non
 
     with pytest.raises(ValueError, match="POLICY_INVALID"):
         load_verified_policy(destination)
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["policy_version", "controls_version"],
+)
+def test_verified_policy_rejects_version_incoherence(tmp_path, mutation) -> None:
+    ledger = build_ledger(tmp_path)
+    destination = tmp_path / "policy.json"
+    result = MarketPolicyFreezer(now_utc=lambda: START + timedelta(hours=8)).freeze(
+        ledger, destination
+    )
+    assert result.status == "PASS"
+
+    payload = json.loads(destination.read_text(encoding="utf-8"))
+    if mutation == "policy_version":
+        payload["policy_version"] = "MARKET_DATA_POLICY_V2"
+    else:
+        payload["controls"]["version"] = "MARKET_DATA_POLICY_V2"
+
+    unsigned = dict(payload)
+    unsigned.pop("policy_sha256")
+    payload["policy_sha256"] = hashlib.sha256(canonical_bytes(unsigned)).hexdigest()
+    destination.write_bytes(canonical_bytes(payload))
+
+    with pytest.raises(ValueError, match="POLICY_INVALID"):
+        load_verified_policy(destination)

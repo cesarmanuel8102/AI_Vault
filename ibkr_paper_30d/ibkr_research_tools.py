@@ -105,7 +105,7 @@ class IBKRResearchToolbox:
                 tool=request.tool,
                 success=False,
                 data={},
-                error=f"{type(exc).__name__}:{exc}",
+                error=f"{type(exc).__name__}:tool_failed",
             )
 
     WARNING_BLOCK_TOKENS = (
@@ -116,6 +116,33 @@ class IBKRResearchToolbox:
         "incompatible",
         "missing",
     )
+
+    MODEL_SAFE_FEASIBILITY_FIELDS = frozenset(
+        {
+            "success",
+            "error",
+            "contract",
+            "commission",
+            "minCommission",
+            "maxCommission",
+            "initMarginChange",
+            "maintMarginChange",
+            "equityWithLoanChange",
+            "warningText",
+            "whatIf",
+            "paper_only",
+            "current_position",
+            "requested_quantity",
+        }
+    )
+
+    @classmethod
+    def _model_safe_feasibility(cls, feasibility: dict[str, Any]) -> dict[str, Any]:
+        return {
+            key: value
+            for key, value in feasibility.items()
+            if key in cls.MODEL_SAFE_FEASIBILITY_FIELDS
+        }
 
     def _feasibility_common(
         self,
@@ -191,6 +218,7 @@ class IBKRResearchToolbox:
             )
 
         feasibility = self._broker_feasibility(proposal, ib=ib)
+        model_feasibility = self._model_safe_feasibility(feasibility)
         feasibility_ok, feasibility_reasons = self._feasibility_common(
             feasibility, equity=equity
         )
@@ -198,7 +226,7 @@ class IBKRResearchToolbox:
             return ProposalValidation(
                 passed=False,
                 reason_codes=feasibility_reasons,
-                broker_evidence=feasibility,
+                broker_evidence=model_feasibility,
             )
 
         commission = (
@@ -211,7 +239,7 @@ class IBKRResearchToolbox:
             return ProposalValidation(
                 passed=False,
                 reason_codes=("EXPERIMENT_CAPITAL_BOUNDARY_AFTER_COSTS",),
-                broker_evidence=feasibility,
+                broker_evidence=model_feasibility,
             )
 
         return ProposalValidation(
@@ -221,7 +249,7 @@ class IBKRResearchToolbox:
                 "risk_policy": risk.model_dump(mode="json"),
                 "structural_loss_floor": str(structural_floor),
                 "effective_maximum_loss": str(effective_maximum_loss),
-                "what_if": feasibility,
+                "what_if": model_feasibility,
             },
         )
 
@@ -301,7 +329,7 @@ class IBKRResearchToolbox:
                 state = broker.whatIfOrder(matched.contract, order)
             except Exception as exc:
                 state = None
-                state_error = f"{type(exc).__name__}:{exc}"
+                state_error = f"{type(exc).__name__}:broker_operation_failed"
             else:
                 state_error = None
             evidence = {
@@ -529,7 +557,7 @@ class IBKRResearchToolbox:
             return {
                 "success": False,
                 "reason": "TRADE_CONTRACT_MARKET_DATA_CHECK_FAILED",
-                "error": f"{type(exc).__name__}:{exc}",
+                "error": f"{type(exc).__name__}:broker_operation_failed",
                 "contract": self._serialize_contract(contract),
             }
 
@@ -860,7 +888,7 @@ class IBKRResearchToolbox:
 
     def _broker_feasibility_from_args(self, args: dict[str, Any]) -> dict[str, Any]:
         proposal = AutonomousTradeProposal.model_validate(args["proposal"])
-        return self._broker_feasibility(proposal)
+        return self._model_safe_feasibility(self._broker_feasibility(proposal))
 
     def _proposal_contract(self, ib: Any, proposal: AutonomousTradeProposal):
         from ib_insync import ComboLeg, Contract
@@ -950,7 +978,7 @@ class IBKRResearchToolbox:
         except Exception as exc:
             return {
                 "success": False,
-                "error": f"{type(exc).__name__}:{exc}",
+                "error": f"{type(exc).__name__}:broker_operation_failed",
                 "whatIf": True,
                 "paper_only": True,
             }

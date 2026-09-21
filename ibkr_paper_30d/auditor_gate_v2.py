@@ -494,13 +494,21 @@ def _evaluate_predicates(
     if any(network.get(key) is not value for key, value in expected_network.items()):
         reasons.append("NETWORK_FACT_MISMATCH")
     endpoints = network.get("endpoints")
+    expected_endpoints = {
+        "127.0.0.1:4001": "DENIED",
+        "127.0.0.1:4002": "DENIED",
+        "[::1]:4001": "DENIED",
+        "[::1]:4002": "DENIED",
+    }
     if not isinstance(endpoints, Mapping):
         reasons.append("NETWORK_ENDPOINT_EVIDENCE_INVALID")
     else:
-        values = {str(value) for value in endpoints.values()}
-        if values & {"CONNECTED", "OTHER"}:
+        normalized = {str(key): str(value) for key, value in endpoints.items()}
+        if set(normalized) != set(expected_endpoints):
+            reasons.append("NETWORK_ENDPOINT_EVIDENCE_INVALID")
+        if any(value in {"CONNECTED", "OTHER"} for value in normalized.values()):
             reasons.append("BROKER_NETWORK_ENDPOINT_UNSAFE")
-        if str(endpoints.get("127.0.0.1:4002")) != "DENIED":
+        if normalized != expected_endpoints:
             reasons.append("PAPER_BROKER_LOOPBACK_NOT_DENIED")
 
     output = receipt.output

@@ -12,7 +12,12 @@ from typing import Any, Protocol
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from .canonical import canonical_bytes, sha256_json
-from .trader_invocation import InvocationRequest, TraderDecision, TraderInputBundle
+from .trader_invocation import (
+    InvocationRequest,
+    TraderDecision,
+    TraderInputBundle,
+    _assert_codex_actual_model,
+)
 
 
 class ResearchTool(str, Enum):
@@ -322,35 +327,12 @@ class CodexAutonomousCLIProvider:
         return schema
 
     @staticmethod
-    def _assert_effective_model(output: str, requested_model: str) -> None:
-        observed: set[str] = set()
-        model_keys = {"model", "model_name", "model_id", "effective_model", "actual_model"}
-
-        def collect(value: object) -> None:
-            if isinstance(value, dict):
-                for key, child in value.items():
-                    if key in model_keys and isinstance(child, str) and child.strip():
-                        observed.add(child.strip())
-                    collect(child)
-            elif isinstance(value, list):
-                for child in value:
-                    collect(child)
-
-        for line in output.splitlines():
-            if not line.strip():
-                continue
-            try:
-                event = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            collect(event)
-
-        mismatches = sorted(model for model in observed if model != requested_model)
-        if mismatches:
-            raise RuntimeError(
-                "AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED:"
-                + ",".join(mismatches)
-            )
+    def _assert_effective_model(output: object, requested_model: str) -> None:
+        _assert_codex_actual_model(
+            output,
+            requested_model,
+            error_prefix="AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED",
+        )
 
     @classmethod
     def _native_tool_events(cls, output: str) -> list[dict[str, Any]]:
