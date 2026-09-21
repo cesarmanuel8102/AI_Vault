@@ -2,7 +2,7 @@
 
 Date: 2026-09-21
 Canonical integration branch: `codex/ibkr-paper-auditor-gate-v2`
-Validated head at handoff: `1817ad0c83f4130b255bdcec958b769289af0083`
+Current branch HEAD is authoritative. Resolve it with `git rev-parse HEAD` after synchronization; do not rely on a hard-coded SHA in this handoff.
 
 ## 1. Purpose
 
@@ -481,6 +481,7 @@ Prerequisite completion:
 - `FINALIZE_IBKR_PREREQUISITES.ps1`
 - `RUN_IBKR_MARKET_DATA_GATE.ps1`
 - `IBKR_PREREQUISITE_FINALIZATION_RUNBOOK.md`
+- `SYNC_LOCAL_CODEX_IBKR.ps1`
 
 Market-data corrections:
 
@@ -520,7 +521,34 @@ Before modifying this system, Codex must preserve these invariants:
 14. Market Data Policy evidence remains separate from the trading universe;
 15. any change must pass Windows/Linux CI before promotion.
 
-## 25. Immediate next operational step
+## 25. Local synchronization procedure
+
+Before Codex resumes work on the local Windows checkout, synchronize the
+worktree with the canonical integration branch by running:
+
+```powershell
+Set-Location C:\AI_VAULT
+git fetch origin
+git switch codex/ibkr-paper-auditor-gate-v2
+git pull --ff-only origin codex/ibkr-paper-auditor-gate-v2
+.\SYNC_LOCAL_CODEX_IBKR.ps1
+```
+
+The synchronization script is deliberately non-destructive:
+
+- it refuses to overwrite a dirty worktree;
+- it records dirty status/diff evidence if local uncommitted changes exist;
+- it uses only fast-forward synchronization;
+- it verifies local HEAD equals `origin/codex/ibkr-paper-auditor-gate-v2`;
+- it verifies critical autonomous/prerequisite files;
+- it runs the focused local regression suite unless `-SkipTests` is supplied;
+- it writes a synchronization receipt outside the worktree at
+  `C:\ProgramData\CodexIBKR\local_repository_sync_receipt.json`.
+
+If synchronization reports `LOCAL_SYNC_BLOCKED_DIRTY_TREE`, do not reset or
+discard changes automatically. Inspect and reconcile them first.
+
+## 26. Immediate next operational step
 
 After local synchronization, run the prerequisite finalizer from elevated
 Windows PowerShell with PAPER IB Gateway open:
