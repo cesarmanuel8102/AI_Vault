@@ -427,7 +427,11 @@ def _load_artifact_payload(path: Path) -> dict[str, Any]:
         unsigned = dict(payload)
         unsigned.pop("policy_sha256")
         actual = hashlib.sha256(canonical_bytes(unsigned)).hexdigest()
-        if payload.get("schema") != "MARKET_DATA_POLICY_V1" or claimed != actual:
+        if (
+            payload.get("schema") != "MARKET_DATA_POLICY_V1"
+            or payload.get("policy_version") != "MARKET_DATA_POLICY_V1"
+            or claimed != actual
+        ):
             raise ValueError
         artifact = MarketPolicyArtifact.model_validate(payload)
         evidence = payload.get("evidence") or {}
