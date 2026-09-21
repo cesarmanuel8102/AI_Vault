@@ -4,6 +4,7 @@ import hashlib
 import json
 import math
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
@@ -427,10 +428,15 @@ def _load_artifact_payload(path: Path) -> dict[str, Any]:
         unsigned = dict(payload)
         unsigned.pop("policy_sha256")
         actual = hashlib.sha256(canonical_bytes(unsigned)).hexdigest()
+        if payload.get("schema") != "MARKET_DATA_POLICY_V1" or claimed != actual:
+            raise ValueError
+        policy_version = payload.get("policy_version")
+        controls = payload.get("controls")
         if (
-            payload.get("schema") != "MARKET_DATA_POLICY_V1"
-            or payload.get("policy_version") != "MARKET_DATA_POLICY_V1"
-            or claimed != actual
+            not isinstance(policy_version, str)
+            or re.fullmatch(r"MARKET_DATA_POLICY_V[1-9][0-9]*", policy_version) is None
+            or not isinstance(controls, dict)
+            or controls.get("version") != policy_version
         ):
             raise ValueError
         artifact = MarketPolicyArtifact.model_validate(payload)
