@@ -126,6 +126,42 @@ class IBKRResearchToolbox:
                 reason_codes=("BROKER_FEASIBILITY_FAILED",),
                 broker_evidence=feasibility,
             )
+
+        warning = str(feasibility.get("warningText") or "").lower()
+        if any(token in warning for token in ("not allowed", "cannot", "rejected", "insufficient")):
+            return ProposalValidation(
+                passed=False,
+                reason_codes=("BROKER_FEASIBILITY_WARNING_BLOCK",),
+                broker_evidence=feasibility,
+            )
+
+        margin_candidates = [
+            self._decimal_or_none(feasibility.get("initMarginChange")),
+            self._decimal_or_none(feasibility.get("maintMarginChange")),
+        ]
+        positive_margin = max(
+            (value for value in margin_candidates if value is not None and value > 0),
+            default=Decimal("0"),
+        )
+        if positive_margin > equity:
+            return ProposalValidation(
+                passed=False,
+                reason_codes=("BROKER_MARGIN_EXCEEDS_EXPERIMENT_EQUITY",),
+                broker_evidence=feasibility,
+            )
+
+        commission = (
+            self._decimal_or_none(feasibility.get("maxCommission"))
+            or self._decimal_or_none(feasibility.get("commission"))
+            or Decimal("0")
+        )
+        if proposal.maximum_loss + max(commission, Decimal("0")) > equity:
+            return ProposalValidation(
+                passed=False,
+                reason_codes=("EXPERIMENT_CAPITAL_BOUNDARY_AFTER_COSTS",),
+                broker_evidence=feasibility,
+            )
+
         return ProposalValidation(
             passed=True,
             reason_codes=(),
@@ -134,6 +170,19 @@ class IBKRResearchToolbox:
                 "what_if": feasibility,
             },
         )
+
+    @staticmethod
+    def _decimal_or_none(value: Any) -> Decimal | None:
+        if value is None:
+            return None
+        try:
+            text = str(value).replace(",", "").strip()
+            if not text:
+                return None
+            parsed = Decimal(text)
+            return parsed if parsed.is_finite() else None
+        except Exception:
+            return None
 
     def _connect(self):
         from ib_insync import IB
