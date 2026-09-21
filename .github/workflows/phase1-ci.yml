@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - codex/own-capital-sustainable-return
+      - codex/ibkr-autonomous-research-v1
   pull_request:
     branches:
       - codex/own-capital-sustainable-return
@@ -27,7 +28,7 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest
+          python -m pip install pytest "pydantic>=2,<3"
 
       - name: py_compile critical modules
         shell: pwsh
@@ -37,6 +38,11 @@ jobs:
           python -m py_compile tmp_agent/brain_v9/governance/execution_gate.py
           python -m py_compile tmp_agent/brain_v9/api_security.py
           python -m py_compile tmp_agent/brain_v9/core/session.py
+          python -m py_compile ibkr_paper_30d/autonomous_research.py
+          python -m py_compile ibkr_paper_30d/ibkr_research_tools.py
+          python -m py_compile ibkr_paper_30d/autonomous_execution.py
+          python -m py_compile ibkr_paper_30d/autonomous_runtime.py
+          python -m py_compile ibkr_paper_30d/risk.py
 
       - name: Phase 0 security tests
         shell: pwsh
@@ -50,6 +56,11 @@ jobs:
         run: |
           python tests/unit/test_phase1_import_baseline.py
           python tests/unit/test_phase1_security_defaults.py
+
+      - name: Autonomous research tests
+        shell: pwsh
+        run: |
+          pytest -q tests/ibkr_paper_30d/test_autonomous_research.py tests/ibkr_paper_30d/test_capital_boundary_risk.py tests/ibkr_paper_30d/test_autonomous_execution.py tests/ibkr_paper_30d/test_risk.py tests/ibkr_paper_30d/test_trader_invocation.py
 
       - name: Import smoke
         shell: pwsh
