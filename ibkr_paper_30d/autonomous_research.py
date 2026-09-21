@@ -177,9 +177,12 @@ class CodexAutonomousCLIProvider:
 
     is_real_codex_provider = True
 
+    NATIVE_TOOL_TYPES = frozenset({"web_search", "command_execution", "mcp_tool_call", "file_change"})
+
     def __init__(self, *, runner: Any = subprocess.run):
         self.runner = runner
         self.last_failure_code: str | None = None
+        self.last_native_tool_events: list[dict[str, Any]] = []
 
     def next_turn(
         self,
@@ -222,6 +225,7 @@ class CodexAutonomousCLIProvider:
             if completed.returncode != 0:
                 self.last_failure_code = f"RETURN_CODE_{completed.returncode}"
                 raise RuntimeError("AUTONOMOUS_CODEX_PROVIDER_FAILED")
+            self.last_native_tool_events = self._native_tool_events(completed.stdout)
             try:
                 raw = json.loads(output_path.read_text(encoding="utf-8"))
                 turn = AutonomousTurn.model_validate(raw)
@@ -254,6 +258,8 @@ class CodexAutonomousCLIProvider:
                 "capital_adaptive": True,
                 "instruction": (
                     "You control the research agenda. Request whatever read-only market/broker research you need from the toolbox. "
+                    "You may also use native Codex web search when available for public news, macro, filings, catalysts and market context. "
+                    "IBKR data and IBKR what-if remain authoritative for broker/account/contract feasibility. "
                     "Do not assume prior candidate lists are exhaustive. Reassess instrument and strategy choices as equity, buying power, "
                     "broker feasibility and remaining time change. When evidence is sufficient, return FINAL."
                 ),
@@ -283,6 +289,26 @@ class CodexAutonomousCLIProvider:
 
         normalize(schema)
         return schema
+
+    @classmethod
+    def _native_tool_events(cls, output: str) -> list[dict[str, Any]]:
+        events: list[dict[str, Any]] = []
+        for line in output.splitlines():
+            if not line.strip():
+                continue
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            item = event.get("item") if isinstance(event, dict) else None
+            item_type = item.get("type") if isinstance(item, dict) else None
+            if item_type in cls.NATIVE_TOOL_TYPES:
+                events.append({
+                    "type": item_type,
+                    "status": item.get("status"),
+                    "id": item.get("id"),
+                })
+        return events
 
     @staticmethod
     def _sanitized_environment() -> dict[str, str]:
@@ -348,6 +374,13 @@ class AutonomousResearchLoop:
                 "type": "model_turn",
                 "payload": turn.model_dump(mode="json"),
             })
+            native_events = getattr(self.provider, "last_native_tool_events", None)
+            if native_events:
+                history.append({
+                    "round": round_index,
+                    "type": "native_tool_activity",
+                    "payload": {"events": list(native_events)},
+                })
             if turn.mode == AutonomousTurnMode.RESEARCH:
                 if len(turn.research_requests) > self.max_requests_per_round:
                     return self._blocked(
