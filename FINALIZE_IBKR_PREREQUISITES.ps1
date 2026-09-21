@@ -128,8 +128,8 @@ $User = Get-LocalUser -Name $AuditorUser -ErrorAction Stop
 if ($User.SID.Value -ne $ExpectedAuditorSid) {
     throw "AUDITOR_SID_MISMATCH:ACTUAL=$($User.SID.Value):EXPECTED=$ExpectedAuditorSid"
 }
-if (-not $User.Enabled) {
-    Enable-LocalUser -Name $AuditorUser
+if ($User.Enabled) {
+    Disable-LocalUser -Name $AuditorUser -ErrorAction Stop
 }
 
 if ((Get-Sha256Lower -LiteralPath $TrustAnchorPath) -ne $ExpectedTrustAnchorSha256) {
@@ -199,58 +199,74 @@ if (-not (Test-Path -LiteralPath $SmtpProbeTarget -PathType Leaf)) {
     $TemporaryProbeTargets.Add($SmtpProbeTarget)
 }
 
-# Enable the dedicated auditor account only for the bounded probe window.
-Enable-LocalUser -Name $AuditorUser -ErrorAction Stop
-
-# Reset only the dedicated local auditor account password. The SID is preserved.
-$SecurePassword = New-RandomSecurePassword
-Set-LocalUser -Name $AuditorUser -Password $SecurePassword
-$Credential = New-Object Security.Management.Automation.PSCredential(
-    "$env:COMPUTERNAME\$AuditorUser",
-    $SecurePassword
-)
-
+# Keep the account disabled until the bounded probe window starts.
 $SecondaryLogon = Get-Service -Name seclogon -ErrorAction SilentlyContinue
 $SecondaryLogonWasRunning = $null -ne $SecondaryLogon -and $SecondaryLogon.Status -eq "Running"
 $SecondaryLogonOriginalStartType = if ($null -ne $SecondaryLogon) { [string]$SecondaryLogon.StartType } else { $null }
-if ($null -ne $SecondaryLogon -and -not $SecondaryLogonWasRunning) {
-    if ($SecondaryLogonOriginalStartType -eq "Disabled") { Set-Service -Name seclogon -StartupType Manual }
-    Start-Service -Name seclogon
-}
-
-Get-NetFirewallRule -Name $ProbeFirewallRuleName -ErrorAction SilentlyContinue | Remove-NetFirewallRule -ErrorAction SilentlyContinue
-# During the bounded auditor probe no local process needs broker API access.
-# Use an all-programs loopback block so a compromised auditor process cannot
-# bypass isolation by spawning another executable.
-$ProbeFirewallRule = New-NetFirewallRule -Name $ProbeFirewallRuleName -DisplayName $ProbeFirewallRuleName -Direction Outbound -Action Block -Protocol TCP -RemotePort 4001,4002 -RemoteAddress 127.0.0.1,::1 -Profile Any -Enabled True
-$ProbePortFilter = $ProbeFirewallRule | Get-NetFirewallPortFilter
-$ProbeAddressFilter = $ProbeFirewallRule | Get-NetFirewallAddressFilter
-if ([string]$ProbeFirewallRule.Action -ne "Block" -or [string]$ProbeFirewallRule.Direction -ne "Outbound") { throw "AUDITOR_PROBE_FIREWALL_RULE_INVALID" }
-$ProbeAddresses = @($ProbeAddressFilter.RemoteAddress | ForEach-Object { [string]$_ })
-if ($ProbeAddresses -notcontains "127.0.0.1" -or $ProbeAddresses -notcontains "::1") { throw "AUDITOR_PROBE_FIREWALL_SCOPE_INVALID" }
-$ProbePorts = @($ProbePortFilter.RemotePort | ForEach-Object { [string]$_ })
-if ($ProbePorts -notcontains "4001" -or $ProbePorts -notcontains "4002") { throw "AUDITOR_PROBE_FIREWALL_PORTS_INVALID" }
-
-$StdoutPath = Join-Path $ReportsRoot ("probe-launch-" + [Guid]::NewGuid().ToString("N") + ".out.txt")
-$StderrPath = Join-Path $ReportsRoot ("probe-launch-" + [Guid]::NewGuid().ToString("N") + ".err.txt")
-$ProbeStart = [DateTime]::UtcNow
-
-$Arguments = @(
-    "-NoProfile",
-    "-ExecutionPolicy", "Bypass",
-    "-File", (Quote-Argument $ProbePath),
-    "-BundlePath", (Quote-Argument ([string]$AuditExport.bundle_path)),
-    "-PaperIdentityReceiptPath", (Quote-Argument ([string]$AuditExport.paper_identity_receipt_path)),
-    "-TargetManifestPath", (Quote-Argument $TargetManifest),
-    "-DeploymentManifestPath", (Quote-Argument $DeploymentManifest),
-    "-ExpectedDeploymentManifestSha256", $DeploymentSha,
-    "-ExpectedPaperAccountHash", $PaperHash,
-    "-ExpectedSid", $ExpectedAuditorSid,
-    "-ReportDirectory", (Quote-Argument $ReportsRoot)
-) -join " "
-
 $Receipt = $null
+$AuditorEnabledForProbe = $false
+$ProbeFirewallInstalled = $false
+
 try {
+    Enable-LocalUser -Name $AuditorUser -ErrorAction Stop
+    $AuditorEnabledForProbe = $true
+
+    # Use a one-time random password only inside the bounded probe window.
+    $SecurePassword = New-RandomSecurePassword
+    Set-LocalUser -Name $AuditorUser -Password $SecurePassword
+    $Credential = New-Object Security.Management.Automation.PSCredential(
+        "$env:COMPUTERNAME\$AuditorUser",
+        $SecurePassword
+    )
+
+    if ($null -ne $SecondaryLogon -and -not $SecondaryLogonWasRunning) {
+        if ($SecondaryLogonOriginalStartType -eq "Disabled") {
+            Set-Service -Name seclogon -StartupType Manual
+        }
+        Start-Service -Name seclogon
+    }
+
+    Get-NetFirewallRule -Name $ProbeFirewallRuleName -ErrorAction SilentlyContinue |
+        Remove-NetFirewallRule -ErrorAction SilentlyContinue
+
+    # During the bounded auditor probe no local process needs broker API access.
+    # Use an all-programs loopback block so a compromised auditor process cannot
+    # bypass isolation by spawning another executable.
+    $ProbeFirewallRule = New-NetFirewallRule -Name $ProbeFirewallRuleName -DisplayName $ProbeFirewallRuleName -Direction Outbound -Action Block -Protocol TCP -RemotePort 4001,4002 -RemoteAddress 127.0.0.1,::1 -Profile Any -Enabled True
+    $ProbeFirewallInstalled = $true
+
+    $ProbePortFilter = $ProbeFirewallRule | Get-NetFirewallPortFilter
+    $ProbeAddressFilter = $ProbeFirewallRule | Get-NetFirewallAddressFilter
+    if ([string]$ProbeFirewallRule.Action -ne "Block" -or [string]$ProbeFirewallRule.Direction -ne "Outbound") {
+        throw "AUDITOR_PROBE_FIREWALL_RULE_INVALID"
+    }
+    $ProbeAddresses = @($ProbeAddressFilter.RemoteAddress | ForEach-Object { [string]$_ })
+    if ($ProbeAddresses -notcontains "127.0.0.1" -or $ProbeAddresses -notcontains "::1") {
+        throw "AUDITOR_PROBE_FIREWALL_SCOPE_INVALID"
+    }
+    $ProbePorts = @($ProbePortFilter.RemotePort | ForEach-Object { [string]$_ })
+    if ($ProbePorts -notcontains "4001" -or $ProbePorts -notcontains "4002") {
+        throw "AUDITOR_PROBE_FIREWALL_PORTS_INVALID"
+    }
+
+    $StdoutPath = Join-Path $ReportsRoot ("probe-launch-" + [Guid]::NewGuid().ToString("N") + ".out.txt")
+    $StderrPath = Join-Path $ReportsRoot ("probe-launch-" + [Guid]::NewGuid().ToString("N") + ".err.txt")
+    $ProbeStart = [DateTime]::UtcNow
+
+    $Arguments = @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", (Quote-Argument $ProbePath),
+        "-BundlePath", (Quote-Argument ([string]$AuditExport.bundle_path)),
+        "-PaperIdentityReceiptPath", (Quote-Argument ([string]$AuditExport.paper_identity_receipt_path)),
+        "-TargetManifestPath", (Quote-Argument $TargetManifest),
+        "-DeploymentManifestPath", (Quote-Argument $DeploymentManifest),
+        "-ExpectedDeploymentManifestSha256", $DeploymentSha,
+        "-ExpectedPaperAccountHash", $PaperHash,
+        "-ExpectedSid", $ExpectedAuditorSid,
+        "-ReportDirectory", (Quote-Argument $ReportsRoot)
+    ) -join " "
+
     $Process = Start-Process -FilePath $WindowsPowerShell -ArgumentList $Arguments -Credential $Credential -UseNewEnvironment -WorkingDirectory $RuntimeRoot -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput $StdoutPath -RedirectStandardError $StderrPath
     if ($Process.ExitCode -ne 0) {
         $Err = if (Test-Path $StderrPath) { Get-Content -LiteralPath $StderrPath -Raw } else { "" }
@@ -268,17 +284,27 @@ try {
     Copy-Item -LiteralPath $Receipt.FullName -Destination $CanonicalAuditorReceipt -Force
 }
 finally {
-    Get-NetFirewallRule -Name $ProbeFirewallRuleName -ErrorAction SilentlyContinue | Remove-NetFirewallRule -ErrorAction SilentlyContinue
-    foreach ($TemporaryPath in $TemporaryProbeTargets) {
-        if (Test-Path -LiteralPath $TemporaryPath -PathType Leaf) { Remove-Item -LiteralPath $TemporaryPath -Force }
+    if ($ProbeFirewallInstalled -or (Get-NetFirewallRule -Name $ProbeFirewallRuleName -ErrorAction SilentlyContinue)) {
+        Get-NetFirewallRule -Name $ProbeFirewallRuleName -ErrorAction SilentlyContinue |
+            Remove-NetFirewallRule -ErrorAction SilentlyContinue
     }
-    try {
-        $PostProbePassword = New-RandomSecurePassword
-        Set-LocalUser -Name $AuditorUser -Password $PostProbePassword
-    } catch { }
-    try {
-        Disable-LocalUser -Name $AuditorUser -ErrorAction Stop
-    } catch { }
+
+    foreach ($TemporaryPath in $TemporaryProbeTargets) {
+        if (Test-Path -LiteralPath $TemporaryPath -PathType Leaf) {
+            Remove-Item -LiteralPath $TemporaryPath -Force
+        }
+    }
+
+    if ($AuditorEnabledForProbe -or (Get-LocalUser -Name $AuditorUser -ErrorAction SilentlyContinue)) {
+        try {
+            $PostProbePassword = New-RandomSecurePassword
+            Set-LocalUser -Name $AuditorUser -Password $PostProbePassword
+        } catch { }
+        try {
+            Disable-LocalUser -Name $AuditorUser -ErrorAction Stop
+        } catch { }
+    }
+
     if ($null -ne $SecondaryLogon -and -not $SecondaryLogonWasRunning) {
         try { Stop-Service -Name seclogon -Force } catch { }
         if ($SecondaryLogonOriginalStartType -eq "Disabled") {
