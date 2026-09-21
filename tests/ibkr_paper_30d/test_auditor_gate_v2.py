@@ -610,3 +610,25 @@ def test_gate_report_is_blocked_when_real_receipt_is_absent() -> None:
     assert "AUDITOR_LEAST_PRIVILEGE_AND_RUNTIME_INTEGRITY_GATE_V2: BLOCK" in report
     assert "NEW_ADMIN_ACTION_REQUIRED" in report
     assert "Accepted receipt: NONE" in report
+
+@pytest.mark.parametrize(
+    "missing_endpoint",
+    [
+        "127.0.0.1:4001",
+        "127.0.0.1:4002",
+        "[::1]:4001",
+        "[::1]:4002",
+    ],
+)
+def test_gate_v2_requires_all_four_broker_endpoints_denied(
+    complete_receipt, expected_identity, now, missing_endpoint
+) -> None:
+    partial = deepcopy(complete_receipt)
+    del partial["network_facts"]["endpoints"][missing_endpoint]
+
+    receipt = parse_auditor_gate_v2_receipt(canonical_bytes(partial))
+    result = evaluate_auditor_gate_v2(receipt, expected_identity, now)
+
+    assert result.canonical_gate == "BLOCK"
+    assert "NETWORK_ENDPOINT_EVIDENCE_INVALID" in result.reason_codes
+    assert "PAPER_BROKER_LOOPBACK_NOT_DENIED" in result.reason_codes
