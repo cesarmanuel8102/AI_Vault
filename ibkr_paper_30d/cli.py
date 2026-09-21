@@ -864,6 +864,7 @@ def invoke_autonomous_research_cycle(
     reasoning_effort: str,
     timeout_seconds: int,
     experiment_equity: Decimal,
+    experiment_start_utc: str,
     market_session_state: str,
 ) -> dict[str, object]:
     """
@@ -909,6 +910,7 @@ def invoke_autonomous_research_cycle(
         result = runtime.run_cycle(
             readonly_report=readonly,
             experiment_equity=experiment_equity,
+            experiment_start_utc=experiment_start_utc,
             market_data_gate="PASS",
             market_session_state=market_session_state,
         )
@@ -1137,6 +1139,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     autonomous_parser.add_argument("--reasoning-effort", default="high")
     autonomous_parser.add_argument("--timeout-seconds", type=int, default=180)
     autonomous_parser.add_argument("--equity", type=Decimal, default=Decimal("500.00"))
+    autonomous_parser.add_argument("--experiment-start-utc", required=True)
     autonomous_parser.add_argument("--market-session", default="REGULAR")
     observe_parser = commands.add_parser("observe-market-data")
     observe_parser.add_argument("--host", default="127.0.0.1")
@@ -1175,6 +1178,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             reasoning_effort=args.reasoning_effort,
             timeout_seconds=args.timeout_seconds,
             experiment_equity=args.equity,
+            experiment_start_utc=args.experiment_start_utc,
             market_session_state=args.market_session,
         )
     elif args.command == "observe-market-data":
