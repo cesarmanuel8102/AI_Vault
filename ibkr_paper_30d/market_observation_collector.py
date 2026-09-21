@@ -467,6 +467,13 @@ class _IBKRMarketDataClient(EWrapper, EClient):
         )
 
 
+PRIMARY_EXCHANGE_BY_SYMBOL = {
+    "SPY": "ARCA",
+    "QQQ": "NASDAQ",
+    "IEF": "NASDAQ",
+}
+
+
 class IBKRMarketDataSource:
     def __init__(
         self,
@@ -507,7 +514,9 @@ class IBKRMarketDataSource:
             contract.secType = "STK"
             contract.exchange = "SMART"
             contract.currency = "USD"
-            contract.primaryExchange = "ARCA"
+            primary_exchange = PRIMARY_EXCHANGE_BY_SYMBOL.get(symbol.upper())
+            if primary_exchange:
+                contract.primaryExchange = primary_exchange
             contract_request_id = 9_000 + offset
             self.client.register_contract_request(contract_request_id, symbol)
             self.client.reqContractDetails(contract_request_id, contract)
