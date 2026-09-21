@@ -190,25 +190,29 @@ $Arguments = @(
     "-ReportDirectory", (Quote-Argument $ReportsRoot)
 ) -join " "
 
-$Process = Start-Process -FilePath "PowerShell.exe" -ArgumentList $Arguments -Credential $Credential -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput $StdoutPath -RedirectStandardError $StderrPath
-if ($Process.ExitCode -ne 0) {
-    $Err = if (Test-Path $StderrPath) { Get-Content -LiteralPath $StderrPath -Raw } else { "" }
-    $Out = if (Test-Path $StdoutPath) { Get-Content -LiteralPath $StdoutPath -Raw } else { "" }
-    throw "AUDITOR_GATE_V2_PROBE_FAILED:EXIT=$($Process.ExitCode):OUT=$Out:ERR=$Err"
-}
+$Receipt = $null
+try {
+    $Process = Start-Process -FilePath "PowerShell.exe" -ArgumentList $Arguments -Credential $Credential -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput $StdoutPath -RedirectStandardError $StderrPath
+    if ($Process.ExitCode -ne 0) {
+        $Err = if (Test-Path $StderrPath) { Get-Content -LiteralPath $StderrPath -Raw } else { "" }
+        $Out = if (Test-Path $StdoutPath) { Get-Content -LiteralPath $StdoutPath -Raw } else { "" }
+        throw "AUDITOR_GATE_V2_PROBE_FAILED:EXIT=$($Process.ExitCode):OUT=$Out:ERR=$Err"
+    }
 
-$Receipt = Get-ChildItem -LiteralPath $ReportsRoot -Filter "auditor-gate-v2-*.json" -File |
-    Where-Object { $_.LastWriteTimeUtc -ge $ProbeStart.AddSeconds(-2) } |
-    Sort-Object LastWriteTimeUtc -Descending |
-    Select-Object -First 1
-if ($null -eq $Receipt) {
-    throw "AUDITOR_GATE_V2_RECEIPT_NOT_CREATED"
+    $Receipt = Get-ChildItem -LiteralPath $ReportsRoot -Filter "auditor-gate-v2-*.json" -File |
+        Where-Object { $_.LastWriteTimeUtc -ge $ProbeStart.AddSeconds(-2) } |
+        Sort-Object LastWriteTimeUtc -Descending |
+        Select-Object -First 1
+    if ($null -eq $Receipt) {
+        throw "AUDITOR_GATE_V2_RECEIPT_NOT_CREATED"
+    }
+    Copy-Item -LiteralPath $Receipt.FullName -Destination $CanonicalAuditorReceipt -Force
 }
-Copy-Item -LiteralPath $Receipt.FullName -Destination $CanonicalAuditorReceipt -Force
-
-foreach ($TemporaryPath in $TemporaryProbeTargets) {
-    if (Test-Path -LiteralPath $TemporaryPath -PathType Leaf) {
-        Remove-Item -LiteralPath $TemporaryPath -Force
+finally {
+    foreach ($TemporaryPath in $TemporaryProbeTargets) {
+        if (Test-Path -LiteralPath $TemporaryPath -PathType Leaf) {
+            Remove-Item -LiteralPath $TemporaryPath -Force
+        }
     }
 }
 
