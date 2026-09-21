@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import pytest
+from types import SimpleNamespace
 
 from ibkr_paper_30d.autonomous_execution import (
     AutonomousPaperExecutionNotArmed,
     AutonomousPaperExecutor,
 )
-from ibkr_paper_30d.autonomous_research import AutonomousTradeProposal
+from ibkr_paper_30d.autonomous_research import AutonomousTradeProposal, ProposalValidation
 from ibkr_paper_30d.trader_invocation import TraderInputBundle
 
 
@@ -96,3 +97,74 @@ def test_executor_retains_non_strategic_safety_gates(kwargs, reason):
     assert result.success is False
     assert result.status == "BLOCKED"
     assert reason in result.reason_codes
+
+
+class _FakeIB:
+    def __init__(self):
+        self.place_calls = 0
+
+    def placeOrder(self, contract, order):
+        self.place_calls += 1
+        raise AssertionError("placeOrder must not be reached")
+
+    def disconnect(self):
+        pass
+
+
+class _PassUntilOperatorControlToolbox:
+    def __init__(self):
+        self.ib = _FakeIB()
+
+    def _connect(self):
+        return self.ib
+
+    def _proposal_contract(self, ib, proposal):
+        return SimpleNamespace(conId=123, symbol=proposal.symbol)
+
+    def live_contract_quote_evidence(self, ib, contract):
+        return {"success": True, "market_data_type": 1}
+
+    def validate_proposal(self, proposal, bundle, *, ib=None):
+        return ProposalValidation(
+            passed=True,
+            reason_codes=(),
+            broker_evidence={"what_if": {"success": True}},
+        )
+
+
+def test_immediate_operator_control_blocks_place_order(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _PassUntilOperatorControlToolbox()
+    with Database.open(tmp_path / "execution.sqlite3") as db:
+        executor = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: ("OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE",),
+        )
+        result = executor.execute(proposal(), bundle())
+
+    assert result.success is False
+    assert result.status == "BLOCKED"
+    assert "OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE" in result.reason_codes
+    assert toolbox.ib.place_calls == 0
+
+
+def test_missing_immediate_operator_control_callback_fails_closed(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _PassUntilOperatorControlToolbox()
+    with Database.open(tmp_path / "execution.sqlite3") as db:
+        executor = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+        )
+        result = executor.execute(proposal(), bundle())
+
+    assert result.success is False
+    assert "FRESH_OPERATOR_CONTROL_CHECK_REQUIRED" in result.reason_codes
+    assert toolbox.ib.place_calls == 0
