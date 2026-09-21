@@ -97,6 +97,7 @@ class AutonomousResearchProvider:
         self.last_tool_activity_detected = False
         self.last_failure_code: str | None = None
         self.last_failure_diagnostic: str | None = None
+        self.last_response: ProviderResponse | None = None
 
     def invoke(
         self, request: InvocationRequest, bundle: TraderInputBundle
@@ -123,7 +124,7 @@ class AutonomousResearchProvider:
             if turn.action == ResearchAction.FINAL:
                 assert turn.final_output is not None
                 self.last_event_count = total_events
-                return ProviderResponse(
+                response = ProviderResponse(
                     actual_model=request.requested_model,
                     fallback_reason=None,
                     structured_output=turn.final_output.model_dump(mode="json"),
@@ -137,6 +138,8 @@ class AutonomousResearchProvider:
                         "tool_manifest_sha256": sha256_json(self.toolbox.manifest()),
                     },
                 )
+                self.last_response = response
+                return response
 
             for research_request in turn.research_requests[: self.max_requests_per_round]:
                 if research_request.request_id in seen_request_ids:
@@ -175,7 +178,7 @@ class AutonomousResearchProvider:
             "reason_codes": ["RESEARCH_ROUND_BUDGET_EXHAUSTED"],
             "proposal": None,
         }
-        return ProviderResponse(
+        response = ProviderResponse(
             actual_model=request.requested_model,
             fallback_reason=None,
             structured_output=fallback,
@@ -189,6 +192,8 @@ class AutonomousResearchProvider:
                 "tool_manifest_sha256": sha256_json(self.toolbox.manifest()),
             },
         )
+        self.last_response = response
+        return response
 
     def _invoke_research_turn(
         self,
