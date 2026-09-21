@@ -266,6 +266,18 @@ class AutonomousPaperExecutor:
                 action=proposal.action.upper(),
                 quantity=proposal.quantity,
             )
+            operator_reasons = self._operator_control_reasons()
+            if operator_reasons:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=operator_reasons,
+                    order={},
+                    broker_validation={
+                        **validation.broker_evidence,
+                        "trade_contract_market_data": live_quote,
+                    },
+                )
             trade = ib.placeOrder(contract, order)
             ib.sleep(self.fill_wait_seconds)
             status = getattr(trade.orderStatus, "status", "UNKNOWN") or "UNKNOWN"
@@ -491,6 +503,18 @@ class AutonomousPaperExecutor:
                 action=action.action.upper(),
                 quantity=action.quantity,
             )
+            operator_reasons = self._operator_control_reasons()
+            if operator_reasons:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=operator_reasons,
+                    order={},
+                    broker_validation={
+                        **final_validation.broker_evidence,
+                        "trade_contract_market_data": live_quote,
+                    },
+                )
             trade = ib.placeOrder(position.contract, order)
             ib.sleep(self.fill_wait_seconds)
             status = getattr(trade.orderStatus, "status", "UNKNOWN") or "UNKNOWN"
