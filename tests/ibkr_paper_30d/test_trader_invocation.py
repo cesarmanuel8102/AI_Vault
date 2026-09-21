@@ -63,7 +63,7 @@ def request(bundle, *, cycle="cycle-1", invocation="invocation-1", **updates):
         "model_configuration": {"temperature": 0},
         "reasoning_effort": "HIGH",
         "input_bundle_sha256": bundle.sha256,
-        "risk_policy_version": "MONTH1_V1",
+        "risk_policy_version": "CAPITAL_BOUNDARY_V2",
         "experiment_id": "experiment-1",
         "invocation_trigger": "SCHEDULED_SCAN",
         "timeout_seconds": 60,
