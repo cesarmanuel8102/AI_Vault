@@ -12,6 +12,7 @@ from ibkr_paper_30d.prerequisite_tools import create_audit_export
 ROOT = Path(__file__).resolve().parents[2]
 FINALIZER = ROOT / "FINALIZE_IBKR_PREREQUISITES.ps1"
 MARKET_RUNNER = ROOT / "RUN_IBKR_MARKET_DATA_GATE.ps1"
+DENIAL_PROBE = ROOT / "auditor_runtime" / "AUDITOR_DENIAL_PROBE_V1.ps1"
 
 
 def test_prerequisite_scripts_exist_and_never_arm_trading():
@@ -90,3 +91,10 @@ def test_create_audit_export_preserves_identity_receipt_bytes(tmp_path: Path):
     assert Path(result["bundle_path"]).is_dir()
     identity_copy = Path(result["paper_identity_receipt_path"])
     assert identity_copy.read_bytes() == raw
+
+
+def test_denial_probe_classifies_acl_errors_explicitly():
+    text = DENIAL_PROBE.read_text(encoding="utf-8")
+    assert "Test-Path -LiteralPath $Target -ErrorAction Stop" in text
+    assert "catch [UnauthorizedAccessException] { return \"DENIED\" }" in text
+    assert "catch [Security.SecurityException] { return \"DENIED\" }" in text
