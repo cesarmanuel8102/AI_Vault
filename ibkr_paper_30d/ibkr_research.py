@@ -5,7 +5,7 @@ import math
 import threading
 import time
 from datetime import datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any, Callable
 
 from ibapi.client import EClient
@@ -774,11 +774,16 @@ class IBKRResearchToolbox:
             raise ValueError("maximum_loss/capital_required cannot be negative")
         account = self._account_state()
         buying_power_raw = account.get("buying_power")
-        buying_power = (
-            Decimal(str(buying_power_raw))
-            if buying_power_raw not in (None, "")
-            else Decimal("0")
-        )
+        try:
+            buying_power = (
+                Decimal(str(buying_power_raw))
+                if buying_power_raw not in (None, "")
+                else Decimal("0")
+            )
+            if not buying_power.is_finite() or buying_power < 0:
+                buying_power = Decimal("0")
+        except (InvalidOperation, ValueError):
+            buying_power = Decimal("0")
         return {
             "experimental_equity": str(self.experimental_equity),
             "maximum_loss": str(maximum_loss),
