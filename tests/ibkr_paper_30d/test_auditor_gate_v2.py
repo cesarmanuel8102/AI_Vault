@@ -263,9 +263,9 @@ def test_residual_risk_binds_paper_identity_without_cleartext_account(
         expected_identity.expected_account_hash
     )
     assert artifact["PAPER_IDENTITY_RECEIPT_SHA256"] == expected_identity.receipt_sha256
-    assert artifact["AUDITOR_TECHNICAL_SOCKET_REACHABILITY"] is True
-    assert artifact["AUDITOR_NETWORK_ISOLATION_REQUIRED"] is False
-    assert artifact["AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE"] is True
+    assert artifact["AUDITOR_TECHNICAL_SOCKET_REACHABILITY"] is False
+    assert artifact["AUDITOR_NETWORK_ISOLATION_REQUIRED"] is True
+    assert artifact["AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE"] is False
     assert artifact["AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED"] is True
     assert artifact["AUDITOR_ORDER_AUTHORITY_GRANTED"] is False
     assert artifact["AUDITOR_BROKER_CONTROL_PATH_AUTHORIZED"] is False
@@ -582,12 +582,11 @@ def test_gate_report_renders_all_v2_evidence_without_account_identity(
     for value in (
         "AUDITOR_LEAST_PRIVILEGE_AND_RUNTIME_INTEGRITY_GATE_V2: PASS",
         "AUDITOR_ISOLATION_GATE_V2: PASS",
-        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY: true",
-        "AUDITOR_NETWORK_ISOLATION_REQUIRED: false",
-        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE: true",
+        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY: false",
+        "AUDITOR_NETWORK_ISOLATION_REQUIRED: true",
+        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE: false",
         "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED: true",
-        "LEGACY_FIREWALL_CONTROL: INEFFECTIVE_FOR_LOOPBACK_REQUIREMENT",
-        "WFP_AUDITOR_FRONT: DEFERRED",
+        "BROKER_LOOPBACK_SOCKET_CONTROL: PROVEN_DENIED",
         "EXPECTED_PAPER_ACCOUNT_IDENTITY_HASH",
         "PAPER_ENVIRONMENT_REFERENCE",
         "BROKER_MODULE_AVAILABLE",
