@@ -194,3 +194,56 @@ def test_operator_revocation_after_registry_blocks_final_send(tmp_path):
     assert "OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE" in result.reason_codes
     assert registry_count == 1
     assert toolbox.ib.place_calls == 0
+
+
+def test_immediate_fill_payload_inherits_issued_order_identity():
+    trade = SimpleNamespace(
+        order=SimpleNamespace(
+            orderRef="codex-ibkr-paper-30d-a-issued",
+            orderId=77,
+            permId=88,
+            clientId=99,
+        ),
+        fills=[
+            SimpleNamespace(
+                execution=SimpleNamespace(
+                    execId="",
+                    orderRef="",
+                    permId=0,
+                    orderId=0,
+                    clientId=0,
+                    side="BOT",
+                    shares=1,
+                    price=10.0,
+                    time="2026-09-21T13:30:00Z",
+                    cumQty=1,
+                    avgPrice=10.0,
+                ),
+                contract=SimpleNamespace(
+                    conId=123,
+                    symbol="XYZ",
+                    localSymbol="XYZ",
+                    secType="STK",
+                    exchange="SMART",
+                    currency="USD",
+                    lastTradeDateOrContractMonth="",
+                    strike=0,
+                    right="",
+                    multiplier="1",
+                ),
+                commissionReport=None,
+            )
+        ],
+    )
+
+    payload = AutonomousPaperExecutor._fills_payload(
+        trade,
+        fallback_order_ref="codex-ibkr-paper-30d-a-issued",
+    )
+    assert len(payload) == 1
+    fill = payload[0]
+    assert fill["orderRef"] == "codex-ibkr-paper-30d-a-issued"
+    assert fill["orderId"] == 77
+    assert fill["permId"] == 88
+    assert fill["clientId"] == 99
+    assert fill["execution_id_hash"] is None
