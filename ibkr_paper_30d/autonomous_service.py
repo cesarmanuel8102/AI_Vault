@@ -470,6 +470,16 @@ class AutonomousExperimentService:
                     {"message": "database integrity/runtime failure"},
                 )
                 raise
+            except AutonomousServiceError as exc:
+                _append_alert(
+                    self.db,
+                    "FATAL_AUTONOMOUS_STATE_ERROR",
+                    {
+                        "error_type": type(exc).__name__,
+                        "message": str(exc)[:500],
+                    },
+                )
+                raise
             except Exception as exc:
                 try:
                     _append_alert(
