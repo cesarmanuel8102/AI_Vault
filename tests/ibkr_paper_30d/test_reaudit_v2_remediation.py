@@ -12,7 +12,11 @@ from ibkr_paper_30d.autonomous_research import (
     AutonomousPositionAction,
     CodexAutonomousCLIProvider,
     ProposalValidation,
+    ResearchRequest,
+    ResearchTool,
 )
+from ibkr_paper_30d.autonomous_state import AutonomousStateBuilder
+from ibkr_paper_30d.auditor_runtime_v2 import consolidate_probe_results_v2
 from ibkr_paper_30d.ibkr_research_tools import IBKRResearchToolbox
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.trader_invocation import TraderDecision, TraderInputBundle
@@ -232,3 +236,232 @@ def test_late_position_direction_inversion_blocks_before_send(tmp_path):
         "POSITION_ACTION_WOULD_INCREASE_EXPOSURE_BEFORE_SEND",
     )
     assert toolbox.ib.place_calls == 0
+
+
+@pytest.mark.parametrize(
+    "output",
+    [
+        json.dumps({"type": "thread.started", "model": "gpt-5.6-sol"}),
+        "",
+        None,
+        '{"actual_model":"gpt-5.6-sol"',
+        json.dumps({"actual_model": 56}),
+        json.dumps({"actual_model": ""}),
+        '{"actual_model":"gpt-5.5-codex","actual_model":"gpt-5.6-sol"}',
+        json.dumps({"chosen_model": "gpt-5.6-sol"}),
+        json.dumps({"model": {"actual": "gpt-5.6-sol"}}),
+    ],
+)
+def test_actual_model_attestation_fails_closed_without_valid_authoritative_evidence(output):
+    with pytest.raises(
+        RuntimeError, match="AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED"
+    ):
+        CodexAutonomousCLIProvider._assert_effective_model(
+            output, "gpt-5.6-sol"
+        )
+
+
+def test_actual_model_attestation_accepts_only_matching_authoritative_model():
+    output = "\n".join(
+        [
+            json.dumps(
+                {
+                    "type": "thread.started",
+                    "model": "gpt-5.6-sol",
+                    "actual_model": "gpt-5.6-sol",
+                }
+            ),
+            json.dumps({"type": "turn.completed"}),
+        ]
+    )
+    CodexAutonomousCLIProvider._assert_effective_model(
+        output, "gpt-5.6-sol"
+    )
+
+
+def test_model_safe_broker_feasibility_redacts_global_before_after_balances():
+    toolbox = IBKRResearchToolbox(
+        expected_account_hash="a" * 64,
+        declared_options_level=4,
+    )
+    raw = {
+        "success": True,
+        "commission": "1.00",
+        "initMarginChange": "25.00",
+        "maintMarginChange": "20.00",
+        "equityWithLoanChange": "-1.00",
+        "initMarginBefore": "5000.00",
+        "initMarginAfter": "5025.00",
+        "maintMarginBefore": "4000.00",
+        "maintMarginAfter": "4020.00",
+        "equityWithLoanBefore": "50000.00",
+        "equityWithLoanAfter": "49999.00",
+        "whatIf": True,
+        "paper_only": True,
+    }
+
+    safe = toolbox._model_safe_feasibility(raw)
+
+    assert safe["initMarginChange"] == "25.00"
+    assert safe["maintMarginChange"] == "20.00"
+    assert safe["commission"] == "1.00"
+    for forbidden in (
+        "initMarginBefore",
+        "initMarginAfter",
+        "maintMarginBefore",
+        "maintMarginAfter",
+        "equityWithLoanBefore",
+        "equityWithLoanAfter",
+    ):
+        assert forbidden not in safe
+
+
+def test_research_exception_message_does_not_echo_broker_balance(monkeypatch):
+    toolbox = IBKRResearchToolbox(
+        expected_account_hash="a" * 64,
+        declared_options_level=4,
+    )
+
+    def boom(_):
+        raise RuntimeError("NetLiquidation=50000 BuyingPower=100000")
+
+    monkeypatch.setattr(toolbox, "_account_state", boom)
+    request = ResearchRequest(
+        request_id="v3-error-redaction",
+        tool=ResearchTool.ACCOUNT_STATE,
+        arguments={},
+        purpose="verify fail-closed redaction",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.success is False
+    assert result.error == "RuntimeError:tool_failed"
+    assert "50000" not in result.error
+    assert "100000" not in result.error
+    assert "NetLiquidation" not in result.error
+
+
+def test_broker_snapshot_ignores_legacy_summary_global_balances():
+    snapshot = AutonomousStateBuilder._broker_snapshot(
+        {
+            "paper_account": True,
+            "declared_options_level": 4,
+            "summary": {
+                "BuyingPower": "1.00",
+                "AvailableFunds": "2.00",
+                "NetLiquidation": "999999.00",
+            },
+        },
+        Decimal("500.00"),
+    )
+
+    assert snapshot["experiment_buying_power"] == "500.00"
+    assert snapshot["global_broker_balances_redacted"] is True
+    assert "summary" not in snapshot
+
+
+def _consolidator_inputs_for_endpoint_test():
+    run_id = "run-v3-endpoint-test"
+    names = (
+        "SECRETS_READ",
+        "IBKR_SECRET_READ",
+        "SMTP_SECRET_READ",
+        "EXECUTION_LOCK_ACCESS",
+        "LIVE_DATABASE_MUTATION",
+        "BROKER_WRITE_PATH_ACCESS",
+        "TRADER_CONTEXT_ACCESS",
+        "AUDIT_INPUT_MUTATION",
+        "IMMUTABLE_EXPORT_READ",
+        "AUDITOR_REPORT_WRITE",
+    )
+    outcomes = {name: "DENIED" for name in names}
+    outcomes["IMMUTABLE_EXPORT_READ"] = "ALLOWED"
+    outcomes["AUDITOR_REPORT_WRITE"] = "ALLOWED"
+    return {
+        "run_id": run_id,
+        "started_at": datetime(2026, 9, 21, 14, 0, tzinfo=timezone.utc),
+        "completed_at": datetime(2026, 9, 21, 14, 1, tzinfo=timezone.utc),
+        "identity": {
+            "effective_sid": "S-1-5-21-214160970-1890373857-4055601883-1012",
+            "token_elevated": False,
+            "separate_process": True,
+        },
+        "runtime": {
+            "status": "PASS",
+            "runtime_manifest_sha256": "a" * 64,
+            "deployment_manifest_sha256": "b" * 64,
+            "probe_sha256": "c" * 64,
+            "probe_manifest_sha256": "d" * 64,
+            "exact_fileset": True,
+            "verified_at_utc": "2026-09-21T13:59:30Z",
+            "predicates": {
+                "BROKER_MODULE_AVAILABLE": False,
+                "ORDER_WRITE_SYMBOL_AVAILABLE": False,
+                "EXECUTION_ADAPTER_AVAILABLE": False,
+                "EXECUTION_LOCK_CLIENT_AVAILABLE": False,
+                "TRADER_IPC_CLIENT_AVAILABLE": False,
+                "BROKER_CREDENTIAL_SOURCE_AVAILABLE": False,
+                "ORDER_WRITE_MODULE_AVAILABLE": False,
+            },
+        },
+        "denial": {
+            "status": "COMPLETE",
+            "run_id": run_id,
+            "target_validation_matrix": [
+                {"run_id": run_id, "probe": name, "valid": True}
+                for name in names
+            ],
+            "results": outcomes,
+            "network_endpoints": {
+                "127.0.0.1:4001": "DENIED",
+                "127.0.0.1:4002": "DENIED",
+                "[::1]:4001": "DENIED",
+                "[::1]:4002": "DENIED",
+            },
+        },
+        "functional": {
+            "run_id": run_id,
+            "status": "PASS",
+            "bundle_id": "e" * 64,
+            "manifest_sha256": "f" * 64,
+        },
+        "paper": {
+            "run_id": run_id,
+            "expected_account_identity_hash": "1" * 64,
+            "identity_receipt_sha256": "2" * 64,
+            "environment_reference": "PAPER:gateway:4002",
+            "broker_session_environment_reference": "PAPER:session:4002",
+            "verified_at_utc": "2026-09-21T13:59:00Z",
+            "paper_identity_gate": "PASS",
+            "readonly_identity_gate": "PASS",
+            "broker_reconciliation_gate": "PASS",
+            "paper_only": True,
+            "live_allowed": False,
+            "real_money_allowed": False,
+        },
+        "output": {
+            "run_id": run_id,
+            "report_path": "v3.json",
+            "created": True,
+            "report_sha256": "3" * 64,
+            "evidence_origin": "REAL_RESTRICTED_TOKEN",
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    "missing_endpoint",
+    [
+        "127.0.0.1:4001",
+        "127.0.0.1:4002",
+        "[::1]:4001",
+        "[::1]:4002",
+    ],
+)
+def test_legacy_consolidator_requires_all_four_denied_endpoints(missing_endpoint):
+    inputs = _consolidator_inputs_for_endpoint_test()
+    del inputs["denial"]["network_endpoints"][missing_endpoint]
+
+    with pytest.raises(ValueError, match="CONSOLIDATED_NETWORK_FACT_MISMATCH"):
+        consolidate_probe_results_v2(**inputs)
