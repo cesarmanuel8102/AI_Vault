@@ -28,10 +28,11 @@ def test_prerequisite_scripts_exist_and_never_arm_trading():
     assert "market_data_task_registered" in finalizer
 
     market = MARKET_RUNNER.read_text(encoding="utf-8")
-    assert '"300"' in market
+    assert '"315"' in market
     assert "AddMinutes(31)" in market
     assert "freeze-market-policy" in market
     assert "validate-real-market-data" in market
+    assert "Archive-CollectionEvidence" in market
 
 
 @pytest.mark.skipif(os.name != "nt", reason="PowerShell 5.1 parser validation is Windows-only")
