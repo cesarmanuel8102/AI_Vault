@@ -79,7 +79,9 @@ class RuntimeMarketDataGate:
                 ),
                 ObservationPrerequisites(
                     identity_receipt_sha256=self.expected_account_hash,
-                    reconciliation_receipt_sha256="runtime-market-gate",
+                    reconciliation_receipt_sha256=hashlib.sha256(
+                        b"runtime-market-gate"
+                    ).hexdigest(),
                     paper_identity_proven=True,
                     broker_reconciliation_gate="PASS",
                 ),
