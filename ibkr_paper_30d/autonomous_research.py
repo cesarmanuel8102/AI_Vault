@@ -106,8 +106,6 @@ class AutonomousTradeProposal(BaseModel, frozen=True):
         total = self.probability_profit + self.probability_loss
         if total > Decimal("1.0001"):
             raise ValueError("probability_profit + probability_loss cannot exceed 1")
-        if self.loss_is_bounded is False:
-            raise ValueError("experiment requires bounded maximum loss")
         return self
 
 
@@ -381,7 +379,7 @@ class AutonomousResearchLoop:
                 return self._blocked(history, round_index, "MISSING_PROPOSAL")
             if proposal.maximum_loss > equity:
                 return self._blocked(history, round_index, "EXPERIMENT_CAPITAL_BOUNDARY")
-            if proposal.capital_required > equity and proposal.maximum_loss >= equity:
+            if proposal.capital_required > equity:
                 return self._blocked(history, round_index, "CAPITAL_REQUIRED_EXCEEDS_EQUITY")
 
             validation = self.toolbox.validate_proposal(proposal, bundle)
