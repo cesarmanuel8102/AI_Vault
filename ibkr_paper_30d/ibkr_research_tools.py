@@ -108,8 +108,49 @@ class IBKRResearchToolbox:
                 error=f"{type(exc).__name__}:{exc}",
             )
 
+    WARNING_BLOCK_TOKENS = (
+        "not allowed",
+        "cannot",
+        "rejected",
+        "insufficient",
+        "incompatible",
+        "missing",
+    )
+
+    def _feasibility_common(
+        self,
+        feasibility: dict[str, Any],
+        *,
+        equity: Decimal,
+    ) -> tuple[bool, tuple[str, ...]]:
+        if not feasibility.get("success"):
+            return False, ("BROKER_FEASIBILITY_FAILED",)
+        warning = str(feasibility.get("warningText") or "").lower()
+        if any(token in warning for token in self.WARNING_BLOCK_TOKENS):
+            return False, ("BROKER_FEASIBILITY_WARNING_BLOCK",)
+
+        init_margin = self._decimal_or_none(feasibility.get("initMarginChange"))
+        maint_margin = self._decimal_or_none(feasibility.get("maintMarginChange"))
+        commission_candidates = (
+            self._decimal_or_none(feasibility.get("commission")),
+            self._decimal_or_none(feasibility.get("minCommission")),
+            self._decimal_or_none(feasibility.get("maxCommission")),
+        )
+        if init_margin is None or maint_margin is None:
+            return False, ("BROKER_MARGIN_EVIDENCE_MISSING",)
+        if all(value is None for value in commission_candidates):
+            return False, ("BROKER_COMMISSION_EVIDENCE_MISSING",)
+        positive_margin = max(init_margin, maint_margin, Decimal("0"))
+        if positive_margin > equity:
+            return False, ("BROKER_MARGIN_EXCEEDS_EXPERIMENT_EQUITY",)
+        return True, ()
+
     def validate_proposal(
-        self, proposal: AutonomousTradeProposal, bundle: TraderInputBundle
+        self,
+        proposal: AutonomousTradeProposal,
+        bundle: TraderInputBundle,
+        *,
+        ib: Any | None = None,
     ) -> ProposalValidation:
         equity = Decimal(str(bundle.experiment_subledger_snapshot.get("equity", "0")))
         structural_floor, structural_reason = self._structure_loss_floor(proposal, bundle)
@@ -149,40 +190,21 @@ class IBKRResearchToolbox:
                 },
             )
 
-        feasibility = self._broker_feasibility(proposal)
-        if not feasibility.get("success"):
-            return ProposalValidation(
-                passed=False,
-                reason_codes=("BROKER_FEASIBILITY_FAILED",),
-                broker_evidence=feasibility,
-            )
-
-        warning = str(feasibility.get("warningText") or "").lower()
-        if any(token in warning for token in ("not allowed", "cannot", "rejected", "insufficient")):
-            return ProposalValidation(
-                passed=False,
-                reason_codes=("BROKER_FEASIBILITY_WARNING_BLOCK",),
-                broker_evidence=feasibility,
-            )
-
-        margin_candidates = [
-            self._decimal_or_none(feasibility.get("initMarginChange")),
-            self._decimal_or_none(feasibility.get("maintMarginChange")),
-        ]
-        positive_margin = max(
-            (value for value in margin_candidates if value is not None and value > 0),
-            default=Decimal("0"),
+        feasibility = self._broker_feasibility(proposal, ib=ib)
+        feasibility_ok, feasibility_reasons = self._feasibility_common(
+            feasibility, equity=equity
         )
-        if positive_margin > equity:
+        if not feasibility_ok:
             return ProposalValidation(
                 passed=False,
-                reason_codes=("BROKER_MARGIN_EXCEEDS_EXPERIMENT_EQUITY",),
+                reason_codes=feasibility_reasons,
                 broker_evidence=feasibility,
             )
 
         commission = (
             self._decimal_or_none(feasibility.get("maxCommission"))
             or self._decimal_or_none(feasibility.get("commission"))
+            or self._decimal_or_none(feasibility.get("minCommission"))
             or Decimal("0")
         )
         if effective_maximum_loss + max(commission, Decimal("0")) > equity:
