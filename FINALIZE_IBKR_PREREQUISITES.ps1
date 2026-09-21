@@ -24,6 +24,7 @@ $ReadOnlyReport = Join-Path $CanonicalReportRoot "read_only_real_paper_reconcili
 $CanonicalAuditorReceipt = Join-Path $CanonicalReportRoot "auditor_gate_v2_receipt.json"
 $MarketValidation = Join-Path $CanonicalReportRoot "market_data_validation.json"
 $MarketTaskName = "CodexIBKRMarketDataGate"
+$CanonicalAcceptance = Join-Path $RepoRoot "AUDITOR_MONTH1_PAPER_RESIDUAL_RISK_ACCEPTANCE_V1.json"
 
 function Assert-Administrator {
     $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -183,17 +184,39 @@ if ($null -eq $Receipt) {
 }
 Copy-Item -LiteralPath $Receipt.FullName -Destination $CanonicalAuditorReceipt -Force
 
-$env:AUDITOR_RUNTIME_MANIFEST_V2_SHA256 = Get-Sha256Lower -LiteralPath $RuntimeManifest
-$env:AUDITOR_RUNTIME_DEPLOYMENT_MANIFEST_V2_SHA256 = Get-Sha256Lower -LiteralPath $DeploymentManifest
-$env:AUDITOR_GATE_V2_PROBE_SHA256 = Get-Sha256Lower -LiteralPath $ProbePath
-$env:AUDITOR_PROBE_TARGET_MANIFEST_SHA256 = Get-Sha256Lower -LiteralPath $TargetManifest
+$RuntimeManifestSha = Get-Sha256Lower -LiteralPath $RuntimeManifest
+$DeploymentManifestSha = Get-Sha256Lower -LiteralPath $DeploymentManifest
+$ProbeSha = Get-Sha256Lower -LiteralPath $ProbePath
+$TargetManifestSha = Get-Sha256Lower -LiteralPath $TargetManifest
 
-$AuditorArtifacts = Invoke-PythonJson -Arguments @(
-    "-m", "ibkr_paper_30d.cli", "write-auditor-v2-artifacts",
-    "--receipt", $CanonicalAuditorReceipt
+$env:AUDITOR_RUNTIME_MANIFEST_V2_SHA256 = $RuntimeManifestSha
+$env:AUDITOR_RUNTIME_DEPLOYMENT_MANIFEST_V2_SHA256 = $DeploymentManifestSha
+$env:AUDITOR_GATE_V2_PROBE_SHA256 = $ProbeSha
+$env:AUDITOR_PROBE_TARGET_MANIFEST_SHA256 = $TargetManifestSha
+
+$AuditorEvaluation = Invoke-PythonJson -Arguments @(
+    "-m", "ibkr_paper_30d.prerequisite_tools", "evaluate-auditor",
+    "--receipt", $CanonicalAuditorReceipt,
+    "--readonly-report", $ReadOnlyReport,
+    "--runtime-manifest-sha256", $RuntimeManifestSha,
+    "--deployment-manifest-sha256", $DeploymentManifestSha,
+    "--probe-sha256", $ProbeSha,
+    "--probe-manifest-sha256", $TargetManifestSha
 )
-if ($AuditorArtifacts.gate -ne "PASS") {
-    throw "AUDITOR_GATE_V2_BLOCK:$($AuditorArtifacts.reason_codes -join ',')"
+if ($AuditorEvaluation.canonical_gate -ne "PASS" -or $AuditorEvaluation.compatibility_gate -ne "PASS") {
+    throw "AUDITOR_GATE_V2_BLOCK:$($AuditorEvaluation.reason_codes -join ',')"
+}
+
+$AcceptanceCreated = $false
+if (-not (Test-Path -LiteralPath $CanonicalAcceptance -PathType Leaf)) {
+    $AuditorArtifacts = Invoke-PythonJson -Arguments @(
+        "-m", "ibkr_paper_30d.cli", "write-auditor-v2-artifacts",
+        "--receipt", $CanonicalAuditorReceipt
+    )
+    if ($AuditorArtifacts.gate -ne "PASS") {
+        throw "AUDITOR_GATE_V2_ARTIFACT_BLOCK:$($AuditorArtifacts.reason_codes -join ',')"
+    }
+    $AcceptanceCreated = $true
 }
 
 $MarketAlreadyPass = $false
@@ -233,6 +256,7 @@ $Ready = Invoke-PythonJson -Arguments @(
 [ordered]@{
     status = "AUDITOR_PASS"
     auditor_gate_v2 = "PASS"
+    auditor_acceptance_created = $AcceptanceCreated
     market_data_gate = $(if ($MarketAlreadyPass) { "PASS" } else { "PENDING_REGULAR_SESSION_EVIDENCE" })
     market_data_task_registered = $TaskRegistered
     market_data_task_name = $(if ($TaskRegistered) { $MarketTaskName } else { $null })
