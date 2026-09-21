@@ -5,6 +5,12 @@ import socket
 import threading
 import json
 
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    os.name != "nt", reason="Windows named-mutex execution lock tests"
+)
+
 from ibkr_paper_30d.execution_lock import ExecutionLock, LockOwner
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.types import new_uuid7
