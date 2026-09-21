@@ -108,6 +108,7 @@ def persist_outcome(
         "validation": outcome.validation,
         "decision": outcome.decision.value,
         "proposal": None if outcome.proposal is None else outcome.proposal.model_dump(mode="json"),
+        "position_action": None if outcome.position_action is None else outcome.position_action.model_dump(mode="json"),
         "reason_codes": list(outcome.reason_codes),
         "rounds": outcome.rounds,
         "transcript_sha256": outcome.transcript_sha256,
@@ -175,9 +176,16 @@ def run_autonomous_cycle(
         persist_outcome(database, bundle, request, outcome)
 
     execution = None
-    if execute_paper and outcome.accepted and outcome.decision == TraderDecision.PROPOSE_TRADE:
+    if execute_paper and outcome.accepted:
         executor = executor or AutonomousPaperExecutor(toolbox)
-        execution = executor.execute(outcome.proposal, bundle)
+        if outcome.decision == TraderDecision.PROPOSE_TRADE and outcome.proposal is not None:
+            execution = executor.execute(outcome.proposal, bundle)
+        elif outcome.decision in {TraderDecision.REDUCE_POSITION, TraderDecision.CLOSE_POSITION} and outcome.position_action is not None:
+            execution = executor.execute_position_action(
+                outcome.position_action,
+                bundle,
+                outcome.decision,
+            )
 
     return {
         "schema": "CODEX_IBKR_AUTONOMOUS_CYCLE_V1",
