@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Sequence
 from uuid import uuid4
@@ -35,6 +36,8 @@ class AutonomousCycleResult(BaseModel, frozen=True):
     risk_reason_codes: tuple[str, ...]
     liability_gate: str
     liability_reason_codes: tuple[str, ...]
+    contract_quote_gate: str
+    contract_quote_reason_codes: tuple[str, ...]
     broker_what_if_seen: bool
     capital_feasibility_seen: bool
     execution_ready: bool
@@ -188,6 +191,8 @@ class AutonomousDecisionRuntime:
         risk_reasons: tuple[str, ...] = ()
         liability_gate = "NOT_APPLICABLE"
         liability_reasons: tuple[str, ...] = ()
+        contract_quote_gate = "NOT_APPLICABLE"
+        contract_quote_reasons: tuple[str, ...] = ()
         what_if_seen = self._successful_tool_seen(evidence, "what_if_order")
         capital_seen = self._successful_tool_seen(evidence, "capital_feasibility")
 
@@ -200,6 +205,14 @@ class AutonomousDecisionRuntime:
                 liability_reasons = liability.reason_codes
                 if not liability.structurally_bounded:
                     post_reasons.extend(liability.reason_codes)
+
+                quote_ok, quote_reasons = self._fresh_realtime_quote_coverage(
+                    evidence, proposal
+                )
+                contract_quote_gate = "PASS" if quote_ok else "BLOCK"
+                contract_quote_reasons = quote_reasons
+                if not quote_ok:
+                    post_reasons.extend(quote_reasons)
 
                 maximum_loss_raw = proposal.get("maximum_loss")
                 if maximum_loss_raw is None:
@@ -240,6 +253,7 @@ class AutonomousDecisionRuntime:
             and validated.effective_decision == "PROPOSE_TRADE"
             and risk_gate == RiskResult.PASS.value
             and liability_gate == "PASS"
+            and contract_quote_gate == "PASS"
             and capital_seen
             and what_if_seen
             and not post_reasons
@@ -258,12 +272,94 @@ class AutonomousDecisionRuntime:
             risk_reason_codes=risk_reasons,
             liability_gate=liability_gate,
             liability_reason_codes=liability_reasons,
+            contract_quote_gate=contract_quote_gate,
+            contract_quote_reason_codes=contract_quote_reasons,
             broker_what_if_seen=what_if_seen,
             capital_feasibility_seen=capital_seen,
             execution_ready=execution_ready,
             order_authority=False,
             reason_codes=combined_reasons,
         )
+
+    @staticmethod
+    def _fresh_realtime_quote_coverage(
+        evidence: list[dict[str, Any]],
+        proposal: dict[str, Any],
+        *,
+        max_age_seconds: float = 120.0,
+    ) -> tuple[bool, tuple[str, ...]]:
+        required_ids: set[int] = set()
+        reasons: list[str] = []
+        legs = list(proposal.get("legs") or [])
+        if legs:
+            for leg in legs:
+                try:
+                    contract_id = int(leg.get("contract_id") or 0)
+                except (TypeError, ValueError):
+                    contract_id = 0
+                if contract_id <= 0:
+                    reasons.append("RESOLVED_LEG_CONTRACT_REQUIRED")
+                else:
+                    required_ids.add(contract_id)
+        else:
+            try:
+                contract_id = int(proposal.get("contract_id") or 0)
+            except (TypeError, ValueError):
+                contract_id = 0
+            if contract_id <= 0:
+                reasons.append("RESOLVED_CONTRACT_REQUIRED")
+            else:
+                required_ids.add(contract_id)
+
+        if reasons:
+            return False, tuple(dict.fromkeys(reasons))
+
+        covered: set[int] = set()
+        now = datetime.now(timezone.utc)
+        for item in evidence:
+            request_payload = item.get("request") or {}
+            if request_payload.get("tool") != "quote":
+                continue
+            args = request_payload.get("arguments") or {}
+            try:
+                contract_id = int(args.get("contract_id") or 0)
+            except (TypeError, ValueError):
+                continue
+            if contract_id not in required_ids:
+                continue
+
+            outer_result = item.get("result") or {}
+            if outer_result.get("status") != "PASS":
+                continue
+            quote_result = outer_result.get("result") or {}
+            quote = quote_result.get("quote") or {}
+            if int(quote.get("market_data_type") or 0) != 1:
+                continue
+            if not any(
+                quote.get(field) is not None
+                for field in ("bid", "ask", "last")
+            ):
+                continue
+            received = quote.get("received_utc")
+            if not received:
+                continue
+            try:
+                received_dt = datetime.fromisoformat(
+                    str(received).replace("Z", "+00:00")
+                )
+            except ValueError:
+                continue
+            age = (now - received_dt.astimezone(timezone.utc)).total_seconds()
+            if 0 <= age <= max_age_seconds:
+                covered.add(contract_id)
+
+        missing = sorted(required_ids - covered)
+        if missing:
+            return False, tuple(
+                f"FRESH_REALTIME_QUOTE_REQUIRED:{contract_id}"
+                for contract_id in missing
+            )
+        return True, ()
 
     @staticmethod
     def _successful_tool_seen(
