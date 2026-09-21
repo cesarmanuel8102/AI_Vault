@@ -13,6 +13,9 @@ APPEND_ONLY_TABLES = (
     "fills",
     "positions_snapshots",
     "subledger_events",
+    "autonomous_ledger_events",
+    "experiment_clock_events",
+    "experiment_order_registry",
     "risk_snapshots",
     "broker_reconciliations",
     "heartbeats",
@@ -113,6 +116,49 @@ CREATE TABLE IF NOT EXISTS subledger_events(
     payload_sha256 TEXT NOT NULL,
     created_at_utc TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS autonomous_ledger_events(
+    sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id TEXT NOT NULL UNIQUE,
+    event_type TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    payload_sha256 TEXT NOT NULL,
+    previous_event_sha256 TEXT,
+    event_sha256 TEXT NOT NULL UNIQUE,
+    created_at_utc TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS experiment_clock_events(
+    sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id TEXT NOT NULL UNIQUE,
+    experiment_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    payload_sha256 TEXT NOT NULL,
+    previous_event_sha256 TEXT,
+    event_sha256 TEXT NOT NULL UNIQUE,
+    created_at_utc TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS one_experiment_start
+ON experiment_clock_events(experiment_id, event_type);
+CREATE TABLE IF NOT EXISTS experiment_order_registry(
+    sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+    registry_id TEXT NOT NULL UNIQUE,
+    order_ref TEXT NOT NULL,
+    client_order_id INTEGER,
+    perm_id INTEGER,
+    ibkr_order_id INTEGER,
+    contract_id INTEGER,
+    action TEXT NOT NULL,
+    quantity TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    payload_sha256 TEXT NOT NULL,
+    created_at_utc TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS experiment_order_registry_order_ref
+ON experiment_order_registry(order_ref);
+CREATE INDEX IF NOT EXISTS experiment_order_registry_client_order_id
+ON experiment_order_registry(client_order_id);
+CREATE INDEX IF NOT EXISTS experiment_order_registry_perm_id
+ON experiment_order_registry(perm_id);
 CREATE TABLE IF NOT EXISTS risk_snapshots(
     snapshot_id TEXT PRIMARY KEY,
     decision_id TEXT REFERENCES decision_records(decision_id),
