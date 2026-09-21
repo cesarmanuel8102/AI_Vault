@@ -82,6 +82,13 @@ class AutonomousStateBuilder:
             experiment_clock={},
         )
 
+    def _sync_executions(self) -> None:
+        executions = self._tool(ResearchTool.EXECUTIONS)
+        for fill in executions.get("executions", []) or []:
+            if not str(fill.get("orderRef") or "").startswith("codex-ibkr-paper-30d"):
+                continue
+            self.ledger.record_fill(fill)
+
     def _mark_open_positions(self) -> None:
         state = self.ledger.project()
         for position in state.positions:
@@ -200,6 +207,7 @@ class AutonomousStateBuilder:
         market_session_state: str = "UNKNOWN",
         benchmark_state: dict[str, Any] | None = None,
     ) -> TraderInputBundle:
+        self._sync_executions()
         self._mark_open_positions()
         ledger_state = self.ledger.project()
         account = self._tool(ResearchTool.ACCOUNT_STATE)
