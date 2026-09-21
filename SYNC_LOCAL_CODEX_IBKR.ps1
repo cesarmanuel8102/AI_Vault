@@ -120,6 +120,23 @@ if (-not $SkipTests) {
 
 $ReceiptRoot = "C:\ProgramData\CodexIBKR"
 [void](New-Item -ItemType Directory -Path $ReceiptRoot -Force)
+$ReceiptAcl = Get-Acl -LiteralPath $ReceiptRoot
+$ReceiptAcl.SetAccessRuleProtection($true, $false)
+$ReceiptAcl.Access | ForEach-Object { [void]$ReceiptAcl.RemoveAccessRuleSpecific($_) }
+$Administrators = New-Object Security.Principal.NTAccount("BUILTIN", "Administrators")
+$System = New-Object Security.Principal.NTAccount("NT AUTHORITY", "SYSTEM")
+$CurrentUser = [Security.Principal.WindowsIdentity]::GetCurrent().User
+foreach ($Identity in @($Administrators, $System, $CurrentUser)) {
+    $Rule = New-Object Security.AccessControl.FileSystemAccessRule(
+        $Identity,
+        "FullControl",
+        "ContainerInherit,ObjectInherit",
+        "None",
+        "Allow"
+    )
+    $ReceiptAcl.AddAccessRule($Rule)
+}
+Set-Acl -LiteralPath $ReceiptRoot -AclObject $ReceiptAcl
 $ReceiptPath = Join-Path $ReceiptRoot "local_repository_sync_receipt.json"
 $RequiredHashes = [ordered]@{}
 foreach ($Relative in $RequiredFiles) {
