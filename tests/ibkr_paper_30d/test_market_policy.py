@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import math
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
 
+from ibkr_paper_30d.canonical import canonical_bytes
 from ibkr_paper_30d.market_data import (
     DecisionClass,
     MarketDataGate,
@@ -302,3 +305,22 @@ def test_runtime_new_trade_gate_requires_regular_session(tmp_path, session) -> N
 
     assert gate_result.status == "BLOCK"
     assert "MARKET_SESSION_NOT_REGULAR" in gate_result.reason_codes
+
+
+def test_policy_frozen_with_stale_collector_version_is_rejected(tmp_path) -> None:
+    ledger = build_ledger(tmp_path)
+    destination = tmp_path / "policy.json"
+    result = MarketPolicyFreezer(now_utc=lambda: START + timedelta(hours=8)).freeze(
+        ledger, destination
+    )
+    assert result.status == "PASS"
+
+    payload = json.loads(destination.read_text(encoding="utf-8"))
+    payload["evidence"]["collector_version"] = "STALE_COLLECTOR"
+    unsigned = dict(payload)
+    unsigned.pop("policy_sha256")
+    payload["policy_sha256"] = hashlib.sha256(canonical_bytes(unsigned)).hexdigest()
+    destination.write_bytes(canonical_bytes(payload))
+
+    with pytest.raises(ValueError, match="POLICY_INVALID"):
+        load_verified_policy(destination)
