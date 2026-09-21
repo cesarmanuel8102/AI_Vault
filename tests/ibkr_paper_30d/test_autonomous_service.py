@@ -5,8 +5,13 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 import ibkr_paper_30d.autonomous_service as service_module
-from ibkr_paper_30d.autonomous_service import AutonomousExperimentService
+from ibkr_paper_30d.autonomous_service import AutonomousExperimentService, AutonomousServiceError
 from ibkr_paper_30d.persistence import Database
+from ibkr_paper_30d.experiment_control import (
+    ExperimentClockStore,
+    KillSwitchStore,
+    OwnerAuthorizationStore,
+)
 
 
 @dataclass
@@ -134,3 +139,58 @@ def test_fill_causes_immediate_position_event_reassessment(tmp_path, monkeypatch
         ("SCHEDULED_SCAN", None),
         ("POSITION_EVENT", False),
     ]
+
+
+
+class PassGate:
+    def evaluate(self, *args, **kwargs):
+        return {"gate_status": "PASS", "reason_codes": []}
+
+
+class ArmedExecutor:
+    armed = True
+
+
+def test_paper_execution_requires_explicit_clock_bound_owner_authorization(tmp_path):
+    start = datetime(2026, 9, 21, 13, 30, tzinfo=timezone.utc)
+    with Database.open(tmp_path / "armed.sqlite3") as db:
+        KillSwitchStore(db).set(
+            "KILL_SWITCH_CLEAR",
+            reason="test precondition",
+            actor="test",
+        )
+        try:
+            AutonomousExperimentService(
+                db,
+                experiment_start_utc=start,
+                execute_paper=True,
+                toolbox=StubToolbox(),
+                provider=StubProvider(),
+                executor=ArmedExecutor(),
+                runtime_market_gate=PassGate(),
+                runtime_auditor_gate=PassGate(),
+            )
+        except AutonomousServiceError as exc:
+            assert "explicit owner authorization" in str(exc)
+        else:
+            raise AssertionError("armed service accepted missing owner authorization")
+
+        clock = ExperimentClockStore(db).load()
+        assert clock is not None
+        OwnerAuthorizationStore(db).set(
+            "AUTHORIZED",
+            clock_event_sha256=clock.event_sha256,
+            reason="owner authorized test",
+            actor="owner",
+        )
+        service = AutonomousExperimentService(
+            db,
+            experiment_start_utc=start,
+            execute_paper=True,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=ArmedExecutor(),
+            runtime_market_gate=PassGate(),
+            runtime_auditor_gate=PassGate(),
+        )
+        assert service.execute_paper is True
