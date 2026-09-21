@@ -434,11 +434,18 @@ class IBKRResearchToolbox:
             for item in values:
                 if item.tag in wanted:
                     summary[item.tag] = str(item.value)
+            server_time = ib.reqCurrentTime()
+            server_time_utc = (
+                server_time.astimezone(__import__("datetime").timezone.utc).isoformat().replace("+00:00", "Z")
+                if hasattr(server_time, "astimezone")
+                else str(server_time)
+            )
             return {
                 "success": True,
                 "paper_account": True,
                 "declared_options_level": self.declared_options_level,
                 "summary": summary,
+                "server_time_utc": server_time_utc,
             }
         finally:
             ib.disconnect()
