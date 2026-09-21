@@ -173,6 +173,11 @@ class AutonomousExperimentService:
 
     def _fresh_execution_safety(self, scope: str) -> tuple[str, ...]:
         reasons: list[str] = []
+        clock_snapshot = self.clock.snapshot(datetime.now(timezone.utc))
+        if clock_snapshot.get("not_started"):
+            reasons.append("EXPERIMENT_NOT_STARTED_FRESH")
+        if clock_snapshot.get("expired"):
+            reasons.append("EXPERIMENT_EXPIRED_FRESH")
         if self.kill_switch.current() != "KILL_SWITCH_CLEAR":
             reasons.append("KILL_SWITCH_TRIGGERED_FRESH")
         auditor = self.runtime_auditor_gate.evaluate()
@@ -238,6 +243,12 @@ class AutonomousExperimentService:
             }
 
         bundle = self._builder().build(trigger=trigger)
+        if bundle.experiment_clock.get("not_started"):
+            return {
+                "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
+                "status": "EXPERIMENT_NOT_STARTED",
+                "bundle": bundle.model_dump(mode="json"),
+            }
         if bundle.experiment_clock.get("expired"):
             return {
                 "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
@@ -372,6 +383,14 @@ class AutonomousExperimentService:
 
                 result = self._run_cycle(trigger)
                 status = str(result.get("status") or "")
+                if status == "EXPERIMENT_NOT_STARTED":
+                    self.sleep(
+                        min(
+                            self.position_interval_seconds,
+                            self.scan_interval_seconds,
+                        )
+                    )
+                    continue
                 if status == "EXPERIMENT_EXPIRED":
                     self._terminal_event("CLOCK_EXPIRED")
                     return
