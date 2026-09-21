@@ -99,10 +99,29 @@ class IBKRResearchToolbox:
         self, proposal: AutonomousTradeProposal, bundle: TraderInputBundle
     ) -> ProposalValidation:
         equity = Decimal(str(bundle.experiment_subledger_snapshot.get("equity", "0")))
+        structural_floor, structural_reason = self._structure_loss_floor(proposal, bundle)
+        if structural_reason is not None:
+            return ProposalValidation(
+                passed=False,
+                reason_codes=(structural_reason,),
+                broker_evidence={"structural_loss_floor": None},
+            )
+        if structural_floor is None:
+            structural_floor = Decimal("0")
+        if proposal.maximum_loss + Decimal("0.01") < structural_floor:
+            return ProposalValidation(
+                passed=False,
+                reason_codes=("DECLARED_MAX_LOSS_UNDERSTATES_STRUCTURE",),
+                broker_evidence={
+                    "declared_maximum_loss": str(proposal.maximum_loss),
+                    "structural_loss_floor": str(structural_floor),
+                },
+            )
+        effective_maximum_loss = max(proposal.maximum_loss, structural_floor)
         risk = self.risk_engine.evaluate(
             CapitalBoundaryInputs(
                 experiment_equity=equity,
-                maximum_loss=proposal.maximum_loss,
+                maximum_loss=effective_maximum_loss,
                 liability_is_bounded=proposal.loss_is_bounded,
                 uses_external_capital=False,
             )
@@ -111,15 +130,10 @@ class IBKRResearchToolbox:
             return ProposalValidation(
                 passed=False,
                 reason_codes=risk.reason_codes,
-                broker_evidence={"risk_policy": risk.model_dump(mode="json")},
-            )
-
-        structural = self._bounded_structure_reason(proposal)
-        if structural is not None:
-            return ProposalValidation(
-                passed=False,
-                reason_codes=(structural,),
-                broker_evidence={"risk_policy": risk.model_dump(mode="json")},
+                broker_evidence={
+                    "risk_policy": risk.model_dump(mode="json"),
+                    "structural_loss_floor": str(structural_floor),
+                },
             )
 
         feasibility = self._broker_feasibility(proposal)
@@ -158,7 +172,7 @@ class IBKRResearchToolbox:
             or self._decimal_or_none(feasibility.get("commission"))
             or Decimal("0")
         )
-        if proposal.maximum_loss + max(commission, Decimal("0")) > equity:
+        if effective_maximum_loss + max(commission, Decimal("0")) > equity:
             return ProposalValidation(
                 passed=False,
                 reason_codes=("EXPERIMENT_CAPITAL_BOUNDARY_AFTER_COSTS",),
@@ -170,6 +184,8 @@ class IBKRResearchToolbox:
             reason_codes=(),
             broker_evidence={
                 "risk_policy": risk.model_dump(mode="json"),
+                "structural_loss_floor": str(structural_floor),
+                "effective_maximum_loss": str(effective_maximum_loss),
                 "what_if": feasibility,
             },
         )
@@ -686,29 +702,130 @@ class IBKRResearchToolbox:
             ib.disconnect()
 
     @staticmethod
-    def _bounded_structure_reason(proposal: AutonomousTradeProposal) -> str | None:
-        if not proposal.loss_is_bounded:
-            return "UNBOUNDED_LIABILITY"
-        if not proposal.legs:
-            if proposal.action.upper() == "SELL" and proposal.sec_type.upper() in {"STK", "OPT"}:
-                return "UNBOUNDED_SINGLE_SHORT_POSITION"
-            return None
+    def _covered_shares(bundle: TraderInputBundle, symbol: str) -> Decimal:
+        shares = Decimal("0")
+        for item in bundle.positions_snapshot:
+            if (
+                str(item.get("symbol") or "").upper() == symbol.upper()
+                and str(item.get("sec_type") or item.get("secType") or "").upper() == "STK"
+            ):
+                try:
+                    quantity = Decimal(str(item.get("quantity") or item.get("position") or "0"))
+                except Exception:
+                    continue
+                if quantity > 0:
+                    shares += quantity
+        return shares
 
-        shorts = [
-            leg for leg in proposal.legs
-            if leg.action.upper() == "SELL" and leg.sec_type.upper() == "OPT"
-        ]
-        longs = [
-            leg for leg in proposal.legs
-            if leg.action.upper() == "BUY" and leg.sec_type.upper() == "OPT"
-        ]
-        for short in shorts:
-            protectors = [
-                leg for leg in longs
-                if leg.symbol == short.symbol
-                and leg.expiry == short.expiry
-                and (leg.right or "").upper() == (short.right or "").upper()
-            ]
-            if sum(leg.ratio for leg in protectors) < short.ratio:
-                return "SHORT_OPTION_LEG_NOT_FULLY_BOUNDED"
-        return None
+    @classmethod
+    def _structure_loss_floor(
+        cls,
+        proposal: AutonomousTradeProposal,
+        bundle: TraderInputBundle,
+    ) -> tuple[Decimal | None, str | None]:
+        if not proposal.loss_is_bounded:
+            return None, "UNBOUNDED_LIABILITY"
+
+        quantity = Decimal(str(proposal.quantity))
+        action = proposal.action.upper()
+        sec_type = proposal.sec_type.upper()
+
+        if not proposal.legs:
+            if action == "BUY":
+                # Long stock/options cannot lose more than their paid capital.
+                return max(Decimal(str(proposal.capital_required)), Decimal("0")), None
+            if action != "SELL":
+                return None, "UNSUPPORTED_ORDER_ACTION"
+            if sec_type == "STK":
+                return None, "UNBOUNDED_SHORT_STOCK"
+            if sec_type != "OPT":
+                return None, "UNBOUNDED_OR_UNVERIFIED_SHORT_INSTRUMENT"
+
+            right = str(proposal.right or "").upper()
+            if right == "C":
+                required_shares = quantity * Decimal("100")
+                if cls._covered_shares(bundle, proposal.symbol) < required_shares:
+                    return None, "UNCOVERED_SHORT_CALL"
+                # Existing long-stock downside is already inside current equity.
+                return Decimal("0"), None
+            if right == "P":
+                if proposal.strike is None or proposal.strike <= 0:
+                    return None, "SHORT_PUT_STRIKE_REQUIRED"
+                credit = max(Decimal(str(proposal.limit_price or 0)), Decimal("0"))
+                per_share_loss = max(Decimal(str(proposal.strike)) - credit, Decimal("0"))
+                return per_share_loss * Decimal("100") * quantity, None
+            return None, "SHORT_OPTION_RIGHT_REQUIRED"
+
+        expiries = {
+            str(leg.expiry or "")
+            for leg in proposal.legs
+            if leg.sec_type.upper() == "OPT"
+        }
+        if len(expiries) > 1:
+            return None, "MULTI_EXPIRY_SHORT_STRUCTURE_NOT_PROVEN_BOUNDED"
+
+        net_upper_slope = Decimal("0")
+        strikes: list[Decimal] = []
+        for leg in proposal.legs:
+            sign = Decimal("1") if leg.action.upper() == "BUY" else Decimal("-1")
+            ratio = Decimal(str(leg.ratio))
+            leg_type = leg.sec_type.upper()
+            if leg_type == "STK":
+                net_upper_slope += sign * ratio
+            elif leg_type == "OPT":
+                right = str(leg.right or "").upper()
+                if leg.strike is None or leg.strike < 0 or right not in {"C", "P"}:
+                    return None, "INVALID_OPTION_LEG"
+                strike = Decimal(str(leg.strike))
+                strikes.append(strike)
+                if right == "C":
+                    net_upper_slope += sign * ratio
+            else:
+                return None, "UNVERIFIED_MULTI_LEG_INSTRUMENT"
+
+        if net_upper_slope < 0:
+            return None, "UNBOUNDED_UPSIDE_LIABILITY"
+
+        critical = {Decimal("0"), *strikes}
+        if strikes:
+            critical.add(max(strikes) * Decimal("2") + Decimal("1"))
+
+        overall_qty = quantity
+        if proposal.limit_price is not None:
+            price = Decimal(str(proposal.limit_price))
+            initial_cash = (
+                -price * Decimal("100") * overall_qty
+                if action == "BUY"
+                else price * Decimal("100") * overall_qty
+            )
+        else:
+            initial_cash = (
+                -Decimal(str(proposal.capital_required))
+                if action == "BUY"
+                else Decimal("0")
+            )
+
+        minimum_pnl: Decimal | None = None
+        for underlying in sorted(critical):
+            pnl = initial_cash
+            for leg in proposal.legs:
+                sign = Decimal("1") if leg.action.upper() == "BUY" else Decimal("-1")
+                ratio = Decimal(str(leg.ratio))
+                leg_type = leg.sec_type.upper()
+                if leg_type == "STK":
+                    payoff = underlying
+                    multiplier = Decimal("1")
+                else:
+                    strike = Decimal(str(leg.strike))
+                    right = str(leg.right or "").upper()
+                    payoff = (
+                        max(underlying - strike, Decimal("0"))
+                        if right == "C"
+                        else max(strike - underlying, Decimal("0"))
+                    )
+                    multiplier = Decimal("100")
+                pnl += sign * ratio * payoff * multiplier * overall_qty
+            minimum_pnl = pnl if minimum_pnl is None else min(minimum_pnl, pnl)
+
+        loss_floor = max(-(minimum_pnl or Decimal("0")), Decimal("0"))
+        return loss_floor, None
