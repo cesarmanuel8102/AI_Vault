@@ -30,6 +30,32 @@ CONSOLIDATED_PROBE = ROOT / "auditor_runtime" / "AUDITOR_GATE_V2_PROBE.ps1"
 DEPLOYMENT_SCRIPT = ROOT / "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1"
 
 
+def current_token_elevated() -> bool:
+    if os.name != "nt":
+        return False
+    result = subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-Command",
+            "$i=[Security.Principal.WindowsIdentity]::GetCurrent();"
+            "$p=[Security.Principal.WindowsPrincipal]::new($i);"
+            "$p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=True,
+    )
+    return result.stdout.strip().lower() == "true"
+
+
+requires_non_elevated_token = pytest.mark.skipif(
+    current_token_elevated(),
+    reason="consolidated denial probe requires a non-elevated restricted token",
+)
+
+
 @pytest.fixture
 def staged_runtime(tmp_path: Path) -> Path:
     runtime = tmp_path / "runtime"
@@ -452,6 +478,7 @@ def _current_sid() -> str:
     return result.stdout.strip()
 
 
+@requires_non_elevated_token
 def test_consolidated_probe_children_accept_exact_v2_runtime_manifest(
     tmp_path: Path,
 ) -> None:
