@@ -152,7 +152,7 @@ class ArmedExecutor:
 
 
 def test_paper_execution_requires_explicit_clock_bound_owner_authorization(tmp_path):
-    start = datetime(2026, 9, 21, 13, 30, tzinfo=timezone.utc)
+    start = datetime(2026, 9, 20, 13, 30, tzinfo=timezone.utc)
     with Database.open(tmp_path / "armed.sqlite3") as db:
         KillSwitchStore(db).set(
             "KILL_SWITCH_CLEAR",
