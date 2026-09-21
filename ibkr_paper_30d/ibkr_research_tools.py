@@ -375,6 +375,90 @@ class IBKRResearchToolbox:
         return ib
 
     @staticmethod
+    def _valid_live_price(value: Any) -> bool:
+        try:
+            parsed = Decimal(str(value))
+        except Exception:
+            return False
+        return parsed.is_finite() and parsed > 0
+
+    def live_contract_quote_evidence(
+        self,
+        ib: Any,
+        contract: Any,
+        *,
+        wait_seconds: float = 2.0,
+        max_age_seconds: float = 15.0,
+    ) -> dict[str, Any]:
+        """Require fresh live bid/ask for the exact contract before transmission."""
+        try:
+            ib.reqMarketDataType(1)  # explicitly request LIVE data
+            ticker = ib.reqMktData(contract, "", True, False)
+            ib.sleep(wait_seconds)
+            bid = getattr(ticker, "bid", None)
+            ask = getattr(ticker, "ask", None)
+            stamp = getattr(ticker, "time", None)
+            if not self._valid_live_price(bid) or not self._valid_live_price(ask):
+                return {
+                    "success": False,
+                    "reason": "TRADE_CONTRACT_LIVE_BID_ASK_MISSING",
+                    "contract": self._serialize_contract(contract),
+                }
+            bid_d = Decimal(str(bid))
+            ask_d = Decimal(str(ask))
+            if bid_d > ask_d:
+                return {
+                    "success": False,
+                    "reason": "TRADE_CONTRACT_CROSSED_MARKET",
+                    "contract": self._serialize_contract(contract),
+                    "bid": str(bid_d),
+                    "ask": str(ask_d),
+                }
+            if stamp is None or not hasattr(stamp, "astimezone"):
+                return {
+                    "success": False,
+                    "reason": "TRADE_CONTRACT_QUOTE_TIMESTAMP_MISSING",
+                    "contract": self._serialize_contract(contract),
+                }
+            server_time = ib.reqCurrentTime()
+            if server_time is None or not hasattr(server_time, "astimezone"):
+                return {
+                    "success": False,
+                    "reason": "BROKER_SERVER_TIME_MISSING_FOR_TRADE_QUOTE",
+                    "contract": self._serialize_contract(contract),
+                }
+            from datetime import timezone
+            quote_utc = stamp.astimezone(timezone.utc)
+            broker_utc = server_time.astimezone(timezone.utc)
+            age_seconds = (broker_utc - quote_utc).total_seconds()
+            if age_seconds < -5.0 or age_seconds > max_age_seconds:
+                return {
+                    "success": False,
+                    "reason": "TRADE_CONTRACT_QUOTE_STALE",
+                    "contract": self._serialize_contract(contract),
+                    "quote_time_utc": quote_utc.isoformat().replace("+00:00", "Z"),
+                    "broker_time_utc": broker_utc.isoformat().replace("+00:00", "Z"),
+                    "age_seconds": age_seconds,
+                }
+            return {
+                "success": True,
+                "contract": self._serialize_contract(contract),
+                "bid": str(bid_d),
+                "ask": str(ask_d),
+                "quote_time_utc": quote_utc.isoformat().replace("+00:00", "Z"),
+                "broker_time_utc": broker_utc.isoformat().replace("+00:00", "Z"),
+                "age_seconds": age_seconds,
+                "requested_market_data_type": "LIVE",
+            }
+        except Exception as exc:
+            return {
+                "success": False,
+                "reason": "TRADE_CONTRACT_MARKET_DATA_CHECK_FAILED",
+                "error": f"{type(exc).__name__}:{exc}",
+                "contract": self._serialize_contract(contract),
+            }
+
+    @staticmethod
     def _serialize_contract(contract: Any) -> dict[str, Any]:
         return {
             "conId": int(getattr(contract, "conId", 0) or 0),
