@@ -266,3 +266,13 @@ def test_disconnect_and_farm_failures_degrade_source(error_code: int) -> None:
     source.client.error(-1, error_code, "synthetic transport failure")
 
     assert source.source_health() == "DEGRADED"
+
+
+def test_prerequisite_primary_exchange_mapping_matches_ibkr() -> None:
+    from ibkr_paper_30d.market_observation_collector import PRIMARY_EXCHANGE_BY_SYMBOL
+
+    assert PRIMARY_EXCHANGE_BY_SYMBOL == {
+        "SPY": "ARCA",
+        "QQQ": "NASDAQ",
+        "IEF": "NASDAQ",
+    }
