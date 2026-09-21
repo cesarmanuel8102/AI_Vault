@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict
 
 from .autonomous_research import AutonomousResearchProvider
 from .canonical import sha256_json
+from .experiment_clock import build_experiment_clock
 from .ibkr_research import IBKRResearchToolbox
 from .liability import assess_proposal_liability
 from .persistence import Database
@@ -80,6 +81,7 @@ class AutonomousDecisionRuntime:
         *,
         readonly_report: dict[str, Any],
         experiment_equity: Decimal,
+        experiment_start_utc: str,
         market_data_gate: str,
         market_session_state: str,
         kill_switch_state: str = "KILL_SWITCH_CLEAR",
@@ -101,6 +103,13 @@ class AutonomousDecisionRuntime:
         cycle_id = f"autonomous-cycle-{run_id}"
         invocation_id = f"autonomous-invocation-{run_id}"
         now = utc_now()
+        experiment_clock = build_experiment_clock(
+            experiment_start_utc, observed_at_utc=now, duration_days=30
+        )
+        if experiment_clock.status == "NOT_STARTED":
+            raise RuntimeError("EXPERIMENT_NOT_STARTED")
+        if experiment_clock.expired:
+            raise RuntimeError("EXPERIMENT_HORIZON_EXPIRED")
         buying_power = readonly_report.get("buying_power")
         capability_snapshot = {
             "schema": "BROKER_CAPABILITY_SNAPSHOT_V1",
@@ -152,6 +161,7 @@ class AutonomousDecisionRuntime:
             process_policy_version="AUTONOMOUS_RESEARCH_V1",
             execution_realism_version="IBKR_PAPER_WHAT_IF_REQUIRED_V1",
             benchmark_state=benchmark_state or {},
+            experiment_clock=experiment_clock.model_dump(mode="json"),
             broker_capability_snapshot=capability_snapshot,
             research_policy_version="AUTONOMOUS_RESEARCH_V1",
             research_round_budget=self.max_research_rounds,
