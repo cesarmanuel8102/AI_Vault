@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 import random
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 from .autonomous_research import (
@@ -12,6 +14,8 @@ from .autonomous_research import (
     ResearchResult,
     ResearchTool,
 )
+from .ibkr_readonly import expected_identity_hash
+from .ibkr_readonly_session import ExpectedPaperIdentityStore
 from .risk import CapitalBoundaryInputs, CapitalBoundaryRiskEngine, RiskResult
 from .trader_invocation import TraderDecision, TraderInputBundle
 
@@ -36,6 +40,7 @@ class IBKRResearchToolbox:
         client_id_max: int = 19899,
         timeout_seconds: float = 12.0,
         declared_options_level: int | None = None,
+        expected_account_hash: str | None = None,
     ) -> None:
         if host not in PAPER_HOSTS or port != PAPER_PORT:
             raise ValueError("autonomous research requires local IBKR paper Gateway :4002")
@@ -45,6 +50,14 @@ class IBKRResearchToolbox:
         self.client_id_max = client_id_max
         self.timeout_seconds = timeout_seconds
         self.declared_options_level = declared_options_level
+        configured_hash = expected_account_hash or os.environ.get("IBKR_PAPER_ACCOUNT_SHA256")
+        if configured_hash is None:
+            store = ExpectedPaperIdentityStore(
+                Path("Secrets/expected_paper_account_identity_v1.json")
+            )
+            if store.path.exists():
+                configured_hash = store.load_hash()
+        self.expected_account_hash = configured_hash.lower() if configured_hash else None
         self.risk_engine = CapitalBoundaryRiskEngine.aggressive_month1()
 
     def manifest(self) -> list[dict[str, Any]]:
@@ -313,6 +326,13 @@ class IBKRResearchToolbox:
         if len(accounts) != 1 or not str(accounts[0]).upper().startswith("DU"):
             ib.disconnect()
             raise PermissionError("single DU paper account identity required")
+        if self.expected_account_hash is None:
+            ib.disconnect()
+            raise PermissionError("expected paper account identity hash is required")
+        actual_hash = expected_identity_hash(str(accounts[0]))
+        if actual_hash != self.expected_account_hash:
+            ib.disconnect()
+            raise PermissionError("paper account identity mismatch")
         return ib
 
     @staticmethod
