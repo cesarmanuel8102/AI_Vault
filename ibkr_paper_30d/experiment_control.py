@@ -30,6 +30,7 @@ class ExperimentClock:
         if now.tzinfo is None or now.utcoffset() is None:
             raise ValueError("now must be timezone-aware")
         now = now.astimezone(timezone.utc)
+        not_started = now < self.start_utc
         elapsed = max((now - self.start_utc).total_seconds(), 0.0)
         remaining = max((self.end_utc - now).total_seconds(), 0.0)
         return {
@@ -41,6 +42,7 @@ class ExperimentClock:
             "elapsed_days": elapsed / 86400.0,
             "remaining_days": remaining / 86400.0,
             "remaining_seconds": remaining,
+            "not_started": not_started,
             "expired": remaining <= 0,
             "clock_event_sha256": self.event_sha256,
         }
