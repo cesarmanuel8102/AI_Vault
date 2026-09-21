@@ -48,8 +48,14 @@ jobs:
           python -m py_compile ibkr_paper_30d/autonomous_state.py
           python -m py_compile ibkr_paper_30d/autonomous_service.py
           python -m py_compile ibkr_paper_30d/prerequisite_tools.py
-          powershell.exe -NoProfile -Command "$errors=$null; [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'FINALIZE_IBKR_PREREQUISITES.ps1'),[ref]$null,[ref]$errors)|Out-Null; if($errors.Count){$errors|ForEach-Object{Write-Error $_}; exit 1}"
-          powershell.exe -NoProfile -Command "$errors=$null; [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'RUN_IBKR_MARKET_DATA_GATE.ps1'),[ref]$null,[ref]$errors)|Out-Null; if($errors.Count){$errors|ForEach-Object{Write-Error $_}; exit 1}"
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'FINALIZE_IBKR_PREREQUISITES.ps1'), [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count) { $parseErrors | ForEach-Object { Write-Error $_ }; exit 1 }
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'RUN_IBKR_MARKET_DATA_GATE.ps1'), [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count) { $parseErrors | ForEach-Object { Write-Error $_ }; exit 1 }
 
       - name: Phase 0 security tests
         shell: pwsh
