@@ -81,3 +81,27 @@ def test_defined_risk_spread_legs_are_accounted_independently(tmp_path):
         assert state.market_value == Decimal("130.00")
         assert state.equity == Decimal("528.00")
         assert len(state.positions) == 2
+
+
+def test_weighted_average_cost_survives_partial_close(tmp_path):
+    with Database.open(tmp_path / "ledger.sqlite3") as db:
+        ledger = AutonomousExperimentLedger(db, allocation=Decimal("1000.00"))
+        ledger.record_fill(fill("e1", "BUY", "2.00", con_id=301, symbol="XYZ", commission="0"))
+        second = fill("e2", "BUY", "4.00", con_id=301, symbol="XYZ", commission="0")
+        second["quantity"] = "1"
+        ledger.record_fill(second)
+        state = ledger.project()
+        pos = state.positions[0]
+        assert pos.quantity == Decimal("2")
+        assert pos.average_cost == Decimal("3.00")
+
+        close = fill("e3", "SELL", "5.00", con_id=301, symbol="XYZ", commission="0")
+        close["quantity"] = "1"
+        ledger.record_fill(close)
+        state = ledger.project()
+        pos = state.positions[0]
+        assert pos.quantity == Decimal("1")
+        assert pos.average_cost == Decimal("3.00")
+        assert state.cash == Decimal("900.00")
+        assert state.market_value == Decimal("500.00")
+        assert state.equity == Decimal("1400.00")
