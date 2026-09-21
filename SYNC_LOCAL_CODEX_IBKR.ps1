@@ -118,9 +118,9 @@ if (-not $SkipTests) {
     $TestsPassed = ($PytestOutput -join [Environment]::NewLine)
 }
 
-$ReportRoot = Join-Path $ResolvedRepoRoot "state\ibkr_paper_30d\reports"
-[void](New-Item -ItemType Directory -Path $ReportRoot -Force)
-$ReceiptPath = Join-Path $ReportRoot "local_repository_sync_receipt.json"
+$ReceiptRoot = "C:\ProgramData\CodexIBKR"
+[void](New-Item -ItemType Directory -Path $ReceiptRoot -Force)
+$ReceiptPath = Join-Path $ReceiptRoot "local_repository_sync_receipt.json"
 $RequiredHashes = [ordered]@{}
 foreach ($Relative in $RequiredFiles) {
     $RequiredHashes[$Relative] = (
@@ -136,7 +136,7 @@ $Receipt = [ordered]@{
     local_head = $LocalHead
     remote_head = $RemoteHead
     synchronized = ($LocalHead -eq $RemoteHead)
-    dirty_tree_after_sync = (@(& git status --porcelain=v1)).Count -ne 0
+    dirty_tree_after_sync = $false
     required_files_sha256 = $RequiredHashes
     local_validation_executed = -not $SkipTests
     local_validation_output = $TestsPassed
@@ -144,11 +144,13 @@ $Receipt = [ordered]@{
         [string]$env:IBKR_AUTONOMOUS_PAPER_ARMED
     ).ToLowerInvariant() -eq "true"
 }
-$Receipt | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $ReceiptPath -Encoding UTF8
-
-if ($Receipt.dirty_tree_after_sync) {
-    throw "WORKTREE_BECAME_DIRTY_AFTER_SYNC:$ReceiptPath"
+$PostSyncDirty = @(& git status --porcelain=v1)
+if ($LASTEXITCODE -ne 0) { throw "POST_SYNC_GIT_STATUS_FAILED" }
+if ($PostSyncDirty.Count -ne 0) {
+    throw "WORKTREE_BECAME_DIRTY_AFTER_SYNC:$($PostSyncDirty -join ';')"
 }
+$Receipt.dirty_tree_after_sync = $false
+$Receipt | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $ReceiptPath -Encoding UTF8
 
 [ordered]@{
     status = "PASS"
