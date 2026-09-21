@@ -16,7 +16,7 @@ from .autonomous_research import CodexAutonomousCLIProvider
 from .autonomous_runtime import run_autonomous_cycle
 from .autonomous_state import AutonomousStateBuilder
 from .canonical import canonical_bytes, sha256_json
-from .experiment_control import ExperimentClockStore, KillSwitchStore
+from .experiment_control import ExperimentClockStore, KillSwitchStore, OwnerAuthorizationStore
 from .experiment_ledger import AutonomousExperimentLedger
 from .ibkr_research_tools import IBKRResearchToolbox
 from .market_data import DecisionClass
@@ -148,6 +148,7 @@ class AutonomousExperimentService:
         )
         self.runtime_auditor_gate = runtime_auditor_gate or RuntimeAuditorGate()
         self.kill_switch = KillSwitchStore(db)
+        self.owner_authorization = OwnerAuthorizationStore(db)
         self.provider = provider or CodexAutonomousCLIProvider()
         self.executor = executor or AutonomousPaperExecutor(
             self.toolbox,
@@ -196,6 +197,12 @@ class AutonomousExperimentService:
         if not getattr(self.executor, "armed", False):
             raise AutonomousServiceError(
                 "paper execution requested but IBKR_AUTONOMOUS_PAPER_ARMED is not true"
+            )
+        if self.owner_authorization.current(
+            clock_event_sha256=self.clock.event_sha256
+        ) != "AUTHORIZED":
+            raise AutonomousServiceError(
+                "paper execution requires explicit owner authorization bound to this experiment clock"
             )
         reasons = self._fresh_execution_safety("NEW_TRADE")
         if reasons:
