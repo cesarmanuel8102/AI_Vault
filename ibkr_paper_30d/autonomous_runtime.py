@@ -203,8 +203,8 @@ class AutonomousDecisionRuntime:
         liability_reasons: tuple[str, ...] = ()
         contract_quote_gate = "NOT_APPLICABLE"
         contract_quote_reasons: tuple[str, ...] = ()
-        what_if_seen = self._successful_tool_seen(evidence, "what_if_order")
-        capital_seen = self._successful_tool_seen(evidence, "capital_feasibility")
+        what_if_seen = self._successful_what_if_seen(evidence)
+        capital_seen = self._successful_capital_feasibility_seen(evidence)
 
         if validated.accepted and validated.effective_decision == "PROPOSE_TRADE":
             if not isinstance(proposal, dict):
@@ -370,6 +370,53 @@ class AutonomousDecisionRuntime:
                 for contract_id in missing
             )
         return True, ()
+
+    @staticmethod
+    def _successful_capital_feasibility_seen(
+        evidence: list[dict[str, Any]],
+    ) -> bool:
+        for item in evidence:
+            request = item.get("request") or {}
+            if request.get("tool") != "capital_feasibility":
+                continue
+            outer = item.get("result") or {}
+            if outer.get("status") != "PASS":
+                continue
+            payload = outer.get("result") or {}
+            if payload.get("feasible_by_known_constraints") is True:
+                return True
+        return False
+
+    @staticmethod
+    def _successful_what_if_seen(evidence: list[dict[str, Any]]) -> bool:
+        for item in evidence:
+            request = item.get("request") or {}
+            if request.get("tool") != "what_if_order":
+                continue
+            outer = item.get("result") or {}
+            if outer.get("status") != "PASS":
+                continue
+            payload = outer.get("result") or {}
+            if payload.get("what_if") is not True or payload.get("transmit") is not False:
+                continue
+            preview = payload.get("preview") or {}
+            if not isinstance(preview, dict) or not preview:
+                continue
+            # Require broker-produced margin/commission evidence, not a shell.
+            if not any(
+                preview.get(field) not in (None, "")
+                for field in (
+                    "init_margin_change",
+                    "maint_margin_change",
+                    "equity_with_loan_change",
+                    "commission",
+                    "min_commission",
+                    "max_commission",
+                )
+            ):
+                continue
+            return True
+        return False
 
     @staticmethod
     def _successful_tool_seen(
