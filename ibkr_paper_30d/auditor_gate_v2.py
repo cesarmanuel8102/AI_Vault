@@ -42,6 +42,7 @@ TARGET_NAMES = (
     "EXECUTION_LOCK_ACCESS",
     "LIVE_DATABASE_MUTATION",
     "BROKER_WRITE_PATH_ACCESS",
+    "BROKER_NETWORK_SOCKET_ACCESS",
     "TRADER_CONTEXT_ACCESS",
     "AUDIT_INPUT_MUTATION",
     "IMMUTABLE_EXPORT_READ",
@@ -49,7 +50,6 @@ TARGET_NAMES = (
 )
 APPROVED_CAPABILITY_OUTCOMES = {
     **{name: "DENIED" for name in TARGET_NAMES},
-    "BROKER_WRITE_PATH_ACCESS": "ALLOWED",
     "IMMUTABLE_EXPORT_READ": "ALLOWED",
     "AUDITOR_REPORT_WRITE": "ALLOWED",
 }
@@ -360,12 +360,19 @@ def _evaluate_predicates(
         "probe_manifest_sha256",
         "exact_fileset",
         "verified_at_utc",
+        "forbidden_privileges_absent",
+        "checked_forbidden_privileges",
         "predicates",
     }
     if not _exact_keys(runtime, runtime_keys):
         reasons.append("RUNTIME_INTEGRITY_SCHEMA_INVALID")
     if runtime.get("status") != "PASS" or runtime.get("exact_fileset") is not True:
         reasons.append("RUNTIME_INTEGRITY_BLOCK")
+    if runtime.get("forbidden_privileges_absent") is not True:
+        reasons.append("AUDITOR_FORBIDDEN_PRIVILEGE_PRESENT")
+    checked_privileges = runtime.get("checked_forbidden_privileges")
+    if not isinstance(checked_privileges, (list, tuple)) or not checked_privileges:
+        reasons.append("AUDITOR_PRIVILEGE_CHECK_MISSING")
     runtime_expectations = {
         "runtime_manifest_sha256": "runtime_manifest_sha256",
         "deployment_manifest_sha256": "deployment_manifest_sha256",
@@ -477,17 +484,24 @@ def _evaluate_predicates(
 
     network = receipt.network_facts
     expected_network = {
-        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": True,
-        "AUDITOR_NETWORK_ISOLATION_REQUIRED": False,
-        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": True,
+        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": False,
+        "AUDITOR_NETWORK_ISOLATION_REQUIRED": True,
+        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": False,
         "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
     }
     if not _exact_keys(network, set(expected_network) | {"endpoints"}):
         reasons.append("NETWORK_FACT_SCHEMA_INVALID")
     if any(network.get(key) is not value for key, value in expected_network.items()):
         reasons.append("NETWORK_FACT_MISMATCH")
-    if not isinstance(network.get("endpoints"), Mapping):
+    endpoints = network.get("endpoints")
+    if not isinstance(endpoints, Mapping):
         reasons.append("NETWORK_ENDPOINT_EVIDENCE_INVALID")
+    else:
+        values = {str(value) for value in endpoints.values()}
+        if values & {"CONNECTED", "OTHER"}:
+            reasons.append("BROKER_NETWORK_ENDPOINT_UNSAFE")
+        if str(endpoints.get("127.0.0.1:4002")) != "DENIED":
+            reasons.append("PAPER_BROKER_LOOPBACK_NOT_DENIED")
 
     output = receipt.output
     if not _exact_keys(
