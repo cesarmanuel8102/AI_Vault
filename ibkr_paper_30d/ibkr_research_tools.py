@@ -899,11 +899,9 @@ class IBKRResearchToolbox:
                 else price * Decimal("100") * overall_qty
             )
         else:
-            initial_cash = (
-                -Decimal(str(proposal.capital_required))
-                if action == "BUY"
-                else Decimal("0")
-            )
+            if action == "BUY":
+                return None, "MULTI_LEG_BUY_COST_NOT_PRETRADE_BOUNDED"
+            initial_cash = Decimal("0")
 
         minimum_pnl: Decimal | None = None
         for underlying in sorted(critical):
