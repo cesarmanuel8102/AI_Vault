@@ -537,3 +537,76 @@ def test_combo_live_market_data_falls_back_to_all_legs():
     assert result["validation_mode"] == "ALL_COMBO_LEGS"
     assert len(result["leg_results"]) == 2
     assert all(item["success"] for item in result["leg_results"])
+
+
+def test_runtime_market_gate_blocks_rejected_live_observation(tmp_path, monkeypatch):
+    from ibkr_paper_30d import runtime_integrity
+    from ibkr_paper_30d.market_data import MarketDataPolicy
+    from ibkr_paper_30d.market_observation_collector import RawQuote
+    from ibkr_paper_30d.runtime_integrity import RuntimeMarketDataGate
+
+    now = datetime(2026, 9, 21, 14, 30, tzinfo=timezone.utc)
+
+    class FakeSource:
+        def __init__(self):
+            self.started = False
+
+        def start(self, symbols):
+            self.started = True
+
+        def identity_receipt_sha256(self):
+            return "a" * 64
+
+        def heartbeat_ok(self):
+            return True
+
+        def source_health(self):
+            return "HEALTHY"
+
+        def snapshot(self, symbol):
+            return RawQuote(
+                symbol=symbol,
+                contract_id={"IEF": 1, "QQQ": 2, "SPY": 3}[symbol],
+                liquid_hours="20260921:0930-20260921:1600",
+                timezone_id="US/Eastern",
+                realtime_or_delayed="DELAYED",
+                entitlement_state="AVAILABLE",
+                bid=Decimal("100"),
+                ask=Decimal("100.01"),
+                last=Decimal("100"),
+                bid_size=Decimal("10"),
+                ask_size=Decimal("10"),
+                last_size=Decimal("1"),
+                broker_quote_timestamp=now,
+                local_receipt_timestamp=now,
+                monotonic_receipt_ns=1,
+                clock_skew_ms=0,
+                round_trip_ms=1,
+                source_health="HEALTHY",
+            )
+
+        def stop(self):
+            pass
+
+    monkeypatch.setattr(
+        runtime_integrity,
+        "load_verified_policy",
+        lambda path: MarketDataPolicy(
+            version="MARKET_DATA_POLICY_V1",
+            max_new_trade_age_ms=1000,
+            max_position_management_age_ms=2000,
+            max_clock_skew_ms=500,
+            require_realtime_for_new_trade=True,
+            require_bid_ask_for_spread=True,
+        ),
+    )
+
+    gate = RuntimeMarketDataGate(
+        policy_path=tmp_path / "policy.json",
+        expected_account_hash="a" * 64,
+        source_factory=FakeSource,
+        now_utc=lambda: now,
+    )
+    result = gate.evaluate()
+    assert result["gate_status"] == "BLOCK"
+    assert "DELAYED_DATA" in result["reason_codes"]
