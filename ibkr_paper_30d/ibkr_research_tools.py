@@ -243,12 +243,16 @@ class IBKRResearchToolbox:
         action: AutonomousPositionAction,
         bundle: TraderInputBundle,
         decision: TraderDecision,
+        *,
+        ib: Any | None = None,
     ) -> ProposalValidation:
         from ib_insync import Order
 
-        ib = self._connect()
+        equity = Decimal(str(bundle.experiment_subledger_snapshot.get("equity", "0")))
+        owns_connection = ib is None
+        broker = ib or self._connect()
         try:
-            matched = self._resolve_open_position(ib, action)
+            matched = self._resolve_open_position(broker, action)
             if matched is None:
                 return ProposalValidation(
                     passed=False,
@@ -293,20 +297,32 @@ class IBKRResearchToolbox:
             )
             if action.limit_price is not None:
                 order.lmtPrice = float(action.limit_price)
-            state = ib.whatIfOrder(matched.contract, order)
+            try:
+                state = broker.whatIfOrder(matched.contract, order)
+            except Exception as exc:
+                state = None
+                state_error = f"{type(exc).__name__}:{exc}"
+            else:
+                state_error = None
             evidence = {
+                "success": state is not None,
+                "error": state_error or ("WHAT_IF_RETURNED_NONE" if state is None else None),
                 "contract": self._serialize_contract(matched.contract),
                 "current_position": str(position),
                 "requested_quantity": str(quantity),
                 "whatIf": True,
                 "commission": getattr(state, "commission", None),
+                "minCommission": getattr(state, "minCommission", None),
+                "maxCommission": getattr(state, "maxCommission", None),
+                "initMarginChange": getattr(state, "initMarginChange", None),
+                "maintMarginChange": getattr(state, "maintMarginChange", None),
                 "warningText": getattr(state, "warningText", None),
             }
-            warning = str(evidence.get("warningText") or "").lower()
-            if any(token in warning for token in ("not allowed", "cannot", "rejected")):
+            feasibility_ok, reasons = self._feasibility_common(evidence, equity=equity)
+            if not feasibility_ok:
                 return ProposalValidation(
                     passed=False,
-                    reason_codes=("BROKER_FEASIBILITY_WARNING_BLOCK",),
+                    reason_codes=reasons,
                     broker_evidence=evidence,
                 )
             return ProposalValidation(
@@ -315,7 +331,8 @@ class IBKRResearchToolbox:
                 broker_evidence=evidence,
             )
         finally:
-            ib.disconnect()
+            if owns_connection:
+                broker.disconnect()
 
     @staticmethod
     def _resolve_open_position(ib: Any, action: AutonomousPositionAction):
