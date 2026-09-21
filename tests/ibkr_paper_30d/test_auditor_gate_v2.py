@@ -36,6 +36,7 @@ TARGET_NAMES = (
     "EXECUTION_LOCK_ACCESS",
     "LIVE_DATABASE_MUTATION",
     "BROKER_WRITE_PATH_ACCESS",
+    "BROKER_NETWORK_SOCKET_ACCESS",
     "TRADER_CONTEXT_ACCESS",
     "AUDIT_INPUT_MUTATION",
     "IMMUTABLE_EXPORT_READ",
@@ -52,7 +53,6 @@ def now() -> datetime:
 def complete_receipt(now: datetime) -> dict[str, object]:
     run_id = "run-v2-001"
     outcomes = {name: "DENIED" for name in TARGET_NAMES}
-    outcomes["BROKER_WRITE_PATH_ACCESS"] = "ALLOWED"
     outcomes["IMMUTABLE_EXPORT_READ"] = "ALLOWED"
     outcomes["AUDITOR_REPORT_WRITE"] = "ALLOWED"
     return {
@@ -72,6 +72,11 @@ def complete_receipt(now: datetime) -> dict[str, object]:
             "probe_manifest_sha256": "d" * 64,
             "exact_fileset": True,
             "verified_at_utc": "2026-09-20T15:57:30Z",
+            "forbidden_privileges_absent": True,
+            "checked_forbidden_privileges": [
+                "SeDebugPrivilege",
+                "SeImpersonatePrivilege",
+            ],
             "predicates": {
                 "BROKER_MODULE_AVAILABLE": False,
                 "ORDER_WRITE_SYMBOL_AVAILABLE": False,
@@ -108,11 +113,16 @@ def complete_receipt(now: datetime) -> dict[str, object]:
             "real_money_allowed": False,
         },
         "network_facts": {
-            "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": True,
-            "AUDITOR_NETWORK_ISOLATION_REQUIRED": False,
-            "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": True,
+            "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": False,
+            "AUDITOR_NETWORK_ISOLATION_REQUIRED": True,
+            "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": False,
             "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
-            "endpoints": {"127.0.0.1:4002": "CONNECTED", "[::1]:4002": "NO_LISTENER"},
+            "endpoints": {
+                "127.0.0.1:4001": "DENIED",
+                "127.0.0.1:4002": "DENIED",
+                "[::1]:4001": "DENIED",
+                "[::1]:4002": "DENIED",
+            },
         },
         "output": {
             "run_id": run_id,
