@@ -247,3 +247,43 @@ def test_immediate_fill_payload_inherits_issued_order_identity():
     assert fill["permId"] == 88
     assert fill["clientId"] == 99
     assert fill["execution_id_hash"] is None
+
+
+def test_order_registry_appends_broker_perm_id_without_rewriting_pre_send_identity(tmp_path):
+    from decimal import Decimal
+    from ibkr_paper_30d.persistence import Database
+
+    with Database.open(tmp_path / "registry.sqlite3") as db:
+        executor = AutonomousPaperExecutor(
+            NoCallToolbox(),
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        )
+        contract = SimpleNamespace(conId=123)
+        pre_send = SimpleNamespace(orderId=77, permId=0)
+        post_send = SimpleNamespace(orderId=77, permId=9001)
+
+        executor._register_order(
+            order=pre_send,
+            contract=contract,
+            order_ref="codex-ibkr-paper-30d-a-test",
+            action="BUY",
+            quantity=Decimal("1"),
+        )
+        executor._register_order(
+            order=post_send,
+            contract=contract,
+            order_ref="codex-ibkr-paper-30d-a-test",
+            action="BUY",
+            quantity=Decimal("1"),
+        )
+
+        rows = db.execute(
+            "SELECT client_order_id,perm_id FROM experiment_order_registry "
+            "WHERE order_ref=? ORDER BY sequence",
+            ("codex-ibkr-paper-30d-a-test",),
+        ).fetchall()
+
+    assert rows == [(77, 0), (77, 9001)]
