@@ -318,3 +318,46 @@ def test_finalizer_uses_pinned_trust_anchor_not_installed_manifest_as_authority(
     assert "ExpectedTrustAnchorSha256" in finalizer
     assert "evaluate-runtime-trust-anchor" in finalizer
     assert "AUDITOR_DEPLOYMENT_MANIFEST_TRUST_ANCHOR_MISMATCH" in finalizer
+
+
+def test_validate_proposal_blocks_failed_whatif_branch(monkeypatch):
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(
+        toolbox,
+        "_broker_feasibility",
+        lambda proposal, ib=None: {
+            "success": False,
+            "error": "WHAT_IF_RETURNED_NONE",
+            "whatIf": True,
+            "paper_only": True,
+        },
+    )
+
+    result = toolbox.validate_proposal(proposal(), bundle())
+
+    assert result.passed is False
+    assert result.reason_codes == ("BROKER_FEASIBILITY_FAILED",)
+
+
+def test_validate_proposal_blocks_broker_warning_branch(monkeypatch):
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(
+        toolbox,
+        "_broker_feasibility",
+        lambda proposal, ib=None: {
+            "success": True,
+            "warningText": "Order rejected: insufficient margin",
+            "initMarginChange": "0",
+            "maintMarginChange": "0",
+            "commission": "1.00",
+            "minCommission": "1.00",
+            "maxCommission": "1.00",
+            "whatIf": True,
+            "paper_only": True,
+        },
+    )
+
+    result = toolbox.validate_proposal(proposal(), bundle())
+
+    assert result.passed is False
+    assert result.reason_codes == ("BROKER_FEASIBILITY_WARNING_BLOCK",)
