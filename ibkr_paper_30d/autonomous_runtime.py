@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -195,7 +196,7 @@ def run_autonomous_cycle(
     if execution is not None and database is not None:
         ledger = AutonomousExperimentLedger(
             database,
-            allocation=__import__("decimal").Decimal(
+            allocation=Decimal(
                 str(bundle.experiment_subledger_snapshot.get("allocation", "500.00"))
             ),
         )
