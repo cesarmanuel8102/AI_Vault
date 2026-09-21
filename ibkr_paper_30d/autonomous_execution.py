@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Any
+from decimal import Decimal
+from typing import Any, Callable
 
 from .autonomous_research import AutonomousPositionAction, AutonomousTradeProposal
+from .canonical import canonical_bytes, sha256_json
 from .ibkr_research_tools import IBKRResearchToolbox
+from .persistence import Database
+from .repositories import utc_now
+from .types import new_uuid7
 from .trader_invocation import TraderDecision, TraderInputBundle
 
 
@@ -36,6 +41,8 @@ class AutonomousPaperExecutor:
         *,
         armed: bool | None = None,
         fill_wait_seconds: float = 3.0,
+        database: Database | None = None,
+        fresh_safety_check: Callable[[str], tuple[str, ...]] | None = None,
     ) -> None:
         self.toolbox = toolbox
         self.armed = (
@@ -44,6 +51,8 @@ class AutonomousPaperExecutor:
             else bool(armed)
         )
         self.fill_wait_seconds = fill_wait_seconds
+        self.database = database
+        self.fresh_safety_check = fresh_safety_check
 
     @staticmethod
     def _fills_payload(trade: Any) -> list[dict[str, Any]]:
@@ -76,6 +85,56 @@ class AutonomousPaperExecutor:
                 },
             })
         return items
+
+    def _fresh_safety_reasons(self, scope: str) -> tuple[str, ...]:
+        if self.fresh_safety_check is None:
+            return ("FRESH_SAFETY_CHECK_REQUIRED",)
+        try:
+            return tuple(self.fresh_safety_check(scope))
+        except Exception as exc:
+            return (f"FRESH_SAFETY_CHECK_FAILED:{type(exc).__name__}",)
+
+    def _register_order(
+        self,
+        *,
+        trade: Any,
+        contract: Any,
+        order_ref: str,
+        action: str,
+        quantity: Decimal,
+    ) -> None:
+        if self.database is None:
+            raise RuntimeError("persistent database required for armed paper execution")
+        payload = {
+            "schema": "EXPERIMENT_ORDER_REGISTRY_V1",
+            "order_ref": order_ref,
+            "client_order_id": int(getattr(trade.order, "orderId", 0) or 0),
+            "perm_id": int(getattr(trade.order, "permId", 0) or 0),
+            "ibkr_order_id": int(getattr(trade.order, "orderId", 0) or 0),
+            "contract_id": int(getattr(contract, "conId", 0) or 0),
+            "action": action,
+            "quantity": str(quantity),
+            "created_at_utc": utc_now(),
+        }
+        self.database.execute(
+            "INSERT INTO experiment_order_registry("
+            "registry_id,order_ref,client_order_id,perm_id,ibkr_order_id,"
+            "contract_id,action,quantity,payload_json,payload_sha256,created_at_utc"
+            ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                str(new_uuid7()),
+                order_ref,
+                payload["client_order_id"],
+                payload["perm_id"],
+                payload["ibkr_order_id"],
+                payload["contract_id"],
+                action,
+                str(quantity),
+                canonical_bytes(payload).decode("utf-8"),
+                sha256_json(payload),
+                utc_now(),
+            ),
+        )
 
     def execute(
         self,
