@@ -36,6 +36,7 @@ $ReadOnlyReport = Join-Path $CanonicalReportRoot "read_only_real_paper_reconcili
 $CanonicalAuditorReceipt = Join-Path $CanonicalReportRoot "auditor_gate_v2_receipt.json"
 $MarketValidation = Join-Path $CanonicalReportRoot "market_data_validation.json"
 $MarketTaskName = "CodexIBKRMarketDataGate"
+$ProbeFirewallRuleName = "CodexAuditorV2-Probe-PowerShell-Broker-Block"
 $CanonicalAcceptance = Join-Path $ResolvedRepoRoot "AUDITOR_MONTH1_PAPER_RESIDUAL_RISK_ACCEPTANCE_V1.json"
 
 function Assert-Administrator {
@@ -180,9 +181,20 @@ $Credential = New-Object Security.Management.Automation.PSCredential(
 )
 
 $SecondaryLogon = Get-Service -Name seclogon -ErrorAction SilentlyContinue
-if ($null -ne $SecondaryLogon -and $SecondaryLogon.Status -ne "Running") {
+$SecondaryLogonWasRunning = $null -ne $SecondaryLogon -and $SecondaryLogon.Status -eq "Running"
+$SecondaryLogonOriginalStartType = if ($null -ne $SecondaryLogon) { [string]$SecondaryLogon.StartType } else { $null }
+if ($null -ne $SecondaryLogon -and -not $SecondaryLogonWasRunning) {
+    if ($SecondaryLogonOriginalStartType -eq "Disabled") { Set-Service -Name seclogon -StartupType Manual }
     Start-Service -Name seclogon
 }
+
+Get-NetFirewallRule -Name $ProbeFirewallRuleName -ErrorAction SilentlyContinue | Remove-NetFirewallRule -ErrorAction SilentlyContinue
+$ProbeFirewallRule = New-NetFirewallRule -Name $ProbeFirewallRuleName -DisplayName $ProbeFirewallRuleName -Direction Outbound -Action Block -Protocol TCP -RemotePort 4001,4002 -RemoteAddress 127.0.0.1,::1 -Program $WindowsPowerShell -Profile Any -Enabled True
+$ProbePortFilter = $ProbeFirewallRule | Get-NetFirewallPortFilter
+$ProbeAppFilter = $ProbeFirewallRule | Get-NetFirewallApplicationFilter
+if ([string]$ProbeFirewallRule.Action -ne "Block" -or [string]$ProbeFirewallRule.Direction -ne "Outbound" -or [string]$ProbeAppFilter.Program -ine $WindowsPowerShell) { throw "AUDITOR_PROBE_FIREWALL_RULE_INVALID" }
+$ProbePorts = @($ProbePortFilter.RemotePort | ForEach-Object { [string]$_ })
+if ($ProbePorts -notcontains "4001" -or $ProbePorts -notcontains "4002") { throw "AUDITOR_PROBE_FIREWALL_PORTS_INVALID" }
 
 $StdoutPath = Join-Path $ReportsRoot ("probe-launch-" + [Guid]::NewGuid().ToString("N") + ".out.txt")
 $StderrPath = Join-Path $ReportsRoot ("probe-launch-" + [Guid]::NewGuid().ToString("N") + ".err.txt")
@@ -221,9 +233,18 @@ try {
     Copy-Item -LiteralPath $Receipt.FullName -Destination $CanonicalAuditorReceipt -Force
 }
 finally {
+    Get-NetFirewallRule -Name $ProbeFirewallRuleName -ErrorAction SilentlyContinue | Remove-NetFirewallRule -ErrorAction SilentlyContinue
     foreach ($TemporaryPath in $TemporaryProbeTargets) {
-        if (Test-Path -LiteralPath $TemporaryPath -PathType Leaf) {
-            Remove-Item -LiteralPath $TemporaryPath -Force
+        if (Test-Path -LiteralPath $TemporaryPath -PathType Leaf) { Remove-Item -LiteralPath $TemporaryPath -Force }
+    }
+    try {
+        $PostProbePassword = New-RandomSecurePassword
+        Set-LocalUser -Name $AuditorUser -Password $PostProbePassword
+    } catch { }
+    if ($null -ne $SecondaryLogon -and -not $SecondaryLogonWasRunning) {
+        try { Stop-Service -Name seclogon -Force } catch { }
+        if ($SecondaryLogonOriginalStartType -eq "Disabled") {
+            try { Set-Service -Name seclogon -StartupType Disabled } catch { }
         }
     }
 }
