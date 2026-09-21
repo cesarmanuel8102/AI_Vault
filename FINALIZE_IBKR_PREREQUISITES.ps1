@@ -219,10 +219,15 @@ if ($null -ne $SecondaryLogon -and -not $SecondaryLogonWasRunning) {
 }
 
 Get-NetFirewallRule -Name $ProbeFirewallRuleName -ErrorAction SilentlyContinue | Remove-NetFirewallRule -ErrorAction SilentlyContinue
-$ProbeFirewallRule = New-NetFirewallRule -Name $ProbeFirewallRuleName -DisplayName $ProbeFirewallRuleName -Direction Outbound -Action Block -Protocol TCP -RemotePort 4001,4002 -RemoteAddress 127.0.0.1,::1 -Program $WindowsPowerShell -Profile Any -Enabled True
+# During the bounded auditor probe no local process needs broker API access.
+# Use an all-programs loopback block so a compromised auditor process cannot
+# bypass isolation by spawning another executable.
+$ProbeFirewallRule = New-NetFirewallRule -Name $ProbeFirewallRuleName -DisplayName $ProbeFirewallRuleName -Direction Outbound -Action Block -Protocol TCP -RemotePort 4001,4002 -RemoteAddress 127.0.0.1,::1 -Profile Any -Enabled True
 $ProbePortFilter = $ProbeFirewallRule | Get-NetFirewallPortFilter
-$ProbeAppFilter = $ProbeFirewallRule | Get-NetFirewallApplicationFilter
-if ([string]$ProbeFirewallRule.Action -ne "Block" -or [string]$ProbeFirewallRule.Direction -ne "Outbound" -or [string]$ProbeAppFilter.Program -ine $WindowsPowerShell) { throw "AUDITOR_PROBE_FIREWALL_RULE_INVALID" }
+$ProbeAddressFilter = $ProbeFirewallRule | Get-NetFirewallAddressFilter
+if ([string]$ProbeFirewallRule.Action -ne "Block" -or [string]$ProbeFirewallRule.Direction -ne "Outbound") { throw "AUDITOR_PROBE_FIREWALL_RULE_INVALID" }
+$ProbeAddresses = @($ProbeAddressFilter.RemoteAddress | ForEach-Object { [string]$_ })
+if ($ProbeAddresses -notcontains "127.0.0.1" -or $ProbeAddresses -notcontains "::1") { throw "AUDITOR_PROBE_FIREWALL_SCOPE_INVALID" }
 $ProbePorts = @($ProbePortFilter.RemotePort | ForEach-Object { [string]$_ })
 if ($ProbePorts -notcontains "4001" -or $ProbePorts -notcontains "4002") { throw "AUDITOR_PROBE_FIREWALL_PORTS_INVALID" }
 
