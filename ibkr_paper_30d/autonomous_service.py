@@ -141,16 +141,21 @@ class AutonomousExperimentService:
         self.toolbox = toolbox or IBKRResearchToolbox(
             declared_options_level=options_level
         )
+        self.broker_now = broker_now or self._read_broker_time
         expected_hash = getattr(self.toolbox, "expected_account_hash", None)
         self.runtime_market_gate = runtime_market_gate or (
-            RuntimeMarketDataGate(expected_account_hash=expected_hash)
+            RuntimeMarketDataGate(
+                expected_account_hash=expected_hash,
+                now_utc=self.broker_now,
+            )
             if expected_hash
             else None
         )
-        self.runtime_auditor_gate = runtime_auditor_gate or RuntimeAuditorGate()
+        self.runtime_auditor_gate = runtime_auditor_gate or RuntimeAuditorGate(
+            now_utc=self.broker_now
+        )
         self.kill_switch = KillSwitchStore(db)
         self.owner_authorization = OwnerAuthorizationStore(db)
-        self.broker_now = broker_now or self._read_broker_time
         self.provider = provider or CodexAutonomousCLIProvider()
         self.executor = executor or AutonomousPaperExecutor(
             self.toolbox,
