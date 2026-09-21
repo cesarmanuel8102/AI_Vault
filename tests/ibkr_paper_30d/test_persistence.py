@@ -127,3 +127,31 @@ def test_database_lock_fails_closed(db_path) -> None:
             pass
         first.close()
         second.close()
+
+
+def test_autonomous_persistence_contract_distinguishes_legacy_tables() -> None:
+    from ibkr_paper_30d.persistence import (
+        AUTONOMOUS_CANONICAL_TABLES,
+        LEGACY_COMPATIBILITY_TABLES,
+    )
+
+    assert {
+        "autonomous_ledger_events",
+        "experiment_clock_events",
+        "experiment_authorization_events",
+        "experiment_order_registry",
+        "kill_switch_events",
+        "trader_input_bundles",
+        "trader_invocations",
+        "trader_results",
+        "autonomous_research_events",
+    } <= AUTONOMOUS_CANONICAL_TABLES
+    assert {
+        "fills",
+        "orders",
+        "subledger_events",
+        "broker_reconciliations",
+        "market_data_snapshots",
+        "market_data_gate_results",
+    } <= LEGACY_COMPATIBILITY_TABLES
+    assert AUTONOMOUS_CANONICAL_TABLES.isdisjoint(LEGACY_COMPATIBILITY_TABLES)
