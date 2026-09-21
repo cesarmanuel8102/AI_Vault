@@ -382,6 +382,73 @@ class IBKRResearchToolbox:
             return False
         return parsed.is_finite() and parsed > 0
 
+    def _single_live_quote_evidence(
+        self,
+        ib: Any,
+        contract: Any,
+        *,
+        wait_seconds: float,
+        max_age_seconds: float,
+    ) -> dict[str, Any]:
+        ib.reqMarketDataType(1)  # explicitly request LIVE data
+        ticker = ib.reqMktData(contract, "", True, False)
+        ib.sleep(wait_seconds)
+        bid = getattr(ticker, "bid", None)
+        ask = getattr(ticker, "ask", None)
+        stamp = getattr(ticker, "time", None)
+        if not self._valid_live_price(bid) or not self._valid_live_price(ask):
+            return {
+                "success": False,
+                "reason": "TRADE_CONTRACT_LIVE_BID_ASK_MISSING",
+                "contract": self._serialize_contract(contract),
+            }
+        bid_d = Decimal(str(bid))
+        ask_d = Decimal(str(ask))
+        if bid_d > ask_d:
+            return {
+                "success": False,
+                "reason": "TRADE_CONTRACT_CROSSED_MARKET",
+                "contract": self._serialize_contract(contract),
+                "bid": str(bid_d),
+                "ask": str(ask_d),
+            }
+        if stamp is None or not hasattr(stamp, "astimezone"):
+            return {
+                "success": False,
+                "reason": "TRADE_CONTRACT_QUOTE_TIMESTAMP_MISSING",
+                "contract": self._serialize_contract(contract),
+            }
+        server_time = ib.reqCurrentTime()
+        if server_time is None or not hasattr(server_time, "astimezone"):
+            return {
+                "success": False,
+                "reason": "BROKER_SERVER_TIME_MISSING_FOR_TRADE_QUOTE",
+                "contract": self._serialize_contract(contract),
+            }
+        from datetime import timezone
+        quote_utc = stamp.astimezone(timezone.utc)
+        broker_utc = server_time.astimezone(timezone.utc)
+        age_seconds = (broker_utc - quote_utc).total_seconds()
+        if age_seconds < -5.0 or age_seconds > max_age_seconds:
+            return {
+                "success": False,
+                "reason": "TRADE_CONTRACT_QUOTE_STALE",
+                "contract": self._serialize_contract(contract),
+                "quote_time_utc": quote_utc.isoformat().replace("+00:00", "Z"),
+                "broker_time_utc": broker_utc.isoformat().replace("+00:00", "Z"),
+                "age_seconds": age_seconds,
+            }
+        return {
+            "success": True,
+            "contract": self._serialize_contract(contract),
+            "bid": str(bid_d),
+            "ask": str(ask_d),
+            "quote_time_utc": quote_utc.isoformat().replace("+00:00", "Z"),
+            "broker_time_utc": broker_utc.isoformat().replace("+00:00", "Z"),
+            "age_seconds": age_seconds,
+            "requested_market_data_type": "LIVE",
+        }
+
     def live_contract_quote_evidence(
         self,
         ib: Any,
@@ -390,65 +457,64 @@ class IBKRResearchToolbox:
         wait_seconds: float = 2.0,
         max_age_seconds: float = 15.0,
     ) -> dict[str, Any]:
-        """Require fresh live bid/ask for the exact contract before transmission."""
+        """Require fresh live market evidence before broker transmission.
+
+        For BAG contracts, a direct combo quote is preferred. If IBKR does not
+        publish a combo bid/ask, every combo leg must independently have a fresh
+        LIVE bid/ask; this preserves defined-risk multi-leg capability without
+        accepting stale or delayed inputs.
+        """
         try:
-            ib.reqMarketDataType(1)  # explicitly request LIVE data
-            ticker = ib.reqMktData(contract, "", True, False)
-            ib.sleep(wait_seconds)
-            bid = getattr(ticker, "bid", None)
-            ask = getattr(ticker, "ask", None)
-            stamp = getattr(ticker, "time", None)
-            if not self._valid_live_price(bid) or not self._valid_live_price(ask):
-                return {
-                    "success": False,
-                    "reason": "TRADE_CONTRACT_LIVE_BID_ASK_MISSING",
-                    "contract": self._serialize_contract(contract),
-                }
-            bid_d = Decimal(str(bid))
-            ask_d = Decimal(str(ask))
-            if bid_d > ask_d:
-                return {
-                    "success": False,
-                    "reason": "TRADE_CONTRACT_CROSSED_MARKET",
-                    "contract": self._serialize_contract(contract),
-                    "bid": str(bid_d),
-                    "ask": str(ask_d),
-                }
-            if stamp is None or not hasattr(stamp, "astimezone"):
-                return {
-                    "success": False,
-                    "reason": "TRADE_CONTRACT_QUOTE_TIMESTAMP_MISSING",
-                    "contract": self._serialize_contract(contract),
-                }
-            server_time = ib.reqCurrentTime()
-            if server_time is None or not hasattr(server_time, "astimezone"):
-                return {
-                    "success": False,
-                    "reason": "BROKER_SERVER_TIME_MISSING_FOR_TRADE_QUOTE",
-                    "contract": self._serialize_contract(contract),
-                }
-            from datetime import timezone
-            quote_utc = stamp.astimezone(timezone.utc)
-            broker_utc = server_time.astimezone(timezone.utc)
-            age_seconds = (broker_utc - quote_utc).total_seconds()
-            if age_seconds < -5.0 or age_seconds > max_age_seconds:
-                return {
-                    "success": False,
-                    "reason": "TRADE_CONTRACT_QUOTE_STALE",
-                    "contract": self._serialize_contract(contract),
-                    "quote_time_utc": quote_utc.isoformat().replace("+00:00", "Z"),
-                    "broker_time_utc": broker_utc.isoformat().replace("+00:00", "Z"),
-                    "age_seconds": age_seconds,
-                }
+            direct = self._single_live_quote_evidence(
+                ib,
+                contract,
+                wait_seconds=wait_seconds,
+                max_age_seconds=max_age_seconds,
+            )
+            if direct.get("success"):
+                return {**direct, "validation_mode": "DIRECT_CONTRACT"}
+
+            if str(getattr(contract, "secType", "") or "").upper() != "BAG":
+                return direct
+
+            from ib_insync import Contract
+            leg_results: list[dict[str, Any]] = []
+            for leg in getattr(contract, "comboLegs", []) or []:
+                leg_contract = Contract(
+                    conId=int(getattr(leg, "conId", 0) or 0),
+                    exchange=str(getattr(leg, "exchange", "") or "SMART"),
+                    currency=str(getattr(contract, "currency", "") or "USD"),
+                )
+                qualified = ib.qualifyContracts(leg_contract)
+                if not qualified:
+                    return {
+                        "success": False,
+                        "reason": "TRADE_COMBO_LEG_UNRESOLVED",
+                        "contract": self._serialize_contract(contract),
+                        "failed_leg_con_id": leg_contract.conId,
+                    }
+                evidence = self._single_live_quote_evidence(
+                    ib,
+                    qualified[0],
+                    wait_seconds=wait_seconds,
+                    max_age_seconds=max_age_seconds,
+                )
+                leg_results.append(evidence)
+                if not evidence.get("success"):
+                    return {
+                        "success": False,
+                        "reason": "TRADE_COMBO_LEG_MARKET_DATA_BLOCK",
+                        "contract": self._serialize_contract(contract),
+                        "leg_results": leg_results,
+                    }
+            if not leg_results:
+                return direct
             return {
                 "success": True,
                 "contract": self._serialize_contract(contract),
-                "bid": str(bid_d),
-                "ask": str(ask_d),
-                "quote_time_utc": quote_utc.isoformat().replace("+00:00", "Z"),
-                "broker_time_utc": broker_utc.isoformat().replace("+00:00", "Z"),
-                "age_seconds": age_seconds,
+                "validation_mode": "ALL_COMBO_LEGS",
                 "requested_market_data_type": "LIVE",
+                "leg_results": leg_results,
             }
         except Exception as exc:
             return {
