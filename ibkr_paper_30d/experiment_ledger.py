@@ -105,7 +105,18 @@ class AutonomousExperimentLedger:
         )
         return event_id
 
+    def _recorded_execution_hashes(self) -> set[str]:
+        return {
+            str(event.get("execution_id_hash"))
+            for event in self._events()
+            if event.get("event_type") == "BROKER_FILL"
+            and event.get("execution_id_hash")
+        }
+
     def record_fill(self, fill: dict[str, Any]) -> str:
+        execution_hash = str(fill.get("execution_id_hash") or "")
+        if execution_hash and execution_hash in self._recorded_execution_hashes():
+            return f"duplicate:{execution_hash}"
         side = str(fill.get("side") or fill.get("action") or "").upper()
         if side not in {"BUY", "SELL"}:
             raise ValueError("fill side must be BUY or SELL")
