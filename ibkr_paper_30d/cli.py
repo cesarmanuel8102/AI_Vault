@@ -806,7 +806,7 @@ def invoke_real_codex_test(
         model_configuration={"provider": "codex-cli", "synthetic": True},
         reasoning_effort=reasoning_effort,
         input_bundle_sha256=bundle.sha256,
-        risk_policy_version="MONTH1_V1",
+        risk_policy_version="CAPITAL_BOUNDARY_V2",
         experiment_id="prelifecycle-provider-test",
         invocation_trigger="OWNER_AUTHORIZED_NON_TRADING_TEST",
         timeout_seconds=timeout_seconds,
