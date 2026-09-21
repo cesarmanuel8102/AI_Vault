@@ -3,10 +3,15 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import subprocess
 
 import pytest
+
+pytestmark = pytest.mark.skipif(
+    os.name != "nt", reason="Windows Auditor V2 PowerShell/runtime tests"
+)
 
 from ibkr_paper_30d.auditor_runtime_v2 import (
     RUNTIME_MANIFEST_NAME,
