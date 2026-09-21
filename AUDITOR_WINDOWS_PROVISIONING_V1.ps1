@@ -137,6 +137,13 @@ foreach ($Path in $ProtectedPaths) {
     }
     $AclChanges += New-AclChange -Path $Path -Rights $Rights -Type "Deny" -Directory $IsDirectory
 }
+$AuditorDenyLogonRights = @(
+    "SeDenyBatchLogonRight",
+    "SeDenyServiceLogonRight",
+    "SeDenyNetworkLogonRight",
+    "SeDenyRemoteInteractiveLogonRight"
+)
+
 $LegacyAclChanges = @()
 foreach ($Path in $LegacyEphemeralPaths) {
     $LegacyAclChanges += New-AclChange -Path $Path -Rights "FullControl" -Type "Deny" -Directory $false
@@ -208,6 +215,7 @@ $Manifest = [ordered]@{
         reject_unrecognized_state = $true
     }
     runtime_files = $RuntimeFiles
+    auditor_deny_logon_rights = $AuditorDenyLogonRights
     probe_targets = $ProbeTargets
     validation_commands = @(
         "Get-LocalUser -Name CodexAuditorV1",
@@ -554,6 +562,63 @@ function Assert-FirewallRuleMatches {
     }
 }
 
+function Set-AuditorDenyLogonRights {
+    param(
+        [Security.Principal.SecurityIdentifier]$Sid,
+        [bool]$Present
+    )
+    $Nonce = [Guid]::NewGuid().ToString('N')
+    $Cfg = Join-Path $env:TEMP ("codex-auditor-rights-" + $Nonce + ".inf")
+    $Db = Join-Path $env:TEMP ("codex-auditor-rights-" + $Nonce + ".sdb")
+    try {
+        & secedit.exe /export /cfg $Cfg /areas user_rights /quiet | Out-Null
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $Cfg)) {
+            throw "SECEDIT_EXPORT_FAILED"
+        }
+        $Lines = [Collections.Generic.List[string]](Get-Content -LiteralPath $Cfg)
+        $PrivilegeHeader = $Lines.FindIndex([Predicate[string]]{ param($Line) $Line -eq "[Privilege Rights]" })
+        if ($PrivilegeHeader -lt 0) {
+            $Lines.Add("[Privilege Rights]")
+            $PrivilegeHeader = $Lines.Count - 1
+        }
+        $SidToken = "*" + $Sid.Value
+        foreach ($Right in $AuditorDenyLogonRights) {
+            $Pattern = "^" + [regex]::Escape($Right) + "\s*="
+            $Index = -1
+            for ($I = 0; $I -lt $Lines.Count; $I++) {
+                if ($Lines[$I] -match $Pattern) { $Index = $I; break }
+            }
+            $Values = New-Object Collections.Generic.List[string]
+            if ($Index -ge 0) {
+                $Raw = ($Lines[$Index] -split "=", 2)[1].Trim()
+                if ($Raw) {
+                    foreach ($Value in $Raw.Split(',')) {
+                        $Trimmed = $Value.Trim()
+                        if ($Trimmed) { $Values.Add($Trimmed) }
+                    }
+                }
+            }
+            if ($Present) {
+                if (-not $Values.Contains($SidToken)) { $Values.Add($SidToken) }
+            }
+            else {
+                [void]$Values.Remove($SidToken)
+            }
+            $Replacement = $Right + " = " + ($Values -join ",")
+            if ($Index -ge 0) { $Lines[$Index] = $Replacement }
+            else { $Lines.Insert($PrivilegeHeader + 1, $Replacement) }
+        }
+        $Lines | Set-Content -LiteralPath $Cfg -Encoding Unicode
+        & secedit.exe /configure /db $Db /cfg $Cfg /areas user_rights /quiet | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "SECEDIT_CONFIGURE_FAILED" }
+    }
+    finally {
+        Remove-Item -LiteralPath $Cfg -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $Db -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath ($Db + ".jfm") -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Invoke-Apply {
     param([Security.SecureString]$AccountPassword)
     foreach ($Path in $ManagedPaths) {
@@ -568,6 +633,7 @@ function Invoke-Apply {
     }
     $AdminMember = Get-LocalGroupMember -Group "Administrators" -ErrorAction Stop | Where-Object { $_.SID -eq $User.SID }
     if ($null -ne $AdminMember) { throw "AUDITOR_PRIVILEGED_GROUP_CONFLICT" }
+    Set-AuditorDenyLogonRights -Sid $User.SID -Present $true
     Install-RuntimeFiles
     Write-ProbeTargetManifest -Sid $User.SID
     $Results = @()
@@ -666,6 +732,7 @@ function Invoke-Rollback {
         foreach ($Change in $RollbackChanges) {
             [void](Remove-ManifestAce -Change $Change -Sid $User.SID)
         }
+        Set-AuditorDenyLogonRights -Sid $User.SID -Present $false
     }
     Get-NetFirewallRule -Name $FirewallRuleName -ErrorAction SilentlyContinue | Remove-NetFirewallRule
     if ($null -ne $User) { Remove-LocalUser -Name $AccountName }
