@@ -56,6 +56,7 @@ Codex can iteratively choose:
 - historical bars with Codex-selected horizon and timeframe;
 - option expirations / strikes / exchanges;
 - broker news when entitled;
+- live read-only web search for current external evidence;
 - capital feasibility;
 - exact IBKR what-if margin / commission preview;
 - optional external research when a read-only external provider is configured.
@@ -67,7 +68,9 @@ symbol or strategy universe.
 ## Capital adaptation
 
 Current experimental equity is rebound into the research toolbox at the start
-of every decision cycle.
+of every decision cycle. The exact experiment start timestamp is also bound to
+the decision bundle; Codex receives day index and remaining seconds/days until
+the fixed 30-day terminal horizon.
 
 A change in equity immediately triggers a new research cycle so Codex can
 discover instruments or structures that became newly accessible, or stop using
@@ -98,6 +101,15 @@ The what-if path is PAPER-only and forces transmit=false.  It is used to obtain
 margin and commission impact, not to submit an order.
 
 A proposal lacking these two pieces of evidence is not execution-ready.
+
+Every proposed economic leg must also resolve to an IBKR contract ID and have a
+fresh real-time IBKR quote for that exact contract before execution readiness.
+Delayed, stale, unresolved, or mismatched contract data fails closed.
+
+The runtime independently proves that the payoff structure has no unbounded-loss
+direction. A model-provided maximum-loss number cannot override this proof.
+Short equity, naked short calls, and unhedged directional derivatives therefore
+cannot pass merely because Codex reports a small estimated loss.
 
 ## Scheduling
 
