@@ -109,6 +109,7 @@ class AutonomousExperimentService:
         executor: Any | None = None,
         runtime_market_gate: RuntimeMarketDataGate | None = None,
         runtime_auditor_gate: RuntimeAuditorGate | None = None,
+        broker_now: Callable[[], datetime] | None = None,
         sleep: Callable[[float], None] = time.sleep,
         monotonic: Callable[[], float] = time.monotonic,
     ) -> None:
@@ -149,6 +150,7 @@ class AutonomousExperimentService:
         self.runtime_auditor_gate = runtime_auditor_gate or RuntimeAuditorGate()
         self.kill_switch = KillSwitchStore(db)
         self.owner_authorization = OwnerAuthorizationStore(db)
+        self.broker_now = broker_now or self._read_broker_time
         self.provider = provider or CodexAutonomousCLIProvider()
         self.executor = executor or AutonomousPaperExecutor(
             self.toolbox,
@@ -171,9 +173,31 @@ class AutonomousExperimentService:
     def stop(self) -> None:
         self.stop_event.set()
 
+    def _read_broker_time(self) -> datetime:
+        payload = self.toolbox._account_state({})
+        raw = payload.get("server_time_utc")
+        if not isinstance(raw, str) or not raw:
+            raise AutonomousServiceError("broker server time unavailable")
+        try:
+            parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise AutonomousServiceError("broker server time invalid") from exc
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise AutonomousServiceError("broker server time invalid")
+        return parsed.astimezone(timezone.utc)
+
     def _fresh_execution_safety(self, scope: str) -> tuple[str, ...]:
         reasons: list[str] = []
-        clock_snapshot = self.clock.snapshot(datetime.now(timezone.utc))
+        try:
+            broker_now = self.broker_now()
+        except Exception as exc:
+            reasons.append(f"BROKER_TIME_UNAVAILABLE_FRESH:{type(exc).__name__}")
+            broker_now = None
+        clock_snapshot = (
+            self.clock.snapshot(broker_now)
+            if broker_now is not None
+            else {"not_started": True, "expired": True}
+        )
         if clock_snapshot.get("not_started"):
             reasons.append("EXPERIMENT_NOT_STARTED_FRESH")
         if clock_snapshot.get("expired"):
@@ -214,8 +238,8 @@ class AutonomousExperimentService:
             raise AutonomousServiceError(
                 "paper execution prerequisites are not PASS: " + ",".join(reasons)
             )
-        if self.clock.snapshot(datetime.now(timezone.utc))["expired"]:
-            raise AutonomousServiceError("experiment clock already expired")
+        # Expiry/not-started is already evaluated from broker server time by
+        # _fresh_execution_safety; do not reintroduce wall-clock authority here.
 
     def _builder(self) -> AutonomousStateBuilder:
         return AutonomousStateBuilder(
