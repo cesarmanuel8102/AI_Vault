@@ -77,7 +77,7 @@ def test_codex_cli_provider_uses_isolated_schema_bound_ephemeral_invocation() ->
         output_path.write_text(json.dumps(output(value)), encoding="utf-8")
         stdout = "\n".join(
             (
-                json.dumps({"type": "thread.started", "thread_id": "test"}),
+                json.dumps({"type": "thread.started", "thread_id": "test", "actual_model": "gpt-5.5"}),
                 json.dumps(
                     {
                         "type": "item.completed",
@@ -117,7 +117,7 @@ def test_codex_cli_provider_rejects_any_tool_activity(item_type) -> None:
         output_path = Path(command[command.index("--output-last-message") + 1])
         output_path.write_text(json.dumps(output(value)), encoding="utf-8")
         stdout = json.dumps(
-            {"type": "item.started", "item": {"type": item_type, "id": "unsafe"}}
+            {"type": "item.started", "actual_model": "gpt-5.5", "item": {"type": item_type, "id": "unsafe"}}
         )
         return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
 
