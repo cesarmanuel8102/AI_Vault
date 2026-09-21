@@ -95,23 +95,7 @@ if ($Missing.Count -ne 0) {
 
 $TestsPassed = $null
 if (-not $SkipTests) {
-    $TestFiles = @(
-        "tests/ibkr_paper_30d/test_autonomous_research.py",
-        "tests/ibkr_paper_30d/test_capital_boundary_risk.py",
-        "tests/ibkr_paper_30d/test_autonomous_execution.py",
-        "tests/ibkr_paper_30d/test_autonomous_runtime.py",
-        "tests/ibkr_paper_30d/test_experiment_ledger.py",
-        "tests/ibkr_paper_30d/test_autonomous_state.py",
-        "tests/ibkr_paper_30d/test_autonomous_service.py",
-        "tests/ibkr_paper_30d/test_autonomous_architecture_contract.py",
-        "tests/ibkr_paper_30d/test_autonomous_codex_provider.py",
-        "tests/ibkr_paper_30d/test_bounded_level4_structures.py",
-        "tests/ibkr_paper_30d/test_prerequisite_tools.py",
-        "tests/ibkr_paper_30d/test_market_observation_collector.py",
-        "tests/ibkr_paper_30d/test_risk.py",
-        "tests/ibkr_paper_30d/test_trader_invocation.py"
-    )
-    $PytestOutput = @(& python -m pytest -q @TestFiles 2>&1)
+    $PytestOutput = @(& python -m pytest -q tests/ibkr_paper_30d 2>&1)
     if ($LASTEXITCODE -ne 0) {
         throw "LOCAL_VALIDATION_FAILED:$($PytestOutput -join ' | ')"
     }
