@@ -482,7 +482,17 @@ class AutonomousPaperExecutor:
                     order={},
                     broker_validation=final_validation.broker_evidence,
                 )
-            final_size = abs(Decimal(str(position.position)))
+            final_position = Decimal(str(position.position))
+            final_required_action = "SELL" if final_position > 0 else "BUY"
+            if action.action.upper() != final_required_action:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("POSITION_ACTION_WOULD_INCREASE_EXPOSURE_BEFORE_SEND",),
+                    order={},
+                    broker_validation=final_validation.broker_evidence,
+                )
+            final_size = abs(final_position)
             if action.quantity > final_size:
                 return PaperExecutionResult(
                     success=False,

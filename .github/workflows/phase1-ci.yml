@@ -7,6 +7,7 @@ on:
       - codex/ibkr-autonomous-research-v1
       - codex/ibkr-paper-auditor-gate-v2
       - codex/ibkr-external-audit-remediation-v1
+      - codex/ibkr-reaudit-v2-remediation
   pull_request:
     branches:
       - codex/own-capital-sustainable-return

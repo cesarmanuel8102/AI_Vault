@@ -134,6 +134,16 @@ class RuntimeMarketDataGate:
                     if result.quote_timestamp is not None
                     else None
                 ),
+                "oldest_quote_timestamp": (
+                    result.oldest_quote_timestamp.isoformat()
+                    if result.oldest_quote_timestamp is not None
+                    else None
+                ),
+                "latest_quote_timestamp": (
+                    result.latest_quote_timestamp.isoformat()
+                    if result.latest_quote_timestamp is not None
+                    else None
+                ),
                 "quote_age_at_decision_ms": result.quote_age_at_decision_ms,
                 "decision_class": decision_class.value,
             }

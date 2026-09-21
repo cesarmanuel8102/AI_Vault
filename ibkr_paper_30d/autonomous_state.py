@@ -121,19 +121,22 @@ class AutonomousStateBuilder:
             (order_ref,),
         ).fetchall()
         for client_order_id, registered_perm_id in rows:
-            client_match = (
-                order_id > 0
-                and client_order_id is not None
-                and int(client_order_id) == order_id
-            )
-            perm_match = (
-                perm_id > 0
-                and registered_perm_id is not None
-                and int(registered_perm_id) > 0
-                and int(registered_perm_id) == perm_id
-            )
-            if client_match or perm_match:
-                return True
+            registered_order_id = int(client_order_id or 0)
+            registered_perm = int(registered_perm_id or 0)
+
+            # When the broker supplies both identifiers, require both to match the
+            # same registry row. If only one identifier is available, match that
+            # identifier. Never allow a correct permId to mask a wrong orderId (or
+            # vice versa).
+            if order_id > 0:
+                if registered_order_id <= 0 or registered_order_id != order_id:
+                    continue
+            if perm_id > 0:
+                if registered_perm <= 0 or registered_perm != perm_id:
+                    continue
+            if order_id <= 0 and perm_id <= 0:
+                continue
+            return True
         return False
 
     def _sync_executions(self) -> list[str]:

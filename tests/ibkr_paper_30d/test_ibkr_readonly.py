@@ -254,8 +254,9 @@ def test_auditor_status_uses_v2_evaluation_but_never_authorizes_orders() -> None
     assert status["AUDITOR_ISOLATION_GATE"] == "PASS"
     assert status["READY_FOR_HARMLESS_PAPER_LIFECYCLE_TEST"] is False
     assert status["REAL_PAPER_ORDER_WRITE_AUTHORIZED"] is False
-    assert status["AUDITOR_TECHNICAL_SOCKET_REACHABILITY"] is True
-    assert status["AUDITOR_NETWORK_ISOLATION_REQUIRED"] is False
+    assert status["AUDITOR_TECHNICAL_SOCKET_REACHABILITY"] is False
+    assert status["AUDITOR_NETWORK_ISOLATION_REQUIRED"] is True
+    assert status["AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE"] is False
 
 
 def test_market_behavior_requires_an_actual_quote_value() -> None:

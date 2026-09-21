@@ -62,7 +62,7 @@ class IBKRResearchToolbox:
 
     def manifest(self) -> list[dict[str, Any]]:
         return [
-            {"tool": ResearchTool.ACCOUNT_STATE.value, "purpose": "Current paper balances, NLV, cash, buying power and declared option permission level."},
+            {"tool": ResearchTool.ACCOUNT_STATE.value, "purpose": "Paper-session identity context, broker server time and declared option permission level. Global broker balances are deliberately redacted."},
             {"tool": ResearchTool.POSITIONS.value, "purpose": "Current paper positions."},
             {"tool": ResearchTool.OPEN_ORDERS.value, "purpose": "Current paper open orders."},
             {"tool": ResearchTool.EXECUTIONS.value, "purpose": "Recent paper executions/fills, including orderRef for experiment reconciliation."},
@@ -582,17 +582,18 @@ class IBKRResearchToolbox:
         return qualified[0]
 
     def _account_state(self, _: dict[str, Any]) -> dict[str, Any]:
+        """Return broker/session context without exposing global account capital.
+
+        The autonomous experiment reasons from its isolated ledger equity. Raw
+        account NetLiquidation/cash/buying-power/margin values are intentionally
+        not returned to Codex; broker feasibility remains authoritative through
+        per-order IBKR what-if checks.
+        """
         ib = self._connect()
         try:
-            values = ib.accountSummary()
-            wanted = {
-                "NetLiquidation", "TotalCashValue", "SettledCash", "BuyingPower",
-                "AvailableFunds", "ExcessLiquidity", "InitMarginReq", "MaintMarginReq",
-            }
-            summary: dict[str, str] = {}
-            for item in values:
-                if item.tag in wanted:
-                    summary[item.tag] = str(item.value)
+            # Touch accountSummary so connection/account health is exercised, but
+            # never surface global balance fields to the model-facing tool result.
+            ib.accountSummary()
             server_time = ib.reqCurrentTime()
             server_time_utc = (
                 server_time.astimezone(__import__("datetime").timezone.utc).isoformat().replace("+00:00", "Z")
@@ -603,7 +604,7 @@ class IBKRResearchToolbox:
                 "success": True,
                 "paper_account": True,
                 "declared_options_level": self.declared_options_level,
-                "summary": summary,
+                "global_broker_balances_redacted": True,
                 "server_time_utc": server_time_utc,
             }
         finally:

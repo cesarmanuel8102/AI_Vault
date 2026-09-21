@@ -283,8 +283,10 @@ def _fake_consolidated_inputs() -> dict[str, object]:
             ],
             "results": outcomes,
             "network_endpoints": {
-                "127.0.0.1:4002": "CONNECTED",
-                "[::1]:4002": "NO_LISTENER",
+                "127.0.0.1:4001": "DENIED",
+                "127.0.0.1:4002": "DENIED",
+                "[::1]:4001": "DENIED",
+                "[::1]:4002": "DENIED",
             },
         },
         "functional": {
@@ -327,13 +329,15 @@ def test_consolidated_probe_builds_one_complete_single_run_receipt() -> None:
     assert len(receipt["target_validation_matrix"]) == 10
     assert len(receipt["capability_outcomes"]) == 10
     assert receipt["network_facts"] == {
-        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": True,
-        "AUDITOR_NETWORK_ISOLATION_REQUIRED": False,
-        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": True,
+        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": False,
+        "AUDITOR_NETWORK_ISOLATION_REQUIRED": True,
+        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": False,
         "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
         "endpoints": {
-            "127.0.0.1:4002": "CONNECTED",
-            "[::1]:4002": "NO_LISTENER",
+            "127.0.0.1:4001": "DENIED",
+            "127.0.0.1:4002": "DENIED",
+            "[::1]:4001": "DENIED",
+            "[::1]:4002": "DENIED",
         },
     }
 
