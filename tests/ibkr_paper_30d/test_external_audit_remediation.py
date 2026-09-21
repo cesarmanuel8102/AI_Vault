@@ -361,3 +361,22 @@ def test_validate_proposal_blocks_broker_warning_branch(monkeypatch):
 
     assert result.passed is False
     assert result.reason_codes == ("BROKER_FEASIBILITY_WARNING_BLOCK",)
+
+
+def test_unknown_contract_resolution_fails_closed():
+    class MissingContractBroker:
+        def qualifyContracts(self, contract):
+            return []
+
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+
+    with pytest.raises(LookupError, match="IBKR contract not found"):
+        toolbox._qualify(
+            MissingContractBroker(),
+            {
+                "symbol": "NO_SUCH_CONTRACT",
+                "sec_type": "STK",
+                "exchange": "SMART",
+                "currency": "USD",
+            },
+        )
