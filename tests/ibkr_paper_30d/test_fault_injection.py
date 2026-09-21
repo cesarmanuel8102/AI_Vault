@@ -20,7 +20,17 @@ NOW = datetime(2026, 9, 20, 16, 0, tzinfo=timezone.utc)
 
 @pytest.fixture
 def harness(tmp_path) -> FaultInjectionHarness:
-    return FaultInjectionHarness(tmp_path / "fault-evidence.jsonl")
+    subject = FaultInjectionHarness(tmp_path / "fault-evidence.jsonl")
+    for scenario in FAULT_SCENARIOS:
+        subject.register(
+            scenario,
+            lambda scenario=scenario: FaultObservation(
+                blocked=True,
+                recovery_required=True,
+                reason_code=f"TESTED_{scenario.upper()}",
+            ),
+        )
+    return subject
 
 
 @pytest.mark.parametrize("scenario", FAULT_SCENARIOS)
