@@ -4,10 +4,15 @@ import argparse
 import json
 import os
 import stat
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 
 from .auditor_export import AuditExporter
+from .auditor_gate_v2 import (
+    PaperIdentityBinding,
+    load_and_evaluate_auditor_gate_v2,
+)
 
 
 def create_audit_export(
@@ -61,6 +66,36 @@ def create_audit_export(
     return result
 
 
+def evaluate_auditor(
+    receipt_path: Path,
+    readonly_report: Path,
+    runtime_manifest_sha256: str,
+    deployment_manifest_sha256: str,
+    probe_sha256: str,
+    probe_manifest_sha256: str,
+) -> dict[str, object]:
+    readonly_bytes = readonly_report.read_bytes()
+    binding = PaperIdentityBinding.from_readonly_receipt(
+        json.loads(readonly_bytes), readonly_bytes
+    )
+    binding = replace(
+        binding,
+        runtime_manifest_sha256=runtime_manifest_sha256,
+        deployment_manifest_sha256=deployment_manifest_sha256,
+        probe_sha256=probe_sha256,
+        probe_manifest_sha256=probe_manifest_sha256,
+    )
+    evaluation = load_and_evaluate_auditor_gate_v2(
+        receipt_path, binding, datetime.now(timezone.utc)
+    )
+    return {
+        "canonical_gate": evaluation.canonical_gate,
+        "compatibility_gate": evaluation.compatibility_gate,
+        "gate_version": evaluation.gate_version,
+        "reason_codes": list(evaluation.reason_codes),
+    }
+
+
 def readiness(report_root: Path) -> dict[str, object]:
     auditor_receipt = report_root / "auditor_gate_v2_receipt.json"
     market_policy = report_root / "market_data_policy_v1.json"
@@ -107,6 +142,14 @@ def main(argv: list[str] | None = None) -> int:
     audit.add_argument("--readonly-report", type=Path, required=True)
     audit.add_argument("--export-root", type=Path, required=True)
 
+    evaluate = sub.add_parser("evaluate-auditor")
+    evaluate.add_argument("--receipt", type=Path, required=True)
+    evaluate.add_argument("--readonly-report", type=Path, required=True)
+    evaluate.add_argument("--runtime-manifest-sha256", required=True)
+    evaluate.add_argument("--deployment-manifest-sha256", required=True)
+    evaluate.add_argument("--probe-sha256", required=True)
+    evaluate.add_argument("--probe-manifest-sha256", required=True)
+
     ready = sub.add_parser("readiness")
     ready.add_argument(
         "--report-root",
@@ -117,6 +160,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "create-audit-export":
         result = create_audit_export(args.readonly_report, args.export_root)
+    elif args.command == "evaluate-auditor":
+        result = evaluate_auditor(
+            args.receipt,
+            args.readonly_report,
+            args.runtime_manifest_sha256,
+            args.deployment_manifest_sha256,
+            args.probe_sha256,
+            args.probe_manifest_sha256,
+        )
     else:
         result = readiness(args.report_root)
     print(json.dumps(result, sort_keys=True))
