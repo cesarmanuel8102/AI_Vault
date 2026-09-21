@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .canonical import canonical_bytes
 from .market_data import MarketDataPolicy
 from .market_observation_ledger import MarketObservationLedger
+from .market_observation_collector import MARKET_OBSERVATION_COLLECTOR_VERSION
 
 
 class DistributionStatistics(BaseModel, frozen=True):
@@ -158,6 +159,7 @@ class MarketPolicyFreezer:
             "accepted_windows": window_manifests,
             "symbols": sorted({record["symbol"] for record in accepted}),
             "source": "IBKR",
+            "collector_version": MARKET_OBSERVATION_COLLECTOR_VERSION,
             "session_classes": sorted({record["market_session"] for record in records}),
             "entitlement_states": sorted(
                 {record["entitlement_state"] for record in records}
@@ -427,7 +429,10 @@ def _load_artifact_payload(path: Path) -> dict[str, Any]:
         actual = hashlib.sha256(canonical_bytes(unsigned)).hexdigest()
         if payload.get("schema") != "MARKET_DATA_POLICY_V1" or claimed != actual:
             raise ValueError
-        MarketPolicyArtifact.model_validate(payload)
+        artifact = MarketPolicyArtifact.model_validate(payload)
+        evidence = payload.get("evidence") or {}
+        if evidence.get("collector_version") != MARKET_OBSERVATION_COLLECTOR_VERSION:
+            raise ValueError("MARKET_POLICY_COLLECTOR_VERSION_STALE")
         return payload
     except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
         raise ValueError("POLICY_INVALID") from exc
