@@ -136,7 +136,7 @@ for ($i = 1; $i -le 3; $i++) {
     Require-File $MarketObservationReport
     $obs = Get-Content -LiteralPath $MarketObservationReport -Raw | ConvertFrom-Json
     if ($obs.status -ne "PASS") {
-        throw ("MARKET_OBSERVATION_NOT_PASS:window=$i:" + (($obs.reason_codes | ForEach-Object { [string]$_ }) -join ","))
+        throw ("MARKET_OBSERVATION_NOT_PASS:window=${i}:" + (($obs.reason_codes | ForEach-Object { [string]$_ }) -join ","))
     }
     if ([int]$obs.rejected_observation_count -ne 0) {
         throw "MARKET_OBSERVATION_HAS_REJECTIONS:window=$i rejected=$($obs.rejected_observation_count)"
