@@ -154,3 +154,43 @@ def test_late_commission_report_appends_adjustment_without_double_counting_fill(
         final = ledger.project()
         assert final.event_count == 2
         assert final.fees == Decimal("1.25")
+
+
+def test_missing_exec_id_then_real_exec_id_does_not_double_count(tmp_path):
+    base = {
+        "orderRef": "codex-ibkr-paper-30d-a-test",
+        "permId": 10,
+        "orderId": 11,
+        "clientId": 12,
+        "execution_time": "2026-09-21T13:31:00Z",
+        "side": "BUY",
+        "quantity": "1",
+        "price": "2.00",
+        "commission": None,
+        "contract": {
+            "conId": 123,
+            "symbol": "XYZ",
+            "secType": "OPT",
+            "multiplier": "100",
+        },
+    }
+    with Database.open(tmp_path / "ledger.sqlite3") as db:
+        ledger = AutonomousExperimentLedger(db)
+
+        first = dict(base)
+        first["execution_id_hash"] = None
+        first_id = ledger.record_fill(first)
+        assert not first_id.startswith("duplicate:")
+
+        second = dict(base)
+        second["execution_id_hash"] = "f" * 64
+        second["commission"] = "1.00"
+        second_id = ledger.record_fill(second)
+        assert not second_id.startswith("duplicate:")
+
+        state = ledger.project()
+        assert state.event_count == 2
+        assert state.equity == Decimal("499.00")
+        assert state.fees == Decimal("1.00")
+        assert len(state.positions) == 1
+        assert state.positions[0].quantity == Decimal("1")
