@@ -201,6 +201,18 @@ class AutonomousPaperExecutor:
                 )
 
             contract = self.toolbox._proposal_contract(ib, proposal)
+            live_quote = self.toolbox.live_contract_quote_evidence(ib, contract)
+            if not live_quote.get("success"):
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("TRADE_CONTRACT_MARKET_DATA_BLOCK", str(live_quote.get("reason") or "UNKNOWN")),
+                    order={},
+                    broker_validation={
+                        **validation.broker_evidence,
+                        "trade_contract_market_data": live_quote,
+                    },
+                )
             order_ref = f"codex-ibkr-paper-30d-a-{bundle.decision_cycle_id[-12:]}"
             order = Order(
                 action=proposal.action.upper(),
@@ -391,6 +403,19 @@ class AutonomousPaperExecutor:
                     reason_codes=("CLOSE_POSITION_SIZE_CHANGED_BEFORE_SEND",),
                     order={},
                     broker_validation=final_validation.broker_evidence,
+                )
+
+            live_quote = self.toolbox.live_contract_quote_evidence(ib, position.contract)
+            if not live_quote.get("success"):
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("TRADE_CONTRACT_MARKET_DATA_BLOCK", str(live_quote.get("reason") or "UNKNOWN")),
+                    order={},
+                    broker_validation={
+                        **final_validation.broker_evidence,
+                        "trade_contract_market_data": live_quote,
+                    },
                 )
 
             order_ref = f"codex-ibkr-paper-30d-p-{bundle.decision_cycle_id[-12:]}"
