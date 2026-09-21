@@ -2,7 +2,7 @@
 [CmdletBinding()]
 param(
     [string]$RepoRoot = "C:\AI_VAULT",
-    [int]$WindowSeconds = 360,
+    [int]$WindowSeconds = 330,
     [int]$GapSeconds = 1500
 )
 
