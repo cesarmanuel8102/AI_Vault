@@ -1,5 +1,9 @@
 name: ibkr-paper-30d-ci
 
+concurrency:
+  group: ibkr-paper-30d-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
