@@ -22,6 +22,9 @@ def test_broker_writes_are_hard_disabled_by_default() -> None:
     assert settings.paper_only is True
     assert settings.broker_write_authorized is False
     assert settings.experiment_allocation == Decimal("500.00")
+    assert settings.options_permission_level == 4
+    assert settings.autonomous_research_enabled is True
+    assert settings.research_round_budget == 8
 
 
 def test_broker_write_enable_attempt_is_rejected() -> None:
