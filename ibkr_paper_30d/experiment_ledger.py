@@ -69,21 +69,40 @@ class AutonomousExperimentLedger:
         self.db = db
         self.allocation = _money(allocation)
 
-    def _events(self) -> list[dict[str, Any]]:
+    def _events(self) -> tuple[list[dict[str, Any]], list[str]]:
         rows = self.db.execute(
-            "SELECT event_type,payload_json FROM subledger_events ORDER BY sequence"
+            "SELECT event_type,payload_json,payload_sha256,previous_event_sha256,event_sha256 "
+            "FROM autonomous_ledger_events ORDER BY sequence"
         ).fetchall()
         events: list[dict[str, Any]] = []
-        for event_type, payload_json in rows:
+        reasons: list[str] = []
+        previous: str | None = None
+        for event_type, payload_json, payload_sha, stored_previous, event_sha in rows:
             try:
-                payload = json.loads(payload_json)
+                payload = json.loads(str(payload_json))
             except (TypeError, json.JSONDecodeError):
-                continue
+                reasons.append("LEDGER_EVENT_JSON_INVALID")
+                break
             if payload.get("schema") != self.SCHEMA:
-                continue
-            payload["event_type"] = event_type
+                reasons.append("LEDGER_EVENT_SCHEMA_INVALID")
+                break
+            if sha256_json(payload) != str(payload_sha):
+                reasons.append("LEDGER_PAYLOAD_HASH_MISMATCH")
+                break
+            normalized_previous = str(stored_previous) if stored_previous is not None else None
+            if normalized_previous != previous:
+                reasons.append("LEDGER_CHAIN_PREDECESSOR_MISMATCH")
+                break
+            expected_event_sha = sha256_json(
+                {"previous_event_sha256": previous, "payload": payload}
+            )
+            if expected_event_sha != str(event_sha):
+                reasons.append("LEDGER_EVENT_HASH_MISMATCH")
+                break
+            payload["event_type"] = str(event_type)
             events.append(payload)
-        return events
+            previous = str(event_sha)
+        return events, reasons
 
     def append(self, event_type: str, payload: dict[str, Any]) -> str:
         body = {
@@ -92,30 +111,69 @@ class AutonomousExperimentLedger:
             **payload,
         }
         event_id = str(new_uuid7())
-        self.db.execute(
-            "INSERT INTO subledger_events(event_id,event_type,payload_json,payload_sha256,created_at_utc) "
-            "VALUES(?,?,?,?,?)",
-            (
-                event_id,
-                event_type,
-                canonical_bytes(body).decode("utf-8"),
-                sha256_json(body),
-                utc_now(),
-            ),
-        )
+        payload_json = canonical_bytes(body).decode("utf-8")
+        payload_sha = sha256_json(body)
+        with self.db.transaction() as tx:
+            row = tx.execute(
+                "SELECT event_sha256 FROM autonomous_ledger_events "
+                "ORDER BY sequence DESC LIMIT 1"
+            ).fetchone()
+            previous = str(row[0]) if row is not None else None
+            event_sha = sha256_json(
+                {"previous_event_sha256": previous, "payload": body}
+            )
+            tx.execute(
+                "INSERT INTO autonomous_ledger_events("
+                "event_id,event_type,payload_json,payload_sha256,"
+                "previous_event_sha256,event_sha256,created_at_utc"
+                ") VALUES(?,?,?,?,?,?,?)",
+                (
+                    event_id,
+                    event_type,
+                    payload_json,
+                    payload_sha,
+                    previous,
+                    event_sha,
+                    utc_now(),
+                ),
+            )
         return event_id
 
     def _recorded_execution_hashes(self) -> set[str]:
+        events, _ = self._events()
         return {
             str(event.get("execution_id_hash"))
-            for event in self._events()
+            for event in events
             if event.get("event_type") == "BROKER_FILL"
             and event.get("execution_id_hash")
         }
 
+    @staticmethod
+    def _execution_hash(fill: dict[str, Any]) -> str:
+        supplied = str(fill.get("execution_id_hash") or "").strip()
+        if supplied:
+            return supplied
+        contract = fill.get("contract") or {}
+        fallback = {
+            "schema": "SYNTHETIC_EXECUTION_ID_V1",
+            "contract_id": int(contract.get("conId") or fill.get("contract_id") or 0),
+            "side": str(fill.get("side") or fill.get("action") or "").upper(),
+            "quantity": str(fill.get("quantity") or fill.get("shares") or ""),
+            "price": str(fill.get("price") or ""),
+            "multiplier": str(contract.get("multiplier") or fill.get("multiplier") or "1"),
+            "order_ref": str(fill.get("orderRef") or ""),
+            "perm_id": int(fill.get("permId") or 0),
+            "order_id": int(fill.get("orderId") or 0),
+            "client_id": int(fill.get("clientId") or 0),
+            "execution_time": str(fill.get("execution_time") or ""),
+            "cum_qty": str(fill.get("cumQty") or ""),
+            "avg_price": str(fill.get("avgPrice") or ""),
+        }
+        return sha256_json(fallback)
+
     def record_fill(self, fill: dict[str, Any]) -> str:
-        execution_hash = str(fill.get("execution_id_hash") or "")
-        if execution_hash and execution_hash in self._recorded_execution_hashes():
+        execution_hash = self._execution_hash(fill)
+        if execution_hash in self._recorded_execution_hashes():
             return f"duplicate:{execution_hash}"
         side = str(fill.get("side") or fill.get("action") or "").upper()
         if side not in {"BUY", "SELL"}:
@@ -143,7 +201,12 @@ class AutonomousExperimentLedger:
                 "quantity": str(quantity),
                 "price": str(price),
                 "commission": str(commission),
-                "execution_id_hash": fill.get("execution_id_hash"),
+                "execution_id_hash": execution_hash,
+                "orderRef": str(fill.get("orderRef") or ""),
+                "permId": int(fill.get("permId") or 0),
+                "orderId": int(fill.get("orderId") or 0),
+                "clientId": int(fill.get("clientId") or 0),
+                "execution_time": str(fill.get("execution_time") or ""),
             },
         )
 
@@ -190,7 +253,8 @@ class AutonomousExperimentLedger:
                 market += position["quantity"] * mark * position["multiplier"]
             return cash + market
 
-        events = self._events()
+        events, integrity_reasons = self._events()
+        reasons.extend(integrity_reasons)
         for event in events:
             event_type = event.get("event_type")
             if event_type == "BROKER_FILL":
