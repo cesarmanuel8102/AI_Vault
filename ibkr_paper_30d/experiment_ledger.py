@@ -164,13 +164,10 @@ class AutonomousExperimentLedger:
         return total if found else None
 
     @staticmethod
-    def _execution_hash(fill: dict[str, Any]) -> str:
-        supplied = str(fill.get("execution_id_hash") or "").strip()
-        if supplied:
-            return supplied
+    def _execution_fingerprint(fill: dict[str, Any]) -> str:
         contract = fill.get("contract") or {}
-        fallback = {
-            "schema": "SYNTHETIC_EXECUTION_ID_V1",
+        payload = {
+            "schema": "EXECUTION_FINGERPRINT_V1",
             "contract_id": int(contract.get("conId") or fill.get("contract_id") or 0),
             "side": str(fill.get("side") or fill.get("action") or "").upper(),
             "quantity": str(fill.get("quantity") or fill.get("shares") or ""),
@@ -181,13 +178,38 @@ class AutonomousExperimentLedger:
             "order_id": int(fill.get("orderId") or 0),
             "client_id": int(fill.get("clientId") or 0),
             "execution_time": str(fill.get("execution_time") or ""),
-            "cum_qty": str(fill.get("cumQty") or ""),
-            "avg_price": str(fill.get("avgPrice") or ""),
         }
-        return sha256_json(fallback)
+        return sha256_json(payload)
+
+    @classmethod
+    def _execution_hash(cls, fill: dict[str, Any]) -> str:
+        supplied = str(fill.get("execution_id_hash") or "").strip()
+        if supplied:
+            return supplied
+        return cls._execution_fingerprint(fill)
+
+    def _find_existing_execution(
+        self,
+        *,
+        execution_hash: str,
+        execution_fingerprint: str,
+    ) -> tuple[str, Decimal] | None:
+        events, _ = self._events()
+        for event in events:
+            if event.get("event_type") != "BROKER_FILL":
+                continue
+            stored_hash = str(event.get("execution_id_hash") or "")
+            stored_fingerprint = str(event.get("execution_fingerprint") or "")
+            if not stored_fingerprint:
+                stored_fingerprint = self._execution_fingerprint(event)
+            if stored_hash == execution_hash or stored_fingerprint == execution_fingerprint:
+                effective = self._effective_commission_for_execution(stored_hash)
+                return stored_hash, effective or Decimal("0")
+        return None
 
     def record_fill(self, fill: dict[str, Any]) -> str:
         execution_hash = self._execution_hash(fill)
+        execution_fingerprint = self._execution_fingerprint(fill)
         raw_commission = fill.get("commission")
         commission_known = raw_commission is not None and str(raw_commission).strip() != ""
         incoming_commission = (
@@ -195,19 +217,23 @@ class AutonomousExperimentLedger:
             if commission_known
             else Decimal("0")
         )
-        existing_commission = self._effective_commission_for_execution(execution_hash)
-        if existing_commission is not None:
+        existing = self._find_existing_execution(
+            execution_hash=execution_hash,
+            execution_fingerprint=execution_fingerprint,
+        )
+        if existing is not None:
+            canonical_execution_hash, existing_commission = existing
             if commission_known and incoming_commission != existing_commission:
                 delta = incoming_commission - existing_commission
                 return self.append(
                     "BROKER_COMMISSION_ADJUSTMENT",
                     {
-                        "execution_id_hash": execution_hash,
+                        "execution_id_hash": canonical_execution_hash,
                         "commission_delta": str(delta),
                         "effective_commission": str(incoming_commission),
                     },
                 )
-            return f"duplicate:{execution_hash}"
+            return f"duplicate:{canonical_execution_hash}"
         side = str(fill.get("side") or fill.get("action") or "").upper()
         if side not in {"BUY", "SELL"}:
             raise ValueError("fill side must be BUY or SELL")
@@ -235,6 +261,7 @@ class AutonomousExperimentLedger:
                 "price": str(price),
                 "commission": str(commission),
                 "execution_id_hash": execution_hash,
+                "execution_fingerprint": execution_fingerprint,
                 "orderRef": str(fill.get("orderRef") or ""),
                 "permId": int(fill.get("permId") or 0),
                 "orderId": int(fill.get("orderId") or 0),
