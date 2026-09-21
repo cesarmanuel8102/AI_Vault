@@ -36,12 +36,15 @@ class AutonomousStateBuilder:
         toolbox: IBKRResearchToolbox,
         *,
         allocation: Decimal = Decimal("500.00"),
-        experiment_start_utc: datetime,
+        experiment_start_utc: datetime | None,
         duration_days: int = 30,
         kill_switch_state: str | None = None,
         runtime_market_gate: RuntimeMarketDataGate | None = None,
     ) -> None:
-        if experiment_start_utc.tzinfo is None or experiment_start_utc.utcoffset() is None:
+        if (
+            experiment_start_utc is not None
+            and (experiment_start_utc.tzinfo is None or experiment_start_utc.utcoffset() is None)
+        ):
             raise ValueError("experiment_start_utc must be timezone-aware")
         if duration_days <= 0:
             raise ValueError("duration_days must be positive")
