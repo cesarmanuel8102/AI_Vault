@@ -324,7 +324,7 @@ class CodexAutonomousCLIProvider:
     @staticmethod
     def _assert_effective_model(output: str, requested_model: str) -> None:
         observed: set[str] = set()
-        model_keys = {"model", "model_name", "model_id", "effective_model"}
+        model_keys = {"model", "model_name", "model_id", "effective_model", "actual_model"}
 
         def collect(value: object) -> None:
             if isinstance(value, dict):
