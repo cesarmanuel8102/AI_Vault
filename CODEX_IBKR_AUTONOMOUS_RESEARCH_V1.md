@@ -79,6 +79,7 @@ The research toolbox provides primitive, Codex-selected access to:
 - account state;
 - positions;
 - open orders;
+- recent broker executions/fills for delayed-fill reconciliation;
 - IBKR market scanners;
 - contract resolution;
 - quotes and option Greeks;
@@ -109,6 +110,45 @@ Valid final decisions include:
 - PAUSE_FOR_REVIEW
 
 NO_TRADE is valid and is not penalized by the runtime.
+
+## Dynamic experiment state
+
+The autonomous route maintains an isolated append-only experiment ledger that
+accounts for actual broker fills by contract id, side, quantity, price,
+commission and contract multiplier.
+
+This supports stocks, long options and multi-leg option positions without
+borrowing unrelated account equity into the experiment.
+
+Before every decision cycle the runtime:
+
+- reconciles delayed IBKR executions by experiment orderRef;
+- deduplicates fills by execution id hash;
+- marks tracked open positions with current broker quotes;
+- recomputes isolated cash, market value and equity;
+- recomputes high-water mark and drawdown for measurement only;
+- reconciles tracked position quantity against IBKR;
+- filters open orders to experiment orderRef values only;
+- injects fresh current equity, broker state and Level-4 context into Codex;
+- injects experiment start/end timestamps and remaining time;
+- keeps candidate_screen_results empty.
+
+Drawdown is observed for measurement and learning. It is not a fixed stop.
+
+## Operating cadence
+
+The continuous service uses these default observation clocks:
+
+- normal opportunity-discovery cycle: every 300 seconds;
+- open-position review cycle: every 60 seconds;
+- immediate position-state reassessment after a broker fill.
+
+These are observation/reasoning cadences, not mandatory trade frequencies.
+Codex may return NO_TRADE or MONITOR_POSITION on any cycle.
+
+The service terminates when isolated experiment equity reaches zero or the
+30-day clock expires. Reconciliation or kill-switch failure blocks new
+decisions without substituting a strategy decision.
 
 ## Position management
 
@@ -155,7 +195,9 @@ The runtime persists:
 - audited native-tool activity metadata;
 - broker feasibility evidence;
 - final decision/proposal or position action;
-- canonical trader result hash.
+- canonical trader result hash;
+- multiplier-aware isolated fill/mark ledger;
+- post-execution isolated equity snapshot.
 
 This permits later attribution of performance to research quality, sizing,
 execution, luck and realized market outcomes.
@@ -166,3 +208,15 @@ Implementation does not start the 30-day experiment.
 
 Existing auditor, market-data and lifecycle readiness gates remain authoritative
 until explicitly satisfied and the paper executor is deliberately armed.
+
+
+## Validation
+
+Current autonomous implementation validation:
+
+- autonomous/regression test suite: 56 passed, 0 failed;
+- autonomous module compilation: PASS;
+- no fixed SPY/QQQ/AAPL/IWM/MSFT universe in the autonomous route;
+- no 5%/15%/20% or equivalent fixed strategy-risk limits in the autonomous route;
+- frozen candidate field retained only as an empty compatibility field;
+- paper executor remains unarmed by default.
