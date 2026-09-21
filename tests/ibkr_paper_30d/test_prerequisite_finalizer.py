@@ -29,6 +29,11 @@ def test_prerequisite_scripts_exist_and_never_arm_trading():
     assert "Enable-LocalUser -Name $AuditorUser" in finalizer
     assert "Disable-LocalUser -Name $AuditorUser" in finalizer
     assert "UNSAFE_ARGUMENT_VALUE" in finalizer
+    assert "[char]36" in finalizer  # $ interpolation
+    assert "[char]96" in finalizer  # PowerShell escape/backtick
+    assert "[char]59" in finalizer  # command separator
+    assert "[char]38" in finalizer  # invocation/control operator
+    assert "[char]124" in finalizer  # pipeline
     assert "RemotePort 4001,4002" in finalizer
     assert "RemoteAddress 127.0.0.1,::1" in finalizer
     assert "-Program $WindowsPowerShell" not in finalizer
