@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import Any
 
 from .autonomous_research import (
+    AutonomousPositionAction,
     AutonomousTradeProposal,
     ProposalValidation,
     ResearchRequest,
@@ -12,7 +13,7 @@ from .autonomous_research import (
     ResearchTool,
 )
 from .risk import CapitalBoundaryInputs, CapitalBoundaryRiskEngine, RiskResult
-from .trader_invocation import TraderInputBundle
+from .trader_invocation import TraderDecision, TraderInputBundle
 
 
 PAPER_HOSTS = {"127.0.0.1", "localhost"}
@@ -183,6 +184,104 @@ class IBKRResearchToolbox:
             return parsed if parsed.is_finite() else None
         except Exception:
             return None
+
+    def validate_position_action(
+        self,
+        action: AutonomousPositionAction,
+        bundle: TraderInputBundle,
+        decision: TraderDecision,
+    ) -> ProposalValidation:
+        from ib_insync import Order
+
+        ib = self._connect()
+        try:
+            matched = self._resolve_open_position(ib, action)
+            if matched is None:
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("POSITION_NOT_FOUND",),
+                    broker_evidence={},
+                )
+            position = Decimal(str(matched.position))
+            required_action = "SELL" if position > 0 else "BUY"
+            if action.action.upper() != required_action:
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("POSITION_ACTION_WOULD_INCREASE_EXPOSURE",),
+                    broker_evidence={"position": str(position)},
+                )
+            quantity = action.quantity
+            current_size = abs(position)
+            if quantity > current_size:
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("POSITION_ACTION_EXCEEDS_OPEN_SIZE",),
+                    broker_evidence={"position": str(position)},
+                )
+            if decision == TraderDecision.CLOSE_POSITION and quantity != current_size:
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("CLOSE_POSITION_REQUIRES_FULL_SIZE",),
+                    broker_evidence={"position": str(position)},
+                )
+            if decision == TraderDecision.REDUCE_POSITION and quantity >= current_size:
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("REDUCE_POSITION_REQUIRES_PARTIAL_SIZE",),
+                    broker_evidence={"position": str(position)},
+                )
+
+            order = Order(
+                action=action.action.upper(),
+                orderType=action.order_type.upper(),
+                totalQuantity=float(quantity),
+                transmit=False,
+                whatIf=True,
+            )
+            if action.limit_price is not None:
+                order.lmtPrice = float(action.limit_price)
+            state = ib.whatIfOrder(matched.contract, order)
+            evidence = {
+                "contract": self._serialize_contract(matched.contract),
+                "current_position": str(position),
+                "requested_quantity": str(quantity),
+                "whatIf": True,
+                "commission": getattr(state, "commission", None),
+                "warningText": getattr(state, "warningText", None),
+            }
+            warning = str(evidence.get("warningText") or "").lower()
+            if any(token in warning for token in ("not allowed", "cannot", "rejected")):
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("BROKER_FEASIBILITY_WARNING_BLOCK",),
+                    broker_evidence=evidence,
+                )
+            return ProposalValidation(
+                passed=True,
+                reason_codes=(),
+                broker_evidence=evidence,
+            )
+        finally:
+            ib.disconnect()
+
+    @staticmethod
+    def _resolve_open_position(ib: Any, action: AutonomousPositionAction):
+        for position in ib.positions():
+            contract = position.contract
+            if action.contract_id is not None and int(getattr(contract, "conId", 0) or 0) == action.contract_id:
+                return position
+            if str(getattr(contract, "symbol", "")).upper() != action.symbol.upper():
+                continue
+            if str(getattr(contract, "secType", "")).upper() != action.sec_type.upper():
+                continue
+            if action.expiry and str(getattr(contract, "lastTradeDateOrContractMonth", "")) != action.expiry:
+                continue
+            if action.strike is not None and Decimal(str(getattr(contract, "strike", 0))) != action.strike:
+                continue
+            if action.right and str(getattr(contract, "right", "")).upper() != action.right.upper():
+                continue
+            return position
+        return None
 
     def _connect(self):
         from ib_insync import IB
