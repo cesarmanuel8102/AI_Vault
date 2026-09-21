@@ -24,6 +24,14 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pytest "pydantic>=2,<3"
 
+      - name: Parse preflight PowerShell scripts
+        shell: pwsh
+        run: |
+          $errors = @()
+          [void][System.Management.Automation.Language.Parser]::ParseFile("FINALIZE_IBKR_AUDITOR_ADMIN.ps1", [ref]$null, [ref]$errors)
+          [void][System.Management.Automation.Language.Parser]::ParseFile("FINALIZE_IBKR_MARKET_DATA.ps1", [ref]$null, [ref]$errors)
+          if ($errors.Count -gt 0) { $errors | Format-List | Out-String | Write-Error; exit 1 }
+
       - name: Compile autonomous modules
         run: |
           python -m py_compile ibkr_paper_30d/autonomous_research.py
