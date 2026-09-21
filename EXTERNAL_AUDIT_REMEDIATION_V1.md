@@ -75,8 +75,45 @@ create new post-horizon risk merely to flatten mechanically.
 
 ## CI closure
 
-Final Windows/Linux counts and final remediation SHA must be inserted only
-after both full-suite workflows pass on the same HEAD.
+Validated code SHA:
+
+`fbb416e6c1a6f5cde1d4c3f9dd2f1f08d85cfd5c`
+
+Full-suite validation on that exact SHA:
+
+- Linux / Python 3.11: **417 passed, 0 failed, 99 skipped**.
+- Windows / Python 3.11: **514 passed, 0 failed, 7 skipped**.
+- Windows preflight PowerShell parsing: PASS.
+- Windows Phase 0 security tests: PASS.
+- Windows Phase 1 baseline tests: PASS.
+- Windows import smoke: PASS.
+
+Additional post-audit hardening included in this validated SHA:
+
+- Fresh pre-trade contract evidence verifies the **actual**
+  `Ticker.marketDataType == 1` (LIVE), not merely that LIVE data was requested.
+- BAG orders require either a fresh direct combo quote or fresh LIVE evidence
+  for every combo leg.
+- Auditor receipt freshness and experiment horizon checks use IBKR broker
+  server time in the autonomous service rather than trusting the local wall
+  clock.
+- Owner authorization is bound to the persisted experiment clock and is
+  re-checked immediately before broker transmission.
+- The executor performs an additional operator-control recheck after the
+  append-only order-registry write and immediately before `placeOrder`.
+- Immediate fills inherit the issued order identity when the execution callback
+  omits orderRef/orderId/permId metadata.
+- Broker-assigned `permId` is appended to the experiment order registry after
+  submission, preserving both pre-send client identity and post-send broker
+  identity.
+- Late commission reports are reconciled via append-only commission adjustment
+  events without double-counting the fill.
+- Synthetic fill identities are reconciled with later real broker execIds
+  without duplicating economic exposure.
+
+This file remains an index, not proof. The external re-audit must independently
+verify the code at or after the validated code SHA and must not treat these
+counts as evidence of correctness beyond test execution.
 
 ## External re-audit rule
 
