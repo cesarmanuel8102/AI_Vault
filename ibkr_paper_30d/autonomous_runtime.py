@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict
 from .autonomous_research import AutonomousResearchProvider
 from .canonical import sha256_json
 from .ibkr_research import IBKRResearchToolbox
+from .liability import assess_proposal_liability
 from .persistence import Database
 from .repositories import utc_now
 from .risk import RiskEngine, RiskInputs, RiskResult
@@ -32,6 +33,8 @@ class AutonomousCycleResult(BaseModel, frozen=True):
     research_evidence_sha256: str
     risk_gate: str
     risk_reason_codes: tuple[str, ...]
+    liability_gate: str
+    liability_reason_codes: tuple[str, ...]
     broker_what_if_seen: bool
     capital_feasibility_seen: bool
     execution_ready: bool
@@ -183,6 +186,8 @@ class AutonomousDecisionRuntime:
         post_reasons: list[str] = []
         risk_gate = "NOT_APPLICABLE"
         risk_reasons: tuple[str, ...] = ()
+        liability_gate = "NOT_APPLICABLE"
+        liability_reasons: tuple[str, ...] = ()
         what_if_seen = self._successful_tool_seen(evidence, "what_if_order")
         capital_seen = self._successful_tool_seen(evidence, "capital_feasibility")
 
@@ -190,6 +195,12 @@ class AutonomousDecisionRuntime:
             if not isinstance(proposal, dict):
                 post_reasons.append("PROPOSAL_PAYLOAD_MISSING")
             else:
+                liability = assess_proposal_liability(proposal)
+                liability_gate = liability.status
+                liability_reasons = liability.reason_codes
+                if not liability.structurally_bounded:
+                    post_reasons.extend(liability.reason_codes)
+
                 maximum_loss_raw = proposal.get("maximum_loss")
                 if maximum_loss_raw is None:
                     post_reasons.append("MAXIMUM_LOSS_REQUIRED")
@@ -228,6 +239,7 @@ class AutonomousDecisionRuntime:
             validated.accepted
             and validated.effective_decision == "PROPOSE_TRADE"
             and risk_gate == RiskResult.PASS.value
+            and liability_gate == "PASS"
             and capital_seen
             and what_if_seen
             and not post_reasons
@@ -244,6 +256,8 @@ class AutonomousDecisionRuntime:
             research_evidence_sha256=sha256_json(evidence),
             risk_gate=risk_gate,
             risk_reason_codes=risk_reasons,
+            liability_gate=liability_gate,
+            liability_reason_codes=liability_reasons,
             broker_what_if_seen=what_if_seen,
             capital_feasibility_seen=capital_seen,
             execution_ready=execution_ready,
