@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .canonical import canonical_bytes
 from .market_data import MarketDataPolicy
 from .market_observation_ledger import MarketObservationLedger
+from .market_observation_collector import MARKET_OBSERVATION_COLLECTOR_VERSION
 
 
 class DistributionStatistics(BaseModel, frozen=True):
@@ -150,14 +151,15 @@ class MarketPolicyFreezer:
             "ledger_record_count": len(records),
             "ledger_last_record_sha256": verification.last_record_sha256,
             "evidence_start_utc": min(
-                record["local_receipt_timestamp"] for record in accepted
+                record["broker_quote_timestamp"] for record in accepted
             ),
             "evidence_end_utc": max(
-                record["local_receipt_timestamp"] for record in accepted
+                record["broker_quote_timestamp"] for record in accepted
             ),
             "accepted_windows": window_manifests,
             "symbols": sorted({record["symbol"] for record in accepted}),
             "source": "IBKR",
+            "collector_version": MARKET_OBSERVATION_COLLECTOR_VERSION,
             "session_classes": sorted({record["market_session"] for record in records}),
             "entitlement_states": sorted(
                 {record["entitlement_state"] for record in records}
@@ -314,12 +316,17 @@ class MarketPolicyFreezer:
         ):
             reasons.append("SYMBOL_SET_INSUFFICIENT")
         if accepted:
-            times = sorted(
-                _parse_time(str(record["local_receipt_timestamp"]))
+            broker_times = [
+                _parse_time(str(record["broker_quote_timestamp"]))
                 for record in accepted
-            )
-            if times[-1] - times[0] < _minutes(65):
-                reasons.append("EVIDENCE_SPAN_INSUFFICIENT")
+                if record.get("broker_quote_timestamp")
+            ]
+            if len(broker_times) != len(accepted):
+                reasons.append("BROKER_TIMESTAMP_EVIDENCE_INCOMPLETE")
+            else:
+                broker_times.sort()
+                if broker_times[-1] - broker_times[0] < _minutes(65):
+                    reasons.append("EVIDENCE_SPAN_INSUFFICIENT")
         entitlement_by_symbol: dict[str, set[str]] = {}
         for record in records:
             entitlement_by_symbol.setdefault(str(record.get("symbol")), set()).add(
@@ -422,7 +429,10 @@ def _load_artifact_payload(path: Path) -> dict[str, Any]:
         actual = hashlib.sha256(canonical_bytes(unsigned)).hexdigest()
         if payload.get("schema") != "MARKET_DATA_POLICY_V1" or claimed != actual:
             raise ValueError
-        MarketPolicyArtifact.model_validate(payload)
+        artifact = MarketPolicyArtifact.model_validate(payload)
+        evidence = payload.get("evidence") or {}
+        if evidence.get("collector_version") != MARKET_OBSERVATION_COLLECTOR_VERSION:
+            raise ValueError("MARKET_POLICY_COLLECTOR_VERSION_STALE")
         return payload
     except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
         raise ValueError("POLICY_INVALID") from exc

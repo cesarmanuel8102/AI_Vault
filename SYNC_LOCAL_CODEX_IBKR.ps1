@@ -84,6 +84,9 @@ $RequiredFiles = @(
     "ibkr_paper_30d\autonomous_state.py",
     "ibkr_paper_30d\autonomous_service.py",
     "ibkr_paper_30d\experiment_ledger.py",
+    "EXTERNAL_AUDIT_REMEDIATION_V1.md",
+    "ibkr_paper_30d\runtime_integrity.py",
+    "ibkr_paper_30d\experiment_control.py",
     "ibkr_paper_30d\prerequisite_tools.py"
 )
 $Missing = @($RequiredFiles | Where-Object {
@@ -95,23 +98,7 @@ if ($Missing.Count -ne 0) {
 
 $TestsPassed = $null
 if (-not $SkipTests) {
-    $TestFiles = @(
-        "tests/ibkr_paper_30d/test_autonomous_research.py",
-        "tests/ibkr_paper_30d/test_capital_boundary_risk.py",
-        "tests/ibkr_paper_30d/test_autonomous_execution.py",
-        "tests/ibkr_paper_30d/test_autonomous_runtime.py",
-        "tests/ibkr_paper_30d/test_experiment_ledger.py",
-        "tests/ibkr_paper_30d/test_autonomous_state.py",
-        "tests/ibkr_paper_30d/test_autonomous_service.py",
-        "tests/ibkr_paper_30d/test_autonomous_architecture_contract.py",
-        "tests/ibkr_paper_30d/test_autonomous_codex_provider.py",
-        "tests/ibkr_paper_30d/test_bounded_level4_structures.py",
-        "tests/ibkr_paper_30d/test_prerequisite_tools.py",
-        "tests/ibkr_paper_30d/test_market_observation_collector.py",
-        "tests/ibkr_paper_30d/test_risk.py",
-        "tests/ibkr_paper_30d/test_trader_invocation.py"
-    )
-    $PytestOutput = @(& python -m pytest -q @TestFiles 2>&1)
+    $PytestOutput = @(& python -m pytest -q tests/ibkr_paper_30d 2>&1)
     if ($LASTEXITCODE -ne 0) {
         throw "LOCAL_VALIDATION_FAILED:$($PytestOutput -join ' | ')"
     }
@@ -120,6 +107,23 @@ if (-not $SkipTests) {
 
 $ReceiptRoot = "C:\ProgramData\CodexIBKR"
 [void](New-Item -ItemType Directory -Path $ReceiptRoot -Force)
+$ReceiptAcl = Get-Acl -LiteralPath $ReceiptRoot
+$ReceiptAcl.SetAccessRuleProtection($true, $false)
+$ReceiptAcl.Access | ForEach-Object { [void]$ReceiptAcl.RemoveAccessRuleSpecific($_) }
+$Administrators = New-Object Security.Principal.NTAccount("BUILTIN", "Administrators")
+$System = New-Object Security.Principal.NTAccount("NT AUTHORITY", "SYSTEM")
+$CurrentUser = [Security.Principal.WindowsIdentity]::GetCurrent().User
+foreach ($Identity in @($Administrators, $System, $CurrentUser)) {
+    $Rule = New-Object Security.AccessControl.FileSystemAccessRule(
+        $Identity,
+        "FullControl",
+        "ContainerInherit,ObjectInherit",
+        "None",
+        "Allow"
+    )
+    $ReceiptAcl.AddAccessRule($Rule)
+}
+Set-Acl -LiteralPath $ReceiptRoot -AclObject $ReceiptAcl
 $ReceiptPath = Join-Path $ReceiptRoot "local_repository_sync_receipt.json"
 $RequiredHashes = [ordered]@{}
 foreach ($Relative in $RequiredFiles) {

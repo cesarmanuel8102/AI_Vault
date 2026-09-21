@@ -24,6 +24,7 @@ $RequiredTargets = @(
     "EXECUTION_LOCK_ACCESS",
     "LIVE_DATABASE_MUTATION",
     "BROKER_WRITE_PATH_ACCESS",
+    "BROKER_NETWORK_SOCKET_ACCESS",
     "TRADER_CONTEXT_ACCESS",
     "AUDIT_INPUT_MUTATION",
     "IMMUTABLE_EXPORT_READ",
@@ -212,10 +213,10 @@ function Get-PathValidation {
             return [ordered]@{
                 normalized_path = $Full
                 approved_root = $MatchedRoot
-                reparse_state = "OPAQUE_AFTER_OS_DENIAL"
+                reparse_state = "PATH_CHAIN_NOT_FULLY_INSPECTABLE"
                 path_chain = $PathChain
-                valid = $true
-                reason = $(if ($Cursor -ieq $Full) { "ACCESS_DENIED_AT_TARGET" } else { "ACCESS_DENIED_AT_ANCESTOR" })
+                valid = $false
+                reason = "TARGET_PATH_CHAIN_NOT_FULLY_INSPECTABLE"
             }
         }
         catch [System.Management.Automation.ItemNotFoundException] {
@@ -332,7 +333,9 @@ function Test-BrokerNetworkCapability {
         }
     }
     $Values = @($Outcomes.Values)
-    $Status = $(if ($Values -contains "CONNECTED") { "ALLOWED" } elseif (($Values | Where-Object { $_ -ne "DENIED" }).Count -eq 0) { "DENIED" } else { "NOT_PROVEN" })
+    $Unsafe = @($Values | Where-Object { $_ -in @("CONNECTED", "OTHER") })
+    $Denied = @($Values | Where-Object { $_ -eq "DENIED" })
+    $Status = $(if ($Unsafe.Count -gt 0) { "ALLOWED" } elseif ($Denied.Count -gt 0) { "DENIED" } else { "NOT_PROVEN" })
     return [ordered]@{ status = $Status; network_endpoints = $Outcomes }
 }
 
@@ -433,12 +436,12 @@ foreach ($Name in $RequiredTargets) {
         $Results[$Name] = Test-ReadCapability -Target $Resolved[$Name]
     }
     elseif ($Name -eq "BROKER_WRITE_PATH_ACCESS") {
-        $FileResult = Test-MutationCapability -Target $Resolved[$Name]
+        $Results[$Name] = Test-MutationCapability -Target $Resolved[$Name]
+    }
+    elseif ($Name -eq "BROKER_NETWORK_SOCKET_ACCESS") {
         $NetworkResult = Test-BrokerNetworkCapability
         $NetworkEndpoints = $NetworkResult.network_endpoints
-        if ($FileResult -eq "ALLOWED" -or $NetworkResult.status -eq "ALLOWED") { $Results[$Name] = "ALLOWED" }
-        elseif ($FileResult -eq "DENIED" -and $NetworkResult.status -eq "DENIED") { $Results[$Name] = "DENIED" }
-        else { $Results[$Name] = "NOT_PROVEN" }
+        $Results[$Name] = $NetworkResult.status
     }
     elseif ($Name -ne "AUDITOR_REPORT_WRITE") {
         $Results[$Name] = Test-MutationCapability -Target $Resolved[$Name]

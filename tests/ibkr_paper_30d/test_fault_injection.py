@@ -8,6 +8,7 @@ import pytest
 
 from ibkr_paper_30d.reporting import (
     FAULT_SCENARIOS,
+    FAULT_SCENARIO_TEST_MATRIX,
     FaultInjectionHarness,
     FaultObservation,
     build_fault_report,
@@ -20,7 +21,18 @@ NOW = datetime(2026, 9, 20, 16, 0, tzinfo=timezone.utc)
 
 @pytest.fixture
 def harness(tmp_path) -> FaultInjectionHarness:
-    return FaultInjectionHarness(tmp_path / "fault-evidence.jsonl")
+    subject = FaultInjectionHarness(tmp_path / "fault-evidence.jsonl")
+    for scenario in FAULT_SCENARIOS:
+        subject.register(
+            scenario,
+            lambda scenario=scenario: FaultObservation(
+                blocked=True,
+                recovery_required=True,
+                reason_code=f"TESTED_{scenario.upper()}",
+            ),
+            production_test_nodeid=FAULT_SCENARIO_TEST_MATRIX[scenario],
+        )
+    return subject
 
 
 @pytest.mark.parametrize("scenario", FAULT_SCENARIOS)
@@ -73,6 +85,7 @@ def test_fault_hook_that_does_not_block_causes_failed_result(harness) -> None:
             recovery_required=False,
             reason_code="UNSAFE_CONTINUATION",
         ),
+        production_test_nodeid=FAULT_SCENARIO_TEST_MATRIX["market_data_loss"],
     )
 
     result = harness.run("market_data_loss")
@@ -133,3 +146,22 @@ def test_reports_bind_test_evidence_and_redact_security_detail(harness, tmp_path
     assert reports.fault_report_sha256 == hashlib.sha256(
         reports.fault_report.read_bytes()
     ).hexdigest()
+
+
+def test_fault_matrix_is_bound_to_existing_product_test_nodeids() -> None:
+    root = __import__("pathlib").Path(__file__).resolve().parents[2]
+    assert set(FAULT_SCENARIO_TEST_MATRIX) == set(FAULT_SCENARIOS)
+    for scenario, nodeid in FAULT_SCENARIO_TEST_MATRIX.items():
+        relative, function_name = nodeid.split("::", 1)
+        source_path = root / relative
+        assert source_path.is_file(), (scenario, source_path)
+        source = source_path.read_text(encoding="utf-8")
+        assert f"def {function_name}(" in source, (scenario, nodeid)
+
+
+def test_unregistered_handler_cannot_be_reported_as_production_pass(tmp_path) -> None:
+    subject = FaultInjectionHarness(tmp_path / "unregistered.jsonl")
+    result = subject.run("broker_disconnect")
+    assert result.passed is False
+    assert result.production_test_nodeid is None
+    assert result.reason_code == "FAULT_HANDLER_NOT_REGISTERED"

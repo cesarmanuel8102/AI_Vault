@@ -5,14 +5,21 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 import ibkr_paper_30d.autonomous_service as service_module
-from ibkr_paper_30d.autonomous_service import AutonomousExperimentService
+from ibkr_paper_30d.autonomous_service import AutonomousExperimentService, AutonomousServiceError
 from ibkr_paper_30d.persistence import Database
+from ibkr_paper_30d.experiment_control import (
+    ExperimentClockStore,
+    KillSwitchStore,
+    OwnerAuthorizationStore,
+)
 
 
 @dataclass
 class FakeProjected:
     equity: Decimal = Decimal("500.00")
     positions: tuple = ()
+    valid: bool = True
+    reason_codes: tuple = ()
 
 
 class FakeLedger:
@@ -58,8 +65,8 @@ class RecordingService(AutonomousExperimentService):
         self.stop_after = stop_after
         self.results = list(results or [])
 
-    def _run_cycle(self, trigger):
-        self.triggers.append(trigger)
+    def _run_cycle(self, trigger, *, allow_execution=None):
+        self.triggers.append((trigger, allow_execution))
         if len(self.triggers) >= self.stop_after:
             self.stop()
         if self.results:
@@ -93,7 +100,7 @@ def test_no_positions_scans_every_five_minutes(tmp_path, monkeypatch):
         subject = make_service(db, clock, stop_after=2)
         subject.run_forever()
 
-    assert subject.triggers == ["SCHEDULED_SCAN", "SCHEDULED_SCAN"]
+    assert subject.triggers == [("SCHEDULED_SCAN", None), ("SCHEDULED_SCAN", None)]
     assert clock.sleeps == [300.0]
 
 
@@ -106,9 +113,9 @@ def test_open_position_adds_one_minute_monitoring_without_replacing_scan(tmp_pat
         subject.run_forever()
 
     assert subject.triggers == [
-        "POSITION_EVENT",
-        "SCHEDULED_SCAN",
-        "POSITION_EVENT",
+        ("POSITION_EVENT", None),
+        ("SCHEDULED_SCAN", None),
+        ("POSITION_EVENT", None),
     ]
     assert clock.sleeps == [60.0]
 
@@ -128,4 +135,100 @@ def test_fill_causes_immediate_position_event_reassessment(tmp_path, monkeypatch
         subject = make_service(db, clock, stop_after=2, results=results)
         subject.run_forever()
 
-    assert subject.triggers == ["SCHEDULED_SCAN", "POSITION_EVENT"]
+    assert subject.triggers == [
+        ("SCHEDULED_SCAN", None),
+        ("POSITION_EVENT", False),
+    ]
+
+
+
+class PassGate:
+    def evaluate(self, *args, **kwargs):
+        return {"gate_status": "PASS", "reason_codes": []}
+
+
+class ArmedExecutor:
+    armed = True
+
+
+def test_paper_execution_requires_explicit_clock_bound_owner_authorization(tmp_path):
+    start = datetime(2026, 9, 20, 13, 30, tzinfo=timezone.utc)
+    with Database.open(tmp_path / "armed.sqlite3") as db:
+        KillSwitchStore(db).set(
+            "KILL_SWITCH_CLEAR",
+            reason="test precondition",
+            actor="test",
+        )
+        try:
+            AutonomousExperimentService(
+                db,
+                experiment_start_utc=start,
+                execute_paper=True,
+                toolbox=StubToolbox(),
+                provider=StubProvider(),
+                executor=ArmedExecutor(),
+                runtime_market_gate=PassGate(),
+                runtime_auditor_gate=PassGate(),
+                broker_now=lambda: datetime(2026, 9, 21, 13, 30, tzinfo=timezone.utc),
+            )
+        except AutonomousServiceError as exc:
+            assert "explicit owner authorization" in str(exc)
+        else:
+            raise AssertionError("armed service accepted missing owner authorization")
+
+        clock = ExperimentClockStore(db).load()
+        assert clock is not None
+        OwnerAuthorizationStore(db).set(
+            "AUTHORIZED",
+            clock_event_sha256=clock.event_sha256,
+            reason="owner authorized test",
+            actor="owner",
+        )
+        service = AutonomousExperimentService(
+            db,
+            experiment_start_utc=start,
+            execute_paper=True,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=ArmedExecutor(),
+            runtime_market_gate=PassGate(),
+            runtime_auditor_gate=PassGate(),
+            broker_now=lambda: datetime(2026, 9, 21, 13, 30, tzinfo=timezone.utc),
+        )
+        assert service.execute_paper is True
+
+
+def test_fresh_safety_fails_closed_when_broker_time_unavailable(tmp_path):
+    start = datetime(2026, 9, 20, 13, 30, tzinfo=timezone.utc)
+    with Database.open(tmp_path / "broker-time.sqlite3") as db:
+        subject = AutonomousExperimentService(
+            db,
+            experiment_start_utc=start,
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=StubExecutor(),
+            runtime_market_gate=PassGate(),
+            runtime_auditor_gate=PassGate(),
+            broker_now=lambda: (_ for _ in ()).throw(RuntimeError("clock unavailable")),
+        )
+        reasons = subject._fresh_execution_safety("NEW_TRADE")
+        assert any(reason.startswith("BROKER_TIME_UNAVAILABLE_FRESH") for reason in reasons)
+        assert "EXPERIMENT_NOT_STARTED_FRESH" in reasons
+        assert "EXPERIMENT_EXPIRED_FRESH" in reasons
+
+
+def test_default_runtime_auditor_uses_broker_time_authority(tmp_path):
+    fixed = datetime(2026, 9, 21, 13, 30, tzinfo=timezone.utc)
+    start = datetime(2026, 9, 20, 13, 30, tzinfo=timezone.utc)
+    with Database.open(tmp_path / "broker-auditor-time.sqlite3") as db:
+        subject = AutonomousExperimentService(
+            db,
+            experiment_start_utc=start,
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=StubExecutor(),
+            broker_now=lambda: fixed,
+        )
+        assert subject.runtime_auditor_gate.now_utc() == fixed

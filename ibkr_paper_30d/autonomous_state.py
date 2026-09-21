@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
 from .autonomous_research import ResearchRequest, ResearchTool
 from .canonical import sha256_json
+from .experiment_control import ExperimentClockStore, KillSwitchStore
 from .experiment_ledger import AutonomousExperimentLedger
 from .ibkr_research_tools import IBKRResearchToolbox
 from .persistence import Database
+from .market_data import DecisionClass
 from .repositories import utc_now
+from .runtime_integrity import RuntimeMarketDataGate
 from .trader_invocation import TraderInputBundle
 from .types import new_uuid7
 
@@ -33,20 +36,40 @@ class AutonomousStateBuilder:
         toolbox: IBKRResearchToolbox,
         *,
         allocation: Decimal = Decimal("500.00"),
-        experiment_start_utc: datetime,
+        experiment_start_utc: datetime | None,
         duration_days: int = 30,
-        kill_switch_state: str = "KILL_SWITCH_TRIGGERED",
+        kill_switch_state: str | None = None,
+        runtime_market_gate: RuntimeMarketDataGate | None = None,
     ) -> None:
-        if experiment_start_utc.tzinfo is None or experiment_start_utc.utcoffset() is None:
+        if (
+            experiment_start_utc is not None
+            and (experiment_start_utc.tzinfo is None or experiment_start_utc.utcoffset() is None)
+        ):
             raise ValueError("experiment_start_utc must be timezone-aware")
         if duration_days <= 0:
             raise ValueError("duration_days must be positive")
         self.db = db
         self.toolbox = toolbox
         self.ledger = AutonomousExperimentLedger(db, allocation=allocation)
-        self.experiment_start_utc = experiment_start_utc.astimezone(timezone.utc)
-        self.duration_days = duration_days
-        self.kill_switch_state = kill_switch_state
+        self.experiment_clock = ExperimentClockStore(db).initialize_or_load(
+            requested_start_utc=experiment_start_utc,
+            duration_days=duration_days,
+            initial_allocation=allocation,
+        )
+        self.kill_switch_store = KillSwitchStore(db)
+        if kill_switch_state is not None and self.kill_switch_store.current() == "KILL_SWITCH_TRIGGERED":
+            if kill_switch_state == "KILL_SWITCH_CLEAR":
+                self.kill_switch_store.set(
+                    "KILL_SWITCH_CLEAR",
+                    reason="explicit builder initialization",
+                    actor="runtime",
+                )
+        expected_hash = getattr(toolbox, "expected_account_hash", None)
+        self.runtime_market_gate = runtime_market_gate or (
+            RuntimeMarketDataGate(expected_account_hash=expected_hash)
+            if expected_hash
+            else None
+        )
 
     def _tool(self, tool: ResearchTool, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
         request = ResearchRequest(
@@ -73,24 +96,64 @@ class AutonomousStateBuilder:
             open_orders_snapshot=[],
             risk_snapshot={"policy": "AGGRESSIVE_CAPITAL_BOUNDARY_V1"},
             kill_switch_state="KILL_SWITCH_TRIGGERED",
-            market_data_snapshot={"gate_status": "PASS", "scope": "state_builder"},
+            market_data_snapshot={
+                "gate_status": "BLOCK",
+                "scope": "state_builder_placeholder",
+                "reason_codes": ["PLACEHOLDER_BUNDLE_FAIL_CLOSED"],
+            },
             candidate_screen_results=[],
             relevant_previous_immutable_decisions=[],
             process_policy_version="AUTONOMOUS_RESEARCH_V1",
             execution_realism_version="PAPER_V1",
             benchmark_state={},
-            experiment_clock={},
+            experiment_clock={"expired": True, "remaining_seconds": 0},
         )
 
-    def _sync_executions(self) -> None:
+    def _registered_fill(self, fill: dict[str, Any]) -> bool:
+        order_ref = str(fill.get("orderRef") or "")
+        if not order_ref.startswith("codex-ibkr-paper-30d"):
+            return False
+        order_id = int(fill.get("orderId") or 0)
+        perm_id = int(fill.get("permId") or 0)
+        rows = self.db.execute(
+            "SELECT client_order_id,perm_id FROM experiment_order_registry "
+            "WHERE order_ref=? ORDER BY sequence DESC",
+            (order_ref,),
+        ).fetchall()
+        for client_order_id, registered_perm_id in rows:
+            client_match = (
+                order_id > 0
+                and client_order_id is not None
+                and int(client_order_id) == order_id
+            )
+            perm_match = (
+                perm_id > 0
+                and registered_perm_id is not None
+                and int(registered_perm_id) > 0
+                and int(registered_perm_id) == perm_id
+            )
+            if client_match or perm_match:
+                return True
+        return False
+
+    def _sync_executions(self) -> list[str]:
         executions = self._tool(ResearchTool.EXECUTIONS)
+        reasons: list[str] = []
         for fill in executions.get("executions", []) or []:
-            if not str(fill.get("orderRef") or "").startswith("codex-ibkr-paper-30d"):
+            order_ref = str(fill.get("orderRef") or "")
+            if not order_ref.startswith("codex-ibkr-paper-30d"):
+                continue
+            if not self._registered_fill(fill):
+                reasons.append(
+                    f"UNREGISTERED_EXPERIMENT_FILL:{int(fill.get('orderId') or 0)}"
+                )
                 continue
             self.ledger.record_fill(fill)
+        return reasons
 
-    def _mark_open_positions(self) -> None:
+    def _mark_open_positions(self) -> list[str]:
         state = self.ledger.project()
+        reasons: list[str] = []
         for position in state.positions:
             result = self.toolbox.execute(
                 ResearchRequest(
@@ -106,6 +169,7 @@ class AutonomousStateBuilder:
                 self._minimal_placeholder_bundle(),
             )
             if not result.success:
+                reasons.append(f"MARK_QUOTE_FAILED:{position.contract_id}")
                 continue
             raw_price = (
                 result.data.get("marketPrice")
@@ -116,6 +180,7 @@ class AutonomousStateBuilder:
             try:
                 price = Decimal(str(raw_price))
             except Exception:
+                reasons.append(f"MARK_QUOTE_INVALID:{position.contract_id}")
                 continue
             if price.is_finite() and price > 0:
                 self.ledger.record_mark(
@@ -123,6 +188,9 @@ class AutonomousStateBuilder:
                     symbol=position.symbol,
                     price=price,
                 )
+            else:
+                reasons.append(f"MARK_QUOTE_INVALID:{position.contract_id}")
+        return reasons
 
     @staticmethod
     def _broker_position_map(payload: dict[str, Any]) -> dict[int, Decimal]:
@@ -186,18 +254,42 @@ class AutonomousStateBuilder:
         return list(reversed(items))
 
     def _clock(self, now: datetime) -> dict[str, Any]:
-        end = self.experiment_start_utc + timedelta(days=self.duration_days)
-        remaining = max((end - now).total_seconds(), 0.0)
-        elapsed = max((now - self.experiment_start_utc).total_seconds(), 0.0)
+        return self.experiment_clock.snapshot(now)
+
+    @staticmethod
+    def _broker_now(account: dict[str, Any]) -> datetime:
+        raw = account.get("server_time_utc")
+        if not isinstance(raw, str) or not raw:
+            raise AutonomousStateBuildError("BROKER_SERVER_TIME_MISSING")
+        try:
+            parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise AutonomousStateBuildError("BROKER_SERVER_TIME_INVALID") from exc
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise AutonomousStateBuildError("BROKER_SERVER_TIME_INVALID")
+        return parsed.astimezone(timezone.utc)
+
+    @staticmethod
+    def _broker_snapshot(account: dict[str, Any], equity: Decimal) -> dict[str, Any]:
+        summary = account.get("summary", {}) or {}
+        limits: list[Decimal] = [max(equity, Decimal("0"))]
+        for key in ("BuyingPower", "AvailableFunds", "ExcessLiquidity", "SettledCash"):
+            raw = summary.get(key)
+            if raw is None:
+                continue
+            try:
+                value = Decimal(str(raw))
+            except Exception:
+                continue
+            if value.is_finite() and value >= 0:
+                limits.append(value)
+        experiment_buying_power = min(limits) if limits else Decimal("0")
         return {
-            "start_utc": self.experiment_start_utc.isoformat().replace("+00:00", "Z"),
-            "end_utc": end.isoformat().replace("+00:00", "Z"),
-            "now_utc": now.isoformat().replace("+00:00", "Z"),
-            "duration_days": self.duration_days,
-            "elapsed_days": elapsed / 86400.0,
-            "remaining_days": remaining / 86400.0,
-            "remaining_seconds": remaining,
-            "expired": remaining <= 0,
+            "paper_account": bool(account.get("paper_account")),
+            "declared_options_level": account.get("declared_options_level"),
+            "experiment_buying_power": str(experiment_buying_power),
+            "global_broker_balances_redacted": True,
+            "note": "Buying power is capped to isolated experiment equity and broker constraints.",
         }
 
     def build(
@@ -207,14 +299,22 @@ class AutonomousStateBuilder:
         market_session_state: str = "UNKNOWN",
         benchmark_state: dict[str, Any] | None = None,
     ) -> TraderInputBundle:
-        self._sync_executions()
-        self._mark_open_positions()
+        execution_reasons = self._sync_executions()
+        mark_reasons = self._mark_open_positions()
         ledger_state = self.ledger.project()
         account = self._tool(ResearchTool.ACCOUNT_STATE)
         broker_positions = self._tool(ResearchTool.POSITIONS)
         open_orders = self._tool(ResearchTool.OPEN_ORDERS)
         reconciliation = self._reconcile(ledger_state, broker_positions)
-        now = datetime.now(timezone.utc)
+        state_reasons = execution_reasons + mark_reasons
+        if state_reasons:
+            reconciliation["status"] = "BLOCK"
+            reconciliation["reason_codes"] = list(
+                dict.fromkeys(
+                    list(reconciliation.get("reason_codes", [])) + state_reasons
+                )
+            )
+        now = self._broker_now(account)
         clock = self._clock(now)
 
         isolated_orders = [
@@ -229,19 +329,26 @@ class AutonomousStateBuilder:
                 "sec_type": item.sec_type,
                 "multiplier": str(item.multiplier),
                 "quantity": str(item.quantity),
+                "average_cost": str(item.average_cost),
                 "mark": str(item.mark),
                 "market_value": str(item.market_value),
             }
             for item in ledger_state.positions
         ]
 
-        gate_status = (
-            "PASS"
-            if reconciliation.get("status") == "PASS"
-            and self.kill_switch_state == "KILL_SWITCH_CLEAR"
-            and not clock["expired"]
-            else "BLOCK"
+        kill_switch_state = self.kill_switch_store.current()
+        decision_class = (
+            DecisionClass.OPEN_POSITION_MANAGEMENT
+            if trigger == "POSITION_EVENT"
+            else DecisionClass.NEW_TRADE
         )
+        if self.runtime_market_gate is None:
+            market_gate = {
+                "gate_status": "BLOCK",
+                "reason_codes": ["EXPECTED_PAPER_IDENTITY_REQUIRED_FOR_MARKET_GATE"],
+            }
+        else:
+            market_gate = self.runtime_market_gate.evaluate(decision_class)
         return TraderInputBundle(
             decision_cycle_id=f"cycle-{new_uuid7()}",
             utc_timestamp=clock["now_utc"],
@@ -258,12 +365,9 @@ class AutonomousStateBuilder:
                 "valid": ledger_state.valid,
                 "reason_codes": list(ledger_state.reason_codes),
             },
-            broker_account_snapshot={
-                "paper_account": bool(account.get("paper_account")),
-                "declared_options_level": account.get("declared_options_level"),
-                "broker_summary": account.get("summary", {}),
-                "note": "Broker balances may exceed isolated experiment equity and are not available to the experiment.",
-            },
+            broker_account_snapshot=self._broker_snapshot(
+                account, ledger_state.equity
+            ),
             positions_snapshot=isolated_positions,
             open_orders_snapshot=isolated_orders,
             risk_snapshot={
@@ -271,10 +375,10 @@ class AutonomousStateBuilder:
                 "maximum_experiment_liability": str(max(ledger_state.equity, Decimal("0"))),
                 "fixed_percent_limits": False,
             },
-            kill_switch_state=self.kill_switch_state,
+            kill_switch_state=kill_switch_state,
             market_data_snapshot={
-                "gate_status": gate_status,
-                "scope": "broker_session_and_isolated_state_readiness",
+                **market_gate,
+                "scope": "runtime_frozen_policy_and_fresh_ibkr_quotes",
                 "specific_contract_data_validated_on_demand": True,
             },
             candidate_screen_results=[],

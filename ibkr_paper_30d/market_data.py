@@ -96,6 +96,8 @@ class MarketDataGateResult(BaseModel, frozen=True):
     market_data_snapshot_id: str
     market_data_snapshot_sha256: str
     quote_timestamp: datetime | None
+    oldest_quote_timestamp: datetime | None = None
+    latest_quote_timestamp: datetime | None = None
     quote_age_at_decision_ms: int | None
     market_data_policy_version: str
 
@@ -196,14 +198,18 @@ class MarketDataGate:
                 _add_reason(reasons, "TIMESTAMP_MISMATCH")
 
         oldest_index = ages.index(max(ages)) if ages else None
+        oldest_timestamp = (
+            timestamps[oldest_index] if oldest_index is not None else None
+        )
+        latest_timestamp = max(timestamps) if timestamps else None
         return MarketDataGateResult(
             status="BLOCK" if reasons else "PASS",
             reason_codes=tuple(reasons),
             market_data_snapshot_id=snapshot.snapshot_id,
             market_data_snapshot_sha256=snapshot.sha256,
-            quote_timestamp=(
-                timestamps[oldest_index] if oldest_index is not None else None
-            ),
+            quote_timestamp=oldest_timestamp,
+            oldest_quote_timestamp=oldest_timestamp,
+            latest_quote_timestamp=latest_timestamp,
             quote_age_at_decision_ms=(
                 ages[oldest_index] if oldest_index is not None else None
             ),

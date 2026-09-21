@@ -157,3 +157,35 @@ def test_snapshot_hash_is_deterministic_and_changes_with_quote(fresh_quote) -> N
     assert first.sha256 == second.sha256
     assert first.snapshot_id == second.snapshot_id
     assert changed.sha256 != first.sha256
+
+
+def test_gate_reports_oldest_and_latest_quote_timestamps(gate, fresh_quote) -> None:
+    older = fresh_quote.model_copy(
+        update={
+            "symbol": "QQQ",
+            "contract_id": 320227571,
+            "quote_timestamp": NOW - timedelta(milliseconds=900),
+            "local_receipt_timestamp": NOW - timedelta(milliseconds=850),
+            "declared_quote_age_ms": 900,
+        }
+    )
+    newer = fresh_quote.model_copy(
+        update={
+            "symbol": "IEF",
+            "contract_id": 15547844,
+            "quote_timestamp": NOW - timedelta(milliseconds=100),
+            "local_receipt_timestamp": NOW - timedelta(milliseconds=90),
+            "declared_quote_age_ms": 100,
+        }
+    )
+    snapshot = MarketDataSnapshot.freeze(
+        [fresh_quote, older, newer],
+        created_at_utc=NOW,
+    )
+
+    result = gate.evaluate(snapshot, DecisionClass.NEW_TRADE, now=NOW)
+
+    assert result.status == "PASS"
+    assert result.quote_timestamp == older.quote_timestamp
+    assert result.oldest_quote_timestamp == older.quote_timestamp
+    assert result.latest_quote_timestamp == newer.quote_timestamp

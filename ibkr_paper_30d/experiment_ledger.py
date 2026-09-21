@@ -33,6 +33,7 @@ class ExperimentPosition:
     sec_type: str
     multiplier: Decimal
     quantity: Decimal
+    average_cost: Decimal
     mark: Decimal
     market_value: Decimal
 
@@ -69,21 +70,40 @@ class AutonomousExperimentLedger:
         self.db = db
         self.allocation = _money(allocation)
 
-    def _events(self) -> list[dict[str, Any]]:
+    def _events(self) -> tuple[list[dict[str, Any]], list[str]]:
         rows = self.db.execute(
-            "SELECT event_type,payload_json FROM subledger_events ORDER BY sequence"
+            "SELECT event_type,payload_json,payload_sha256,previous_event_sha256,event_sha256 "
+            "FROM autonomous_ledger_events ORDER BY sequence"
         ).fetchall()
         events: list[dict[str, Any]] = []
-        for event_type, payload_json in rows:
+        reasons: list[str] = []
+        previous: str | None = None
+        for event_type, payload_json, payload_sha, stored_previous, event_sha in rows:
             try:
-                payload = json.loads(payload_json)
+                payload = json.loads(str(payload_json))
             except (TypeError, json.JSONDecodeError):
-                continue
+                reasons.append("LEDGER_EVENT_JSON_INVALID")
+                break
             if payload.get("schema") != self.SCHEMA:
-                continue
-            payload["event_type"] = event_type
+                reasons.append("LEDGER_EVENT_SCHEMA_INVALID")
+                break
+            if sha256_json(payload) != str(payload_sha):
+                reasons.append("LEDGER_PAYLOAD_HASH_MISMATCH")
+                break
+            normalized_previous = str(stored_previous) if stored_previous is not None else None
+            if normalized_previous != previous:
+                reasons.append("LEDGER_CHAIN_PREDECESSOR_MISMATCH")
+                break
+            expected_event_sha = sha256_json(
+                {"previous_event_sha256": previous, "payload": payload}
+            )
+            if expected_event_sha != str(event_sha):
+                reasons.append("LEDGER_EVENT_HASH_MISMATCH")
+                break
+            payload["event_type"] = str(event_type)
             events.append(payload)
-        return events
+            previous = str(event_sha)
+        return events, reasons
 
     def append(self, event_type: str, payload: dict[str, Any]) -> str:
         body = {
@@ -92,31 +112,128 @@ class AutonomousExperimentLedger:
             **payload,
         }
         event_id = str(new_uuid7())
-        self.db.execute(
-            "INSERT INTO subledger_events(event_id,event_type,payload_json,payload_sha256,created_at_utc) "
-            "VALUES(?,?,?,?,?)",
-            (
-                event_id,
-                event_type,
-                canonical_bytes(body).decode("utf-8"),
-                sha256_json(body),
-                utc_now(),
-            ),
-        )
+        payload_json = canonical_bytes(body).decode("utf-8")
+        payload_sha = sha256_json(body)
+        with self.db.transaction() as tx:
+            row = tx.execute(
+                "SELECT event_sha256 FROM autonomous_ledger_events "
+                "ORDER BY sequence DESC LIMIT 1"
+            ).fetchone()
+            previous = str(row[0]) if row is not None else None
+            event_sha = sha256_json(
+                {"previous_event_sha256": previous, "payload": body}
+            )
+            tx.execute(
+                "INSERT INTO autonomous_ledger_events("
+                "event_id,event_type,payload_json,payload_sha256,"
+                "previous_event_sha256,event_sha256,created_at_utc"
+                ") VALUES(?,?,?,?,?,?,?)",
+                (
+                    event_id,
+                    event_type,
+                    payload_json,
+                    payload_sha,
+                    previous,
+                    event_sha,
+                    utc_now(),
+                ),
+            )
         return event_id
 
     def _recorded_execution_hashes(self) -> set[str]:
+        events, _ = self._events()
         return {
             str(event.get("execution_id_hash"))
-            for event in self._events()
+            for event in events
             if event.get("event_type") == "BROKER_FILL"
             and event.get("execution_id_hash")
         }
 
+    def _effective_commission_for_execution(self, execution_hash: str) -> Decimal | None:
+        events, _ = self._events()
+        found = False
+        total = Decimal("0")
+        for event in events:
+            if str(event.get("execution_id_hash") or "") != execution_hash:
+                continue
+            if event.get("event_type") == "BROKER_FILL":
+                found = True
+                total += max(_d(event.get("commission")), Decimal("0"))
+            elif event.get("event_type") == "BROKER_COMMISSION_ADJUSTMENT":
+                total += _d(event.get("commission_delta"))
+        return total if found else None
+
+    @staticmethod
+    def _execution_fingerprint(fill: dict[str, Any]) -> str:
+        contract = fill.get("contract") or {}
+        payload = {
+            "schema": "EXECUTION_FINGERPRINT_V1",
+            "contract_id": int(contract.get("conId") or fill.get("contract_id") or 0),
+            "side": str(fill.get("side") or fill.get("action") or "").upper(),
+            "quantity": str(fill.get("quantity") or fill.get("shares") or ""),
+            "price": str(fill.get("price") or ""),
+            "multiplier": str(contract.get("multiplier") or fill.get("multiplier") or "1"),
+            "order_ref": str(fill.get("orderRef") or ""),
+            "perm_id": int(fill.get("permId") or 0),
+            "order_id": int(fill.get("orderId") or 0),
+            "client_id": int(fill.get("clientId") or 0),
+            "execution_time": str(fill.get("execution_time") or ""),
+        }
+        return sha256_json(payload)
+
+    @classmethod
+    def _execution_hash(cls, fill: dict[str, Any]) -> str:
+        supplied = str(fill.get("execution_id_hash") or "").strip()
+        if supplied:
+            return supplied
+        return cls._execution_fingerprint(fill)
+
+    def _find_existing_execution(
+        self,
+        *,
+        execution_hash: str,
+        execution_fingerprint: str,
+    ) -> tuple[str, Decimal] | None:
+        events, _ = self._events()
+        for event in events:
+            if event.get("event_type") != "BROKER_FILL":
+                continue
+            stored_hash = str(event.get("execution_id_hash") or "")
+            stored_fingerprint = str(event.get("execution_fingerprint") or "")
+            if not stored_fingerprint:
+                stored_fingerprint = self._execution_fingerprint(event)
+            if stored_hash == execution_hash or stored_fingerprint == execution_fingerprint:
+                effective = self._effective_commission_for_execution(stored_hash)
+                return stored_hash, effective or Decimal("0")
+        return None
+
     def record_fill(self, fill: dict[str, Any]) -> str:
-        execution_hash = str(fill.get("execution_id_hash") or "")
-        if execution_hash and execution_hash in self._recorded_execution_hashes():
-            return f"duplicate:{execution_hash}"
+        execution_hash = self._execution_hash(fill)
+        execution_fingerprint = self._execution_fingerprint(fill)
+        raw_commission = fill.get("commission")
+        commission_known = raw_commission is not None and str(raw_commission).strip() != ""
+        incoming_commission = (
+            max(_d(raw_commission), Decimal("0"))
+            if commission_known
+            else Decimal("0")
+        )
+        existing = self._find_existing_execution(
+            execution_hash=execution_hash,
+            execution_fingerprint=execution_fingerprint,
+        )
+        if existing is not None:
+            canonical_execution_hash, existing_commission = existing
+            if commission_known and incoming_commission != existing_commission:
+                delta = incoming_commission - existing_commission
+                return self.append(
+                    "BROKER_COMMISSION_ADJUSTMENT",
+                    {
+                        "execution_id_hash": canonical_execution_hash,
+                        "commission_delta": str(delta),
+                        "effective_commission": str(incoming_commission),
+                    },
+                )
+            return f"duplicate:{canonical_execution_hash}"
         side = str(fill.get("side") or fill.get("action") or "").upper()
         if side not in {"BUY", "SELL"}:
             raise ValueError("fill side must be BUY or SELL")
@@ -131,7 +248,7 @@ class AutonomousExperimentLedger:
         multiplier = _d(contract.get("multiplier") or fill.get("multiplier") or "1", "1")
         if multiplier <= 0:
             multiplier = Decimal("1")
-        commission = max(_d(fill.get("commission")), Decimal("0"))
+        commission = incoming_commission
         return self.append(
             "BROKER_FILL",
             {
@@ -143,7 +260,13 @@ class AutonomousExperimentLedger:
                 "quantity": str(quantity),
                 "price": str(price),
                 "commission": str(commission),
-                "execution_id_hash": fill.get("execution_id_hash"),
+                "execution_id_hash": execution_hash,
+                "execution_fingerprint": execution_fingerprint,
+                "orderRef": str(fill.get("orderRef") or ""),
+                "permId": int(fill.get("permId") or 0),
+                "orderId": int(fill.get("orderId") or 0),
+                "clientId": int(fill.get("clientId") or 0),
+                "execution_time": str(fill.get("execution_time") or ""),
             },
         )
 
@@ -186,11 +309,12 @@ class AutonomousExperimentLedger:
         def equity_now() -> Decimal:
             market = Decimal("0")
             for contract_id, position in positions.items():
-                mark = marks.get(contract_id, position.get("last_fill_price", Decimal("0")))
+                mark = marks.get(contract_id, position.get("average_cost", Decimal("0")))
                 market += position["quantity"] * mark * position["multiplier"]
             return cash + market
 
-        events = self._events()
+        events, integrity_reasons = self._events()
+        reasons.extend(integrity_reasons)
         for event in events:
             event_type = event.get("event_type")
             if event_type == "BROKER_FILL":
@@ -220,17 +344,38 @@ class AutonomousExperimentLedger:
                         "sec_type": str(event.get("sec_type") or ""),
                         "multiplier": multiplier,
                         "quantity": Decimal("0"),
+                        "average_cost": price,
                         "last_fill_price": price,
                     },
                 )
                 if slot["multiplier"] != multiplier:
                     reasons.append("MULTIPLIER_MISMATCH")
-                slot["quantity"] += signed_quantity
+                old_quantity = slot["quantity"]
+                old_average = slot["average_cost"]
+                new_quantity = old_quantity + signed_quantity
+                if old_quantity == 0 or old_quantity * signed_quantity > 0:
+                    total_units = abs(old_quantity) + abs(signed_quantity)
+                    slot["average_cost"] = (
+                        (abs(old_quantity) * old_average + abs(signed_quantity) * price)
+                        / total_units
+                    )
+                elif abs(signed_quantity) > abs(old_quantity):
+                    # Position crossed through zero. The excess opens a new
+                    # position on the opposite side at the current fill price.
+                    slot["average_cost"] = price
+                # Partial closes preserve the cost basis of the remaining units.
+                slot["quantity"] = new_quantity
                 slot["last_fill_price"] = price
                 marks[contract_id] = price
                 if slot["quantity"] == 0:
                     positions.pop(contract_id, None)
                     marks.pop(contract_id, None)
+            elif event_type == "BROKER_COMMISSION_ADJUSTMENT":
+                delta = _d(event.get("commission_delta"))
+                cash -= delta
+                fees += delta
+                if fees < 0:
+                    reasons.append("INVALID_COMMISSION_ADJUSTMENT")
             elif event_type == "MARK":
                 contract_id = int(event.get("contract_id") or 0)
                 price = _d(event.get("price"))
@@ -246,7 +391,7 @@ class AutonomousExperimentLedger:
         position_rows: list[ExperimentPosition] = []
         market_value = Decimal("0")
         for contract_id, position in sorted(positions.items()):
-            mark = marks.get(contract_id, position["last_fill_price"])
+            mark = marks.get(contract_id, position["average_cost"])
             value = position["quantity"] * mark * position["multiplier"]
             market_value += value
             position_rows.append(
@@ -256,6 +401,7 @@ class AutonomousExperimentLedger:
                     sec_type=position["sec_type"],
                     multiplier=position["multiplier"],
                     quantity=position["quantity"],
+                    average_cost=_money(position["average_cost"]),
                     mark=mark,
                     market_value=_money(value),
                 )

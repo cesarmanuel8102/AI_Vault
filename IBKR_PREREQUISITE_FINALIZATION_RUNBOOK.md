@@ -89,3 +89,57 @@ A fully completed prerequisite state reports:
 - `paper_execution_armed: false`
 
 The experiment remains deliberately unarmed after both prerequisites pass.
+
+
+## Day 1 authorization and arming
+
+Passing Auditor V2 and Market Data Gate does not authorize trading.
+
+Choose the official experiment start timestamp once. The first authorization
+persists that clock and binds owner authorization to its immutable clock hash.
+
+Example:
+
+```powershell
+Set-Location C:\AI_VAULT
+python -m ibkr_paper_30d.autonomous_service `
+  --db state\ibkr_paper_30d\autonomous.sqlite3 `
+  --start-utc 2026-09-22T13:30:00Z `
+  --authorize-start `
+  --authorization-phrase "AUTHORIZE 30-DAY PAPER EXPERIMENT"
+```
+
+Use the actual intended Day 1 UTC timestamp, not the example date above.
+
+Before start, clear the operational kill switch explicitly:
+
+```powershell
+python -m ibkr_paper_30d.autonomous_service `
+  --db state\ibkr_paper_30d\autonomous.sqlite3 `
+  --kill-switch clear `
+  --kill-reason "owner authorizes Day 1"
+```
+
+Only after owner authorization, persisted clock binding, fresh Auditor PASS,
+fresh Market Data PASS and kill-switch CLEAR may PAPER transmission be armed:
+
+```powershell
+$env:IBKR_AUTONOMOUS_PAPER_ARMED = "true"
+python -m ibkr_paper_30d.autonomous_service `
+  --db state\ibkr_paper_30d\autonomous.sqlite3 `
+  --execute-paper
+```
+
+A future `start_utc` remains non-executable until that time. Restarts load the
+original persisted start/end; they cannot reset the 30-day horizon.
+
+To revoke owner authorization:
+
+```powershell
+python -m ibkr_paper_30d.autonomous_service `
+  --db state\ibkr_paper_30d\autonomous.sqlite3 `
+  --revoke-start
+```
+
+Revocation prevents subsequent armed starts even if
+`IBKR_AUTONOMOUS_PAPER_ARMED=true` remains in the environment.

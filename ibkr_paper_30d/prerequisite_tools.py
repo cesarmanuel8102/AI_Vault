@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import stat
+import subprocess
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,6 +14,97 @@ from .auditor_gate_v2 import (
     PaperIdentityBinding,
     load_and_evaluate_auditor_gate_v2,
 )
+
+
+
+def _git_blob(repo_root: Path, commit: str, path: str) -> bytes:
+    result = subprocess.run(
+        ["git", "-C", str(repo_root), "show", f"{commit}:{path}"],
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise ValueError(f"TRUST_ANCHOR_GIT_BLOB_UNAVAILABLE:{path}")
+    return result.stdout
+
+
+def _manifest_text(schema: str, hashes: dict[str, str]) -> bytes:
+    files_json = json.dumps(
+        {key: hashes[key] for key in sorted(hashes)},
+        separators=(",", ":"),
+        ensure_ascii=True,
+    )
+    body = f'{{"files":{files_json},"schema":"{schema}"}}'
+    manifest_hash = __import__("hashlib").sha256(body.encode("utf-8")).hexdigest()
+    return (
+        f'{{"files":{files_json},"manifest_sha256":"{manifest_hash}","schema":"{schema}"}}'
+    ).encode("utf-8")
+
+
+def _normalized_text_bytes(value: bytes) -> bytes:
+    try:
+        text = value.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise ValueError("TRUST_ANCHOR_SOURCE_NOT_UTF8") from exc
+    return text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
+
+
+def evaluate_runtime_trust_anchor(
+    repo_root: Path,
+    anchor_path: Path,
+) -> dict[str, object]:
+    anchor = json.loads(anchor_path.read_text(encoding="utf-8"))
+    if anchor.get("schema") != "AUDITOR_RUNTIME_V2_TRUST_ANCHOR_V1":
+        raise ValueError("TRUST_ANCHOR_SCHEMA_INVALID")
+    commit = str(anchor.get("source_commit") or "")
+    files = list(anchor.get("runtime_files") or [])
+    manifest_name = str(anchor.get("runtime_manifest_name") or "")
+    if not commit or len(commit) != 40 or not files or not manifest_name:
+        raise ValueError("TRUST_ANCHOR_INVALID")
+
+    ancestor = subprocess.run(
+        ["git", "-C", str(repo_root), "merge-base", "--is-ancestor", commit, "HEAD"],
+        capture_output=True,
+        check=False,
+    )
+    if ancestor.returncode != 0:
+        raise ValueError("TRUST_ANCHOR_COMMIT_NOT_ANCESTOR")
+
+    payload_hashes: dict[str, str] = {}
+    source_matches = True
+    source_blob_sha256: dict[str, str] = {}
+    for name in files:
+        blob = _git_blob(repo_root, commit, f"auditor_runtime/{name}")
+        source_blob_sha256[name] = __import__("hashlib").sha256(blob).hexdigest()
+        current = repo_root / "auditor_runtime" / name
+        if not current.is_file():
+            source_matches = False
+            continue
+        current_bytes = current.read_bytes()
+        if _normalized_text_bytes(current_bytes) != _normalized_text_bytes(blob):
+            source_matches = False
+        payload_hashes[name] = __import__("hashlib").sha256(current_bytes).hexdigest()
+
+    if set(payload_hashes) != set(files):
+        source_matches = False
+
+    runtime_text = _manifest_text("AUDITOR_RUNTIME_MANIFEST_V2", payload_hashes)
+    deployment_hashes = dict(payload_hashes)
+    deployment_hashes[manifest_name] = __import__("hashlib").sha256(runtime_text).hexdigest()
+    deployment_text = _manifest_text(
+        "AUDITOR_RUNTIME_DEPLOYMENT_MANIFEST_V2", deployment_hashes
+    )
+    anchor_sha = __import__("hashlib").sha256(anchor_path.read_bytes()).hexdigest()
+    return {
+        "schema": "AUDITOR_RUNTIME_V2_TRUST_ANCHOR_EVALUATION_V1",
+        "source_commit": commit,
+        "anchor_sha256": anchor_sha,
+        "source_matches_anchor": source_matches,
+        "source_blob_sha256": source_blob_sha256,
+        "payload_sha256": payload_hashes,
+        "runtime_manifest_sha256": __import__("hashlib").sha256(runtime_text).hexdigest(),
+        "deployment_manifest_sha256": __import__("hashlib").sha256(deployment_text).hexdigest(),
+    }
 
 
 def create_audit_export(
@@ -150,6 +242,10 @@ def main(argv: list[str] | None = None) -> int:
     evaluate.add_argument("--probe-sha256", required=True)
     evaluate.add_argument("--probe-manifest-sha256", required=True)
 
+    trust = sub.add_parser("evaluate-runtime-trust-anchor")
+    trust.add_argument("--repo-root", type=Path, required=True)
+    trust.add_argument("--anchor", type=Path, required=True)
+
     ready = sub.add_parser("readiness")
     ready.add_argument(
         "--report-root",
@@ -169,6 +265,8 @@ def main(argv: list[str] | None = None) -> int:
             args.probe_sha256,
             args.probe_manifest_sha256,
         )
+    elif args.command == "evaluate-runtime-trust-anchor":
+        result = evaluate_runtime_trust_anchor(args.repo_root, args.anchor)
     else:
         result = readiness(args.report_root)
     print(json.dumps(result, sort_keys=True))

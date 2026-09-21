@@ -13,6 +13,28 @@ from .canonical import canonical_bytes
 from .redaction import redact_text
 
 
+FAULT_SCENARIO_TEST_MATRIX = {
+    "crash_before_commit": "tests/ibkr_paper_30d/test_evidence.py::test_crash_before_commit_rolls_back",
+    "crash_after_commit": "tests/ibkr_paper_30d/test_evidence.py::test_crash_after_commit_preserves_record",
+    "crash_during_submit": "tests/ibkr_paper_30d/test_fake_broker.py::test_unknown_submit_is_never_retried",
+    "crash_after_ack": "tests/ibkr_paper_30d/test_reconciliation.py::test_completed_order_or_execution_recovers_crash_window",
+    "partial_fill_crash": "tests/ibkr_paper_30d/test_fake_broker.py::test_fake_lifecycle_supports_partial_fill_modify_cancel",
+    "broker_disconnect": "tests/ibkr_paper_30d/test_orchestrator.py::test_reconnecting_remains_paused_without_order_authority",
+    "two_factor_required": "tests/ibkr_paper_30d/test_orchestrator.py::test_2fa_requires_owner_and_full_reconciliation",
+    "auth_failure": "tests/ibkr_paper_30d/test_orchestrator.py::test_auth_failure_pauses_and_alerts",
+    "duplicate_order": "tests/ibkr_paper_30d/test_fake_broker.py::test_duplicate_idempotency_key_transmits_once",
+    "db_lock": "tests/ibkr_paper_30d/test_persistence.py::test_database_lock_fails_closed",
+    "db_corruption": "tests/ibkr_paper_30d/test_persistence.py::test_tampered_hash_chain_is_detected",
+    "subledger_mismatch": "tests/ibkr_paper_30d/test_subledger.py::test_broker_subledger_mismatch_blocks_reconciliation",
+    "market_data_loss": "tests/ibkr_paper_30d/test_market_data.py::test_invalid_quotes_block",
+    "smtp_failure": "tests/ibkr_paper_30d/test_alerts.py::test_smtp_failure_is_durable_and_due_for_retry",
+    "event_log_failure": "tests/ibkr_paper_30d/test_alerts.py::test_event_log_failure_does_not_suppress_external_delivery",
+    "stale_execution_lock": "tests/ibkr_paper_30d/test_execution_lock.py::test_confirmed_dead_owner_enters_recovery_without_authority",
+    "trader_timeout": "tests/ibkr_paper_30d/test_trader_invocation.py::test_timeout_fails_to_no_trade",
+    "trader_malformed": "tests/ibkr_paper_30d/test_trader_invocation.py::test_malformed_wrong_schema_and_authority_excess_fail_to_no_trade",
+    "auditor_access_attempt": "tests/ibkr_paper_30d/test_auditor_isolation.py::test_isolation_report_stays_blocked_when_forbidden_capabilities_exist",
+}
+
 FAULT_SCENARIOS = (
     "crash_before_commit",
     "crash_after_commit",
@@ -75,6 +97,7 @@ class FaultResult:
     evidence_persisted: bool
     recovery_required: bool
     reason_code: str
+    production_test_nodeid: str | None
 
 
 @dataclass(frozen=True)
@@ -98,13 +121,26 @@ class FaultInjectionHarness:
         self.evidence_path.parent.mkdir(parents=True, exist_ok=True)
         self.new_order_authority = True
         self._handlers: dict[str, Callable[[], FaultObservation]] = {}
+        self._production_test_nodeids: dict[str, str] = {}
 
     def register(
-        self, scenario: str, handler: Callable[[], FaultObservation]
+        self,
+        scenario: str,
+        handler: Callable[[], FaultObservation],
+        *,
+        production_test_nodeid: str | None = None,
     ) -> None:
         if scenario not in FAULT_SCENARIOS:
             raise ValueError(f"unknown fault scenario: {scenario}")
         self._handlers[scenario] = handler
+        if production_test_nodeid is not None:
+            expected = FAULT_SCENARIO_TEST_MATRIX.get(scenario)
+            if production_test_nodeid != expected:
+                raise ValueError(
+                    f"production test nodeid mismatch for {scenario}: "
+                    f"{production_test_nodeid!r} != {expected!r}"
+                )
+            self._production_test_nodeids[scenario] = production_test_nodeid
 
     def run(self, scenario: str) -> FaultResult:
         self.new_order_authority = False
@@ -116,18 +152,28 @@ class FaultInjectionHarness:
         )
         handler = self._handlers.get(scenario)
         try:
-            observation = handler() if handler else self._default_observation(scenario)
+            observation = (
+                handler()
+                if handler is not None
+                else FaultObservation(
+                    blocked=False,
+                    recovery_required=True,
+                    reason_code="FAULT_HANDLER_NOT_REGISTERED",
+                )
+            )
         except Exception as exc:
             observation = FaultObservation(
                 blocked=True,
                 recovery_required=True,
                 reason_code=f"INJECTED_EXCEPTION:{type(exc).__name__}",
             )
+        production_test_nodeid = self._production_test_nodeids.get(scenario)
         passed = bool(
             observation.blocked
             and observation.recovery_required
             and not self.new_order_authority
             and observation.reason_code
+            and production_test_nodeid
         )
         result = FaultResult(
             scenario=scenario,
@@ -137,6 +183,7 @@ class FaultInjectionHarness:
             evidence_persisted=False,
             recovery_required=observation.recovery_required,
             reason_code=observation.reason_code,
+            production_test_nodeid=production_test_nodeid,
         )
         self._append_evidence(
             {
@@ -147,6 +194,7 @@ class FaultInjectionHarness:
                 "authority": self.new_order_authority,
                 "recovery_required": observation.recovery_required,
                 "reason_code": observation.reason_code,
+                "production_test_nodeid": production_test_nodeid,
             }
         )
         return FaultResult(**{**asdict(result), "evidence_persisted": True})
@@ -171,11 +219,6 @@ class FaultInjectionHarness:
                 return EvidenceVerification(False, count, count)
             previous = digest
         return EvidenceVerification(True, count)
-
-    @staticmethod
-    def _default_observation(scenario: str) -> FaultObservation:
-        reason, _ = _DEFAULT_OBSERVATIONS[scenario]
-        return FaultObservation(True, True, reason)
 
     def _append_evidence(self, payload: dict[str, object]) -> None:
         previous = self._last_hash()

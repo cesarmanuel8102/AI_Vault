@@ -26,9 +26,16 @@ def test_prerequisite_scripts_exist_and_never_arm_trading():
     assert "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1" in finalizer
     assert "AUDITOR_GATE_V2_PROBE.ps1" in finalizer
     assert "market_data_task_registered" in finalizer
+    assert "Enable-LocalUser -Name $AuditorUser" in finalizer
+    assert "Disable-LocalUser -Name $AuditorUser" in finalizer
+    assert "UNSAFE_ARGUMENT_VALUE" in finalizer
+    assert "RemotePort 4001,4002" in finalizer
+    assert "RemoteAddress 127.0.0.1,::1" in finalizer
+    assert "-Program $WindowsPowerShell" not in finalizer
+    assert "AUDITOR_PROBE_FIREWALL_SCOPE_INVALID" in finalizer
 
     market = MARKET_RUNNER.read_text(encoding="utf-8")
-    assert '"315"' in market
+    assert '"330"' in market
     assert "AddMinutes(31)" in market
     assert "freeze-market-policy" in market
     assert "validate-real-market-data" in market
@@ -99,3 +106,24 @@ def test_denial_probe_classifies_acl_errors_explicitly():
     assert "Test-Path -LiteralPath $Target -ErrorAction Stop" in text
     assert "catch [UnauthorizedAccessException] { return \"DENIED\" }" in text
     assert "catch [Security.SecurityException] { return \"DENIED\" }" in text
+
+
+def test_auditor_account_enablement_is_inside_cleanup_guard():
+    text = FINALIZER.read_text(encoding="utf-8")
+    assert text.count("Enable-LocalUser -Name $AuditorUser") == 1
+
+    preflight_disable = text.index("if ($User.Enabled)")
+    trust_anchor = text.index("AUDITOR_TRUST_ANCHOR_HASH_MISMATCH")
+    assert preflight_disable < trust_anchor
+
+    marker = text.index("# Keep the account disabled until the bounded probe window starts.")
+    try_index = text.index("try {", marker)
+    enable_index = text.index("Enable-LocalUser -Name $AuditorUser", marker)
+    finally_index = text.index("finally {", enable_index)
+    cleanup_disable = text.index(
+        "Disable-LocalUser -Name $AuditorUser -ErrorAction Stop", finally_index
+    )
+
+    assert marker < try_index < enable_index < finally_index < cleanup_disable
+    assert "$AuditorEnabledForProbe = $true" in text[enable_index:finally_index]
+    assert "$ProbeFirewallInstalled = $true" in text[enable_index:finally_index]

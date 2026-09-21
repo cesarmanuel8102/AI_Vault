@@ -5,6 +5,14 @@ import socket
 import threading
 import json
 
+import pytest
+
+if os.name != "nt":
+    pytest.skip(
+        "Windows named-mutex execution lock tests",
+        allow_module_level=True,
+    )
+
 from ibkr_paper_30d.execution_lock import ExecutionLock, LockOwner
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.types import new_uuid7

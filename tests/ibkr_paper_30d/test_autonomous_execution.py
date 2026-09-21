@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import pytest
+from types import SimpleNamespace
 
 from ibkr_paper_30d.autonomous_execution import (
     AutonomousPaperExecutionNotArmed,
     AutonomousPaperExecutor,
 )
-from ibkr_paper_30d.autonomous_research import AutonomousTradeProposal
+from ibkr_paper_30d.autonomous_research import AutonomousTradeProposal, ProposalValidation
 from ibkr_paper_30d.trader_invocation import TraderInputBundle
 
 
@@ -96,3 +97,193 @@ def test_executor_retains_non_strategic_safety_gates(kwargs, reason):
     assert result.success is False
     assert result.status == "BLOCKED"
     assert reason in result.reason_codes
+
+
+class _FakeIB:
+    def __init__(self):
+        self.place_calls = 0
+        self.client = SimpleNamespace(getReqId=lambda: 4242)
+
+    def placeOrder(self, contract, order):
+        self.place_calls += 1
+        raise AssertionError("placeOrder must not be reached")
+
+    def disconnect(self):
+        pass
+
+
+class _PassUntilOperatorControlToolbox:
+    def __init__(self):
+        self.ib = _FakeIB()
+
+    def _connect(self):
+        return self.ib
+
+    def _proposal_contract(self, ib, proposal):
+        return SimpleNamespace(conId=123, symbol=proposal.symbol)
+
+    def live_contract_quote_evidence(self, ib, contract):
+        return {"success": True, "market_data_type": 1}
+
+    def validate_proposal(self, proposal, bundle, *, ib=None):
+        return ProposalValidation(
+            passed=True,
+            reason_codes=(),
+            broker_evidence={"what_if": {"success": True}},
+        )
+
+
+def test_immediate_operator_control_blocks_place_order(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _PassUntilOperatorControlToolbox()
+    with Database.open(tmp_path / "execution.sqlite3") as db:
+        executor = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: ("OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE",),
+        )
+        result = executor.execute(proposal(), bundle())
+
+    assert result.success is False
+    assert result.status == "BLOCKED"
+    assert "OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE" in result.reason_codes
+    assert toolbox.ib.place_calls == 0
+
+
+def test_missing_immediate_operator_control_callback_fails_closed(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _PassUntilOperatorControlToolbox()
+    with Database.open(tmp_path / "execution.sqlite3") as db:
+        executor = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+        )
+        result = executor.execute(proposal(), bundle())
+
+    assert result.success is False
+    assert "FRESH_OPERATOR_CONTROL_CHECK_REQUIRED" in result.reason_codes
+    assert toolbox.ib.place_calls == 0
+
+
+def test_operator_revocation_after_registry_blocks_final_send(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _PassUntilOperatorControlToolbox()
+    checks = iter(((), ("OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE",)))
+    with Database.open(tmp_path / "execution.sqlite3") as db:
+        executor = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: next(checks),
+        )
+        result = executor.execute(proposal(), bundle())
+        registry_count = db.execute(
+            "SELECT COUNT(*) FROM experiment_order_registry"
+        ).fetchone()[0]
+
+    assert result.success is False
+    assert result.status == "BLOCKED"
+    assert "OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE" in result.reason_codes
+    assert registry_count == 1
+    assert toolbox.ib.place_calls == 0
+
+
+def test_immediate_fill_payload_inherits_issued_order_identity():
+    trade = SimpleNamespace(
+        order=SimpleNamespace(
+            orderRef="codex-ibkr-paper-30d-a-issued",
+            orderId=77,
+            permId=88,
+            clientId=99,
+        ),
+        fills=[
+            SimpleNamespace(
+                execution=SimpleNamespace(
+                    execId="",
+                    orderRef="",
+                    permId=0,
+                    orderId=0,
+                    clientId=0,
+                    side="BOT",
+                    shares=1,
+                    price=10.0,
+                    time="2026-09-21T13:30:00Z",
+                    cumQty=1,
+                    avgPrice=10.0,
+                ),
+                contract=SimpleNamespace(
+                    conId=123,
+                    symbol="XYZ",
+                    localSymbol="XYZ",
+                    secType="STK",
+                    exchange="SMART",
+                    currency="USD",
+                    lastTradeDateOrContractMonth="",
+                    strike=0,
+                    right="",
+                    multiplier="1",
+                ),
+                commissionReport=None,
+            )
+        ],
+    )
+
+    payload = AutonomousPaperExecutor._fills_payload(
+        trade,
+        fallback_order_ref="codex-ibkr-paper-30d-a-issued",
+    )
+    assert len(payload) == 1
+    fill = payload[0]
+    assert fill["orderRef"] == "codex-ibkr-paper-30d-a-issued"
+    assert fill["orderId"] == 77
+    assert fill["permId"] == 88
+    assert fill["clientId"] == 99
+    assert fill["execution_id_hash"] is None
+
+
+def test_order_registry_appends_broker_perm_id_without_rewriting_pre_send_identity(tmp_path):
+    from decimal import Decimal
+    from ibkr_paper_30d.persistence import Database
+
+    with Database.open(tmp_path / "registry.sqlite3") as db:
+        executor = AutonomousPaperExecutor(
+            NoCallToolbox(),
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        )
+        contract = SimpleNamespace(conId=123)
+        pre_send = SimpleNamespace(orderId=77, permId=0)
+        post_send = SimpleNamespace(orderId=77, permId=9001)
+
+        executor._register_order(
+            order=pre_send,
+            contract=contract,
+            order_ref="codex-ibkr-paper-30d-a-test",
+            action="BUY",
+            quantity=Decimal("1"),
+        )
+        executor._register_order(
+            order=post_send,
+            contract=contract,
+            order_ref="codex-ibkr-paper-30d-a-test",
+            action="BUY",
+            quantity=Decimal("1"),
+        )
+
+        rows = db.execute(
+            "SELECT client_order_id,perm_id FROM experiment_order_registry "
+            "WHERE order_ref=? ORDER BY sequence",
+            ("codex-ibkr-paper-30d-a-test",),
+        ).fetchall()
+
+    assert rows == [(77, 0), (77, 9001)]

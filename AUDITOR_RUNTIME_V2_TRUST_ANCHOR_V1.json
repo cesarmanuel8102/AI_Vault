@@ -1,0 +1,11 @@
+{
+  "schema": "AUDITOR_RUNTIME_V2_TRUST_ANCHOR_V1",
+  "source_commit": "890be85919f85ee53ebd87df7feb95be262c1383",
+  "runtime_files": [
+    "AUDITOR_DENIAL_PROBE_V1.ps1",
+    "AUDITOR_GATE_V2_PROBE.ps1",
+    "CODEX_DECISION_AUDITOR_V1.ps1"
+  ],
+  "runtime_manifest_name": "AUDITOR_RUNTIME_MANIFEST_V2.json",
+  "purpose": "Pin the reviewed Auditor V2 runtime to immutable Git objects; never derive expected trust from installed ProgramData files."
+}

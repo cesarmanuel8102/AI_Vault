@@ -6,6 +6,44 @@ from pathlib import Path
 from typing import Iterator, Sequence
 
 
+# Canonical persistence surfaces for the autonomous IBKR experiment.
+# These are the tables new autonomous runtime code is expected to write.
+AUTONOMOUS_CANONICAL_TABLES = frozenset({
+    "state_events",
+    "autonomous_ledger_events",
+    "experiment_clock_events",
+    "experiment_authorization_events",
+    "experiment_order_registry",
+    "kill_switch_events",
+    "alerts",
+    "trader_input_bundles",
+    "trader_invocations",
+    "trader_results",
+    "autonomous_research_events",
+})
+
+# Retained for backwards compatibility with the earlier Phase-1 architecture.
+# New autonomous runtime code MUST NOT depend on these tables as authoritative
+# state unless they are explicitly promoted into AUTONOMOUS_CANONICAL_TABLES.
+LEGACY_COMPATIBILITY_TABLES = frozenset({
+    "decision_records",
+    "orders",
+    "order_events",
+    "fills",
+    "positions_snapshots",
+    "subledger_events",
+    "risk_snapshots",
+    "broker_reconciliations",
+    "heartbeats",
+    "alert_deliveries",
+    "auditor_results",
+    "process_changes",
+    "benchmarks",
+    "execution_lock_events",
+    "market_data_snapshots",
+    "market_data_gate_results",
+})
+
 APPEND_ONLY_TABLES = (
     "state_events",
     "decision_records",
@@ -13,6 +51,10 @@ APPEND_ONLY_TABLES = (
     "fills",
     "positions_snapshots",
     "subledger_events",
+    "autonomous_ledger_events",
+    "experiment_clock_events",
+    "experiment_authorization_events",
+    "experiment_order_registry",
     "risk_snapshots",
     "broker_reconciliations",
     "heartbeats",
@@ -113,6 +155,61 @@ CREATE TABLE IF NOT EXISTS subledger_events(
     payload_sha256 TEXT NOT NULL,
     created_at_utc TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS autonomous_ledger_events(
+    sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id TEXT NOT NULL UNIQUE,
+    event_type TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    payload_sha256 TEXT NOT NULL,
+    previous_event_sha256 TEXT,
+    event_sha256 TEXT NOT NULL UNIQUE,
+    created_at_utc TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS experiment_clock_events(
+    sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id TEXT NOT NULL UNIQUE,
+    experiment_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    payload_sha256 TEXT NOT NULL,
+    previous_event_sha256 TEXT,
+    event_sha256 TEXT NOT NULL UNIQUE,
+    created_at_utc TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS one_experiment_start
+ON experiment_clock_events(experiment_id, event_type);
+CREATE TABLE IF NOT EXISTS experiment_authorization_events(
+    sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id TEXT NOT NULL UNIQUE,
+    experiment_id TEXT NOT NULL,
+    state TEXT NOT NULL CHECK(state IN ('AUTHORIZED','REVOKED')),
+    clock_event_sha256 TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    payload_sha256 TEXT NOT NULL,
+    created_at_utc TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS experiment_authorization_events_experiment
+ON experiment_authorization_events(experiment_id, sequence);
+CREATE TABLE IF NOT EXISTS experiment_order_registry(
+    sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+    registry_id TEXT NOT NULL UNIQUE,
+    order_ref TEXT NOT NULL,
+    client_order_id INTEGER,
+    perm_id INTEGER,
+    ibkr_order_id INTEGER,
+    contract_id INTEGER,
+    action TEXT NOT NULL,
+    quantity TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    payload_sha256 TEXT NOT NULL,
+    created_at_utc TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS experiment_order_registry_order_ref
+ON experiment_order_registry(order_ref);
+CREATE INDEX IF NOT EXISTS experiment_order_registry_client_order_id
+ON experiment_order_registry(client_order_id);
+CREATE INDEX IF NOT EXISTS experiment_order_registry_perm_id
+ON experiment_order_registry(perm_id);
 CREATE TABLE IF NOT EXISTS risk_snapshots(
     snapshot_id TEXT PRIMARY KEY,
     decision_id TEXT REFERENCES decision_records(decision_id),

@@ -77,9 +77,9 @@ def build_residual_risk_acceptance(
         raise ArtifactValidationError("MONTH1_PAPER_SCOPE_INVALID")
     network = receipt.network_facts
     expected_network = {
-        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": True,
-        "AUDITOR_NETWORK_ISOLATION_REQUIRED": False,
-        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": True,
+        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": False,
+        "AUDITOR_NETWORK_ISOLATION_REQUIRED": True,
+        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": False,
         "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
     }
     if any(network.get(key) is not value for key, value in expected_network.items()):
@@ -119,8 +119,9 @@ def build_residual_risk_acceptance(
         "EXPIRATION_TRIGGERS": list(_EXPIRATION_TRIGGERS),
         "OWNER_DECISION": dict(owner_decision),
         "RISK_STATEMENT": (
-            "The authenticated local IB Gateway may technically accept another "
-            "local API client."
+            "Auditor broker-socket isolation was proven for the restricted "
+            "probe process; compromise containment beyond the audited token "
+            "boundary is not claimed."
         ),
     }
     encoded = canonical_bytes(body)
@@ -232,9 +233,9 @@ def render_auditor_gate_v2_report(
         network = receipt.network_facts
     else:
         network = {
-            "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": True,
-            "AUDITOR_NETWORK_ISOLATION_REQUIRED": False,
-            "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": True,
+            "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": None,
+            "AUDITOR_NETWORK_ISOLATION_REQUIRED": True,
+            "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": None,
             "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
         }
     lines.extend(["", "## Network And Containment", ""])
@@ -245,14 +246,21 @@ def render_auditor_gate_v2_report(
         "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED",
     ):
         lines.append(f"{name}: {_display(network.get(name))}")
+    socket_control = (
+        "PROVEN_DENIED"
+        if receipt is not None
+        and network.get("AUDITOR_TECHNICAL_SOCKET_REACHABILITY") is False
+        and network.get("AUDITOR_NETWORK_ISOLATION_REQUIRED") is True
+        else "UNPROVEN"
+    )
     lines.extend(
         [
-            "LEGACY_FIREWALL_CONTROL: INEFFECTIVE_FOR_LOOPBACK_REQUIREMENT",
-            "WFP_AUDITOR_FRONT: DEFERRED",
+            f"BROKER_LOOPBACK_SOCKET_CONTROL: {socket_control}",
             "",
             (
-                "The authenticated local IB Gateway may technically accept another "
-                "local API client."
+                "The restricted auditor token is accepted only when the probe "
+                "demonstrates broker loopback denial; broader host compromise "
+                "containment is not claimed."
             ),
             "",
             "## Unresolved Reasons",

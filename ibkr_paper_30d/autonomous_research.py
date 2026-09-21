@@ -253,6 +253,9 @@ class CodexAutonomousCLIProvider:
             if completed.returncode != 0:
                 self.last_failure_code = f"RETURN_CODE_{completed.returncode}"
                 raise RuntimeError("AUTONOMOUS_CODEX_PROVIDER_FAILED")
+            self._assert_effective_model(
+                completed.stdout, request.requested_model
+            )
             self.last_native_tool_events = self._native_tool_events(completed.stdout)
             try:
                 raw = json.loads(output_path.read_text(encoding="utf-8"))
@@ -317,6 +320,37 @@ class CodexAutonomousCLIProvider:
 
         normalize(schema)
         return schema
+
+    @staticmethod
+    def _assert_effective_model(output: str, requested_model: str) -> None:
+        observed: set[str] = set()
+        model_keys = {"model", "model_name", "model_id", "effective_model"}
+
+        def collect(value: object) -> None:
+            if isinstance(value, dict):
+                for key, child in value.items():
+                    if key in model_keys and isinstance(child, str) and child.strip():
+                        observed.add(child.strip())
+                    collect(child)
+            elif isinstance(value, list):
+                for child in value:
+                    collect(child)
+
+        for line in output.splitlines():
+            if not line.strip():
+                continue
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            collect(event)
+
+        mismatches = sorted(model for model in observed if model != requested_model)
+        if mismatches:
+            raise RuntimeError(
+                "AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED:"
+                + ",".join(mismatches)
+            )
 
     @classmethod
     def _native_tool_events(cls, output: str) -> list[dict[str, Any]]:

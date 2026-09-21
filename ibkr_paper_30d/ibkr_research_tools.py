@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 import random
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 from .autonomous_research import (
@@ -12,6 +14,8 @@ from .autonomous_research import (
     ResearchResult,
     ResearchTool,
 )
+from .ibkr_readonly import expected_identity_hash
+from .ibkr_readonly_session import ExpectedPaperIdentityStore
 from .risk import CapitalBoundaryInputs, CapitalBoundaryRiskEngine, RiskResult
 from .trader_invocation import TraderDecision, TraderInputBundle
 
@@ -36,6 +40,7 @@ class IBKRResearchToolbox:
         client_id_max: int = 19899,
         timeout_seconds: float = 12.0,
         declared_options_level: int | None = None,
+        expected_account_hash: str | None = None,
     ) -> None:
         if host not in PAPER_HOSTS or port != PAPER_PORT:
             raise ValueError("autonomous research requires local IBKR paper Gateway :4002")
@@ -45,6 +50,14 @@ class IBKRResearchToolbox:
         self.client_id_max = client_id_max
         self.timeout_seconds = timeout_seconds
         self.declared_options_level = declared_options_level
+        configured_hash = expected_account_hash or os.environ.get("IBKR_PAPER_ACCOUNT_SHA256")
+        if configured_hash is None:
+            store = ExpectedPaperIdentityStore(
+                Path("Secrets/expected_paper_account_identity_v1.json")
+            )
+            if store.path.exists():
+                configured_hash = store.load_hash()
+        self.expected_account_hash = configured_hash.lower() if configured_hash else None
         self.risk_engine = CapitalBoundaryRiskEngine.aggressive_month1()
 
     def manifest(self) -> list[dict[str, Any]]:
@@ -95,8 +108,49 @@ class IBKRResearchToolbox:
                 error=f"{type(exc).__name__}:{exc}",
             )
 
+    WARNING_BLOCK_TOKENS = (
+        "not allowed",
+        "cannot",
+        "rejected",
+        "insufficient",
+        "incompatible",
+        "missing",
+    )
+
+    def _feasibility_common(
+        self,
+        feasibility: dict[str, Any],
+        *,
+        equity: Decimal,
+    ) -> tuple[bool, tuple[str, ...]]:
+        if not feasibility.get("success"):
+            return False, ("BROKER_FEASIBILITY_FAILED",)
+        warning = str(feasibility.get("warningText") or "").lower()
+        if any(token in warning for token in self.WARNING_BLOCK_TOKENS):
+            return False, ("BROKER_FEASIBILITY_WARNING_BLOCK",)
+
+        init_margin = self._decimal_or_none(feasibility.get("initMarginChange"))
+        maint_margin = self._decimal_or_none(feasibility.get("maintMarginChange"))
+        commission_candidates = (
+            self._decimal_or_none(feasibility.get("commission")),
+            self._decimal_or_none(feasibility.get("minCommission")),
+            self._decimal_or_none(feasibility.get("maxCommission")),
+        )
+        if init_margin is None or maint_margin is None:
+            return False, ("BROKER_MARGIN_EVIDENCE_MISSING",)
+        if all(value is None for value in commission_candidates):
+            return False, ("BROKER_COMMISSION_EVIDENCE_MISSING",)
+        positive_margin = max(init_margin, maint_margin, Decimal("0"))
+        if positive_margin > equity:
+            return False, ("BROKER_MARGIN_EXCEEDS_EXPERIMENT_EQUITY",)
+        return True, ()
+
     def validate_proposal(
-        self, proposal: AutonomousTradeProposal, bundle: TraderInputBundle
+        self,
+        proposal: AutonomousTradeProposal,
+        bundle: TraderInputBundle,
+        *,
+        ib: Any | None = None,
     ) -> ProposalValidation:
         equity = Decimal(str(bundle.experiment_subledger_snapshot.get("equity", "0")))
         structural_floor, structural_reason = self._structure_loss_floor(proposal, bundle)
@@ -136,40 +190,21 @@ class IBKRResearchToolbox:
                 },
             )
 
-        feasibility = self._broker_feasibility(proposal)
-        if not feasibility.get("success"):
-            return ProposalValidation(
-                passed=False,
-                reason_codes=("BROKER_FEASIBILITY_FAILED",),
-                broker_evidence=feasibility,
-            )
-
-        warning = str(feasibility.get("warningText") or "").lower()
-        if any(token in warning for token in ("not allowed", "cannot", "rejected", "insufficient")):
-            return ProposalValidation(
-                passed=False,
-                reason_codes=("BROKER_FEASIBILITY_WARNING_BLOCK",),
-                broker_evidence=feasibility,
-            )
-
-        margin_candidates = [
-            self._decimal_or_none(feasibility.get("initMarginChange")),
-            self._decimal_or_none(feasibility.get("maintMarginChange")),
-        ]
-        positive_margin = max(
-            (value for value in margin_candidates if value is not None and value > 0),
-            default=Decimal("0"),
+        feasibility = self._broker_feasibility(proposal, ib=ib)
+        feasibility_ok, feasibility_reasons = self._feasibility_common(
+            feasibility, equity=equity
         )
-        if positive_margin > equity:
+        if not feasibility_ok:
             return ProposalValidation(
                 passed=False,
-                reason_codes=("BROKER_MARGIN_EXCEEDS_EXPERIMENT_EQUITY",),
+                reason_codes=feasibility_reasons,
                 broker_evidence=feasibility,
             )
 
         commission = (
             self._decimal_or_none(feasibility.get("maxCommission"))
             or self._decimal_or_none(feasibility.get("commission"))
+            or self._decimal_or_none(feasibility.get("minCommission"))
             or Decimal("0")
         )
         if effective_maximum_loss + max(commission, Decimal("0")) > equity:
@@ -208,12 +243,16 @@ class IBKRResearchToolbox:
         action: AutonomousPositionAction,
         bundle: TraderInputBundle,
         decision: TraderDecision,
+        *,
+        ib: Any | None = None,
     ) -> ProposalValidation:
         from ib_insync import Order
 
-        ib = self._connect()
+        equity = Decimal(str(bundle.experiment_subledger_snapshot.get("equity", "0")))
+        owns_connection = ib is None
+        broker = ib or self._connect()
         try:
-            matched = self._resolve_open_position(ib, action)
+            matched = self._resolve_open_position(broker, action)
             if matched is None:
                 return ProposalValidation(
                     passed=False,
@@ -258,20 +297,32 @@ class IBKRResearchToolbox:
             )
             if action.limit_price is not None:
                 order.lmtPrice = float(action.limit_price)
-            state = ib.whatIfOrder(matched.contract, order)
+            try:
+                state = broker.whatIfOrder(matched.contract, order)
+            except Exception as exc:
+                state = None
+                state_error = f"{type(exc).__name__}:{exc}"
+            else:
+                state_error = None
             evidence = {
+                "success": state is not None,
+                "error": state_error or ("WHAT_IF_RETURNED_NONE" if state is None else None),
                 "contract": self._serialize_contract(matched.contract),
                 "current_position": str(position),
                 "requested_quantity": str(quantity),
                 "whatIf": True,
                 "commission": getattr(state, "commission", None),
+                "minCommission": getattr(state, "minCommission", None),
+                "maxCommission": getattr(state, "maxCommission", None),
+                "initMarginChange": getattr(state, "initMarginChange", None),
+                "maintMarginChange": getattr(state, "maintMarginChange", None),
                 "warningText": getattr(state, "warningText", None),
             }
-            warning = str(evidence.get("warningText") or "").lower()
-            if any(token in warning for token in ("not allowed", "cannot", "rejected")):
+            feasibility_ok, reasons = self._feasibility_common(evidence, equity=equity)
+            if not feasibility_ok:
                 return ProposalValidation(
                     passed=False,
-                    reason_codes=("BROKER_FEASIBILITY_WARNING_BLOCK",),
+                    reason_codes=reasons,
                     broker_evidence=evidence,
                 )
             return ProposalValidation(
@@ -280,7 +331,8 @@ class IBKRResearchToolbox:
                 broker_evidence=evidence,
             )
         finally:
-            ib.disconnect()
+            if owns_connection:
+                broker.disconnect()
 
     @staticmethod
     def _resolve_open_position(ib: Any, action: AutonomousPositionAction):
@@ -313,7 +365,173 @@ class IBKRResearchToolbox:
         if len(accounts) != 1 or not str(accounts[0]).upper().startswith("DU"):
             ib.disconnect()
             raise PermissionError("single DU paper account identity required")
+        if self.expected_account_hash is None:
+            ib.disconnect()
+            raise PermissionError("expected paper account identity hash is required")
+        actual_hash = expected_identity_hash(str(accounts[0]))
+        if actual_hash != self.expected_account_hash:
+            ib.disconnect()
+            raise PermissionError("paper account identity mismatch")
         return ib
+
+    @staticmethod
+    def _valid_live_price(value: Any) -> bool:
+        try:
+            parsed = Decimal(str(value))
+        except Exception:
+            return False
+        return parsed.is_finite() and parsed > 0
+
+    def _single_live_quote_evidence(
+        self,
+        ib: Any,
+        contract: Any,
+        *,
+        wait_seconds: float,
+        max_age_seconds: float,
+    ) -> dict[str, Any]:
+        ib.reqMarketDataType(1)  # explicitly request LIVE data
+        ticker = ib.reqMktData(contract, "", True, False)
+        ib.sleep(wait_seconds)
+        bid = getattr(ticker, "bid", None)
+        ask = getattr(ticker, "ask", None)
+        stamp = getattr(ticker, "time", None)
+        actual_market_data_type = getattr(ticker, "marketDataType", None)
+        if actual_market_data_type != 1:
+            return {
+                "success": False,
+                "reason": "TRADE_CONTRACT_MARKET_DATA_NOT_REALTIME",
+                "contract": self._serialize_contract(contract),
+                "market_data_type": actual_market_data_type,
+            }
+        if not self._valid_live_price(bid) or not self._valid_live_price(ask):
+            return {
+                "success": False,
+                "reason": "TRADE_CONTRACT_LIVE_BID_ASK_MISSING",
+                "contract": self._serialize_contract(contract),
+            }
+        bid_d = Decimal(str(bid))
+        ask_d = Decimal(str(ask))
+        if bid_d > ask_d:
+            return {
+                "success": False,
+                "reason": "TRADE_CONTRACT_CROSSED_MARKET",
+                "contract": self._serialize_contract(contract),
+                "bid": str(bid_d),
+                "ask": str(ask_d),
+            }
+        if stamp is None or not hasattr(stamp, "astimezone"):
+            return {
+                "success": False,
+                "reason": "TRADE_CONTRACT_QUOTE_TIMESTAMP_MISSING",
+                "contract": self._serialize_contract(contract),
+            }
+        server_time = ib.reqCurrentTime()
+        if server_time is None or not hasattr(server_time, "astimezone"):
+            return {
+                "success": False,
+                "reason": "BROKER_SERVER_TIME_MISSING_FOR_TRADE_QUOTE",
+                "contract": self._serialize_contract(contract),
+            }
+        from datetime import timezone
+        quote_utc = stamp.astimezone(timezone.utc)
+        broker_utc = server_time.astimezone(timezone.utc)
+        age_seconds = (broker_utc - quote_utc).total_seconds()
+        if age_seconds < -5.0 or age_seconds > max_age_seconds:
+            return {
+                "success": False,
+                "reason": "TRADE_CONTRACT_QUOTE_STALE",
+                "contract": self._serialize_contract(contract),
+                "quote_time_utc": quote_utc.isoformat().replace("+00:00", "Z"),
+                "broker_time_utc": broker_utc.isoformat().replace("+00:00", "Z"),
+                "age_seconds": age_seconds,
+            }
+        return {
+            "success": True,
+            "contract": self._serialize_contract(contract),
+            "bid": str(bid_d),
+            "ask": str(ask_d),
+            "quote_time_utc": quote_utc.isoformat().replace("+00:00", "Z"),
+            "broker_time_utc": broker_utc.isoformat().replace("+00:00", "Z"),
+            "age_seconds": age_seconds,
+            "requested_market_data_type": "LIVE",
+            "market_data_type": 1,
+        }
+
+    def live_contract_quote_evidence(
+        self,
+        ib: Any,
+        contract: Any,
+        *,
+        wait_seconds: float = 2.0,
+        max_age_seconds: float = 15.0,
+    ) -> dict[str, Any]:
+        """Require fresh live market evidence before broker transmission.
+
+        For BAG contracts, a direct combo quote is preferred. If IBKR does not
+        publish a combo bid/ask, every combo leg must independently have a fresh
+        LIVE bid/ask; this preserves defined-risk multi-leg capability without
+        accepting stale or delayed inputs.
+        """
+        try:
+            direct = self._single_live_quote_evidence(
+                ib,
+                contract,
+                wait_seconds=wait_seconds,
+                max_age_seconds=max_age_seconds,
+            )
+            if direct.get("success"):
+                return {**direct, "validation_mode": "DIRECT_CONTRACT"}
+
+            if str(getattr(contract, "secType", "") or "").upper() != "BAG":
+                return direct
+
+            from ib_insync import Contract
+            leg_results: list[dict[str, Any]] = []
+            for leg in getattr(contract, "comboLegs", []) or []:
+                leg_contract = Contract(
+                    conId=int(getattr(leg, "conId", 0) or 0),
+                    exchange=str(getattr(leg, "exchange", "") or "SMART"),
+                    currency=str(getattr(contract, "currency", "") or "USD"),
+                )
+                qualified = ib.qualifyContracts(leg_contract)
+                if not qualified:
+                    return {
+                        "success": False,
+                        "reason": "TRADE_COMBO_LEG_UNRESOLVED",
+                        "contract": self._serialize_contract(contract),
+                        "failed_leg_con_id": leg_contract.conId,
+                    }
+                evidence = self._single_live_quote_evidence(
+                    ib,
+                    qualified[0],
+                    wait_seconds=wait_seconds,
+                    max_age_seconds=max_age_seconds,
+                )
+                leg_results.append(evidence)
+                if not evidence.get("success"):
+                    return {
+                        "success": False,
+                        "reason": "TRADE_COMBO_LEG_MARKET_DATA_BLOCK",
+                        "contract": self._serialize_contract(contract),
+                        "leg_results": leg_results,
+                    }
+            if not leg_results:
+                return direct
+            return {
+                "success": True,
+                "contract": self._serialize_contract(contract),
+                "validation_mode": "ALL_COMBO_LEGS",
+                "requested_market_data_type": "LIVE",
+                "leg_results": leg_results,
+            }
+        except Exception as exc:
+            return {
+                "success": False,
+                "reason": "TRADE_CONTRACT_MARKET_DATA_CHECK_FAILED",
+                "error": f"{type(exc).__name__}:{exc}",
+                "contract": self._serialize_contract(contract),
+            }
 
     @staticmethod
     def _serialize_contract(contract: Any) -> dict[str, Any]:
@@ -375,11 +593,18 @@ class IBKRResearchToolbox:
             for item in values:
                 if item.tag in wanted:
                     summary[item.tag] = str(item.value)
+            server_time = ib.reqCurrentTime()
+            server_time_utc = (
+                server_time.astimezone(__import__("datetime").timezone.utc).isoformat().replace("+00:00", "Z")
+                if hasattr(server_time, "astimezone")
+                else str(server_time)
+            )
             return {
                 "success": True,
                 "paper_account": True,
                 "declared_options_level": self.declared_options_level,
                 "summary": summary,
+                "server_time_utc": server_time_utc,
             }
         finally:
             ib.disconnect()
@@ -439,10 +664,18 @@ class IBKRResearchToolbox:
                     "orderRef": str(getattr(execution, "orderRef", "") or ""),
                     "permId": int(getattr(execution, "permId", 0) or 0),
                     "orderId": int(getattr(execution, "orderId", 0) or 0),
+                    "clientId": int(getattr(execution, "clientId", 0) or 0),
+                    "execution_time": str(getattr(execution, "time", "") or ""),
+                    "cumQty": str(getattr(execution, "cumQty", "") or ""),
+                    "avgPrice": str(getattr(execution, "avgPrice", "") or ""),
                     "side": side,
                     "quantity": str(getattr(execution, "shares", "") or ""),
                     "price": str(getattr(execution, "price", "") or ""),
-                    "commission": str(getattr(commission_report, "commission", 0) or 0),
+                    "commission": (
+                    None
+                    if commission_report is None
+                    else str(getattr(commission_report, "commission", 0))
+                ),
                     "contract": self._serialize_contract(contract),
                 })
             return {"success": True, "executions": items}
@@ -663,12 +896,18 @@ class IBKRResearchToolbox:
             },
         )
 
-    def _broker_feasibility(self, proposal: AutonomousTradeProposal) -> dict[str, Any]:
+    def _broker_feasibility(
+        self,
+        proposal: AutonomousTradeProposal,
+        *,
+        ib: Any | None = None,
+    ) -> dict[str, Any]:
         from ib_insync import Order
 
-        ib = self._connect()
+        owns_connection = ib is None
+        broker = ib or self._connect()
         try:
-            contract = self._proposal_contract(ib, proposal)
+            contract = self._proposal_contract(broker, proposal)
             order = Order(
                 action=proposal.action.upper(),
                 orderType=proposal.order_type.upper(),
@@ -678,8 +917,16 @@ class IBKRResearchToolbox:
             )
             if proposal.limit_price is not None:
                 order.lmtPrice = float(proposal.limit_price)
-            state = ib.whatIfOrder(contract, order)
-            return {
+            state = broker.whatIfOrder(contract, order)
+            if state is None:
+                return {
+                    "success": False,
+                    "error": "WHAT_IF_RETURNED_NONE",
+                    "contract": self._serialize_contract(contract),
+                    "whatIf": True,
+                    "paper_only": True,
+                }
+            evidence = {
                 "success": True,
                 "contract": self._serialize_contract(contract),
                 "commission": getattr(state, "commission", None),
@@ -698,8 +945,17 @@ class IBKRResearchToolbox:
                 "whatIf": True,
                 "paper_only": True,
             }
+            return evidence
+        except Exception as exc:
+            return {
+                "success": False,
+                "error": f"{type(exc).__name__}:{exc}",
+                "whatIf": True,
+                "paper_only": True,
+            }
         finally:
-            ib.disconnect()
+            if owns_connection and broker is not None:
+                broker.disconnect()
 
     @staticmethod
     def _covered_shares(bundle: TraderInputBundle, symbol: str) -> Decimal:
@@ -813,11 +1069,9 @@ class IBKRResearchToolbox:
                 else price * Decimal("100") * overall_qty
             )
         else:
-            initial_cash = (
-                -Decimal(str(proposal.capital_required))
-                if action == "BUY"
-                else Decimal("0")
-            )
+            if action == "BUY":
+                return None, "MULTI_LEG_BUY_COST_NOT_PRETRADE_BOUNDED"
+            initial_cash = Decimal("0")
 
         minimum_pnl: Decimal | None = None
         for underlying in sorted(critical):

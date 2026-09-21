@@ -36,7 +36,10 @@ $ReadOnlyReport = Join-Path $CanonicalReportRoot "read_only_real_paper_reconcili
 $CanonicalAuditorReceipt = Join-Path $CanonicalReportRoot "auditor_gate_v2_receipt.json"
 $MarketValidation = Join-Path $CanonicalReportRoot "market_data_validation.json"
 $MarketTaskName = "CodexIBKRMarketDataGate"
+$ProbeFirewallRuleName = "CodexAuditorV2-Probe-PowerShell-Broker-Block"
 $CanonicalAcceptance = Join-Path $ResolvedRepoRoot "AUDITOR_MONTH1_PAPER_RESIDUAL_RISK_ACCEPTANCE_V1.json"
+$TrustAnchorPath = Join-Path $ResolvedRepoRoot "AUDITOR_RUNTIME_V2_TRUST_ANCHOR_V1.json"
+$ExpectedTrustAnchorSha256 = "33669683a4cee5621b4f887a2193cdb1ff3592eb222d3cc446457db172a97233"
 
 function Assert-Administrator {
     $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -79,7 +82,11 @@ function New-RandomSecurePassword {
 
 function Quote-Argument {
     param([string]$Value)
-    return '"' + $Value.Replace('"', '\"') + '"'
+    if ([string]::IsNullOrWhiteSpace($Value)) { throw "EMPTY_ARGUMENT_VALUE" }
+    if ($Value.Contains('"') -or $Value.EndsWith('\')) {
+        throw "UNSAFE_ARGUMENT_VALUE"
+    }
+    return '"' + $Value + '"'
 }
 
 Assert-Administrator
@@ -121,8 +128,23 @@ $User = Get-LocalUser -Name $AuditorUser -ErrorAction Stop
 if ($User.SID.Value -ne $ExpectedAuditorSid) {
     throw "AUDITOR_SID_MISMATCH:ACTUAL=$($User.SID.Value):EXPECTED=$ExpectedAuditorSid"
 }
-if (-not $User.Enabled) {
-    Enable-LocalUser -Name $AuditorUser
+if ($User.Enabled) {
+    Disable-LocalUser -Name $AuditorUser -ErrorAction Stop
+}
+
+if ((Get-Sha256Lower -LiteralPath $TrustAnchorPath) -ne $ExpectedTrustAnchorSha256) {
+    throw "AUDITOR_TRUST_ANCHOR_HASH_MISMATCH"
+}
+$TrustAnchor = Invoke-PythonJson -Arguments @(
+    "-m", "ibkr_paper_30d.prerequisite_tools", "evaluate-runtime-trust-anchor",
+    "--repo-root", $ResolvedRepoRoot,
+    "--anchor", $TrustAnchorPath
+)
+if ($TrustAnchor.source_matches_anchor -ne $true) {
+    throw "AUDITOR_RUNTIME_SOURCE_DOES_NOT_MATCH_TRUST_ANCHOR"
+}
+if ([string]$TrustAnchor.anchor_sha256 -ne $ExpectedTrustAnchorSha256) {
+    throw "AUDITOR_TRUST_ANCHOR_EVALUATION_MISMATCH"
 }
 
 & PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1") -Mode Install -ConfirmRuntimeMutation
@@ -147,7 +169,13 @@ if (-not (Test-Path -LiteralPath $AuditExport.paper_identity_receipt_path -PathT
     throw "EXPORTED_PAPER_IDENTITY_RECEIPT_MISSING"
 }
 
-$DeploymentSha = Get-Sha256Lower -LiteralPath $DeploymentManifest
+$DeploymentSha = [string]$TrustAnchor.deployment_manifest_sha256
+if ((Get-Sha256Lower -LiteralPath $DeploymentManifest) -ne $DeploymentSha) {
+    throw "AUDITOR_DEPLOYMENT_MANIFEST_TRUST_ANCHOR_MISMATCH"
+}
+if ((Get-Sha256Lower -LiteralPath $RuntimeManifest) -ne [string]$TrustAnchor.runtime_manifest_sha256) {
+    throw "AUDITOR_RUNTIME_MANIFEST_TRUST_ANCHOR_MISMATCH"
+}
 $PaperHash = [string]$ReadOnly.expected_account_identity_hash
 if ($PaperHash -notmatch '^[0-9a-f]{64}$') {
     throw "EXPECTED_PAPER_ACCOUNT_HASH_INVALID"
@@ -171,39 +199,74 @@ if (-not (Test-Path -LiteralPath $SmtpProbeTarget -PathType Leaf)) {
     $TemporaryProbeTargets.Add($SmtpProbeTarget)
 }
 
-# Reset only the dedicated local auditor account password. The SID is preserved.
-$SecurePassword = New-RandomSecurePassword
-Set-LocalUser -Name $AuditorUser -Password $SecurePassword
-$Credential = New-Object Security.Management.Automation.PSCredential(
-    "$env:COMPUTERNAME\$AuditorUser",
-    $SecurePassword
-)
-
+# Keep the account disabled until the bounded probe window starts.
 $SecondaryLogon = Get-Service -Name seclogon -ErrorAction SilentlyContinue
-if ($null -ne $SecondaryLogon -and $SecondaryLogon.Status -ne "Running") {
-    Start-Service -Name seclogon
-}
-
-$StdoutPath = Join-Path $ReportsRoot ("probe-launch-" + [Guid]::NewGuid().ToString("N") + ".out.txt")
-$StderrPath = Join-Path $ReportsRoot ("probe-launch-" + [Guid]::NewGuid().ToString("N") + ".err.txt")
-$ProbeStart = [DateTime]::UtcNow
-
-$Arguments = @(
-    "-NoProfile",
-    "-ExecutionPolicy", "Bypass",
-    "-File", (Quote-Argument $ProbePath),
-    "-BundlePath", (Quote-Argument ([string]$AuditExport.bundle_path)),
-    "-PaperIdentityReceiptPath", (Quote-Argument ([string]$AuditExport.paper_identity_receipt_path)),
-    "-TargetManifestPath", (Quote-Argument $TargetManifest),
-    "-DeploymentManifestPath", (Quote-Argument $DeploymentManifest),
-    "-ExpectedDeploymentManifestSha256", $DeploymentSha,
-    "-ExpectedPaperAccountHash", $PaperHash,
-    "-ExpectedSid", $ExpectedAuditorSid,
-    "-ReportDirectory", (Quote-Argument $ReportsRoot)
-) -join " "
-
+$SecondaryLogonWasRunning = $null -ne $SecondaryLogon -and $SecondaryLogon.Status -eq "Running"
+$SecondaryLogonOriginalStartType = if ($null -ne $SecondaryLogon) { [string]$SecondaryLogon.StartType } else { $null }
 $Receipt = $null
+$AuditorEnabledForProbe = $false
+$ProbeFirewallInstalled = $false
+
 try {
+    Enable-LocalUser -Name $AuditorUser -ErrorAction Stop
+    $AuditorEnabledForProbe = $true
+
+    # Use a one-time random password only inside the bounded probe window.
+    $SecurePassword = New-RandomSecurePassword
+    Set-LocalUser -Name $AuditorUser -Password $SecurePassword
+    $Credential = New-Object Security.Management.Automation.PSCredential(
+        "$env:COMPUTERNAME\$AuditorUser",
+        $SecurePassword
+    )
+
+    if ($null -ne $SecondaryLogon -and -not $SecondaryLogonWasRunning) {
+        if ($SecondaryLogonOriginalStartType -eq "Disabled") {
+            Set-Service -Name seclogon -StartupType Manual
+        }
+        Start-Service -Name seclogon
+    }
+
+    Get-NetFirewallRule -Name $ProbeFirewallRuleName -ErrorAction SilentlyContinue |
+        Remove-NetFirewallRule -ErrorAction SilentlyContinue
+
+    # During the bounded auditor probe no local process needs broker API access.
+    # Use an all-programs loopback block so a compromised auditor process cannot
+    # bypass isolation by spawning another executable.
+    $ProbeFirewallRule = New-NetFirewallRule -Name $ProbeFirewallRuleName -DisplayName $ProbeFirewallRuleName -Direction Outbound -Action Block -Protocol TCP -RemotePort 4001,4002 -RemoteAddress 127.0.0.1,::1 -Profile Any -Enabled True
+    $ProbeFirewallInstalled = $true
+
+    $ProbePortFilter = $ProbeFirewallRule | Get-NetFirewallPortFilter
+    $ProbeAddressFilter = $ProbeFirewallRule | Get-NetFirewallAddressFilter
+    if ([string]$ProbeFirewallRule.Action -ne "Block" -or [string]$ProbeFirewallRule.Direction -ne "Outbound") {
+        throw "AUDITOR_PROBE_FIREWALL_RULE_INVALID"
+    }
+    $ProbeAddresses = @($ProbeAddressFilter.RemoteAddress | ForEach-Object { [string]$_ })
+    if ($ProbeAddresses -notcontains "127.0.0.1" -or $ProbeAddresses -notcontains "::1") {
+        throw "AUDITOR_PROBE_FIREWALL_SCOPE_INVALID"
+    }
+    $ProbePorts = @($ProbePortFilter.RemotePort | ForEach-Object { [string]$_ })
+    if ($ProbePorts -notcontains "4001" -or $ProbePorts -notcontains "4002") {
+        throw "AUDITOR_PROBE_FIREWALL_PORTS_INVALID"
+    }
+
+    $StdoutPath = Join-Path $ReportsRoot ("probe-launch-" + [Guid]::NewGuid().ToString("N") + ".out.txt")
+    $StderrPath = Join-Path $ReportsRoot ("probe-launch-" + [Guid]::NewGuid().ToString("N") + ".err.txt")
+    $ProbeStart = [DateTime]::UtcNow
+
+    $Arguments = @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", (Quote-Argument $ProbePath),
+        "-BundlePath", (Quote-Argument ([string]$AuditExport.bundle_path)),
+        "-PaperIdentityReceiptPath", (Quote-Argument ([string]$AuditExport.paper_identity_receipt_path)),
+        "-TargetManifestPath", (Quote-Argument $TargetManifest),
+        "-DeploymentManifestPath", (Quote-Argument $DeploymentManifest),
+        "-ExpectedDeploymentManifestSha256", $DeploymentSha,
+        "-ExpectedPaperAccountHash", $PaperHash,
+        "-ExpectedSid", $ExpectedAuditorSid,
+        "-ReportDirectory", (Quote-Argument $ReportsRoot)
+    ) -join " "
+
     $Process = Start-Process -FilePath $WindowsPowerShell -ArgumentList $Arguments -Credential $Credential -UseNewEnvironment -WorkingDirectory $RuntimeRoot -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput $StdoutPath -RedirectStandardError $StderrPath
     if ($Process.ExitCode -ne 0) {
         $Err = if (Test-Path $StderrPath) { Get-Content -LiteralPath $StderrPath -Raw } else { "" }
@@ -221,15 +284,37 @@ try {
     Copy-Item -LiteralPath $Receipt.FullName -Destination $CanonicalAuditorReceipt -Force
 }
 finally {
+    if ($ProbeFirewallInstalled -or (Get-NetFirewallRule -Name $ProbeFirewallRuleName -ErrorAction SilentlyContinue)) {
+        Get-NetFirewallRule -Name $ProbeFirewallRuleName -ErrorAction SilentlyContinue |
+            Remove-NetFirewallRule -ErrorAction SilentlyContinue
+    }
+
     foreach ($TemporaryPath in $TemporaryProbeTargets) {
         if (Test-Path -LiteralPath $TemporaryPath -PathType Leaf) {
             Remove-Item -LiteralPath $TemporaryPath -Force
         }
     }
+
+    if ($AuditorEnabledForProbe -or (Get-LocalUser -Name $AuditorUser -ErrorAction SilentlyContinue)) {
+        try {
+            $PostProbePassword = New-RandomSecurePassword
+            Set-LocalUser -Name $AuditorUser -Password $PostProbePassword
+        } catch { }
+        try {
+            Disable-LocalUser -Name $AuditorUser -ErrorAction Stop
+        } catch { }
+    }
+
+    if ($null -ne $SecondaryLogon -and -not $SecondaryLogonWasRunning) {
+        try { Stop-Service -Name seclogon -Force } catch { }
+        if ($SecondaryLogonOriginalStartType -eq "Disabled") {
+            try { Set-Service -Name seclogon -StartupType Disabled } catch { }
+        }
+    }
 }
 
-$RuntimeManifestSha = Get-Sha256Lower -LiteralPath $RuntimeManifest
-$DeploymentManifestSha = Get-Sha256Lower -LiteralPath $DeploymentManifest
+$RuntimeManifestSha = [string]$TrustAnchor.runtime_manifest_sha256
+$DeploymentManifestSha = [string]$TrustAnchor.deployment_manifest_sha256
 $ProbeSha = Get-Sha256Lower -LiteralPath $ProbePath
 $TargetManifestSha = Get-Sha256Lower -LiteralPath $TargetManifest
 
