@@ -260,7 +260,7 @@ def observe_market_data(
     expected_account_hash: str | None = None,
     symbols: Sequence[str] = ("SPY", "QQQ", "IEF"),
     cadence_seconds: float = 5,
-    window_seconds: float = 300,
+    window_seconds: float = 330,
     now_utc=None,
 ) -> dict[str, object]:
     root = Path(output_root)
@@ -1057,7 +1057,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     observe_parser.add_argument("--port", type=int, default=4002)
     observe_parser.add_argument("--symbols", nargs="+", default=["SPY", "QQQ", "IEF"])
     observe_parser.add_argument("--cadence-seconds", type=float, default=5)
-    observe_parser.add_argument("--window-seconds", type=float, default=300)
+    observe_parser.add_argument("--window-seconds", type=float, default=330)
     freeze_parser = commands.add_parser("freeze-market-policy")
     freeze_parser.add_argument("--ledger", type=Path, default=MARKET_LEDGER)
     freeze_parser.add_argument("--destination", type=Path, default=MARKET_POLICY)
