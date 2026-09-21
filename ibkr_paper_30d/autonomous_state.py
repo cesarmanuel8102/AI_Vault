@@ -109,8 +109,9 @@ class AutonomousStateBuilder:
                 continue
             self.ledger.record_fill(fill)
 
-    def _mark_open_positions(self) -> None:
+    def _mark_open_positions(self) -> list[str]:
         state = self.ledger.project()
+        reasons: list[str] = []
         for position in state.positions:
             result = self.toolbox.execute(
                 ResearchRequest(
@@ -126,6 +127,7 @@ class AutonomousStateBuilder:
                 self._minimal_placeholder_bundle(),
             )
             if not result.success:
+                reasons.append(f"MARK_QUOTE_FAILED:{position.contract_id}")
                 continue
             raw_price = (
                 result.data.get("marketPrice")
@@ -136,6 +138,7 @@ class AutonomousStateBuilder:
             try:
                 price = Decimal(str(raw_price))
             except Exception:
+                reasons.append(f"MARK_QUOTE_INVALID:{position.contract_id}")
                 continue
             if price.is_finite() and price > 0:
                 self.ledger.record_mark(
@@ -143,6 +146,9 @@ class AutonomousStateBuilder:
                     symbol=position.symbol,
                     price=price,
                 )
+            else:
+                reasons.append(f"MARK_QUOTE_INVALID:{position.contract_id}")
+        return reasons
 
     @staticmethod
     def _broker_position_map(payload: dict[str, Any]) -> dict[int, Decimal]:
@@ -206,18 +212,29 @@ class AutonomousStateBuilder:
         return list(reversed(items))
 
     def _clock(self, now: datetime) -> dict[str, Any]:
-        end = self.experiment_start_utc + timedelta(days=self.duration_days)
-        remaining = max((end - now).total_seconds(), 0.0)
-        elapsed = max((now - self.experiment_start_utc).total_seconds(), 0.0)
+        return self.experiment_clock.snapshot(now)
+
+    @staticmethod
+    def _broker_snapshot(account: dict[str, Any], equity: Decimal) -> dict[str, Any]:
+        summary = account.get("summary", {}) or {}
+        limits: list[Decimal] = [max(equity, Decimal("0"))]
+        for key in ("BuyingPower", "AvailableFunds", "ExcessLiquidity", "SettledCash"):
+            raw = summary.get(key)
+            if raw is None:
+                continue
+            try:
+                value = Decimal(str(raw))
+            except Exception:
+                continue
+            if value.is_finite() and value >= 0:
+                limits.append(value)
+        experiment_buying_power = min(limits) if limits else Decimal("0")
         return {
-            "start_utc": self.experiment_start_utc.isoformat().replace("+00:00", "Z"),
-            "end_utc": end.isoformat().replace("+00:00", "Z"),
-            "now_utc": now.isoformat().replace("+00:00", "Z"),
-            "duration_days": self.duration_days,
-            "elapsed_days": elapsed / 86400.0,
-            "remaining_days": remaining / 86400.0,
-            "remaining_seconds": remaining,
-            "expired": remaining <= 0,
+            "paper_account": bool(account.get("paper_account")),
+            "declared_options_level": account.get("declared_options_level"),
+            "experiment_buying_power": str(experiment_buying_power),
+            "global_broker_balances_redacted": True,
+            "note": "Buying power is capped to isolated experiment equity and broker constraints.",
         }
 
     def build(
@@ -228,12 +245,17 @@ class AutonomousStateBuilder:
         benchmark_state: dict[str, Any] | None = None,
     ) -> TraderInputBundle:
         self._sync_executions()
-        self._mark_open_positions()
+        mark_reasons = self._mark_open_positions()
         ledger_state = self.ledger.project()
         account = self._tool(ResearchTool.ACCOUNT_STATE)
         broker_positions = self._tool(ResearchTool.POSITIONS)
         open_orders = self._tool(ResearchTool.OPEN_ORDERS)
         reconciliation = self._reconcile(ledger_state, broker_positions)
+        if mark_reasons:
+            reconciliation["status"] = "BLOCK"
+            reconciliation["reason_codes"] = list(
+                dict.fromkeys(list(reconciliation.get("reason_codes", [])) + mark_reasons)
+            )
         now = datetime.now(timezone.utc)
         clock = self._clock(now)
 
@@ -255,13 +277,19 @@ class AutonomousStateBuilder:
             for item in ledger_state.positions
         ]
 
-        gate_status = (
-            "PASS"
-            if reconciliation.get("status") == "PASS"
-            and self.kill_switch_state == "KILL_SWITCH_CLEAR"
-            and not clock["expired"]
-            else "BLOCK"
+        kill_switch_state = self.kill_switch_store.current()
+        decision_class = (
+            DecisionClass.OPEN_POSITION_MANAGEMENT
+            if trigger == "POSITION_EVENT"
+            else DecisionClass.NEW_TRADE
         )
+        if self.runtime_market_gate is None:
+            market_gate = {
+                "gate_status": "BLOCK",
+                "reason_codes": ["EXPECTED_PAPER_IDENTITY_REQUIRED_FOR_MARKET_GATE"],
+            }
+        else:
+            market_gate = self.runtime_market_gate.evaluate(decision_class)
         return TraderInputBundle(
             decision_cycle_id=f"cycle-{new_uuid7()}",
             utc_timestamp=clock["now_utc"],
@@ -278,12 +306,9 @@ class AutonomousStateBuilder:
                 "valid": ledger_state.valid,
                 "reason_codes": list(ledger_state.reason_codes),
             },
-            broker_account_snapshot={
-                "paper_account": bool(account.get("paper_account")),
-                "declared_options_level": account.get("declared_options_level"),
-                "broker_summary": account.get("summary", {}),
-                "note": "Broker balances may exceed isolated experiment equity and are not available to the experiment.",
-            },
+            broker_account_snapshot=self._broker_snapshot(
+                account, ledger_state.equity
+            ),
             positions_snapshot=isolated_positions,
             open_orders_snapshot=isolated_orders,
             risk_snapshot={
@@ -291,10 +316,10 @@ class AutonomousStateBuilder:
                 "maximum_experiment_liability": str(max(ledger_state.equity, Decimal("0"))),
                 "fixed_percent_limits": False,
             },
-            kill_switch_state=self.kill_switch_state,
+            kill_switch_state=kill_switch_state,
             market_data_snapshot={
-                "gate_status": gate_status,
-                "scope": "broker_session_and_isolated_state_readiness",
+                **market_gate,
+                "scope": "runtime_frozen_policy_and_fresh_ibkr_quotes",
                 "specific_contract_data_validated_on_demand": True,
             },
             candidate_screen_results=[],
