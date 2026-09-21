@@ -104,7 +104,7 @@ class AutonomousPaperExecutor:
     def _register_order(
         self,
         *,
-        trade: Any,
+        order: Any,
         contract: Any,
         order_ref: str,
         action: str,
@@ -115,9 +115,9 @@ class AutonomousPaperExecutor:
         payload = {
             "schema": "EXPERIMENT_ORDER_REGISTRY_V1",
             "order_ref": order_ref,
-            "client_order_id": int(getattr(trade.order, "orderId", 0) or 0),
-            "perm_id": int(getattr(trade.order, "permId", 0) or 0),
-            "ibkr_order_id": int(getattr(trade.order, "orderId", 0) or 0),
+            "client_order_id": int(getattr(order, "orderId", 0) or 0),
+            "perm_id": int(getattr(order, "permId", 0) or 0),
+            "ibkr_order_id": int(getattr(order, "orderId", 0) or 0),
             "contract_id": int(getattr(contract, "conId", 0) or 0),
             "action": action,
             "quantity": str(quantity),
@@ -212,14 +212,16 @@ class AutonomousPaperExecutor:
             )
             if proposal.limit_price is not None:
                 order.lmtPrice = float(proposal.limit_price)
-            trade = ib.placeOrder(contract, order)
+            if not int(getattr(order, "orderId", 0) or 0):
+                order.orderId = int(ib.client.getReqId())
             self._register_order(
-                trade=trade,
+                order=order,
                 contract=contract,
                 order_ref=order_ref,
                 action=proposal.action.upper(),
                 quantity=proposal.quantity,
             )
+            trade = ib.placeOrder(contract, order)
             ib.sleep(self.fill_wait_seconds)
             status = getattr(trade.orderStatus, "status", "UNKNOWN") or "UNKNOWN"
             payload = {
@@ -402,14 +404,16 @@ class AutonomousPaperExecutor:
             )
             if action.limit_price is not None:
                 order.lmtPrice = float(action.limit_price)
-            trade = ib.placeOrder(position.contract, order)
+            if not int(getattr(order, "orderId", 0) or 0):
+                order.orderId = int(ib.client.getReqId())
             self._register_order(
-                trade=trade,
+                order=order,
                 contract=position.contract,
                 order_ref=order_ref,
                 action=action.action.upper(),
                 quantity=action.quantity,
             )
+            trade = ib.placeOrder(position.contract, order)
             ib.sleep(self.fill_wait_seconds)
             status = getattr(trade.orderStatus, "status", "UNKNOWN") or "UNKNOWN"
             payload = {
