@@ -8,6 +8,7 @@ import socket
 import re
 from dataclasses import asdict, replace
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
 from typing import Sequence
 from uuid import uuid4
@@ -23,6 +24,8 @@ from .alerts import (
     load_smtp_channel,
 )
 from .auditor import write_isolation_report
+from .autonomous_runtime import AutonomousDecisionRuntime
+from .ibkr_research import IBKRResearchToolbox
 from .auditor_gate_v2 import (
     AuditorGateV2Evaluation,
     IdentityBindingError,
@@ -75,6 +78,7 @@ READONLY_REPORT = REPORT_ROOT / "read_only_real_paper_reconciliation.json"
 ALERT_REPORT = REPORT_ROOT / "alert_delivery_simulation.json"
 GATE_REPORT = REPORT_ROOT / "updated_gate_matrix.json"
 REAL_CODEX_REPORT = REPORT_ROOT / "real_codex_trader_invocation.json"
+AUTONOMOUS_RESEARCH_REPORT = REPORT_ROOT / "autonomous_research_cycle.json"
 AUDITOR_REPORT = REPORT_ROOT / "auditor_isolation_probe.json"
 AUDITOR_V2_RECEIPT = REPORT_ROOT / "auditor_gate_v2_receipt.json"
 AUDITOR_V2_REPORT = Path("AUDITOR_ISOLATION_GATE_V2_REPORT.md")
@@ -852,6 +856,80 @@ def invoke_real_codex_test(
     return report
 
 
+def invoke_autonomous_research_cycle(
+    *,
+    host: str,
+    port: int,
+    model: str,
+    reasoning_effort: str,
+    timeout_seconds: int,
+    experiment_equity: Decimal,
+    market_session_state: str,
+) -> dict[str, object]:
+    """
+    Run one real multi-round Codex research/decision cycle against the paper
+    broker's read-only/research surface.  No order is submitted by this command.
+    """
+    readonly = _read_json(READONLY_REPORT)
+    market_validation = _read_json(MARKET_VALIDATION_REPORT)
+    reasons: list[str] = []
+    if readonly.get("paper_account_identity_gate") != "PASS":
+        reasons.append("PAPER_ACCOUNT_IDENTITY_GATE")
+    if readonly.get("broker_reconciliation_gate") != "PASS":
+        reasons.append("BROKER_RECONCILIATION_GATE")
+    if market_validation.get("market_data_gate") != "PASS":
+        reasons.append("MARKET_DATA_GATE")
+    if reasons:
+        report = {
+            "schema": "AUTONOMOUS_RESEARCH_CYCLE_REPORT_V1",
+            "status": "BLOCK",
+            "reason_codes": reasons,
+            "order_authority": False,
+            "real_order_writes_attempted": 0,
+        }
+        _atomic_json(AUTONOMOUS_RESEARCH_REPORT, report)
+        return report
+
+    toolbox = IBKRResearchToolbox(
+        host=host,
+        port=port,
+        options_permission_level=4,
+        timeout_seconds=float(timeout_seconds),
+    )
+    database = Database.open(REPORT_ROOT / "autonomous_trader.sqlite3")
+    try:
+        runtime = AutonomousDecisionRuntime(
+            db=database,
+            toolbox=toolbox,
+            model=model,
+            reasoning_effort=reasoning_effort,
+            timeout_seconds=timeout_seconds,
+            max_research_rounds=8,
+        )
+        result = runtime.run_cycle(
+            readonly_report=readonly,
+            experiment_equity=experiment_equity,
+            market_data_gate="PASS",
+            market_session_state=market_session_state,
+        )
+    finally:
+        database.close()
+
+    report = {
+        "schema": "AUTONOMOUS_RESEARCH_CYCLE_REPORT_V1",
+        "status": "PASS" if result.accepted else "BLOCK",
+        **result.model_dump(mode="json"),
+        "configured_options_permission_level": 4,
+        "strategy_allowlist": None,
+        "symbol_allowlist": None,
+        "timeframe_allowlist": None,
+        "fixed_percentage_risk_limits": False,
+        "real_order_writes_attempted": 0,
+    }
+    _atomic_json(AUTONOMOUS_RESEARCH_REPORT, report)
+    return report
+
+
 def simulate_alerts(events: Sequence[str]) -> dict[str, object]:
     REPORT_ROOT.mkdir(parents=True, exist_ok=True)
     smtp = load_smtp_channel(Path("Secrets/email_alerts.env"))
@@ -1052,6 +1130,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     codex_parser.add_argument("--model", default="gpt-5.5")
     codex_parser.add_argument("--reasoning-effort", default="medium")
     codex_parser.add_argument("--timeout-seconds", type=int, default=120)
+    autonomous_parser = commands.add_parser("invoke-autonomous-research-cycle")
+    autonomous_parser.add_argument("--host", default="127.0.0.1")
+    autonomous_parser.add_argument("--port", type=int, default=4002)
+    autonomous_parser.add_argument("--model", default="gpt-5.5")
+    autonomous_parser.add_argument("--reasoning-effort", default="high")
+    autonomous_parser.add_argument("--timeout-seconds", type=int, default=180)
+    autonomous_parser.add_argument("--equity", type=Decimal, default=Decimal("500.00"))
+    autonomous_parser.add_argument("--market-session", default="REGULAR")
     observe_parser = commands.add_parser("observe-market-data")
     observe_parser.add_argument("--host", default="127.0.0.1")
     observe_parser.add_argument("--port", type=int, default=4002)
@@ -1080,6 +1166,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             model=args.model,
             reasoning_effort=args.reasoning_effort,
             timeout_seconds=args.timeout_seconds,
+        )
+    elif args.command == "invoke-autonomous-research-cycle":
+        report = invoke_autonomous_research_cycle(
+            host=args.host,
+            port=args.port,
+            model=args.model,
+            reasoning_effort=args.reasoning_effort,
+            timeout_seconds=args.timeout_seconds,
+            experiment_equity=args.equity,
+            market_session_state=args.market_session,
         )
     elif args.command == "observe-market-data":
         report = observe_market_data(
