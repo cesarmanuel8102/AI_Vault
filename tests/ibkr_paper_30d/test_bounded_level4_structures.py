@@ -5,13 +5,13 @@ from ibkr_paper_30d.ibkr_research_tools import IBKRResearchToolbox
 from ibkr_paper_30d.trader_invocation import TraderInputBundle
 
 
-def bundle(positions=None):
+def bundle(positions=None, equity="5000.00"):
     return TraderInputBundle(
         decision_cycle_id="cycle-structure-1",
         utc_timestamp="2026-09-20T20:00:00Z",
         market_session_state="REGULAR",
         reconciliation_receipt={"status": "PASS"},
-        experiment_subledger_snapshot={"equity": "5000.00"},
+        experiment_subledger_snapshot={"equity": equity},
         broker_account_snapshot={"declared_options_level": 4},
         positions_snapshot=positions or [],
         open_orders_snapshot=[],
@@ -151,3 +151,65 @@ def test_unbounded_call_ratio_spread_is_rejected():
 
     assert floor is None
     assert reason == "UNBOUNDED_UPSIDE_LIABILITY"
+
+
+def test_long_option_loss_floor_comes_from_limit_debit_not_model_capital_estimate():
+    proposal = base(
+        action="BUY",
+        direction="LONG",
+        limit_price="1.00",
+        capital_required="900.00",
+        maximum_loss="100.00",
+        right="C",
+    )
+
+    floor, reason = IBKRResearchToolbox._structure_loss_floor(proposal, bundle(equity="500.00"))
+
+    assert reason is None
+    assert floor == Decimal("100.00")
+
+
+def test_long_option_market_order_is_blocked_when_maximum_spend_cannot_be_proven():
+    proposal = base(
+        action="BUY",
+        direction="LONG",
+        order_type="MKT",
+        limit_price=None,
+        capital_required="100.00",
+        maximum_loss="100.00",
+        right="C",
+    )
+
+    floor, reason = IBKRResearchToolbox._structure_loss_floor(proposal, bundle(equity="500.00"))
+
+    assert floor is None
+    assert reason == "LONG_OPTION_COST_NOT_PRETRADE_BOUNDED"
+
+
+def test_ibkr_whatif_margin_over_isolated_equity_blocks_even_if_model_estimate_is_low(monkeypatch):
+    proposal = base(
+        action="BUY",
+        direction="LONG",
+        limit_price="1.00",
+        capital_required="100.00",
+        maximum_loss="100.00",
+        right="C",
+    )
+    toolbox = IBKRResearchToolbox(declared_options_level=4)
+    monkeypatch.setattr(
+        toolbox,
+        "_broker_feasibility",
+        lambda _proposal: {
+            "success": True,
+            "warningText": "",
+            "initMarginChange": "600.00",
+            "maintMarginChange": "600.00",
+            "commission": "1.00",
+            "maxCommission": "1.00",
+        },
+    )
+
+    result = toolbox.validate_proposal(proposal, bundle(equity="500.00"))
+
+    assert result.passed is False
+    assert result.reason_codes == ("BROKER_MARGIN_EXCEEDS_EXPERIMENT_EQUITY",)
