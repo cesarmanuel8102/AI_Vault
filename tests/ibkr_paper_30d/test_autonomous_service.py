@@ -169,6 +169,7 @@ def test_paper_execution_requires_explicit_clock_bound_owner_authorization(tmp_p
                 executor=ArmedExecutor(),
                 runtime_market_gate=PassGate(),
                 runtime_auditor_gate=PassGate(),
+                broker_now=lambda: datetime(2026, 9, 21, 13, 30, tzinfo=timezone.utc),
             )
         except AutonomousServiceError as exc:
             assert "explicit owner authorization" in str(exc)
@@ -192,5 +193,26 @@ def test_paper_execution_requires_explicit_clock_bound_owner_authorization(tmp_p
             executor=ArmedExecutor(),
             runtime_market_gate=PassGate(),
             runtime_auditor_gate=PassGate(),
+            broker_now=lambda: datetime(2026, 9, 21, 13, 30, tzinfo=timezone.utc),
         )
         assert service.execute_paper is True
+
+
+def test_fresh_safety_fails_closed_when_broker_time_unavailable(tmp_path):
+    start = datetime(2026, 9, 20, 13, 30, tzinfo=timezone.utc)
+    with Database.open(tmp_path / "broker-time.sqlite3") as db:
+        subject = AutonomousExperimentService(
+            db,
+            experiment_start_utc=start,
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=StubExecutor(),
+            runtime_market_gate=PassGate(),
+            runtime_auditor_gate=PassGate(),
+            broker_now=lambda: (_ for _ in ()).throw(RuntimeError("clock unavailable")),
+        )
+        reasons = subject._fresh_execution_safety("NEW_TRADE")
+        assert any(reason.startswith("BROKER_TIME_UNAVAILABLE_FRESH") for reason in reasons)
+        assert "EXPERIMENT_NOT_STARTED_FRESH" in reasons
+        assert "EXPERIMENT_EXPIRED_FRESH" in reasons
