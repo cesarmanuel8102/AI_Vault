@@ -417,7 +417,7 @@ class _IBKRMarketDataClient(EWrapper, EClient):
     def _stamp(self, quote: dict[str, object], time_value: int) -> None:
         broker_timestamp = datetime.fromtimestamp(time_value, timezone.utc)
         previous = quote.get("broker_quote_timestamp")
-        if not isinstance(previous, datetime) or broker_timestamp < previous:
+        if not isinstance(previous, datetime) or broker_timestamp > previous:
             quote["broker_quote_timestamp"] = broker_timestamp
         quote["local_receipt_timestamp"] = self.now_utc()
         quote["monotonic_receipt_ns"] = self.monotonic_ns()
