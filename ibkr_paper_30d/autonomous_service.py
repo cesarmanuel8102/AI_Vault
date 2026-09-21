@@ -452,6 +452,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--options-level", type=int, default=4)
     parser.add_argument("--execute-paper", action="store_true")
     parser.add_argument("--once", action="store_true")
+    parser.add_argument("--authorize-start", action="store_true")
+    parser.add_argument("--revoke-start", action="store_true")
+    parser.add_argument("--authorization-phrase")
     parser.add_argument(
         "--kill-switch",
         choices=("status", "clear", "trigger"),
@@ -486,9 +489,49 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 0
 
+        requested_start = _parse_utc(args.start_utc)
+        if args.authorize_start or args.revoke_start:
+            clock = ExperimentClockStore(db).initialize_or_load(
+                requested_start_utc=requested_start,
+                duration_days=args.duration_days,
+                initial_allocation=Decimal(args.allocation),
+            )
+            auth_store = OwnerAuthorizationStore(db)
+            if args.authorize_start:
+                expected_phrase = "AUTHORIZE 30-DAY PAPER EXPERIMENT"
+                if args.authorization_phrase != expected_phrase:
+                    raise AutonomousServiceError(
+                        "exact authorization phrase required: " + expected_phrase
+                    )
+                event_id = auth_store.set(
+                    "AUTHORIZED",
+                    clock_event_sha256=clock.event_sha256,
+                    reason="explicit owner authorization for Day 1",
+                    actor="owner",
+                )
+                print(json.dumps({
+                    "status": "AUTHORIZED",
+                    "event_id": event_id,
+                    "clock_event_sha256": clock.event_sha256,
+                    "paper_execution_armed": False,
+                }, sort_keys=True))
+                return 0
+            event_id = auth_store.set(
+                "REVOKED",
+                clock_event_sha256=clock.event_sha256,
+                reason="explicit owner revocation",
+                actor="owner",
+            )
+            print(json.dumps({
+                "status": "REVOKED",
+                "event_id": event_id,
+                "paper_execution_armed": False,
+            }, sort_keys=True))
+            return 0
+
         service = AutonomousExperimentService(
             db,
-            experiment_start_utc=_parse_utc(args.start_utc),
+            experiment_start_utc=requested_start,
             allocation=Decimal(args.allocation),
             duration_days=args.duration_days,
             scan_interval_seconds=args.scan_seconds,
