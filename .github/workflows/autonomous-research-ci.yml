@@ -1,0 +1,38 @@
+name: autonomous-research-ci
+
+on:
+  push:
+    branches:
+      - codex/ibkr-autonomous-research-v1
+  pull_request:
+    branches:
+      - codex/ibkr-paper-auditor-gate-v2
+
+jobs:
+  autonomous-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest "pydantic>=2,<3"
+
+      - name: Compile autonomous modules
+        run: |
+          python -m py_compile ibkr_paper_30d/autonomous_research.py
+          python -m py_compile ibkr_paper_30d/ibkr_research_tools.py
+          python -m py_compile ibkr_paper_30d/autonomous_execution.py
+          python -m py_compile ibkr_paper_30d/autonomous_runtime.py
+          python -m py_compile ibkr_paper_30d/risk.py
+          python -m py_compile ibkr_paper_30d/persistence.py
+
+      - name: Run autonomous and regression tests
+        run: |
+          pytest -q             tests/ibkr_paper_30d/test_autonomous_research.py             tests/ibkr_paper_30d/test_capital_boundary_risk.py             tests/ibkr_paper_30d/test_autonomous_execution.py             tests/ibkr_paper_30d/test_risk.py             tests/ibkr_paper_30d/test_trader_invocation.py
