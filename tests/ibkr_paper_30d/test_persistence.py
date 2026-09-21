@@ -107,3 +107,23 @@ def test_tampered_hash_chain_is_detected(db_path) -> None:
 
     assert verification.valid is False
     assert verification.first_invalid_sequence == 1
+
+
+def test_database_lock_fails_closed(db_path) -> None:
+    first = Database.open(db_path)
+    second = Database.open(db_path)
+    try:
+        first.execute("BEGIN IMMEDIATE")
+        second.execute("PRAGMA busy_timeout=25")
+        with pytest.raises(sqlite3.OperationalError, match="locked"):
+            second.execute(
+                "INSERT INTO schema_versions(version, applied_at_utc) "
+                "VALUES(99, '2026-09-21T00:00:00Z')"
+            )
+    finally:
+        try:
+            first.connection.rollback()
+        except sqlite3.Error:
+            pass
+        first.close()
+        second.close()
