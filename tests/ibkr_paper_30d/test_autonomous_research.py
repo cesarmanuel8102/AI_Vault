@@ -214,3 +214,43 @@ def test_no_trade_remains_valid_after_autonomous_research():
 
     assert outcome.accepted is True
     assert outcome.decision == TraderDecision.NO_TRADE
+
+
+def test_unbounded_liability_is_blocked_by_loop_even_if_toolbox_would_accept():
+    value = bundle("500.00")
+    raw = proposal(maximum_loss="100.00").model_dump()
+    raw["loss_is_bounded"] = False
+    final = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        research_requests=[],
+        decision=TraderDecision.PROPOSE_TRADE,
+        proposal=AutonomousTradeProposal(**raw),
+        confidence="0.7",
+        reasoning_summary="Model considered an unbounded structure",
+        reason_codes=[],
+    )
+
+    outcome = AutonomousResearchLoop(SequenceProvider([final]), FakeToolbox()).run(request(value), value)
+
+    assert outcome.accepted is False
+    assert outcome.reason_codes == ("UNBOUNDED_LIABILITY",)
+
+
+def test_capital_required_cannot_use_rest_of_broker_account():
+    value = bundle("500.00")
+    raw = proposal(maximum_loss="400.00").model_dump()
+    raw["capital_required"] = "500.01"
+    final = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        research_requests=[],
+        decision=TraderDecision.PROPOSE_TRADE,
+        proposal=AutonomousTradeProposal(**raw),
+        confidence="0.7",
+        reasoning_summary="Broker may have more buying power but experiment does not",
+        reason_codes=[],
+    )
+
+    outcome = AutonomousResearchLoop(SequenceProvider([final]), FakeToolbox()).run(request(value), value)
+
+    assert outcome.accepted is False
+    assert outcome.reason_codes == ("CAPITAL_REQUIRED_EXCEEDS_EQUITY",)
