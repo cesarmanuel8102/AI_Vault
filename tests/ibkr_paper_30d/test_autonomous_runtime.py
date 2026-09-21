@@ -73,3 +73,47 @@ def test_every_multileg_contract_requires_its_own_quote():
     )
     assert ok is False
     assert reasons == ("FRESH_REALTIME_QUOTE_REQUIRED:22",)
+
+
+def test_capital_feasibility_must_be_true_not_merely_callable():
+    evidence = [
+        {
+            "request": {"tool": "capital_feasibility", "arguments": {}},
+            "result": {
+                "status": "PASS",
+                "result": {"feasible_by_known_constraints": False},
+            },
+        }
+    ]
+    assert AutonomousDecisionRuntime._successful_capital_feasibility_seen(evidence) is False
+
+    evidence[0]["result"]["result"]["feasible_by_known_constraints"] = True
+    assert AutonomousDecisionRuntime._successful_capital_feasibility_seen(evidence) is True
+
+
+def test_what_if_requires_substantive_non_transmitting_broker_preview():
+    empty = [
+        {
+            "request": {"tool": "what_if_order", "arguments": {}},
+            "result": {
+                "status": "PASS",
+                "result": {"what_if": True, "transmit": False, "preview": {}},
+            },
+        }
+    ]
+    assert AutonomousDecisionRuntime._successful_what_if_seen(empty) is False
+
+    valid = [
+        {
+            "request": {"tool": "what_if_order", "arguments": {}},
+            "result": {
+                "status": "PASS",
+                "result": {
+                    "what_if": True,
+                    "transmit": False,
+                    "preview": {"init_margin_change": "125.00"},
+                },
+            },
+        }
+    ]
+    assert AutonomousDecisionRuntime._successful_what_if_seen(valid) is True
