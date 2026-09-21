@@ -43,6 +43,7 @@ class AutonomousPaperExecutor:
         fill_wait_seconds: float = 3.0,
         database: Database | None = None,
         fresh_safety_check: Callable[[str], tuple[str, ...]] | None = None,
+        operator_control_check: Callable[[], tuple[str, ...]] | None = None,
     ) -> None:
         self.toolbox = toolbox
         self.armed = (
@@ -53,6 +54,7 @@ class AutonomousPaperExecutor:
         self.fill_wait_seconds = fill_wait_seconds
         self.database = database
         self.fresh_safety_check = fresh_safety_check
+        self.operator_control_check = operator_control_check
 
     @staticmethod
     def _fills_payload(trade: Any) -> list[dict[str, Any]]:
@@ -104,6 +106,14 @@ class AutonomousPaperExecutor:
             return tuple(self.fresh_safety_check(scope))
         except Exception as exc:
             return (f"FRESH_SAFETY_CHECK_FAILED:{type(exc).__name__}",)
+
+    def _operator_control_reasons(self) -> tuple[str, ...]:
+        if self.operator_control_check is None:
+            return ("FRESH_OPERATOR_CONTROL_CHECK_REQUIRED",)
+        try:
+            return tuple(self.operator_control_check())
+        except Exception as exc:
+            return (f"FRESH_OPERATOR_CONTROL_CHECK_FAILED:{type(exc).__name__}",)
 
     def _register_order(
         self,
@@ -184,16 +194,6 @@ class AutonomousPaperExecutor:
 
         ib = self.toolbox._connect()
         try:
-            validation = self.toolbox.validate_proposal(proposal, bundle, ib=ib)
-            if not validation.passed:
-                return PaperExecutionResult(
-                    success=False,
-                    status="BLOCKED",
-                    reason_codes=validation.reason_codes,
-                    order={},
-                    broker_validation=validation.broker_evidence,
-                )
-
             fresh_reasons = self._fresh_safety_reasons("NEW_TRADE")
             if fresh_reasons:
                 return PaperExecutionResult(
@@ -201,7 +201,7 @@ class AutonomousPaperExecutor:
                     status="BLOCKED",
                     reason_codes=fresh_reasons,
                     order={},
-                    broker_validation=validation.broker_evidence,
+                    broker_validation={},
                 )
 
             contract = self.toolbox._proposal_contract(ib, proposal)
@@ -210,13 +210,42 @@ class AutonomousPaperExecutor:
                 return PaperExecutionResult(
                     success=False,
                     status="BLOCKED",
-                    reason_codes=("TRADE_CONTRACT_MARKET_DATA_BLOCK", str(live_quote.get("reason") or "UNKNOWN")),
+                    reason_codes=(
+                        "TRADE_CONTRACT_MARKET_DATA_BLOCK",
+                        str(live_quote.get("reason") or "UNKNOWN"),
+                    ),
+                    order={},
+                    broker_validation={"trade_contract_market_data": live_quote},
+                )
+
+            # Final broker what-if occurs after fresh gates and exact-contract
+            # market data, leaving only a DB-only operator-control check before send.
+            validation = self.toolbox.validate_proposal(proposal, bundle, ib=ib)
+            if not validation.passed:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=validation.reason_codes,
                     order={},
                     broker_validation={
                         **validation.broker_evidence,
                         "trade_contract_market_data": live_quote,
                     },
                 )
+
+            operator_reasons = self._operator_control_reasons()
+            if operator_reasons:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=operator_reasons,
+                    order={},
+                    broker_validation={
+                        **validation.broker_evidence,
+                        "trade_contract_market_data": live_quote,
+                    },
+                )
+
             order_ref = f"codex-ibkr-paper-30d-a-{bundle.decision_cycle_id[-12:]}"
             order = Order(
                 action=proposal.action.upper(),
@@ -301,6 +330,16 @@ class AutonomousPaperExecutor:
 
         ib = self.toolbox._connect()
         try:
+            fresh_reasons = self._fresh_safety_reasons("POSITION_MANAGEMENT")
+            if fresh_reasons:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=fresh_reasons,
+                    order={},
+                    broker_validation={},
+                )
+
             validation = self.toolbox.validate_position_action(
                 action, bundle, decision, ib=ib
             )
@@ -358,7 +397,24 @@ class AutonomousPaperExecutor:
                     broker_validation=validation.broker_evidence,
                 )
 
-            # Re-issue what-if against the same connection immediately before send.
+            live_quote = self.toolbox.live_contract_quote_evidence(ib, position.contract)
+            if not live_quote.get("success"):
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=(
+                        "TRADE_CONTRACT_MARKET_DATA_BLOCK",
+                        str(live_quote.get("reason") or "UNKNOWN"),
+                    ),
+                    order={},
+                    broker_validation={
+                        **validation.broker_evidence,
+                        "trade_contract_market_data": live_quote,
+                    },
+                )
+
+            # Re-issue what-if against the same connection after exact-contract
+            # market data and immediately before the final position/control checks.
             final_validation = self.toolbox.validate_position_action(
                 action, bundle, decision, ib=ib
             )
@@ -368,17 +424,10 @@ class AutonomousPaperExecutor:
                     status="BLOCKED",
                     reason_codes=final_validation.reason_codes,
                     order={},
-                    broker_validation=final_validation.broker_evidence,
-                )
-
-            fresh_reasons = self._fresh_safety_reasons("POSITION_MANAGEMENT")
-            if fresh_reasons:
-                return PaperExecutionResult(
-                    success=False,
-                    status="BLOCKED",
-                    reason_codes=fresh_reasons,
-                    order={},
-                    broker_validation=final_validation.broker_evidence,
+                    broker_validation={
+                        **final_validation.broker_evidence,
+                        "trade_contract_market_data": live_quote,
+                    },
                 )
 
             # One final quantity snapshot after the final what-if.
@@ -409,12 +458,12 @@ class AutonomousPaperExecutor:
                     broker_validation=final_validation.broker_evidence,
                 )
 
-            live_quote = self.toolbox.live_contract_quote_evidence(ib, position.contract)
-            if not live_quote.get("success"):
+            operator_reasons = self._operator_control_reasons()
+            if operator_reasons:
                 return PaperExecutionResult(
                     success=False,
                     status="BLOCKED",
-                    reason_codes=("TRADE_CONTRACT_MARKET_DATA_BLOCK", str(live_quote.get("reason") or "UNKNOWN")),
+                    reason_codes=operator_reasons,
                     order={},
                     broker_validation={
                         **final_validation.broker_evidence,
