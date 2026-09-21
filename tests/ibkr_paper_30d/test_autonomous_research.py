@@ -3,6 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from ibkr_paper_30d.autonomous_research import (
+    AutonomousPositionAction,
     AutonomousResearchLoop,
     AutonomousTradeProposal,
     AutonomousTurn,
@@ -47,6 +48,13 @@ class FakeToolbox:
             passed=self.validation,
             reason_codes=() if self.validation else ("BROKER_FEASIBILITY_FAILED",),
             broker_evidence={"what_if": "PASS" if self.validation else "BLOCK"},
+        )
+
+    def validate_position_action(self, action, bundle, decision):
+        return ProposalValidation(
+            passed=self.validation,
+            reason_codes=() if self.validation else ("POSITION_ACTION_BLOCKED",),
+            broker_evidence={"position_action": decision.value},
         )
 
 
@@ -277,3 +285,82 @@ def test_stale_input_hash_blocks_before_autonomous_provider_call():
     assert outcome.accepted is False
     assert outcome.reason_codes == ("INPUT_HASH_MISMATCH",)
     assert provider.histories == []
+
+
+def test_codex_can_reduce_existing_position_autonomously():
+    value = bundle("650.00").model_copy(update={
+        "positions_snapshot": [
+            {"symbol": "NVDA", "security_type": "STK", "quantity": "2"}
+        ]
+    })
+    action = AutonomousPositionAction(
+        symbol="NVDA",
+        sec_type="STK",
+        action="SELL",
+        quantity="1",
+        order_type="MKT",
+        limit_price=None,
+        contract_id=None,
+        expiry=None,
+        strike=None,
+        right=None,
+        reason="Reduce exposure because the original catalyst weakened",
+    )
+    final = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        research_requests=[],
+        decision=TraderDecision.REDUCE_POSITION,
+        proposal=None,
+        position_action=action,
+        confidence="0.82",
+        reasoning_summary="The position remains viable but no longer warrants full size.",
+        reason_codes=["THESIS_WEAKENED"],
+    )
+
+    outcome = AutonomousResearchLoop(
+        SequenceProvider([final]), FakeToolbox()
+    ).run(request(value), value)
+
+    assert outcome.accepted is True
+    assert outcome.decision == TraderDecision.REDUCE_POSITION
+    assert outcome.position_action is not None
+    assert outcome.position_action.quantity == Decimal("1")
+
+
+def test_blocked_position_management_falls_back_to_monitor():
+    value = bundle("650.00").model_copy(update={
+        "positions_snapshot": [
+            {"symbol": "NVDA", "security_type": "STK", "quantity": "2"}
+        ]
+    })
+    action = AutonomousPositionAction(
+        symbol="NVDA",
+        sec_type="STK",
+        action="SELL",
+        quantity="2",
+        order_type="MKT",
+        limit_price=None,
+        contract_id=None,
+        expiry=None,
+        strike=None,
+        right=None,
+        reason="Attempt close",
+    )
+    final = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        research_requests=[],
+        decision=TraderDecision.CLOSE_POSITION,
+        proposal=None,
+        position_action=action,
+        confidence="0.9",
+        reasoning_summary="Close the position.",
+        reason_codes=["EXIT_NOW"],
+    )
+
+    outcome = AutonomousResearchLoop(
+        SequenceProvider([final]), FakeToolbox(validation=False)
+    ).run(request(value), value)
+
+    assert outcome.accepted is False
+    assert outcome.decision == TraderDecision.MONITOR_POSITION
+    assert outcome.reason_codes == ("POSITION_ACTION_BLOCKED",)
