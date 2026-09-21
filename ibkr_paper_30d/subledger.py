@@ -122,7 +122,13 @@ class Subledger:
         def totals() -> tuple[Decimal, Decimal, Decimal]:
             market_value = sum(
                 (
-                    position.quantity * position.mark * position.multiplier
+                    position.quantity
+                    * (
+                        position.mark - position.average_cost
+                        if position.security_type == "FUT"
+                        else position.mark
+                    )
+                    * position.multiplier
                     for position in positions.values()
                 ),
                 Decimal("0"),
@@ -148,22 +154,25 @@ class Subledger:
                     else "INVALID_SELL_FILL"
                 )
                 return
-            if str(event.security_type or "").upper() == "FUT":
-                reasons.append("FUTURES_VARIATION_MARGIN_REQUIRED")
-                return
-
+            security_type = str(event.security_type or "STK").upper()
             key = self._key(event)
             multiplier = event.multiplier
-            cash_delta = -(signed_fill * event.price * multiplier)
-            cash += cash_delta
-            settled_cash += cash_delta
+            if security_type == "FUT":
+                # Futures do not exchange the full notional on entry. Equity is
+                # marked through variation P&L; realized variation is moved to
+                # cash when quantity is closed below.
+                cash_delta = Decimal("0")
+            else:
+                cash_delta = -(signed_fill * event.price * multiplier)
+                cash += cash_delta
+                settled_cash += cash_delta
 
             existing = positions.get(key)
             if existing is None:
                 positions[key] = _Position(
                     symbol=event.symbol,
                     contract_id=int(event.contract_id or 0),
-                    security_type=str(event.security_type or "STK").upper(),
+                    security_type=security_type,
                     quantity=signed_fill,
                     average_cost=event.price,
                     mark=event.price,
@@ -193,9 +202,17 @@ class Subledger:
             closing = min(abs(old_q), abs(signed_fill))
             # q * (exit - entry) works for long q; reverse for a short.
             if old_q > 0:
-                realized += closing * (event.price - existing.average_cost) * multiplier
+                realized_delta = (
+                    closing * (event.price - existing.average_cost) * multiplier
+                )
             else:
-                realized += closing * (existing.average_cost - event.price) * multiplier
+                realized_delta = (
+                    closing * (existing.average_cost - event.price) * multiplier
+                )
+            realized += realized_delta
+            if existing.security_type == "FUT":
+                cash += realized_delta
+                settled_cash += realized_delta
 
             new_q = old_q + signed_fill
             if new_q == 0:
