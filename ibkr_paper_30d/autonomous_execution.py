@@ -55,6 +55,22 @@ class AutonomousPaperExecutor:
                 "set IBKR_AUTONOMOUS_PAPER_ARMED=true only when the paper experiment is explicitly started"
             )
 
+        safety_reasons = []
+        if bundle.reconciliation_receipt.get("status") != "PASS":
+            safety_reasons.append("BROKER_RECONCILIATION_REQUIRED")
+        if bundle.kill_switch_state != "KILL_SWITCH_CLEAR":
+            safety_reasons.append("KILL_SWITCH_TRIGGERED")
+        if bundle.market_data_snapshot.get("gate_status") != "PASS":
+            safety_reasons.append("MARKET_DATA_GATE_BLOCK")
+        if safety_reasons:
+            return PaperExecutionResult(
+                success=False,
+                status="BLOCKED",
+                reason_codes=tuple(safety_reasons),
+                order={},
+                broker_validation={},
+            )
+
         validation = self.toolbox.validate_proposal(proposal, bundle)
         if not validation.passed:
             return PaperExecutionResult(
