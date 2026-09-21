@@ -216,3 +216,19 @@ def test_fresh_safety_fails_closed_when_broker_time_unavailable(tmp_path):
         assert any(reason.startswith("BROKER_TIME_UNAVAILABLE_FRESH") for reason in reasons)
         assert "EXPERIMENT_NOT_STARTED_FRESH" in reasons
         assert "EXPERIMENT_EXPIRED_FRESH" in reasons
+
+
+def test_default_runtime_auditor_uses_broker_time_authority(tmp_path):
+    fixed = datetime(2026, 9, 21, 13, 30, tzinfo=timezone.utc)
+    start = datetime(2026, 9, 20, 13, 30, tzinfo=timezone.utc)
+    with Database.open(tmp_path / "broker-auditor-time.sqlite3") as db:
+        subject = AutonomousExperimentService(
+            db,
+            experiment_start_utc=start,
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=StubExecutor(),
+            broker_now=lambda: fixed,
+        )
+        assert subject.runtime_auditor_gate.now_utc() == fixed
