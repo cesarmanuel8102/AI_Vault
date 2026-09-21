@@ -15,8 +15,8 @@ Codex controls:
 
 - what markets and symbols to investigate;
 - which read-only research tools to request;
-- which public news, macro, filings and catalysts to investigate when native
-  Codex web research is available;
+- which public news, macro, filings and catalysts to investigate using live
+  native Codex web research (`--search`) when available;
 - strategy family and thesis;
 - timeframe and holding period;
 - instrument and contract structure;
@@ -89,9 +89,19 @@ The research toolbox provides primitive, Codex-selected access to:
 - IBKR what-if order feasibility and margin.
 
 Single and multi-leg BAG option structures are supported by the research and
-what-if layer.
+what-if layer. The autonomous route uses deterministic payoff analysis instead
+of a fixed strategy allowlist: finite-loss short puts, covered calls and
+bounded same-expiry multi-leg structures may proceed when their calculated
+maximum liability plus costs fits inside current isolated experiment equity;
+uncovered short calls, short stock and other unbounded/unverified structures
+remain blocked.
 
 ## Research loop
+
+The default autonomous model is `gpt-5.6-sol` with reasoning effort `max`.
+Both remain operator-configurable, but the experiment default is intentionally
+the maximum-capability Codex configuration rather than the prior `gpt-5.5`
+default.
 
 Codex may run multiple research rounds before returning a final decision.
 
@@ -214,8 +224,11 @@ until explicitly satisfied and the paper executor is deliberately armed.
 
 Current autonomous implementation validation:
 
-- autonomous/regression test suite: 56 passed, 0 failed;
-- autonomous module compilation: PASS;
+- autonomous/regression suite on Linux: 66 passed, 0 failed;
+- autonomous/regression suite on Windows: 66 passed, 0 failed;
+- autonomous module compilation: PASS on both CI paths;
+- live Codex web search flag and GPT-5.6 Sol/max invocation contract: PASS;
+- deterministic bounded Level-4 structure tests: PASS;
 - no fixed SPY/QQQ/AAPL/IWM/MSFT universe in the autonomous route;
 - no 5%/15%/20% or equivalent fixed strategy-risk limits in the autonomous route;
 - frozen candidate field retained only as an empty compatibility field;
