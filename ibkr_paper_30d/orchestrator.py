@@ -1,3 +1,12 @@
+"""LEGACY COMPATIBILITY MODULE.
+
+PaperOrchestrator belongs to the earlier Phase-1 architecture and is retained
+for compatibility/recovery tests. It is NOT an execution authority or safety
+boundary for the autonomous IBKR experiment. The authoritative autonomous
+runtime is autonomous_service.py + autonomous_state.py +
+autonomous_execution.py + runtime_integrity.py.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
