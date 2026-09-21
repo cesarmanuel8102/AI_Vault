@@ -9,6 +9,17 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+$ResolvedRepoRoot = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\')
+if ($ResolvedRepoRoot -ine "C:\AI_VAULT") {
+    throw "REPO_ROOT_MUST_BE_C:\AI_VAULT"
+}
+$ResolvedPython = if (Test-Path -LiteralPath $PythonExe -PathType Leaf) {
+    [IO.Path]::GetFullPath($PythonExe)
+} else {
+    (Get-Command $PythonExe -ErrorAction Stop).Source
+}
+$WindowsPowerShell = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
+
 $ExpectedAuditorSid = "S-1-5-21-214160970-1890373857-4055601883-1012"
 $AuditorUser = "CodexAuditorV1"
 $ProgramRoot = "C:\ProgramData\CodexAuditorV1"
@@ -42,7 +53,7 @@ function Get-Sha256Lower {
 
 function Invoke-PythonJson {
     param([string[]]$Arguments)
-    $Output = @(& $PythonExe @Arguments 2>&1)
+    $Output = @(& $ResolvedPython @Arguments 2>&1)
     if ($LASTEXITCODE -ne 0) {
         throw "PYTHON_COMMAND_FAILED:$($Arguments -join ' '):$($Output -join ' | ')"
     }
@@ -73,17 +84,8 @@ function Quote-Argument {
 
 Assert-Administrator
 
-$ResolvedRepoRoot = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\')
-if ($ResolvedRepoRoot -ine "C:\AI_VAULT") {
-    throw "REPO_ROOT_MUST_BE_C:\AI_VAULT"
-}
 if (-not (Test-Path -LiteralPath $ResolvedRepoRoot -PathType Container)) {
     throw "REPO_ROOT_NOT_FOUND:$ResolvedRepoRoot"
-}
-$ResolvedPython = if (Test-Path -LiteralPath $PythonExe -PathType Leaf) {
-    [IO.Path]::GetFullPath($PythonExe)
-} else {
-    (Get-Command $PythonExe -ErrorAction Stop).Source
 }
 Set-Location -LiteralPath $ResolvedRepoRoot
 [void](New-Item -ItemType Directory -Path $CanonicalReportRoot -Force)
@@ -160,7 +162,7 @@ if (-not (Test-Path -LiteralPath $LegacyExecutionLock -PathType Leaf)) {
 }
 $LiveInvocationDb = Join-Path $CanonicalReportRoot "real_codex_invocations.sqlite3"
 if (-not (Test-Path -LiteralPath $LiveInvocationDb -PathType Leaf)) {
-    $DbInit = @(& python -c "from ibkr_paper_30d.persistence import Database; db=Database.open(r'$LiveInvocationDb'); db.close(); print('OK')" 2>&1)
+    $DbInit = @(& $ResolvedPython -c "from ibkr_paper_30d.persistence import Database; db=Database.open(r'$LiveInvocationDb'); db.close(); print('OK')" 2>&1)
     if ($LASTEXITCODE -ne 0) { throw "LIVE_INVOCATION_DB_PROBE_TARGET_CREATE_FAILED:$($DbInit -join ' | ')" }
 }
 $SmtpProbeTarget = Join-Path $ResolvedRepoRoot "Secrets\email_alerts.env"
@@ -202,8 +204,7 @@ $Arguments = @(
 
 $Receipt = $null
 try {
-    $WindowsPowerShell = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
-$Process = Start-Process -FilePath $WindowsPowerShell -ArgumentList $Arguments -Credential $Credential -UseNewEnvironment -WorkingDirectory $RuntimeRoot -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput $StdoutPath -RedirectStandardError $StderrPath
+    $Process = Start-Process -FilePath $WindowsPowerShell -ArgumentList $Arguments -Credential $Credential -UseNewEnvironment -WorkingDirectory $RuntimeRoot -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput $StdoutPath -RedirectStandardError $StderrPath
     if ($Process.ExitCode -ne 0) {
         $Err = if (Test-Path $StderrPath) { Get-Content -LiteralPath $StderrPath -Raw } else { "" }
         $Out = if (Test-Path $StdoutPath) { Get-Content -LiteralPath $StdoutPath -Raw } else { "" }
