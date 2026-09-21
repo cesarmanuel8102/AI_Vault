@@ -152,15 +152,6 @@ class AutonomousPaperExecutor:
             raise AutonomousPaperExecutionNotArmed(
                 "set IBKR_AUTONOMOUS_PAPER_ARMED=true only when the paper experiment is explicitly started"
             )
-        if self.database is None:
-            return PaperExecutionResult(
-                success=False,
-                status="BLOCKED",
-                reason_codes=("PERSISTENT_ORDER_REGISTRY_REQUIRED",),
-                order={},
-                broker_validation={},
-            )
-
         safety_reasons = []
         if bundle.reconciliation_receipt.get("status") != "PASS":
             safety_reasons.append("BROKER_RECONCILIATION_REQUIRED")
@@ -173,6 +164,14 @@ class AutonomousPaperExecutor:
                 success=False,
                 status="BLOCKED",
                 reason_codes=tuple(safety_reasons),
+                order={},
+                broker_validation={},
+            )
+        if self.database is None:
+            return PaperExecutionResult(
+                success=False,
+                status="BLOCKED",
+                reason_codes=("PERSISTENT_ORDER_REGISTRY_REQUIRED",),
                 order={},
                 broker_validation={},
             )
@@ -256,15 +255,6 @@ class AutonomousPaperExecutor:
             raise AutonomousPaperExecutionNotArmed(
                 "set IBKR_AUTONOMOUS_PAPER_ARMED=true only when the paper experiment is explicitly started"
             )
-        if self.database is None:
-            return PaperExecutionResult(
-                success=False,
-                status="BLOCKED",
-                reason_codes=("PERSISTENT_ORDER_REGISTRY_REQUIRED",),
-                order={},
-                broker_validation={},
-            )
-
         safety_reasons = []
         if bundle.reconciliation_receipt.get("status") != "PASS":
             safety_reasons.append("BROKER_RECONCILIATION_REQUIRED")
@@ -277,6 +267,14 @@ class AutonomousPaperExecutor:
                 success=False,
                 status="BLOCKED",
                 reason_codes=tuple(safety_reasons),
+                order={},
+                broker_validation={},
+            )
+        if self.database is None:
+            return PaperExecutionResult(
+                success=False,
+                status="BLOCKED",
+                reason_codes=("PERSISTENT_ORDER_REGISTRY_REQUIRED",),
                 order={},
                 broker_validation={},
             )
