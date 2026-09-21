@@ -395,6 +395,7 @@ class IBKRResearchToolbox:
                     "orderType": str(getattr(trade.order, "orderType", "")),
                     "quantity": str(getattr(trade.order, "totalQuantity", "")),
                     "status": str(getattr(trade.orderStatus, "status", "")),
+                    "orderRef": str(getattr(trade.order, "orderRef", "") or ""),
                 })
             return {"success": True, "open_orders": items}
         finally:
