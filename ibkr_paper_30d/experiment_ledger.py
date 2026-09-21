@@ -33,6 +33,7 @@ class ExperimentPosition:
     sec_type: str
     multiplier: Decimal
     quantity: Decimal
+    average_cost: Decimal
     mark: Decimal
     market_value: Decimal
 
@@ -249,7 +250,7 @@ class AutonomousExperimentLedger:
         def equity_now() -> Decimal:
             market = Decimal("0")
             for contract_id, position in positions.items():
-                mark = marks.get(contract_id, position.get("last_fill_price", Decimal("0")))
+                mark = marks.get(contract_id, position.get("average_cost", Decimal("0")))
                 market += position["quantity"] * mark * position["multiplier"]
             return cash + market
 
@@ -284,12 +285,27 @@ class AutonomousExperimentLedger:
                         "sec_type": str(event.get("sec_type") or ""),
                         "multiplier": multiplier,
                         "quantity": Decimal("0"),
+                        "average_cost": price,
                         "last_fill_price": price,
                     },
                 )
                 if slot["multiplier"] != multiplier:
                     reasons.append("MULTIPLIER_MISMATCH")
-                slot["quantity"] += signed_quantity
+                old_quantity = slot["quantity"]
+                old_average = slot["average_cost"]
+                new_quantity = old_quantity + signed_quantity
+                if old_quantity == 0 or old_quantity * signed_quantity > 0:
+                    total_units = abs(old_quantity) + abs(signed_quantity)
+                    slot["average_cost"] = (
+                        (abs(old_quantity) * old_average + abs(signed_quantity) * price)
+                        / total_units
+                    )
+                elif abs(signed_quantity) > abs(old_quantity):
+                    # Position crossed through zero. The excess opens a new
+                    # position on the opposite side at the current fill price.
+                    slot["average_cost"] = price
+                # Partial closes preserve the cost basis of the remaining units.
+                slot["quantity"] = new_quantity
                 slot["last_fill_price"] = price
                 marks[contract_id] = price
                 if slot["quantity"] == 0:
@@ -310,7 +326,7 @@ class AutonomousExperimentLedger:
         position_rows: list[ExperimentPosition] = []
         market_value = Decimal("0")
         for contract_id, position in sorted(positions.items()):
-            mark = marks.get(contract_id, position["last_fill_price"])
+            mark = marks.get(contract_id, position["average_cost"])
             value = position["quantity"] * mark * position["multiplier"]
             market_value += value
             position_rows.append(
@@ -320,6 +336,7 @@ class AutonomousExperimentLedger:
                     sec_type=position["sec_type"],
                     multiplier=position["multiplier"],
                     quantity=position["quantity"],
+                    average_cost=_money(position["average_cost"]),
                     mark=mark,
                     market_value=_money(value),
                 )
