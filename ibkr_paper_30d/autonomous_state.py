@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
 from .autonomous_research import ResearchRequest, ResearchTool
 from .canonical import sha256_json
+from .experiment_control import ExperimentClockStore, KillSwitchStore
 from .experiment_ledger import AutonomousExperimentLedger
 from .ibkr_research_tools import IBKRResearchToolbox
 from .persistence import Database
+from .market_data import DecisionClass
 from .repositories import utc_now
+from .runtime_integrity import RuntimeMarketDataGate
 from .trader_invocation import TraderInputBundle
 from .types import new_uuid7
 
@@ -35,7 +38,8 @@ class AutonomousStateBuilder:
         allocation: Decimal = Decimal("500.00"),
         experiment_start_utc: datetime,
         duration_days: int = 30,
-        kill_switch_state: str = "KILL_SWITCH_TRIGGERED",
+        kill_switch_state: str | None = None,
+        runtime_market_gate: RuntimeMarketDataGate | None = None,
     ) -> None:
         if experiment_start_utc.tzinfo is None or experiment_start_utc.utcoffset() is None:
             raise ValueError("experiment_start_utc must be timezone-aware")
@@ -44,9 +48,25 @@ class AutonomousStateBuilder:
         self.db = db
         self.toolbox = toolbox
         self.ledger = AutonomousExperimentLedger(db, allocation=allocation)
-        self.experiment_start_utc = experiment_start_utc.astimezone(timezone.utc)
-        self.duration_days = duration_days
-        self.kill_switch_state = kill_switch_state
+        self.experiment_clock = ExperimentClockStore(db).initialize_or_load(
+            requested_start_utc=experiment_start_utc,
+            duration_days=duration_days,
+            initial_allocation=allocation,
+        )
+        self.kill_switch_store = KillSwitchStore(db)
+        if kill_switch_state is not None and self.kill_switch_store.current() == "KILL_SWITCH_TRIGGERED":
+            if kill_switch_state == "KILL_SWITCH_CLEAR":
+                self.kill_switch_store.set(
+                    "KILL_SWITCH_CLEAR",
+                    reason="explicit builder initialization",
+                    actor="runtime",
+                )
+        expected_hash = getattr(toolbox, "expected_account_hash", None)
+        self.runtime_market_gate = runtime_market_gate or (
+            RuntimeMarketDataGate(expected_account_hash=expected_hash)
+            if expected_hash
+            else None
+        )
 
     def _tool(self, tool: ResearchTool, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
         request = ResearchRequest(
