@@ -142,3 +142,20 @@ def test_codex_output_schema_requires_nullable_fields() -> None:
     assert "proposal" in schema["required"]
     assert schema["additionalProperties"] is False
     assert "pattern" not in json.dumps(schema)
+
+def test_codex_cli_provider_requires_actual_model_attestation() -> None:
+    value = bundle()
+
+    def runner(command, **kwargs):
+        output_path = Path(command[command.index("--output-last-message") + 1])
+        output_path.write_text(json.dumps(output(value)), encoding="utf-8")
+        stdout = "\n".join(
+            (
+                json.dumps({"type": "thread.started", "thread_id": "test"}),
+                json.dumps({"type": "turn.completed"}),
+            )
+        )
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    with pytest.raises(RuntimeError, match="CODEX_MODEL_ATTESTATION_FAILED"):
+        CodexCLIProvider(runner=runner).invoke(request(value), value)
