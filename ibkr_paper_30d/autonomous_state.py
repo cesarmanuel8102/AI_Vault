@@ -218,6 +218,19 @@ class AutonomousStateBuilder:
         return self.experiment_clock.snapshot(now)
 
     @staticmethod
+    def _broker_now(account: dict[str, Any]) -> datetime:
+        raw = account.get("server_time_utc")
+        if not isinstance(raw, str) or not raw:
+            raise AutonomousStateBuildError("BROKER_SERVER_TIME_MISSING")
+        try:
+            parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise AutonomousStateBuildError("BROKER_SERVER_TIME_INVALID") from exc
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise AutonomousStateBuildError("BROKER_SERVER_TIME_INVALID")
+        return parsed.astimezone(timezone.utc)
+
+    @staticmethod
     def _broker_snapshot(account: dict[str, Any], equity: Decimal) -> dict[str, Any]:
         summary = account.get("summary", {}) or {}
         limits: list[Decimal] = [max(equity, Decimal("0"))]
@@ -259,7 +272,7 @@ class AutonomousStateBuilder:
             reconciliation["reason_codes"] = list(
                 dict.fromkeys(list(reconciliation.get("reason_codes", [])) + mark_reasons)
             )
-        now = datetime.now(timezone.utc)
+        now = self._broker_now(account)
         clock = self._clock(now)
 
         isolated_orders = [
