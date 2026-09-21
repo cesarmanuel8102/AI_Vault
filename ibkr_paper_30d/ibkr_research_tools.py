@@ -662,7 +662,11 @@ class IBKRResearchToolbox:
                     "side": side,
                     "quantity": str(getattr(execution, "shares", "") or ""),
                     "price": str(getattr(execution, "price", "") or ""),
-                    "commission": str(getattr(commission_report, "commission", 0) or 0),
+                    "commission": (
+                    None
+                    if commission_report is None
+                    else str(getattr(commission_report, "commission", 0))
+                ),
                     "contract": self._serialize_contract(contract),
                 })
             return {"success": True, "executions": items}
