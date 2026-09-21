@@ -105,12 +105,47 @@ class AutonomousStateBuilder:
             experiment_clock={},
         )
 
-    def _sync_executions(self) -> None:
+    def _registered_fill(self, fill: dict[str, Any]) -> bool:
+        order_ref = str(fill.get("orderRef") or "")
+        if not order_ref.startswith("codex-ibkr-paper-30d"):
+            return False
+        order_id = int(fill.get("orderId") or 0)
+        perm_id = int(fill.get("permId") or 0)
+        rows = self.db.execute(
+            "SELECT client_order_id,perm_id FROM experiment_order_registry "
+            "WHERE order_ref=? ORDER BY sequence DESC",
+            (order_ref,),
+        ).fetchall()
+        for client_order_id, registered_perm_id in rows:
+            client_match = (
+                order_id > 0
+                and client_order_id is not None
+                and int(client_order_id) == order_id
+            )
+            perm_match = (
+                perm_id > 0
+                and registered_perm_id is not None
+                and int(registered_perm_id) > 0
+                and int(registered_perm_id) == perm_id
+            )
+            if client_match or perm_match:
+                return True
+        return False
+
+    def _sync_executions(self) -> list[str]:
         executions = self._tool(ResearchTool.EXECUTIONS)
+        reasons: list[str] = []
         for fill in executions.get("executions", []) or []:
-            if not str(fill.get("orderRef") or "").startswith("codex-ibkr-paper-30d"):
+            order_ref = str(fill.get("orderRef") or "")
+            if not order_ref.startswith("codex-ibkr-paper-30d"):
+                continue
+            if not self._registered_fill(fill):
+                reasons.append(
+                    f"UNREGISTERED_EXPERIMENT_FILL:{int(fill.get('orderId') or 0)}"
+                )
                 continue
             self.ledger.record_fill(fill)
+        return reasons
 
     def _mark_open_positions(self) -> list[str]:
         state = self.ledger.project()
@@ -260,17 +295,20 @@ class AutonomousStateBuilder:
         market_session_state: str = "UNKNOWN",
         benchmark_state: dict[str, Any] | None = None,
     ) -> TraderInputBundle:
-        self._sync_executions()
+        execution_reasons = self._sync_executions()
         mark_reasons = self._mark_open_positions()
         ledger_state = self.ledger.project()
         account = self._tool(ResearchTool.ACCOUNT_STATE)
         broker_positions = self._tool(ResearchTool.POSITIONS)
         open_orders = self._tool(ResearchTool.OPEN_ORDERS)
         reconciliation = self._reconcile(ledger_state, broker_positions)
-        if mark_reasons:
+        state_reasons = execution_reasons + mark_reasons
+        if state_reasons:
             reconciliation["status"] = "BLOCK"
             reconciliation["reason_codes"] = list(
-                dict.fromkeys(list(reconciliation.get("reason_codes", [])) + mark_reasons)
+                dict.fromkeys(
+                    list(reconciliation.get("reason_codes", [])) + state_reasons
+                )
             )
         now = self._broker_now(account)
         clock = self._clock(now)
