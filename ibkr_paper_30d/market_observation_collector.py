@@ -549,6 +549,25 @@ class IBKRMarketDataSource:
         if not self.client.current_time_event.wait(self.timeout_seconds):
             raise ObservationAborted("BROKER_CLOCK_TIMEOUT")
 
+        deadline = time.monotonic() + min(self.timeout_seconds, 5.0)
+        while time.monotonic() < deadline:
+            complete = True
+            for symbol in symbols:
+                quote = self.client.quotes.get(symbol, {})
+                if (
+                    quote.get("bid") is None
+                    or quote.get("ask") is None
+                    or quote.get("broker_quote_timestamp") is None
+                    or quote.get("realtime_or_delayed") in {None, "UNKNOWN"}
+                ):
+                    complete = False
+                    break
+            if complete:
+                break
+            time.sleep(0.05)
+        else:
+            raise ObservationAborted("INITIAL_REALTIME_QUOTE_TIMEOUT")
+
     def identity_receipt_sha256(self) -> str:
         accounts = self.client.managed_accounts_value
         return expected_identity_hash(accounts[0]) if len(accounts) == 1 else ""
