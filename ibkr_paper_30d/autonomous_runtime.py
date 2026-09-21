@@ -65,7 +65,7 @@ class AutonomousDecisionRuntime:
         db: Database,
         toolbox: IBKRResearchToolbox,
         model: str,
-        reasoning_effort: str = "HIGH",
+        reasoning_effort: str = "max",
         timeout_seconds: int = 180,
         max_research_rounds: int = 8,
     ) -> None:
