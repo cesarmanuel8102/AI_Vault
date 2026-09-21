@@ -229,7 +229,7 @@ class CodexAutonomousCLIProvider:
             command = [
                 "codex", "exec", "--ephemeral", "--ignore-rules",
                 "--ignore-user-config", "--skip-git-repo-check",
-                "--sandbox", "read-only", "--json",
+                "--sandbox", "read-only", "--search", "--json",
                 "--model", request.requested_model,
                 "-c", f'model_reasoning_effort="{request.reasoning_effort.lower()}"',
                 "--output-schema", str(schema_path),

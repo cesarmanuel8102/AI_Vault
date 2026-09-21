@@ -150,8 +150,8 @@ def persist_outcome(
 def run_autonomous_cycle(
     bundle: TraderInputBundle,
     *,
-    model: str = "gpt-5.5",
-    reasoning_effort: str = "high",
+    model: str = "gpt-5.6-sol",
+    reasoning_effort: str = "max",
     experiment_id: str = "ibkr-paper-30d",
     timeout_seconds: int = 180,
     trigger: str = "SCHEDULED_SCAN",
@@ -235,8 +235,8 @@ class AutonomousTraderBoundary:
     def __init__(
         self,
         *,
-        model: str = "gpt-5.5",
-        reasoning_effort: str = "high",
+        model: str = "gpt-5.6-sol",
+        reasoning_effort: str = "max",
         experiment_id: str = "ibkr-paper-30d",
         timeout_seconds: int = 180,
         options_level: int | None = 4,
@@ -287,8 +287,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m ibkr_paper_30d.autonomous_runtime")
     parser.add_argument("--bundle", type=Path, required=True)
     parser.add_argument("--db", type=Path, default=Path("state/ibkr_paper_30d/autonomous.sqlite3"))
-    parser.add_argument("--model", default="gpt-5.5")
-    parser.add_argument("--reasoning-effort", default="high")
+    parser.add_argument("--model", default="gpt-5.6-sol")
+    parser.add_argument("--reasoning-effort", default="max")
     parser.add_argument("--timeout-seconds", type=int, default=180)
     parser.add_argument("--trigger", default="SCHEDULED_SCAN")
     parser.add_argument("--options-level", type=int, default=4)
