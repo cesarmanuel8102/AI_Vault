@@ -84,6 +84,9 @@ $RequiredFiles = @(
     "ibkr_paper_30d\autonomous_state.py",
     "ibkr_paper_30d\autonomous_service.py",
     "ibkr_paper_30d\experiment_ledger.py",
+    "EXTERNAL_AUDIT_REMEDIATION_V1.md",
+    "ibkr_paper_30d\runtime_integrity.py",
+    "ibkr_paper_30d\experiment_control.py",
     "ibkr_paper_30d\prerequisite_tools.py"
 )
 $Missing = @($RequiredFiles | Where-Object {
