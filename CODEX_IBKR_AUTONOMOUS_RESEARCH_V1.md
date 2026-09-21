@@ -224,8 +224,8 @@ until explicitly satisfied and the paper executor is deliberately armed.
 
 Current autonomous implementation validation:
 
-- autonomous/regression suite on Linux: 66 passed, 0 failed;
-- autonomous/regression suite on Windows: 66 passed, 0 failed;
+- autonomous/regression suite on Linux: 69 passed, 0 failed;
+- autonomous/regression suite on Windows: 69 passed, 0 failed;
 - autonomous module compilation: PASS on both CI paths;
 - live Codex web search flag and GPT-5.6 Sol/max invocation contract: PASS;
 - deterministic bounded Level-4 structure tests: PASS;
