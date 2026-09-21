@@ -82,7 +82,11 @@ function New-RandomSecurePassword {
 
 function Quote-Argument {
     param([string]$Value)
-    return '"' + $Value.Replace('"', '\"') + '"'
+    if ([string]::IsNullOrWhiteSpace($Value)) { throw "EMPTY_ARGUMENT_VALUE" }
+    if ($Value.Contains('"') -or $Value.EndsWith('\')) {
+        throw "UNSAFE_ARGUMENT_VALUE"
+    }
+    return '"' + $Value + '"'
 }
 
 Assert-Administrator
