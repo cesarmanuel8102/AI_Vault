@@ -253,7 +253,13 @@ function Resolve-ApprovedTarget {
 
 function Test-ReadCapability {
     param([string]$Target)
-    if (-not (Test-Path -LiteralPath $Target)) { return "NOT_PROVEN" }
+    try {
+        $Exists = Test-Path -LiteralPath $Target -ErrorAction Stop
+    }
+    catch [UnauthorizedAccessException] { return "DENIED" }
+    catch [Security.SecurityException] { return "DENIED" }
+    catch { return "NOT_PROVEN" }
+    if (-not $Exists) { return "NOT_PROVEN" }
     try {
         $Item = Get-Item -LiteralPath $Target -Force
         if ($Item.PSIsContainer) {
@@ -272,7 +278,13 @@ function Test-ReadCapability {
 
 function Test-MutationCapability {
     param([string]$Target)
-    if (-not (Test-Path -LiteralPath $Target)) { return "NOT_PROVEN" }
+    try {
+        $Exists = Test-Path -LiteralPath $Target -ErrorAction Stop
+    }
+    catch [UnauthorizedAccessException] { return "DENIED" }
+    catch [Security.SecurityException] { return "DENIED" }
+    catch { return "NOT_PROVEN" }
+    if (-not $Exists) { return "NOT_PROVEN" }
     try {
         $Item = Get-Item -LiteralPath $Target -Force
         if ($Item.PSIsContainer) {
