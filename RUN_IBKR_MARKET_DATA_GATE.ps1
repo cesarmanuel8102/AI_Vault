@@ -2,6 +2,7 @@
 [CmdletBinding()]
 param(
     [string]$RepoRoot = "C:\AI_VAULT",
+    [string]$PythonExe = "python",
     [switch]$Scheduled
 )
 
@@ -17,7 +18,7 @@ $StatePath = Join-Path $ReportRoot "market_gate_collection_state.json"
 
 function Invoke-PythonJson {
     param([string[]]$Arguments)
-    $Output = @(& python @Arguments 2>&1)
+    $Output = @(& $PythonExe @Arguments 2>&1)
     if ($LASTEXITCODE -ne 0) {
         throw "PYTHON_COMMAND_FAILED:$($Arguments -join ' '):$($Output -join ' | ')"
     }
@@ -97,10 +98,17 @@ function Wait-UntilUtc {
     }
 }
 
-if (-not (Test-Path -LiteralPath $RepoRoot -PathType Container)) {
-    throw "REPO_ROOT_NOT_FOUND:$RepoRoot"
+$ResolvedRepoRoot = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\')
+if ($ResolvedRepoRoot -ine "C:\AI_VAULT") {
+    throw "REPO_ROOT_MUST_BE_C:\AI_VAULT"
 }
-Set-Location -LiteralPath $RepoRoot
+if (-not (Test-Path -LiteralPath $ResolvedRepoRoot -PathType Container)) {
+    throw "REPO_ROOT_NOT_FOUND:$ResolvedRepoRoot"
+}
+if (-not (Test-Path -LiteralPath $PythonExe -PathType Leaf) -and $null -eq (Get-Command $PythonExe -ErrorAction SilentlyContinue)) {
+    throw "PYTHON_EXECUTABLE_NOT_FOUND:$PythonExe"
+}
+Set-Location -LiteralPath $ResolvedRepoRoot
 
 if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 4002 -InformationLevel Quiet)) {
     throw "IBKR_PAPER_GATEWAY_4002_NOT_LISTENING"
