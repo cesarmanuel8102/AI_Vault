@@ -46,6 +46,11 @@ class TraderInputBundle(BaseModel, frozen=True):
     process_policy_version: str
     execution_realism_version: str
     benchmark_state: dict[str, Any]
+    # Candidate screens are advisory evidence only. They never constrain the
+    # symbols, asset classes or structures Codex may research or propose.
+    broker_capability_snapshot: dict[str, Any] = Field(default_factory=dict)
+    research_policy_version: str = "AUTONOMOUS_RESEARCH_V1"
+    research_round_budget: int = Field(default=8, ge=1, le=32)
 
     @property
     def sha256(self) -> str:
@@ -70,6 +75,22 @@ class InvocationRequest(BaseModel, frozen=True):
     fallback_reason: str | None = None
 
 
+class TradeLeg(BaseModel, frozen=True):
+    model_config = ConfigDict(extra="forbid")
+
+    symbol: str
+    security_type: str
+    action: str
+    ratio: int = Field(gt=0)
+    contract_id: int | None = None
+    expiry: str | None = None
+    strike: Decimal | None = None
+    right: str | None = None
+    multiplier: str | None = None
+    exchange: str = "SMART"
+    currency: str = "USD"
+
+
 class TradeProposal(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
@@ -79,6 +100,14 @@ class TradeProposal(BaseModel, frozen=True):
     symbol: str
     instrument: str
     direction: str
+    security_type: str | None = None
+    contract_id: int | None = None
+    quantity: Decimal | None = None
+    capital_required: Decimal | None = None
+    maximum_loss: Decimal | None = None
+    probability_profit: Decimal | None = Field(default=None, ge=0, le=1)
+    expected_value: Decimal | None = None
+    legs: list[TradeLeg] = Field(default_factory=list)
     entry_condition: str
     invalidation_condition: str
     profit_taking_rule: str
@@ -124,6 +153,8 @@ class ProviderResponse(BaseModel, frozen=True):
     actual_model: str
     fallback_reason: str | None = None
     structured_output: Any
+    research_evidence: list[dict[str, Any]] = Field(default_factory=list)
+    research_metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class TraderProvider(Protocol):
@@ -220,20 +251,40 @@ class CodexCLIProvider:
 
     @staticmethod
     def _prompt(request: InvocationRequest, bundle: TraderInputBundle) -> str:
+        synthetic = bundle.market_session_state == "SYNTHETIC_NON_TRADING"
         payload = {
-            "schema": "TRADER_INPUT_BUNDLE_TEST_V1",
-            "non_trading_test": True,
+            "schema": (
+                "TRADER_INPUT_BUNDLE_TEST_V1"
+                if synthetic
+                else "AUTONOMOUS_TRADER_INPUT_V1"
+            ),
+            "non_trading_test": synthetic,
             "order_authority": False,
             "request": request.model_dump(mode="json"),
             "bundle": bundle.model_dump(mode="json"),
         }
+        if synthetic:
+            return (
+                "Return only a JSON object conforming to the supplied output schema. "
+                "This is a synthetic non-trading validation. Do not call tools, read files, "
+                "inspect the environment, access a broker, or access an execution lock. "
+                "Return decision NO_TRADE, proposal null, confidence 1.0, and reason code "
+                "SYNTHETIC_NON_TRADING_TEST. Copy decision_cycle_id, invocation_id, and "
+                "input_bundle_sha256 exactly from the request. Use the request utc_timestamp.\n"
+                + canonical_bytes(payload).decode("utf-8")
+            )
         return (
-            "Return only a JSON object conforming to the supplied output schema. "
-            "This is a synthetic non-trading validation. Do not call tools, read files, "
-            "inspect the environment, access a broker, or access an execution lock. "
-            "Return decision NO_TRADE, proposal null, confidence 1.0, and reason code "
-            "SYNTHETIC_NON_TRADING_TEST. Copy decision_cycle_id, invocation_id, and "
-            "input_bundle_sha256 exactly from the request. Use the request utc_timestamp.\n"
+            "Return only a JSON object conforming to the supplied TraderOutput schema. "
+            "You are the autonomous trader for a 30-day paper experiment. Your objective "
+            "is to maximize terminal experimental equity. The entire current experimental "
+            "equity may be placed at risk, but no proposal may create worst-case liability "
+            "greater than current experimental equity. There are no fixed percentage risk, "
+            "drawdown, diversification, strategy-family, symbol, timeframe or asset-class "
+            "limits. Treat candidate_screen_results as optional advisory evidence, never as "
+            "an allowed-symbol list. Adapt your strategy whenever equity, buying power or "
+            "broker capabilities change. This one-shot provider has no research tools; if "
+            "the supplied evidence is insufficient, choose NO_TRADE rather than inventing "
+            "facts. The autonomous research provider is the production decision path.\n"
             + canonical_bytes(payload).decode("utf-8")
         )
 
@@ -464,6 +515,9 @@ class TraderInvocationAdapter:
             "requested_model": request.requested_model,
             "actual_model": response.actual_model,
             "fallback_reason": response.fallback_reason,
+            "research_evidence_count": len(response.research_evidence),
+            "research_evidence_sha256": sha256_json(response.research_evidence),
+            "research_metadata": response.research_metadata,
         }
         if response.actual_model != request.requested_model and not response.fallback_reason:
             return self._invalid(
@@ -500,17 +554,10 @@ class TraderInvocationAdapter:
             return self._invalid(
                 request, "INPUT_HASH_MISMATCH", raw=parsed.model_dump(mode="json")
             )
-        if parsed.proposal is not None:
-            candidates = {
-                str(item.get("symbol", ""))
-                for item in bundle.candidate_screen_results
-            }
-            if parsed.proposal.symbol not in candidates:
-                return self._invalid(
-                    request,
-                    "SYMBOL_NOT_IN_FROZEN_CANDIDATES",
-                    raw=parsed.model_dump(mode="json"),
-                )
+        # Deliberately no frozen-candidate allowlist here.  A proposal may
+        # reference any broker-resolvable instrument discovered autonomously.
+        # Executability, permissions, buying power and maximum-loss feasibility
+        # are evaluated by broker/capital gates after the decision is frozen.
         return self._finish(
             request,
             accepted=True,
