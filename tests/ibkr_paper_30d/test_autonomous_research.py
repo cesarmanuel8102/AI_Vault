@@ -254,3 +254,26 @@ def test_capital_required_cannot_use_rest_of_broker_account():
 
     assert outcome.accepted is False
     assert outcome.reason_codes == ("CAPITAL_REQUIRED_EXCEEDS_EQUITY",)
+
+
+def test_stale_market_gate_blocks_before_autonomous_provider_call():
+    value = bundle("500.00").model_copy(update={"market_data_snapshot": {"gate_status": "BLOCK"}})
+    provider = SequenceProvider([])
+
+    outcome = AutonomousResearchLoop(provider, FakeToolbox()).run(request(value), value)
+
+    assert outcome.accepted is False
+    assert outcome.reason_codes == ("MARKET_DATA_GATE_BLOCK",)
+    assert provider.histories == []
+
+
+def test_stale_input_hash_blocks_before_autonomous_provider_call():
+    value = bundle("500.00")
+    bad_request = request(value).model_copy(update={"input_bundle_sha256": "0" * 64})
+    provider = SequenceProvider([])
+
+    outcome = AutonomousResearchLoop(provider, FakeToolbox()).run(bad_request, value)
+
+    assert outcome.accepted is False
+    assert outcome.reason_codes == ("INPUT_HASH_MISMATCH",)
+    assert provider.histories == []
