@@ -563,3 +563,52 @@ evidence.
 
 Only after both prerequisite gates show PASS should experiment arming/start be
 considered as a separate explicit step.
+
+
+## Post-external-audit runtime contract
+
+An independent adversarial audit against SHA
+`c4a0abdd081724e6073d0a4c394feb9749e4c985` identified fail-open runtime and
+host-isolation defects. The remediation branch changed several contracts.
+Future Codex work MUST preserve the following:
+
+1. The 30-day experiment clock is persisted on first initialization and cannot
+   be reset by restart. A future start is explicitly `not_started` and cannot
+   execute early.
+2. PAPER execution requires all of:
+   - `IBKR_AUTONOMOUS_PAPER_ARMED=true`;
+   - immutable owner `AUTHORIZED` event bound to the persisted clock hash;
+   - current kill switch CLEAR;
+   - current reconciliation PASS;
+   - current runtime Market Data Gate PASS;
+   - current Auditor V2 receipt/integrity PASS.
+3. Market-data and Auditor gates are checked during state construction and again
+   immediately before broker transmission.
+4. IBKR what-if is fail-closed. None/error/missing margin/missing commission or
+   blocking broker warnings must block execution.
+5. Position-management actions use the same broker-feasibility boundary as new
+   orders, re-resolve quantity/direction and re-run what-if on the same
+   connection immediately before send.
+6. Experiment fills require a matching issued-order registry identity in
+   addition to the experiment orderRef prefix.
+7. The isolated experiment ledger is hash chained and synthesizes a
+   deterministic execution identity when broker execId is absent.
+8. Global account NLV/buying power is not exposed as experiment capital. Codex
+   sees only isolated equity and experiment buying power capped by broker
+   constraints.
+9. The restricted auditor account must prove loopback broker socket denial and
+   absence of forbidden token privileges. It is enabled only for the bounded
+   probe window, then its password is rotated and the account is disabled.
+10. Auditor runtime trust is pinned to immutable Git-bound trust material, not
+    to an installed manifest hashing itself.
+11. Codex model floor is GPT-5.6 Sol / max reasoning; a reported model
+    substitution is a runtime error.
+12. Immediate post-fill reevaluation is observation/reasoning only and cannot
+    transmit a second order in the same outer-loop iteration.
+13. CI and local synchronization run the full `tests/ibkr_paper_30d` suite.
+14. The canonical remediation index is
+    `EXTERNAL_AUDIT_REMEDIATION_V1.md`.
+
+Do not reintroduce any pre-remediation behavior merely to make an old test pass.
+When a legacy test conflicts with a stronger fail-closed security contract,
+update the test to validate the stronger contract instead.
