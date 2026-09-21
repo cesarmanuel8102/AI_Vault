@@ -377,6 +377,8 @@ class AutonomousResearchLoop:
             proposal = turn.proposal
             if proposal is None:
                 return self._blocked(history, round_index, "MISSING_PROPOSAL")
+            if not proposal.loss_is_bounded:
+                return self._blocked(history, round_index, "UNBOUNDED_LIABILITY")
             if proposal.maximum_loss > equity:
                 return self._blocked(history, round_index, "EXPERIMENT_CAPITAL_BOUNDARY")
             if proposal.capital_required > equity:
