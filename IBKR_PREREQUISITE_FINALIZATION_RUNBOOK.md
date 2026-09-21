@@ -102,10 +102,10 @@ Example:
 
 ```powershell
 Set-Location C:\AI_VAULT
-python -m ibkr_paper_30d.autonomous_service \
-  --db state\ibkr_paper_30d\autonomous.sqlite3 \
-  --start-utc 2026-09-22T13:30:00Z \
-  --authorize-start \
+python -m ibkr_paper_30d.autonomous_service `
+  --db state\ibkr_paper_30d\autonomous.sqlite3 `
+  --start-utc 2026-09-22T13:30:00Z `
+  --authorize-start `
   --authorization-phrase "AUTHORIZE 30-DAY PAPER EXPERIMENT"
 ```
 
@@ -114,9 +114,9 @@ Use the actual intended Day 1 UTC timestamp, not the example date above.
 Before start, clear the operational kill switch explicitly:
 
 ```powershell
-python -m ibkr_paper_30d.autonomous_service \
-  --db state\ibkr_paper_30d\autonomous.sqlite3 \
-  --kill-switch clear \
+python -m ibkr_paper_30d.autonomous_service `
+  --db state\ibkr_paper_30d\autonomous.sqlite3 `
+  --kill-switch clear `
   --kill-reason "owner authorizes Day 1"
 ```
 
@@ -125,8 +125,8 @@ fresh Market Data PASS and kill-switch CLEAR may PAPER transmission be armed:
 
 ```powershell
 $env:IBKR_AUTONOMOUS_PAPER_ARMED = "true"
-python -m ibkr_paper_30d.autonomous_service \
-  --db state\ibkr_paper_30d\autonomous.sqlite3 \
+python -m ibkr_paper_30d.autonomous_service `
+  --db state\ibkr_paper_30d\autonomous.sqlite3 `
   --execute-paper
 ```
 
@@ -136,8 +136,8 @@ original persisted start/end; they cannot reset the 30-day horizon.
 To revoke owner authorization:
 
 ```powershell
-python -m ibkr_paper_30d.autonomous_service \
-  --db state\ibkr_paper_30d\autonomous.sqlite3 \
+python -m ibkr_paper_30d.autonomous_service `
+  --db state\ibkr_paper_30d\autonomous.sqlite3 `
   --revoke-start
 ```
 
