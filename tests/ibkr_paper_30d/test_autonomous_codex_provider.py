@@ -70,7 +70,7 @@ def test_autonomous_codex_invocation_enables_live_search_and_max_reasoning():
             )
         stdout = "\n".join(
             [
-                json.dumps({"type": "thread.started", "thread_id": "t"}),
+                json.dumps({"type": "thread.started", "thread_id": "t", "actual_model": "gpt-5.6-sol"}),
                 json.dumps({
                     "type": "item.completed",
                     "item": {"type": "web_search", "id": "w1", "status": "completed"},
@@ -119,6 +119,7 @@ def test_autonomous_codex_rejects_reported_model_substitution():
                         "type": "thread.started",
                         "thread_id": "t",
                         "model": "gpt-5.5",
+                        "actual_model": "gpt-5.5",
                     }
                 ),
                 json.dumps({"type": "turn.completed"}),
