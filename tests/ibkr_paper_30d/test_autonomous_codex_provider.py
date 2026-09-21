@@ -91,3 +91,46 @@ def test_autonomous_codex_invocation_enables_live_search_and_max_reasoning():
     assert provider.last_native_tool_events == [
         {"type": "web_search", "status": "completed", "id": "w1"}
     ]
+
+
+def test_autonomous_codex_rejects_reported_model_substitution():
+    value = bundle()
+
+    def runner(command, **kwargs):
+        output_path = command[command.index("--output-last-message") + 1]
+        with open(output_path, "w", encoding="utf-8") as handle:
+            json.dump(
+                {
+                    "mode": "FINAL",
+                    "research_requests": [],
+                    "decision": "NO_TRADE",
+                    "proposal": None,
+                    "position_action": None,
+                    "confidence": "0.75",
+                    "reasoning_summary": "No trade.",
+                    "reason_codes": ["NO_EDGE_FOUND"],
+                },
+                handle,
+            )
+        stdout = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "thread.started",
+                        "thread_id": "t",
+                        "model": "gpt-5.5",
+                    }
+                ),
+                json.dumps({"type": "turn.completed"}),
+            ]
+        )
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    provider = CodexAutonomousCLIProvider(runner=runner)
+
+    import pytest
+
+    with pytest.raises(
+        RuntimeError, match="AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED"
+    ):
+        provider.next_turn(request(value), value, [], [{"tool": "MARKET_SCANNER"}])
