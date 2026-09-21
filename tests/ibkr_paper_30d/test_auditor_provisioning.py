@@ -3,10 +3,15 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
 import subprocess
 from pathlib import Path
 
 import pytest
+
+pytestmark = pytest.mark.skipif(
+    os.name != "nt", reason="Windows auditor provisioning boundary tests"
+)
 
 
 ROOT = Path(__file__).parents[2]
