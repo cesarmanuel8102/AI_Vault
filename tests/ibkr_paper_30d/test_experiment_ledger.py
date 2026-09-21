@@ -146,3 +146,11 @@ def test_late_commission_report_appends_adjustment_without_double_counting_fill(
         duplicate = ledger.record_fill(updated)
         assert duplicate.startswith("duplicate:")
         assert ledger.project().event_count == 2
+
+        missing_again = dict(updated)
+        missing_again["commission"] = None
+        duplicate_missing = ledger.record_fill(missing_again)
+        assert duplicate_missing.startswith("duplicate:")
+        final = ledger.project()
+        assert final.event_count == 2
+        assert final.fees == Decimal("1.25")
