@@ -26,6 +26,10 @@ def build_request(
     timeout_seconds: int,
     trigger: str,
 ) -> InvocationRequest:
+    if model != "gpt-5.6-sol":
+        raise ValueError("autonomous experiment requires gpt-5.6-sol")
+    if reasoning_effort.lower() != "max":
+        raise ValueError("autonomous experiment requires max reasoning effort")
     invocation_id = f"autonomous-{new_uuid7()}"
     return InvocationRequest(
         decision_cycle_id=bundle.decision_cycle_id,
