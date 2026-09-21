@@ -45,6 +45,38 @@ class AutonomousPaperExecutor:
         )
         self.fill_wait_seconds = fill_wait_seconds
 
+    @staticmethod
+    def _fills_payload(trade: Any) -> list[dict[str, Any]]:
+        items: list[dict[str, Any]] = []
+        for fill in getattr(trade, "fills", []) or []:
+            execution = getattr(fill, "execution", None)
+            contract = getattr(fill, "contract", None)
+            commission_report = getattr(fill, "commissionReport", None)
+            raw_side = str(getattr(execution, "side", "") or "").upper()
+            side = "BUY" if raw_side in {"BOT", "BUY"} else "SELL" if raw_side in {"SLD", "SELL"} else raw_side
+            execution_id = str(getattr(execution, "execId", "") or "")
+            import hashlib
+            items.append({
+                "execution_id_hash": hashlib.sha256(execution_id.encode("utf-8")).hexdigest() if execution_id else None,
+                "side": side,
+                "quantity": str(getattr(execution, "shares", "") or ""),
+                "price": str(getattr(execution, "price", "") or ""),
+                "commission": str(getattr(commission_report, "commission", 0) or 0),
+                "contract": {
+                    "conId": int(getattr(contract, "conId", 0) or 0),
+                    "symbol": str(getattr(contract, "symbol", "") or ""),
+                    "localSymbol": str(getattr(contract, "localSymbol", "") or ""),
+                    "secType": str(getattr(contract, "secType", "") or ""),
+                    "exchange": str(getattr(contract, "exchange", "") or ""),
+                    "currency": str(getattr(contract, "currency", "") or ""),
+                    "expiry": str(getattr(contract, "lastTradeDateOrContractMonth", "") or ""),
+                    "strike": str(getattr(contract, "strike", 0) or 0),
+                    "right": str(getattr(contract, "right", "") or ""),
+                    "multiplier": str(getattr(contract, "multiplier", "") or "1"),
+                },
+            })
+        return items
+
     def execute(
         self,
         proposal: AutonomousTradeProposal,
@@ -106,6 +138,7 @@ class AutonomousPaperExecutor:
                 "filled": getattr(trade.orderStatus, "filled", None),
                 "remaining": getattr(trade.orderStatus, "remaining", None),
                 "avgFillPrice": getattr(trade.orderStatus, "avgFillPrice", None),
+                "fills": self._fills_payload(trade),
                 "paper_only": True,
             }
             failed = str(status).upper() in {"INACTIVE", "CANCELLED", "API CANCELLED"}
@@ -189,6 +222,7 @@ class AutonomousPaperExecutor:
                 "filled": getattr(trade.orderStatus, "filled", None),
                 "remaining": getattr(trade.orderStatus, "remaining", None),
                 "avgFillPrice": getattr(trade.orderStatus, "avgFillPrice", None),
+                "fills": self._fills_payload(trade),
                 "paper_only": True,
                 "position_management": decision.value,
             }
