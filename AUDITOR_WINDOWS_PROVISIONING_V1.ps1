@@ -129,7 +129,13 @@ $AclChanges = @(
     (New-AclChange -Path $ProvisioningPath -Rights "Write,Delete,ChangePermissions,TakeOwnership" -Type "Deny" -Directory $true)
 )
 foreach ($Path in $ProtectedPaths) {
-    $AclChanges += New-AclChange -Path $Path -Rights "FullControl" -Type "Deny" -Directory ($Path -eq $LiveStateRoot -or (Test-Path -LiteralPath $Path -PathType Container))
+    $IsDirectory = ($Path -eq $LiveStateRoot -or (Test-Path -LiteralPath $Path -PathType Container))
+    $Rights = if ($IsDirectory) {
+        "ReadData,WriteData,AppendData,CreateFiles,CreateDirectories,Delete,DeleteSubdirectoriesAndFiles,ChangePermissions,TakeOwnership"
+    } else {
+        "WriteData,AppendData,Delete,ChangePermissions,TakeOwnership"
+    }
+    $AclChanges += New-AclChange -Path $Path -Rights $Rights -Type "Deny" -Directory $IsDirectory
 }
 $LegacyAclChanges = @()
 foreach ($Path in $LegacyEphemeralPaths) {
@@ -145,6 +151,7 @@ $ProbeTargets = [ordered]@{
     EXECUTION_LOCK_ACCESS = "C:\AI_VAULT\state\ibkr_paper_30d\execution.lock"
     LIVE_DATABASE_MUTATION = "C:\AI_VAULT\state\ibkr_paper_30d\reports\real_codex_invocations.sqlite3"
     BROKER_WRITE_PATH_ACCESS = "C:\AI_VAULT\ibkr_paper_30d\broker.py"
+    BROKER_NETWORK_SOCKET_ACCESS = "C:\AI_VAULT\ibkr_paper_30d\broker.py"
     TRADER_CONTEXT_ACCESS = "C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py"
     AUDIT_INPUT_MUTATION = $ExportPath
     IMMUTABLE_EXPORT_READ = $ExportPath
