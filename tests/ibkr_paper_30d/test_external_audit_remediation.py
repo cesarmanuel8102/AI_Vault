@@ -406,3 +406,18 @@ def test_owner_authorization_is_bound_to_persisted_clock(tmp_path):
             reason="owner revoked",
         )
         assert store.current(clock_event_sha256=clock.event_sha256) == "REVOKED"
+
+
+def test_experiment_clock_marks_future_start_not_started(tmp_path):
+    start = datetime(2026, 9, 22, 13, 30, tzinfo=timezone.utc)
+    now = datetime(2026, 9, 21, 13, 30, tzinfo=timezone.utc)
+    with Database.open(tmp_path / "future-clock.sqlite3") as db:
+        clock = ExperimentClockStore(db).initialize_or_load(
+            requested_start_utc=start,
+            duration_days=30,
+            initial_allocation=Decimal("500.00"),
+        )
+        snapshot = clock.snapshot(now)
+        assert snapshot["not_started"] is True
+        assert snapshot["elapsed_days"] == 0
+        assert snapshot["expired"] is False
