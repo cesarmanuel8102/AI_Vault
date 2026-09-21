@@ -105,3 +105,44 @@ def test_weighted_average_cost_survives_partial_close(tmp_path):
         assert state.cash == Decimal("900.00")
         assert state.market_value == Decimal("500.00")
         assert state.equity == Decimal("1400.00")
+
+
+def test_late_commission_report_appends_adjustment_without_double_counting_fill(tmp_path):
+    fill = {
+        "execution_id_hash": "late-commission-1",
+        "orderRef": "codex-ibkr-paper-30d-a-test",
+        "permId": 10,
+        "orderId": 11,
+        "clientId": 12,
+        "execution_time": "2026-09-21T13:31:00Z",
+        "side": "BUY",
+        "quantity": "1",
+        "price": "2.00",
+        "commission": "0",
+        "contract": {
+            "conId": 123,
+            "symbol": "XYZ",
+            "secType": "OPT",
+            "multiplier": "100",
+        },
+    }
+    with Database.open(tmp_path / "ledger.sqlite3") as db:
+        ledger = AutonomousExperimentLedger(db)
+        ledger.record_fill(fill)
+        first = ledger.project()
+        assert first.equity == Decimal("500.00")
+        assert first.fees == Decimal("0.00")
+
+        updated = dict(fill)
+        updated["commission"] = "1.25"
+        event_id = ledger.record_fill(updated)
+        assert not event_id.startswith("duplicate:")
+
+        second = ledger.project()
+        assert second.event_count == 2
+        assert second.equity == Decimal("498.75")
+        assert second.fees == Decimal("1.25")
+
+        duplicate = ledger.record_fill(updated)
+        assert duplicate.startswith("duplicate:")
+        assert ledger.project().event_count == 2
