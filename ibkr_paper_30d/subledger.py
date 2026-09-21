@@ -15,8 +15,11 @@ def money(value: Decimal) -> Decimal:
 class SubledgerEvent:
     event_type: str
     symbol: str = ""
+    contract_id: int = 0
+    security_type: str = "STK"
     quantity: Decimal = Decimal("0")
     price: Decimal = Decimal("0")
+    multiplier: Decimal = Decimal("1")
     amount: Decimal = Decimal("0")
 
 
@@ -55,12 +58,29 @@ class ReconciliationReceipt:
 
 @dataclass
 class _Position:
-    quantity: Decimal
+    symbol: str
+    contract_id: int
+    security_type: str
+    quantity: Decimal  # signed: long > 0, short < 0
     average_cost: Decimal
     mark: Decimal
+    multiplier: Decimal
 
 
 class Subledger:
+    """
+    Virtual experiment ledger.
+
+    STK and premium-based derivative fills use signed quantities, so defined-risk
+    option structures can contain both long and short legs without confusing a
+    short leg with an invalid sale.  A contract multiplier is part of every
+    cash/P&L calculation.
+
+    Futures variation-margin accounting is intentionally not synthesized from
+    notional fills here; a FUT fill must be reconciled from authoritative broker
+    cash/P&L events before it can be represented as experimental equity.
+    """
+
     def __init__(self, allocation: Decimal):
         if allocation <= 0:
             raise ValueError("allocation must be positive")
@@ -69,6 +89,26 @@ class Subledger:
     @classmethod
     def start(cls, allocation: Decimal = Decimal("500.00")) -> "Subledger":
         return cls(allocation)
+
+    @staticmethod
+    def _key(event: SubledgerEvent) -> str:
+        return (
+            f"conid:{event.contract_id}"
+            if int(event.contract_id or 0) > 0
+            else f"symbol:{event.symbol.upper()}"
+        )
+
+    @staticmethod
+    def _valid_fill(event: SubledgerEvent) -> bool:
+        return bool(
+            event.symbol
+            and event.quantity > 0
+            and event.price > 0
+            and event.multiplier > 0
+            and event.quantity.is_finite()
+            and event.price.is_finite()
+            and event.multiplier.is_finite()
+        )
 
     def project(self, events: list[SubledgerEvent]) -> SubledgerState:
         cash = self.allocation
@@ -81,13 +121,17 @@ class Subledger:
 
         def totals() -> tuple[Decimal, Decimal, Decimal]:
             market_value = sum(
-                (position.quantity * position.mark for position in positions.values()),
+                (
+                    position.quantity * position.mark * position.multiplier
+                    for position in positions.values()
+                ),
                 Decimal("0"),
             )
             unrealized = sum(
                 (
                     position.quantity
                     * (position.mark - position.average_cost)
+                    * position.multiplier
                     for position in positions.values()
                 ),
                 Decimal("0"),
@@ -95,63 +139,109 @@ class Subledger:
             equity = cash + market_value
             return money(market_value), money(unrealized), money(equity)
 
+        def apply_fill(event: SubledgerEvent, signed_fill: Decimal) -> None:
+            nonlocal cash, settled_cash, realized
+            if not self._valid_fill(event):
+                reasons.append(
+                    "INVALID_BUY_FILL"
+                    if signed_fill > 0
+                    else "INVALID_SELL_FILL"
+                )
+                return
+            if str(event.security_type or "").upper() == "FUT":
+                reasons.append("FUTURES_VARIATION_MARGIN_REQUIRED")
+                return
+
+            key = self._key(event)
+            multiplier = event.multiplier
+            cash_delta = -(signed_fill * event.price * multiplier)
+            cash += cash_delta
+            settled_cash += cash_delta
+
+            existing = positions.get(key)
+            if existing is None:
+                positions[key] = _Position(
+                    symbol=event.symbol,
+                    contract_id=int(event.contract_id or 0),
+                    security_type=str(event.security_type or "STK").upper(),
+                    quantity=signed_fill,
+                    average_cost=event.price,
+                    mark=event.price,
+                    multiplier=multiplier,
+                )
+                return
+
+            if existing.multiplier != multiplier:
+                reasons.append("CONTRACT_MULTIPLIER_MISMATCH")
+                return
+            if existing.symbol.upper() != event.symbol.upper():
+                reasons.append("CONTRACT_SYMBOL_MISMATCH")
+                return
+
+            old_q = existing.quantity
+            if old_q == 0 or (old_q > 0) == (signed_fill > 0):
+                total_abs = abs(old_q) + abs(signed_fill)
+                average = (
+                    abs(old_q) * existing.average_cost
+                    + abs(signed_fill) * event.price
+                ) / total_abs
+                existing.quantity = old_q + signed_fill
+                existing.average_cost = average
+                existing.mark = event.price
+                return
+
+            closing = min(abs(old_q), abs(signed_fill))
+            # q * (exit - entry) works for long q; reverse for a short.
+            if old_q > 0:
+                realized += closing * (event.price - existing.average_cost) * multiplier
+            else:
+                realized += closing * (existing.average_cost - event.price) * multiplier
+
+            new_q = old_q + signed_fill
+            if new_q == 0:
+                del positions[key]
+                return
+            if (new_q > 0) == (old_q > 0):
+                # Partial close: original basis survives.
+                existing.quantity = new_q
+                existing.mark = event.price
+                return
+
+            # Fill crossed through zero and opened a position in the opposite
+            # direction. The excess quantity begins at the current fill price.
+            existing.quantity = new_q
+            existing.average_cost = event.price
+            existing.mark = event.price
+
         for event in events:
             if event.event_type == "BUY_FILL":
-                if event.quantity <= 0 or event.price <= 0 or not event.symbol:
-                    reasons.append("INVALID_BUY_FILL")
-                    continue
-                cost = event.quantity * event.price
-                existing = positions.get(event.symbol)
-                if existing is None:
-                    positions[event.symbol] = _Position(
-                        event.quantity, event.price, event.price
-                    )
-                else:
-                    total_quantity = existing.quantity + event.quantity
-                    average = (
-                        existing.quantity * existing.average_cost + cost
-                    ) / total_quantity
-                    positions[event.symbol] = _Position(
-                        total_quantity, average, existing.mark
-                    )
-                cash -= cost
-                settled_cash -= cost
+                apply_fill(event, abs(event.quantity))
             elif event.event_type == "SELL_FILL":
-                existing = positions.get(event.symbol)
-                if (
-                    existing is None
-                    or event.quantity <= 0
-                    or event.quantity > existing.quantity
-                    or event.price <= 0
-                ):
-                    reasons.append("INVALID_SELL_FILL")
-                    continue
-                proceeds = event.quantity * event.price
-                realized += event.quantity * (event.price - existing.average_cost)
-                cash += proceeds
-                settled_cash += proceeds
-                remaining = existing.quantity - event.quantity
-                if remaining == 0:
-                    del positions[event.symbol]
-                else:
-                    positions[event.symbol] = _Position(
-                        remaining, existing.average_cost, existing.mark
-                    )
+                apply_fill(event, -abs(event.quantity))
             elif event.event_type == "FEE":
-                if event.amount < 0:
+                if event.amount < 0 or not event.amount.is_finite():
                     reasons.append("INVALID_FEE")
                     continue
                 fees += event.amount
                 cash -= event.amount
                 settled_cash -= event.amount
             elif event.event_type == "MARK":
-                existing = positions.get(event.symbol)
-                if existing is None or event.price <= 0:
+                if event.price <= 0 or not event.price.is_finite():
                     reasons.append("INVALID_MARK")
                     continue
-                positions[event.symbol] = _Position(
-                    existing.quantity, existing.average_cost, event.price
-                )
+                key = self._key(event)
+                existing = positions.get(key)
+                if existing is None and int(event.contract_id or 0) <= 0:
+                    matches = [
+                        item
+                        for item in positions.values()
+                        if item.symbol.upper() == event.symbol.upper()
+                    ]
+                    existing = matches[0] if len(matches) == 1 else None
+                if existing is None:
+                    reasons.append("INVALID_MARK")
+                    continue
+                existing.mark = event.price
             elif event.event_type == "SETTLED_CASH":
                 settled_cash = event.amount
             else:
