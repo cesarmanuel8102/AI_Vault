@@ -249,6 +249,15 @@ class AutonomousPaperExecutor:
             raise AutonomousPaperExecutionNotArmed(
                 "set IBKR_AUTONOMOUS_PAPER_ARMED=true only when the paper experiment is explicitly started"
             )
+        if self.database is None:
+            return PaperExecutionResult(
+                success=False,
+                status="BLOCKED",
+                reason_codes=("PERSISTENT_ORDER_REGISTRY_REQUIRED",),
+                order={},
+                broker_validation={},
+            )
+
         safety_reasons = []
         if bundle.reconciliation_receipt.get("status") != "PASS":
             safety_reasons.append("BROKER_RECONCILIATION_REQUIRED")
@@ -265,20 +274,22 @@ class AutonomousPaperExecutor:
                 broker_validation={},
             )
 
-        validation = self.toolbox.validate_position_action(action, bundle, decision)
-        if not validation.passed:
-            return PaperExecutionResult(
-                success=False,
-                status="BLOCKED",
-                reason_codes=validation.reason_codes,
-                order={},
-                broker_validation=validation.broker_evidence,
-            )
-
         from ib_insync import Order
 
         ib = self.toolbox._connect()
         try:
+            validation = self.toolbox.validate_position_action(
+                action, bundle, decision, ib=ib
+            )
+            if not validation.passed:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=validation.reason_codes,
+                    order={},
+                    broker_validation=validation.broker_evidence,
+                )
+
             position = self.toolbox._resolve_open_position(ib, action)
             if position is None:
                 return PaperExecutionResult(
@@ -288,22 +299,118 @@ class AutonomousPaperExecutor:
                     order={},
                     broker_validation=validation.broker_evidence,
                 )
+            current_position = Decimal(str(position.position))
+            required_action = "SELL" if current_position > 0 else "BUY"
+            if action.action.upper() != required_action:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("POSITION_ACTION_WOULD_INCREASE_EXPOSURE_AFTER_RECHECK",),
+                    order={},
+                    broker_validation=validation.broker_evidence,
+                )
+            current_size = abs(current_position)
+            if action.quantity > current_size:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("POSITION_ACTION_EXCEEDS_OPEN_SIZE_AFTER_RECHECK",),
+                    order={},
+                    broker_validation=validation.broker_evidence,
+                )
+            if decision == TraderDecision.CLOSE_POSITION and action.quantity != current_size:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("CLOSE_POSITION_SIZE_CHANGED_AFTER_VALIDATION",),
+                    order={},
+                    broker_validation=validation.broker_evidence,
+                )
+            if decision == TraderDecision.REDUCE_POSITION and action.quantity >= current_size:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("REDUCE_POSITION_SIZE_CHANGED_AFTER_VALIDATION",),
+                    order={},
+                    broker_validation=validation.broker_evidence,
+                )
+
+            # Re-issue what-if against the same connection immediately before send.
+            final_validation = self.toolbox.validate_position_action(
+                action, bundle, decision, ib=ib
+            )
+            if not final_validation.passed:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=final_validation.reason_codes,
+                    order={},
+                    broker_validation=final_validation.broker_evidence,
+                )
+
+            fresh_reasons = self._fresh_safety_reasons("POSITION_MANAGEMENT")
+            if fresh_reasons:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=fresh_reasons,
+                    order={},
+                    broker_validation=final_validation.broker_evidence,
+                )
+
+            # One final quantity snapshot after the final what-if.
+            position = self.toolbox._resolve_open_position(ib, action)
+            if position is None:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("POSITION_NOT_FOUND_BEFORE_SEND",),
+                    order={},
+                    broker_validation=final_validation.broker_evidence,
+                )
+            final_size = abs(Decimal(str(position.position)))
+            if action.quantity > final_size:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("POSITION_ACTION_EXCEEDS_OPEN_SIZE_BEFORE_SEND",),
+                    order={},
+                    broker_validation=final_validation.broker_evidence,
+                )
+            if decision == TraderDecision.CLOSE_POSITION and action.quantity != final_size:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("CLOSE_POSITION_SIZE_CHANGED_BEFORE_SEND",),
+                    order={},
+                    broker_validation=final_validation.broker_evidence,
+                )
+
+            order_ref = f"codex-ibkr-paper-30d-p-{bundle.decision_cycle_id[-12:]}"
             order = Order(
                 action=action.action.upper(),
                 orderType=action.order_type.upper(),
                 totalQuantity=float(action.quantity),
                 transmit=True,
                 whatIf=False,
-                orderRef="codex-ibkr-paper-30d-position-management",
+                orderRef=order_ref,
             )
             if action.limit_price is not None:
                 order.lmtPrice = float(action.limit_price)
             trade = ib.placeOrder(position.contract, order)
+            self._register_order(
+                trade=trade,
+                contract=position.contract,
+                order_ref=order_ref,
+                action=action.action.upper(),
+                quantity=action.quantity,
+            )
             ib.sleep(self.fill_wait_seconds)
             status = getattr(trade.orderStatus, "status", "UNKNOWN") or "UNKNOWN"
             payload = {
                 "orderId": getattr(trade.order, "orderId", None),
                 "permId": getattr(trade.order, "permId", None),
+                "orderRef": order_ref,
                 "status": status,
                 "filled": getattr(trade.orderStatus, "filled", None),
                 "remaining": getattr(trade.orderStatus, "remaining", None),
@@ -318,7 +425,8 @@ class AutonomousPaperExecutor:
                 status=str(status),
                 reason_codes=() if not failed else ("BROKER_REJECTED_OR_CANCELLED",),
                 order=payload,
-                broker_validation=validation.broker_evidence,
+                broker_validation=final_validation.broker_evidence,
             )
         finally:
             ib.disconnect()
+
