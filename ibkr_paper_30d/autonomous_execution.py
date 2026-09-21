@@ -145,6 +145,14 @@ class AutonomousPaperExecutor:
             raise AutonomousPaperExecutionNotArmed(
                 "set IBKR_AUTONOMOUS_PAPER_ARMED=true only when the paper experiment is explicitly started"
             )
+        if self.database is None:
+            return PaperExecutionResult(
+                success=False,
+                status="BLOCKED",
+                reason_codes=("PERSISTENT_ORDER_REGISTRY_REQUIRED",),
+                order={},
+                broker_validation={},
+            )
 
         safety_reasons = []
         if bundle.reconciliation_receipt.get("status") != "PASS":
@@ -162,37 +170,56 @@ class AutonomousPaperExecutor:
                 broker_validation={},
             )
 
-        validation = self.toolbox.validate_proposal(proposal, bundle)
-        if not validation.passed:
-            return PaperExecutionResult(
-                success=False,
-                status="BLOCKED",
-                reason_codes=validation.reason_codes,
-                order={},
-                broker_validation=validation.broker_evidence,
-            )
-
         from ib_insync import Order
 
         ib = self.toolbox._connect()
         try:
+            validation = self.toolbox.validate_proposal(proposal, bundle, ib=ib)
+            if not validation.passed:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=validation.reason_codes,
+                    order={},
+                    broker_validation=validation.broker_evidence,
+                )
+
+            fresh_reasons = self._fresh_safety_reasons("NEW_TRADE")
+            if fresh_reasons:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=fresh_reasons,
+                    order={},
+                    broker_validation=validation.broker_evidence,
+                )
+
             contract = self.toolbox._proposal_contract(ib, proposal)
+            order_ref = f"codex-ibkr-paper-30d-a-{bundle.decision_cycle_id[-12:]}"
             order = Order(
                 action=proposal.action.upper(),
                 orderType=proposal.order_type.upper(),
                 totalQuantity=float(proposal.quantity),
                 transmit=True,
                 whatIf=False,
-                orderRef="codex-ibkr-paper-30d-autonomous",
+                orderRef=order_ref,
             )
             if proposal.limit_price is not None:
                 order.lmtPrice = float(proposal.limit_price)
             trade = ib.placeOrder(contract, order)
+            self._register_order(
+                trade=trade,
+                contract=contract,
+                order_ref=order_ref,
+                action=proposal.action.upper(),
+                quantity=proposal.quantity,
+            )
             ib.sleep(self.fill_wait_seconds)
             status = getattr(trade.orderStatus, "status", "UNKNOWN") or "UNKNOWN"
             payload = {
                 "orderId": getattr(trade.order, "orderId", None),
                 "permId": getattr(trade.order, "permId", None),
+                "orderRef": order_ref,
                 "status": status,
                 "filled": getattr(trade.orderStatus, "filled", None),
                 "remaining": getattr(trade.orderStatus, "remaining", None),
