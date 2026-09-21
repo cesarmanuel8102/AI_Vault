@@ -29,6 +29,10 @@ def test_prerequisite_scripts_exist_and_never_arm_trading():
     assert "Enable-LocalUser -Name $AuditorUser" in finalizer
     assert "Disable-LocalUser -Name $AuditorUser" in finalizer
     assert "UNSAFE_ARGUMENT_VALUE" in finalizer
+    assert "RemotePort 4001,4002" in finalizer
+    assert "RemoteAddress 127.0.0.1,::1" in finalizer
+    assert "-Program $WindowsPowerShell" not in finalizer
+    assert "AUDITOR_PROBE_FIREWALL_SCOPE_INVALID" in finalizer
 
     market = MARKET_RUNNER.read_text(encoding="utf-8")
     assert '"330"' in market
