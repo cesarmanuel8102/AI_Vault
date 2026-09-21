@@ -5,6 +5,7 @@ on:
     branches:
       - codex/own-capital-sustainable-return
       - codex/ibkr-autonomous-research-v1
+      - codex/validate-ibkr-prerequisite-finalizer-v5
   pull_request:
     branches:
       - codex/own-capital-sustainable-return
@@ -46,6 +47,7 @@ jobs:
           python -m py_compile ibkr_paper_30d/experiment_ledger.py
           python -m py_compile ibkr_paper_30d/autonomous_state.py
           python -m py_compile ibkr_paper_30d/autonomous_service.py
+          python -m py_compile ibkr_paper_30d/prerequisite_tools.py
 
       - name: Phase 0 security tests
         shell: pwsh
@@ -63,7 +65,7 @@ jobs:
       - name: Autonomous research tests
         shell: pwsh
         run: |
-          pytest -q tests/ibkr_paper_30d/test_autonomous_research.py tests/ibkr_paper_30d/test_capital_boundary_risk.py tests/ibkr_paper_30d/test_autonomous_execution.py tests/ibkr_paper_30d/test_autonomous_runtime.py tests/ibkr_paper_30d/test_experiment_ledger.py tests/ibkr_paper_30d/test_autonomous_state.py tests/ibkr_paper_30d/test_autonomous_service.py tests/ibkr_paper_30d/test_autonomous_architecture_contract.py tests/ibkr_paper_30d/test_autonomous_codex_provider.py tests/ibkr_paper_30d/test_bounded_level4_structures.py tests/ibkr_paper_30d/test_risk.py tests/ibkr_paper_30d/test_trader_invocation.py
+          pytest -q tests/ibkr_paper_30d/test_prerequisite_finalizer.py tests/ibkr_paper_30d/test_autonomous_research.py tests/ibkr_paper_30d/test_capital_boundary_risk.py tests/ibkr_paper_30d/test_autonomous_execution.py tests/ibkr_paper_30d/test_autonomous_runtime.py tests/ibkr_paper_30d/test_experiment_ledger.py tests/ibkr_paper_30d/test_autonomous_state.py tests/ibkr_paper_30d/test_autonomous_service.py tests/ibkr_paper_30d/test_autonomous_architecture_contract.py tests/ibkr_paper_30d/test_autonomous_codex_provider.py tests/ibkr_paper_30d/test_bounded_level4_structures.py tests/ibkr_paper_30d/test_risk.py tests/ibkr_paper_30d/test_trader_invocation.py
 
       - name: Import smoke
         shell: pwsh
