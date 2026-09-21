@@ -209,3 +209,66 @@ class RuntimeGateState:
     @property
     def passed(self) -> bool:
         return self.auditor_gate == "PASS" and self.market_data_gate == "PASS"
+
+
+
+class OwnerAuthorizationStore:
+    """Append-only owner authorization bound to the persisted experiment clock."""
+
+    SCHEMA = "EXPERIMENT_OWNER_AUTHORIZATION_V1"
+
+    def __init__(self, db: Database, experiment_id: str = "ibkr-paper-30d"):
+        self.db = db
+        self.experiment_id = experiment_id
+
+    def current(self, *, clock_event_sha256: str) -> str:
+        row = self.db.execute(
+            "SELECT state,clock_event_sha256 FROM experiment_authorization_events "
+            "WHERE experiment_id=? ORDER BY sequence DESC LIMIT 1",
+            (self.experiment_id,),
+        ).fetchone()
+        if row is None:
+            return "NOT_AUTHORIZED"
+        state, bound_clock = map(str, row)
+        if bound_clock != clock_event_sha256:
+            return "NOT_AUTHORIZED"
+        return state
+
+    def set(
+        self,
+        state: str,
+        *,
+        clock_event_sha256: str,
+        reason: str,
+        actor: str = "owner",
+    ) -> str:
+        if state not in {"AUTHORIZED", "REVOKED"}:
+            raise ValueError("invalid owner authorization state")
+        if len(clock_event_sha256) != 64:
+            raise ValueError("clock_event_sha256 must be a SHA-256 hex digest")
+        payload = {
+            "schema": self.SCHEMA,
+            "experiment_id": self.experiment_id,
+            "state": state,
+            "clock_event_sha256": clock_event_sha256,
+            "reason": reason,
+            "actor": actor,
+            "created_at_utc": utc_now(),
+        }
+        event_id = str(new_uuid7())
+        self.db.execute(
+            "INSERT INTO experiment_authorization_events("
+            "event_id,experiment_id,state,clock_event_sha256,payload_json,"
+            "payload_sha256,created_at_utc"
+            ") VALUES(?,?,?,?,?,?,?)",
+            (
+                event_id,
+                self.experiment_id,
+                state,
+                clock_event_sha256,
+                canonical_bytes(payload).decode("utf-8"),
+                sha256_json(payload),
+                utc_now(),
+            ),
+        )
+        return event_id
