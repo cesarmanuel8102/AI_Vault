@@ -482,3 +482,58 @@ def test_trade_contract_live_quote_evidence_fails_closed():
     result = toolbox.live_contract_quote_evidence(fresh, contract)
     assert result["success"] is True
     assert result["requested_market_data_type"] == "LIVE"
+
+
+class ComboQuoteBroker(LiveQuoteBroker):
+    def reqMktData(self, contract, genericTickList="", snapshot=True, regulatorySnapshot=False):
+        if str(getattr(contract, "secType", "") or "").upper() == "BAG":
+            return SimpleNamespace(
+                bid=float("nan"),
+                ask=float("nan"),
+                time=self.quote_time,
+            )
+        return SimpleNamespace(bid=1.0, ask=1.1, time=self.quote_time)
+
+    def qualifyContracts(self, contract):
+        return [
+            SimpleNamespace(
+                conId=int(getattr(contract, "conId", 0) or 0),
+                symbol="XYZ",
+                localSymbol="XYZ",
+                secType="OPT",
+                exchange="SMART",
+                primaryExchange="",
+                currency="USD",
+                lastTradeDateOrContractMonth="20261016",
+                strike=40,
+                right="C",
+                multiplier="100",
+            )
+        ]
+
+
+def test_combo_live_market_data_falls_back_to_all_legs():
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    combo = SimpleNamespace(
+        conId=0,
+        symbol="XYZ",
+        localSymbol="XYZ",
+        secType="BAG",
+        exchange="SMART",
+        primaryExchange="",
+        currency="USD",
+        lastTradeDateOrContractMonth="",
+        strike=0,
+        right="",
+        multiplier="",
+        comboLegs=[
+            SimpleNamespace(conId=101, exchange="SMART"),
+            SimpleNamespace(conId=102, exchange="SMART"),
+        ],
+    )
+    broker = ComboQuoteBroker()
+    result = toolbox.live_contract_quote_evidence(broker, combo)
+    assert result["success"] is True
+    assert result["validation_mode"] == "ALL_COMBO_LEGS"
+    assert len(result["leg_results"]) == 2
+    assert all(item["success"] for item in result["leg_results"])
