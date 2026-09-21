@@ -66,6 +66,22 @@ class ProposalLeg(BaseModel, frozen=True):
     currency: str = "USD"
 
 
+class AutonomousPositionAction(BaseModel, frozen=True):
+    model_config = ConfigDict(extra="forbid")
+
+    symbol: str
+    sec_type: str
+    action: str
+    quantity: Decimal = Field(gt=0)
+    order_type: str
+    limit_price: Decimal | None = None
+    contract_id: int | None = None
+    expiry: str | None = None
+    strike: Decimal | None = None
+    right: str | None = None
+    reason: str
+
+
 class AutonomousTradeProposal(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
@@ -116,6 +132,7 @@ class AutonomousTurn(BaseModel, frozen=True):
     research_requests: list[ResearchRequest] = Field(default_factory=list)
     decision: TraderDecision | None = None
     proposal: AutonomousTradeProposal | None = None
+    position_action: AutonomousPositionAction | None = None
     confidence: Decimal = Field(ge=0, le=1)
     reasoning_summary: str
     reason_codes: list[str] = Field(default_factory=list)
@@ -125,17 +142,21 @@ class AutonomousTurn(BaseModel, frozen=True):
         if self.mode == AutonomousTurnMode.RESEARCH:
             if not self.research_requests:
                 raise ValueError("RESEARCH mode requires at least one research request")
-            if self.decision is not None or self.proposal is not None:
+            if self.decision is not None or self.proposal is not None or self.position_action is not None:
                 raise ValueError("RESEARCH mode cannot contain a final decision")
         else:
             if self.research_requests:
                 raise ValueError("FINAL mode cannot contain research requests")
             if self.decision is None:
                 raise ValueError("FINAL mode requires decision")
-            if self.decision == TraderDecision.PROPOSE_TRADE and self.proposal is None:
-                raise ValueError("PROPOSE_TRADE requires proposal")
-            if self.decision != TraderDecision.PROPOSE_TRADE and self.proposal is not None:
-                raise ValueError("proposal only allowed for PROPOSE_TRADE")
+            if self.decision == TraderDecision.PROPOSE_TRADE:
+                if self.proposal is None or self.position_action is not None:
+                    raise ValueError("PROPOSE_TRADE requires proposal only")
+            elif self.decision in {TraderDecision.REDUCE_POSITION, TraderDecision.CLOSE_POSITION}:
+                if self.position_action is None or self.proposal is not None:
+                    raise ValueError("position-management decision requires position_action only")
+            elif self.proposal is not None or self.position_action is not None:
+                raise ValueError("trade payload not allowed for this decision")
         return self
 
 
@@ -152,6 +173,12 @@ class ResearchToolbox(Protocol):
     def execute(self, request: ResearchRequest, bundle: TraderInputBundle) -> ResearchResult: ...
     def validate_proposal(
         self, proposal: AutonomousTradeProposal, bundle: TraderInputBundle
+    ) -> ProposalValidation: ...
+    def validate_position_action(
+        self,
+        action: AutonomousPositionAction,
+        bundle: TraderInputBundle,
+        decision: TraderDecision,
     ) -> ProposalValidation: ...
 
 
@@ -327,6 +354,7 @@ class AutonomousResearchOutcome(BaseModel, frozen=True):
     validation: str
     decision: TraderDecision
     proposal: AutonomousTradeProposal | None
+    position_action: AutonomousPositionAction | None
     reason_codes: tuple[str, ...]
     rounds: int
     transcript: list[dict[str, Any]]
@@ -407,12 +435,49 @@ class AutonomousResearchLoop:
                 continue
 
             decision = turn.decision or TraderDecision.NO_TRADE
+            if decision in {TraderDecision.REDUCE_POSITION, TraderDecision.CLOSE_POSITION}:
+                action = turn.position_action
+                if action is None:
+                    return self._blocked(history, round_index, "MISSING_POSITION_ACTION")
+                validation = self.toolbox.validate_position_action(
+                    action, bundle, decision
+                )
+                history.append({
+                    "round": round_index,
+                    "type": "position_action_validation",
+                    "payload": validation.model_dump(mode="json"),
+                })
+                if not validation.passed:
+                    return self._finish(
+                        history=history,
+                        rounds=round_index,
+                        decision=TraderDecision.MONITOR_POSITION,
+                        proposal=None,
+                        position_action=None,
+                        accepted=False,
+                        validation="BLOCK",
+                        reason_codes=validation.reason_codes,
+                        broker_validation=validation.broker_evidence,
+                    )
+                return self._finish(
+                    history=history,
+                    rounds=round_index,
+                    decision=decision,
+                    proposal=None,
+                    position_action=action,
+                    accepted=True,
+                    validation="PASS",
+                    reason_codes=tuple(turn.reason_codes),
+                    broker_validation=validation.broker_evidence,
+                )
+
             if decision != TraderDecision.PROPOSE_TRADE:
                 return self._finish(
                     history=history,
                     rounds=round_index,
                     decision=decision,
                     proposal=None,
+                    position_action=None,
                     accepted=True,
                     validation="PASS",
                     reason_codes=tuple(turn.reason_codes),
@@ -440,6 +505,7 @@ class AutonomousResearchLoop:
                     rounds=round_index,
                     decision=TraderDecision.NO_TRADE,
                     proposal=None,
+                    position_action=None,
                     accepted=False,
                     validation="BLOCK",
                     reason_codes=validation.reason_codes,
@@ -450,6 +516,7 @@ class AutonomousResearchLoop:
                 rounds=round_index,
                 decision=decision,
                 proposal=proposal,
+                position_action=None,
                 accepted=True,
                 validation="PASS",
                 reason_codes=tuple(turn.reason_codes),
@@ -466,6 +533,7 @@ class AutonomousResearchLoop:
             rounds=rounds,
             decision=TraderDecision.NO_TRADE,
             proposal=None,
+            position_action=None,
             accepted=False,
             validation="BLOCK",
             reason_codes=(reason,),
@@ -478,6 +546,7 @@ class AutonomousResearchLoop:
         rounds: int,
         decision: TraderDecision,
         proposal: AutonomousTradeProposal | None,
+        position_action: AutonomousPositionAction | None,
         accepted: bool,
         validation: str,
         reason_codes: tuple[str, ...],
@@ -489,6 +558,7 @@ class AutonomousResearchLoop:
             validation=validation,
             decision=decision,
             proposal=proposal,
+            position_action=position_action,
             reason_codes=reason_codes,
             rounds=rounds,
             transcript=history,
