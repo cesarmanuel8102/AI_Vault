@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import socket
 import stat
@@ -9,6 +10,10 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
+pytestmark = pytest.mark.skipif(
+    os.name != "nt", reason="Windows PowerShell auditor runtime tests"
+)
 
 from ibkr_paper_30d.auditor_export import AuditExporter
 
