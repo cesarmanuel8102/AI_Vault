@@ -26,7 +26,7 @@ $ExpectedRuntimeNames = @(
 $ExpectedTargets = @(
     "SECRETS_READ", "IBKR_SECRET_READ", "SMTP_SECRET_READ",
     "EXECUTION_LOCK_ACCESS", "LIVE_DATABASE_MUTATION",
-    "BROKER_WRITE_PATH_ACCESS", "TRADER_CONTEXT_ACCESS",
+    "BROKER_WRITE_PATH_ACCESS", "BROKER_NETWORK_SOCKET_ACCESS", "TRADER_CONTEXT_ACCESS",
     "AUDIT_INPUT_MUTATION", "IMMUTABLE_EXPORT_READ", "AUDITOR_REPORT_WRITE"
 )
 
@@ -115,6 +115,29 @@ $Principal = New-Object Security.Principal.WindowsPrincipal($Identity)
 $Elevated = $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if ($Identity.User.Value -ne $ExpectedSid -or $Elevated) { throw "AUDITOR_IDENTITY_INVALID" }
 
+$ForbiddenPrivileges = @(
+    "SeDebugPrivilege",
+    "SeImpersonatePrivilege",
+    "SeTcbPrivilege",
+    "SeCreateTokenPrivilege",
+    "SeAssignPrimaryTokenPrivilege",
+    "SeLoadDriverPrivilege",
+    "SeTakeOwnershipPrivilege",
+    "SeRestorePrivilege",
+    "SeBackupPrivilege"
+)
+$PrivilegeOutput = @(& whoami.exe /priv /fo csv /nh 2>&1)
+if ($LASTEXITCODE -ne 0) { throw "AUDITOR_PRIVILEGE_ENUMERATION_FAILED" }
+$PrivilegeText = $PrivilegeOutput -join [Environment]::NewLine
+$PresentForbiddenPrivileges = @(
+    $ForbiddenPrivileges | Where-Object {
+        $PrivilegeText -match [regex]::Escape($_)
+    }
+)
+if ($PresentForbiddenPrivileges.Count -ne 0) {
+    throw ("AUDITOR_FORBIDDEN_PRIVILEGE_PRESENT:" + ($PresentForbiddenPrivileges -join ","))
+}
+
 $ActualNames = @(Get-ChildItem -LiteralPath $RuntimeRoot -File | ForEach-Object { $_.Name })
 Assert-ExactSet -Expected $ExpectedRuntimeNames -Actual $ActualNames -Reason "RUNTIME_FILESET_MISMATCH"
 if ((Get-Sha256Hex -LiteralPath $DeploymentManifestPath) -ne $ExpectedDeploymentManifestSha256) {
@@ -167,7 +190,15 @@ Assert-ExactSet -Expected $ExpectedTargets -Actual @($TargetRows | ForEach-Objec
 $OutcomeNames = @($Denial.results.PSObject.Properties | ForEach-Object { $_.Name })
 Assert-ExactSet -Expected $ExpectedTargets -Actual $OutcomeNames -Reason "CAPABILITY_SET_MISMATCH"
 $EndpointValues = @($Denial.network_endpoints.PSObject.Properties | ForEach-Object { [string]$_.Value })
-if ($EndpointValues -notcontains "CONNECTED") { throw "TECHNICAL_SOCKET_REACHABILITY_NOT_OBSERVED" }
+if ([string]$Denial.results.BROKER_NETWORK_SOCKET_ACCESS -ne "DENIED") {
+    throw "BROKER_NETWORK_SOCKET_NOT_DENIED"
+}
+if ([string]$Denial.network_endpoints."127.0.0.1:4002" -ne "DENIED") {
+    throw "PAPER_BROKER_LOOPBACK_NOT_DENIED"
+}
+if (@($EndpointValues | Where-Object { $_ -in @("CONNECTED", "OTHER") }).Count -ne 0) {
+    throw "BROKER_NETWORK_ENDPOINT_UNSAFE"
+}
 
 $FunctionalPath = [string]$Functional.report_path
 $Receipt = [ordered]@{
@@ -181,6 +212,8 @@ $Receipt = [ordered]@{
         probe_sha256 = Get-Sha256Hex $PSCommandPath
         probe_manifest_sha256 = Get-Sha256Hex $TargetManifestPath
         exact_fileset = $true; verified_at_utc = $Started.ToString("o").Replace("+00:00", "Z")
+        forbidden_privileges_absent = $true
+        checked_forbidden_privileges = $ForbiddenPrivileges
         predicates = [ordered]@{
             BROKER_MODULE_AVAILABLE = $false; ORDER_WRITE_SYMBOL_AVAILABLE = $false
             EXECUTION_ADAPTER_AVAILABLE = $false; EXECUTION_LOCK_CLIENT_AVAILABLE = $false
@@ -199,8 +232,8 @@ $Receipt = [ordered]@{
         paper_only = $true; live_allowed = $false; real_money_allowed = $false
     }
     network_facts = [ordered]@{
-        AUDITOR_TECHNICAL_SOCKET_REACHABILITY = $true; AUDITOR_NETWORK_ISOLATION_REQUIRED = $false
-        AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE = $true; AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED = $true
+        AUDITOR_TECHNICAL_SOCKET_REACHABILITY = $false; AUDITOR_NETWORK_ISOLATION_REQUIRED = $true
+        AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE = $false; AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED = $true
         endpoints = $Denial.network_endpoints
     }
     output = [ordered]@{
