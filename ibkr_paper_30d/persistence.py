@@ -15,6 +15,7 @@ APPEND_ONLY_TABLES = (
     "subledger_events",
     "autonomous_ledger_events",
     "experiment_clock_events",
+    "experiment_authorization_events",
     "experiment_order_registry",
     "risk_snapshots",
     "broker_reconciliations",
@@ -139,6 +140,18 @@ CREATE TABLE IF NOT EXISTS experiment_clock_events(
 );
 CREATE UNIQUE INDEX IF NOT EXISTS one_experiment_start
 ON experiment_clock_events(experiment_id, event_type);
+CREATE TABLE IF NOT EXISTS experiment_authorization_events(
+    sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id TEXT NOT NULL UNIQUE,
+    experiment_id TEXT NOT NULL,
+    state TEXT NOT NULL CHECK(state IN ('AUTHORIZED','REVOKED')),
+    clock_event_sha256 TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    payload_sha256 TEXT NOT NULL,
+    created_at_utc TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS experiment_authorization_events_experiment
+ON experiment_authorization_events(experiment_id, sequence);
 CREATE TABLE IF NOT EXISTS experiment_order_registry(
     sequence INTEGER PRIMARY KEY AUTOINCREMENT,
     registry_id TEXT NOT NULL UNIQUE,
