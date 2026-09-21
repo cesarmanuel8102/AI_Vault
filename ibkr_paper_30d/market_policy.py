@@ -150,10 +150,10 @@ class MarketPolicyFreezer:
             "ledger_record_count": len(records),
             "ledger_last_record_sha256": verification.last_record_sha256,
             "evidence_start_utc": min(
-                record["local_receipt_timestamp"] for record in accepted
+                record["broker_quote_timestamp"] for record in accepted
             ),
             "evidence_end_utc": max(
-                record["local_receipt_timestamp"] for record in accepted
+                record["broker_quote_timestamp"] for record in accepted
             ),
             "accepted_windows": window_manifests,
             "symbols": sorted({record["symbol"] for record in accepted}),
@@ -314,12 +314,17 @@ class MarketPolicyFreezer:
         ):
             reasons.append("SYMBOL_SET_INSUFFICIENT")
         if accepted:
-            times = sorted(
-                _parse_time(str(record["local_receipt_timestamp"]))
+            broker_times = [
+                _parse_time(str(record["broker_quote_timestamp"]))
                 for record in accepted
-            )
-            if times[-1] - times[0] < _minutes(65):
-                reasons.append("EVIDENCE_SPAN_INSUFFICIENT")
+                if record.get("broker_quote_timestamp")
+            ]
+            if len(broker_times) != len(accepted):
+                reasons.append("BROKER_TIMESTAMP_EVIDENCE_INCOMPLETE")
+            else:
+                broker_times.sort()
+                if broker_times[-1] - broker_times[0] < _minutes(65):
+                    reasons.append("EVIDENCE_SPAN_INSUFFICIENT")
         entitlement_by_symbol: dict[str, set[str]] = {}
         for record in records:
             entitlement_by_symbol.setdefault(str(record.get("symbol")), set()).add(
