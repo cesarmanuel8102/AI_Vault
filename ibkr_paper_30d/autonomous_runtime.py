@@ -164,6 +164,10 @@ def run_autonomous_cycle(
 ) -> dict[str, Any]:
     if execute_paper and database is None:
         raise ValueError("paper execution requires persistent experiment database")
+    if execute_paper and executor is None:
+        raise ValueError(
+            "paper execution requires an explicitly safety-bound executor"
+        )
 
     request = build_request(
         bundle,
@@ -183,7 +187,7 @@ def run_autonomous_cycle(
     execution = None
     post_execution_subledger = None
     if execute_paper and outcome.accepted:
-        executor = executor or AutonomousPaperExecutor(toolbox)
+        assert executor is not None
         if outcome.decision == TraderDecision.PROPOSE_TRADE and outcome.proposal is not None:
             execution = executor.execute(outcome.proposal, bundle)
         elif outcome.decision in {TraderDecision.REDUCE_POSITION, TraderDecision.CLOSE_POSITION} and outcome.position_action is not None:
