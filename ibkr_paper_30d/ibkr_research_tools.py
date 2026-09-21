@@ -732,8 +732,22 @@ class IBKRResearchToolbox:
 
         if not proposal.legs:
             if action == "BUY":
-                # Long stock/options cannot lose more than their paid capital.
-                return max(Decimal(str(proposal.capital_required)), Decimal("0")), None
+                # capital_required is model-authored and therefore advisory only.
+                # Prove maximum paid capital from executable order terms.
+                limit_price = (
+                    Decimal(str(proposal.limit_price))
+                    if proposal.limit_price is not None
+                    else None
+                )
+                if sec_type == "OPT":
+                    if limit_price is None or limit_price <= 0:
+                        return None, "LONG_OPTION_COST_NOT_PRETRADE_BOUNDED"
+                    return limit_price * Decimal("100") * quantity, None
+                if sec_type == "STK":
+                    if limit_price is None or limit_price <= 0:
+                        return None, "LONG_STOCK_COST_NOT_PRETRADE_BOUNDED"
+                    return limit_price * quantity, None
+                return None, "LONG_INSTRUMENT_MAX_LOSS_NOT_PROVEN"
             if action != "SELL":
                 return None, "UNSUPPORTED_ORDER_ACTION"
             if sec_type == "STK":
