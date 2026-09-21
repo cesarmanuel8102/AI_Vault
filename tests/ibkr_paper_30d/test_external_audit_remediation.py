@@ -17,6 +17,7 @@ from ibkr_paper_30d.experiment_control import (
     ExperimentClockStore,
     ExperimentControlError,
     KillSwitchStore,
+    OwnerAuthorizationStore,
 )
 from ibkr_paper_30d.experiment_ledger import AutonomousExperimentLedger
 from ibkr_paper_30d.ibkr_research_tools import IBKRResearchToolbox
@@ -380,3 +381,28 @@ def test_unknown_contract_resolution_fails_closed():
                 "currency": "USD",
             },
         )
+
+
+def test_owner_authorization_is_bound_to_persisted_clock(tmp_path):
+    start = datetime(2026, 9, 21, 13, 30, tzinfo=timezone.utc)
+    with Database.open(tmp_path / "auth.sqlite3") as db:
+        clock = ExperimentClockStore(db).initialize_or_load(
+            requested_start_utc=start,
+            duration_days=30,
+            initial_allocation=Decimal("500.00"),
+        )
+        store = OwnerAuthorizationStore(db)
+        assert store.current(clock_event_sha256=clock.event_sha256) == "NOT_AUTHORIZED"
+        store.set(
+            "AUTHORIZED",
+            clock_event_sha256=clock.event_sha256,
+            reason="explicit owner authorization",
+        )
+        assert store.current(clock_event_sha256=clock.event_sha256) == "AUTHORIZED"
+        assert store.current(clock_event_sha256="f" * 64) == "NOT_AUTHORIZED"
+        store.set(
+            "REVOKED",
+            clock_event_sha256=clock.event_sha256,
+            reason="owner revoked",
+        )
+        assert store.current(clock_event_sha256=clock.event_sha256) == "REVOKED"
