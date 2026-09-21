@@ -488,8 +488,10 @@ def consolidate_probe_results_v2(
     endpoints = denial.get("network_endpoints")
     if not isinstance(endpoints, Mapping):
         raise ValueError("CONSOLIDATED_CHILD_FAILURE")
-    reachable = "CONNECTED" in endpoints.values()
-    if not reachable:
+    endpoint_values = {str(value) for value in endpoints.values()}
+    if "CONNECTED" in endpoint_values or "OTHER" in endpoint_values:
+        raise ValueError("CONSOLIDATED_NETWORK_FACT_MISMATCH")
+    if endpoint_values != {"DENIED"}:
         raise ValueError("CONSOLIDATED_NETWORK_FACT_MISMATCH")
     return {
         "schema": "AUDITOR_GATE_V2_RECEIPT_V1",
@@ -506,9 +508,9 @@ def consolidate_probe_results_v2(
         "functional_auditor": dict(functional),
         "paper_identity": dict(paper),
         "network_facts": {
-            "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": True,
-            "AUDITOR_NETWORK_ISOLATION_REQUIRED": False,
-            "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": True,
+            "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": False,
+            "AUDITOR_NETWORK_ISOLATION_REQUIRED": True,
+            "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": False,
             "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
             "endpoints": dict(endpoints),
         },
