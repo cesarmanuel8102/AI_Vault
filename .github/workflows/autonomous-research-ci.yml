@@ -5,6 +5,7 @@ on:
     branches:
       - codex/ibkr-autonomous-research-v1
       - codex/ibkr-external-audit-remediation-v1
+      - codex/ibkr-reaudit-v2-remediation
   pull_request:
     branches:
       - codex/ibkr-paper-auditor-gate-v2
