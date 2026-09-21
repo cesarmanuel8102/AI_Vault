@@ -52,6 +52,33 @@ def persist_outcome(
     request: InvocationRequest,
     outcome: Any,
 ) -> None:
+    bundle_id = f"bundle-{bundle.decision_cycle_id}"
+    bundle_payload = bundle.model_dump(mode="json")
+    bundle_encoded = canonical_bytes(bundle_payload).decode("utf-8")
+    existing = db.execute(
+        "SELECT payload_sha256 FROM trader_input_bundles WHERE bundle_id=?",
+        (bundle_id,),
+    ).fetchone()
+    if existing is not None and str(existing[0]) != bundle.sha256:
+        raise ValueError("decision cycle already bound to different autonomous input")
+    db.execute(
+        "INSERT OR IGNORE INTO trader_input_bundles(bundle_id,decision_cycle_id,payload_json,payload_sha256,created_at_utc) VALUES(?,?,?,?,?)",
+        (bundle_id, bundle.decision_cycle_id, bundle_encoded, bundle.sha256, utc_now()),
+    )
+
+    request_payload = request.model_dump(mode="json")
+    db.execute(
+        "INSERT INTO trader_invocations(invocation_id,decision_cycle_id,bundle_id,payload_json,payload_sha256,created_at_utc) VALUES(?,?,?,?,?,?)",
+        (
+            request.invocation_id,
+            bundle.decision_cycle_id,
+            bundle_id,
+            canonical_bytes(request_payload).decode("utf-8"),
+            sha256_json(request_payload),
+            utc_now(),
+        ),
+    )
+
     for index, event in enumerate(outcome.transcript):
         payload = {
             "decision_cycle_id": bundle.decision_cycle_id,
@@ -86,6 +113,8 @@ def persist_outcome(
         "transcript_sha256": outcome.transcript_sha256,
         "broker_validation": outcome.broker_validation,
     }
+    final_encoded = canonical_bytes(final_payload).decode("utf-8")
+    final_hash = sha256_json(final_payload)
     db.execute(
         "INSERT INTO autonomous_research_events(event_id,decision_cycle_id,invocation_id,round_index,event_type,payload_json,payload_sha256,created_at_utc) "
         "VALUES(?,?,?,?,?,?,?,?)",
@@ -95,8 +124,21 @@ def persist_outcome(
             request.invocation_id,
             outcome.rounds,
             "final_outcome",
-            canonical_bytes(final_payload).decode("utf-8"),
-            sha256_json(final_payload),
+            final_encoded,
+            final_hash,
+            utc_now(),
+        ),
+    )
+    db.execute(
+        "INSERT INTO trader_results(result_id,invocation_id,decision_cycle_id,accepted,accepted_cycle_key,payload_json,payload_sha256,created_at_utc) VALUES(?,?,?,?,?,?,?,?)",
+        (
+            str(new_uuid7()),
+            request.invocation_id,
+            bundle.decision_cycle_id,
+            1 if outcome.accepted else 0,
+            bundle.decision_cycle_id if outcome.accepted else None,
+            final_encoded,
+            final_hash,
             utc_now(),
         ),
     )
@@ -113,6 +155,9 @@ def run_autonomous_cycle(
     options_level: int | None = 4,
     execute_paper: bool = False,
     database: Database | None = None,
+    provider: Any | None = None,
+    toolbox: Any | None = None,
+    executor: Any | None = None,
 ) -> dict[str, Any]:
     request = build_request(
         bundle,
@@ -122,8 +167,8 @@ def run_autonomous_cycle(
         timeout_seconds=timeout_seconds,
         trigger=trigger,
     )
-    toolbox = IBKRResearchToolbox(declared_options_level=options_level)
-    provider = CodexAutonomousCLIProvider()
+    toolbox = toolbox or IBKRResearchToolbox(declared_options_level=options_level)
+    provider = provider or CodexAutonomousCLIProvider()
     outcome = AutonomousResearchLoop(provider, toolbox).run(request, bundle)
 
     if database is not None:
@@ -131,7 +176,7 @@ def run_autonomous_cycle(
 
     execution = None
     if execute_paper and outcome.accepted and outcome.decision == TraderDecision.PROPOSE_TRADE:
-        executor = AutonomousPaperExecutor(toolbox)
+        executor = executor or AutonomousPaperExecutor(toolbox)
         execution = executor.execute(outcome.proposal, bundle)
 
     return {
@@ -146,6 +191,56 @@ def run_autonomous_cycle(
             "broker_validation": execution.broker_validation,
         },
     }
+
+
+class AutonomousTraderBoundary:
+    """Adapter compatible with PaperOrchestrator.TraderBoundary."""
+
+    def __init__(
+        self,
+        *,
+        model: str = "gpt-5.5",
+        reasoning_effort: str = "high",
+        experiment_id: str = "ibkr-paper-30d",
+        timeout_seconds: int = 180,
+        options_level: int | None = 4,
+        execute_paper: bool = False,
+        database: Database | None = None,
+        provider: Any | None = None,
+        toolbox: Any | None = None,
+        executor: Any | None = None,
+    ) -> None:
+        self.model = model
+        self.reasoning_effort = reasoning_effort
+        self.experiment_id = experiment_id
+        self.timeout_seconds = timeout_seconds
+        self.options_level = options_level
+        self.execute_paper = execute_paper
+        self.database = database
+        self.provider = provider
+        self.toolbox = toolbox
+        self.executor = executor
+
+    def invoke(self, trigger: str, bundle: object) -> dict[str, Any]:
+        typed_bundle = (
+            bundle
+            if isinstance(bundle, TraderInputBundle)
+            else TraderInputBundle.model_validate(bundle)
+        )
+        return run_autonomous_cycle(
+            typed_bundle,
+            model=self.model,
+            reasoning_effort=self.reasoning_effort,
+            experiment_id=self.experiment_id,
+            timeout_seconds=self.timeout_seconds,
+            trigger=trigger,
+            options_level=self.options_level,
+            execute_paper=self.execute_paper,
+            database=self.database,
+            provider=self.provider,
+            toolbox=self.toolbox,
+            executor=self.executor,
+        )
 
 
 def _load_bundle(path: Path) -> TraderInputBundle:
