@@ -16,6 +16,12 @@ class RiskResult(str, Enum):
 
 
 class RiskPolicy(BaseModel, frozen=True):
+    """DEPRECATED legacy policy.
+
+    Retained only for backward-compatibility tests and non-autonomous legacy
+    paths. The autonomous IBKR experiment MUST use CapitalBoundaryRiskPolicy
+    and MUST NOT import or instantiate this class as an execution gate.
+    """
     version: str = "MONTH1_V1"
     max_loss_per_trade: Decimal = Decimal("0.05")
     max_position_capital: Decimal = Decimal("0.40")
@@ -57,6 +63,7 @@ class RiskDecision(BaseModel, frozen=True):
 
 
 class RiskEngine:
+    """DEPRECATED legacy percentage-cap engine; not authoritative for autonomous IBKR."""
     def __init__(self, policy: RiskPolicy):
         self.policy = policy
 
