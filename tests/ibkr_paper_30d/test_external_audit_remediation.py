@@ -421,3 +421,64 @@ def test_experiment_clock_marks_future_start_not_started(tmp_path):
         assert snapshot["not_started"] is True
         assert snapshot["elapsed_days"] == 0
         assert snapshot["expired"] is False
+
+
+class LiveQuoteBroker:
+    def __init__(self, *, bid=1.0, ask=1.1, quote_time=None, broker_time=None):
+        self.bid = bid
+        self.ask = ask
+        self.quote_time = quote_time or datetime(2026, 9, 21, 13, 30, tzinfo=timezone.utc)
+        self.broker_time = broker_time or datetime(2026, 9, 21, 13, 30, 5, tzinfo=timezone.utc)
+        self.requested_type = None
+
+    def reqMarketDataType(self, value):
+        self.requested_type = value
+
+    def reqMktData(self, contract, genericTickList="", snapshot=True, regulatorySnapshot=False):
+        return SimpleNamespace(bid=self.bid, ask=self.ask, time=self.quote_time)
+
+    def reqCurrentTime(self):
+        return self.broker_time
+
+    def sleep(self, seconds):
+        pass
+
+
+def _simple_contract():
+    return SimpleNamespace(
+        conId=123,
+        symbol="XYZ",
+        localSymbol="XYZ",
+        secType="OPT",
+        exchange="SMART",
+        primaryExchange="",
+        currency="USD",
+        lastTradeDateOrContractMonth="20261016",
+        strike=40,
+        right="C",
+        multiplier="100",
+    )
+
+
+def test_trade_contract_live_quote_evidence_fails_closed():
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    contract = _simple_contract()
+
+    missing = LiveQuoteBroker(bid=float("nan"), ask=1.1)
+    result = toolbox.live_contract_quote_evidence(missing, contract)
+    assert result["success"] is False
+    assert result["reason"] == "TRADE_CONTRACT_LIVE_BID_ASK_MISSING"
+    assert missing.requested_type == 1
+
+    stale = LiveQuoteBroker(
+        quote_time=datetime(2026, 9, 21, 13, 29, tzinfo=timezone.utc),
+        broker_time=datetime(2026, 9, 21, 13, 30, tzinfo=timezone.utc),
+    )
+    result = toolbox.live_contract_quote_evidence(stale, contract)
+    assert result["success"] is False
+    assert result["reason"] == "TRADE_CONTRACT_QUOTE_STALE"
+
+    fresh = LiveQuoteBroker()
+    result = toolbox.live_contract_quote_evidence(fresh, contract)
+    assert result["success"] is True
+    assert result["requested_market_data_type"] == "LIVE"
