@@ -121,3 +121,67 @@ class RiskEngine:
             maximum_position_capital=max_position,
             maximum_total_open_risk=max_open_risk,
         )
+
+
+class CapitalBoundaryRiskPolicy(BaseModel, frozen=True):
+    """Aggressive experiment policy with no fixed sizing or drawdown caps.
+
+    Full loss of the isolated experimental equity is allowed. The only
+    financial boundary is that a proposed position may not create liability
+    greater than the current experimental equity.
+    """
+
+    version: str = "AGGRESSIVE_CAPITAL_BOUNDARY_V1"
+    allow_full_equity_loss: bool = True
+
+
+class CapitalBoundaryInputs(BaseModel, frozen=True):
+    experiment_equity: Decimal
+    maximum_loss: Decimal
+    liability_is_bounded: bool
+    uses_external_capital: bool = False
+
+
+class CapitalBoundaryDecision(BaseModel, frozen=True):
+    model_config = ConfigDict(use_enum_values=False)
+
+    result: RiskResult
+    reason_codes: tuple[str, ...]
+    policy_version: str
+    maximum_allowed_loss: Decimal
+
+
+class CapitalBoundaryRiskEngine:
+    def __init__(self, policy: CapitalBoundaryRiskPolicy | None = None):
+        self.policy = policy or CapitalBoundaryRiskPolicy()
+
+    @classmethod
+    def aggressive_month1(cls) -> "CapitalBoundaryRiskEngine":
+        return cls(CapitalBoundaryRiskPolicy())
+
+    def evaluate(self, inputs: CapitalBoundaryInputs) -> CapitalBoundaryDecision:
+        equity = inputs.experiment_equity
+        loss = inputs.maximum_loss
+        reasons: list[str] = []
+        if not equity.is_finite() or equity <= 0:
+            reasons.append("INVALID_EQUITY")
+        if not loss.is_finite() or loss < 0:
+            reasons.append("INVALID_MAXIMUM_LOSS")
+        if not inputs.liability_is_bounded:
+            reasons.append("UNBOUNDED_LIABILITY")
+        if inputs.uses_external_capital:
+            reasons.append("EXTERNAL_CAPITAL_FORBIDDEN")
+        if (
+            equity.is_finite()
+            and equity > 0
+            and loss.is_finite()
+            and loss > equity
+        ):
+            reasons.append("EXPERIMENT_CAPITAL_BOUNDARY")
+
+        return CapitalBoundaryDecision(
+            result=RiskResult.PASS if not reasons else RiskResult.BLOCK,
+            reason_codes=tuple(dict.fromkeys(reasons)),
+            policy_version=self.policy.version,
+            maximum_allowed_loss=max(equity, Decimal("0")),
+        )
