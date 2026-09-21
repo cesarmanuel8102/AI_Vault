@@ -67,6 +67,13 @@ class AutonomousPaperExecutor:
             import hashlib
             items.append({
                 "execution_id_hash": hashlib.sha256(execution_id.encode("utf-8")).hexdigest() if execution_id else None,
+                "orderRef": str(getattr(execution, "orderRef", "") or ""),
+                "permId": int(getattr(execution, "permId", 0) or 0),
+                "orderId": int(getattr(execution, "orderId", 0) or 0),
+                "clientId": int(getattr(execution, "clientId", 0) or 0),
+                "execution_time": str(getattr(execution, "time", "") or ""),
+                "cumQty": str(getattr(execution, "cumQty", "") or ""),
+                "avgPrice": str(getattr(execution, "avgPrice", "") or ""),
                 "side": side,
                 "quantity": str(getattr(execution, "shares", "") or ""),
                 "price": str(getattr(execution, "price", "") or ""),
