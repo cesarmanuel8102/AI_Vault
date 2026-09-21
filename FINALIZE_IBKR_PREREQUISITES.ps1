@@ -2,6 +2,7 @@
 [CmdletBinding()]
 param(
     [string]$RepoRoot = "C:\AI_VAULT",
+    [string]$PythonExe = "python",
     [switch]$SkipTaskRegistration
 )
 
@@ -19,12 +20,12 @@ $TargetManifest = Join-Path $ProvisioningRoot "AUDITOR_PROBE_TARGET_MANIFEST_V1.
 $DeploymentManifest = Join-Path $ProvisioningRoot "AUDITOR_RUNTIME_V2_DEPLOYMENT_MANIFEST.json"
 $RuntimeManifest = Join-Path $RuntimeRoot "AUDITOR_RUNTIME_MANIFEST_V2.json"
 $ProbePath = Join-Path $RuntimeRoot "AUDITOR_GATE_V2_PROBE.ps1"
-$CanonicalReportRoot = Join-Path $RepoRoot "state\ibkr_paper_30d\reports"
+$CanonicalReportRoot = Join-Path $ResolvedRepoRoot "state\ibkr_paper_30d\reports"
 $ReadOnlyReport = Join-Path $CanonicalReportRoot "read_only_real_paper_reconciliation.json"
 $CanonicalAuditorReceipt = Join-Path $CanonicalReportRoot "auditor_gate_v2_receipt.json"
 $MarketValidation = Join-Path $CanonicalReportRoot "market_data_validation.json"
 $MarketTaskName = "CodexIBKRMarketDataGate"
-$CanonicalAcceptance = Join-Path $RepoRoot "AUDITOR_MONTH1_PAPER_RESIDUAL_RISK_ACCEPTANCE_V1.json"
+$CanonicalAcceptance = Join-Path $ResolvedRepoRoot "AUDITOR_MONTH1_PAPER_RESIDUAL_RISK_ACCEPTANCE_V1.json"
 
 function Assert-Administrator {
     $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -41,7 +42,7 @@ function Get-Sha256Lower {
 
 function Invoke-PythonJson {
     param([string[]]$Arguments)
-    $Output = @(& python @Arguments 2>&1)
+    $Output = @(& $PythonExe @Arguments 2>&1)
     if ($LASTEXITCODE -ne 0) {
         throw "PYTHON_COMMAND_FAILED:$($Arguments -join ' '):$($Output -join ' | ')"
     }
@@ -72,10 +73,19 @@ function Quote-Argument {
 
 Assert-Administrator
 
-if (-not (Test-Path -LiteralPath $RepoRoot -PathType Container)) {
-    throw "REPO_ROOT_NOT_FOUND:$RepoRoot"
+$ResolvedRepoRoot = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\')
+if ($ResolvedRepoRoot -ine "C:\AI_VAULT") {
+    throw "REPO_ROOT_MUST_BE_C:\AI_VAULT"
 }
-Set-Location -LiteralPath $RepoRoot
+if (-not (Test-Path -LiteralPath $ResolvedRepoRoot -PathType Container)) {
+    throw "REPO_ROOT_NOT_FOUND:$ResolvedRepoRoot"
+}
+$ResolvedPython = if (Test-Path -LiteralPath $PythonExe -PathType Leaf) {
+    [IO.Path]::GetFullPath($PythonExe)
+} else {
+    (Get-Command $PythonExe -ErrorAction Stop).Source
+}
+Set-Location -LiteralPath $ResolvedRepoRoot
 [void](New-Item -ItemType Directory -Path $CanonicalReportRoot -Force)
 
 if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 4002 -InformationLevel Quiet)) {
@@ -101,7 +111,7 @@ if (
 $ExistingAuditor = Get-LocalUser -Name $AuditorUser -ErrorAction SilentlyContinue
 $ExistingTargetManifest = Test-Path -LiteralPath $TargetManifest -PathType Leaf
 if ($null -eq $ExistingAuditor -or -not $ExistingTargetManifest) {
-    & PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "AUDITOR_WINDOWS_PROVISIONING_V1.ps1") -Mode Apply -Confirm:$false
+    & PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_WINDOWS_PROVISIONING_V1.ps1") -Mode Apply -Confirm:$false
     if ($LASTEXITCODE -ne 0) { throw "AUDITOR_PROVISIONING_V1_FAILED" }
 }
 
@@ -113,10 +123,10 @@ if (-not $User.Enabled) {
     Enable-LocalUser -Name $AuditorUser
 }
 
-& PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1") -Mode Install -ConfirmRuntimeMutation
+& PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1") -Mode Install -ConfirmRuntimeMutation
 if ($LASTEXITCODE -ne 0) { throw "AUDITOR_RUNTIME_V2_INSTALL_FAILED" }
 
-$ReviewOutput = @(& PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1") -Mode Review)
+$ReviewOutput = @(& PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1") -Mode Review)
 $ReviewJson = ($ReviewOutput -join [Environment]::NewLine) | ConvertFrom-Json
 if ($ReviewJson.INSTALLED_RUNTIME_EXACT -ne $true) {
     throw "AUDITOR_RUNTIME_V2_NOT_EXACT"
@@ -143,7 +153,7 @@ if ($PaperHash -notmatch '^[0-9a-f]{64}$') {
 
 # Ensure exact denial-probe leaf targets exist. Temporary markers are removed later.
 $TemporaryProbeTargets = New-Object Collections.Generic.List[string]
-$LegacyExecutionLock = Join-Path $RepoRoot "state\ibkr_paper_30d\execution.lock"
+$LegacyExecutionLock = Join-Path $ResolvedRepoRoot "state\ibkr_paper_30d\execution.lock"
 if (-not (Test-Path -LiteralPath $LegacyExecutionLock -PathType Leaf)) {
     [IO.File]::WriteAllText($LegacyExecutionLock, '{"schema":"AUDITOR_PROBE_LOCK_TARGET_V1","order_authority":false}')
     $TemporaryProbeTargets.Add($LegacyExecutionLock)
@@ -153,7 +163,7 @@ if (-not (Test-Path -LiteralPath $LiveInvocationDb -PathType Leaf)) {
     $DbInit = @(& python -c "from ibkr_paper_30d.persistence import Database; db=Database.open(r'$LiveInvocationDb'); db.close(); print('OK')" 2>&1)
     if ($LASTEXITCODE -ne 0) { throw "LIVE_INVOCATION_DB_PROBE_TARGET_CREATE_FAILED:$($DbInit -join ' | ')" }
 }
-$SmtpProbeTarget = Join-Path $RepoRoot "Secrets\email_alerts.env"
+$SmtpProbeTarget = Join-Path $ResolvedRepoRoot "Secrets\email_alerts.env"
 if (-not (Test-Path -LiteralPath $SmtpProbeTarget -PathType Leaf)) {
     [IO.File]::WriteAllText($SmtpProbeTarget, "# temporary auditor denial probe target" + [Environment]::NewLine)
     $TemporaryProbeTargets.Add($SmtpProbeTarget)
@@ -192,7 +202,8 @@ $Arguments = @(
 
 $Receipt = $null
 try {
-    $Process = Start-Process -FilePath "PowerShell.exe" -ArgumentList $Arguments -Credential $Credential -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput $StdoutPath -RedirectStandardError $StderrPath
+    $WindowsPowerShell = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
+$Process = Start-Process -FilePath $WindowsPowerShell -ArgumentList $Arguments -Credential $Credential -UseNewEnvironment -WorkingDirectory $RuntimeRoot -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput $StdoutPath -RedirectStandardError $StderrPath
     if ($Process.ExitCode -ne 0) {
         $Err = if (Test-Path $StderrPath) { Get-Content -LiteralPath $StderrPath -Raw } else { "" }
         $Out = if (Test-Path $StdoutPath) { Get-Content -LiteralPath $StdoutPath -Raw } else { "" }
@@ -262,7 +273,7 @@ if (Test-Path -LiteralPath $MarketValidation -PathType Leaf) {
 
 $TaskRegistered = $false
 if (-not $MarketAlreadyPass -and -not $SkipTaskRegistration) {
-    $MarketScript = Join-Path $RepoRoot "RUN_IBKR_MARKET_DATA_GATE.ps1"
+    $MarketScript = Join-Path $ResolvedRepoRoot "RUN_IBKR_MARKET_DATA_GATE.ps1"
     if (-not (Test-Path -LiteralPath $MarketScript -PathType Leaf)) {
         throw "MARKET_DATA_GATE_SCRIPT_MISSING"
     }
@@ -270,11 +281,13 @@ if (-not $MarketAlreadyPass -and -not $SkipTaskRegistration) {
     $TaskAction = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument (
         "-NoProfile -ExecutionPolicy Bypass -File " +
         (Quote-Argument $MarketScript) +
-        " -RepoRoot " + (Quote-Argument $RepoRoot) +
+        " -RepoRoot " + (Quote-Argument $ResolvedRepoRoot) +
+        " -PythonExe " + (Quote-Argument $ResolvedPython) +
         " -Scheduled"
     )
     $TaskTrigger = New-ScheduledTaskTrigger -Weekly -WeeksInterval 1 -DaysOfWeek Monday,Tuesday,Wednesday,Thursday,Friday -At 9:35AM
-    $Principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Highest
+    $CurrentIdentityName = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+    $Principal = New-ScheduledTaskPrincipal -UserId $CurrentIdentityName -LogonType Interactive -RunLevel Highest
     $Settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 3)
     Register-ScheduledTask -TaskName $MarketTaskName -Action $TaskAction -Trigger $TaskTrigger -Principal $Principal -Settings $Settings -Force | Out-Null
     $TaskRegistered = $true
