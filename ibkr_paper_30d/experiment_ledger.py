@@ -149,6 +149,20 @@ class AutonomousExperimentLedger:
             and event.get("execution_id_hash")
         }
 
+    def _effective_commission_for_execution(self, execution_hash: str) -> Decimal | None:
+        events, _ = self._events()
+        found = False
+        total = Decimal("0")
+        for event in events:
+            if str(event.get("execution_id_hash") or "") != execution_hash:
+                continue
+            if event.get("event_type") == "BROKER_FILL":
+                found = True
+                total += max(_d(event.get("commission")), Decimal("0"))
+            elif event.get("event_type") == "BROKER_COMMISSION_ADJUSTMENT":
+                total += _d(event.get("commission_delta"))
+        return total if found else None
+
     @staticmethod
     def _execution_hash(fill: dict[str, Any]) -> str:
         supplied = str(fill.get("execution_id_hash") or "").strip()
@@ -174,7 +188,19 @@ class AutonomousExperimentLedger:
 
     def record_fill(self, fill: dict[str, Any]) -> str:
         execution_hash = self._execution_hash(fill)
-        if execution_hash in self._recorded_execution_hashes():
+        incoming_commission = max(_d(fill.get("commission")), Decimal("0"))
+        existing_commission = self._effective_commission_for_execution(execution_hash)
+        if existing_commission is not None:
+            if incoming_commission != existing_commission:
+                delta = incoming_commission - existing_commission
+                return self.append(
+                    "BROKER_COMMISSION_ADJUSTMENT",
+                    {
+                        "execution_id_hash": execution_hash,
+                        "commission_delta": str(delta),
+                        "effective_commission": str(incoming_commission),
+                    },
+                )
             return f"duplicate:{execution_hash}"
         side = str(fill.get("side") or fill.get("action") or "").upper()
         if side not in {"BUY", "SELL"}:
@@ -190,7 +216,7 @@ class AutonomousExperimentLedger:
         multiplier = _d(contract.get("multiplier") or fill.get("multiplier") or "1", "1")
         if multiplier <= 0:
             multiplier = Decimal("1")
-        commission = max(_d(fill.get("commission")), Decimal("0"))
+        commission = incoming_commission
         return self.append(
             "BROKER_FILL",
             {
@@ -311,6 +337,12 @@ class AutonomousExperimentLedger:
                 if slot["quantity"] == 0:
                     positions.pop(contract_id, None)
                     marks.pop(contract_id, None)
+            elif event_type == "BROKER_COMMISSION_ADJUSTMENT":
+                delta = _d(event.get("commission_delta"))
+                cash -= delta
+                fees += delta
+                if fees < 0:
+                    reasons.append("INVALID_COMMISSION_ADJUSTMENT")
             elif event_type == "MARK":
                 contract_id = int(event.get("contract_id") or 0)
                 price = _d(event.get("price"))
