@@ -77,7 +77,11 @@ class AutonomousPaperExecutor:
                 "side": side,
                 "quantity": str(getattr(execution, "shares", "") or ""),
                 "price": str(getattr(execution, "price", "") or ""),
-                "commission": str(getattr(commission_report, "commission", 0) or 0),
+                "commission": (
+                    None
+                    if commission_report is None
+                    else str(getattr(commission_report, "commission", 0))
+                ),
                 "contract": {
                     "conId": int(getattr(contract, "conId", 0) or 0),
                     "symbol": str(getattr(contract, "symbol", "") or ""),
