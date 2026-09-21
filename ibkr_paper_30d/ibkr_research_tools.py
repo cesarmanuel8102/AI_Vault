@@ -709,12 +709,18 @@ class IBKRResearchToolbox:
             },
         )
 
-    def _broker_feasibility(self, proposal: AutonomousTradeProposal) -> dict[str, Any]:
+    def _broker_feasibility(
+        self,
+        proposal: AutonomousTradeProposal,
+        *,
+        ib: Any | None = None,
+    ) -> dict[str, Any]:
         from ib_insync import Order
 
-        ib = self._connect()
+        owns_connection = ib is None
+        broker = ib or self._connect()
         try:
-            contract = self._proposal_contract(ib, proposal)
+            contract = self._proposal_contract(broker, proposal)
             order = Order(
                 action=proposal.action.upper(),
                 orderType=proposal.order_type.upper(),
@@ -724,8 +730,16 @@ class IBKRResearchToolbox:
             )
             if proposal.limit_price is not None:
                 order.lmtPrice = float(proposal.limit_price)
-            state = ib.whatIfOrder(contract, order)
-            return {
+            state = broker.whatIfOrder(contract, order)
+            if state is None:
+                return {
+                    "success": False,
+                    "error": "WHAT_IF_RETURNED_NONE",
+                    "contract": self._serialize_contract(contract),
+                    "whatIf": True,
+                    "paper_only": True,
+                }
+            evidence = {
                 "success": True,
                 "contract": self._serialize_contract(contract),
                 "commission": getattr(state, "commission", None),
@@ -744,8 +758,17 @@ class IBKRResearchToolbox:
                 "whatIf": True,
                 "paper_only": True,
             }
+            return evidence
+        except Exception as exc:
+            return {
+                "success": False,
+                "error": f"{type(exc).__name__}:{exc}",
+                "whatIf": True,
+                "paper_only": True,
+            }
         finally:
-            ib.disconnect()
+            if owns_connection and broker is not None:
+                broker.disconnect()
 
     @staticmethod
     def _covered_shares(bundle: TraderInputBundle, symbol: str) -> Decimal:
