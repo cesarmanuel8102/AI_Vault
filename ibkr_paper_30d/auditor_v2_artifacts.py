@@ -77,9 +77,9 @@ def build_residual_risk_acceptance(
         raise ArtifactValidationError("MONTH1_PAPER_SCOPE_INVALID")
     network = receipt.network_facts
     expected_network = {
-        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": True,
-        "AUDITOR_NETWORK_ISOLATION_REQUIRED": False,
-        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": True,
+        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": False,
+        "AUDITOR_NETWORK_ISOLATION_REQUIRED": True,
+        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": False,
         "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
     }
     if any(network.get(key) is not value for key, value in expected_network.items()):
@@ -119,8 +119,9 @@ def build_residual_risk_acceptance(
         "EXPIRATION_TRIGGERS": list(_EXPIRATION_TRIGGERS),
         "OWNER_DECISION": dict(owner_decision),
         "RISK_STATEMENT": (
-            "The authenticated local IB Gateway may technically accept another "
-            "local API client."
+            "Auditor broker-socket isolation was proven for the restricted "
+            "probe process; compromise containment beyond the audited token "
+            "boundary is not claimed."
         ),
     }
     encoded = canonical_bytes(body)
