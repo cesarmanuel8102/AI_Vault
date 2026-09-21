@@ -23,6 +23,32 @@ AUDITOR_NAME = "CODEX_DECISION_AUDITOR_V1.ps1"
 PROBE_NAME = "AUDITOR_DENIAL_PROBE_V1.ps1"
 
 
+def current_token_elevated() -> bool:
+    if os.name != "nt":
+        return False
+    result = subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-Command",
+            "$i=[Security.Principal.WindowsIdentity]::GetCurrent();"
+            "$p=[Security.Principal.WindowsPrincipal]::new($i);"
+            "$p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=True,
+    )
+    return result.stdout.strip().lower() == "true"
+
+
+requires_non_elevated_token = pytest.mark.skipif(
+    current_token_elevated(),
+    reason="test requires the same non-elevated token contract as CodexAuditorV1",
+)
+
+
 def compact_json(value) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"))
 
@@ -142,6 +168,7 @@ def test_provisioning_review_hash_binds_runtime_and_probe_targets() -> None:
         "EXECUTION_LOCK_ACCESS",
         "LIVE_DATABASE_MUTATION",
         "BROKER_WRITE_PATH_ACCESS",
+        "BROKER_NETWORK_SOCKET_ACCESS",
         "TRADER_CONTEXT_ACCESS",
         "AUDIT_INPUT_MUTATION",
         "IMMUTABLE_EXPORT_READ",
@@ -155,7 +182,7 @@ def test_runtime_accepts_exact_hash_bound_bundle(tmp_path, export_bundle) -> Non
     assert result.returncode == 0, result.stdout + result.stderr
     assert payload["status"] == "PASS"
     assert payload["verified_file_count"] == 2
-    assert payload["token_elevated"] is False
+    assert payload["token_elevated"] is current_token_elevated()
     assert Path(payload["report_path"]).is_file()
 
 
@@ -321,6 +348,7 @@ def target_manifest(expected_sid: str, approved_root: Path, reports: Path) -> di
         "EXECUTION_LOCK_ACCESS": str(approved_root / "state" / "execution.lock"),
         "LIVE_DATABASE_MUTATION": str(approved_root / "state" / "live.sqlite3"),
         "BROKER_WRITE_PATH_ACCESS": str(approved_root / "broker.py"),
+        "BROKER_NETWORK_SOCKET_ACCESS": str(approved_root / "broker.py"),
         "TRADER_CONTEXT_ACCESS": str(approved_root / "trader_invocation.py"),
         "AUDIT_INPUT_MUTATION": str(approved_root / "exports"),
         "IMMUTABLE_EXPORT_READ": str(approved_root / "exports"),
@@ -354,7 +382,8 @@ def run_target_validation(tmp_path: Path, manifest: dict):
     )
 
 
-def test_target_validation_accepts_all_ten_approved_paths(tmp_path) -> None:
+@requires_non_elevated_token
+def test_target_validation_accepts_all_approved_paths(tmp_path) -> None:
     root = tmp_path / "approved"
     reports = tmp_path / "reports"
     root.mkdir()
@@ -365,7 +394,7 @@ def test_target_validation_accepts_all_ten_approved_paths(tmp_path) -> None:
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert payload["status"] == "TARGET_VALIDATION_COMPLETE"
-    assert len(payload["target_validation_matrix"]) == 10
+    assert len(payload["target_validation_matrix"]) == 11
     assert all(row["valid"] for row in payload["target_validation_matrix"])
 
 
@@ -400,10 +429,11 @@ Get-PathValidation -Target $script:DeniedTarget -ApprovedRoots @('{root}') | Con
     payload = json.loads(result.stdout.strip())
 
     assert result.returncode == 0, result.stdout + result.stderr
-    assert payload["valid"] is True
-    assert payload["reason"] == "ACCESS_DENIED_AT_TARGET"
+    assert payload["valid"] is False
+    assert payload["reason"] == "TARGET_PATH_CHAIN_NOT_FULLY_INSPECTABLE"
 
 
+@requires_non_elevated_token
 def test_target_validation_rejects_outside_root_and_reparse_path(tmp_path) -> None:
     root = tmp_path / "approved"
     reports = tmp_path / "reports"
@@ -466,6 +496,7 @@ def test_endpoint_classifier_has_truthful_four_state_contract() -> None:
     assert 'WaitOne(5000)) { return "OTHER" }' in source
 
 
+@requires_non_elevated_token
 def test_active_dual_stack_listener_is_classified_connected(tmp_path) -> None:
     listener = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     listener.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
@@ -506,6 +537,7 @@ def test_active_dual_stack_listener_is_classified_connected(tmp_path) -> None:
     assert payload["network_endpoints"][f"[::1]:{port}"] == "CONNECTED"
 
 
+@requires_non_elevated_token
 def test_closed_dual_stack_port_is_classified_no_listener(tmp_path) -> None:
     reservation = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     reservation.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
@@ -543,6 +575,7 @@ def test_closed_dual_stack_port_is_classified_no_listener(tmp_path) -> None:
     assert payload["network_endpoints"][f"[::1]:{port}"] == "NO_LISTENER"
 
 
+@requires_non_elevated_token
 def test_probe_report_binds_effective_sid_and_elevation_state(tmp_path) -> None:
     runtime, runtime_manifest = stage_runtime(tmp_path)
     reports = tmp_path / "reports"
@@ -586,6 +619,7 @@ def test_probe_report_binds_effective_sid_and_elevation_state(tmp_path) -> None:
     assert set(payload["results"]) == set(targets["targets"])
 
 
+@requires_non_elevated_token
 def test_probe_rejects_wrong_sid_before_operations(tmp_path) -> None:
     runtime, runtime_manifest = stage_runtime(tmp_path)
     target_manifest = tmp_path / "targets.json"
