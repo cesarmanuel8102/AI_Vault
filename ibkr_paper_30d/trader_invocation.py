@@ -46,6 +46,7 @@ class TraderInputBundle(BaseModel, frozen=True):
     process_policy_version: str
     execution_realism_version: str
     benchmark_state: dict[str, Any]
+    experiment_clock: dict[str, Any] = Field(default_factory=dict)
 
     @property
     def sha256(self) -> str:

@@ -26,6 +26,7 @@ APPEND_ONLY_TABLES = (
     "trader_input_bundles",
     "trader_invocations",
     "trader_results",
+    "autonomous_research_events",
     "market_data_snapshots",
     "market_data_gate_results",
 )
@@ -214,6 +215,17 @@ CREATE TABLE IF NOT EXISTS trader_results(
     created_at_utc TEXT NOT NULL,
     CHECK((accepted=1 AND accepted_cycle_key=decision_cycle_id) OR
           (accepted=0 AND accepted_cycle_key IS NULL))
+);
+CREATE TABLE IF NOT EXISTS autonomous_research_events(
+    sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id TEXT NOT NULL UNIQUE,
+    decision_cycle_id TEXT NOT NULL,
+    invocation_id TEXT NOT NULL,
+    round_index INTEGER NOT NULL,
+    event_type TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    payload_sha256 TEXT NOT NULL,
+    created_at_utc TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS market_data_snapshots(
     snapshot_id TEXT PRIMARY KEY,
