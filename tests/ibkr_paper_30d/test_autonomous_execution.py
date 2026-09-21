@@ -102,6 +102,7 @@ def test_executor_retains_non_strategic_safety_gates(kwargs, reason):
 class _FakeIB:
     def __init__(self):
         self.place_calls = 0
+        self.client = SimpleNamespace(getReqId=lambda: 4242)
 
     def placeOrder(self, contract, order):
         self.place_calls += 1
@@ -167,4 +168,29 @@ def test_missing_immediate_operator_control_callback_fails_closed(tmp_path):
 
     assert result.success is False
     assert "FRESH_OPERATOR_CONTROL_CHECK_REQUIRED" in result.reason_codes
+    assert toolbox.ib.place_calls == 0
+
+
+def test_operator_revocation_after_registry_blocks_final_send(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _PassUntilOperatorControlToolbox()
+    checks = iter(((), ("OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE",)))
+    with Database.open(tmp_path / "execution.sqlite3") as db:
+        executor = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: next(checks),
+        )
+        result = executor.execute(proposal(), bundle())
+        registry_count = db.execute(
+            "SELECT COUNT(*) FROM experiment_order_registry"
+        ).fetchone()[0]
+
+    assert result.success is False
+    assert result.status == "BLOCKED"
+    assert "OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE" in result.reason_codes
+    assert registry_count == 1
     assert toolbox.ib.place_calls == 0
