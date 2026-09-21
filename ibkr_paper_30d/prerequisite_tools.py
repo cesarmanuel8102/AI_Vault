@@ -41,6 +41,14 @@ def _manifest_text(schema: str, hashes: dict[str, str]) -> bytes:
     ).encode("utf-8")
 
 
+def _normalized_text_bytes(value: bytes) -> bytes:
+    try:
+        text = value.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise ValueError("TRUST_ANCHOR_SOURCE_NOT_UTF8") from exc
+    return text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
+
+
 def evaluate_runtime_trust_anchor(
     repo_root: Path,
     anchor_path: Path,
@@ -64,13 +72,21 @@ def evaluate_runtime_trust_anchor(
 
     payload_hashes: dict[str, str] = {}
     source_matches = True
+    source_blob_sha256: dict[str, str] = {}
     for name in files:
         blob = _git_blob(repo_root, commit, f"auditor_runtime/{name}")
-        digest = __import__("hashlib").sha256(blob).hexdigest()
-        payload_hashes[name] = digest
+        source_blob_sha256[name] = __import__("hashlib").sha256(blob).hexdigest()
         current = repo_root / "auditor_runtime" / name
-        if not current.is_file() or __import__("hashlib").sha256(current.read_bytes()).hexdigest() != digest:
+        if not current.is_file():
             source_matches = False
+            continue
+        current_bytes = current.read_bytes()
+        if _normalized_text_bytes(current_bytes) != _normalized_text_bytes(blob):
+            source_matches = False
+        payload_hashes[name] = __import__("hashlib").sha256(current_bytes).hexdigest()
+
+    if set(payload_hashes) != set(files):
+        source_matches = False
 
     runtime_text = _manifest_text("AUDITOR_RUNTIME_MANIFEST_V2", payload_hashes)
     deployment_hashes = dict(payload_hashes)
@@ -84,10 +100,12 @@ def evaluate_runtime_trust_anchor(
         "source_commit": commit,
         "anchor_sha256": anchor_sha,
         "source_matches_anchor": source_matches,
+        "source_blob_sha256": source_blob_sha256,
         "payload_sha256": payload_hashes,
         "runtime_manifest_sha256": __import__("hashlib").sha256(runtime_text).hexdigest(),
         "deployment_manifest_sha256": __import__("hashlib").sha256(deployment_text).hexdigest(),
     }
+
 
 def create_audit_export(
     readonly_report: Path,
