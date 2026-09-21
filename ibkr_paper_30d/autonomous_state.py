@@ -96,13 +96,17 @@ class AutonomousStateBuilder:
             open_orders_snapshot=[],
             risk_snapshot={"policy": "AGGRESSIVE_CAPITAL_BOUNDARY_V1"},
             kill_switch_state="KILL_SWITCH_TRIGGERED",
-            market_data_snapshot={"gate_status": "PASS", "scope": "state_builder"},
+            market_data_snapshot={
+                "gate_status": "BLOCK",
+                "scope": "state_builder_placeholder",
+                "reason_codes": ["PLACEHOLDER_BUNDLE_FAIL_CLOSED"],
+            },
             candidate_screen_results=[],
             relevant_previous_immutable_decisions=[],
             process_policy_version="AUTONOMOUS_RESEARCH_V1",
             execution_realism_version="PAPER_V1",
             benchmark_state={},
-            experiment_clock={},
+            experiment_clock={"expired": True, "remaining_seconds": 0},
         )
 
     def _registered_fill(self, fill: dict[str, Any]) -> bool:
