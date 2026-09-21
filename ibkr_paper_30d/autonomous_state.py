@@ -329,6 +329,7 @@ class AutonomousStateBuilder:
                 "sec_type": item.sec_type,
                 "multiplier": str(item.multiplier),
                 "quantity": str(item.quantity),
+                "average_cost": str(item.average_cost),
                 "mark": str(item.mark),
                 "market_value": str(item.market_value),
             }
