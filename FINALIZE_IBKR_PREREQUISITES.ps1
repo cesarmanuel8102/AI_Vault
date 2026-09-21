@@ -39,6 +39,7 @@ $MarketTaskName = "CodexIBKRMarketDataGate"
 $ProbeFirewallRuleName = "CodexAuditorV2-Probe-PowerShell-Broker-Block"
 $CanonicalAcceptance = Join-Path $ResolvedRepoRoot "AUDITOR_MONTH1_PAPER_RESIDUAL_RISK_ACCEPTANCE_V1.json"
 $TrustAnchorPath = Join-Path $ResolvedRepoRoot "AUDITOR_RUNTIME_V2_TRUST_ANCHOR_V1.json"
+$ExpectedTrustAnchorSha256 = "33669683a4cee5621b4f887a2193cdb1ff3592eb222d3cc446457db172a97233"
 
 function Assert-Administrator {
     $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -127,6 +128,9 @@ if (-not $User.Enabled) {
     Enable-LocalUser -Name $AuditorUser
 }
 
+if ((Get-Sha256Lower -LiteralPath $TrustAnchorPath) -ne $ExpectedTrustAnchorSha256) {
+    throw "AUDITOR_TRUST_ANCHOR_HASH_MISMATCH"
+}
 $TrustAnchor = Invoke-PythonJson -Arguments @(
     "-m", "ibkr_paper_30d.prerequisite_tools", "evaluate-runtime-trust-anchor",
     "--repo-root", $ResolvedRepoRoot,
@@ -134,6 +138,9 @@ $TrustAnchor = Invoke-PythonJson -Arguments @(
 )
 if ($TrustAnchor.source_matches_anchor -ne $true) {
     throw "AUDITOR_RUNTIME_SOURCE_DOES_NOT_MATCH_TRUST_ANCHOR"
+}
+if ([string]$TrustAnchor.anchor_sha256 -ne $ExpectedTrustAnchorSha256) {
+    throw "AUDITOR_TRUST_ANCHOR_EVALUATION_MISMATCH"
 }
 
 & PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1") -Mode Install -ConfirmRuntimeMutation
