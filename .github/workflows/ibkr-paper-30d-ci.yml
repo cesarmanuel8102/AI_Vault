@@ -37,6 +37,7 @@ jobs:
           python -m py_compile ibkr_paper_30d/ibkr_research.py
           python -m py_compile ibkr_paper_30d/autonomous_runtime.py
           python -m py_compile ibkr_paper_30d/autonomous_scheduler.py
+          python -m py_compile ibkr_paper_30d/liability.py
           python -m py_compile ibkr_paper_30d/risk.py
           python -m py_compile ibkr_paper_30d/cli.py
 
