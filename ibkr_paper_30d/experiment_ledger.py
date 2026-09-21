@@ -188,10 +188,16 @@ class AutonomousExperimentLedger:
 
     def record_fill(self, fill: dict[str, Any]) -> str:
         execution_hash = self._execution_hash(fill)
-        incoming_commission = max(_d(fill.get("commission")), Decimal("0"))
+        raw_commission = fill.get("commission")
+        commission_known = raw_commission is not None and str(raw_commission).strip() != ""
+        incoming_commission = (
+            max(_d(raw_commission), Decimal("0"))
+            if commission_known
+            else Decimal("0")
+        )
         existing_commission = self._effective_commission_for_execution(execution_hash)
         if existing_commission is not None:
-            if incoming_commission != existing_commission:
+            if commission_known and incoming_commission != existing_commission:
                 delta = incoming_commission - existing_commission
                 return self.append(
                     "BROKER_COMMISSION_ADJUSTMENT",
