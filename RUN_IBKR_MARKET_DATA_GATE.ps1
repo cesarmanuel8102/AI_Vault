@@ -152,7 +152,7 @@ try {
             "--host", "127.0.0.1", "--port", "4002",
             "--symbols", "SPY", "QQQ", "IEF",
             "--cadence-seconds", "5",
-            "--window-seconds", "315"
+            "--window-seconds", "330"
         )
         if ($Observation.status -ne "PASS") {
             throw "MARKET_OBSERVATION_BLOCK:$($Observation.reason_codes -join ',')"
