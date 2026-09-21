@@ -8,6 +8,7 @@ from typing import Any
 from .autonomous_execution import AutonomousPaperExecutor
 from .autonomous_research import AutonomousResearchLoop, CodexAutonomousCLIProvider
 from .canonical import canonical_bytes, sha256_json
+from .experiment_ledger import AutonomousExperimentLedger
 from .ibkr_research_tools import IBKRResearchToolbox
 from .persistence import Database
 from .repositories import utc_now
@@ -160,6 +161,9 @@ def run_autonomous_cycle(
     toolbox: Any | None = None,
     executor: Any | None = None,
 ) -> dict[str, Any]:
+    if execute_paper and database is None:
+        raise ValueError("paper execution requires persistent experiment database")
+
     request = build_request(
         bundle,
         model=model,
@@ -176,6 +180,7 @@ def run_autonomous_cycle(
         persist_outcome(database, bundle, request, outcome)
 
     execution = None
+    post_execution_subledger = None
     if execute_paper and outcome.accepted:
         executor = executor or AutonomousPaperExecutor(toolbox)
         if outcome.decision == TraderDecision.PROPOSE_TRADE and outcome.proposal is not None:
@@ -187,10 +192,32 @@ def run_autonomous_cycle(
                 outcome.decision,
             )
 
+    if execution is not None and database is not None:
+        ledger = AutonomousExperimentLedger(
+            database,
+            allocation=__import__("decimal").Decimal(
+                str(bundle.experiment_subledger_snapshot.get("allocation", "500.00"))
+            ),
+        )
+        ledger.record_execution_result(execution)
+        projected = ledger.project()
+        post_execution_subledger = {
+            "cash": str(projected.cash),
+            "market_value": str(projected.market_value),
+            "equity": str(projected.equity),
+            "high_water_mark": str(projected.high_water_mark),
+            "drawdown": str(projected.drawdown),
+            "fees": str(projected.fees),
+            "event_count": projected.event_count,
+            "valid": projected.valid,
+            "reason_codes": list(projected.reason_codes),
+        }
+
     return {
         "schema": "CODEX_IBKR_AUTONOMOUS_CYCLE_V1",
         "request": request.model_dump(mode="json"),
         "outcome": outcome.model_dump(mode="json"),
+        "post_execution_subledger": post_execution_subledger,
         "execution": None if execution is None else {
             "success": execution.success,
             "status": execution.status,
