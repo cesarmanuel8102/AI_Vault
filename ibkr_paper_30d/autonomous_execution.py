@@ -57,8 +57,13 @@ class AutonomousPaperExecutor:
         self.operator_control_check = operator_control_check
 
     @staticmethod
-    def _fills_payload(trade: Any) -> list[dict[str, Any]]:
+    def _fills_payload(
+        trade: Any,
+        *,
+        fallback_order_ref: str = "",
+    ) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = []
+        trade_order = getattr(trade, "order", None)
         for fill in getattr(trade, "fills", []) or []:
             execution = getattr(fill, "execution", None)
             contract = getattr(fill, "contract", None)
@@ -69,10 +74,27 @@ class AutonomousPaperExecutor:
             import hashlib
             items.append({
                 "execution_id_hash": hashlib.sha256(execution_id.encode("utf-8")).hexdigest() if execution_id else None,
-                "orderRef": str(getattr(execution, "orderRef", "") or ""),
-                "permId": int(getattr(execution, "permId", 0) or 0),
-                "orderId": int(getattr(execution, "orderId", 0) or 0),
-                "clientId": int(getattr(execution, "clientId", 0) or 0),
+                "orderRef": str(
+                    getattr(execution, "orderRef", "")
+                    or fallback_order_ref
+                    or getattr(trade_order, "orderRef", "")
+                    or ""
+                ),
+                "permId": int(
+                    getattr(execution, "permId", 0)
+                    or getattr(trade_order, "permId", 0)
+                    or 0
+                ),
+                "orderId": int(
+                    getattr(execution, "orderId", 0)
+                    or getattr(trade_order, "orderId", 0)
+                    or 0
+                ),
+                "clientId": int(
+                    getattr(execution, "clientId", 0)
+                    or getattr(trade_order, "clientId", 0)
+                    or 0
+                ),
                 "execution_time": str(getattr(execution, "time", "") or ""),
                 "cumQty": str(getattr(execution, "cumQty", "") or ""),
                 "avgPrice": str(getattr(execution, "avgPrice", "") or ""),
@@ -289,7 +311,7 @@ class AutonomousPaperExecutor:
                 "filled": getattr(trade.orderStatus, "filled", None),
                 "remaining": getattr(trade.orderStatus, "remaining", None),
                 "avgFillPrice": getattr(trade.orderStatus, "avgFillPrice", None),
-                "fills": self._fills_payload(trade),
+                "fills": self._fills_payload(trade, fallback_order_ref=order_ref),
                 "paper_only": True,
             }
             failed = str(status).upper() in {"INACTIVE", "CANCELLED", "API CANCELLED"}
@@ -526,7 +548,7 @@ class AutonomousPaperExecutor:
                 "filled": getattr(trade.orderStatus, "filled", None),
                 "remaining": getattr(trade.orderStatus, "remaining", None),
                 "avgFillPrice": getattr(trade.orderStatus, "avgFillPrice", None),
-                "fills": self._fills_payload(trade),
+                "fills": self._fills_payload(trade, fallback_order_ref=order_ref),
                 "paper_only": True,
                 "position_management": decision.value,
             }
