@@ -116,7 +116,15 @@ class FaultInjectionHarness:
         )
         handler = self._handlers.get(scenario)
         try:
-            observation = handler() if handler else self._default_observation(scenario)
+            observation = (
+                handler()
+                if handler is not None
+                else FaultObservation(
+                    blocked=False,
+                    recovery_required=True,
+                    reason_code="FAULT_HANDLER_NOT_REGISTERED",
+                )
+            )
         except Exception as exc:
             observation = FaultObservation(
                 blocked=True,
@@ -171,11 +179,6 @@ class FaultInjectionHarness:
                 return EvidenceVerification(False, count, count)
             previous = digest
         return EvidenceVerification(True, count)
-
-    @staticmethod
-    def _default_observation(scenario: str) -> FaultObservation:
-        reason, _ = _DEFAULT_OBSERVATIONS[scenario]
-        return FaultObservation(True, True, reason)
 
     def _append_evidence(self, payload: dict[str, object]) -> None:
         previous = self._last_hash()
