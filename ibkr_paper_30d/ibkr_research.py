@@ -9,8 +9,7 @@ from decimal import Decimal
 from typing import Any, Callable
 
 from ibapi.client import EClient
-from ibapi.combo_leg import ComboLeg
-from ibapi.contract import Contract
+from ibapi.contract import ComboLeg, Contract
 from ibapi.order import Order
 from ibapi.scanner import ScannerSubscription
 from ibapi.wrapper import EWrapper
