@@ -6,9 +6,6 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict
 
 
-CENT = Decimal("0.01")
-
-
 class RiskResult(str, Enum):
     PASS = "PASS"
     BLOCK = "BLOCK"
@@ -16,17 +13,21 @@ class RiskResult(str, Enum):
 
 
 class RiskPolicy(BaseModel, frozen=True):
-    version: str = "MONTH1_V1"
-    max_loss_per_trade: Decimal = Decimal("0.05")
-    max_position_capital: Decimal = Decimal("0.40")
-    max_total_open_risk: Decimal = Decimal("0.15")
-    max_concurrent_positions: int = 3
-    max_daily_loss: Decimal = Decimal("0.08")
-    max_weekly_drawdown: Decimal = Decimal("0.12")
-    max_total_drawdown: Decimal = Decimal("0.20")
+    """
+    Capital-boundary policy for the autonomous 30-day experiment.
+
+    Strategy-level percentage limits are intentionally absent.  Codex owns
+    sizing, concentration, drawdown tolerance and number of simultaneous
+    positions.  The deterministic boundary only prevents the experiment from
+    creating a worst-case liability greater than the experimental equity.
+    """
+
+    version: str = "CAPITAL_BOUNDARY_V2"
+    maximum_experiment_liability_fraction: Decimal = Decimal("1.00")
 
     @classmethod
     def month1(cls) -> "RiskPolicy":
+        # Compatibility alias used by the existing orchestration layer.
         return cls()
 
 
@@ -54,6 +55,10 @@ class RiskDecision(BaseModel, frozen=True):
     maximum_estimated_loss: Decimal
     maximum_position_capital: Decimal
     maximum_total_open_risk: Decimal
+    maximum_experiment_liability: Decimal
+    position_capital_limit_enforced: bool = False
+    drawdown_limits_enforced: bool = False
+    concurrent_position_limit_enforced: bool = False
 
 
 class RiskEngine:
@@ -64,48 +69,30 @@ class RiskEngine:
     def month1(cls) -> "RiskEngine":
         return cls(RiskPolicy.month1())
 
-    @staticmethod
-    def _strict_max(basis: Decimal, fraction: Decimal) -> Decimal:
-        return (basis * fraction - CENT).quantize(CENT)
-
     def evaluate(self, inputs: RiskInputs) -> RiskDecision:
         equity = inputs.experiment_equity
-        max_loss = self._strict_max(max(equity, Decimal("0")), self.policy.max_loss_per_trade)
-        max_position = self._strict_max(
-            max(equity, Decimal("0")), self.policy.max_position_capital
-        )
-        max_open_risk = self._strict_max(
-            max(equity, Decimal("0")), self.policy.max_total_open_risk
-        )
         reasons: list[str] = []
+
         if equity <= 0:
             reasons.append("INVALID_EQUITY")
+            liability_limit = Decimal("0")
         else:
-            if inputs.estimated_loss >= equity * self.policy.max_loss_per_trade:
-                reasons.append("MAX_ESTIMATED_LOSS_PER_TRADE")
-            if inputs.position_capital >= equity * self.policy.max_position_capital:
-                reasons.append("MAX_SINGLE_POSITION_CAPITAL")
-            if inputs.total_open_risk >= equity * self.policy.max_total_open_risk:
-                reasons.append("MAX_TOTAL_OPEN_RISK")
-            if inputs.concurrent_positions >= self.policy.max_concurrent_positions:
-                reasons.append("MAX_CONCURRENT_POSITIONS")
-            if inputs.daily_loss >= inputs.day_start_equity * self.policy.max_daily_loss:
-                reasons.append("MAX_DAILY_LOSS")
-            if (
-                inputs.weekly_drawdown
-                >= inputs.week_start_equity * self.policy.max_weekly_drawdown
-            ):
-                reasons.append("MAX_WEEKLY_DRAWDOWN")
-            if (
-                inputs.total_drawdown
-                >= inputs.high_water_equity * self.policy.max_total_drawdown
-            ):
-                reasons.append("MAX_TOTAL_DRAWDOWN")
+            liability_limit = (
+                equity * self.policy.maximum_experiment_liability_fraction
+            )
+            if not inputs.estimated_loss.is_finite() or inputs.estimated_loss < 0:
+                reasons.append("INVALID_ESTIMATED_LOSS")
+            elif inputs.estimated_loss > liability_limit:
+                reasons.append("EXPERIMENT_LIABILITY_EXCEEDS_EQUITY")
+
+            if not inputs.total_open_risk.is_finite() or inputs.total_open_risk < 0:
+                reasons.append("INVALID_TOTAL_OPEN_RISK")
+            elif inputs.total_open_risk > liability_limit:
+                reasons.append("TOTAL_OPEN_RISK_EXCEEDS_EQUITY")
 
         reducible = {
-            "MAX_ESTIMATED_LOSS_PER_TRADE",
-            "MAX_SINGLE_POSITION_CAPITAL",
-            "MAX_TOTAL_OPEN_RISK",
+            "EXPERIMENT_LIABILITY_EXCEEDS_EQUITY",
+            "TOTAL_OPEN_RISK_EXCEEDS_EQUITY",
         }
         if not reasons:
             result = RiskResult.PASS
@@ -113,11 +100,15 @@ class RiskEngine:
             result = RiskResult.REDUCE_SIZE
         else:
             result = RiskResult.BLOCK
+
         return RiskDecision(
             result=result,
             reason_codes=tuple(reasons),
             policy_version=self.policy.version,
-            maximum_estimated_loss=max_loss,
-            maximum_position_capital=max_position,
-            maximum_total_open_risk=max_open_risk,
+            maximum_estimated_loss=liability_limit,
+            # Retained for schema compatibility only.  Position notional/capital
+            # is no longer capped by policy; broker buying power is authoritative.
+            maximum_position_capital=liability_limit,
+            maximum_total_open_risk=liability_limit,
+            maximum_experiment_liability=liability_limit,
         )

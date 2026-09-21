@@ -124,3 +124,199 @@ def test_fee_cannot_drive_cash_below_zero_silently() -> None:
 
     assert state.valid is False
     assert state.reason_codes == ("NEGATIVE_CASH", "NEGATIVE_SETTLED_CASH")
+
+
+def test_long_option_uses_contract_multiplier_in_cash_and_equity() -> None:
+    ledger = Subledger.start(Decimal("500.00"))
+    events = [
+        SubledgerEvent(
+            event_type="BUY_FILL",
+            symbol="XYZ",
+            contract_id=101,
+            security_type="OPT",
+            quantity=Decimal("1"),
+            price=Decimal("2.00"),
+            multiplier=Decimal("100"),
+        ),
+        SubledgerEvent(
+            event_type="MARK",
+            symbol="XYZ",
+            contract_id=101,
+            security_type="OPT",
+            price=Decimal("3.00"),
+        ),
+    ]
+
+    state = ledger.project(events)
+
+    assert state.cash == Decimal("300.00")
+    assert state.market_value == Decimal("300.00")
+    assert state.unrealized_pnl == Decimal("100.00")
+    assert state.equity == Decimal("600.00")
+
+
+def test_short_option_leg_is_valid_and_marks_signed_market_value() -> None:
+    ledger = Subledger.start(Decimal("500.00"))
+    events = [
+        SubledgerEvent(
+            event_type="SELL_FILL",
+            symbol="XYZ",
+            contract_id=202,
+            security_type="OPT",
+            quantity=Decimal("1"),
+            price=Decimal("1.50"),
+            multiplier=Decimal("100"),
+        ),
+        SubledgerEvent(
+            event_type="MARK",
+            symbol="XYZ",
+            contract_id=202,
+            security_type="OPT",
+            price=Decimal("1.00"),
+        ),
+    ]
+
+    state = ledger.project(events)
+
+    assert state.valid is True
+    assert state.cash == Decimal("650.00")
+    assert state.market_value == Decimal("-100.00")
+    assert state.unrealized_pnl == Decimal("50.00")
+    assert state.equity == Decimal("550.00")
+
+
+def test_closing_short_option_realizes_profit() -> None:
+    ledger = Subledger.start(Decimal("500.00"))
+    events = [
+        SubledgerEvent(
+            event_type="SELL_FILL",
+            symbol="XYZ",
+            contract_id=303,
+            security_type="OPT",
+            quantity=Decimal("1"),
+            price=Decimal("2.00"),
+            multiplier=Decimal("100"),
+        ),
+        SubledgerEvent(
+            event_type="BUY_FILL",
+            symbol="XYZ",
+            contract_id=303,
+            security_type="OPT",
+            quantity=Decimal("1"),
+            price=Decimal("1.25"),
+            multiplier=Decimal("100"),
+        ),
+    ]
+
+    state = ledger.project(events)
+
+    assert state.cash == Decimal("575.00")
+    assert state.market_value == Decimal("0.00")
+    assert state.realized_pnl == Decimal("75.00")
+    assert state.equity == Decimal("575.00")
+
+
+def test_defined_risk_vertical_can_hold_long_and_short_option_legs() -> None:
+    ledger = Subledger.start(Decimal("500.00"))
+    events = [
+        SubledgerEvent(
+            event_type="BUY_FILL",
+            symbol="XYZ",
+            contract_id=401,
+            security_type="OPT",
+            quantity=Decimal("1"),
+            price=Decimal("2.00"),
+            multiplier=Decimal("100"),
+        ),
+        SubledgerEvent(
+            event_type="SELL_FILL",
+            symbol="XYZ",
+            contract_id=402,
+            security_type="OPT",
+            quantity=Decimal("1"),
+            price=Decimal("1.00"),
+            multiplier=Decimal("100"),
+        ),
+        SubledgerEvent(
+            event_type="MARK",
+            symbol="XYZ",
+            contract_id=401,
+            security_type="OPT",
+            price=Decimal("3.00"),
+        ),
+        SubledgerEvent(
+            event_type="MARK",
+            symbol="XYZ",
+            contract_id=402,
+            security_type="OPT",
+            price=Decimal("1.50"),
+        ),
+    ]
+
+    state = ledger.project(events)
+
+    assert state.valid is True
+    assert state.cash == Decimal("400.00")
+    assert state.market_value == Decimal("150.00")
+    assert state.unrealized_pnl == Decimal("50.00")
+    assert state.equity == Decimal("550.00")
+
+
+def test_future_uses_variation_pnl_not_notional_cash() -> None:
+    ledger = Subledger.start(Decimal("500.00"))
+    events = [
+        SubledgerEvent(
+            event_type="BUY_FILL",
+            symbol="MES",
+            contract_id=501,
+            security_type="FUT",
+            quantity=Decimal("1"),
+            price=Decimal("5000"),
+            multiplier=Decimal("5"),
+        ),
+        SubledgerEvent(
+            event_type="MARK",
+            symbol="MES",
+            contract_id=501,
+            security_type="FUT",
+            price=Decimal("5010"),
+        ),
+    ]
+
+    state = ledger.project(events)
+
+    assert state.cash == Decimal("500.00")
+    assert state.market_value == Decimal("50.00")
+    assert state.unrealized_pnl == Decimal("50.00")
+    assert state.equity == Decimal("550.00")
+
+
+def test_future_close_moves_realized_variation_to_cash() -> None:
+    ledger = Subledger.start(Decimal("500.00"))
+    events = [
+        SubledgerEvent(
+            event_type="BUY_FILL",
+            symbol="MES",
+            contract_id=502,
+            security_type="FUT",
+            quantity=Decimal("1"),
+            price=Decimal("5000"),
+            multiplier=Decimal("5"),
+        ),
+        SubledgerEvent(
+            event_type="SELL_FILL",
+            symbol="MES",
+            contract_id=502,
+            security_type="FUT",
+            quantity=Decimal("1"),
+            price=Decimal("5010"),
+            multiplier=Decimal("5"),
+        ),
+    ]
+
+    state = ledger.project(events)
+
+    assert state.cash == Decimal("550.00")
+    assert state.realized_pnl == Decimal("50.00")
+    assert state.market_value == Decimal("0.00")
+    assert state.equity == Decimal("550.00")

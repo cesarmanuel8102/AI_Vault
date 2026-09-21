@@ -1,0 +1,430 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from decimal import Decimal
+from typing import Any, Sequence
+from uuid import uuid4
+
+from pydantic import BaseModel, ConfigDict
+
+from .autonomous_research import AutonomousResearchProvider
+from .canonical import sha256_json
+from .experiment_clock import build_experiment_clock
+from .ibkr_research import IBKRResearchToolbox
+from .liability import assess_proposal_liability
+from .persistence import Database
+from .repositories import utc_now
+from .risk import RiskEngine, RiskInputs, RiskResult
+from .trader_invocation import (
+    InvocationRequest,
+    TraderInputBundle,
+    TraderInvocationAdapter,
+)
+
+
+class AutonomousCycleResult(BaseModel, frozen=True):
+    model_config = ConfigDict(extra="forbid")
+
+    decision_cycle_id: str
+    invocation_id: str
+    accepted: bool
+    decision: str
+    validation: str
+    proposal: dict[str, Any] | None
+    research_evidence_count: int
+    research_evidence_sha256: str
+    risk_gate: str
+    risk_reason_codes: tuple[str, ...]
+    liability_gate: str
+    liability_reason_codes: tuple[str, ...]
+    contract_quote_gate: str
+    contract_quote_reason_codes: tuple[str, ...]
+    broker_what_if_seen: bool
+    capital_feasibility_seen: bool
+    execution_ready: bool
+    order_authority: bool
+    reason_codes: tuple[str, ...]
+
+
+class AutonomousDecisionRuntime:
+    """
+    Operational decision path for the 30-day paper experiment.
+
+    The runtime does not supply a strategy or tradable-symbol universe.  Codex
+    owns discovery and research.  Deterministic code validates only the paper
+    broker state, experimental-capital boundary, and exact broker what-if
+    evidence before a proposal can be considered execution-ready.
+
+    This class intentionally does not submit an order.  Submission remains a
+    separate gated side effect so decision research can be tested independently.
+    """
+
+    def __init__(
+        self,
+        *,
+        db: Database,
+        toolbox: IBKRResearchToolbox,
+        model: str,
+        reasoning_effort: str = "max",
+        timeout_seconds: int = 180,
+        max_research_rounds: int = 8,
+    ) -> None:
+        self.db = db
+        self.toolbox = toolbox
+        self.model = model
+        self.reasoning_effort = reasoning_effort
+        self.timeout_seconds = timeout_seconds
+        self.max_research_rounds = max_research_rounds
+
+    def run_cycle(
+        self,
+        *,
+        readonly_report: dict[str, Any],
+        experiment_equity: Decimal,
+        experiment_start_utc: str,
+        market_data_gate: str,
+        market_session_state: str,
+        kill_switch_state: str = "KILL_SWITCH_CLEAR",
+        current_open_risk: Decimal = Decimal("0"),
+        candidate_screen_results: Sequence[dict[str, Any]] = (),
+        benchmark_state: dict[str, Any] | None = None,
+        invocation_trigger: str = "SCHEDULED_SCAN",
+    ) -> AutonomousCycleResult:
+        if experiment_equity <= 0:
+            raise ValueError("experimental equity must be positive")
+        if readonly_report.get("paper_account_identity_gate") != "PASS":
+            raise RuntimeError("PAPER_ACCOUNT_IDENTITY_GATE_BLOCK")
+        if readonly_report.get("broker_reconciliation_gate") != "PASS":
+            raise RuntimeError("BROKER_RECONCILIATION_GATE_BLOCK")
+        if market_data_gate != "PASS":
+            raise RuntimeError("MARKET_DATA_GATE_BLOCK")
+
+        run_id = uuid4().hex
+        cycle_id = f"autonomous-cycle-{run_id}"
+        invocation_id = f"autonomous-invocation-{run_id}"
+        now = utc_now()
+        experiment_clock = build_experiment_clock(
+            experiment_start_utc, observed_at_utc=now, duration_days=30
+        )
+        if experiment_clock.status == "NOT_STARTED":
+            raise RuntimeError("EXPERIMENT_NOT_STARTED")
+        if experiment_clock.expired:
+            raise RuntimeError("EXPERIMENT_HORIZON_EXPIRED")
+        buying_power = readonly_report.get("buying_power")
+        capability_snapshot = {
+            "schema": "BROKER_CAPABILITY_SNAPSHOT_V1",
+            "paper_only": True,
+            "options_permission_level": self.toolbox.options_permission_level,
+            "buying_power": buying_power,
+            "net_liquidation": readonly_report.get("net_liquidation"),
+            "market_data_behavior": readonly_report.get("market_data_behavior"),
+            "dynamic_contract_discovery": True,
+            "dynamic_option_chain_discovery": True,
+            "broker_what_if_available": True,
+            "fixed_symbol_allowlist": False,
+            "fixed_strategy_allowlist": False,
+            "fixed_timeframe_allowlist": False,
+        }
+        bundle = TraderInputBundle(
+            decision_cycle_id=cycle_id,
+            utc_timestamp=now,
+            market_session_state=market_session_state,
+            reconciliation_receipt={
+                "status": readonly_report.get("broker_reconciliation_gate"),
+                "sha256": sha256_json(readonly_report),
+            },
+            experiment_subledger_snapshot={
+                "equity": str(experiment_equity),
+                "current_open_risk": str(current_open_risk),
+            },
+            broker_account_snapshot={
+                "cash": readonly_report.get("cash"),
+                "settled_cash": readonly_report.get("settled_cash"),
+                "buying_power": buying_power,
+                "net_liquidation": readonly_report.get("net_liquidation"),
+            },
+            positions_snapshot=list(readonly_report.get("positions") or []),
+            open_orders_snapshot=list(readonly_report.get("open_orders") or []),
+            risk_snapshot={
+                "policy_version": "CAPITAL_BOUNDARY_V2",
+                "maximum_experiment_liability": str(experiment_equity),
+                "fixed_percentage_limits": False,
+            },
+            kill_switch_state=kill_switch_state,
+            market_data_snapshot={
+                "gate_status": market_data_gate,
+                "source": "IBKR",
+                "dynamic_research": True,
+            },
+            candidate_screen_results=list(candidate_screen_results),
+            relevant_previous_immutable_decisions=[],
+            process_policy_version="AUTONOMOUS_RESEARCH_V1",
+            execution_realism_version="IBKR_PAPER_WHAT_IF_REQUIRED_V1",
+            benchmark_state=benchmark_state or {},
+            experiment_clock=experiment_clock.model_dump(mode="json"),
+            broker_capability_snapshot=capability_snapshot,
+            research_policy_version="AUTONOMOUS_RESEARCH_V1",
+            research_round_budget=self.max_research_rounds,
+        )
+        request = InvocationRequest(
+            decision_cycle_id=cycle_id,
+            invocation_id=invocation_id,
+            utc_timestamp=now,
+            requested_model=self.model,
+            actual_model=self.model,
+            model_configuration={
+                "provider": "codex-cli-autonomous-research",
+                "paper_only": True,
+                "candidate_screens_are_advisory": True,
+            },
+            reasoning_effort=self.reasoning_effort,
+            input_bundle_sha256=bundle.sha256,
+            risk_policy_version="CAPITAL_BOUNDARY_V2",
+            experiment_id="codex-ibkr-paper-30d",
+            invocation_trigger=invocation_trigger,
+            timeout_seconds=self.timeout_seconds,
+        )
+
+        provider = AutonomousResearchProvider(
+            self.toolbox,
+            max_rounds=self.max_research_rounds,
+        )
+        adapter = TraderInvocationAdapter(self.db, provider)
+        validated = adapter.invoke(request, bundle)
+        response = provider.last_response
+        evidence = response.research_evidence if response is not None else []
+        structured = response.structured_output if response is not None else {}
+        proposal = structured.get("proposal") if isinstance(structured, dict) else None
+
+        post_reasons: list[str] = []
+        risk_gate = "NOT_APPLICABLE"
+        risk_reasons: tuple[str, ...] = ()
+        liability_gate = "NOT_APPLICABLE"
+        liability_reasons: tuple[str, ...] = ()
+        contract_quote_gate = "NOT_APPLICABLE"
+        contract_quote_reasons: tuple[str, ...] = ()
+        what_if_seen = self._successful_what_if_seen(evidence)
+        capital_seen = self._successful_capital_feasibility_seen(evidence)
+
+        if validated.accepted and validated.effective_decision == "PROPOSE_TRADE":
+            if not isinstance(proposal, dict):
+                post_reasons.append("PROPOSAL_PAYLOAD_MISSING")
+            else:
+                liability = assess_proposal_liability(proposal)
+                liability_gate = liability.status
+                liability_reasons = liability.reason_codes
+                if not liability.structurally_bounded:
+                    post_reasons.extend(liability.reason_codes)
+
+                quote_ok, quote_reasons = self._fresh_realtime_quote_coverage(
+                    evidence, proposal
+                )
+                contract_quote_gate = "PASS" if quote_ok else "BLOCK"
+                contract_quote_reasons = quote_reasons
+                if not quote_ok:
+                    post_reasons.extend(quote_reasons)
+
+                maximum_loss_raw = proposal.get("maximum_loss")
+                if maximum_loss_raw is None:
+                    post_reasons.append("MAXIMUM_LOSS_REQUIRED")
+                else:
+                    maximum_loss = Decimal(str(maximum_loss_raw))
+                    risk = RiskEngine.month1().evaluate(
+                        RiskInputs(
+                            experiment_equity=experiment_equity,
+                            day_start_equity=experiment_equity,
+                            week_start_equity=experiment_equity,
+                            high_water_equity=experiment_equity,
+                            estimated_loss=maximum_loss,
+                            position_capital=Decimal(
+                                str(proposal.get("capital_required") or maximum_loss)
+                            ),
+                            total_open_risk=current_open_risk + maximum_loss,
+                            daily_loss=Decimal("0"),
+                            weekly_drawdown=Decimal("0"),
+                            total_drawdown=Decimal("0"),
+                            concurrent_positions=len(
+                                readonly_report.get("positions") or []
+                            ),
+                        )
+                    )
+                    risk_gate = risk.result.value
+                    risk_reasons = risk.reason_codes
+                    if risk.result is not RiskResult.PASS:
+                        post_reasons.extend(risk.reason_codes)
+
+            if not capital_seen:
+                post_reasons.append("CAPITAL_FEASIBILITY_EVIDENCE_REQUIRED")
+            if not what_if_seen:
+                post_reasons.append("BROKER_WHAT_IF_EVIDENCE_REQUIRED")
+
+        execution_ready = bool(
+            validated.accepted
+            and validated.effective_decision == "PROPOSE_TRADE"
+            and risk_gate == RiskResult.PASS.value
+            and liability_gate == "PASS"
+            and contract_quote_gate == "PASS"
+            and capital_seen
+            and what_if_seen
+            and not post_reasons
+        )
+        combined_reasons = tuple(validated.reason_codes) + tuple(post_reasons)
+        return AutonomousCycleResult(
+            decision_cycle_id=cycle_id,
+            invocation_id=invocation_id,
+            accepted=validated.accepted,
+            decision=validated.effective_decision,
+            validation=validated.validation,
+            proposal=proposal if isinstance(proposal, dict) else None,
+            research_evidence_count=len(evidence),
+            research_evidence_sha256=sha256_json(evidence),
+            risk_gate=risk_gate,
+            risk_reason_codes=risk_reasons,
+            liability_gate=liability_gate,
+            liability_reason_codes=liability_reasons,
+            contract_quote_gate=contract_quote_gate,
+            contract_quote_reason_codes=contract_quote_reasons,
+            broker_what_if_seen=what_if_seen,
+            capital_feasibility_seen=capital_seen,
+            execution_ready=execution_ready,
+            order_authority=False,
+            reason_codes=combined_reasons,
+        )
+
+    @staticmethod
+    def _fresh_realtime_quote_coverage(
+        evidence: list[dict[str, Any]],
+        proposal: dict[str, Any],
+        *,
+        max_age_seconds: float = 120.0,
+    ) -> tuple[bool, tuple[str, ...]]:
+        required_ids: set[int] = set()
+        reasons: list[str] = []
+        legs = list(proposal.get("legs") or [])
+        if legs:
+            for leg in legs:
+                try:
+                    contract_id = int(leg.get("contract_id") or 0)
+                except (TypeError, ValueError):
+                    contract_id = 0
+                if contract_id <= 0:
+                    reasons.append("RESOLVED_LEG_CONTRACT_REQUIRED")
+                else:
+                    required_ids.add(contract_id)
+        else:
+            try:
+                contract_id = int(proposal.get("contract_id") or 0)
+            except (TypeError, ValueError):
+                contract_id = 0
+            if contract_id <= 0:
+                reasons.append("RESOLVED_CONTRACT_REQUIRED")
+            else:
+                required_ids.add(contract_id)
+
+        if reasons:
+            return False, tuple(dict.fromkeys(reasons))
+
+        covered: set[int] = set()
+        now = datetime.now(timezone.utc)
+        for item in evidence:
+            request_payload = item.get("request") or {}
+            if request_payload.get("tool") != "quote":
+                continue
+            args = request_payload.get("arguments") or {}
+            try:
+                contract_id = int(args.get("contract_id") or 0)
+            except (TypeError, ValueError):
+                continue
+            if contract_id not in required_ids:
+                continue
+
+            outer_result = item.get("result") or {}
+            if outer_result.get("status") != "PASS":
+                continue
+            quote_result = outer_result.get("result") or {}
+            quote = quote_result.get("quote") or {}
+            if int(quote.get("market_data_type") or 0) != 1:
+                continue
+            if not any(
+                quote.get(field) is not None
+                for field in ("bid", "ask", "last")
+            ):
+                continue
+            received = quote.get("received_utc")
+            if not received:
+                continue
+            try:
+                received_dt = datetime.fromisoformat(
+                    str(received).replace("Z", "+00:00")
+                )
+            except ValueError:
+                continue
+            age = (now - received_dt.astimezone(timezone.utc)).total_seconds()
+            if 0 <= age <= max_age_seconds:
+                covered.add(contract_id)
+
+        missing = sorted(required_ids - covered)
+        if missing:
+            return False, tuple(
+                f"FRESH_REALTIME_QUOTE_REQUIRED:{contract_id}"
+                for contract_id in missing
+            )
+        return True, ()
+
+    @staticmethod
+    def _successful_capital_feasibility_seen(
+        evidence: list[dict[str, Any]],
+    ) -> bool:
+        for item in evidence:
+            request = item.get("request") or {}
+            if request.get("tool") != "capital_feasibility":
+                continue
+            outer = item.get("result") or {}
+            if outer.get("status") != "PASS":
+                continue
+            payload = outer.get("result") or {}
+            if payload.get("feasible_by_known_constraints") is True:
+                return True
+        return False
+
+    @staticmethod
+    def _successful_what_if_seen(evidence: list[dict[str, Any]]) -> bool:
+        for item in evidence:
+            request = item.get("request") or {}
+            if request.get("tool") != "what_if_order":
+                continue
+            outer = item.get("result") or {}
+            if outer.get("status") != "PASS":
+                continue
+            payload = outer.get("result") or {}
+            if payload.get("what_if") is not True or payload.get("transmit") is not False:
+                continue
+            preview = payload.get("preview") or {}
+            if not isinstance(preview, dict) or not preview:
+                continue
+            # Require broker-produced margin/commission evidence, not a shell.
+            if not any(
+                preview.get(field) not in (None, "")
+                for field in (
+                    "init_margin_change",
+                    "maint_margin_change",
+                    "equity_with_loan_change",
+                    "commission",
+                    "min_commission",
+                    "max_commission",
+                )
+            ):
+                continue
+            return True
+        return False
+
+    @staticmethod
+    def _successful_tool_seen(
+        evidence: list[dict[str, Any]], tool_name: str
+    ) -> bool:
+        for item in evidence:
+            request = item.get("request") or {}
+            result = item.get("result") or {}
+            if request.get("tool") == tool_name and result.get("status") == "PASS":
+                return True
+        return False

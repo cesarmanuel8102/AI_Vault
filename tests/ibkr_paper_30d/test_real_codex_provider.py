@@ -44,7 +44,7 @@ def request(value: TraderInputBundle) -> InvocationRequest:
         model_configuration={"provider": "codex-cli", "synthetic": True},
         reasoning_effort="medium",
         input_bundle_sha256=value.sha256,
-        risk_policy_version="MONTH1_V1",
+        risk_policy_version="CAPITAL_BOUNDARY_V2",
         experiment_id="prelifecycle-provider-test",
         invocation_trigger="OWNER_AUTHORIZED_NON_TRADING_TEST",
         timeout_seconds=60,
