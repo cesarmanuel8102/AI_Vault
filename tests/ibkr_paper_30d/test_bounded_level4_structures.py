@@ -199,7 +199,7 @@ def test_ibkr_whatif_margin_over_isolated_equity_blocks_even_if_model_estimate_i
     monkeypatch.setattr(
         toolbox,
         "_broker_feasibility",
-        lambda _proposal: {
+        lambda _proposal, ib=None: {
             "success": True,
             "warningText": "",
             "initMarginChange": "600.00",
