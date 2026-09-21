@@ -46,8 +46,8 @@ class AutonomousExperimentService:
         duration_days: int = 30,
         scan_interval_seconds: float = 300.0,
         position_interval_seconds: float = 60.0,
-        model: str = "gpt-5.5",
-        reasoning_effort: str = "high",
+        model: str = "gpt-5.6-sol",
+        reasoning_effort: str = "max",
         timeout_seconds: int = 180,
         options_level: int | None = 4,
         execute_paper: bool = False,
@@ -191,8 +191,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--duration-days", type=int, default=30)
     parser.add_argument("--scan-seconds", type=float, default=300)
     parser.add_argument("--position-seconds", type=float, default=60)
-    parser.add_argument("--model", default="gpt-5.5")
-    parser.add_argument("--reasoning-effort", default="high")
+    parser.add_argument("--model", default="gpt-5.6-sol")
+    parser.add_argument("--reasoning-effort", default="max")
     parser.add_argument("--timeout-seconds", type=int, default=180)
     parser.add_argument("--options-level", type=int, default=4)
     parser.add_argument("--execute-paper", action="store_true")
