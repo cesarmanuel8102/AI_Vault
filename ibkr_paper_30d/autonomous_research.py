@@ -364,6 +364,17 @@ class AutonomousResearchLoop:
         self, request: InvocationRequest, bundle: TraderInputBundle
     ) -> AutonomousResearchOutcome:
         history: list[dict[str, Any]] = []
+        if request.decision_cycle_id != bundle.decision_cycle_id:
+            return self._blocked(history, 0, "CYCLE_MISMATCH")
+        if request.input_bundle_sha256 != bundle.sha256:
+            return self._blocked(history, 0, "INPUT_HASH_MISMATCH")
+        if bundle.reconciliation_receipt.get("status") != "PASS":
+            return self._blocked(history, 0, "BROKER_RECONCILIATION_REQUIRED")
+        if bundle.kill_switch_state != "KILL_SWITCH_CLEAR":
+            return self._blocked(history, 0, "KILL_SWITCH_TRIGGERED")
+        if bundle.market_data_snapshot.get("gate_status") != "PASS":
+            return self._blocked(history, 0, "MARKET_DATA_GATE_BLOCK")
+
         manifest = self.toolbox.manifest()
         equity = self._experimental_equity(bundle)
 
