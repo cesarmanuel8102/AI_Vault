@@ -161,6 +161,7 @@ class AutonomousExperimentService:
             self.toolbox,
             database=db,
             fresh_safety_check=self._fresh_execution_safety,
+            operator_control_check=self._fresh_operator_controls,
         )
         self.sleep = sleep
         self.monotonic = monotonic
@@ -209,6 +210,10 @@ class AutonomousExperimentService:
             reasons.append("EXPERIMENT_EXPIRED_FRESH")
         if self.kill_switch.current() != "KILL_SWITCH_CLEAR":
             reasons.append("KILL_SWITCH_TRIGGERED_FRESH")
+        if self.owner_authorization.current(
+            clock_event_sha256=self.clock.event_sha256
+        ) != "AUTHORIZED":
+            reasons.append("OWNER_AUTHORIZATION_REQUIRED_FRESH")
         auditor = self.runtime_auditor_gate.evaluate()
         if auditor.get("gate_status") != "PASS":
             reasons.append("AUDITOR_GATE_BLOCK_FRESH")
@@ -226,6 +231,17 @@ class AutonomousExperimentService:
                 reasons.append("MARKET_DATA_GATE_BLOCK_FRESH")
                 reasons.extend(str(x) for x in market.get("reason_codes", []) or [])
         return tuple(dict.fromkeys(reasons))
+
+    def _fresh_operator_controls(self) -> tuple[str, ...]:
+        """DB-only controls checked immediately before broker transmission."""
+        reasons: list[str] = []
+        if self.kill_switch.current() != "KILL_SWITCH_CLEAR":
+            reasons.append("KILL_SWITCH_TRIGGERED_IMMEDIATE")
+        if self.owner_authorization.current(
+            clock_event_sha256=self.clock.event_sha256
+        ) != "AUTHORIZED":
+            reasons.append("OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE")
+        return tuple(reasons)
 
     def _assert_arm_prerequisites(self) -> None:
         if not getattr(self.executor, "armed", False):
