@@ -396,6 +396,14 @@ class IBKRResearchToolbox:
         bid = getattr(ticker, "bid", None)
         ask = getattr(ticker, "ask", None)
         stamp = getattr(ticker, "time", None)
+        actual_market_data_type = getattr(ticker, "marketDataType", None)
+        if actual_market_data_type != 1:
+            return {
+                "success": False,
+                "reason": "TRADE_CONTRACT_MARKET_DATA_NOT_REALTIME",
+                "contract": self._serialize_contract(contract),
+                "market_data_type": actual_market_data_type,
+            }
         if not self._valid_live_price(bid) or not self._valid_live_price(ask):
             return {
                 "success": False,
@@ -447,6 +455,7 @@ class IBKRResearchToolbox:
             "broker_time_utc": broker_utc.isoformat().replace("+00:00", "Z"),
             "age_seconds": age_seconds,
             "requested_market_data_type": "LIVE",
+            "market_data_type": 1,
         }
 
     def live_contract_quote_evidence(
