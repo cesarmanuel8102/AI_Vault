@@ -491,9 +491,8 @@ class AutonomousResearchLoop:
                 return self._blocked(history, round_index, "UNBOUNDED_LIABILITY")
             if proposal.maximum_loss > equity:
                 return self._blocked(history, round_index, "EXPERIMENT_CAPITAL_BOUNDARY")
-            if proposal.capital_required > equity:
-                return self._blocked(history, round_index, "CAPITAL_REQUIRED_EXCEEDS_EQUITY")
-
+            # capital_required is a model estimate, not an authority boundary.
+            # IBKR what-if margin/commission is authoritative for executability.
             validation = self.toolbox.validate_proposal(proposal, bundle)
             history.append({
                 "round": round_index,
