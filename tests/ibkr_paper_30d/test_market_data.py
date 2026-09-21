@@ -189,3 +189,13 @@ def test_gate_reports_oldest_and_latest_quote_timestamps(gate, fresh_quote) -> N
     assert result.quote_timestamp == older.quote_timestamp
     assert result.oldest_quote_timestamp == older.quote_timestamp
     assert result.latest_quote_timestamp == newer.quote_timestamp
+
+def test_quote_snapshot_rejects_naive_timestamps(fresh_quote) -> None:
+    with pytest.raises(ValueError, match="timezone-aware"):
+        fresh_quote.model_copy(
+            update={"quote_timestamp": datetime(2026, 9, 20, 14, 29, 59)}
+        ).model_validate(
+            fresh_quote.model_copy(
+                update={"quote_timestamp": datetime(2026, 9, 20, 14, 29, 59)}
+            ).model_dump()
+        )
