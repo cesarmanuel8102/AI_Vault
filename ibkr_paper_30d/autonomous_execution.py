@@ -302,6 +302,14 @@ class AutonomousPaperExecutor:
                 )
             trade = ib.placeOrder(contract, order)
             ib.sleep(self.fill_wait_seconds)
+            if int(getattr(trade.order, "permId", 0) or 0) > 0:
+                self._register_order(
+                    order=trade.order,
+                    contract=contract,
+                    order_ref=order_ref,
+                    action=proposal.action.upper(),
+                    quantity=proposal.quantity,
+                )
             status = getattr(trade.orderStatus, "status", "UNKNOWN") or "UNKNOWN"
             payload = {
                 "orderId": getattr(trade.order, "orderId", None),
@@ -539,6 +547,14 @@ class AutonomousPaperExecutor:
                 )
             trade = ib.placeOrder(position.contract, order)
             ib.sleep(self.fill_wait_seconds)
+            if int(getattr(trade.order, "permId", 0) or 0) > 0:
+                self._register_order(
+                    order=trade.order,
+                    contract=position.contract,
+                    order_ref=order_ref,
+                    action=action.action.upper(),
+                    quantity=action.quantity,
+                )
             status = getattr(trade.orderStatus, "status", "UNKNOWN") or "UNKNOWN"
             payload = {
                 "orderId": getattr(trade.order, "orderId", None),
