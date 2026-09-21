@@ -46,6 +46,7 @@ class TraderInputBundle(BaseModel, frozen=True):
     process_policy_version: str
     execution_realism_version: str
     benchmark_state: dict[str, Any]
+    experiment_clock: dict[str, Any] = Field(default_factory=dict)
     # Candidate screens are advisory evidence only. They never constrain the
     # symbols, asset classes or structures Codex may research or propose.
     broker_capability_snapshot: dict[str, Any] = Field(default_factory=dict)
