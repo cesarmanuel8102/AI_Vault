@@ -101,6 +101,10 @@ class AutonomousResearchProvider:
     def invoke(
         self, request: InvocationRequest, bundle: TraderInputBundle
     ) -> ProviderResponse:
+        binder = getattr(self.toolbox, "bind_bundle", None)
+        if callable(binder):
+            binder(bundle)
+
         round_limit = min(self.max_rounds, bundle.research_round_budget)
         evidence: list[dict[str, Any]] = []
         seen_request_ids: set[str] = set()
