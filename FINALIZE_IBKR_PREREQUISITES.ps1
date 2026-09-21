@@ -98,8 +98,12 @@ if (
     throw "PAPER_IDENTITY_NOT_PROVEN"
 }
 
-& PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "AUDITOR_WINDOWS_PROVISIONING_V1.ps1") -Mode Apply -Confirm:$false
-if ($LASTEXITCODE -ne 0) { throw "AUDITOR_PROVISIONING_V1_FAILED" }
+$ExistingAuditor = Get-LocalUser -Name $AuditorUser -ErrorAction SilentlyContinue
+$ExistingTargetManifest = Test-Path -LiteralPath $TargetManifest -PathType Leaf
+if ($null -eq $ExistingAuditor -or -not $ExistingTargetManifest) {
+    & PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "AUDITOR_WINDOWS_PROVISIONING_V1.ps1") -Mode Apply -Confirm:$false
+    if ($LASTEXITCODE -ne 0) { throw "AUDITOR_PROVISIONING_V1_FAILED" }
+}
 
 $User = Get-LocalUser -Name $AuditorUser -ErrorAction Stop
 if ($User.SID.Value -ne $ExpectedAuditorSid) {
@@ -135,6 +139,24 @@ $DeploymentSha = Get-Sha256Lower -LiteralPath $DeploymentManifest
 $PaperHash = [string]$ReadOnly.expected_account_identity_hash
 if ($PaperHash -notmatch '^[0-9a-f]{64}$') {
     throw "EXPECTED_PAPER_ACCOUNT_HASH_INVALID"
+}
+
+# Ensure exact denial-probe leaf targets exist. Temporary markers are removed later.
+$TemporaryProbeTargets = New-Object Collections.Generic.List[string]
+$LegacyExecutionLock = Join-Path $RepoRoot "state\ibkr_paper_30d\execution.lock"
+if (-not (Test-Path -LiteralPath $LegacyExecutionLock -PathType Leaf)) {
+    [IO.File]::WriteAllText($LegacyExecutionLock, '{"schema":"AUDITOR_PROBE_LOCK_TARGET_V1","order_authority":false}')
+    $TemporaryProbeTargets.Add($LegacyExecutionLock)
+}
+$LiveInvocationDb = Join-Path $CanonicalReportRoot "real_codex_invocations.sqlite3"
+if (-not (Test-Path -LiteralPath $LiveInvocationDb -PathType Leaf)) {
+    $DbInit = @(& python -c "from ibkr_paper_30d.persistence import Database; db=Database.open(r'$LiveInvocationDb'); db.close(); print('OK')" 2>&1)
+    if ($LASTEXITCODE -ne 0) { throw "LIVE_INVOCATION_DB_PROBE_TARGET_CREATE_FAILED:$($DbInit -join ' | ')" }
+}
+$SmtpProbeTarget = Join-Path $RepoRoot "Secrets\email_alerts.env"
+if (-not (Test-Path -LiteralPath $SmtpProbeTarget -PathType Leaf)) {
+    [IO.File]::WriteAllText($SmtpProbeTarget, "# temporary auditor denial probe target" + [Environment]::NewLine)
+    $TemporaryProbeTargets.Add($SmtpProbeTarget)
 }
 
 # Reset only the dedicated local auditor account password. The SID is preserved.
@@ -183,6 +205,12 @@ if ($null -eq $Receipt) {
     throw "AUDITOR_GATE_V2_RECEIPT_NOT_CREATED"
 }
 Copy-Item -LiteralPath $Receipt.FullName -Destination $CanonicalAuditorReceipt -Force
+
+foreach ($TemporaryPath in $TemporaryProbeTargets) {
+    if (Test-Path -LiteralPath $TemporaryPath -PathType Leaf) {
+        Remove-Item -LiteralPath $TemporaryPath -Force
+    }
+}
 
 $RuntimeManifestSha = Get-Sha256Lower -LiteralPath $RuntimeManifest
 $DeploymentManifestSha = Get-Sha256Lower -LiteralPath $DeploymentManifest
