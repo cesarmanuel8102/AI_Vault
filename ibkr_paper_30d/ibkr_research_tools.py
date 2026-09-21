@@ -52,6 +52,7 @@ class IBKRResearchToolbox:
             {"tool": ResearchTool.ACCOUNT_STATE.value, "purpose": "Current paper balances, NLV, cash, buying power and declared option permission level."},
             {"tool": ResearchTool.POSITIONS.value, "purpose": "Current paper positions."},
             {"tool": ResearchTool.OPEN_ORDERS.value, "purpose": "Current paper open orders."},
+            {"tool": ResearchTool.EXECUTIONS.value, "purpose": "Recent paper executions/fills, including orderRef for experiment reconciliation."},
             {"tool": ResearchTool.MARKET_SCANNER.value, "purpose": "IBKR scanner; Codex chooses instrument/location/scan code and filters."},
             {"tool": ResearchTool.RESOLVE_CONTRACT.value, "purpose": "Resolve any IBKR contract supported by the account."},
             {"tool": ResearchTool.QUOTE.value, "purpose": "Snapshot quote for a requested stock, ETF, option or other resolvable contract."},
@@ -67,6 +68,7 @@ class IBKRResearchToolbox:
                 ResearchTool.ACCOUNT_STATE: self._account_state,
                 ResearchTool.POSITIONS: self._positions,
                 ResearchTool.OPEN_ORDERS: self._open_orders,
+                ResearchTool.EXECUTIONS: self._executions,
                 ResearchTool.MARKET_SCANNER: self._market_scanner,
                 ResearchTool.RESOLVE_CONTRACT: self._resolve_contract,
                 ResearchTool.QUOTE: self._quote,
@@ -398,6 +400,36 @@ class IBKRResearchToolbox:
                     "orderRef": str(getattr(trade.order, "orderRef", "") or ""),
                 })
             return {"success": True, "open_orders": items}
+        finally:
+            ib.disconnect()
+
+    def _executions(self, _: dict[str, Any]) -> dict[str, Any]:
+        from ib_insync import ExecutionFilter
+
+        ib = self._connect()
+        try:
+            fills = ib.reqExecutions(ExecutionFilter())
+            items = []
+            for fill in fills:
+                execution = fill.execution
+                contract = fill.contract
+                commission_report = getattr(fill, "commissionReport", None)
+                raw_side = str(getattr(execution, "side", "") or "").upper()
+                side = "BUY" if raw_side in {"BOT", "BUY"} else "SELL" if raw_side in {"SLD", "SELL"} else raw_side
+                import hashlib
+                exec_id = str(getattr(execution, "execId", "") or "")
+                items.append({
+                    "execution_id_hash": hashlib.sha256(exec_id.encode("utf-8")).hexdigest() if exec_id else None,
+                    "orderRef": str(getattr(execution, "orderRef", "") or ""),
+                    "permId": int(getattr(execution, "permId", 0) or 0),
+                    "orderId": int(getattr(execution, "orderId", 0) or 0),
+                    "side": side,
+                    "quantity": str(getattr(execution, "shares", "") or ""),
+                    "price": str(getattr(execution, "price", "") or ""),
+                    "commission": str(getattr(commission_report, "commission", 0) or 0),
+                    "contract": self._serialize_contract(contract),
+                })
+            return {"success": True, "executions": items}
         finally:
             ib.disconnect()
 
