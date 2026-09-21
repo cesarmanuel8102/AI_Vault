@@ -44,6 +44,25 @@ function Assert-RegularCollectionStart {
     }
 }
 
+function Archive-CollectionEvidence {
+    param([string]$Reason)
+    $Existing = @(
+        $LedgerPath,
+        $PolicyPath,
+        (Join-Path $ReportRoot "market_observation.json"),
+        (Join-Path $ReportRoot "market_policy_freeze.json"),
+        $ValidationPath,
+        $StatePath
+    ) | Where-Object { Test-Path -LiteralPath $_ }
+    if ($Existing.Count -eq 0) { return }
+    $Stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssZ")
+    $Archive = Join-Path $ReportRoot ("archive\market-gate-" + $Stamp + "-" + $Reason)
+    [void](New-Item -ItemType Directory -Path $Archive -Force)
+    foreach ($Path in $Existing) {
+        Move-Item -LiteralPath $Path -Destination (Join-Path $Archive ([IO.Path]::GetFileName($Path))) -Force
+    }
+}
+
 function Initialize-CleanEvidence {
     if (Test-Path -LiteralPath $StatePath) { return }
     [void](New-Item -ItemType Directory -Path $ReportRoot -Force)
@@ -112,41 +131,47 @@ if ($ReadOnly.status -ne "PASS") {
     throw "READONLY_IDENTITY_GATE_NOT_PASS:$($ReadOnly.reason_codes -join ',')"
 }
 
-$Starts = @()
-for ($Index = 0; $Index -lt 3; $Index++) {
-    if ($Index -gt 0) {
-        $Target = $Starts[$Index - 1].AddMinutes(31)
-        Wait-UntilUtc -Target $Target
+try {
+    $Starts = @()
+    for ($Index = 0; $Index -lt 3; $Index++) {
+        if ($Index -gt 0) {
+            $Target = $Starts[$Index - 1].AddMinutes(31)
+            Wait-UntilUtc -Target $Target
+        }
+        $Starts += [DateTime]::UtcNow
+        $Observation = Invoke-PythonJson -Arguments @(
+            "-m", "ibkr_paper_30d.cli", "observe-market-data",
+            "--host", "127.0.0.1", "--port", "4002",
+            "--symbols", "SPY", "QQQ", "IEF",
+            "--cadence-seconds", "5",
+            "--window-seconds", "315"
+        )
+        if ($Observation.status -ne "PASS") {
+            throw "MARKET_OBSERVATION_BLOCK:$($Observation.reason_codes -join ',')"
+        }
     }
-    $Starts += [DateTime]::UtcNow
-    $Observation = Invoke-PythonJson -Arguments @(
-        "-m", "ibkr_paper_30d.cli", "observe-market-data",
-        "--host", "127.0.0.1", "--port", "4002",
-        "--symbols", "SPY", "QQQ", "IEF",
-        "--cadence-seconds", "5",
-        "--window-seconds", "300"
+
+    $Freeze = Invoke-PythonJson -Arguments @(
+        "-m", "ibkr_paper_30d.cli", "freeze-market-policy",
+        "--ledger", $LedgerPath,
+        "--destination", $PolicyPath
     )
-    if ($Observation.status -ne "PASS") {
-        throw "MARKET_OBSERVATION_BLOCK:$($Observation.reason_codes -join ',')"
+    if ($Freeze.status -notin @("PASS", "ALREADY_FROZEN")) {
+        throw "MARKET_POLICY_FREEZE_BLOCK:$($Freeze.reason_codes -join ',')"
+    }
+
+    $Validation = Invoke-PythonJson -Arguments @(
+        "-m", "ibkr_paper_30d.cli", "validate-real-market-data",
+        "--host", "127.0.0.1", "--port", "4002",
+        "--policy", $PolicyPath
+    )
+    if ($Validation.market_data_gate -ne "PASS") {
+        throw "MARKET_DATA_GATE_BLOCK:$($Validation.reason_codes -join ',')"
     }
 }
-
-$Freeze = Invoke-PythonJson -Arguments @(
-    "-m", "ibkr_paper_30d.cli", "freeze-market-policy",
-    "--ledger", $LedgerPath,
-    "--destination", $PolicyPath
-)
-if ($Freeze.status -notin @("PASS", "ALREADY_FROZEN")) {
-    throw "MARKET_POLICY_FREEZE_BLOCK:$($Freeze.reason_codes -join ',')"
-}
-
-$Validation = Invoke-PythonJson -Arguments @(
-    "-m", "ibkr_paper_30d.cli", "validate-real-market-data",
-    "--host", "127.0.0.1", "--port", "4002",
-    "--policy", $PolicyPath
-)
-if ($Validation.market_data_gate -ne "PASS") {
-    throw "MARKET_DATA_GATE_BLOCK:$($Validation.reason_codes -join ',')"
+catch {
+    Archive-CollectionEvidence -Reason "failed"
+    throw
 }
 
 $Ready = Invoke-PythonJson -Arguments @(
