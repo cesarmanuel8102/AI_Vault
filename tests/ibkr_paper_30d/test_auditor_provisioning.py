@@ -264,7 +264,11 @@ def test_missing_ephemeral_leaf_is_not_an_apply_target(
     protected_denies = {
         change["path"]
         for change in review_manifest["acl_changes"]
-        if change["type"] == "Deny" and change["rights"] == "FullControl"
+        if change["type"] == "Deny"
+        and any(
+            token in change["rights"]
+            for token in ("WriteData", "CreateFiles", "Delete", "ChangePermissions")
+        )
     }
     assert LIVE_STATE_ROOT in protected_denies
     assert not any(path.endswith(leaf_name) for path in protected_denies)
@@ -276,13 +280,18 @@ def test_live_state_parent_denial_inherits_to_future_files(review_manifest) -> N
         for change in review_manifest["acl_changes"]
         if change["path"] == LIVE_STATE_ROOT
     )
-    assert parent_change == {
-        "path": LIVE_STATE_ROOT,
-        "rights": "FullControl",
-        "type": "Deny",
-        "directory": True,
-        "identity": "CodexAuditorV1",
-    }
+    assert parent_change["path"] == LIVE_STATE_ROOT
+    assert parent_change["type"] == "Deny"
+    assert parent_change["directory"] is True
+    assert parent_change["identity"] == "CodexAuditorV1"
+    rights = set(parent_change["rights"].split(","))
+    assert {"ReadData", "WriteData", "AppendData", "CreateFiles", "CreateDirectories",
+            "Delete", "DeleteSubdirectoriesAndFiles", "ChangePermissions",
+            "TakeOwnership"} <= rights
+    # ReadAttributes/ReadPermissions are intentionally not denied so the
+    # restricted probe can inspect the full path chain for reparse points.
+    assert "ReadAttributes" not in rights
+    assert "ReadPermissions" not in rights
     inheritance = review_manifest["live_state_inheritance"]
     assert inheritance["flags"] == ["ContainerInherit", "ObjectInherit"]
     assert inheritance["propagation"] == "None"
