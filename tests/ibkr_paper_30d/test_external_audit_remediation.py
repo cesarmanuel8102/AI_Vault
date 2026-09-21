@@ -424,18 +424,32 @@ def test_experiment_clock_marks_future_start_not_started(tmp_path):
 
 
 class LiveQuoteBroker:
-    def __init__(self, *, bid=1.0, ask=1.1, quote_time=None, broker_time=None):
+    def __init__(
+        self,
+        *,
+        bid=1.0,
+        ask=1.1,
+        quote_time=None,
+        broker_time=None,
+        actual_market_data_type=1,
+    ):
         self.bid = bid
         self.ask = ask
         self.quote_time = quote_time or datetime(2026, 9, 21, 13, 30, tzinfo=timezone.utc)
         self.broker_time = broker_time or datetime(2026, 9, 21, 13, 30, 5, tzinfo=timezone.utc)
+        self.actual_market_data_type = actual_market_data_type
         self.requested_type = None
 
     def reqMarketDataType(self, value):
         self.requested_type = value
 
     def reqMktData(self, contract, genericTickList="", snapshot=True, regulatorySnapshot=False):
-        return SimpleNamespace(bid=self.bid, ask=self.ask, time=self.quote_time)
+        return SimpleNamespace(
+            bid=self.bid,
+            ask=self.ask,
+            time=self.quote_time,
+            marketDataType=self.actual_market_data_type,
+        )
 
     def reqCurrentTime(self):
         return self.broker_time
@@ -464,6 +478,13 @@ def test_trade_contract_live_quote_evidence_fails_closed():
     toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
     contract = _simple_contract()
 
+    delayed = LiveQuoteBroker(actual_market_data_type=3)
+    result = toolbox.live_contract_quote_evidence(delayed, contract)
+    assert result["success"] is False
+    assert result["reason"] == "TRADE_CONTRACT_MARKET_DATA_NOT_REALTIME"
+    assert result["market_data_type"] == 3
+    assert delayed.requested_type == 1
+
     missing = LiveQuoteBroker(bid=float("nan"), ask=1.1)
     result = toolbox.live_contract_quote_evidence(missing, contract)
     assert result["success"] is False
@@ -491,8 +512,14 @@ class ComboQuoteBroker(LiveQuoteBroker):
                 bid=float("nan"),
                 ask=float("nan"),
                 time=self.quote_time,
+                marketDataType=self.actual_market_data_type,
             )
-        return SimpleNamespace(bid=1.0, ask=1.1, time=self.quote_time)
+        return SimpleNamespace(
+            bid=1.0,
+            ask=1.1,
+            time=self.quote_time,
+            marketDataType=self.actual_market_data_type,
+        )
 
     def qualifyContracts(self, contract):
         return [
