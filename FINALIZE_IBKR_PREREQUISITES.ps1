@@ -195,6 +195,9 @@ if (-not (Test-Path -LiteralPath $SmtpProbeTarget -PathType Leaf)) {
     $TemporaryProbeTargets.Add($SmtpProbeTarget)
 }
 
+# Enable the dedicated auditor account only for the bounded probe window.
+Enable-LocalUser -Name $AuditorUser -ErrorAction Stop
+
 # Reset only the dedicated local auditor account password. The SID is preserved.
 $SecurePassword = New-RandomSecurePassword
 Set-LocalUser -Name $AuditorUser -Password $SecurePassword
@@ -263,6 +266,9 @@ finally {
     try {
         $PostProbePassword = New-RandomSecurePassword
         Set-LocalUser -Name $AuditorUser -Password $PostProbePassword
+    } catch { }
+    try {
+        Disable-LocalUser -Name $AuditorUser -ErrorAction Stop
     } catch { }
     if ($null -ne $SecondaryLogon -and -not $SecondaryLogonWasRunning) {
         try { Stop-Service -Name seclogon -Force } catch { }
