@@ -7,9 +7,11 @@ import json
 
 import pytest
 
-pytestmark = pytest.mark.skipif(
-    os.name != "nt", reason="Windows named-mutex execution lock tests"
-)
+if os.name != "nt":
+    pytest.skip(
+        "Windows named-mutex execution lock tests",
+        allow_module_level=True,
+    )
 
 from ibkr_paper_30d.execution_lock import ExecutionLock, LockOwner
 from ibkr_paper_30d.persistence import Database
