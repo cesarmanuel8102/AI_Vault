@@ -28,6 +28,7 @@ def test_prerequisite_scripts_exist_and_never_arm_trading():
     assert "market_data_task_registered" in finalizer
     assert "Enable-LocalUser -Name $AuditorUser" in finalizer
     assert "Disable-LocalUser -Name $AuditorUser" in finalizer
+    assert "UNSAFE_ARGUMENT_VALUE" in finalizer
 
     market = MARKET_RUNNER.read_text(encoding="utf-8")
     assert '"330"' in market
