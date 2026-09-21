@@ -83,7 +83,8 @@ function New-RandomSecurePassword {
 function Quote-Argument {
     param([string]$Value)
     if ([string]::IsNullOrWhiteSpace($Value)) { throw "EMPTY_ARGUMENT_VALUE" }
-    if ($Value.Contains('"') -or $Value.EndsWith('\')) {
+    $Forbidden = [char[]]@([char]34, [char]36, [char]96, [char]59, [char]38, [char]124, [char]60, [char]62, [char]13, [char]10)
+    if ($Value.EndsWith('\') -or $Value.IndexOfAny($Forbidden) -ge 0) {
         throw "UNSAFE_ARGUMENT_VALUE"
     }
     return '"' + $Value + '"'
