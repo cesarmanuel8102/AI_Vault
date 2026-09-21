@@ -214,15 +214,16 @@ def test_output_cycle_or_bundle_contradiction_fails(database, valid_bundle) -> N
     assert result.reason_codes == ("CYCLE_MISMATCH",)
 
 
-def test_symbol_not_in_frozen_candidates_fails_semantic_validation(
+def test_symbol_outside_advisory_candidates_is_allowed(
     database, valid_bundle
 ) -> None:
     subject, _ = adapter(database, proposal_output(valid_bundle, symbol="QQQ"))
 
     result = subject.invoke(request(valid_bundle), valid_bundle)
 
-    assert result.validation == "INVALID"
-    assert result.reason_codes == ("SYMBOL_NOT_IN_FROZEN_CANDIDATES",)
+    assert result.validation == "PASS"
+    assert result.accepted is True
+    assert result.effective_decision == "PROPOSE_TRADE"
 
 
 def test_stale_market_gate_blocks_invocation(database, valid_bundle) -> None:
