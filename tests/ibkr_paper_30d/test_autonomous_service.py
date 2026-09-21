@@ -13,6 +13,8 @@ from ibkr_paper_30d.persistence import Database
 class FakeProjected:
     equity: Decimal = Decimal("500.00")
     positions: tuple = ()
+    valid: bool = True
+    reason_codes: tuple = ()
 
 
 class FakeLedger:
@@ -58,8 +60,8 @@ class RecordingService(AutonomousExperimentService):
         self.stop_after = stop_after
         self.results = list(results or [])
 
-    def _run_cycle(self, trigger):
-        self.triggers.append(trigger)
+    def _run_cycle(self, trigger, *, allow_execution=None):
+        self.triggers.append((trigger, allow_execution))
         if len(self.triggers) >= self.stop_after:
             self.stop()
         if self.results:
@@ -93,7 +95,7 @@ def test_no_positions_scans_every_five_minutes(tmp_path, monkeypatch):
         subject = make_service(db, clock, stop_after=2)
         subject.run_forever()
 
-    assert subject.triggers == ["SCHEDULED_SCAN", "SCHEDULED_SCAN"]
+    assert subject.triggers == [("SCHEDULED_SCAN", None), ("SCHEDULED_SCAN", None)]
     assert clock.sleeps == [300.0]
 
 
@@ -106,9 +108,9 @@ def test_open_position_adds_one_minute_monitoring_without_replacing_scan(tmp_pat
         subject.run_forever()
 
     assert subject.triggers == [
-        "POSITION_EVENT",
-        "SCHEDULED_SCAN",
-        "POSITION_EVENT",
+        ("POSITION_EVENT", None),
+        ("SCHEDULED_SCAN", None),
+        ("POSITION_EVENT", None),
     ]
     assert clock.sleeps == [60.0]
 
@@ -128,4 +130,7 @@ def test_fill_causes_immediate_position_event_reassessment(tmp_path, monkeypatch
         subject = make_service(db, clock, stop_after=2, results=results)
         subject.run_forever()
 
-    assert subject.triggers == ["SCHEDULED_SCAN", "POSITION_EVENT"]
+    assert subject.triggers == [
+        ("SCHEDULED_SCAN", None),
+        ("POSITION_EVENT", False),
+    ]
