@@ -38,6 +38,7 @@ $MarketValidation = Join-Path $CanonicalReportRoot "market_data_validation.json"
 $MarketTaskName = "CodexIBKRMarketDataGate"
 $ProbeFirewallRuleName = "CodexAuditorV2-Probe-PowerShell-Broker-Block"
 $CanonicalAcceptance = Join-Path $ResolvedRepoRoot "AUDITOR_MONTH1_PAPER_RESIDUAL_RISK_ACCEPTANCE_V1.json"
+$TrustAnchorPath = Join-Path $ResolvedRepoRoot "AUDITOR_RUNTIME_V2_TRUST_ANCHOR_V1.json"
 
 function Assert-Administrator {
     $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -126,6 +127,15 @@ if (-not $User.Enabled) {
     Enable-LocalUser -Name $AuditorUser
 }
 
+$TrustAnchor = Invoke-PythonJson -Arguments @(
+    "-m", "ibkr_paper_30d.prerequisite_tools", "evaluate-runtime-trust-anchor",
+    "--repo-root", $ResolvedRepoRoot,
+    "--anchor", $TrustAnchorPath
+)
+if ($TrustAnchor.source_matches_anchor -ne $true) {
+    throw "AUDITOR_RUNTIME_SOURCE_DOES_NOT_MATCH_TRUST_ANCHOR"
+}
+
 & PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1") -Mode Install -ConfirmRuntimeMutation
 if ($LASTEXITCODE -ne 0) { throw "AUDITOR_RUNTIME_V2_INSTALL_FAILED" }
 
@@ -148,7 +158,13 @@ if (-not (Test-Path -LiteralPath $AuditExport.paper_identity_receipt_path -PathT
     throw "EXPORTED_PAPER_IDENTITY_RECEIPT_MISSING"
 }
 
-$DeploymentSha = Get-Sha256Lower -LiteralPath $DeploymentManifest
+$DeploymentSha = [string]$TrustAnchor.deployment_manifest_sha256
+if ((Get-Sha256Lower -LiteralPath $DeploymentManifest) -ne $DeploymentSha) {
+    throw "AUDITOR_DEPLOYMENT_MANIFEST_TRUST_ANCHOR_MISMATCH"
+}
+if ((Get-Sha256Lower -LiteralPath $RuntimeManifest) -ne [string]$TrustAnchor.runtime_manifest_sha256) {
+    throw "AUDITOR_RUNTIME_MANIFEST_TRUST_ANCHOR_MISMATCH"
+}
 $PaperHash = [string]$ReadOnly.expected_account_identity_hash
 if ($PaperHash -notmatch '^[0-9a-f]{64}$') {
     throw "EXPECTED_PAPER_ACCOUNT_HASH_INVALID"
@@ -249,8 +265,8 @@ finally {
     }
 }
 
-$RuntimeManifestSha = Get-Sha256Lower -LiteralPath $RuntimeManifest
-$DeploymentManifestSha = Get-Sha256Lower -LiteralPath $DeploymentManifest
+$RuntimeManifestSha = [string]$TrustAnchor.runtime_manifest_sha256
+$DeploymentManifestSha = [string]$TrustAnchor.deployment_manifest_sha256
 $ProbeSha = Get-Sha256Lower -LiteralPath $ProbePath
 $TargetManifestSha = Get-Sha256Lower -LiteralPath $TargetManifest
 
