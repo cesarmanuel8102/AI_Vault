@@ -16,6 +16,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 from ibkr_paper_30d.auditor_export import AuditExporter
+from ibkr_paper_30d.canonical import sha256_json
 
 ROOT = Path(__file__).parents[2]
 RUNTIME_SOURCE = ROOT / "auditor_runtime"
@@ -481,6 +482,62 @@ def test_target_validation_rejects_outside_root_and_reparse_path(tmp_path) -> No
         if item["probe"] == "SECRETS_READ"
     )
     assert reparse_row["reason"] == "TARGET_REPARSE_POINT"
+
+
+def test_gate_paper_environment_references_match_python_canonical_json() -> None:
+    gate = RUNTIME_SOURCE / "AUDITOR_GATE_V2_PROBE.ps1"
+    escaped = str(gate).replace("'", "''")
+    account_hash = "a" * 64
+    receipt = {
+        "host": "127.0.0.1",
+        "port": 4002,
+        "gateway_mode": "PAPER",
+        "server_version": 157,
+        "connection_time": "20260922 18:04:09 EDT",
+        "server_timestamp_utc": "2026-09-22T22:04:09Z",
+    }
+    expected_paper = "PAPER:" + sha256_json(
+        {
+            "host": receipt["host"],
+            "port": receipt["port"],
+            "gateway_mode": receipt["gateway_mode"],
+            "expected_account_identity_hash": account_hash,
+        }
+    )
+    expected_session = "PAPER-SESSION:" + sha256_json(
+        {
+            "server_version": receipt["server_version"],
+            "connection_time": receipt["connection_time"],
+            "server_timestamp_utc": receipt["server_timestamp_utc"],
+        }
+    )
+
+    command = (
+        "$tokens=$null;$errors=$null;"
+        f"$ast=[Management.Automation.Language.Parser]::ParseFile('{escaped}',[ref]$tokens,[ref]$errors);"
+        "if($errors.Count){$errors|ForEach-Object{$_.Message};exit 1};"
+        "$hashFn=$ast.Find({param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Get-TextSha256'},$true);"
+        "$refFn=$ast.Find({param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Get-PaperEnvironmentReferences'},$true);"
+        "Invoke-Expression $hashFn.Extent.Text;"
+        "Invoke-Expression $refFn.Extent.Text;"
+        "$r=[pscustomobject]@{"
+        f"host='{receipt['host']}';port={receipt['port']};gateway_mode='{receipt['gateway_mode']}';"
+        f"server_version={receipt['server_version']};connection_time='{receipt['connection_time']}';"
+        f"server_timestamp_utc='{receipt['server_timestamp_utc']}'"
+        "};"
+        f"Get-PaperEnvironmentReferences -PaperReceipt $r -ExpectedPaperAccountHash '{account_hash}' | ConvertTo-Json -Compress"
+    )
+    result = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-Command", command],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout.strip())
+    assert payload["environment_reference"] == expected_paper
+    assert payload["broker_session_environment_reference"] == expected_session
 
 
 def test_gate_records_socket_reachability_as_residual_risk_without_hard_denial() -> None:
