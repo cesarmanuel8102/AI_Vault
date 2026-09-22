@@ -97,6 +97,95 @@ function Quote-Argument {
     return '"' + $Value + '"'
 }
 
+$RequiredProbeTargetNames = @(
+    "SECRETS_READ",
+    "IBKR_SECRET_READ",
+    "SMTP_SECRET_READ",
+    "EXECUTION_LOCK_ACCESS",
+    "LIVE_DATABASE_MUTATION",
+    "BROKER_WRITE_PATH_ACCESS",
+    "BROKER_NETWORK_SOCKET_ACCESS",
+    "TRADER_CONTEXT_ACCESS",
+    "AUDIT_INPUT_MUTATION",
+    "IMMUTABLE_EXPORT_READ",
+    "AUDITOR_REPORT_WRITE"
+)
+
+function Test-StringSetEqualOrdinalIgnoreCase {
+    param([object[]]$Left, [object[]]$Right)
+    $LeftNormalized = @($Left | ForEach-Object { [string]$_ } | Sort-Object)
+    $RightNormalized = @($Right | ForEach-Object { [string]$_ } | Sort-Object)
+    if ($LeftNormalized.Count -ne $RightNormalized.Count) { return $false }
+    for ($I = 0; $I -lt $LeftNormalized.Count; $I++) {
+        if (-not [string]::Equals($LeftNormalized[$I], $RightNormalized[$I], [StringComparison]::OrdinalIgnoreCase)) {
+            return $false
+        }
+    }
+    return $true
+}
+
+function Test-AuditorTargetManifestCurrent {
+    param(
+        [string]$LiteralPath,
+        [string]$ExpectedSid,
+        [string]$RepoRoot
+    )
+    if (-not (Test-Path -LiteralPath $LiteralPath -PathType Leaf)) { return $false }
+    try {
+        $ManifestValue = Get-Content -LiteralPath $LiteralPath -Raw | ConvertFrom-Json
+    }
+    catch { return $false }
+    if (
+        $ManifestValue.schema -ne "AUDITOR_PROBE_TARGET_MANIFEST_V1" -or
+        [string]$ManifestValue.expected_sid -ne $ExpectedSid -or
+        $null -eq $ManifestValue.targets -or
+        $null -eq $ManifestValue.approved_roots
+    ) { return $false }
+
+    $ActualTargetNames = @($ManifestValue.targets.PSObject.Properties.Name)
+    if (-not (Test-StringSetEqualOrdinalIgnoreCase -Left $ActualTargetNames -Right $RequiredProbeTargetNames)) {
+        return $false
+    }
+
+    $ActiveStateRoot = Join-Path $RepoRoot "state\ibkr_paper_30d"
+    $ExpectedTargets = [ordered]@{
+        SECRETS_READ = (Join-Path $RepoRoot "Secrets")
+        IBKR_SECRET_READ = "C:\Jts"
+        SMTP_SECRET_READ = (Join-Path $RepoRoot "Secrets\email_alerts.env")
+        EXECUTION_LOCK_ACCESS = (Join-Path $ActiveStateRoot "execution.lock")
+        LIVE_DATABASE_MUTATION = (Join-Path $ActiveStateRoot "reports\real_codex_invocations.sqlite3")
+        BROKER_WRITE_PATH_ACCESS = (Join-Path $RepoRoot "ibkr_paper_30d\broker.py")
+        BROKER_NETWORK_SOCKET_ACCESS = (Join-Path $RepoRoot "ibkr_paper_30d\broker.py")
+        TRADER_CONTEXT_ACCESS = (Join-Path $RepoRoot "ibkr_paper_30d\trader_invocation.py")
+        AUDIT_INPUT_MUTATION = $ExportsRoot
+        IMMUTABLE_EXPORT_READ = $ExportsRoot
+        AUDITOR_REPORT_WRITE = $ReportsRoot
+    }
+    foreach ($Name in $RequiredProbeTargetNames) {
+        $ActualPath = [IO.Path]::GetFullPath([string]$ManifestValue.targets.$Name).TrimEnd('\')
+        $ExpectedPath = [IO.Path]::GetFullPath([string]$ExpectedTargets[$Name]).TrimEnd('\')
+        if (-not [string]::Equals($ActualPath, $ExpectedPath, [StringComparison]::OrdinalIgnoreCase)) {
+            return $false
+        }
+    }
+
+    $ExpectedApprovedRoots = @(
+        $RuntimeRoot,
+        $ExportsRoot,
+        $ReportsRoot,
+        $ProvisioningRoot,
+        (Join-Path $RepoRoot "Secrets"),
+        "C:\Jts",
+        $ActiveStateRoot,
+        (Join-Path $RepoRoot "ibkr_paper_30d\broker.py"),
+        (Join-Path $RepoRoot "ibkr_paper_30d\trader_invocation.py")
+    ) | ForEach-Object { [IO.Path]::GetFullPath([string]$_).TrimEnd('\') }
+    $ActualApprovedRoots = @($ManifestValue.approved_roots) | ForEach-Object {
+        [IO.Path]::GetFullPath([string]$_).TrimEnd('\')
+    }
+    return Test-StringSetEqualOrdinalIgnoreCase -Left $ActualApprovedRoots -Right $ExpectedApprovedRoots
+}
+
 Assert-Administrator
 
 if (-not (Test-Path -LiteralPath $ResolvedRepoRoot -PathType Container)) {
@@ -126,10 +215,13 @@ if (
 }
 
 $ExistingAuditor = Get-LocalUser -Name $AuditorUser -ErrorAction SilentlyContinue
-$ExistingTargetManifest = Test-Path -LiteralPath $TargetManifest -PathType Leaf
-if ($null -eq $ExistingAuditor -or -not $ExistingTargetManifest) {
-    & PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_WINDOWS_PROVISIONING_V1.ps1") -Mode Apply -Confirm:$false
+$TargetManifestCurrent = Test-AuditorTargetManifestCurrent -LiteralPath $TargetManifest -ExpectedSid $ExpectedAuditorSid -RepoRoot $ResolvedRepoRoot
+if ($null -eq $ExistingAuditor -or -not $TargetManifestCurrent) {
+    & PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_WINDOWS_PROVISIONING_V1.ps1") -Mode Apply -RepoRoot $ResolvedRepoRoot -Confirm:$false
     if ($LASTEXITCODE -ne 0) { throw "AUDITOR_PROVISIONING_V1_FAILED" }
+}
+if (-not (Test-AuditorTargetManifestCurrent -LiteralPath $TargetManifest -ExpectedSid $ExpectedAuditorSid -RepoRoot $ResolvedRepoRoot)) {
+    throw "AUDITOR_TARGET_MANIFEST_STALE_AFTER_PROVISIONING"
 }
 
 $User = Get-LocalUser -Name $AuditorUser -ErrorAction Stop
