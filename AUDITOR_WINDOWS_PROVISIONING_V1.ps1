@@ -3,13 +3,16 @@
 param(
     [ValidateSet("Review", "Apply", "Rollback")]
     [string]$Mode = "Review",
-    [string]$RepoRoot = "C:\AI_VAULT_IBKR",
+    [string]$RepoRoot = "",
     [switch]$ConfirmRollback
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
+    $RepoRoot = $PSScriptRoot
+}
 $ResolvedRepoRoot = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\')
 $ScriptRepoRoot = [IO.Path]::GetFullPath($PSScriptRoot).TrimEnd('\')
 if ($ResolvedRepoRoot -ine $ScriptRepoRoot) {
@@ -465,6 +468,24 @@ function Test-RecognizedLegacyRuntimeManifest {
     return $true
 }
 
+function Test-ProbeTargetMapEqual {
+    param(
+        [object]$Actual,
+        [object]$Expected
+    )
+    $ActualNames = @($Actual.PSObject.Properties.Name)
+    $ExpectedNames = @($Expected.PSObject.Properties.Name)
+    if (-not (Test-StringSetEqual -Left $ActualNames -Right $ExpectedNames)) {
+        return $false
+    }
+    foreach ($Name in $ExpectedNames) {
+        if ([string]$Actual.$Name -cne [string]$Expected.$Name) {
+            return $false
+        }
+    }
+    return $true
+}
+
 function Test-RecognizedLegacyProbeManifest {
     param(
         [string]$Text,
@@ -479,17 +500,14 @@ function Test-RecognizedLegacyProbeManifest {
         $Legacy.expected_sid -ne $Sid.Value
     ) { return $false }
 
-    $ActualTargets = $Legacy.targets | ConvertTo-Json -Depth 5 -Compress
-    $ExactLegacyTargets = $LegacyProbeTargets | ConvertTo-Json -Depth 5 -Compress
-    if ($ActualTargets -ceq $ExactLegacyTargets) {
+    if (Test-ProbeTargetMapEqual -Actual $Legacy.targets -Expected $LegacyProbeTargets) {
         return (
             (Get-TextSha256Hex -Text $Text) -eq $ExpectedLegacyProbeManifestHash -and
             (Test-StringSetEqual -Left @($Legacy.approved_roots) -Right $LegacyApprovedPaths)
         )
     }
 
-    $StaleHostTargets = $StaleHostProbeTargets | ConvertTo-Json -Depth 5 -Compress
-    if ($ActualTargets -ceq $StaleHostTargets) {
+    if (Test-ProbeTargetMapEqual -Actual $Legacy.targets -Expected $StaleHostProbeTargets) {
         return Test-StringSetEqual -Left @($Legacy.approved_roots) -Right $LegacyActiveApprovedPaths
     }
     return $false
