@@ -96,7 +96,7 @@ def complete_receipt(now: datetime) -> dict[str, object]:
         "functional_auditor": {
             "run_id": run_id,
             "status": "PASS",
-            "bundle_id": "e" * 64,
+            "bundle_id": "audit-" + "e" * 24,
             "manifest_sha256": "f" * 64,
         },
         "paper_identity": {
@@ -329,6 +329,7 @@ NEGATIVE_GATE_CASES = (
     ("elevated", "AUDITOR_TOKEN_ELEVATED"),
     ("wrong_paper_account_hash", "PAPER_ACCOUNT_IDENTITY_MISMATCH"),
     ("wrong_paper_identity_receipt", "PAPER_IDENTITY_RECEIPT_MISMATCH"),
+    ("bad_bundle_id", "IMMUTABLE_BUNDLE_IDENTITY_INVALID"),
     ("paper_environment_change", "PAPER_ENVIRONMENT_MISMATCH"),
     ("runtime_extra_file", "RUNTIME_INTEGRITY_BLOCK"),
     ("runtime_missing_file", "RUNTIME_INTEGRITY_BLOCK"),
@@ -364,6 +365,8 @@ def _apply_negative_mutation(name: str, payload: dict[str, object]) -> None:
         payload["paper_identity"]["expected_account_identity_hash"] = "9" * 64
     elif name == "wrong_paper_identity_receipt":
         payload["paper_identity"]["identity_receipt_sha256"] = "8" * 64
+    elif name == "bad_bundle_id":
+        payload["functional_auditor"]["bundle_id"] = "e" * 64
     elif name == "paper_environment_change":
         payload["paper_identity"]["environment_reference"] = "LIVE:gateway:4001"
     elif name in {"runtime_extra_file", "runtime_missing_file", "broadened_runtime_bundle"}:
@@ -671,3 +674,15 @@ def test_gate_v2_requires_network_fact_consistency_with_endpoint_observation(
 
     assert result.canonical_gate == "BLOCK"
     assert "NETWORK_FACT_MISMATCH" in result.reason_codes
+
+
+def test_functional_bundle_identity_accepts_audit_exporter_format_and_sha256_manifest(
+    complete_receipt, expected_identity, now
+) -> None:
+    receipt = parse_auditor_gate_v2_receipt(canonical_bytes(complete_receipt))
+    result = evaluate_auditor_gate_v2(receipt, expected_identity, now)
+
+    assert result.canonical_gate == "PASS"
+    assert receipt.functional_auditor["bundle_id"].startswith("audit-")
+    assert len(receipt.functional_auditor["bundle_id"]) == 30
+    assert len(receipt.functional_auditor["manifest_sha256"]) == 64

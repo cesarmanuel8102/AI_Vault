@@ -16,6 +16,7 @@ EXPECTED_AUDITOR_SID = "S-1-5-21-214160970-1890373857-4055601883-1012"
 RECEIPT_MAX_AGE = timedelta(hours=24)
 RECEIPT_SCHEMA = "AUDITOR_GATE_V2_RECEIPT_V1"
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_BUNDLE_ID_RE = re.compile(r"^audit-[0-9a-f]{24}$")
 _TOP_LEVEL_FIELDS = frozenset(
     {
         "schema",
@@ -439,10 +440,15 @@ def _evaluate_predicates(
         reasons.append("MIXED_RUN_EVIDENCE")
     if functional.get("status") != "PASS":
         reasons.append("FUNCTIONAL_AUDITOR_BLOCK")
-    for field in ("bundle_id", "manifest_sha256"):
-        value = functional.get(field)
-        if not isinstance(value, str) or not _SHA256_RE.fullmatch(value):
-            reasons.append("IMMUTABLE_BUNDLE_IDENTITY_INVALID")
+    bundle_id = functional.get("bundle_id")
+    manifest_sha256 = functional.get("manifest_sha256")
+    if (
+        not isinstance(bundle_id, str)
+        or not _BUNDLE_ID_RE.fullmatch(bundle_id)
+        or not isinstance(manifest_sha256, str)
+        or not _SHA256_RE.fullmatch(manifest_sha256)
+    ):
+        reasons.append("IMMUTABLE_BUNDLE_IDENTITY_INVALID")
 
     identity = receipt.paper_identity
     identity_keys = {
