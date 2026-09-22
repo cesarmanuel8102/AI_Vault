@@ -51,6 +51,41 @@ function Get-TextSha256 {
     finally { $Algorithm.Dispose() }
 }
 
+
+function Get-PaperEnvironmentReferences {
+    param(
+        [object]$PaperReceipt,
+        [string]$ExpectedPaperAccountHash
+    )
+    # Match ibkr_paper_30d.canonical.sha256_json exactly for the two identity
+    # reference objects. Keys are emitted in Python sort_keys=True order and
+    # scalar values are JSON-encoded without whitespace.
+    $PaperEnvironmentJson = (
+        '{"expected_account_identity_hash":' +
+        (ConvertTo-Json -InputObject $ExpectedPaperAccountHash -Compress) +
+        ',"gateway_mode":' +
+        (ConvertTo-Json -InputObject ([string]$PaperReceipt.gateway_mode) -Compress) +
+        ',"host":' +
+        (ConvertTo-Json -InputObject ([string]$PaperReceipt.host) -Compress) +
+        ',"port":' +
+        ([int]$PaperReceipt.port).ToString([Globalization.CultureInfo]::InvariantCulture) +
+        '}'
+    )
+    $SessionEnvironmentJson = (
+        '{"connection_time":' +
+        (ConvertTo-Json -InputObject ([string]$PaperReceipt.connection_time) -Compress) +
+        ',"server_timestamp_utc":' +
+        (ConvertTo-Json -InputObject ([string]$PaperReceipt.server_timestamp_utc) -Compress) +
+        ',"server_version":' +
+        ([int]$PaperReceipt.server_version).ToString([Globalization.CultureInfo]::InvariantCulture) +
+        '}'
+    )
+    return [ordered]@{
+        environment_reference = "PAPER:" + (Get-TextSha256 $PaperEnvironmentJson)
+        broker_session_environment_reference = "PAPER-SESSION:" + (Get-TextSha256 $SessionEnvironmentJson)
+    }
+}
+
 function Read-StrictJson {
     param([string]$LiteralPath)
     $Text = [IO.File]::ReadAllText($LiteralPath)
@@ -180,32 +215,9 @@ if (
     [int]$PaperReceipt.port -ne 4002
 ) { throw "PAPER_IDENTITY_BLOCK" }
 $PaperReceiptHash = Get-Sha256Hex -LiteralPath $PaperIdentityReceiptPath
-
-# Match ibkr_paper_30d.canonical.sha256_json exactly for the two identity
-# reference objects. Keys are emitted in Python sort_keys=True order and
-# scalar values are JSON-encoded without whitespace.
-$PaperEnvironmentJson = (
-    '{"expected_account_identity_hash":' +
-    (ConvertTo-Json -InputObject $ExpectedPaperAccountHash -Compress) +
-    ',"gateway_mode":' +
-    (ConvertTo-Json -InputObject ([string]$PaperReceipt.gateway_mode) -Compress) +
-    ',"host":' +
-    (ConvertTo-Json -InputObject ([string]$PaperReceipt.host) -Compress) +
-    ',"port":' +
-    ([int]$PaperReceipt.port).ToString([Globalization.CultureInfo]::InvariantCulture) +
-    '}'
-)
-$SessionEnvironmentJson = (
-    '{"connection_time":' +
-    (ConvertTo-Json -InputObject ([string]$PaperReceipt.connection_time) -Compress) +
-    ',"server_timestamp_utc":' +
-    (ConvertTo-Json -InputObject ([string]$PaperReceipt.server_timestamp_utc) -Compress) +
-    ',"server_version":' +
-    ([int]$PaperReceipt.server_version).ToString([Globalization.CultureInfo]::InvariantCulture) +
-    '}'
-)
-$PaperEnvironment = "PAPER:" + (Get-TextSha256 $PaperEnvironmentJson)
-$SessionEnvironment = "PAPER-SESSION:" + (Get-TextSha256 $SessionEnvironmentJson)
+$EnvironmentReferences = Get-PaperEnvironmentReferences -PaperReceipt $PaperReceipt -ExpectedPaperAccountHash $ExpectedPaperAccountHash
+$PaperEnvironment = [string]$EnvironmentReferences.environment_reference
+$SessionEnvironment = [string]$EnvironmentReferences.broker_session_environment_reference
 
 $TargetRows = @($Denial.target_validation_matrix | ForEach-Object {
     [ordered]@{ run_id = $RunId; probe = $_.probe; valid = [bool]$_.valid }
