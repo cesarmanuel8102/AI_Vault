@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -22,6 +23,7 @@ from ibkr_paper_30d.experiment_control import (
 from ibkr_paper_30d.experiment_ledger import AutonomousExperimentLedger
 from ibkr_paper_30d.ibkr_research_tools import IBKRResearchToolbox
 from ibkr_paper_30d.persistence import Database
+from ibkr_paper_30d.prerequisite_tools import evaluate_runtime_trust_anchor
 from ibkr_paper_30d.reporting import FaultInjectionHarness
 from ibkr_paper_30d.trader_invocation import TraderInputBundle
 
@@ -311,6 +313,68 @@ def test_auditor_probe_source_records_network_residual_risk_and_privilege_proof(
     assert "AUDITOR_FORBIDDEN_PRIVILEGE_PRESENT" in probe
     assert "BROKER_NETWORK_SOCKET_ACCESS" in denial
     assert "TARGET_PATH_CHAIN_NOT_FULLY_INSPECTABLE" in denial
+
+
+def test_trust_anchor_accepts_fetched_immutable_commit_outside_current_ancestry(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def git(*args: str) -> str:
+        result = subprocess.run(
+            ["git", "-C", str(repo), *args],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        return result.stdout.strip()
+
+    git("init")
+    git("config", "user.email", "audit@example.invalid")
+    git("config", "user.name", "Audit Test")
+
+    runtime = repo / "auditor_runtime"
+    runtime.mkdir()
+    probe = runtime / "AUDITOR_GATE_V2_PROBE.ps1"
+    probe.write_text("# trusted runtime\n", encoding="utf-8")
+    git("add", ".")
+    git("commit", "-m", "trusted source")
+    source_commit = git("rev-parse", "HEAD")
+
+    git("checkout", "--orphan", "local-import")
+    git("rm", "-rf", ".")
+    runtime.mkdir(exist_ok=True)
+    probe = runtime / "AUDITOR_GATE_V2_PROBE.ps1"
+    probe.write_text("# trusted runtime\n", encoding="utf-8")
+    git("add", ".")
+    git("commit", "-m", "locally imported trusted runtime")
+
+    ancestor = subprocess.run(
+        ["git", "-C", str(repo), "merge-base", "--is-ancestor", source_commit, "HEAD"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert ancestor.returncode != 0
+
+    anchor = repo / "anchor.json"
+    anchor.write_text(
+        json.dumps(
+            {
+                "schema": "AUDITOR_RUNTIME_V2_TRUST_ANCHOR_V1",
+                "source_commit": source_commit,
+                "runtime_files": ["AUDITOR_GATE_V2_PROBE.ps1"],
+                "runtime_manifest_name": "AUDITOR_RUNTIME_MANIFEST_V2.json",
+                "purpose": "test",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = evaluate_runtime_trust_anchor(repo, anchor)
+
+    assert result["source_commit"] == source_commit
+    assert result["source_matches_anchor"] is True
 
 
 def test_finalizer_uses_pinned_trust_anchor_not_installed_manifest_as_authority():
