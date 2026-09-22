@@ -3,11 +3,21 @@
 param(
     [ValidateSet("Review", "Apply", "Rollback")]
     [string]$Mode = "Review",
+    [string]$RepoRoot = "",
     [switch]$ConfirmRollback
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
+    $RepoRoot = $PSScriptRoot
+}
+$ResolvedRepoRoot = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\')
+$ScriptRepoRoot = [IO.Path]::GetFullPath($PSScriptRoot).TrimEnd('\')
+if ($ResolvedRepoRoot -ine $ScriptRepoRoot) {
+    throw "REPO_ROOT_NOT_SCRIPT_ROOT:$ResolvedRepoRoot"
+}
 
 $AccountName = "CodexAuditorV1"
 $ProgramRoot = "C:\ProgramData\CodexAuditorV1"
@@ -25,7 +35,8 @@ $AtomicDestinationPaths = @(
     (Join-Path $RuntimePath "CODEX_DECISION_AUDITOR_V1.ps1"),
     (Join-Path $RuntimePath "AUDITOR_DENIAL_PROBE_V1.ps1"),
     $RuntimeManifestPath,
-    $ProbeTargetManifestPath
+    $ProbeTargetManifestPath,
+    $ChangeManifestPath
 )
 $PredecessorScriptHashes = @(
     "899d262124bbf24e0dbd4661b8df41f93aeb6993dacfe9a200264ad2e9ed6eb7",
@@ -37,29 +48,38 @@ $PredecessorRuntimeHashes = @{
     "CODEX_DECISION_AUDITOR_V1.ps1" = "660cec2f87052edf68ed84e001516e0be7694ed0794337ba4252545d41c71bf4"
     "AUDITOR_DENIAL_PROBE_V1.ps1" = "26d4dc93cdf45ceeae3f40f39248edfe00f749072c4d1b36bd04971bb4a8dbf9"
 }
-$LiveStateRoot = "C:\AI_VAULT\state\ibkr_paper_30d"
+$LegacyRepoRoot = "C:\AI_VAULT"
+$LegacyLiveStateRoot = Join-Path $LegacyRepoRoot "state\ibkr_paper_30d"
+$LiveStateRoot = Join-Path $ResolvedRepoRoot "state\ibkr_paper_30d"
 $LegacyEphemeralPaths = @(
-    "$LiveStateRoot\reports\real_codex_invocations.sqlite3",
-    "$LiveStateRoot\reports\real_codex_invocations.sqlite3-wal",
-    "$LiveStateRoot\reports\real_codex_invocations.sqlite3-shm",
-    "$LiveStateRoot\execution.lock"
+    (Join-Path $LegacyLiveStateRoot "reports\real_codex_invocations.sqlite3"),
+    (Join-Path $LegacyLiveStateRoot "reports\real_codex_invocations.sqlite3-wal"),
+    (Join-Path $LegacyLiveStateRoot "reports\real_codex_invocations.sqlite3-shm"),
+    (Join-Path $LegacyLiveStateRoot "execution.lock")
 )
 
 $ProtectedPaths = @(
-    "C:\AI_VAULT\Secrets",
+    (Join-Path $ResolvedRepoRoot "Secrets"),
     "C:\Jts",
     $LiveStateRoot,
-    "C:\AI_VAULT\ibkr_paper_30d\broker.py",
-    "C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py"
+    (Join-Path $ResolvedRepoRoot "ibkr_paper_30d\broker.py"),
+    (Join-Path $ResolvedRepoRoot "ibkr_paper_30d\trader_invocation.py")
 )
 $ManagedPaths = @($RuntimePath, $ExportPath, $ReportPath, $ProvisioningPath)
 $ApprovedPaths = @($ManagedPaths + $ProtectedPaths)
 $LegacyApprovedPaths = @($ManagedPaths + @(
-    "C:\AI_VAULT\Secrets",
+    (Join-Path $LegacyRepoRoot "Secrets"),
     "C:\Jts"
 ) + $LegacyEphemeralPaths + @(
-    "C:\AI_VAULT\ibkr_paper_30d\broker.py",
-    "C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py"
+    (Join-Path $LegacyRepoRoot "ibkr_paper_30d\broker.py"),
+    (Join-Path $LegacyRepoRoot "ibkr_paper_30d\trader_invocation.py")
+))
+$LegacyActiveApprovedPaths = @($ManagedPaths + @(
+    (Join-Path $LegacyRepoRoot "Secrets"),
+    "C:\Jts",
+    $LegacyLiveStateRoot,
+    (Join-Path $LegacyRepoRoot "ibkr_paper_30d\broker.py"),
+    (Join-Path $LegacyRepoRoot "ibkr_paper_30d\trader_invocation.py")
 ))
 $RemovalApprovedPaths = @($ApprovedPaths + $LegacyEphemeralPaths | Select-Object -Unique)
 
@@ -150,21 +170,48 @@ foreach ($Path in $LegacyEphemeralPaths) {
 }
 
 $ScriptHash = Get-Sha256Hex -LiteralPath $PSCommandPath
-$ApplyCommand = "PowerShell.exe -NoProfile -File .\AUDITOR_WINDOWS_PROVISIONING_V1.ps1 -Mode Apply"
-$RollbackCommand = "PowerShell.exe -NoProfile -File .\AUDITOR_WINDOWS_PROVISIONING_V1.ps1 -Mode Rollback -ConfirmRollback"
+$ApplyCommand = "PowerShell.exe -NoProfile -File .\AUDITOR_WINDOWS_PROVISIONING_V1.ps1 -RepoRoot `"$ResolvedRepoRoot`" -Mode Apply"
+$RollbackCommand = "PowerShell.exe -NoProfile -File .\AUDITOR_WINDOWS_PROVISIONING_V1.ps1 -RepoRoot `"$ResolvedRepoRoot`" -Mode Rollback -ConfirmRollback"
 $ProbeTargets = [ordered]@{
-    SECRETS_READ = "C:\AI_VAULT\Secrets"
+    SECRETS_READ = (Join-Path $ResolvedRepoRoot "Secrets")
     IBKR_SECRET_READ = "C:\Jts"
-    EXECUTION_LOCK_ACCESS = "C:\AI_VAULT\state\ibkr_paper_30d\execution.lock"
-    LIVE_DATABASE_MUTATION = "C:\AI_VAULT\state\ibkr_paper_30d\reports\real_codex_invocations.sqlite3"
-    BROKER_WRITE_PATH_ACCESS = "C:\AI_VAULT\ibkr_paper_30d\broker.py"
-    BROKER_NETWORK_SOCKET_ACCESS = "C:\AI_VAULT\ibkr_paper_30d\broker.py"
-    TRADER_CONTEXT_ACCESS = "C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py"
+    EXECUTION_LOCK_ACCESS = (Join-Path $LiveStateRoot "execution.lock")
+    LIVE_DATABASE_MUTATION = (Join-Path $LiveStateRoot "reports\real_codex_invocations.sqlite3")
+    BROKER_WRITE_PATH_ACCESS = (Join-Path $ResolvedRepoRoot "ibkr_paper_30d\broker.py")
+    BROKER_NETWORK_SOCKET_ACCESS = (Join-Path $ResolvedRepoRoot "ibkr_paper_30d\broker.py")
+    TRADER_CONTEXT_ACCESS = (Join-Path $ResolvedRepoRoot "ibkr_paper_30d\trader_invocation.py")
     AUDIT_INPUT_MUTATION = $ExportPath
     IMMUTABLE_EXPORT_READ = $ExportPath
     AUDITOR_REPORT_WRITE = $ReportPath
 }
-$ProbeTargets[("SM" + "TP_SECRET_READ")] = "C:\AI_VAULT\Secrets\email_alerts.env"
+$ProbeTargets[("SM" + "TP_SECRET_READ")] = (Join-Path $ResolvedRepoRoot "Secrets\email_alerts.env")
+
+# Exact predecessor contract used only to recognize the stale pre-hardening host manifest.
+$LegacyProbeTargets = [ordered]@{
+    SECRETS_READ = (Join-Path $LegacyRepoRoot "Secrets")
+    IBKR_SECRET_READ = "C:\Jts"
+    EXECUTION_LOCK_ACCESS = (Join-Path $LegacyLiveStateRoot "execution.lock")
+    LIVE_DATABASE_MUTATION = (Join-Path $LegacyLiveStateRoot "reports\real_codex_invocations.sqlite3")
+    BROKER_WRITE_PATH_ACCESS = (Join-Path $LegacyRepoRoot "ibkr_paper_30d\broker.py")
+    TRADER_CONTEXT_ACCESS = (Join-Path $LegacyRepoRoot "ibkr_paper_30d\trader_invocation.py")
+    AUDIT_INPUT_MUTATION = $ExportPath
+    IMMUTABLE_EXPORT_READ = $ExportPath
+    AUDITOR_REPORT_WRITE = $ReportPath
+}
+$LegacyProbeTargets[("SM" + "TP_SECRET_READ")] = (Join-Path $LegacyRepoRoot "Secrets\email_alerts.env")
+
+$StaleHostProbeTargets = [ordered]@{
+    SECRETS_READ = (Join-Path $LegacyRepoRoot "Secrets")
+    IBKR_SECRET_READ = "C:\Jts"
+    EXECUTION_LOCK_ACCESS = (Join-Path $LegacyLiveStateRoot "reports\real_codex_invocations.sqlite3")
+    LIVE_DATABASE_MUTATION = (Join-Path $LegacyLiveStateRoot "reports\real_codex_invocations.sqlite3")
+    BROKER_WRITE_PATH_ACCESS = (Join-Path $LegacyRepoRoot "ibkr_paper_30d\broker.py")
+    TRADER_CONTEXT_ACCESS = (Join-Path $LegacyRepoRoot "ibkr_paper_30d\trader_invocation.py")
+    AUDIT_INPUT_MUTATION = $ExportPath
+    IMMUTABLE_EXPORT_READ = $ExportPath
+    AUDITOR_REPORT_WRITE = $ReportPath
+}
+$StaleHostProbeTargets[("SM" + "TP_SECRET_READ")] = (Join-Path $LegacyRepoRoot "Secrets\email_alerts.env")
 $Manifest = [ordered]@{
     schema = "AUDITOR_WINDOWS_PROVISIONING_MANIFEST_V1"
     account_name = $AccountName
@@ -421,31 +468,111 @@ function Test-RecognizedLegacyRuntimeManifest {
     return $true
 }
 
+function Test-ProbeTargetMapEqual {
+    param(
+        [object]$Actual,
+        [object]$Expected
+    )
+    $ActualIsDictionary = $Actual -is [Collections.IDictionary]
+    $ExpectedIsDictionary = $Expected -is [Collections.IDictionary]
+    $ActualNames = if ($ActualIsDictionary) {
+        @($Actual.Keys | ForEach-Object { [string]$_ })
+    } else {
+        @($Actual.PSObject.Properties.Name)
+    }
+    $ExpectedNames = if ($ExpectedIsDictionary) {
+        @($Expected.Keys | ForEach-Object { [string]$_ })
+    } else {
+        @($Expected.PSObject.Properties.Name)
+    }
+    if (-not (Test-StringSetEqual -Left $ActualNames -Right $ExpectedNames)) {
+        return $false
+    }
+    foreach ($Name in $ExpectedNames) {
+        $ActualValue = if ($ActualIsDictionary) { $Actual[$Name] } else { $Actual.PSObject.Properties[$Name].Value }
+        $ExpectedValue = if ($ExpectedIsDictionary) { $Expected[$Name] } else { $Expected.PSObject.Properties[$Name].Value }
+        if ([string]$ActualValue -cne [string]$ExpectedValue) {
+            return $false
+        }
+    }
+    return $true
+}
+
 function Test-RecognizedLegacyProbeManifest {
     param(
         [string]$Text,
         [Security.Principal.SecurityIdentifier]$Sid
     )
-    if ((Get-TextSha256Hex -Text $Text) -ne $ExpectedLegacyProbeManifestHash) {
-        return $false
+    try { $Legacy = $Text | ConvertFrom-Json }
+    catch { return $false }
+    $TopLevelNames = @($Legacy.PSObject.Properties.Name)
+    if (
+        -not (Test-StringSetEqual -Left $TopLevelNames -Right @("schema", "expected_sid", "approved_roots", "targets")) -or
+        $Legacy.schema -ne "AUDITOR_PROBE_TARGET_MANIFEST_V1" -or
+        $Legacy.expected_sid -ne $Sid.Value
+    ) { return $false }
+
+    if (Test-ProbeTargetMapEqual -Actual $Legacy.targets -Expected $LegacyProbeTargets) {
+        return (
+            (Get-TextSha256Hex -Text $Text) -eq $ExpectedLegacyProbeManifestHash -and
+            (Test-StringSetEqual -Left @($Legacy.approved_roots) -Right $LegacyApprovedPaths)
+        )
     }
+
+    if (Test-ProbeTargetMapEqual -Actual $Legacy.targets -Expected $StaleHostProbeTargets) {
+        return Test-StringSetEqual -Left @($Legacy.approved_roots) -Right $LegacyActiveApprovedPaths
+    }
+    return $false
+}
+
+function Test-RecognizedLegacyChangeManifest {
+    param([string]$Text)
     try { $Legacy = $Text | ConvertFrom-Json }
     catch { return $false }
     if (
-        $Legacy.schema -ne "AUDITOR_PROBE_TARGET_MANIFEST_V1" -or
-        $Legacy.expected_sid -ne $Sid.Value -or
-        -not (Test-StringSetEqual -Left @($Legacy.approved_roots) -Right $LegacyApprovedPaths)
+        $Legacy.schema -ne "AUDITOR_WINDOWS_PROVISIONING_MANIFEST_V1" -or
+        $Legacy.account_name -ne $AccountName -or
+        $Legacy.program_root -ne $ProgramRoot -or
+        $Legacy.firewall_rule.name -ne $FirewallRuleName
     ) { return $false }
-    $ExpectedTargets = $ProbeTargets | ConvertTo-Json -Depth 5 -Compress
-    $ActualTargets = $Legacy.targets | ConvertTo-Json -Depth 5 -Compress
-    return $ActualTargets -ceq $ExpectedTargets
+    $LegacyPathSetRecognized = (
+        (Test-StringSetEqual -Left @($Legacy.paths) -Right $LegacyActiveApprovedPaths) -or
+        (Test-StringSetEqual -Left @($Legacy.paths) -Right $LegacyApprovedPaths)
+    )
+    if (-not $LegacyPathSetRecognized) {
+        return $false
+    }
+    $LegacyTargets = @($Legacy.probe_targets.PSObject.Properties.Name)
+    $LegacyTargetNames = @($LegacyProbeTargets.Keys)
+    $TargetSetRecognized = Test-StringSetEqual -Left $LegacyTargets -Right $LegacyTargetNames
+    if (-not $TargetSetRecognized) {
+        $LegacyTargetNamesWithNetwork = @($LegacyTargetNames + @("BROKER_NETWORK_SOCKET_ACCESS"))
+        $TargetSetRecognized = Test-StringSetEqual -Left $LegacyTargets -Right $LegacyTargetNamesWithNetwork
+    }
+    if (-not $TargetSetRecognized) { return $false }
+    foreach ($Property in @($Legacy.probe_targets.PSObject.Properties)) {
+        $Value = [IO.Path]::GetFullPath([string]$Property.Value)
+        $Allowed = @($LegacyActiveApprovedPaths + $LegacyEphemeralPaths | ForEach-Object { [IO.Path]::GetFullPath([string]$_) })
+        $InsideKnownLegacySurface = $false
+        foreach ($Root in $Allowed) {
+            if ($Value -ieq $Root -or $Value.StartsWith($Root.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) {
+                $InsideKnownLegacySurface = $true
+                break
+            }
+        }
+        if (-not $InsideKnownLegacySurface) { return $false }
+    }
+    return $true
 }
 
 function Write-ExclusiveManifest {
     if (Test-Path -LiteralPath $ChangeManifestPath) {
         $Existing = [IO.File]::ReadAllText($ChangeManifestPath)
         if ($Existing -ne $ManifestJson) {
-            throw "PROVISIONING_MANIFEST_CONFLICT"
+            if (-not (Test-RecognizedLegacyChangeManifest -Text $Existing)) {
+                throw "PROVISIONING_MANIFEST_CONFLICT"
+            }
+            Write-TextAtomically -DestinationPath $ChangeManifestPath -Text $ManifestJson
         }
         return
     }
@@ -621,6 +748,15 @@ function Set-AuditorDenyLogonRights {
 
 function Invoke-Apply {
     param([Security.SecureString]$AccountPassword)
+    if (Test-Path -LiteralPath $ChangeManifestPath -PathType Leaf) {
+        $ExistingChangeManifest = [IO.File]::ReadAllText($ChangeManifestPath)
+        if (
+            $ExistingChangeManifest -ne $ManifestJson -and
+            -not (Test-RecognizedLegacyChangeManifest -Text $ExistingChangeManifest)
+        ) {
+            throw "PROVISIONING_MANIFEST_CONFLICT"
+        }
+    }
     foreach ($Path in $ManagedPaths) {
         if (-not (Test-Path -LiteralPath $Path)) {
             [void](New-Item -ItemType Directory -Path $Path)
@@ -641,7 +777,7 @@ function Invoke-Apply {
         $Results += [ordered]@{ path = $Change.path; result = (Add-ManifestAce -Change $Change -Sid $User.SID) }
     }
     foreach ($LegacyChange in $LegacyAclChanges) {
-        $Results += [ordered]@{ path = $LegacyChange.path; result = (Remove-ManifestAce -Change $LegacyChange -Sid $User.SID); legacy_cleanup = $true }
+        $Results += [ordered]@{ path = $LegacyChange.path; result = "PRESERVED_LEGACY_ROOT"; legacy_cleanup = $false }
     }
     $LocalUserSddl = "D:(A;;CC;;;$($User.SID.Value))"
     $Rule = Get-NetFirewallRule -Name $FirewallRuleName -ErrorAction SilentlyContinue
@@ -706,7 +842,7 @@ function Get-PartialRollbackManifest {
     if ((-not $RuntimeIsLegacy -and -not $RuntimeIsCurrent) -or (-not $ProbeIsLegacy -and -not $ProbeIsCurrent)) {
         throw "PARTIAL_STATE_UNRECOGNIZED:MANIFEST_CONTENT"
     }
-    return [pscustomobject]@{ acl_changes = @($AclChanges + $LegacyAclChanges) }
+    return [pscustomobject]@{ acl_changes = @($AclChanges) }
 }
 
 function Invoke-Rollback {
@@ -722,7 +858,10 @@ function Invoke-Rollback {
         ) {
             throw "PROVISIONING_MANIFEST_MISMATCH"
         }
-        $RollbackChanges = @($AppliedManifest.acl_changes) + @($LegacyAclChanges)
+        $RollbackChanges = @(
+            $AppliedManifest.acl_changes |
+                Where-Object { $ApprovedPaths -contains [string]$_.path }
+        )
     }
     else {
         $AppliedManifest = Get-PartialRollbackManifest -User $User

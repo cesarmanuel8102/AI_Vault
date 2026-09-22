@@ -18,12 +18,13 @@ ROOT = Path(__file__).parents[2]
 SCRIPT = ROOT / "AUDITOR_WINDOWS_PROVISIONING_V1.ps1"
 PROBE_SCRIPT = ROOT / "auditor_runtime" / "AUDITOR_DENIAL_PROBE_V1.ps1"
 PROGRAM_ROOT = Path("C:/ProgramData/CodexAuditorV1")
-LIVE_STATE_ROOT = r"C:\AI_VAULT\state\ibkr_paper_30d"
+LEGACY_LIVE_STATE_ROOT = r"C:\AI_VAULT\state\ibkr_paper_30d"
+LIVE_STATE_ROOT = str(ROOT / "state" / "ibkr_paper_30d")
 LEGACY_EPHEMERAL_PATHS = {
-    rf"{LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3",
-    rf"{LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3-wal",
-    rf"{LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3-shm",
-    rf"{LIVE_STATE_ROOT}\execution.lock",
+    rf"{LEGACY_LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3",
+    rf"{LEGACY_LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3-wal",
+    rf"{LEGACY_LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3-shm",
+    rf"{LEGACY_LIVE_STATE_ROOT}\execution.lock",
 }
 LEGACY_APPROVED_ROOTS = [
     r"C:\ProgramData\CodexAuditorV1\runtime",
@@ -32,19 +33,19 @@ LEGACY_APPROVED_ROOTS = [
     r"C:\ProgramData\CodexAuditorV1\provisioning",
     r"C:\AI_VAULT\Secrets",
     r"C:\Jts",
-    rf"{LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3",
-    rf"{LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3-wal",
-    rf"{LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3-shm",
-    rf"{LIVE_STATE_ROOT}\execution.lock",
+    rf"{LEGACY_LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3",
+    rf"{LEGACY_LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3-wal",
+    rf"{LEGACY_LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3-shm",
+    rf"{LEGACY_LIVE_STATE_ROOT}\execution.lock",
     r"C:\AI_VAULT\ibkr_paper_30d\broker.py",
     r"C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py",
 ]
 LEGACY_PROBE_TARGETS = {
     "SECRETS_READ": r"C:\AI_VAULT\Secrets",
     "IBKR_SECRET_READ": r"C:\Jts",
-    "EXECUTION_LOCK_ACCESS": rf"{LIVE_STATE_ROOT}\execution.lock",
+    "EXECUTION_LOCK_ACCESS": rf"{LEGACY_LIVE_STATE_ROOT}\execution.lock",
     "LIVE_DATABASE_MUTATION": (
-        rf"{LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3"
+        rf"{LEGACY_LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3"
     ),
     "BROKER_WRITE_PATH_ACCESS": r"C:\AI_VAULT\ibkr_paper_30d\broker.py",
     "TRADER_CONTEXT_ACCESS": r"C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py",
@@ -56,16 +57,43 @@ LEGACY_PROBE_TARGETS = {
 LEGACY_PROBE_MANIFEST_SHA256 = (
     "eceb33b1846f33eff92e03d67fc03c03e271b3c69f98ab744565767f40c22102"
 )
-APPROVED_AUDITOR_PATHS = {
+STALE_HOST_APPROVED_ROOTS = [
     r"C:\ProgramData\CodexAuditorV1\runtime",
     r"C:\ProgramData\CodexAuditorV1\exports",
     r"C:\ProgramData\CodexAuditorV1\reports",
     r"C:\ProgramData\CodexAuditorV1\provisioning",
     r"C:\AI_VAULT\Secrets",
     r"C:\Jts",
-    LIVE_STATE_ROOT,
+    LEGACY_LIVE_STATE_ROOT,
     r"C:\AI_VAULT\ibkr_paper_30d\broker.py",
     r"C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py",
+]
+STALE_HOST_PROBE_TARGETS = {
+    "SECRETS_READ": r"C:\AI_VAULT\Secrets",
+    "IBKR_SECRET_READ": r"C:\Jts",
+    "EXECUTION_LOCK_ACCESS": (
+        rf"{LEGACY_LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3"
+    ),
+    "LIVE_DATABASE_MUTATION": (
+        rf"{LEGACY_LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3"
+    ),
+    "BROKER_WRITE_PATH_ACCESS": r"C:\AI_VAULT\ibkr_paper_30d\broker.py",
+    "TRADER_CONTEXT_ACCESS": r"C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py",
+    "AUDIT_INPUT_MUTATION": r"C:\ProgramData\CodexAuditorV1\exports",
+    "IMMUTABLE_EXPORT_READ": r"C:\ProgramData\CodexAuditorV1\exports",
+    "AUDITOR_REPORT_WRITE": r"C:\ProgramData\CodexAuditorV1\reports",
+    "SMTP_SECRET_READ": r"C:\AI_VAULT\Secrets\email_alerts.env",
+}
+APPROVED_AUDITOR_PATHS = {
+    r"C:\ProgramData\CodexAuditorV1\runtime",
+    r"C:\ProgramData\CodexAuditorV1\exports",
+    r"C:\ProgramData\CodexAuditorV1\reports",
+    r"C:\ProgramData\CodexAuditorV1\provisioning",
+    str(ROOT / "Secrets"),
+    r"C:\Jts",
+    LIVE_STATE_ROOT,
+    str(ROOT / "ibkr_paper_30d" / "broker.py"),
+    str(ROOT / "ibkr_paper_30d" / "trader_invocation.py"),
 }
 
 
@@ -90,6 +118,8 @@ def review_result():
             "Bypass",
             "-File",
             str(SCRIPT),
+            "-RepoRoot",
+            str(ROOT),
             "-Mode",
             "Review",
         ],
@@ -136,6 +166,50 @@ def test_manifest_names_only_approved_paths_and_firewall_ports(
     assert set(review_manifest["broker_ports"]) == {4001, 4002}
     assert set(review_manifest["paths"]) <= APPROVED_AUDITOR_PATHS
     assert review_manifest["account_name"] == "CodexAuditorV1"
+
+
+def test_active_manifest_is_repo_rooted_and_has_exact_hardened_target_set(
+    review_manifest,
+) -> None:
+    expected_targets = {
+        "SECRETS_READ",
+        "IBKR_SECRET_READ",
+        "SMTP_SECRET_READ",
+        "EXECUTION_LOCK_ACCESS",
+        "LIVE_DATABASE_MUTATION",
+        "BROKER_WRITE_PATH_ACCESS",
+        "BROKER_NETWORK_SOCKET_ACCESS",
+        "TRADER_CONTEXT_ACCESS",
+        "AUDIT_INPUT_MUTATION",
+        "IMMUTABLE_EXPORT_READ",
+        "AUDITOR_REPORT_WRITE",
+    }
+    targets = review_manifest["probe_targets"]
+    assert set(targets) == expected_targets
+    assert targets["BROKER_NETWORK_SOCKET_ACCESS"] == str(
+        ROOT / "ibkr_paper_30d" / "broker.py"
+    )
+    repo_scoped = {
+        "SECRETS_READ",
+        "SMTP_SECRET_READ",
+        "EXECUTION_LOCK_ACCESS",
+        "LIVE_DATABASE_MUTATION",
+        "BROKER_WRITE_PATH_ACCESS",
+        "BROKER_NETWORK_SOCKET_ACCESS",
+        "TRADER_CONTEXT_ACCESS",
+    }
+    for name in repo_scoped:
+        assert Path(targets[name]).is_relative_to(ROOT)
+        assert not str(targets[name]).lower().startswith("c:\\ai_vault\\")
+
+
+def test_provisioning_binds_active_paths_to_explicit_script_repo_root(script_text) -> None:
+    assert '[string]$RepoRoot = ""' in script_text
+    assert "$RepoRoot = $PSScriptRoot" in script_text
+    assert "REPO_ROOT_NOT_SCRIPT_ROOT" in script_text
+    assert "$LiveStateRoot = Join-Path $ResolvedRepoRoot" in script_text
+    assert '$LegacyRepoRoot = "C:\\AI_VAULT"' in script_text
+    assert "Test-ProbeTargetMapEqual" in script_text
 
 
 def test_apply_checks_elevation_before_password_or_mutation(script_text) -> None:
@@ -331,6 +405,11 @@ def test_acl_remediation_preserves_unrelated_aces(script_text) -> None:
     assert "SetAccessRule(" not in script_text
 
 
+def test_apply_preserves_legacy_brain_root_acls(script_text) -> None:
+    assert 'result = "PRESERVED_LEGACY_ROOT"' in script_text
+    assert 'legacy_cleanup = $false' in script_text
+
+
 def test_rollback_after_partial_apply_removes_only_subsystem_owned_changes(
     review_manifest, script_text
 ) -> None:
@@ -465,12 +544,16 @@ def run_legacy_probe_classifier(
     expected_targets = json.dumps(LEGACY_PROBE_TARGETS, separators=(",", ":")).replace(
         "'", "''"
     )
+    stale_targets = json.dumps(STALE_HOST_PROBE_TARGETS, separators=(",", ":")).replace(
+        "'", "''"
+    )
+    stale_roots_ps = "','".join(item.replace("'", "''") for item in STALE_HOST_APPROVED_ROOTS)
     command = (
         "$tokens=$null;$errors=$null;"
         "$ast=[Management.Automation.Language.Parser]::ParseFile("
         f"'{script}',[ref]$tokens,[ref]$errors);"
         "$names=@('Get-TextSha256Hex','Test-StringSetEqual',"
-        "'Test-RecognizedLegacyProbeManifest');"
+        "'Test-ProbeTargetMapEqual','Test-RecognizedLegacyProbeManifest');"
         "$functions=$ast.FindAll({param($node) "
         "$node -is [Management.Automation.Language.FunctionDefinitionAst] -and "
         "$node.Name -in $names},$true);"
@@ -480,6 +563,8 @@ def run_legacy_probe_classifier(
         "'C:\\ProgramData\\CodexAuditorV1\\exports',"
         "'C:\\ProgramData\\CodexAuditorV1\\reports',"
         "'C:\\ProgramData\\CodexAuditorV1\\provisioning');"
+        "$LegacyRepoRoot='C:\\AI_VAULT';"
+        f"$LegacyActiveApprovedPaths=@('{stale_roots_ps}');"
         "$LegacyEphemeralPaths=@("
         "'C:\\AI_VAULT\\state\\ibkr_paper_30d\\reports\\real_codex_invocations.sqlite3',"
         "'C:\\AI_VAULT\\state\\ibkr_paper_30d\\reports\\real_codex_invocations.sqlite3-wal',"
@@ -489,9 +574,16 @@ def run_legacy_probe_classifier(
         "$node -is [Management.Automation.Language.AssignmentStatementAst] -and "
         "$node.Left.Extent.Text -eq '$LegacyApprovedPaths'},$true);"
         "Invoke-Expression $assignment.Extent.Text;"
-        f"$ProbeTargets=('{expected_targets}'|ConvertFrom-Json);"
+        f"$LegacyProbeTargets=('{expected_targets}'|ConvertFrom-Json);"
+        f"$StaleHostProbeTargets=('{stale_targets}'|ConvertFrom-Json);"
         f"$ExpectedLegacyProbeManifestHash='{LEGACY_PROBE_MANIFEST_SHA256}';"
         f"$text=[IO.File]::ReadAllText('{fixture_path}');"
+        "$parsed=$text|ConvertFrom-Json;"
+        "Write-Output ('DEBUG_STALE_TARGET_EQ='+(Test-ProbeTargetMapEqual -Actual $parsed.targets -Expected $StaleHostProbeTargets));"
+        "Write-Output ('DEBUG_STALE_ROOT_EQ='+(Test-StringSetEqual -Left @($parsed.approved_roots) -Right $LegacyActiveApprovedPaths));"
+        "Write-Output ('DEBUG_TARGET_KEYS='+((@($parsed.targets.PSObject.Properties.Name)|Sort-Object)-join ','));"
+        "Write-Output ('DEBUG_ROOTS='+((@($parsed.approved_roots)|Sort-Object)-join ','));"
+        "Write-Output ('DEBUG_EXPECTED_ROOTS='+(($LegacyActiveApprovedPaths|Sort-Object)-join ','));"
         "$sid=New-Object Security.Principal.SecurityIdentifier("
         "'S-1-5-21-214160970-1890373857-4055601883-1012');"
         "$result=Test-RecognizedLegacyProbeManifest -Text $text -Sid $sid;"
@@ -516,6 +608,47 @@ def test_exact_authorized_probe_predecessor_is_classified(tmp_path) -> None:
     result = run_legacy_probe_classifier(tmp_path, manifest)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "CLASSIFIED=true" in result.stdout
+
+
+def test_observed_stale_host_probe_manifest_is_classified(tmp_path) -> None:
+    manifest = {
+        "schema": "AUDITOR_PROBE_TARGET_MANIFEST_V1",
+        "expected_sid": "S-1-5-21-214160970-1890373857-4055601883-1012",
+        "approved_roots": STALE_HOST_APPROVED_ROOTS,
+        "targets": STALE_HOST_PROBE_TARGETS,
+    }
+    result = run_legacy_probe_classifier(tmp_path, manifest)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "CLASSIFIED=true" in result.stdout
+
+
+def test_target_map_comparator_accepts_ordered_expected_map() -> None:
+    script = str(SCRIPT).replace("'", "''")
+    command = (
+        "$tokens=$null;$errors=$null;"
+        "$ast=[Management.Automation.Language.Parser]::ParseFile("
+        f"'{script}',[ref]$tokens,[ref]$errors);"
+        "$names=@('Test-StringSetEqual','Test-ProbeTargetMapEqual');"
+        "$functions=$ast.FindAll({param($node) "
+        "$node -is [Management.Automation.Language.FunctionDefinitionAst] -and "
+        "$node.Name -in $names},$true);"
+        "$functions|Sort-Object {$_.Extent.StartOffset}|"
+        "ForEach-Object {Invoke-Expression $_.Extent.Text};"
+        "$actual='{\"A\":\"one\",\"B\":\"two\"}'|ConvertFrom-Json;"
+        "$expected=[ordered]@{A='one';B='two'};"
+        "$equal=Test-ProbeTargetMapEqual -Actual $actual -Expected $expected;"
+        "Write-Output ('MAP_EQUAL='+$equal.ToString().ToLowerInvariant())"
+    )
+    result = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-Command", command],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "MAP_EQUAL=true" in result.stdout
 
 
 @pytest.mark.parametrize(
