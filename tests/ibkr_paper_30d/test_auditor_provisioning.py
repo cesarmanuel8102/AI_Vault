@@ -566,7 +566,7 @@ def run_legacy_probe_classifier(
         "'C:\\ProgramData\\CodexAuditorV1\\reports',"
         "'C:\\ProgramData\\CodexAuditorV1\\provisioning');"
         "$LegacyRepoRoot='C:\\AI_VAULT';"
-        f"$LegacyActiveApprovedPaths=@('{stale_roots}'|ConvertFrom-Json);"
+        f"$LegacyActiveApprovedPaths=@('{stale_roots}'|ConvertFrom-Json|ForEach-Object{{[string]$_}});"
         "$LegacyEphemeralPaths=@("
         "'C:\\AI_VAULT\\state\\ibkr_paper_30d\\reports\\real_codex_invocations.sqlite3',"
         "'C:\\AI_VAULT\\state\\ibkr_paper_30d\\reports\\real_codex_invocations.sqlite3-wal',"
