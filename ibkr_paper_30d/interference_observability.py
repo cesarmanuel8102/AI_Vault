@@ -14,7 +14,29 @@ def _reason_codes(payload: dict[str, Any] | None) -> tuple[str, ...]:
 
 
 def _block_source(reason_codes: tuple[str, ...]) -> str:
-    if any(code in {"EXPERIMENT_CAPITAL_BOUNDARY", "UNBOUNDED_LIABILITY"} for code in reason_codes):
+    if any(
+        code in {
+            "LONG_INSTRUMENT_MAX_LOSS_NOT_PROVEN",
+            "MULTI_EXPIRY_SHORT_STRUCTURE_NOT_PROVEN_BOUNDED",
+            "UNVERIFIED_MULTI_LEG_INSTRUMENT",
+        }
+        for code in reason_codes
+    ):
+        return "HOST_CAPABILITY_LIMITATION"
+    if any(
+        code in {
+            "EXPERIMENT_CAPITAL_BOUNDARY",
+            "EXPERIMENT_CAPITAL_BOUNDARY_AFTER_COSTS",
+            "UNBOUNDED_LIABILITY",
+            "UNBOUNDED_SHORT_STOCK",
+            "UNCOVERED_SHORT_CALL",
+            "UNBOUNDED_OR_UNVERIFIED_SHORT_INSTRUMENT",
+            "UNBOUNDED_UPSIDE_LIABILITY",
+            "DECLARED_MAX_LOSS_UNDERSTATES_STRUCTURE",
+            "BROKER_MARGIN_EXCEEDS_EXPERIMENT_EQUITY",
+        }
+        for code in reason_codes
+    ):
         return "EXPERIMENT_CAPITAL_BOUNDARY"
     if any(
         code.startswith("BROKER_")
