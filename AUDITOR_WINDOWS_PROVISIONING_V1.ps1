@@ -486,16 +486,11 @@ function Test-RecognizedLegacyChangeManifest {
         return $false
     }
     $LegacyTargets = @($Legacy.probe_targets.PSObject.Properties.Name)
-    $AllowedLegacyTargetSets = @(
-        @($LegacyProbeTargets.Keys),
-        @($LegacyProbeTargets.Keys + @("BROKER_NETWORK_SOCKET_ACCESS"))
-    )
-    $TargetSetRecognized = $false
-    foreach ($Candidate in $AllowedLegacyTargetSets) {
-        if (Test-StringSetEqual -Left $LegacyTargets -Right $Candidate) {
-            $TargetSetRecognized = $true
-            break
-        }
+    $LegacyTargetNames = @($LegacyProbeTargets.Keys)
+    $TargetSetRecognized = Test-StringSetEqual -Left $LegacyTargets -Right $LegacyTargetNames
+    if (-not $TargetSetRecognized) {
+        $LegacyTargetNamesWithNetwork = @($LegacyTargetNames + @("BROKER_NETWORK_SOCKET_ACCESS"))
+        $TargetSetRecognized = Test-StringSetEqual -Left $LegacyTargets -Right $LegacyTargetNamesWithNetwork
     }
     if (-not $TargetSetRecognized) { return $false }
     foreach ($Property in @($Legacy.probe_targets.PSObject.Properties)) {
