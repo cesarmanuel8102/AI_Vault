@@ -296,7 +296,7 @@ def test_fault_harness_cannot_claim_pass_without_real_handler(tmp_path):
     assert result.reason_code == "FAULT_HANDLER_NOT_REGISTERED"
 
 
-def test_auditor_probe_source_requires_network_denial_and_privilege_proof():
+def test_auditor_probe_source_records_network_residual_risk_and_privilege_proof():
     root = Path(__file__).resolve().parents[2]
     probe = (root / "auditor_runtime" / "AUDITOR_GATE_V2_PROBE.ps1").read_text(
         encoding="utf-8"
@@ -304,8 +304,10 @@ def test_auditor_probe_source_requires_network_denial_and_privilege_proof():
     denial = (root / "auditor_runtime" / "AUDITOR_DENIAL_PROBE_V1.ps1").read_text(
         encoding="utf-8"
     )
-    assert "BROKER_NETWORK_SOCKET_NOT_DENIED" in probe
-    assert "PAPER_BROKER_LOOPBACK_NOT_DENIED" in probe
+    assert "BROKER_NETWORK_ENDPOINT_UNCERTAIN" in probe
+    assert "BROKER_NETWORK_SOCKET_NOT_DENIED" not in probe
+    assert "PAPER_BROKER_LOOPBACK_NOT_DENIED" not in probe
+    assert "AUDITOR_NETWORK_ISOLATION_REQUIRED = $false" in probe
     assert "AUDITOR_FORBIDDEN_PRIVILEGE_PRESENT" in probe
     assert "BROKER_NETWORK_SOCKET_ACCESS" in denial
     assert "TARGET_PATH_CHAIN_NOT_FULLY_INSPECTABLE" in denial
