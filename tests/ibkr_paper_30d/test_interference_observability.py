@@ -123,7 +123,9 @@ def test_interference_rate_uses_model_proposed_actions_as_denominator():
     assert summary["observation_count"] == 3
     assert summary["proposed_action_count"] == 2
     assert summary["blocked_proposed_action_count"] == 1
-    assert summary["auditor_interference_rate"] == 0.5
+    assert summary["infrastructure_block_rate"] == 0.5
+    assert summary["auditor_interference_rate"] == 0.0
+    assert summary["host_capability_limit_rate"] == 0.0
 
 
 def test_structural_instrument_gap_is_classified_as_host_capability_limitation():
