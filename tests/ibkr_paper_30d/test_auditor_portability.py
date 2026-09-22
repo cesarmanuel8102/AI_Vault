@@ -76,7 +76,8 @@ def test_finalizer_validates_manifest_semantics_before_reuse() -> None:
     text = FINALIZER.read_text(encoding="utf-8")
     assert "function Test-AuditorTargetManifestCurrent" in text
     assert "AUDITOR_TARGET_MANIFEST_STALE_AFTER_PROVISIONING" in text
-    assert "-Mode Apply -RepoRoot $ResolvedRepoRoot -Confirm:$false" in text
+    assert "-Mode Apply -RepoRoot $ResolvedRepoRoot" in text
+    assert "-Confirm:$false" not in text
     assert "$TargetManifestCurrent = Test-AuditorTargetManifestCurrent" in text
     assert "$ExistingTargetManifest = Test-Path" not in text
 

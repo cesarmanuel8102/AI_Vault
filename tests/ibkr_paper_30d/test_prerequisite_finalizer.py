@@ -238,3 +238,9 @@ def test_clean_environment_probe_child_boots_windows_powershell():
         assert "MARKER=leak" not in result.stdout
     finally:
         probe_script.unlink(missing_ok=True)
+
+
+def test_external_provisioning_invocation_does_not_pass_switch_false_as_string():
+    text = FINALIZER.read_text(encoding="utf-8")
+    assert "-Mode Apply -RepoRoot $ResolvedRepoRoot" in text
+    assert "-Confirm:$false" not in text
