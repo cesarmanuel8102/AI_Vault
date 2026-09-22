@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import argparse
+import json
+import sqlite3
+from pathlib import Path
 from typing import Any
 
 
@@ -226,3 +230,101 @@ def summarize_interference(observations: list[dict[str, Any]]) -> dict[str, Any]
             "as evidence of provider-policy interference"
         ),
     }
+
+
+
+def load_interference_observations(db_path: Path) -> list[dict[str, Any]]:
+    """Load persisted observational events without mutating experiment state."""
+
+    if not db_path.exists():
+        return []
+    connection = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
+    try:
+        rows = connection.execute(
+            "SELECT payload_json FROM autonomous_research_events "
+            "WHERE event_type='interference_observation' ORDER BY created_at_utc, rowid"
+        ).fetchall()
+    finally:
+        connection.close()
+
+    observations: list[dict[str, Any]] = []
+    for (raw_payload,) in rows:
+        try:
+            payload = json.loads(str(raw_payload))
+        except json.JSONDecodeError:
+            continue
+        observation = payload.get("observation") if isinstance(payload, dict) else None
+        if isinstance(observation, dict):
+            observations.append(observation)
+    return observations
+
+
+def load_provider_failure_alerts(db_path: Path) -> list[dict[str, Any]]:
+    """Load provider-runtime failures that occur before a model decision exists."""
+
+    if not db_path.exists():
+        return []
+    connection = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
+    try:
+        rows = connection.execute(
+            "SELECT payload_json FROM alerts "
+            "WHERE event_type='AUTONOMOUS_PROVIDER_FAILURE_OBSERVATION' "
+            "ORDER BY created_at_utc, rowid"
+        ).fetchall()
+    finally:
+        connection.close()
+
+    alerts: list[dict[str, Any]] = []
+    for (raw_payload,) in rows:
+        try:
+            payload = json.loads(str(raw_payload))
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict):
+            alerts.append(payload)
+    return alerts
+
+
+def build_interference_report(db_path: Path) -> dict[str, Any]:
+    observations = load_interference_observations(db_path)
+    provider_failures = load_provider_failure_alerts(db_path)
+    summary = summarize_interference(observations)
+
+    model_decisions: dict[str, int] = {}
+    for item in observations:
+        decision = str(item.get("model_decision") or "UNKNOWN")
+        model_decisions[decision] = model_decisions.get(decision, 0) + 1
+
+    provider_failure_codes: dict[str, int] = {}
+    for item in provider_failures:
+        code = str(item.get("provider_failure_code") or "UNKNOWN")
+        provider_failure_codes[code] = provider_failure_codes.get(code, 0) + 1
+
+    return {
+        "schema": "CODEX_EXPERIMENT_INTERFERENCE_REPORT_V1",
+        "database": str(db_path),
+        "summary": summary,
+        "model_decisions": model_decisions,
+        "provider_failure_count": len(provider_failures),
+        "provider_failure_codes": provider_failure_codes,
+        "provider_policy_attribution": "UNDETERMINED",
+        "provider_policy_visibility": _PROVIDER_POLICY_VISIBILITY,
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="python -m ibkr_paper_30d.interference_observability"
+    )
+    parser.add_argument(
+        "--db",
+        type=Path,
+        default=Path("state/ibkr_paper_30d/autonomous.sqlite3"),
+    )
+    args = parser.parse_args(argv)
+    print(json.dumps(build_interference_report(args.db), sort_keys=True, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
