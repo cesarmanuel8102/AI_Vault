@@ -222,7 +222,7 @@ try {
     # Use a one-time random password only inside the bounded probe window.
     $SecurePassword = New-RandomSecurePassword
     Set-LocalUser -Name $AuditorUser -Password $SecurePassword
-    $Credential = New-Object Security.Management.Automation.PSCredential(
+    $Credential = New-Object System.Management.Automation.PSCredential(
         "$env:COMPUTERNAME\$AuditorUser",
         $SecurePassword
     )
@@ -240,7 +240,7 @@ try {
     # During the bounded auditor probe no local process needs broker API access.
     # Use an all-programs loopback block so a compromised auditor process cannot
     # bypass isolation by spawning another executable.
-    $ProbeFirewallRule = New-NetFirewallRule -Name $ProbeFirewallRuleName -DisplayName $ProbeFirewallRuleName -Direction Outbound -Action Block -Protocol TCP -RemotePort 4001,4002 -RemoteAddress 127.0.0.1,::1 -Profile Any -Enabled True
+    $ProbeFirewallRule = New-NetFirewallRule -Name $ProbeFirewallRuleName -DisplayName $ProbeFirewallRuleName -Direction Outbound -Action Block -Protocol TCP -RemotePort 4001,4002 -RemoteAddress Any -Profile Any -Enabled True
     $ProbeFirewallInstalled = $true
 
     $ProbePortFilter = $ProbeFirewallRule | Get-NetFirewallPortFilter
@@ -249,7 +249,7 @@ try {
         throw "AUDITOR_PROBE_FIREWALL_RULE_INVALID"
     }
     $ProbeAddresses = @($ProbeAddressFilter.RemoteAddress | ForEach-Object { [string]$_ })
-    if ($ProbeAddresses -notcontains "127.0.0.1" -or $ProbeAddresses -notcontains "::1") {
+    if ($ProbeAddresses -notcontains "Any") {
         throw "AUDITOR_PROBE_FIREWALL_SCOPE_INVALID"
     }
     $ProbePorts = @($ProbePortFilter.RemotePort | ForEach-Object { [string]$_ })

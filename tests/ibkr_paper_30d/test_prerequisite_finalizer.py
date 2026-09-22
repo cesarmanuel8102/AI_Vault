@@ -37,7 +37,10 @@ def test_prerequisite_scripts_exist_and_never_arm_trading():
     assert "[char]38" in finalizer  # invocation/control operator
     assert "[char]124" in finalizer  # pipeline
     assert "RemotePort 4001,4002" in finalizer
-    assert "RemoteAddress 127.0.0.1,::1" in finalizer
+    assert "RemoteAddress Any" in finalizer
+    assert "RemoteAddress 127.0.0.1,::1" not in finalizer
+    assert 'if ($ProbeAddresses -notcontains "Any") {' in finalizer
+    assert 'if ($ProbeAddresses -notcontains "127.0.0.1" -or $ProbeAddresses -notcontains "::1") {' not in finalizer
     assert "-Program $WindowsPowerShell" not in finalizer
     assert "AUDITOR_PROBE_FIREWALL_SCOPE_INVALID" in finalizer
 
