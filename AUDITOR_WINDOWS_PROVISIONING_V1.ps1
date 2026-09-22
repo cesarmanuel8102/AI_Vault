@@ -167,8 +167,8 @@ foreach ($Path in $LegacyEphemeralPaths) {
 }
 
 $ScriptHash = Get-Sha256Hex -LiteralPath $PSCommandPath
-$ApplyCommand = "PowerShell.exe -NoProfile -File .\AUDITOR_WINDOWS_PROVISIONING_V1.ps1 -Mode Apply -RepoRoot `"$ResolvedRepoRoot`""
-$RollbackCommand = "PowerShell.exe -NoProfile -File .\AUDITOR_WINDOWS_PROVISIONING_V1.ps1 -Mode Rollback -RepoRoot `"$ResolvedRepoRoot`" -ConfirmRollback"
+$ApplyCommand = "PowerShell.exe -NoProfile -File .\AUDITOR_WINDOWS_PROVISIONING_V1.ps1 -RepoRoot `"$ResolvedRepoRoot`" -Mode Apply"
+$RollbackCommand = "PowerShell.exe -NoProfile -File .\AUDITOR_WINDOWS_PROVISIONING_V1.ps1 -RepoRoot `"$ResolvedRepoRoot`" -Mode Rollback -ConfirmRollback"
 $ProbeTargets = [ordered]@{
     SECRETS_READ = (Join-Path $ResolvedRepoRoot "Secrets")
     IBKR_SECRET_READ = "C:\Jts"
