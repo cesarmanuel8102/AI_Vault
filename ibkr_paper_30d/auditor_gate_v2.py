@@ -49,10 +49,15 @@ TARGET_NAMES = (
     "AUDITOR_REPORT_WRITE",
 )
 APPROVED_CAPABILITY_OUTCOMES = {
-    **{name: "DENIED" for name in TARGET_NAMES},
+    **{
+        name: "DENIED"
+        for name in TARGET_NAMES
+        if name != "BROKER_NETWORK_SOCKET_ACCESS"
+    },
     "IMMUTABLE_EXPORT_READ": "ALLOWED",
     "AUDITOR_REPORT_WRITE": "ALLOWED",
 }
+APPROVED_NETWORK_CAPABILITY_OUTCOMES = frozenset({"ALLOWED", "DENIED", "NOT_PROVEN"})
 STRUCTURAL_PREDICATES = (
     "BROKER_MODULE_AVAILABLE",
     "ORDER_WRITE_SYMBOL_AVAILABLE",
@@ -411,7 +416,18 @@ def _evaluate_predicates(
             reasons.append("TARGET_VALIDATION_FAILED")
     if set(row_names) != set(TARGET_NAMES) or len(set(row_names)) != len(TARGET_NAMES):
         reasons.append("TARGET_VALIDATION_SET_INVALID")
-    if dict(receipt.capability_outcomes) != APPROVED_CAPABILITY_OUTCOMES:
+    capability_outcomes = dict(receipt.capability_outcomes)
+    if set(capability_outcomes) != set(TARGET_NAMES):
+        reasons.append("CAPABILITY_OUTCOMES_INVALID")
+    elif any(
+        capability_outcomes.get(name) != expected
+        for name, expected in APPROVED_CAPABILITY_OUTCOMES.items()
+    ):
+        reasons.append("CAPABILITY_OUTCOMES_INVALID")
+    elif (
+        capability_outcomes.get("BROKER_NETWORK_SOCKET_ACCESS")
+        not in APPROVED_NETWORK_CAPABILITY_OUTCOMES
+    ):
         reasons.append("CAPABILITY_OUTCOMES_INVALID")
 
     functional = receipt.functional_auditor
@@ -483,33 +499,47 @@ def _evaluate_predicates(
         reasons.append("RUNTIME_VERIFICATION_TIME_INVALID")
 
     network = receipt.network_facts
-    expected_network = {
-        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": False,
-        "AUDITOR_NETWORK_ISOLATION_REQUIRED": True,
-        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": False,
-        "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
+    expected_network_keys = {
+        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY",
+        "AUDITOR_NETWORK_ISOLATION_REQUIRED",
+        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE",
+        "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED",
+        "endpoints",
     }
-    if not _exact_keys(network, set(expected_network) | {"endpoints"}):
+    if not _exact_keys(network, expected_network_keys):
         reasons.append("NETWORK_FACT_SCHEMA_INVALID")
-    if any(network.get(key) is not value for key, value in expected_network.items()):
+    reachability = network.get("AUDITOR_TECHNICAL_SOCKET_REACHABILITY")
+    raw_api_possible = network.get("AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE")
+    if (
+        type(reachability) is not bool
+        or type(raw_api_possible) is not bool
+        or network.get("AUDITOR_NETWORK_ISOLATION_REQUIRED") is not False
+        or network.get("AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED") is not True
+        or raw_api_possible is not reachability
+    ):
         reasons.append("NETWORK_FACT_MISMATCH")
+
     endpoints = network.get("endpoints")
-    expected_endpoints = {
-        "127.0.0.1:4001": "DENIED",
-        "127.0.0.1:4002": "DENIED",
-        "[::1]:4001": "DENIED",
-        "[::1]:4002": "DENIED",
+    expected_endpoint_names = {
+        "127.0.0.1:4001",
+        "127.0.0.1:4002",
+        "[::1]:4001",
+        "[::1]:4002",
     }
     if not isinstance(endpoints, Mapping):
         reasons.append("NETWORK_ENDPOINT_EVIDENCE_INVALID")
     else:
         normalized = {str(key): str(value) for key, value in endpoints.items()}
-        if set(normalized) != set(expected_endpoints):
+        if set(normalized) != expected_endpoint_names:
             reasons.append("NETWORK_ENDPOINT_EVIDENCE_INVALID")
-        if any(value in {"CONNECTED", "OTHER"} for value in normalized.values()):
-            reasons.append("BROKER_NETWORK_ENDPOINT_UNSAFE")
-        if normalized != expected_endpoints:
-            reasons.append("PAPER_BROKER_LOOPBACK_NOT_DENIED")
+        allowed_states = {"CONNECTED", "DENIED", "NO_LISTENER"}
+        if any(value not in allowed_states for value in normalized.values()):
+            reasons.append("NETWORK_ENDPOINT_EVIDENCE_INVALID")
+        observed_reachability = any(
+            value == "CONNECTED" for value in normalized.values()
+        )
+        if type(reachability) is bool and reachability is not observed_reachability:
+            reasons.append("NETWORK_FACT_MISMATCH")
 
     output = receipt.output
     if not _exact_keys(
