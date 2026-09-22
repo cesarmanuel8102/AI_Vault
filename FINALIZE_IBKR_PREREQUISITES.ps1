@@ -46,7 +46,7 @@ $MarketTaskName = "CodexIBKRMarketDataGate"
 $ProbeFirewallRuleName = "CodexAuditorV2-Probe-PowerShell-Broker-Block"
 $CanonicalAcceptance = Join-Path $ResolvedRepoRoot "AUDITOR_MONTH1_PAPER_RESIDUAL_RISK_ACCEPTANCE_V1.json"
 $TrustAnchorPath = Join-Path $ResolvedRepoRoot "AUDITOR_RUNTIME_V2_TRUST_ANCHOR_V1.json"
-$ExpectedTrustAnchorSha256 = "28622ab5cdb91a25f9e04115a98e1f4acb92d3b26f29f9c38abb345ff457ba23"
+$ExpectedTrustAnchorSha256 = "028423074114e9d5378f9564e73928aa76dd0aa0100defab3c230ff6db1aeb58"
 
 function Assert-Administrator {
     $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
