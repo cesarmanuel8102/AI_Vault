@@ -63,8 +63,19 @@ function Get-Sha256Lower {
 
 function Invoke-PythonJson {
     param([string[]]$Arguments)
-    $Output = @(& $ResolvedPython @Arguments 2>&1)
-    if ($LASTEXITCODE -ne 0) {
+    $PriorErrorActionPreference = $ErrorActionPreference
+    try {
+        # Windows PowerShell 5.1 can promote redirected native stderr to a
+        # terminating NativeCommandError when ErrorActionPreference is Stop.
+        # Capture the complete child output first, then fail on its exit code.
+        $ErrorActionPreference = "Continue"
+        $Output = @(& $ResolvedPython @Arguments 2>&1)
+        $PythonExitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $PriorErrorActionPreference
+    }
+    if ($PythonExitCode -ne 0) {
         throw "PYTHON_COMMAND_FAILED:$($Arguments -join ' '):$($Output -join ' | ')"
     }
     $Candidates = @($Output | Where-Object { ([string]$_).TrimStart().StartsWith("{") })
