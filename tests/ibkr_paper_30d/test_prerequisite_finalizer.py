@@ -121,6 +121,19 @@ def test_external_provisioning_invocation_does_not_pass_switch_false_as_string()
     assert "-Confirm:$false" not in text
 
 
+def test_market_runner_python_wrapper_captures_native_stderr_before_failing():
+    text = MARKET_RUNNER.read_text(encoding="utf-8")
+    start = text.index("function Invoke-PythonJson")
+    end = text.index("function Get-EasternNow")
+    block = text[start:end]
+
+    assert '$PriorErrorActionPreference = $ErrorActionPreference' in block
+    assert '$ErrorActionPreference = "Continue"' in block
+    assert "$PythonExitCode = $LASTEXITCODE" in block
+    assert "$ErrorActionPreference = $PriorErrorActionPreference" in block
+    assert "PYTHON_COMMAND_FAILED:" in block
+
+
 def test_python_json_wrapper_captures_native_stderr_before_failing():
     text = FINALIZER.read_text(encoding="utf-8")
     start = text.index("function Invoke-PythonJson")
