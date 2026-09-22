@@ -202,6 +202,15 @@ def test_collector_source_exposes_no_order_write_surface() -> None:
     assert not any(name in source for name in forbidden)
 
 
+def test_market_gate_source_explicitly_requests_live_market_data() -> None:
+    from ibkr_paper_30d.market_observation_collector import IBKRMarketDataSource
+
+    source = inspect.getsource(IBKRMarketDataSource.start)
+
+    assert "self.client.reqMarketDataType(1)" in source
+    assert "self.client.reqMarketDataType(3)" not in source
+
+
 def test_ibkr_callbacks_retain_broker_timestamp_and_local_receipt() -> None:
     client = _IBKRMarketDataClient(now_utc=lambda: NOW, monotonic_ns=lambda: 42)
     client.register_request(7100, "SPY", 1, "20260921:0930-20260921:1600", "US/Eastern")
