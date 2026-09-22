@@ -275,7 +275,54 @@ try {
         "-ReportDirectory", (Quote-Argument $ReportsRoot)
     ) -join " "
 
-    $Process = Start-Process -FilePath $WindowsPowerShell -ArgumentList $Arguments -Credential $Credential -UseNewEnvironment -WorkingDirectory $RuntimeRoot -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput $StdoutPath -RedirectStandardError $StderrPath
+    # The Start-Process cmdlet cannot deliver an explicit environment block to
+    # a -Credential launch: the child receives a NULL environment, boots
+    # without SystemRoot, and managed Windows PowerShell fails with 8009001d.
+    # Launch through System.Diagnostics.ProcessStartInfo instead so the child
+    # gets an explicitly cleared environment plus the minimal Windows bootstrap
+    # variables required for powershell.exe to initialize and resolve whoami.exe.
+    $NetworkCredential = $Credential.GetNetworkCredential()
+    $ProbeStartInfo = New-Object System.Diagnostics.ProcessStartInfo
+    if (
+        $null -eq $ProbeStartInfo -or
+        -not ($ProbeStartInfo.PSObject.Properties.Name -contains "UserName") -or
+        -not ($ProbeStartInfo.PSObject.Properties.Name -contains "Password") -or
+        -not ($ProbeStartInfo.PSObject.Properties.Name -contains "EnvironmentVariables")
+    ) {
+        throw "AUDITOR_PROBE_CLEAN_ENVIRONMENT_INJECTION_UNSUPPORTED"
+    }
+    $ProbeStartInfo.FileName = $WindowsPowerShell
+    $ProbeStartInfo.Arguments = $Arguments
+    $ProbeStartInfo.UserName = $NetworkCredential.UserName
+    $ProbeStartInfo.Domain = $NetworkCredential.Domain
+    $ProbeStartInfo.Password = $Credential.Password
+    $ProbeStartInfo.UseShellExecute = $false
+    $ProbeStartInfo.WorkingDirectory = $RuntimeRoot
+    $ProbeStartInfo.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
+    $ProbeStartInfo.RedirectStandardOutput = $true
+    $ProbeStartInfo.RedirectStandardError = $true
+    $ProbeEnvironment = $ProbeStartInfo.EnvironmentVariables
+    if ($null -eq $ProbeEnvironment) {
+        throw "AUDITOR_PROBE_CLEAN_ENVIRONMENT_INJECTION_UNSUPPORTED"
+    }
+    # Clean-environment semantics: no parent variables are inherited by the
+    # restricted auditor process. Only the Windows bootstrap variables needed
+    # for powershell.exe initialization and in-child tool resolution are set.
+    $ProbeEnvironment.Clear()
+    $ProbeEnvironment["SystemRoot"] = $env:SystemRoot
+    $ProbeEnvironment["WINDIR"] = $env:WINDIR
+    $ProbeEnvironment["ComSpec"] = $env:ComSpec
+    $ProbeEnvironment["PATH"] = [Environment]::GetEnvironmentVariable("PATH", [EnvironmentVariableTarget]::Machine)
+    $ProbeEnvironment["PATHEXT"] = [Environment]::GetEnvironmentVariable("PATHEXT", [EnvironmentVariableTarget]::Machine)
+
+    $Process = New-Object System.Diagnostics.Process
+    $Process.StartInfo = $ProbeStartInfo
+    if (-not $Process.Start()) { throw "AUDITOR_PROBE_PROCESS_START_FAILED" }
+    $StdoutTask = $Process.StandardOutput.ReadToEndAsync()
+    $StderrTask = $Process.StandardError.ReadToEndAsync()
+    $Process.WaitForExit()
+    [IO.File]::WriteAllText($StdoutPath, $StdoutTask.Result)
+    [IO.File]::WriteAllText($StderrPath, $StderrTask.Result)
     if ($Process.ExitCode -ne 0) {
         $Err = if (Test-Path $StderrPath) { Get-Content -LiteralPath $StderrPath -Raw } else { "" }
         $Out = if (Test-Path $StdoutPath) { Get-Content -LiteralPath $StdoutPath -Raw } else { "" }
