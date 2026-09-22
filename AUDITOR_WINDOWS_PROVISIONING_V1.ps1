@@ -473,13 +473,25 @@ function Test-ProbeTargetMapEqual {
         [object]$Actual,
         [object]$Expected
     )
-    $ActualNames = @($Actual.PSObject.Properties.Name)
-    $ExpectedNames = @($Expected.PSObject.Properties.Name)
+    $ActualIsDictionary = $Actual -is [Collections.IDictionary]
+    $ExpectedIsDictionary = $Expected -is [Collections.IDictionary]
+    $ActualNames = if ($ActualIsDictionary) {
+        @($Actual.Keys | ForEach-Object { [string]$_ })
+    } else {
+        @($Actual.PSObject.Properties.Name)
+    }
+    $ExpectedNames = if ($ExpectedIsDictionary) {
+        @($Expected.Keys | ForEach-Object { [string]$_ })
+    } else {
+        @($Expected.PSObject.Properties.Name)
+    }
     if (-not (Test-StringSetEqual -Left $ActualNames -Right $ExpectedNames)) {
         return $false
     }
     foreach ($Name in $ExpectedNames) {
-        if ([string]$Actual.$Name -cne [string]$Expected.$Name) {
+        $ActualValue = if ($ActualIsDictionary) { $Actual[$Name] } else { $Actual.PSObject.Properties[$Name].Value }
+        $ExpectedValue = if ($ExpectedIsDictionary) { $Expected[$Name] } else { $Expected.PSObject.Properties[$Name].Value }
+        if ([string]$ActualValue -cne [string]$ExpectedValue) {
             return $false
         }
     }
