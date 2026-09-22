@@ -483,6 +483,27 @@ def test_target_validation_rejects_outside_root_and_reparse_path(tmp_path) -> No
     assert reparse_row["reason"] == "TARGET_REPARSE_POINT"
 
 
+def test_gate_records_socket_reachability_as_residual_risk_without_hard_denial() -> None:
+    source = (RUNTIME_SOURCE / "AUDITOR_GATE_V2_PROBE.ps1").read_text(
+        encoding="utf-8"
+    )
+
+    assert "BROKER_NETWORK_SOCKET_NOT_DENIED" not in source
+    assert "PAPER_BROKER_LOOPBACK_NOT_DENIED" not in source
+    assert "BROKER_NETWORK_ENDPOINT_UNSAFE" not in source
+    assert "BROKER_NETWORK_ENDPOINT_UNCERTAIN" in source
+    assert "AUDITOR_NETWORK_ISOLATION_REQUIRED = $false" in source
+    assert (
+        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY = $TechnicalSocketReachability"
+        in source
+    )
+    assert (
+        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE = "
+        "$UnauthorizedRawApiPathPossible"
+        in source
+    )
+
+
 def test_endpoint_classifier_has_truthful_four_state_contract() -> None:
     source = (RUNTIME_SOURCE / PROBE_NAME).read_text(encoding="utf-8")
 
