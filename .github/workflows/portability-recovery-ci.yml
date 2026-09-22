@@ -1,0 +1,54 @@
+name: portability-recovery-ci
+
+on:
+  push:
+    branches:
+      - chatgpt/ibkr-portability-recovery-v1
+
+jobs:
+  windows-portability:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install test dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pytest-asyncio "pydantic>=2,<3" pydantic-settings sqlalchemy defusedxml tomli ibapi ib-insync pywin32
+
+      - name: Parse PowerShell under pwsh and Windows PowerShell 5.1
+        shell: pwsh
+        run: |
+          $files = @(
+            'AUDITOR_WINDOWS_PROVISIONING_V1.ps1',
+            'FINALIZE_IBKR_PREREQUISITES.ps1',
+            'RUN_IBKR_MARKET_DATA_GATE.ps1',
+            'SYNC_LOCAL_CODEX_IBKR.ps1'
+          )
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [void][Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file), [ref]$tokens, [ref]$errors)
+            if ($errors.Count) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }
+            $full = (Resolve-Path $file).Path.Replace("'", "''")
+            $cmd = '$tokens=$null;$errors=$null;[void][Management.Automation.Language.Parser]::ParseFile(''' + $full + ''',[ref]$tokens,[ref]$errors);if($errors.Count){$errors|ForEach-Object{$_.Message};exit 1}'
+            & powershell.exe -NoProfile -Command $cmd
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: Targeted Auditor portability tests
+        shell: pwsh
+        run: |
+          python -m pytest -q tests/ibkr_paper_30d/test_auditor_provisioning.py tests/ibkr_paper_30d/test_prerequisite_finalizer.py tests/ibkr_paper_30d/test_auditor_runtime.py tests/ibkr_paper_30d/test_auditor_portability.py
+
+      - name: Full IBKR regression
+        shell: pwsh
+        run: |
+          python -m pytest -q tests/ibkr_paper_30d
