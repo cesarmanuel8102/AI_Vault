@@ -204,11 +204,12 @@ def test_active_manifest_is_repo_rooted_and_has_exact_hardened_target_set(
 
 
 def test_provisioning_binds_active_paths_to_explicit_script_repo_root(script_text) -> None:
-    assert '[string]$RepoRoot = "C:\\AI_VAULT_IBKR"' in script_text
+    assert '[string]$RepoRoot = ""' in script_text
+    assert "$RepoRoot = $PSScriptRoot" in script_text
     assert "REPO_ROOT_NOT_SCRIPT_ROOT" in script_text
     assert "$LiveStateRoot = Join-Path $ResolvedRepoRoot" in script_text
     assert '$LegacyRepoRoot = "C:\\AI_VAULT"' in script_text
-    assert "$ExpectedTargets = $LegacyProbeTargets" in script_text
+    assert "Test-ProbeTargetMapEqual" in script_text
 
 
 def test_apply_checks_elevation_before_password_or_mutation(script_text) -> None:
@@ -554,7 +555,7 @@ def run_legacy_probe_classifier(
         "$ast=[Management.Automation.Language.Parser]::ParseFile("
         f"'{script}',[ref]$tokens,[ref]$errors);"
         "$names=@('Get-TextSha256Hex','Test-StringSetEqual',"
-        "'Test-RecognizedLegacyProbeManifest');"
+        "'Test-ProbeTargetMapEqual','Test-RecognizedLegacyProbeManifest');"
         "$functions=$ast.FindAll({param($node) "
         "$node -is [Management.Automation.Language.FunctionDefinitionAst] -and "
         "$node.Name -in $names},$true);"
