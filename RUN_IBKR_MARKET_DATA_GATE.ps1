@@ -18,8 +18,16 @@ $StatePath = Join-Path $ReportRoot "market_gate_collection_state.json"
 
 function Invoke-PythonJson {
     param([string[]]$Arguments)
-    $Output = @(& $PythonExe @Arguments 2>&1)
-    if ($LASTEXITCODE -ne 0) {
+    $PriorErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $Output = @(& $PythonExe @Arguments 2>&1)
+        $PythonExitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $PriorErrorActionPreference
+    }
+    if ($PythonExitCode -ne 0) {
         throw "PYTHON_COMMAND_FAILED:$($Arguments -join ' '):$($Output -join ' | ')"
     }
     $Candidates = @($Output | Where-Object { ([string]$_).TrimStart().StartsWith("{") })
