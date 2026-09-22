@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
-    [string]$RepoRoot = "C:\AI_VAULT",
+    [string]$RepoRoot = "C:\AI_VAULT_IBKR",
     [string]$Branch = "codex/ibkr-paper-auditor-gate-v2",
     [switch]$SkipTests
 )
@@ -18,10 +18,17 @@ function Invoke-Git {
     return $Output
 }
 
-$ResolvedRepoRoot = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\')
-if ($ResolvedRepoRoot -ine "C:\AI_VAULT") {
-    throw "REPO_ROOT_MUST_BE_C:\AI_VAULT"
+function Resolve-ApprovedRepoRoot {
+    param([string]$RepoRoot)
+    $Resolved = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\')
+    $Approved = [IO.Path]::GetFullPath("C:\AI_VAULT_IBKR").TrimEnd('\')
+    if ($Resolved -ine $Approved) {
+        throw "REPO_ROOT_NOT_APPROVED:$Resolved"
+    }
+    return $Resolved
 }
+
+$ResolvedRepoRoot = Resolve-ApprovedRepoRoot -RepoRoot $RepoRoot
 if (-not (Test-Path -LiteralPath $ResolvedRepoRoot -PathType Container)) {
     throw "REPO_ROOT_NOT_FOUND:$ResolvedRepoRoot"
 }

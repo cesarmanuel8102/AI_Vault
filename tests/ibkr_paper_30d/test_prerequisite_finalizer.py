@@ -10,13 +10,15 @@ import pytest
 from ibkr_paper_30d.prerequisite_tools import create_audit_export
 
 ROOT = Path(__file__).resolve().parents[2]
+SYNC_SCRIPT = ROOT / "SYNC_LOCAL_CODEX_IBKR.ps1"
 FINALIZER = ROOT / "FINALIZE_IBKR_PREREQUISITES.ps1"
 MARKET_RUNNER = ROOT / "RUN_IBKR_MARKET_DATA_GATE.ps1"
 DENIAL_PROBE = ROOT / "auditor_runtime" / "AUDITOR_DENIAL_PROBE_V1.ps1"
+ROOT_VALIDATED_SCRIPTS = (SYNC_SCRIPT, FINALIZER, MARKET_RUNNER)
 
 
 def test_prerequisite_scripts_exist_and_never_arm_trading():
-    for path in (FINALIZER, MARKET_RUNNER):
+    for path in ROOT_VALIDATED_SCRIPTS:
         text = path.read_text(encoding="utf-8")
         assert "IBKR_AUTONOMOUS_PAPER_ARMED=true" not in text
         assert "placeOrder" not in text
@@ -45,6 +47,63 @@ def test_prerequisite_scripts_exist_and_never_arm_trading():
     assert "freeze-market-policy" in market
     assert "validate-real-market-data" in market
     assert "Archive-CollectionEvidence" in market
+
+
+@pytest.mark.skipif(os.name != "nt", reason="PowerShell path validation is Windows-only")
+@pytest.mark.parametrize("path", ROOT_VALIDATED_SCRIPTS)
+def test_repo_root_validator_accepts_isolated_ibkr_root(path: Path):
+    result = run_repo_root_validator(path, r"C:\AI_VAULT_IBKR")
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert r"RESOLVED=C:\AI_VAULT_IBKR" in result.stdout
+
+
+@pytest.mark.skipif(os.name != "nt", reason="PowerShell path validation is Windows-only")
+@pytest.mark.parametrize("path", ROOT_VALIDATED_SCRIPTS)
+def test_repo_root_validator_rejects_unapproved_arbitrary_root(path: Path):
+    result = run_repo_root_validator(path, r"C:\temp\foreign_ibkr_clone")
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "ERROR=REPO_ROOT_NOT_APPROVED" in result.stdout
+
+
+def run_repo_root_validator(path: Path, candidate: str) -> subprocess.CompletedProcess[str]:
+    escaped_script = str(path).replace("'", "''")
+    escaped_candidate = candidate.replace("'", "''")
+    command = (
+        "$tokens=$null;$errors=$null;"
+        "$ast=[Management.Automation.Language.Parser]::ParseFile("
+        f"'{escaped_script}',[ref]$tokens,[ref]$errors);"
+        "if($errors.Count){$errors|ForEach-Object{$_.Message};exit 1};"
+        "$fn=$ast.Find({param($node) "
+        "$node -is [Management.Automation.Language.FunctionDefinitionAst] -and "
+        "$node.Name -eq 'Resolve-ApprovedRepoRoot'},$true);"
+        "if($null -eq $fn){throw 'VALIDATOR_MISSING'};"
+        "Invoke-Expression $fn.Extent.Text;"
+        f"try {{$resolved=Resolve-ApprovedRepoRoot -RepoRoot '{escaped_candidate}';"
+        "Write-Output ('RESOLVED='+$resolved)} "
+        "catch {Write-Output ('ERROR='+$_.Exception.Message)}"
+    )
+    return subprocess.run(
+        ["powershell.exe", "-NoProfile", "-Command", command],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+
+
+def test_programdata_runtime_locations_remain_host_anchored():
+    texts = "\n".join(path.read_text(encoding="utf-8") for path in (
+        SYNC_SCRIPT,
+        FINALIZER,
+        MARKET_RUNNER,
+        ROOT / "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1",
+    ))
+
+    assert r"C:\ProgramData\CodexIBKR" in texts
+    assert r"C:\ProgramData\CodexAuditorV1" in texts
 
 
 @pytest.mark.skipif(os.name != "nt", reason="PowerShell 5.1 parser validation is Windows-only")
