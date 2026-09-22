@@ -217,7 +217,7 @@ if (
 $ExistingAuditor = Get-LocalUser -Name $AuditorUser -ErrorAction SilentlyContinue
 $TargetManifestCurrent = Test-AuditorTargetManifestCurrent -LiteralPath $TargetManifest -ExpectedSid $ExpectedAuditorSid -RepoRoot $ResolvedRepoRoot
 if ($null -eq $ExistingAuditor -or -not $TargetManifestCurrent) {
-    & PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_WINDOWS_PROVISIONING_V1.ps1") -Mode Apply -RepoRoot $ResolvedRepoRoot -Confirm:$false
+    & PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_WINDOWS_PROVISIONING_V1.ps1") -Mode Apply -RepoRoot $ResolvedRepoRoot
     if ($LASTEXITCODE -ne 0) { throw "AUDITOR_PROVISIONING_V1_FAILED" }
 }
 if (-not (Test-AuditorTargetManifestCurrent -LiteralPath $TargetManifest -ExpectedSid $ExpectedAuditorSid -RepoRoot $ResolvedRepoRoot)) {
