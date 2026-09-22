@@ -547,9 +547,7 @@ def run_legacy_probe_classifier(
     stale_targets = json.dumps(STALE_HOST_PROBE_TARGETS, separators=(",", ":")).replace(
         "'", "''"
     )
-    stale_roots = json.dumps(STALE_HOST_APPROVED_ROOTS, separators=(",", ":")).replace(
-        "'", "''"
-    )
+    stale_roots_ps = "','".join(item.replace("'", "''") for item in STALE_HOST_APPROVED_ROOTS)
     command = (
         "$tokens=$null;$errors=$null;"
         "$ast=[Management.Automation.Language.Parser]::ParseFile("
@@ -566,7 +564,7 @@ def run_legacy_probe_classifier(
         "'C:\\ProgramData\\CodexAuditorV1\\reports',"
         "'C:\\ProgramData\\CodexAuditorV1\\provisioning');"
         "$LegacyRepoRoot='C:\\AI_VAULT';"
-        f"$LegacyActiveApprovedPaths=@('{stale_roots}'|ConvertFrom-Json|ForEach-Object{{[string]$_}});"
+        f"$LegacyActiveApprovedPaths=@('{stale_roots_ps}');"
         "$LegacyEphemeralPaths=@("
         "'C:\\AI_VAULT\\state\\ibkr_paper_30d\\reports\\real_codex_invocations.sqlite3',"
         "'C:\\AI_VAULT\\state\\ibkr_paper_30d\\reports\\real_codex_invocations.sqlite3-wal',"
