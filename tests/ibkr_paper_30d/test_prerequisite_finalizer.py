@@ -115,6 +115,12 @@ def test_denial_probe_classifies_acl_errors_explicitly():
     assert "catch [Security.SecurityException] { return \"DENIED\" }" in text
 
 
+def test_external_provisioning_invocation_does_not_pass_switch_false_as_string():
+    text = FINALIZER.read_text(encoding="utf-8")
+    assert "-Mode Apply -RepoRoot $ResolvedRepoRoot" in text
+    assert "-Confirm:$false" not in text
+
+
 def test_auditor_account_enablement_is_inside_cleanup_guard():
     text = FINALIZER.read_text(encoding="utf-8")
     assert text.count("Enable-LocalUser -Name $AuditorUser") == 1
