@@ -173,7 +173,7 @@ def test_active_manifest_is_repo_rooted_and_has_exact_hardened_target_set(
     }
     for name in repo_scoped:
         assert Path(targets[name]).is_relative_to(ROOT)
-        assert not str(targets[name]).lower().startswith(r"c:\ai_vault\")
+        assert not str(targets[name]).lower().startswith("c:\\ai_vault\\")
 
 
 def test_provisioning_binds_active_paths_to_explicit_script_repo_root(script_text) -> None:
