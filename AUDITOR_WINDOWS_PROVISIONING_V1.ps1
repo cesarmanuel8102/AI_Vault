@@ -196,6 +196,19 @@ $LegacyProbeTargets = [ordered]@{
     AUDITOR_REPORT_WRITE = $ReportPath
 }
 $LegacyProbeTargets[("SM" + "TP_SECRET_READ")] = (Join-Path $LegacyRepoRoot "Secrets\email_alerts.env")
+
+$StaleHostProbeTargets = [ordered]@{
+    SECRETS_READ = (Join-Path $LegacyRepoRoot "Secrets")
+    IBKR_SECRET_READ = "C:\Jts"
+    EXECUTION_LOCK_ACCESS = (Join-Path $LegacyLiveStateRoot "reports\real_codex_invocations.sqlite3")
+    LIVE_DATABASE_MUTATION = (Join-Path $LegacyLiveStateRoot "reports\real_codex_invocations.sqlite3")
+    BROKER_WRITE_PATH_ACCESS = (Join-Path $LegacyRepoRoot "ibkr_paper_30d\broker.py")
+    TRADER_CONTEXT_ACCESS = (Join-Path $LegacyRepoRoot "ibkr_paper_30d\trader_invocation.py")
+    AUDIT_INPUT_MUTATION = $ExportPath
+    IMMUTABLE_EXPORT_READ = $ExportPath
+    AUDITOR_REPORT_WRITE = $ReportPath
+}
+$StaleHostProbeTargets[("SM" + "TP_SECRET_READ")] = (Join-Path $LegacyRepoRoot "Secrets\email_alerts.env")
 $Manifest = [ordered]@{
     schema = "AUDITOR_WINDOWS_PROVISIONING_MANIFEST_V1"
     account_name = $AccountName
@@ -457,19 +470,29 @@ function Test-RecognizedLegacyProbeManifest {
         [string]$Text,
         [Security.Principal.SecurityIdentifier]$Sid
     )
-    if ((Get-TextSha256Hex -Text $Text) -ne $ExpectedLegacyProbeManifestHash) {
-        return $false
-    }
     try { $Legacy = $Text | ConvertFrom-Json }
     catch { return $false }
+    $TopLevelNames = @($Legacy.PSObject.Properties.Name)
     if (
+        -not (Test-StringSetEqual -Left $TopLevelNames -Right @("schema", "expected_sid", "approved_roots", "targets")) -or
         $Legacy.schema -ne "AUDITOR_PROBE_TARGET_MANIFEST_V1" -or
-        $Legacy.expected_sid -ne $Sid.Value -or
-        -not (Test-StringSetEqual -Left @($Legacy.approved_roots) -Right $LegacyApprovedPaths)
+        $Legacy.expected_sid -ne $Sid.Value
     ) { return $false }
-    $ExpectedTargets = $LegacyProbeTargets | ConvertTo-Json -Depth 5 -Compress
+
     $ActualTargets = $Legacy.targets | ConvertTo-Json -Depth 5 -Compress
-    return $ActualTargets -ceq $ExpectedTargets
+    $ExactLegacyTargets = $LegacyProbeTargets | ConvertTo-Json -Depth 5 -Compress
+    if ($ActualTargets -ceq $ExactLegacyTargets) {
+        return (
+            (Get-TextSha256Hex -Text $Text) -eq $ExpectedLegacyProbeManifestHash -and
+            (Test-StringSetEqual -Left @($Legacy.approved_roots) -Right $LegacyApprovedPaths)
+        )
+    }
+
+    $StaleHostTargets = $StaleHostProbeTargets | ConvertTo-Json -Depth 5 -Compress
+    if ($ActualTargets -ceq $StaleHostTargets) {
+        return Test-StringSetEqual -Left @($Legacy.approved_roots) -Right $LegacyActiveApprovedPaths
+    }
+    return $false
 }
 
 function Test-RecognizedLegacyChangeManifest {
