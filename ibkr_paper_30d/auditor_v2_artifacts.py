@@ -76,13 +76,15 @@ def build_residual_risk_acceptance(
     ):
         raise ArtifactValidationError("MONTH1_PAPER_SCOPE_INVALID")
     network = receipt.network_facts
-    expected_network = {
-        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": False,
-        "AUDITOR_NETWORK_ISOLATION_REQUIRED": True,
-        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": False,
-        "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
-    }
-    if any(network.get(key) is not value for key, value in expected_network.items()):
+    reachability = network.get("AUDITOR_TECHNICAL_SOCKET_REACHABILITY")
+    raw_api_possible = network.get("AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE")
+    if (
+        type(reachability) is not bool
+        or type(raw_api_possible) is not bool
+        or network.get("AUDITOR_NETWORK_ISOLATION_REQUIRED") is not False
+        or network.get("AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED") is not True
+        or raw_api_possible is not reachability
+    ):
         raise ArtifactValidationError("NETWORK_RESIDUAL_RISK_INVALID")
 
     receipt_projection = _receipt_projection(receipt)
@@ -102,7 +104,10 @@ def build_residual_risk_acceptance(
         "PAPER_ONLY": True,
         "LIVE_ALLOWED": False,
         "REAL_MONEY_ALLOWED": False,
-        **expected_network,
+        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": reachability,
+        "AUDITOR_NETWORK_ISOLATION_REQUIRED": False,
+        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": raw_api_possible,
+        "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
         "AUDITOR_ORDER_AUTHORITY_GRANTED": False,
         "AUDITOR_BROKER_CONTROL_PATH_AUTHORIZED": False,
         "APPROVED_RUNTIME_STRUCTURAL_PREDICATES": dict(
@@ -119,9 +124,11 @@ def build_residual_risk_acceptance(
         "EXPIRATION_TRIGGERS": list(_EXPIRATION_TRIGGERS),
         "OWNER_DECISION": dict(owner_decision),
         "RISK_STATEMENT": (
-            "Auditor broker-socket isolation was proven for the restricted "
-            "probe process; compromise containment beyond the audited token "
-            "boundary is not claimed."
+            "Month-1 is PAPER-only. Broker loopback reachability, when observed, "
+            "is recorded as residual risk rather than treated as a required "
+            "network-isolation property. The Auditor has no granted order "
+            "authority or broker control path, and compromise containment beyond "
+            "the audited token boundary is not claimed."
         ),
     }
     encoded = canonical_bytes(body)
@@ -234,7 +241,7 @@ def render_auditor_gate_v2_report(
     else:
         network = {
             "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": None,
-            "AUDITOR_NETWORK_ISOLATION_REQUIRED": True,
+            "AUDITOR_NETWORK_ISOLATION_REQUIRED": False,
             "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": None,
             "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
         }
@@ -246,21 +253,27 @@ def render_auditor_gate_v2_report(
         "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED",
     ):
         lines.append(f"{name}: {_display(network.get(name))}")
-    socket_control = (
-        "PROVEN_DENIED"
-        if receipt is not None
-        and network.get("AUDITOR_TECHNICAL_SOCKET_REACHABILITY") is False
-        and network.get("AUDITOR_NETWORK_ISOLATION_REQUIRED") is True
-        else "UNPROVEN"
-    )
+    socket_control = "UNPROVEN"
+    if receipt is not None:
+        if (
+            network.get("AUDITOR_TECHNICAL_SOCKET_REACHABILITY") is True
+            and network.get("AUDITOR_NETWORK_ISOLATION_REQUIRED") is False
+        ):
+            socket_control = "REACHABLE_RESIDUAL_RISK_ACCEPTED"
+        elif (
+            network.get("AUDITOR_TECHNICAL_SOCKET_REACHABILITY") is False
+            and network.get("AUDITOR_NETWORK_ISOLATION_REQUIRED") is False
+        ):
+            socket_control = "NOT_REACHABLE_AT_PROBE_TIME"
     lines.extend(
         [
             f"BROKER_LOOPBACK_SOCKET_CONTROL: {socket_control}",
             "",
             (
-                "The restricted auditor token is accepted only when the probe "
-                "demonstrates broker loopback denial; broader host compromise "
-                "containment is not claimed."
+                "The restricted auditor token records broker loopback reachability "
+                "as a Month-1 PAPER residual risk. Network isolation is not a "
+                "required gate property; broader host compromise containment is "
+                "not claimed."
             ),
             "",
             "## Unresolved Reasons",
