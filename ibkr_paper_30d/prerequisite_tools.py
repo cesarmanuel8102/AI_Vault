@@ -62,13 +62,13 @@ def evaluate_runtime_trust_anchor(
     if not commit or len(commit) != 40 or not files or not manifest_name:
         raise ValueError("TRUST_ANCHOR_INVALID")
 
-    ancestor = subprocess.run(
-        ["git", "-C", str(repo_root), "merge-base", "--is-ancestor", commit, "HEAD"],
+    source_commit = subprocess.run(
+        ["git", "-C", str(repo_root), "cat-file", "-e", f"{commit}^{commit}"],
         capture_output=True,
         check=False,
     )
-    if ancestor.returncode != 0:
-        raise ValueError("TRUST_ANCHOR_COMMIT_NOT_ANCESTOR")
+    if source_commit.returncode != 0:
+        raise ValueError("TRUST_ANCHOR_COMMIT_UNAVAILABLE")
 
     payload_hashes: dict[str, str] = {}
     source_matches = True
