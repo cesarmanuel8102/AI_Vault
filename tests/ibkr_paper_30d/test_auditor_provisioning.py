@@ -57,6 +57,33 @@ LEGACY_PROBE_TARGETS = {
 LEGACY_PROBE_MANIFEST_SHA256 = (
     "eceb33b1846f33eff92e03d67fc03c03e271b3c69f98ab744565767f40c22102"
 )
+STALE_HOST_APPROVED_ROOTS = [
+    r"C:\ProgramData\CodexAuditorV1\runtime",
+    r"C:\ProgramData\CodexAuditorV1\exports",
+    r"C:\ProgramData\CodexAuditorV1\reports",
+    r"C:\ProgramData\CodexAuditorV1\provisioning",
+    r"C:\AI_VAULT\Secrets",
+    r"C:\Jts",
+    LEGACY_LIVE_STATE_ROOT,
+    r"C:\AI_VAULT\ibkr_paper_30d\broker.py",
+    r"C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py",
+]
+STALE_HOST_PROBE_TARGETS = {
+    "SECRETS_READ": r"C:\AI_VAULT\Secrets",
+    "IBKR_SECRET_READ": r"C:\Jts",
+    "EXECUTION_LOCK_ACCESS": (
+        rf"{LEGACY_LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3"
+    ),
+    "LIVE_DATABASE_MUTATION": (
+        rf"{LEGACY_LIVE_STATE_ROOT}\reports\real_codex_invocations.sqlite3"
+    ),
+    "BROKER_WRITE_PATH_ACCESS": r"C:\AI_VAULT\ibkr_paper_30d\broker.py",
+    "TRADER_CONTEXT_ACCESS": r"C:\AI_VAULT\ibkr_paper_30d\trader_invocation.py",
+    "AUDIT_INPUT_MUTATION": r"C:\ProgramData\CodexAuditorV1\exports",
+    "IMMUTABLE_EXPORT_READ": r"C:\ProgramData\CodexAuditorV1\exports",
+    "AUDITOR_REPORT_WRITE": r"C:\ProgramData\CodexAuditorV1\reports",
+    "SMTP_SECRET_READ": r"C:\AI_VAULT\Secrets\email_alerts.env",
+}
 APPROVED_AUDITOR_PATHS = {
     r"C:\ProgramData\CodexAuditorV1\runtime",
     r"C:\ProgramData\CodexAuditorV1\exports",
@@ -516,6 +543,12 @@ def run_legacy_probe_classifier(
     expected_targets = json.dumps(LEGACY_PROBE_TARGETS, separators=(",", ":")).replace(
         "'", "''"
     )
+    stale_targets = json.dumps(STALE_HOST_PROBE_TARGETS, separators=(",", ":")).replace(
+        "'", "''"
+    )
+    stale_roots = json.dumps(STALE_HOST_APPROVED_ROOTS, separators=(",", ":")).replace(
+        "'", "''"
+    )
     command = (
         "$tokens=$null;$errors=$null;"
         "$ast=[Management.Automation.Language.Parser]::ParseFile("
@@ -532,6 +565,7 @@ def run_legacy_probe_classifier(
         "'C:\\ProgramData\\CodexAuditorV1\\reports',"
         "'C:\\ProgramData\\CodexAuditorV1\\provisioning');"
         "$LegacyRepoRoot='C:\\AI_VAULT';"
+        f"$LegacyActiveApprovedPaths=@('{stale_roots}'|ConvertFrom-Json);"
         "$LegacyEphemeralPaths=@("
         "'C:\\AI_VAULT\\state\\ibkr_paper_30d\\reports\\real_codex_invocations.sqlite3',"
         "'C:\\AI_VAULT\\state\\ibkr_paper_30d\\reports\\real_codex_invocations.sqlite3-wal',"
@@ -542,6 +576,7 @@ def run_legacy_probe_classifier(
         "$node.Left.Extent.Text -eq '$LegacyApprovedPaths'},$true);"
         "Invoke-Expression $assignment.Extent.Text;"
         f"$LegacyProbeTargets=('{expected_targets}'|ConvertFrom-Json);"
+        f"$StaleHostProbeTargets=('{stale_targets}'|ConvertFrom-Json);"
         f"$ExpectedLegacyProbeManifestHash='{LEGACY_PROBE_MANIFEST_SHA256}';"
         f"$text=[IO.File]::ReadAllText('{fixture_path}');"
         "$sid=New-Object Security.Principal.SecurityIdentifier("
@@ -565,6 +600,18 @@ def test_exact_authorized_probe_predecessor_is_classified(tmp_path) -> None:
     assert hashlib.sha256(manifest_text.encode()).hexdigest() == (
         LEGACY_PROBE_MANIFEST_SHA256
     )
+    result = run_legacy_probe_classifier(tmp_path, manifest)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "CLASSIFIED=true" in result.stdout
+
+
+def test_observed_stale_host_probe_manifest_is_classified(tmp_path) -> None:
+    manifest = {
+        "schema": "AUDITOR_PROBE_TARGET_MANIFEST_V1",
+        "expected_sid": "S-1-5-21-214160970-1890373857-4055601883-1012",
+        "approved_roots": STALE_HOST_APPROVED_ROOTS,
+        "targets": STALE_HOST_PROBE_TARGETS,
+    }
     result = run_legacy_probe_classifier(tmp_path, manifest)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "CLASSIFIED=true" in result.stdout
