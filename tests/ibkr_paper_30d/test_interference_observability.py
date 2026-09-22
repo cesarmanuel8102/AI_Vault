@@ -124,3 +124,36 @@ def test_interference_rate_uses_model_proposed_actions_as_denominator():
     assert summary["proposed_action_count"] == 2
     assert summary["blocked_proposed_action_count"] == 1
     assert summary["auditor_interference_rate"] == 0.5
+
+
+def test_structural_instrument_gap_is_classified_as_host_capability_limitation():
+    item = build_interference_observation(
+        outcome={
+            "decision": "NO_TRADE",
+            "accepted": False,
+            "validation": "BLOCK",
+            "reason_codes": ["LONG_INSTRUMENT_MAX_LOSS_NOT_PROVEN"],
+        },
+        execution=None,
+        execute_paper=True,
+    )
+
+    assert item["blocked"] is True
+    assert item["interference_source"] == "HOST_CAPABILITY_LIMITATION"
+    assert item["provider_policy_attribution"] == "UNDETERMINED"
+
+
+def test_unbounded_liability_stays_capital_boundary_not_host_capability():
+    item = build_interference_observation(
+        outcome={
+            "decision": "NO_TRADE",
+            "accepted": False,
+            "validation": "BLOCK",
+            "reason_codes": ["UNBOUNDED_UPSIDE_LIABILITY"],
+        },
+        execution=None,
+        execute_paper=True,
+    )
+
+    assert item["blocked"] is True
+    assert item["interference_source"] == "EXPERIMENT_CAPITAL_BOUNDARY"
