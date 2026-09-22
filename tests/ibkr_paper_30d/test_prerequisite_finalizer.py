@@ -115,6 +115,25 @@ def test_denial_probe_classifies_acl_errors_explicitly():
     assert "catch [Security.SecurityException] { return \"DENIED\" }" in text
 
 
+def test_external_provisioning_invocation_does_not_pass_switch_false_as_string():
+    text = FINALIZER.read_text(encoding="utf-8")
+    assert "-Mode Apply -RepoRoot $ResolvedRepoRoot" in text
+    assert "-Confirm:$false" not in text
+
+
+def test_python_json_wrapper_captures_native_stderr_before_failing():
+    text = FINALIZER.read_text(encoding="utf-8")
+    start = text.index("function Invoke-PythonJson")
+    end = text.index("function New-RandomSecurePassword")
+    block = text[start:end]
+
+    assert '$PriorErrorActionPreference = $ErrorActionPreference' in block
+    assert '$ErrorActionPreference = "Continue"' in block
+    assert "$PythonExitCode = $LASTEXITCODE" in block
+    assert "$ErrorActionPreference = $PriorErrorActionPreference" in block
+    assert "PYTHON_COMMAND_FAILED:" in block
+
+
 def test_auditor_account_enablement_is_inside_cleanup_guard():
     text = FINALIZER.read_text(encoding="utf-8")
     assert text.count("Enable-LocalUser -Name $AuditorUser") == 1
@@ -238,9 +257,3 @@ def test_clean_environment_probe_child_boots_windows_powershell():
         assert "MARKER=leak" not in result.stdout
     finally:
         probe_script.unlink(missing_ok=True)
-
-
-def test_external_provisioning_invocation_does_not_pass_switch_false_as_string():
-    text = FINALIZER.read_text(encoding="utf-8")
-    assert "-Mode Apply -RepoRoot $ResolvedRepoRoot" in text
-    assert "-Confirm:$false" not in text
