@@ -120,6 +120,19 @@ def persist_outcome(
         "rounds": outcome.rounds,
         "transcript_sha256": outcome.transcript_sha256,
         "broker_validation": outcome.broker_validation,
+        "epistemic_status": {
+            "proposal.probability_profit": "MODEL_INFERENCE",
+            "proposal.probability_loss": "MODEL_INFERENCE",
+            "proposal.expected_gain": "MODEL_INFERENCE",
+            "proposal.expected_loss": "MODEL_INFERENCE",
+            "proposal.expected_value": "MODEL_INFERENCE",
+            "proposal.expected_reward_risk": "MODEL_INFERENCE",
+            "proposal.confidence": "MODEL_INFERENCE",
+            "proposal.capital_required": "MODEL_INFERENCE_ADVISORY",
+            "proposal.maximum_loss": "MODEL_INFERENCE_STRUCTURALLY_VERIFIED_WHEN_SUPPORTED",
+            "proposal.loss_is_bounded": "MODEL_INFERENCE_STRUCTURALLY_VERIFIED_WHEN_SUPPORTED",
+            "broker_validation": "BROKER_OR_DETERMINISTIC_EVIDENCE",
+        },
     }
     final_encoded = canonical_bytes(final_payload).decode("utf-8")
     final_hash = sha256_json(final_payload)
