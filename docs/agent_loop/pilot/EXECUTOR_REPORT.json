@@ -1,20 +1,33 @@
 {
   "schema_version": 1,
-  "front_id": "PILOT-KIMI-CODEX-20260716-053820",
-  "issue_number": 2,
+  "worker_version": "1.5.7",
+  "front_id": "PILOT-V157-EVIDENCE-ACTIVATION-20260722-023555",
+  "issue_number": 33,
   "cycle": 1,
-  "executor": "Kimi via OpenCode/Ollama",
+  "executor": "OpenCode/Ollama tool executor",
+  "agent": "brain-opencode-executor",
   "model": "ollama-cloud/kimi-k2.7-code",
-  "base_sha": "06d41b159a6a91453dd5ba8e58d410654c57feee",
+  "base_sha": "53da8ae93158cc3f9a06468c64d955816044c6d2",
   "changed_files": [
     "docs/agent_loop/pilot/EXECUTOR_REPORT.json",
     "docs/agent_loop/pilot/PILOT_MARKER.md"
   ],
   "local_test_profile": "pilot",
   "local_test_passed": true,
-  "local_test_tail": "{\n  \"schema_version\": 1,\n  \"status\": \"PASS\",\n  \"errors\": [],\n  \"changed_files\": [],\n  \"base_sha\": null,\n  \"head_sha\": null,\n  \"generated_utc\": \"2026-07-16T07:01:04.896420+00:00\"\n}\n",
-  "opencode_log_local": "C:\\AI_VAULT_AGENT_WORKER\\reports\\issue-2-cycle-1-opencode.jsonl",
-  "generated_utc": "2026-07-16T07:01:04.904047+00:00",
+  "local_test_tail": "{\r\n  \"schema_version\": 1,\r\n  \"status\": \"PASS\",\r\n  \"errors\": [],\r\n  \"changed_files\": [\r\n    \"docs/agent_loop/pilot/PILOT_MARKER.md\"\r\n  ],\r\n  \"base_sha\": null,\r\n  \"head_sha\": \"53da8ae93158cc3f9a06468c64d955816044c6d2\",\r\n  \"generated_utc\": \"2026-07-22T02:41:02.444584+00:00\"\r\n}\r\n",
+  "opencode_log_local": "C:\\AI_VAULT_AGENT_WORKER\\reports\\issue-33-cycle-1-opencode.jsonl",
+  "executor_evidence": {
+    "source": "worker_parsed_opencode_jsonl",
+    "log_sha256": "494f01bcf76fea9144ce72026e13c09e1e4d7a7d91cda9aa342e801814917a11",
+    "task_acknowledged": true,
+    "task_ack": "ACK_TASK_ID=PILOT-V157-EVIDENCE-ACTIVATION-20260722-023555|cycle=1",
+    "ack_source": "text_sentinel",
+    "write_tool_completed": true,
+    "write_tool_name": "write",
+    "write_tool_target": "docs/agent_loop/pilot/PILOT_MARKER.md",
+    "write_tool_target_kind": "relative"
+  },
+  "generated_utc": "2026-07-22T02:41:02.453819+00:00",
   "merge_performed": false,
   "canonical_local_sync": false
 }
