@@ -24,7 +24,8 @@ REQUIRED_TARGETS = {
 
 def test_provisioning_active_target_block_is_repo_rooted() -> None:
     text = PROVISIONING.read_text(encoding="utf-8")
-    assert '[string]$RepoRoot = "C:\\AI_VAULT_IBKR"' in text
+    assert '[string]$RepoRoot = ""' in text
+    assert "$RepoRoot = $PSScriptRoot" in text
     assert "REPO_ROOT_NOT_SCRIPT_ROOT" in text
     assert '$LiveStateRoot = Join-Path $ResolvedRepoRoot "state\\ibkr_paper_30d"' in text
 
@@ -47,7 +48,7 @@ def test_provisioning_active_target_block_is_repo_rooted() -> None:
 def test_old_root_is_legacy_only_and_apply_does_not_mutate_it() -> None:
     text = PROVISIONING.read_text(encoding="utf-8")
     assert '$LegacyRepoRoot = "C:\\AI_VAULT"' in text
-    assert "$ExpectedTargets = $LegacyProbeTargets" in text
+    assert "Test-ProbeTargetMapEqual" in text
     assert 'result = "PRESERVED_LEGACY_ROOT"' in text
     assert "legacy_cleanup = $false" in text
 
