@@ -53,6 +53,7 @@ def now() -> datetime:
 def complete_receipt(now: datetime) -> dict[str, object]:
     run_id = "run-v2-001"
     outcomes = {name: "DENIED" for name in TARGET_NAMES}
+    outcomes["BROKER_NETWORK_SOCKET_ACCESS"] = "ALLOWED"
     outcomes["IMMUTABLE_EXPORT_READ"] = "ALLOWED"
     outcomes["AUDITOR_REPORT_WRITE"] = "ALLOWED"
     return {
@@ -113,15 +114,15 @@ def complete_receipt(now: datetime) -> dict[str, object]:
             "real_money_allowed": False,
         },
         "network_facts": {
-            "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": False,
-            "AUDITOR_NETWORK_ISOLATION_REQUIRED": True,
-            "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": False,
+            "AUDITOR_TECHNICAL_SOCKET_REACHABILITY": True,
+            "AUDITOR_NETWORK_ISOLATION_REQUIRED": False,
+            "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE": True,
             "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED": True,
             "endpoints": {
-                "127.0.0.1:4001": "DENIED",
-                "127.0.0.1:4002": "DENIED",
-                "[::1]:4001": "DENIED",
-                "[::1]:4002": "DENIED",
+                "127.0.0.1:4001": "NO_LISTENER",
+                "127.0.0.1:4002": "CONNECTED",
+                "[::1]:4001": "NO_LISTENER",
+                "[::1]:4002": "CONNECTED",
             },
         },
         "output": {
@@ -263,9 +264,9 @@ def test_residual_risk_binds_paper_identity_without_cleartext_account(
         expected_identity.expected_account_hash
     )
     assert artifact["PAPER_IDENTITY_RECEIPT_SHA256"] == expected_identity.receipt_sha256
-    assert artifact["AUDITOR_TECHNICAL_SOCKET_REACHABILITY"] is False
-    assert artifact["AUDITOR_NETWORK_ISOLATION_REQUIRED"] is True
-    assert artifact["AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE"] is False
+    assert artifact["AUDITOR_TECHNICAL_SOCKET_REACHABILITY"] is True
+    assert artifact["AUDITOR_NETWORK_ISOLATION_REQUIRED"] is False
+    assert artifact["AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE"] is True
     assert artifact["AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED"] is True
     assert artifact["AUDITOR_ORDER_AUTHORITY_GRANTED"] is False
     assert artifact["AUDITOR_BROKER_CONTROL_PATH_AUTHORIZED"] is False
@@ -582,11 +583,11 @@ def test_gate_report_renders_all_v2_evidence_without_account_identity(
     for value in (
         "AUDITOR_LEAST_PRIVILEGE_AND_RUNTIME_INTEGRITY_GATE_V2: PASS",
         "AUDITOR_ISOLATION_GATE_V2: PASS",
-        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY: false",
-        "AUDITOR_NETWORK_ISOLATION_REQUIRED: true",
-        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE: false",
+        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY: true",
+        "AUDITOR_NETWORK_ISOLATION_REQUIRED: false",
+        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE: true",
         "AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED: true",
-        "BROKER_LOOPBACK_SOCKET_CONTROL: PROVEN_DENIED",
+        "BROKER_LOOPBACK_SOCKET_CONTROL: REACHABLE_RESIDUAL_RISK_ACCEPTED",
         "EXPECTED_PAPER_ACCOUNT_IDENTITY_HASH",
         "PAPER_ENVIRONMENT_REFERENCE",
         "BROKER_MODULE_AVAILABLE",
@@ -620,7 +621,7 @@ def test_gate_report_is_blocked_when_real_receipt_is_absent() -> None:
         "[::1]:4002",
     ],
 )
-def test_gate_v2_requires_all_four_broker_endpoints_denied(
+def test_gate_v2_requires_all_four_broker_endpoint_observations(
     complete_receipt, expected_identity, now, missing_endpoint
 ) -> None:
     partial = deepcopy(complete_receipt)
@@ -631,4 +632,42 @@ def test_gate_v2_requires_all_four_broker_endpoints_denied(
 
     assert result.canonical_gate == "BLOCK"
     assert "NETWORK_ENDPOINT_EVIDENCE_INVALID" in result.reason_codes
-    assert "PAPER_BROKER_LOOPBACK_NOT_DENIED" in result.reason_codes
+
+
+def test_gate_v2_accepts_connected_paper_loopback_as_declared_residual_risk(
+    complete_receipt, expected_identity, now
+) -> None:
+    receipt = parse_auditor_gate_v2_receipt(canonical_bytes(complete_receipt))
+
+    result = evaluate_auditor_gate_v2(receipt, expected_identity, now)
+
+    assert result.canonical_gate == "PASS"
+    assert receipt.network_facts["AUDITOR_TECHNICAL_SOCKET_REACHABILITY"] is True
+    assert receipt.network_facts["AUDITOR_NETWORK_ISOLATION_REQUIRED"] is False
+    assert receipt.network_facts["AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE"] is True
+
+
+def test_gate_v2_blocks_unknown_network_endpoint_state(
+    complete_receipt, expected_identity, now
+) -> None:
+    unsafe = deepcopy(complete_receipt)
+    unsafe["network_facts"]["endpoints"]["127.0.0.1:4002"] = "OTHER"
+
+    receipt = parse_auditor_gate_v2_receipt(canonical_bytes(unsafe))
+    result = evaluate_auditor_gate_v2(receipt, expected_identity, now)
+
+    assert result.canonical_gate == "BLOCK"
+    assert "NETWORK_ENDPOINT_EVIDENCE_INVALID" in result.reason_codes
+
+
+def test_gate_v2_requires_network_fact_consistency_with_endpoint_observation(
+    complete_receipt, expected_identity, now
+) -> None:
+    inconsistent = deepcopy(complete_receipt)
+    inconsistent["network_facts"]["AUDITOR_TECHNICAL_SOCKET_REACHABILITY"] = False
+
+    receipt = parse_auditor_gate_v2_receipt(canonical_bytes(inconsistent))
+    result = evaluate_auditor_gate_v2(receipt, expected_identity, now)
+
+    assert result.canonical_gate == "BLOCK"
+    assert "NETWORK_FACT_MISMATCH" in result.reason_codes

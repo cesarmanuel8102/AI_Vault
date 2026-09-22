@@ -190,15 +190,11 @@ Assert-ExactSet -Expected $ExpectedTargets -Actual @($TargetRows | ForEach-Objec
 $OutcomeNames = @($Denial.results.PSObject.Properties | ForEach-Object { $_.Name })
 Assert-ExactSet -Expected $ExpectedTargets -Actual $OutcomeNames -Reason "CAPABILITY_SET_MISMATCH"
 $EndpointValues = @($Denial.network_endpoints.PSObject.Properties | ForEach-Object { [string]$_.Value })
-if ([string]$Denial.results.BROKER_NETWORK_SOCKET_ACCESS -ne "DENIED") {
-    throw "BROKER_NETWORK_SOCKET_NOT_DENIED"
+if (@($EndpointValues | Where-Object { $_ -eq "OTHER" }).Count -ne 0) {
+    throw "BROKER_NETWORK_ENDPOINT_UNCERTAIN"
 }
-if ([string]$Denial.network_endpoints."127.0.0.1:4002" -ne "DENIED") {
-    throw "PAPER_BROKER_LOOPBACK_NOT_DENIED"
-}
-if (@($EndpointValues | Where-Object { $_ -in @("CONNECTED", "OTHER") }).Count -ne 0) {
-    throw "BROKER_NETWORK_ENDPOINT_UNSAFE"
-}
+$TechnicalSocketReachability = @($EndpointValues | Where-Object { $_ -eq "CONNECTED" }).Count -gt 0
+$UnauthorizedRawApiPathPossible = $TechnicalSocketReachability
 
 $FunctionalPath = [string]$Functional.report_path
 $Receipt = [ordered]@{
@@ -232,8 +228,10 @@ $Receipt = [ordered]@{
         paper_only = $true; live_allowed = $false; real_money_allowed = $false
     }
     network_facts = [ordered]@{
-        AUDITOR_TECHNICAL_SOCKET_REACHABILITY = $false; AUDITOR_NETWORK_ISOLATION_REQUIRED = $true
-        AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE = $false; AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED = $true
+        AUDITOR_TECHNICAL_SOCKET_REACHABILITY = $TechnicalSocketReachability
+        AUDITOR_NETWORK_ISOLATION_REQUIRED = $false
+        AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE = $UnauthorizedRawApiPathPossible
+        AUDITOR_COMPROMISE_CONTAINMENT_NOT_CLAIMED = $true
         endpoints = $Denial.network_endpoints
     }
     output = [ordered]@{

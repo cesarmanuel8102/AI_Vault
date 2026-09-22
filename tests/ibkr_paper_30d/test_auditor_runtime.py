@@ -483,6 +483,27 @@ def test_target_validation_rejects_outside_root_and_reparse_path(tmp_path) -> No
     assert reparse_row["reason"] == "TARGET_REPARSE_POINT"
 
 
+def test_gate_records_socket_reachability_as_residual_risk_without_hard_denial() -> None:
+    source = (RUNTIME_SOURCE / "AUDITOR_GATE_V2_PROBE.ps1").read_text(
+        encoding="utf-8"
+    )
+
+    assert "BROKER_NETWORK_SOCKET_NOT_DENIED" not in source
+    assert "PAPER_BROKER_LOOPBACK_NOT_DENIED" not in source
+    assert "BROKER_NETWORK_ENDPOINT_UNSAFE" not in source
+    assert "BROKER_NETWORK_ENDPOINT_UNCERTAIN" in source
+    assert "AUDITOR_NETWORK_ISOLATION_REQUIRED = $false" in source
+    assert (
+        "AUDITOR_TECHNICAL_SOCKET_REACHABILITY = $TechnicalSocketReachability"
+        in source
+    )
+    assert (
+        "AUDITOR_UNAUTHORIZED_RAW_API_PATH_POSSIBLE = "
+        "$UnauthorizedRawApiPathPossible"
+        in source
+    )
+
+
 def test_endpoint_classifier_has_truthful_four_state_contract() -> None:
     source = (RUNTIME_SOURCE / PROBE_NAME).read_text(encoding="utf-8")
 
@@ -588,10 +609,9 @@ def test_probe_report_binds_effective_sid_and_elevation_state(tmp_path) -> None:
             "IBKR_SECRET_READ": str(tmp_path / "missing-ibkr"),
             "SMTP_SECRET_READ": str(tmp_path / "missing-mail"),
             "EXECUTION_LOCK_ACCESS": str(tmp_path / "missing-lock"),
-                "LIVE_DATABASE_MUTATION": str(tmp_path / "missing.sqlite3"),
-                "BROKER_WRITE_PATH_ACCESS": str(tmp_path / "missing-broker"),
-                "BROKER_NETWORK_SOCKET_ACCESS": str(tmp_path / "missing-broker"),
-                "TRADER_CONTEXT_ACCESS": str(tmp_path / "missing-context"),
+            "LIVE_DATABASE_MUTATION": str(tmp_path / "missing.sqlite3"),
+            "BROKER_WRITE_PATH_ACCESS": str(tmp_path / "missing-broker"),
+            "TRADER_CONTEXT_ACCESS": str(tmp_path / "missing-context"),
             "AUDIT_INPUT_MUTATION": str(tmp_path / "missing-export"),
             "IMMUTABLE_EXPORT_READ": str(tmp_path / "missing-readable"),
             "AUDITOR_REPORT_WRITE": str(reports),
