@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
-    [string]$RepoRoot = "C:\AI_VAULT",
+    [string]$RepoRoot = "C:\AI_VAULT_IBKR",
     [string]$PythonExe = "python",
     [switch]$SkipTaskRegistration
 )
@@ -9,10 +9,17 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$ResolvedRepoRoot = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\')
-if ($ResolvedRepoRoot -ine "C:\AI_VAULT") {
-    throw "REPO_ROOT_MUST_BE_C:\AI_VAULT"
+function Resolve-ApprovedRepoRoot {
+    param([string]$RepoRoot)
+    $Resolved = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\')
+    $Approved = [IO.Path]::GetFullPath("C:\AI_VAULT_IBKR").TrimEnd('\')
+    if ($Resolved -ine $Approved) {
+        throw "REPO_ROOT_NOT_APPROVED:$Resolved"
+    }
+    return $Resolved
 }
+
+$ResolvedRepoRoot = Resolve-ApprovedRepoRoot -RepoRoot $RepoRoot
 $ResolvedPython = if (Test-Path -LiteralPath $PythonExe -PathType Leaf) {
     [IO.Path]::GetFullPath($PythonExe)
 } else {
@@ -215,7 +222,7 @@ try {
     # Use a one-time random password only inside the bounded probe window.
     $SecurePassword = New-RandomSecurePassword
     Set-LocalUser -Name $AuditorUser -Password $SecurePassword
-    $Credential = New-Object Security.Management.Automation.PSCredential(
+    $Credential = New-Object System.Management.Automation.PSCredential(
         "$env:COMPUTERNAME\$AuditorUser",
         $SecurePassword
     )
@@ -233,7 +240,15 @@ try {
     # During the bounded auditor probe no local process needs broker API access.
     # Use an all-programs loopback block so a compromised auditor process cannot
     # bypass isolation by spawning another executable.
-    $ProbeFirewallRule = New-NetFirewallRule -Name $ProbeFirewallRuleName -DisplayName $ProbeFirewallRuleName -Direction Outbound -Action Block -Protocol TCP -RemotePort 4001,4002 -RemoteAddress 127.0.0.1,::1 -Profile Any -Enabled True
+    try {
+        $ProbeFirewallRule = New-NetFirewallRule -Name $ProbeFirewallRuleName -DisplayName $ProbeFirewallRuleName -Direction Outbound -Action Block -Protocol TCP -RemotePort 4001,4002 -RemoteAddress Any -Profile Any -Enabled True -ErrorAction Stop
+    }
+    catch {
+        throw "AUDITOR_PROBE_FIREWALL_RULE_CREATION_FAILED:$($_.Exception.Message)"
+    }
+    if ($null -eq $ProbeFirewallRule) {
+        throw "AUDITOR_PROBE_FIREWALL_RULE_CREATION_FAILED:NO_RULE_OBJECT"
+    }
     $ProbeFirewallInstalled = $true
 
     $ProbePortFilter = $ProbeFirewallRule | Get-NetFirewallPortFilter
@@ -242,7 +257,7 @@ try {
         throw "AUDITOR_PROBE_FIREWALL_RULE_INVALID"
     }
     $ProbeAddresses = @($ProbeAddressFilter.RemoteAddress | ForEach-Object { [string]$_ })
-    if ($ProbeAddresses -notcontains "127.0.0.1" -or $ProbeAddresses -notcontains "::1") {
+    if ($ProbeAddresses -notcontains "Any") {
         throw "AUDITOR_PROBE_FIREWALL_SCOPE_INVALID"
     }
     $ProbePorts = @($ProbePortFilter.RemotePort | ForEach-Object { [string]$_ })
@@ -268,7 +283,54 @@ try {
         "-ReportDirectory", (Quote-Argument $ReportsRoot)
     ) -join " "
 
-    $Process = Start-Process -FilePath $WindowsPowerShell -ArgumentList $Arguments -Credential $Credential -UseNewEnvironment -WorkingDirectory $RuntimeRoot -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput $StdoutPath -RedirectStandardError $StderrPath
+    # The Start-Process cmdlet cannot deliver an explicit environment block to
+    # a -Credential launch: the child receives a NULL environment, boots
+    # without SystemRoot, and managed Windows PowerShell fails with 8009001d.
+    # Launch through System.Diagnostics.ProcessStartInfo instead so the child
+    # gets an explicitly cleared environment plus the minimal Windows bootstrap
+    # variables required for powershell.exe to initialize and resolve whoami.exe.
+    $NetworkCredential = $Credential.GetNetworkCredential()
+    $ProbeStartInfo = New-Object System.Diagnostics.ProcessStartInfo
+    if (
+        $null -eq $ProbeStartInfo -or
+        -not ($ProbeStartInfo.PSObject.Properties.Name -contains "UserName") -or
+        -not ($ProbeStartInfo.PSObject.Properties.Name -contains "Password") -or
+        -not ($ProbeStartInfo.PSObject.Properties.Name -contains "EnvironmentVariables")
+    ) {
+        throw "AUDITOR_PROBE_CLEAN_ENVIRONMENT_INJECTION_UNSUPPORTED"
+    }
+    $ProbeStartInfo.FileName = $WindowsPowerShell
+    $ProbeStartInfo.Arguments = $Arguments
+    $ProbeStartInfo.UserName = $NetworkCredential.UserName
+    $ProbeStartInfo.Domain = $NetworkCredential.Domain
+    $ProbeStartInfo.Password = $Credential.Password
+    $ProbeStartInfo.UseShellExecute = $false
+    $ProbeStartInfo.WorkingDirectory = $RuntimeRoot
+    $ProbeStartInfo.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
+    $ProbeStartInfo.RedirectStandardOutput = $true
+    $ProbeStartInfo.RedirectStandardError = $true
+    $ProbeEnvironment = $ProbeStartInfo.EnvironmentVariables
+    if ($null -eq $ProbeEnvironment) {
+        throw "AUDITOR_PROBE_CLEAN_ENVIRONMENT_INJECTION_UNSUPPORTED"
+    }
+    # Clean-environment semantics: no parent variables are inherited by the
+    # restricted auditor process. Only the Windows bootstrap variables needed
+    # for powershell.exe initialization and in-child tool resolution are set.
+    $ProbeEnvironment.Clear()
+    $ProbeEnvironment["SystemRoot"] = $env:SystemRoot
+    $ProbeEnvironment["WINDIR"] = $env:WINDIR
+    $ProbeEnvironment["ComSpec"] = $env:ComSpec
+    $ProbeEnvironment["PATH"] = [Environment]::GetEnvironmentVariable("PATH", [EnvironmentVariableTarget]::Machine)
+    $ProbeEnvironment["PATHEXT"] = [Environment]::GetEnvironmentVariable("PATHEXT", [EnvironmentVariableTarget]::Machine)
+
+    $Process = New-Object System.Diagnostics.Process
+    $Process.StartInfo = $ProbeStartInfo
+    if (-not $Process.Start()) { throw "AUDITOR_PROBE_PROCESS_START_FAILED" }
+    $StdoutTask = $Process.StandardOutput.ReadToEndAsync()
+    $StderrTask = $Process.StandardError.ReadToEndAsync()
+    $Process.WaitForExit()
+    [IO.File]::WriteAllText($StdoutPath, $StdoutTask.Result)
+    [IO.File]::WriteAllText($StderrPath, $StderrTask.Result)
     if ($Process.ExitCode -ne 0) {
         $Err = if (Test-Path $StderrPath) { Get-Content -LiteralPath $StderrPath -Raw } else { "" }
         $Out = if (Test-Path $StdoutPath) { Get-Content -LiteralPath $StdoutPath -Raw } else { "" }
