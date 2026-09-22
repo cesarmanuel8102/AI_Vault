@@ -86,6 +86,27 @@ def build_residual_risk_acceptance(
         or raw_api_possible is not reachability
     ):
         raise ArtifactValidationError("NETWORK_RESIDUAL_RISK_INVALID")
+    endpoints = network.get("endpoints")
+    expected_endpoint_names = {
+        "127.0.0.1:4001",
+        "127.0.0.1:4002",
+        "[::1]:4001",
+        "[::1]:4002",
+    }
+    if not isinstance(endpoints, Mapping):
+        raise ArtifactValidationError("NETWORK_RESIDUAL_RISK_INVALID")
+    normalized_endpoints = {str(key): str(value) for key, value in endpoints.items()}
+    if set(normalized_endpoints) != expected_endpoint_names:
+        raise ArtifactValidationError("NETWORK_RESIDUAL_RISK_INVALID")
+    if any(
+        value not in {"CONNECTED", "DENIED", "NO_LISTENER"}
+        for value in normalized_endpoints.values()
+    ):
+        raise ArtifactValidationError("NETWORK_RESIDUAL_RISK_INVALID")
+    if reachability is not any(
+        value == "CONNECTED" for value in normalized_endpoints.values()
+    ):
+        raise ArtifactValidationError("NETWORK_RESIDUAL_RISK_INVALID")
 
     receipt_projection = _receipt_projection(receipt)
     body: dict[str, object] = {
