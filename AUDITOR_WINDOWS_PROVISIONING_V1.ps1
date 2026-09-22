@@ -792,7 +792,10 @@ function Invoke-Rollback {
         ) {
             throw "PROVISIONING_MANIFEST_MISMATCH"
         }
-        $RollbackChanges = @($AppliedManifest.acl_changes)
+        $RollbackChanges = @(
+            $AppliedManifest.acl_changes |
+                Where-Object { $ApprovedPaths -contains [string]$_.path }
+        )
     }
     else {
         $AppliedManifest = Get-PartialRollbackManifest -User $User
