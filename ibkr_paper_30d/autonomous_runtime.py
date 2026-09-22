@@ -11,6 +11,7 @@ from .autonomous_research import AutonomousResearchLoop, CodexAutonomousCLIProvi
 from .canonical import canonical_bytes, sha256_json
 from .experiment_ledger import AutonomousExperimentLedger
 from .ibkr_research_tools import IBKRResearchToolbox
+from .interference_observability import build_interference_observation
 from .persistence import Database
 from .repositories import utc_now
 from .trader_invocation import InvocationRequest, TraderDecision, TraderInputBundle
@@ -119,6 +120,19 @@ def persist_outcome(
         "rounds": outcome.rounds,
         "transcript_sha256": outcome.transcript_sha256,
         "broker_validation": outcome.broker_validation,
+        "epistemic_status": {
+            "proposal.probability_profit": "MODEL_INFERENCE",
+            "proposal.probability_loss": "MODEL_INFERENCE",
+            "proposal.expected_gain": "MODEL_INFERENCE",
+            "proposal.expected_loss": "MODEL_INFERENCE",
+            "proposal.expected_value": "MODEL_INFERENCE",
+            "proposal.expected_reward_risk": "MODEL_INFERENCE",
+            "proposal.confidence": "MODEL_INFERENCE",
+            "proposal.capital_required": "MODEL_INFERENCE_ADVISORY",
+            "proposal.maximum_loss": "MODEL_INFERENCE_STRUCTURALLY_VERIFIED_WHEN_SUPPORTED",
+            "proposal.loss_is_bounded": "MODEL_INFERENCE_STRUCTURALLY_VERIFIED_WHEN_SUPPORTED",
+            "broker_validation": "BROKER_OR_DETERMINISTIC_EVIDENCE",
+        },
     }
     final_encoded = canonical_bytes(final_payload).decode("utf-8")
     final_hash = sha256_json(final_payload)
@@ -146,6 +160,35 @@ def persist_outcome(
             bundle.decision_cycle_id if outcome.accepted else None,
             final_encoded,
             final_hash,
+            utc_now(),
+        ),
+    )
+
+
+def persist_interference_observation(
+    db: Database,
+    *,
+    bundle: TraderInputBundle,
+    request: InvocationRequest,
+    outcome: Any,
+    observation: dict[str, Any],
+) -> None:
+    payload = {
+        "decision_cycle_id": bundle.decision_cycle_id,
+        "invocation_id": request.invocation_id,
+        "observation": observation,
+    }
+    db.execute(
+        "INSERT INTO autonomous_research_events(event_id,decision_cycle_id,invocation_id,round_index,event_type,payload_json,payload_sha256,created_at_utc) "
+        "VALUES(?,?,?,?,?,?,?,?)",
+        (
+            str(new_uuid7()),
+            bundle.decision_cycle_id,
+            request.invocation_id,
+            int(outcome.rounds),
+            "interference_observation",
+            canonical_bytes(payload).decode("utf-8"),
+            sha256_json(payload),
             utc_now(),
         ),
     )
@@ -222,18 +265,36 @@ def run_autonomous_cycle(
             "reason_codes": list(projected.reason_codes),
         }
 
+    execution_payload = None if execution is None else {
+        "success": execution.success,
+        "status": execution.status,
+        "reason_codes": list(execution.reason_codes),
+        "order": execution.order,
+        "broker_validation": execution.broker_validation,
+    }
+    outcome_payload = outcome.model_dump(mode="json")
+    interference = build_interference_observation(
+        outcome=outcome_payload,
+        execution=execution_payload,
+        execute_paper=execute_paper,
+        provider_failure_code=getattr(provider, "last_failure_code", None),
+    )
+    if database is not None:
+        persist_interference_observation(
+            database,
+            bundle=bundle,
+            request=request,
+            outcome=outcome,
+            observation=interference,
+        )
+
     return {
         "schema": "CODEX_IBKR_AUTONOMOUS_CYCLE_V1",
         "request": request.model_dump(mode="json"),
-        "outcome": outcome.model_dump(mode="json"),
+        "outcome": outcome_payload,
         "post_execution_subledger": post_execution_subledger,
-        "execution": None if execution is None else {
-            "success": execution.success,
-            "status": execution.status,
-            "reason_codes": list(execution.reason_codes),
-            "order": execution.order,
-            "broker_validation": execution.broker_validation,
-        },
+        "execution": execution_payload,
+        "interference": interference,
     }
 
 

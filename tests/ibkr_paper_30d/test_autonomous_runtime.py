@@ -80,7 +80,17 @@ def test_runtime_persists_canonical_bundle_invocation_result_and_research(tmp_pa
         assert db.execute("SELECT COUNT(*) FROM trader_input_bundles").fetchone()[0] == 1
         assert db.execute("SELECT COUNT(*) FROM trader_invocations").fetchone()[0] == 1
         assert db.execute("SELECT COUNT(*) FROM trader_results").fetchone()[0] == 1
-        assert db.execute("SELECT COUNT(*) FROM autonomous_research_events").fetchone()[0] >= 2
+        assert db.execute("SELECT COUNT(*) FROM autonomous_research_events").fetchone()[0] >= 3
+        assert db.execute(
+            "SELECT COUNT(*) FROM autonomous_research_events WHERE event_type='interference_observation'"
+        ).fetchone()[0] == 1
+        assert result["interference"]["interference_source"] == "MODEL_DECISION"
+        assert result["interference"]["provider_policy_attribution"] == "UNDETERMINED"
+        final_payload = db.execute(
+            "SELECT payload_json FROM autonomous_research_events WHERE event_type='final_outcome'"
+        ).fetchone()[0]
+        assert '"proposal.expected_value":"MODEL_INFERENCE"' in final_payload
+        assert '"broker_validation":"BROKER_OR_DETERMINISTIC_EVIDENCE"' in final_payload
 
 
 def test_autonomous_trader_boundary_accepts_frozen_bundle_mapping():

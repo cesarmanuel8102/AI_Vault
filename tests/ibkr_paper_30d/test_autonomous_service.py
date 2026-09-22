@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal
 
+import pytest
 import ibkr_paper_30d.autonomous_service as service_module
 from ibkr_paper_30d.autonomous_service import AutonomousExperimentService, AutonomousServiceError
 from ibkr_paper_30d.persistence import Database
@@ -232,3 +233,58 @@ def test_default_runtime_auditor_uses_broker_time_authority(tmp_path):
             broker_now=lambda: fixed,
         )
         assert subject.runtime_auditor_gate.now_utc() == fixed
+
+
+
+class FailingProvider:
+    last_failure_code = "RETURN_CODE_1"
+
+
+class _ReadyBundle:
+    experiment_clock = {"not_started": False, "expired": False}
+    reconciliation_receipt = {"status": "PASS"}
+    kill_switch_state = "KILL_SWITCH_CLEAR"
+    market_data_snapshot = {"gate_status": "PASS"}
+
+    def model_dump(self, mode=None):
+        return {
+            "experiment_clock": self.experiment_clock,
+            "reconciliation_receipt": self.reconciliation_receipt,
+            "kill_switch_state": self.kill_switch_state,
+            "market_data_snapshot": self.market_data_snapshot,
+        }
+
+
+class _ReadyBuilder:
+    def build(self, trigger):
+        return _ReadyBundle()
+
+
+def test_provider_failure_is_observed_without_claiming_policy_attribution(tmp_path, monkeypatch):
+    with Database.open(tmp_path / "provider-failure.sqlite3") as db:
+        subject = AutonomousExperimentService(
+            db,
+            experiment_start_utc=datetime.now(timezone.utc),
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=FailingProvider(),
+            executor=StubExecutor(),
+            runtime_market_gate=PassGate(),
+            runtime_auditor_gate=PassGate(),
+        )
+        monkeypatch.setattr(subject, "_builder", lambda: _ReadyBuilder())
+
+        def fail_cycle(*args, **kwargs):
+            raise RuntimeError("AUTONOMOUS_CODEX_PROVIDER_FAILED")
+
+        monkeypatch.setattr(service_module, "run_autonomous_cycle", fail_cycle)
+
+        with pytest.raises(RuntimeError, match="AUTONOMOUS_CODEX_PROVIDER_FAILED"):
+            subject._run_cycle("SCHEDULED_SCAN")
+
+        row = db.execute(
+            "SELECT payload_json FROM alerts WHERE event_type='AUTONOMOUS_PROVIDER_FAILURE_OBSERVATION'"
+        ).fetchone()
+        assert row is not None
+        assert '"provider_failure_code":"RETURN_CODE_1"' in row[0]
+        assert '"provider_policy_attribution":"UNDETERMINED"' in row[0]

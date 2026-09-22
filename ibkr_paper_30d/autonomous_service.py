@@ -319,19 +319,34 @@ class AutonomousExperimentService:
         execution_allowed = (
             self.execute_paper if allow_execution is None else bool(allow_execution)
         )
-        result = run_autonomous_cycle(
-            bundle,
-            model=self.model,
-            reasoning_effort=self.reasoning_effort,
-            timeout_seconds=self.timeout_seconds,
-            trigger=trigger,
-            options_level=self.options_level,
-            execute_paper=execution_allowed,
-            database=self.db,
-            provider=self.provider,
-            toolbox=self.toolbox,
-            executor=self.executor,
-        )
+        try:
+            result = run_autonomous_cycle(
+                bundle,
+                model=self.model,
+                reasoning_effort=self.reasoning_effort,
+                timeout_seconds=self.timeout_seconds,
+                trigger=trigger,
+                options_level=self.options_level,
+                execute_paper=execution_allowed,
+                database=self.db,
+                provider=self.provider,
+                toolbox=self.toolbox,
+                executor=self.executor,
+            )
+        except Exception as exc:
+            provider_failure_code = getattr(self.provider, "last_failure_code", None)
+            if provider_failure_code:
+                _append_alert(
+                    self.db,
+                    "AUTONOMOUS_PROVIDER_FAILURE_OBSERVATION",
+                    {
+                        "provider_failure_code": str(provider_failure_code),
+                        "error_type": type(exc).__name__,
+                        "provider_policy_attribution": "UNDETERMINED",
+                        "provider_policy_visibility": "NOT_DIRECTLY_OBSERVABLE",
+                    },
+                )
+            raise
         result["auditor_gate"] = auditor
         return result
 

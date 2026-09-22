@@ -88,6 +88,11 @@ def test_autonomous_codex_invocation_enables_live_search_and_max_reasoning():
     assert command[command.index("--model") + 1] == "gpt-5.6-sol"
     assert 'model_reasoning_effort="max"' in command
     assert turn.decision.value == "NO_TRADE"
+    prompt_payload = json.loads(captured["input"])
+    assert prompt_payload["mandate"]["objective"].startswith("Maximize terminal experimental equity")
+    assert "trader_style" not in prompt_payload["mandate"]
+    assert prompt_payload["mandate"]["predefined_symbol_universe"] is False
+    assert prompt_payload["mandate"]["predefined_strategy_family"] is False
     assert provider.last_native_tool_events == [
         {"type": "web_search", "status": "completed", "id": "w1"}
     ]
