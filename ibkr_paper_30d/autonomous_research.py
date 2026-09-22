@@ -282,7 +282,6 @@ class CodexAutonomousCLIProvider:
             "schema": "CODEX_AUTONOMOUS_RESEARCH_TURN_V1",
             "mandate": {
                 "objective": "Maximize terminal experimental equity over the remaining 30-day paper-trading experiment.",
-                "trader_style": "aggressive_ambitious_probability_driven",
                 "capital_can_be_fully_lost": True,
                 "fixed_percent_risk_limits": False,
                 "predefined_symbol_universe": False,
