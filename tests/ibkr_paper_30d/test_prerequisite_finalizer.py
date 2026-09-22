@@ -35,7 +35,9 @@ def test_prerequisite_scripts_exist_and_never_arm_trading():
     assert "[char]38" in finalizer  # invocation/control operator
     assert "[char]124" in finalizer  # pipeline
     assert "RemotePort 4001,4002" in finalizer
-    assert "RemoteAddress 127.0.0.1,::1" in finalizer
+    assert "RemoteAddress Any" in finalizer
+    assert "RemoteAddress 127.0.0.1,::1" not in finalizer
+    assert 'if ($ProbeAddresses -notcontains "Any") {' in finalizer
     assert "-Program $WindowsPowerShell" not in finalizer
     assert "AUDITOR_PROBE_FIREWALL_SCOPE_INVALID" in finalizer
 
@@ -132,3 +134,107 @@ def test_auditor_account_enablement_is_inside_cleanup_guard():
     assert marker < try_index < enable_index < finally_index < cleanup_disable
     assert "$AuditorEnabledForProbe = $true" in text[enable_index:finally_index]
     assert "$ProbeFirewallInstalled = $true" in text[enable_index:finally_index]
+
+
+
+def test_auditor_probe_launch_uses_clean_explicit_environment():
+    """The restricted auditor child must boot with an explicit minimal
+    environment instead of Start-Process -UseNewEnvironment, which passes a
+    NULL environment block for -Credential launches (missing SystemRoot
+    triggers Windows PowerShell error 8009001d) and silently drops
+    -Environment values."""
+    text = FINALIZER.read_text(encoding="utf-8")
+
+    assert "System.Diagnostics.ProcessStartInfo" in text
+    assert "$ProbeStartInfo.UserName" in text
+    assert "$ProbeStartInfo.Domain" in text
+    assert "$ProbeStartInfo.Password" in text
+    assert "$ProbeStartInfo.UseShellExecute = $false" in text
+    assert "$ProbeEnvironment.Clear()" in text
+    assert "-UseNewEnvironment" not in text
+
+    assert '$ProbeEnvironment["SystemRoot"]' in text
+    assert '$ProbeEnvironment["WINDIR"]' in text
+    assert '$ProbeEnvironment["ComSpec"]' in text
+    assert "[EnvironmentVariableTarget]::Machine" in text
+    assert "AUDITOR_PROBE_CLEAN_ENVIRONMENT_INJECTION_UNSUPPORTED" in text
+
+
+def test_auditor_probe_environment_allowlist_is_minimal():
+    """Only Windows bootstrap values may be forwarded to the auditor child."""
+    text = FINALIZER.read_text(encoding="utf-8")
+
+    start = text.index("$ProbeEnvironment.Clear()")
+    end = text.index("$Process.StartInfo = $ProbeStartInfo")
+    allowlist_block = text[start:end]
+
+    assigned_keys = set()
+    for line in allowlist_block.splitlines():
+        stripped = line.strip()
+        if "$ProbeEnvironment[" in stripped and "]" in stripped:
+            assigned_keys.add(stripped.split("[")[1].split("]")[0].strip('"'))
+
+    assert assigned_keys, "no environment keys assigned to probe child"
+    assert assigned_keys <= {"SystemRoot", "WINDIR", "ComSpec", "PATH", "PATHEXT"}, (
+        f"unexpected environment keys forwarded to auditor child: {assigned_keys}"
+    )
+    assert "SystemRoot" in assigned_keys
+
+    for forbidden in (
+        "OPENAI",
+        "ANTHROPIC",
+        "GEMINI",
+        "BRAIN_API_KEY",
+        "API_KEY",
+        "PASSWORD",
+        "SECRET",
+        "IBKR_AUTONOMOUS_PAPER_ARMED",
+        "GetEnvironmentVariables()",
+    ):
+        assert forbidden not in allowlist_block, forbidden
+
+
+@pytest.mark.skipif(os.name != "nt", reason="PowerShell path validation is Windows-only")
+def test_clean_environment_probe_child_boots_windows_powershell():
+    """Mechanism proof for explicit clean child environment."""
+    probe_script = Path(os.environ.get("TEMP", ".")) / "glm_probe_child_env_probe.ps1"
+    probe_script.write_text(
+        'Write-Output ("SR=" + $env:SystemRoot)\n'
+        'Write-Output ("MARKER=" + [string]$env:GLM_TEST_PARENT_MARKER)\n',
+        encoding="utf-8",
+    )
+    try:
+        command = (
+            "$env:GLM_TEST_PARENT_MARKER='leak';"
+            "$psi=New-Object System.Diagnostics.ProcessStartInfo;"
+            "$psi.FileName='powershell.exe';"
+            f"$psi.Arguments='-NoProfile -ExecutionPolicy Bypass -File '+[char]34+'{probe_script}'+[char]34;"
+            "$psi.UseShellExecute=$false;"
+            "$psi.RedirectStandardOutput=$true;"
+            "$psi.RedirectStandardError=$true;"
+            "$env0=$psi.EnvironmentVariables;"
+            "$env0.Clear();"
+            "$env0['SystemRoot']=$env:SystemRoot;"
+            "$env0['WINDIR']=$env:WINDIR;"
+            "$env0['ComSpec']=$env:ComSpec;"
+            "$env0['PATH']=[Environment]::GetEnvironmentVariable('PATH','Machine');"
+            "$env0['PATHEXT']=[Environment]::GetEnvironmentVariable('PATHEXT','Machine');"
+            "$p=[System.Diagnostics.Process]::Start($psi);"
+            "$out=$p.StandardOutput.ReadToEnd();"
+            "$p.WaitForExit();"
+            "Write-Output $out;"
+            "if($p.ExitCode -ne 0){exit 1}"
+        )
+        result = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-Command", command],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "SR=C:\\Windows" in result.stdout, result.stdout + result.stderr
+        assert "MARKER=" in result.stdout
+        assert "MARKER=leak" not in result.stdout
+    finally:
+        probe_script.unlink(missing_ok=True)
