@@ -624,6 +624,35 @@ def test_observed_stale_host_probe_manifest_is_classified(tmp_path) -> None:
     assert "CLASSIFIED=true" in result.stdout
 
 
+def test_target_map_comparator_accepts_ordered_expected_map() -> None:
+    script = str(SCRIPT).replace("'", "''")
+    command = (
+        "$tokens=$null;$errors=$null;"
+        "$ast=[Management.Automation.Language.Parser]::ParseFile("
+        f"'{script}',[ref]$tokens,[ref]$errors);"
+        "$names=@('Test-StringSetEqual','Test-ProbeTargetMapEqual');"
+        "$functions=$ast.FindAll({param($node) "
+        "$node -is [Management.Automation.Language.FunctionDefinitionAst] -and "
+        "$node.Name -in $names},$true);"
+        "$functions|Sort-Object {$_.Extent.StartOffset}|"
+        "ForEach-Object {Invoke-Expression $_.Extent.Text};"
+        "$actual='{\"A\":\"one\",\"B\":\"two\"}'|ConvertFrom-Json;"
+        "$expected=[ordered]@{A='one';B='two'};"
+        "$equal=Test-ProbeTargetMapEqual -Actual $actual -Expected $expected;"
+        "Write-Output ('MAP_EQUAL='+$equal.ToString().ToLowerInvariant())"
+    )
+    result = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-Command", command],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "MAP_EQUAL=true" in result.stdout
+
+
 @pytest.mark.parametrize(
     "mutation",
     [
