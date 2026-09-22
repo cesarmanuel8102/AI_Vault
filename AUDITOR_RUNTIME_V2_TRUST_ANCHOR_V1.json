@@ -1,6 +1,6 @@
 {
   "schema": "AUDITOR_RUNTIME_V2_TRUST_ANCHOR_V1",
-  "source_commit": "ca892cd52be5fddadb2ab8b446ac8e43398a8b8c",
+  "source_commit": "a1f9a3dc7d013b0489cf0c9ccdf6156d84b2cf27",
   "runtime_files": [
     "AUDITOR_DENIAL_PROBE_V1.ps1",
     "AUDITOR_GATE_V2_PROBE.ps1",
