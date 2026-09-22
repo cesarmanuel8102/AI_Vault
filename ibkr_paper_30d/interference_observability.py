@@ -190,20 +190,37 @@ def summarize_interference(observations: list[dict[str, Any]]) -> dict[str, Any]
         by_source[source] = by_source.get(source, 0) + 1
         by_disposition[disposition] = by_disposition.get(disposition, 0) + 1
 
-    rate = None
+    infrastructure_block_rate = None
+    auditor_control_rate = None
+    host_capability_limit_rate = None
     if proposed_actions:
-        rate = len(blocked_actions) / len(proposed_actions)
+        denominator = len(proposed_actions)
+        infrastructure_block_rate = len(blocked_actions) / denominator
+        auditor_control_rate = sum(
+            1
+            for item in proposed_actions
+            if item.get("interference_source") == "OPERATOR_OR_AUDITOR_CONTROL"
+        ) / denominator
+        host_capability_limit_rate = sum(
+            1
+            for item in proposed_actions
+            if item.get("interference_source") == "HOST_CAPABILITY_LIMITATION"
+        ) / denominator
 
     return {
         "schema": "CODEX_POLICY_INTERFERENCE_SUMMARY_V1",
         "observation_count": total,
         "proposed_action_count": len(proposed_actions),
         "blocked_proposed_action_count": len(blocked_actions),
-        "auditor_interference_rate": rate,
+        "infrastructure_block_rate": infrastructure_block_rate,
+        "auditor_interference_rate": auditor_control_rate,
+        "host_capability_limit_rate": host_capability_limit_rate,
         "by_source": by_source,
         "by_disposition": by_disposition,
         "provider_policy_visibility": _PROVIDER_POLICY_VISIBILITY,
         "note": (
+            "infrastructure_block_rate counts every blocked model-proposed executable action; "
+            "auditor_interference_rate counts only operator/auditor-control blocks. "
             "provider/developer policy influence is only attributable when an explicit "
             "machine-readable provider signal exists; model caution alone is not treated "
             "as evidence of provider-policy interference"
