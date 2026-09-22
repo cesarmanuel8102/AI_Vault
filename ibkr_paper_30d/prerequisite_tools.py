@@ -63,7 +63,7 @@ def evaluate_runtime_trust_anchor(
         raise ValueError("TRUST_ANCHOR_INVALID")
 
     source_commit = subprocess.run(
-        ["git", "-C", str(repo_root), "cat-file", "-e", f"{commit}^{commit}"],
+        ["git", "-C", str(repo_root), "cat-file", "-e", f"{commit}^{{commit}}"],
         capture_output=True,
         check=False,
     )
