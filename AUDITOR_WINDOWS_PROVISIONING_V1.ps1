@@ -523,7 +523,11 @@ function Test-RecognizedLegacyChangeManifest {
         $Legacy.program_root -ne $ProgramRoot -or
         $Legacy.firewall_rule.name -ne $FirewallRuleName
     ) { return $false }
-    if (-not (Test-StringSetEqual -Left @($Legacy.paths) -Right $LegacyActiveApprovedPaths)) {
+    $LegacyPathSetRecognized = (
+        (Test-StringSetEqual -Left @($Legacy.paths) -Right $LegacyActiveApprovedPaths) -or
+        (Test-StringSetEqual -Left @($Legacy.paths) -Right $LegacyApprovedPaths)
+    )
+    if (-not $LegacyPathSetRecognized) {
         return $false
     }
     $LegacyTargets = @($Legacy.probe_targets.PSObject.Properties.Name)
@@ -732,6 +736,15 @@ function Set-AuditorDenyLogonRights {
 
 function Invoke-Apply {
     param([Security.SecureString]$AccountPassword)
+    if (Test-Path -LiteralPath $ChangeManifestPath -PathType Leaf) {
+        $ExistingChangeManifest = [IO.File]::ReadAllText($ChangeManifestPath)
+        if (
+            $ExistingChangeManifest -ne $ManifestJson -and
+            -not (Test-RecognizedLegacyChangeManifest -Text $ExistingChangeManifest)
+        ) {
+            throw "PROVISIONING_MANIFEST_CONFLICT"
+        }
+    }
     foreach ($Path in $ManagedPaths) {
         if (-not (Test-Path -LiteralPath $Path)) {
             [void](New-Item -ItemType Directory -Path $Path)
