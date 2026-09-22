@@ -58,6 +58,20 @@ def test_old_root_is_legacy_only_and_apply_does_not_mutate_it() -> None:
     assert "Remove-ManifestAce -Change $LegacyChange" not in apply_body
 
 
+def test_apply_preflights_existing_change_manifest_before_mutation() -> None:
+    text = PROVISIONING.read_text(encoding="utf-8")
+    start = text.index("function Invoke-Apply")
+    end = text.index("function Get-PartialRollbackManifest", start)
+    body = text[start:end]
+    preflight = body.index("$ExistingChangeManifest")
+    first_managed_mutation = body.index("foreach ($Path in $ManagedPaths)")
+    assert preflight < first_managed_mutation
+    assert "Test-RecognizedLegacyChangeManifest" in body
+    assert "PROVISIONING_MANIFEST_CONFLICT" in body
+    assert "$LegacyApprovedPaths" in text
+    assert "$LegacyActiveApprovedPaths" in text
+
+
 def test_finalizer_validates_manifest_semantics_before_reuse() -> None:
     text = FINALIZER.read_text(encoding="utf-8")
     assert "function Test-AuditorTargetManifestCurrent" in text
