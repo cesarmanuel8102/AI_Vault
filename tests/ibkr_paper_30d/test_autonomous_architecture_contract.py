@@ -44,3 +44,25 @@ def test_broker_feasibility_remains_authoritative():
     assert "whatIf=True" in source
     assert "BROKER_MARGIN_EXCEEDS_EXPERIMENT_EQUITY" in source
     assert "EXPERIMENT_CAPITAL_BOUNDARY_AFTER_COSTS" in source
+
+
+def test_open_order_writes_exist_only_in_authoritative_executor():
+    executor_path = Path("ibkr_paper_30d/autonomous_execution.py")
+    executor = executor_path.read_text(encoding="utf-8")
+    assert ".cancelOrder(" in executor
+    assert ".placeOrder(" in executor
+    for path in AUTONOMOUS_MODULES:
+        if path == executor_path:
+            continue
+        source = path.read_text(encoding="utf-8")
+        assert ".cancelOrder(" not in source
+
+
+def test_open_order_management_retains_paper_arm_and_live_route_guards():
+    source = Path("ibkr_paper_30d/autonomous_execution.py").read_text(
+        encoding="utf-8"
+    )
+    assert "IBKR_AUTONOMOUS_PAPER_ARMED" in source
+    assert "EXECUTION_CLIENT_ID" in source
+    assert "7497" not in source
+    assert "7496" not in source

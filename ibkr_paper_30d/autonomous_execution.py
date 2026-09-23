@@ -535,6 +535,7 @@ class AutonomousPaperExecutor:
                 status="UNCERTAIN",
                 reason_codes=("LIFECYCLE_RESULT_PERSISTENCE_FAILED",),
                 order={
+                    "order_management": TraderDecision.MODIFY_ORDER.value,
                     "pre_action_state": snapshot,
                     "post_action_reconciliation": post_action_reconciliation,
                 },
@@ -545,6 +546,7 @@ class AutonomousPaperExecutor:
             status=status,
             reason_codes=reason_codes,
             order={
+                "order_management": TraderDecision.MODIFY_ORDER.value,
                 "pre_action_state": snapshot,
                 "post_action_reconciliation": post_action_reconciliation,
             },
@@ -759,6 +761,7 @@ class AutonomousPaperExecutor:
                 status="UNCERTAIN",
                 reason_codes=("LIFECYCLE_RESULT_PERSISTENCE_FAILED",),
                 order={
+                    "order_management": TraderDecision.CANCEL_ORDER.value,
                     "pre_action_state": snapshot,
                     "post_action_reconciliation": post_action_reconciliation,
                 },
@@ -769,6 +772,7 @@ class AutonomousPaperExecutor:
             status=status,
             reason_codes=reason_codes,
             order={
+                "order_management": TraderDecision.CANCEL_ORDER.value,
                 "pre_action_state": snapshot,
                 "post_action_reconciliation": post_action_reconciliation,
             },

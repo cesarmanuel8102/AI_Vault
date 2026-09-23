@@ -142,6 +142,33 @@ def test_fill_causes_immediate_position_event_reassessment(tmp_path, monkeypatch
     ]
 
 
+def test_successful_order_management_triggers_one_observation_only_refresh(
+    tmp_path, monkeypatch
+):
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    results = [
+        {
+            "status": "PASS",
+            "outcome": {"decision": "CANCEL_ORDER"},
+            "execution": {
+                "success": True,
+                "order": {"order_management": "CANCEL_ORDER", "fills": []},
+            },
+        },
+        {"status": "PASS", "outcome": {"decision": "NO_TRADE"}},
+    ]
+    with Database.open(tmp_path / "service.sqlite3") as db:
+        service = make_service(db, clock, stop_after=2, results=results)
+        service.run_forever()
+
+    assert service.triggers == [
+        ("SCHEDULED_SCAN", None),
+        ("POSITION_EVENT", False),
+    ]
+
+
 
 class PassGate:
     def evaluate(self, *args, **kwargs):

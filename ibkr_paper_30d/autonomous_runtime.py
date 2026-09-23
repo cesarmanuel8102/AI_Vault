@@ -116,6 +116,11 @@ def persist_outcome(
         "decision": outcome.decision.value,
         "proposal": None if outcome.proposal is None else outcome.proposal.model_dump(mode="json"),
         "position_action": None if outcome.position_action is None else outcome.position_action.model_dump(mode="json"),
+        "open_order_action": (
+            None
+            if outcome.open_order_action is None
+            else outcome.open_order_action.model_dump(mode="json")
+        ),
         "reason_codes": list(outcome.reason_codes),
         "rounds": outcome.rounds,
         "transcript_sha256": outcome.transcript_sha256,
@@ -240,6 +245,16 @@ def run_autonomous_cycle(
         elif outcome.decision in {TraderDecision.REDUCE_POSITION, TraderDecision.CLOSE_POSITION} and outcome.position_action is not None:
             execution = executor.execute_position_action(
                 outcome.position_action,
+                bundle,
+                outcome.decision,
+            )
+        elif (
+            outcome.decision
+            in {TraderDecision.CANCEL_ORDER, TraderDecision.MODIFY_ORDER}
+            and outcome.open_order_action is not None
+        ):
+            execution = executor.execute_open_order_action(
+                outcome.open_order_action,
                 bundle,
                 outcome.decision,
             )

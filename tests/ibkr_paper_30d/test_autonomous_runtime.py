@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+import sqlite3
+
+import pytest
+
+from ibkr_paper_30d.autonomous_execution import PaperExecutionResult
 from ibkr_paper_30d.autonomous_research import (
+    AutonomousOpenOrderAction,
     AutonomousTurn,
     AutonomousTurnMode,
     ProposalValidation,
@@ -46,6 +52,58 @@ class PassiveToolbox:
         return ProposalValidation(passed=True, reason_codes=(), broker_evidence={})
 
 
+class OpenOrderToolbox(PassiveToolbox):
+    def validate_open_order_action(self, action, bundle, decision):
+        return ProposalValidation(
+            passed=True,
+            reason_codes=(),
+            broker_evidence={"decision": decision.value},
+        )
+
+
+class CancelProvider:
+    last_native_tool_events = []
+
+    def __init__(self, snapshot):
+        self.snapshot = snapshot
+
+    def next_turn(self, request, bundle, history, toolbox_manifest):
+        return AutonomousTurn(
+            mode=AutonomousTurnMode.FINAL,
+            research_requests=[],
+            decision=TraderDecision.CANCEL_ORDER,
+            proposal=None,
+            position_action=None,
+            open_order_action=AutonomousOpenOrderAction(
+                order_ref=self.snapshot["orderRef"],
+                order_id=self.snapshot["orderId"],
+                perm_id=self.snapshot["permId"],
+                client_id=self.snapshot["clientId"],
+                contract_id=self.snapshot["contract"]["conId"],
+                observed_state_sha256=self.snapshot["state_sha256"],
+                reason="Cancel the selected resting experiment order.",
+            ),
+            confidence="0.9",
+            reasoning_summary="The resting order no longer has sufficient edge.",
+            reason_codes=["EDGE_DECAYED"],
+        )
+
+
+class RecordingExecutor:
+    def __init__(self):
+        self.open_order_calls = []
+
+    def execute_open_order_action(self, action, bundle, decision):
+        self.open_order_calls.append((action, decision))
+        return PaperExecutionResult(
+            success=True,
+            status="Cancelled",
+            reason_codes=(),
+            order={"order_management": decision.value, "fills": []},
+            broker_validation={},
+        )
+
+
 def bundle():
     return TraderInputBundle(
         decision_cycle_id="cycle-runtime-1",
@@ -65,6 +123,18 @@ def bundle():
         execution_realism_version="PAPER_V1",
         benchmark_state={},
     )
+
+
+def bundle_with_owned_open_order():
+    snapshot = {
+        "orderRef": "codex-ibkr-paper-30d-a-cycle",
+        "orderId": 41,
+        "permId": 9001,
+        "clientId": 19761,
+        "contract": {"conId": 756733},
+        "state_sha256": "a" * 64,
+    }
+    return bundle().model_copy(update={"open_orders_snapshot": [snapshot]})
 
 
 def test_runtime_persists_canonical_bundle_invocation_result_and_research(tmp_path):
@@ -103,3 +173,50 @@ def test_autonomous_trader_boundary_accepts_frozen_bundle_mapping():
 
     assert result["schema"] == "CODEX_IBKR_AUTONOMOUS_CYCLE_V1"
     assert result["outcome"]["decision"] == "NO_TRADE"
+
+
+def test_runtime_dispatches_accepted_cancel_to_open_order_executor(tmp_path):
+    value = bundle_with_owned_open_order()
+    executor = RecordingExecutor()
+    with Database.open(tmp_path / "autonomous.sqlite3") as db:
+        result = run_autonomous_cycle(
+            value,
+            execute_paper=True,
+            database=db,
+            provider=CancelProvider(value.open_orders_snapshot[0]),
+            toolbox=OpenOrderToolbox(),
+            executor=executor,
+        )
+        final_payload = db.execute(
+            "SELECT payload_json FROM autonomous_research_events "
+            "WHERE event_type='final_outcome'"
+        ).fetchone()[0]
+
+    assert executor.open_order_calls[0][1] == TraderDecision.CANCEL_ORDER
+    assert result["execution"]["order"]["order_management"] == "CANCEL_ORDER"
+    assert '"open_order_action"' in final_payload
+
+
+def test_accepted_cycle_cannot_dispatch_open_order_action_twice(tmp_path):
+    value = bundle_with_owned_open_order()
+    executor = RecordingExecutor()
+    with Database.open(tmp_path / "autonomous.sqlite3") as db:
+        run_autonomous_cycle(
+            value,
+            execute_paper=True,
+            database=db,
+            provider=CancelProvider(value.open_orders_snapshot[0]),
+            toolbox=OpenOrderToolbox(),
+            executor=executor,
+        )
+        with pytest.raises(sqlite3.IntegrityError, match="UNIQUE constraint failed"):
+            run_autonomous_cycle(
+                value,
+                execute_paper=True,
+                database=db,
+                provider=CancelProvider(value.open_orders_snapshot[0]),
+                toolbox=OpenOrderToolbox(),
+                executor=executor,
+            )
+
+    assert len(executor.open_order_calls) == 1

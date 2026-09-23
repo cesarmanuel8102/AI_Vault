@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from ibkr_paper_30d.interference_observability import (
     build_interference_observation,
     summarize_interference,
@@ -159,3 +161,25 @@ def test_unbounded_liability_stays_capital_boundary_not_host_capability():
 
     assert item["blocked"] is True
     assert item["interference_source"] == "EXPERIMENT_CAPITAL_BOUNDARY"
+
+
+@pytest.mark.parametrize("decision", ["CANCEL_ORDER", "MODIFY_ORDER"])
+def test_open_order_lifecycle_is_model_trade_management(decision):
+    item = build_interference_observation(
+        outcome={
+            "decision": decision,
+            "accepted": True,
+            "validation": "PASS",
+            "reason_codes": [],
+        },
+        execution={"success": True, "status": "Submitted", "reason_codes": []},
+        execute_paper=True,
+    )
+
+    summary = summarize_interference([item])
+
+    assert item["disposition"] == "EXECUTED"
+    assert summary["proposed_action_count"] == 1
+    assert summary["new_entry_decision_count"] == 0
+    assert summary["position_fill_decision_count"] == 0
+    assert summary[f"{decision.lower()}_decision_count"] == 1

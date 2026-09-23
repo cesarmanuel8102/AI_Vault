@@ -466,9 +466,16 @@ class AutonomousExperimentService:
                     continue
 
                 execution = result.get("execution") or {}
-                fills = (execution.get("order") or {}).get("fills", []) or []
-                if fills and not self.stop_event.is_set():
-                    # Immediate post-fill state/reasoning refresh is observation-only.
+                execution_order = execution.get("order") or {}
+                fills = execution_order.get("fills", []) or []
+                order_management = str(
+                    execution_order.get("order_management") or ""
+                )
+                lifecycle_success = bool(execution.get("success")) and (
+                    order_management in {"CANCEL_ORDER", "MODIFY_ORDER"}
+                )
+                if (fills or lifecycle_success) and not self.stop_event.is_set():
+                    # Immediate post-action state/reasoning refresh is observation-only.
                     follow_up = self._run_cycle(
                         "POSITION_EVENT", allow_execution=False
                     )

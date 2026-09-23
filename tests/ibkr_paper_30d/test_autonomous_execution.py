@@ -682,6 +682,7 @@ def test_cancel_calls_only_selected_owned_order_and_persists_attempt_and_result(
         events = lifecycle_events(db, action.order_ref)
 
     assert result.success is True
+    assert result.order["order_management"] == "CANCEL_ORDER"
     assert fake_ib.cancelled_order_ids == [action.order_id]
     assert fake_ib.global_cancel_calls == 0
     assert [item["lifecycle_event"] for item in events] == [
@@ -771,6 +772,7 @@ def test_cancel_initial_disconnect_is_retried_before_any_write(tmp_path):
         )
 
     assert result.success is True
+    assert result.order["order_management"] == "CANCEL_ORDER"
     assert executor.toolbox.connect_calls == 2
     assert fake_ib.cancel_calls == 1
 
@@ -948,6 +950,7 @@ def test_modify_preserves_identity_and_submits_same_order_id(tmp_path):
         events = lifecycle_events(db, action.order_ref)
 
     assert result.success is True
+    assert result.order["order_management"] == "MODIFY_ORDER"
     contract, submitted = fake_ib.place_calls[0]
     assert submitted.orderId == action.order_id
     assert submitted.permId == action.perm_id

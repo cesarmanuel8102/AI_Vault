@@ -182,7 +182,14 @@ def summarize_interference(observations: list[dict[str, Any]]) -> dict[str, Any]
     proposed_actions = [
         item
         for item in observations
-        if item.get("model_decision") in {"PROPOSE_TRADE", "REDUCE_POSITION", "CLOSE_POSITION"}
+        if item.get("model_decision")
+        in {
+            "PROPOSE_TRADE",
+            "REDUCE_POSITION",
+            "CLOSE_POSITION",
+            "CANCEL_ORDER",
+            "MODIFY_ORDER",
+        }
     ]
     blocked_actions = [item for item in proposed_actions if bool(item.get("blocked"))]
 
@@ -215,6 +222,19 @@ def summarize_interference(observations: list[dict[str, Any]]) -> dict[str, Any]
         "schema": "CODEX_POLICY_INTERFERENCE_SUMMARY_V1",
         "observation_count": total,
         "proposed_action_count": len(proposed_actions),
+        "new_entry_decision_count": sum(
+            item.get("model_decision") == "PROPOSE_TRADE" for item in observations
+        ),
+        "position_fill_decision_count": sum(
+            item.get("model_decision") in {"REDUCE_POSITION", "CLOSE_POSITION"}
+            for item in observations
+        ),
+        "cancel_order_decision_count": sum(
+            item.get("model_decision") == "CANCEL_ORDER" for item in observations
+        ),
+        "modify_order_decision_count": sum(
+            item.get("model_decision") == "MODIFY_ORDER" for item in observations
+        ),
         "blocked_proposed_action_count": len(blocked_actions),
         "infrastructure_block_rate": infrastructure_block_rate,
         "auditor_interference_rate": auditor_control_rate,
