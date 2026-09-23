@@ -176,3 +176,48 @@ def test_capability_discovery_source_marks_permissions_unproven() -> None:
     assert "UNPROVEN_READ_ONLY_DISCOVERY" in source
     assert '"account_trading_permission_proven": False' in source
     assert '"what_if_orders": False' in source
+
+
+def test_probe_file_accepts_json_list_and_wrapper(tmp_path) -> None:
+    list_path = tmp_path / "probes-list.json"
+    list_path.write_text(
+        '[{"label":"A","symbol":"AAPL","sec_type":"STK","exchange":"SMART"}]',
+        encoding="utf-8",
+    )
+    wrapped_path = tmp_path / "probes-wrapped.json"
+    wrapped_path.write_text(
+        '{"probes":[{"label":"B","symbol":"SPY","sec_type":"STK","exchange":"OVERNIGHT"}]}',
+        encoding="utf-8",
+    )
+
+    first = discovery._parse_probe_file(list_path)
+    second = discovery._parse_probe_file(wrapped_path)
+
+    assert first[0].label == "A"
+    assert second[0].label == "B"
+    assert second[0].exchange == "OVERNIGHT"
+
+
+def test_parse_only_cli_reads_probe_file_without_network(tmp_path, capsys) -> None:
+    path = tmp_path / "probes.json"
+    path.write_text(
+        '[{"label":"OPT","symbol":"AAPL","sec_type":"OPT","exchange":"SMART",'
+        '"con_id":123,"expiry":"20261016","strike":340,"right":"C","multiplier":"100"}]',
+        encoding="utf-8",
+    )
+
+    rc = discovery.main(
+        [
+            "--no-default-probes",
+            "--probe-file",
+            str(path),
+            "--parse-only",
+        ]
+    )
+
+    assert rc == 0
+    payload = __import__("json").loads(capsys.readouterr().out)
+    assert payload["schema"] == "IBKR_CAPABILITY_DISCOVERY_PROBE_SET_V1"
+    assert payload["probe_count"] == 1
+    assert payload["probes"][0]["label"] == "OPT"
+    assert payload["probes"][0]["con_id"] == 123
