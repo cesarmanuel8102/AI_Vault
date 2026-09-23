@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import os
 import random
 from decimal import Decimal
@@ -7,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .autonomous_research import (
+    AutonomousOpenOrderAction,
     AutonomousPositionAction,
     AutonomousTradeProposal,
     ProposalValidation,
@@ -16,7 +18,7 @@ from .autonomous_research import (
 )
 from .ibkr_readonly import expected_identity_hash
 from .ibkr_readonly_session import ExpectedPaperIdentityStore
-from .open_order_management import canonical_open_order
+from .open_order_management import ACTIONABLE_ORDER_STATUSES, canonical_open_order
 from .risk import CapitalBoundaryInputs, CapitalBoundaryRiskEngine, RiskResult
 from .trader_invocation import TraderDecision, TraderInputBundle
 
@@ -357,6 +359,191 @@ class IBKRResearchToolbox:
             return ProposalValidation(
                 passed=True,
                 reason_codes=(),
+                broker_evidence=evidence,
+            )
+        finally:
+            if owns_connection:
+                broker.disconnect()
+
+    def validate_open_order_action(
+        self,
+        action: AutonomousOpenOrderAction,
+        bundle: TraderInputBundle,
+        decision: TraderDecision,
+        *,
+        ib: Any | None = None,
+    ) -> ProposalValidation:
+        frozen = next(
+            (
+                item
+                for item in bundle.open_orders_snapshot
+                if item.get("orderRef") == action.order_ref
+                and int(item.get("orderId") or 0) == action.order_id
+                and int(item.get("clientId") or 0) == action.client_id
+                and int((item.get("contract") or {}).get("conId") or 0)
+                == action.contract_id
+            ),
+            None,
+        )
+        if frozen is None:
+            return ProposalValidation(
+                passed=False,
+                reason_codes=("OPEN_ORDER_FROZEN_STATE_ABSENT",),
+                broker_evidence={},
+            )
+        if frozen.get("state_sha256") != action.observed_state_sha256:
+            return ProposalValidation(
+                passed=False,
+                reason_codes=("OPEN_ORDER_FROZEN_STATE_MISMATCH",),
+                broker_evidence={"frozen_state": frozen},
+            )
+
+        owns_connection = ib is None
+        broker = ib or self._connect()
+        try:
+            trades = list(broker.reqAllOpenOrders())
+            matches = [
+                trade
+                for trade in trades
+                if str(getattr(trade.order, "orderRef", "") or "")
+                == action.order_ref
+                and int(getattr(trade.order, "orderId", 0) or 0)
+                == action.order_id
+                and int(getattr(trade.order, "clientId", 0) or 0)
+                == action.client_id
+                and int(getattr(trade.contract, "conId", 0) or 0)
+                == action.contract_id
+            ]
+            if len(matches) != 1:
+                reason = (
+                    "OPEN_ORDER_IDENTITY_AMBIGUOUS"
+                    if len(matches) > 1
+                    else "OPEN_ORDER_NOT_FOUND"
+                )
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=(reason,),
+                    broker_evidence={},
+                )
+            trade = matches[0]
+            snapshot = canonical_open_order(trade)
+            if snapshot["state_sha256"] != action.observed_state_sha256:
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("OPEN_ORDER_STATE_CHANGED",),
+                    broker_evidence={"live_state": snapshot},
+                )
+            if snapshot["status"].upper() not in ACTIONABLE_ORDER_STATUSES:
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("OPEN_ORDER_NOT_ACTIONABLE",),
+                    broker_evidence={"live_state": snapshot},
+                )
+            if decision == TraderDecision.CANCEL_ORDER:
+                return ProposalValidation(
+                    passed=True,
+                    reason_codes=(),
+                    broker_evidence={"old_state": snapshot},
+                )
+            if decision != TraderDecision.MODIFY_ORDER:
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("UNSUPPORTED_OPEN_ORDER_DECISION",),
+                    broker_evidence={},
+                )
+
+            current_total = Decimal(snapshot["totalQuantity"])
+            filled = Decimal(snapshot["filled"])
+            requested_total = action.new_total_quantity or current_total
+            requested_limit = (
+                action.new_limit_price
+                if action.new_limit_price is not None
+                else Decimal(snapshot["limitPrice"])
+            )
+            if requested_total > current_total:
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("OPEN_ORDER_QUANTITY_INCREASE_FORBIDDEN",),
+                    broker_evidence={"old_state": snapshot},
+                )
+            if requested_total < filled:
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("OPEN_ORDER_TOTAL_BELOW_FILLED",),
+                    broker_evidence={"old_state": snapshot},
+                )
+            if requested_total == filled:
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("OPEN_ORDER_WOULD_HAVE_NO_REMAINING_QUANTITY",),
+                    broker_evidence={"old_state": snapshot},
+                )
+            if (
+                action.new_limit_price is not None
+                and snapshot["orderType"] != "LMT"
+            ):
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("OPEN_ORDER_LIMIT_PRICE_CHANGE_REQUIRES_LMT",),
+                    broker_evidence={"old_state": snapshot},
+                )
+            if requested_total == current_total and requested_limit == Decimal(
+                snapshot["limitPrice"]
+            ):
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("OPEN_ORDER_NO_EFFECTIVE_CHANGE",),
+                    broker_evidence={"old_state": snapshot},
+                )
+
+            quote = self.live_contract_quote_evidence(broker, trade.contract)
+            if not quote.get("success"):
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("OPEN_ORDER_QUOTE_UNUSABLE",),
+                    broker_evidence={"old_state": snapshot, "quote": quote},
+                )
+
+            what_if_order = copy.deepcopy(trade.order)
+            what_if_order.totalQuantity = float(requested_total)
+            if action.new_limit_price is not None:
+                what_if_order.lmtPrice = float(requested_limit)
+            what_if_order.whatIf = True
+            what_if_order.transmit = False
+            try:
+                state = broker.whatIfOrder(trade.contract, what_if_order)
+            except Exception as exc:
+                state = None
+                state_error = f"{type(exc).__name__}:broker_operation_failed"
+            else:
+                state_error = None
+            evidence = {
+                "success": state is not None,
+                "error": state_error
+                or ("WHAT_IF_RETURNED_NONE" if state is None else None),
+                "old_state": snapshot,
+                "requested_change": {
+                    "totalQuantity": str(requested_total),
+                    "limitPrice": str(requested_limit),
+                },
+                "quote": quote,
+                "whatIf": True,
+                "commission": getattr(state, "commission", None),
+                "minCommission": getattr(state, "minCommission", None),
+                "maxCommission": getattr(state, "maxCommission", None),
+                "initMarginChange": getattr(state, "initMarginChange", None),
+                "maintMarginChange": getattr(state, "maintMarginChange", None),
+                "warningText": getattr(state, "warningText", None),
+            }
+            equity = Decimal(
+                str(bundle.experiment_subledger_snapshot.get("equity", "0"))
+            )
+            feasibility_ok, reasons = self._feasibility_common(
+                evidence, equity=equity
+            )
+            return ProposalValidation(
+                passed=feasibility_ok,
+                reason_codes=() if feasibility_ok else reasons,
                 broker_evidence=evidence,
             )
         finally:

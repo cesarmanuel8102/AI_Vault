@@ -18,6 +18,7 @@ from ibkr_paper_30d.autonomous_research import (
     ProposalValidation,
 )
 from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
+from ibkr_paper_30d.ibkr_research_tools import IBKRResearchToolbox
 from ibkr_paper_30d.open_order_management import (
     EXECUTION_CLIENT_ID,
     canonical_open_order,
@@ -223,6 +224,150 @@ class LifecycleToolbox:
         if self.connect_calls <= self.fail_connects:
             raise ConnectionError("initial connection failed")
         return self.broker
+
+
+class ModificationValidationIB(FakeLifecycleIB):
+    def __init__(self, target, *, what_if_state=None):
+        super().__init__(target)
+        self.quote_contract_ids = []
+        self.what_if_calls = 0
+        self.what_if_state = what_if_state
+
+    def reqAllOpenOrders(self):
+        return self.openTrades()
+
+    def whatIfOrder(self, contract, order):
+        self.what_if_calls += 1
+        if self.what_if_state is not None:
+            return self.what_if_state
+        return SimpleNamespace(
+            commission="1.00",
+            minCommission="1.00",
+            maxCommission="1.00",
+            initMarginChange="100.00",
+            maintMarginChange="100.00",
+            warningText="",
+        )
+
+
+class FakeModifyIB(FakeLifecycleIB):
+    def __init__(
+        self,
+        target,
+        *,
+        change_state_after_what_if=False,
+        disconnect_after_place=False,
+    ):
+        super().__init__(target)
+        self.change_state_after_what_if = change_state_after_what_if
+        self.disconnect_after_place = disconnect_after_place
+        self.what_if_calls = 0
+
+    def reqAllOpenOrders(self):
+        return self.openTrades()
+
+    def whatIfOrder(self, contract, order):
+        self.what_if_calls += 1
+        if self.change_state_after_what_if:
+            self.target.order.lmtPrice = 10.25
+        return SimpleNamespace(
+            commission="1.00",
+            minCommission="1.00",
+            maxCommission="1.00",
+            initMarginChange="100.00",
+            maintMarginChange="100.00",
+            warningText="",
+        )
+
+    def placeOrder(self, contract, order):
+        self.place_calls.append((contract, order))
+        self.target.order = order
+        self.target.orderStatus.status = "Submitted"
+        self.target.orderStatus.remaining = Decimal(str(order.totalQuantity)) - Decimal(
+            str(self.target.orderStatus.filled)
+        )
+        if self.disconnect_after_place:
+            raise ConnectionError("disconnected after modify")
+        return self.target
+
+
+def modification_validation_fixture(
+    *,
+    total="2",
+    filled="0",
+    new_total="1",
+    quote_success=True,
+    what_if_state=None,
+    order_type="LMT",
+):
+    target = lifecycle_trade(total=total, filled=filled)
+    target.order.orderType = order_type
+    snapshot = canonical_open_order(target)
+    action = open_order_action_from_trade(target).model_copy(
+        update={
+            "new_total_quantity": Decimal(new_total),
+            "new_limit_price": Decimal("9.50"),
+            "reason": "Reduce and reprice the resting order.",
+        }
+    )
+    value = bundle().model_copy(update={"open_orders_snapshot": [snapshot]})
+    fake_ib = ModificationValidationIB(target, what_if_state=what_if_state)
+    toolbox = IBKRResearchToolbox()
+    toolbox.live_contract_quote_evidence = lambda ib, contract: (
+        fake_ib.quote_contract_ids.append(contract.conId)
+        or {
+            "success": quote_success,
+            "bid": 9.45,
+            "ask": 9.50,
+            "market_data_type": 1,
+        }
+    )
+    return toolbox, fake_ib, value, action
+
+
+@contextmanager
+def armed_modify_fixture(
+    tmp_path,
+    *,
+    change_state_after_what_if=False,
+    disconnect_after_place=False,
+):
+    from ibkr_paper_30d.persistence import Database
+
+    with Database.open(tmp_path / "modify.sqlite3") as db:
+        target = lifecycle_trade()
+        action = open_order_action_from_trade(target).model_copy(
+            update={
+                "new_total_quantity": Decimal("1"),
+                "new_limit_price": Decimal("9.50"),
+                "reason": "Reduce and reprice the resting order.",
+            }
+        )
+        register_issuance(db, target)
+        broker = FakeModifyIB(
+            target,
+            change_state_after_what_if=change_state_after_what_if,
+            disconnect_after_place=disconnect_after_place,
+        )
+        toolbox = IBKRResearchToolbox()
+        toolbox._connect = lambda *, client_id=None: broker
+        toolbox.live_contract_quote_evidence = lambda ib, contract: {
+            "success": True,
+            "bid": 9.45,
+            "ask": 9.50,
+            "market_data_type": 1,
+        }
+        executor = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        )
+        value = bundle().model_copy(
+            update={"open_orders_snapshot": [canonical_open_order(target)]}
+        )
+        yield executor, db, broker, action, value
 
 
 @contextmanager
@@ -651,3 +796,200 @@ def test_cancel_result_persistence_failure_is_uncertain_and_not_replayed(
     assert result.status == "UNCERTAIN"
     assert result.reason_codes == ("LIFECYCLE_RESULT_PERSISTENCE_FAILED",)
     assert fake_ib.cancel_calls == 1
+
+
+def test_modify_validation_requires_fresh_quote_and_what_if():
+    toolbox, fake_ib, value, action = modification_validation_fixture()
+
+    result = toolbox.validate_open_order_action(
+        action, value, TraderDecision.MODIFY_ORDER, ib=fake_ib
+    )
+
+    assert result.passed is True
+    assert fake_ib.quote_contract_ids == [action.contract_id]
+    assert fake_ib.what_if_calls == 1
+    assert result.broker_evidence["whatIf"] is True
+
+
+@pytest.mark.parametrize(
+    ("quantity", "reason"),
+    [
+        ("3", "OPEN_ORDER_QUANTITY_INCREASE_FORBIDDEN"),
+        ("0.5", "OPEN_ORDER_TOTAL_BELOW_FILLED"),
+    ],
+)
+def test_modify_validation_rejects_unsafe_quantity(quantity, reason):
+    toolbox, fake_ib, value, action = modification_validation_fixture(
+        total="2", filled="1", new_total=quantity
+    )
+
+    result = toolbox.validate_open_order_action(
+        action, value, TraderDecision.MODIFY_ORDER, ib=fake_ib
+    )
+
+    assert result.passed is False
+    assert result.reason_codes == (reason,)
+    assert fake_ib.what_if_calls == 0
+
+
+def test_modify_to_filled_quantity_requires_reconciliation_not_zero_remainder():
+    toolbox, fake_ib, value, action = modification_validation_fixture(
+        total="2", filled="1", new_total="1"
+    )
+
+    result = toolbox.validate_open_order_action(
+        action, value, TraderDecision.MODIFY_ORDER, ib=fake_ib
+    )
+
+    assert result.passed is False
+    assert result.reason_codes == ("OPEN_ORDER_WOULD_HAVE_NO_REMAINING_QUANTITY",)
+
+
+def test_modify_validation_rejects_no_effective_change():
+    toolbox, fake_ib, value, action = modification_validation_fixture(
+        total="2", new_total="2"
+    )
+    action = action.model_copy(update={"new_limit_price": Decimal("10")})
+
+    result = toolbox.validate_open_order_action(
+        action, value, TraderDecision.MODIFY_ORDER, ib=fake_ib
+    )
+
+    assert result.reason_codes == ("OPEN_ORDER_NO_EFFECTIVE_CHANGE",)
+    assert fake_ib.what_if_calls == 0
+
+
+def test_modify_validation_requires_usable_quote():
+    toolbox, fake_ib, value, action = modification_validation_fixture(
+        quote_success=False
+    )
+
+    result = toolbox.validate_open_order_action(
+        action, value, TraderDecision.MODIFY_ORDER, ib=fake_ib
+    )
+
+    assert result.reason_codes == ("OPEN_ORDER_QUOTE_UNUSABLE",)
+    assert fake_ib.what_if_calls == 0
+
+
+def test_modify_validation_applies_experiment_equity_to_what_if_margin():
+    state = SimpleNamespace(
+        commission="1.00",
+        minCommission="1.00",
+        maxCommission="1.00",
+        initMarginChange="501.00",
+        maintMarginChange="501.00",
+        warningText="",
+    )
+    toolbox, fake_ib, value, action = modification_validation_fixture(
+        what_if_state=state
+    )
+
+    result = toolbox.validate_open_order_action(
+        action, value, TraderDecision.MODIFY_ORDER, ib=fake_ib
+    )
+
+    assert result.reason_codes == ("BROKER_MARGIN_EXCEEDS_EXPERIMENT_EQUITY",)
+    assert fake_ib.what_if_calls == 1
+
+
+def test_modify_validation_blocks_limit_change_for_non_limit_order():
+    toolbox, fake_ib, value, action = modification_validation_fixture(
+        order_type="MKT"
+    )
+
+    result = toolbox.validate_open_order_action(
+        action, value, TraderDecision.MODIFY_ORDER, ib=fake_ib
+    )
+
+    assert result.reason_codes == ("OPEN_ORDER_LIMIT_PRICE_CHANGE_REQUIRES_LMT",)
+    assert fake_ib.what_if_calls == 0
+
+
+def test_modify_validation_blocks_unacceptable_what_if_warning():
+    state = SimpleNamespace(
+        commission="1.00",
+        minCommission="1.00",
+        maxCommission="1.00",
+        initMarginChange="100.00",
+        maintMarginChange="100.00",
+        warningText="Order not allowed for this account",
+    )
+    toolbox, fake_ib, value, action = modification_validation_fixture(
+        what_if_state=state
+    )
+
+    result = toolbox.validate_open_order_action(
+        action, value, TraderDecision.MODIFY_ORDER, ib=fake_ib
+    )
+
+    assert result.reason_codes == ("BROKER_FEASIBILITY_WARNING_BLOCK",)
+    assert fake_ib.what_if_calls == 1
+
+
+def test_modify_validation_blocks_when_broker_state_is_absent():
+    toolbox, fake_ib, value, action = modification_validation_fixture()
+    fake_ib.target.orderStatus.status = "Cancelled"
+
+    result = toolbox.validate_open_order_action(
+        action, value, TraderDecision.MODIFY_ORDER, ib=fake_ib
+    )
+
+    assert result.reason_codes == ("OPEN_ORDER_NOT_FOUND",)
+    assert fake_ib.what_if_calls == 0
+
+
+def test_modify_preserves_identity_and_submits_same_order_id(tmp_path):
+    with armed_modify_fixture(tmp_path) as fixture:
+        executor, db, fake_ib, action, value = fixture
+        result = executor.execute_open_order_action(
+            action, value, TraderDecision.MODIFY_ORDER
+        )
+        events = lifecycle_events(db, action.order_ref)
+
+    assert result.success is True
+    contract, submitted = fake_ib.place_calls[0]
+    assert submitted.orderId == action.order_id
+    assert submitted.permId == action.perm_id
+    assert submitted.clientId == action.client_id
+    assert submitted.orderRef == action.order_ref
+    assert submitted.account == "DU1234567"
+    assert submitted.action == "BUY"
+    assert submitted.orderType == "LMT"
+    assert submitted.tif == "DAY"
+    assert submitted.totalQuantity == 1
+    assert submitted.lmtPrice == 9.50
+    assert contract.conId == action.contract_id
+    assert [item["lifecycle_event"] for item in events] == [
+        "ISSUED_PRE_SEND",
+        "MODIFY_ATTEMPT",
+        "MODIFY_RESULT",
+    ]
+
+
+def test_state_change_after_what_if_blocks_modify_before_place_order(tmp_path):
+    with armed_modify_fixture(tmp_path, change_state_after_what_if=True) as fixture:
+        executor, _, fake_ib, action, value = fixture
+        result = executor.execute_open_order_action(
+            action, value, TraderDecision.MODIFY_ORDER
+        )
+
+    assert result.success is False
+    assert result.reason_codes == ("OPEN_ORDER_STATE_CHANGED_AFTER_WHAT_IF",)
+    assert fake_ib.place_calls == []
+
+
+def test_modify_post_write_disconnect_is_not_replayed(tmp_path):
+    with armed_modify_fixture(tmp_path, disconnect_after_place=True) as fixture:
+        executor, _, fake_ib, action, value = fixture
+        first = executor.execute_open_order_action(
+            action, value, TraderDecision.MODIFY_ORDER
+        )
+        second = executor.execute_open_order_action(
+            action, value, TraderDecision.MODIFY_ORDER
+        )
+
+    assert first.success is False
+    assert "BROKER_CONFIRMATION_UNAVAILABLE" in first.reason_codes
+    assert second.reason_codes == ("DUPLICATE_ORDER_ACTION_REQUEST",)
+    assert len(fake_ib.place_calls) == 1

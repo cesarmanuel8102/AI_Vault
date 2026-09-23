@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import os
 from dataclasses import dataclass
 from decimal import Decimal
@@ -204,6 +205,7 @@ class AutonomousPaperExecutor:
         self,
         *,
         lifecycle_event: str,
+        decision: TraderDecision,
         action: AutonomousOpenOrderAction,
         bundle: TraderInputBundle,
         snapshot: dict[str, Any],
@@ -216,7 +218,7 @@ class AutonomousPaperExecutor:
             "schema": "EXPERIMENT_ORDER_REGISTRY_LIFECYCLE_V1",
             "lifecycle_event": lifecycle_event,
             "decision_cycle_id": bundle.decision_cycle_id,
-            "decision": TraderDecision.CANCEL_ORDER.value,
+            "decision": decision.value,
             "order_ref": action.order_ref,
             "order_id": action.order_id,
             "perm_id": action.perm_id,
@@ -278,12 +280,275 @@ class AutonomousPaperExecutor:
         action: AutonomousOpenOrderAction,
         bundle: TraderInputBundle,
     ) -> PaperExecutionResult:
+        if not self.armed:
+            raise AutonomousPaperExecutionNotArmed(
+                "set IBKR_AUTONOMOUS_PAPER_ARMED=true only when the paper experiment is explicitly started"
+            )
+        frozen_reasons = self._frozen_bundle_reasons(bundle)
+        if frozen_reasons:
+            return PaperExecutionResult(
+                success=False,
+                status="BLOCKED",
+                reason_codes=frozen_reasons,
+                order={},
+                broker_validation={},
+            )
+        if self.database is None:
+            return PaperExecutionResult(
+                success=False,
+                status="BLOCKED",
+                reason_codes=("PERSISTENT_ORDER_REGISTRY_REQUIRED",),
+                order={},
+                broker_validation={},
+            )
+        fresh_reasons = self._fresh_safety_reasons("OPEN_ORDER_MANAGEMENT")
+        if fresh_reasons:
+            return PaperExecutionResult(
+                success=False,
+                status="BLOCKED",
+                reason_codes=fresh_reasons,
+                order={},
+                broker_validation={},
+            )
+
+        try:
+            ib = self._connect_execution()
+        except Exception:
+            try:
+                ib = self._connect_execution()
+            except Exception as exc:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=(f"BROKER_CONNECTION_FAILED:{type(exc).__name__}",),
+                    order={},
+                    broker_validation={},
+                )
+
+        try:
+            trades = list(ib.reqOpenOrders())
+            if lifecycle_attempt_exists(
+                self.database,
+                order_ref=action.order_ref,
+                decision_cycle_id=bundle.decision_cycle_id,
+            ):
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("DUPLICATE_ORDER_ACTION_REQUEST",),
+                    order={},
+                    broker_validation={},
+                )
+            try:
+                selected_trade, snapshot = resolve_owned_open_trade(
+                    self.database,
+                    trades,
+                    action,
+                    execution_client_id=self.execution_client_id,
+                )
+            except OpenOrderOwnershipError as exc:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=(exc.reason_code,),
+                    order={},
+                    broker_validation={},
+                )
+
+            validation = self.toolbox.validate_open_order_action(
+                action,
+                bundle,
+                TraderDecision.MODIFY_ORDER,
+                ib=ib,
+            )
+            if not validation.passed:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=validation.reason_codes,
+                    order={},
+                    broker_validation=validation.broker_evidence,
+                )
+
+            try:
+                selected_trade, refreshed_snapshot = resolve_owned_open_trade(
+                    self.database,
+                    list(ib.reqOpenOrders()),
+                    action,
+                    execution_client_id=self.execution_client_id,
+                )
+            except OpenOrderOwnershipError as exc:
+                reason = (
+                    "OPEN_ORDER_STATE_CHANGED_AFTER_WHAT_IF"
+                    if exc.reason_code == "OPEN_ORDER_STATE_CHANGED"
+                    else exc.reason_code
+                )
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=(reason,),
+                    order={},
+                    broker_validation=validation.broker_evidence,
+                )
+
+            operator_reasons = self._operator_control_reasons()
+            if operator_reasons:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=operator_reasons,
+                    order={},
+                    broker_validation=validation.broker_evidence,
+                )
+
+            requested_total = (
+                action.new_total_quantity
+                if action.new_total_quantity is not None
+                else Decimal(refreshed_snapshot["totalQuantity"])
+            )
+            requested_limit = (
+                action.new_limit_price
+                if action.new_limit_price is not None
+                else Decimal(refreshed_snapshot["limitPrice"])
+            )
+            modified = copy.deepcopy(selected_trade.order)
+            modified.orderId = refreshed_snapshot["orderId"]
+            modified.permId = refreshed_snapshot["permId"]
+            modified.clientId = refreshed_snapshot["clientId"]
+            modified.orderRef = refreshed_snapshot["orderRef"]
+            modified.account = refreshed_snapshot["account"]
+            modified.action = refreshed_snapshot["action"]
+            modified.orderType = refreshed_snapshot["orderType"]
+            modified.tif = refreshed_snapshot["tif"]
+            modified.outsideRth = refreshed_snapshot["outsideRth"]
+            modified.totalQuantity = float(requested_total)
+            if action.new_limit_price is not None:
+                modified.lmtPrice = float(requested_limit)
+            modified.whatIf = False
+            modified.transmit = True
+
+            try:
+                self._register_lifecycle_event(
+                    lifecycle_event="MODIFY_ATTEMPT",
+                    decision=TraderDecision.MODIFY_ORDER,
+                    action=action,
+                    bundle=bundle,
+                    snapshot=refreshed_snapshot,
+                    broker_evidence=validation.broker_evidence,
+                )
+            except Exception:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("LIFECYCLE_ATTEMPT_PERSISTENCE_FAILED",),
+                    order={},
+                    broker_validation=validation.broker_evidence,
+                )
+
+            try:
+                ib.placeOrder(selected_trade.contract, modified)
+            except Exception:
+                return PaperExecutionResult(
+                    success=False,
+                    status="UNCERTAIN",
+                    reason_codes=("BROKER_CONFIRMATION_UNAVAILABLE",),
+                    order={"pre_action_state": refreshed_snapshot},
+                    broker_validation=validation.broker_evidence,
+                )
+            try:
+                ib.sleep(self.fill_wait_seconds)
+                post_trades = list(ib.reqOpenOrders())
+            except Exception:
+                return PaperExecutionResult(
+                    success=False,
+                    status="UNCERTAIN",
+                    reason_codes=("BROKER_CONFIRMATION_UNAVAILABLE",),
+                    order={"pre_action_state": refreshed_snapshot},
+                    broker_validation=validation.broker_evidence,
+                )
+
+            post_snapshots = [canonical_open_order(item) for item in post_trades]
+            matching = [
+                item
+                for item in post_snapshots
+                if item["orderRef"] == action.order_ref
+                and item["orderId"] == action.order_id
+                and item["clientId"] == action.client_id
+                and item["contract"]["conId"] == action.contract_id
+            ]
+            acknowledged = (
+                len(matching) == 1
+                and Decimal(matching[0]["totalQuantity"]) == requested_total
+                and Decimal(matching[0]["limitPrice"]) == requested_limit
+                and matching[0]["status"].upper() in ACTIONABLE_ORDER_STATUSES
+            )
+            post_reconciliation = {
+                "acknowledged": acknowledged,
+                "matching_order_count": len(matching),
+                "requested_total_quantity": str(requested_total),
+                "requested_limit_price": str(requested_limit),
+                "confirmed_state": matching[0] if len(matching) == 1 else None,
+            }
+            reasons = () if acknowledged else ("BROKER_MODIFICATION_UNCONFIRMED",)
+            return self._modify_result(
+                action=action,
+                bundle=bundle,
+                snapshot=refreshed_snapshot,
+                success=acknowledged,
+                status="SUBMITTED" if acknowledged else "UNCERTAIN",
+                reason_codes=reasons,
+                post_action_reconciliation=post_reconciliation,
+                broker_evidence=validation.broker_evidence,
+            )
+        finally:
+            ib.disconnect()
+
+    def _modify_result(
+        self,
+        *,
+        action: AutonomousOpenOrderAction,
+        bundle: TraderInputBundle,
+        snapshot: dict[str, Any],
+        success: bool,
+        status: str,
+        reason_codes: tuple[str, ...],
+        post_action_reconciliation: dict[str, Any],
+        broker_evidence: dict[str, Any],
+    ) -> PaperExecutionResult:
+        evidence = {
+            **broker_evidence,
+            "post_action_reconciliation": post_action_reconciliation,
+        }
+        try:
+            self._register_lifecycle_event(
+                lifecycle_event="MODIFY_RESULT",
+                decision=TraderDecision.MODIFY_ORDER,
+                action=action,
+                bundle=bundle,
+                snapshot=snapshot,
+                reason_codes=reason_codes,
+                broker_evidence=evidence,
+            )
+        except Exception:
+            return PaperExecutionResult(
+                success=False,
+                status="UNCERTAIN",
+                reason_codes=("LIFECYCLE_RESULT_PERSISTENCE_FAILED",),
+                order={
+                    "pre_action_state": snapshot,
+                    "post_action_reconciliation": post_action_reconciliation,
+                },
+                broker_validation=evidence,
+            )
         return PaperExecutionResult(
-            success=False,
-            status="BLOCKED",
-            reason_codes=("MODIFY_ORDER_NOT_IMPLEMENTED",),
-            order={},
-            broker_validation={},
+            success=success,
+            status=status,
+            reason_codes=reason_codes,
+            order={
+                "pre_action_state": snapshot,
+                "post_action_reconciliation": post_action_reconciliation,
+            },
+            broker_validation=evidence,
         )
 
     def _cancel_open_order(
@@ -378,6 +643,7 @@ class AutonomousPaperExecutor:
             try:
                 self._register_lifecycle_event(
                     lifecycle_event="CANCEL_ATTEMPT",
+                    decision=TraderDecision.CANCEL_ORDER,
                     action=action,
                     bundle=bundle,
                     snapshot=snapshot,
@@ -480,6 +746,7 @@ class AutonomousPaperExecutor:
         try:
             self._register_lifecycle_event(
                 lifecycle_event="CANCEL_RESULT",
+                decision=TraderDecision.CANCEL_ORDER,
                 action=action,
                 bundle=bundle,
                 snapshot=snapshot,

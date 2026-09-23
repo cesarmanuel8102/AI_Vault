@@ -240,6 +240,31 @@ def test_research_loop_validates_open_order_actions(decision, action):
     assert toolbox.open_order_validations == [(action, decision)]
 
 
+def test_blocked_open_order_action_falls_back_to_no_trade():
+    value = bundle()
+    action = open_order_action(new_limit_price="9.50")
+    final = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        research_requests=[],
+        decision=TraderDecision.MODIFY_ORDER,
+        proposal=None,
+        position_action=None,
+        open_order_action=action,
+        confidence="0.8",
+        reasoning_summary="Reprice the resting order.",
+        reason_codes=["RESTING_ORDER_MANAGEMENT"],
+    )
+
+    outcome = AutonomousResearchLoop(
+        SequenceProvider([final]), FakeToolbox(validation=False)
+    ).run(request(value), value)
+
+    assert outcome.accepted is False
+    assert outcome.decision == TraderDecision.NO_TRADE
+    assert outcome.open_order_action is None
+    assert outcome.reason_codes == ("OPEN_ORDER_ACTION_BLOCKED",)
+
+
 def test_codex_can_research_then_trade_symbol_outside_frozen_candidates():
     value = bundle()
     research = AutonomousTurn(
