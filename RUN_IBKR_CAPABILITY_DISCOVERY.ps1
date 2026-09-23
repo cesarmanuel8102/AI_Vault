@@ -63,6 +63,9 @@ $Result = Invoke-PythonJson -Arguments @(
     "--timeout-seconds", "8"
 )
 
+if ($Result.status -eq "BLOCK") {
+    throw "CAPABILITY_DISCOVERY_BLOCK:$($Result.reason_codes -join ',')"
+}
 if ($Result.real_order_writes_attempted -ne 0) {
     throw "CAPABILITY_DISCOVERY_ORDER_WRITE_INVARIANT_BROKEN"
 }
@@ -71,9 +74,6 @@ if ($Result.outbound_allowlist_only -ne $true) {
 }
 if ($Result.gateway_mode -ne "PAPER") {
     throw "CAPABILITY_DISCOVERY_NOT_PAPER"
-}
-if ($Result.status -eq "BLOCK") {
-    throw "CAPABILITY_DISCOVERY_BLOCK:$($Result.reason_codes -join ',')"
 }
 
 $Result | ConvertTo-Json -Depth 12
