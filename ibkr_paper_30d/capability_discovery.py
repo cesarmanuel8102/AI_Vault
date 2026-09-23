@@ -525,6 +525,9 @@ def discover_ibkr_capabilities(
             reasons.append("OPTION_REFERENCE_DATA_UNAVAILABLE")
 
         account_hash = expected_identity_hash(raw_account)
+        connection_time = client.twsConnectionTime()
+        if isinstance(connection_time, bytes):
+            connection_time = connection_time.decode("ascii", errors="replace")
         return {
             "schema": CAPABILITY_DISCOVERY_SCHEMA,
             "status": "PASS" if not reasons else "PARTIAL",
@@ -533,7 +536,7 @@ def discover_ibkr_capabilities(
             "port": port,
             "gateway_mode": "PAPER",
             "server_version": client.serverVersion(),
-            "connection_time": client.twsConnectionTime(),
+            "connection_time": str(connection_time or ""),
             "server_timestamp_utc": client.server_timestamp_utc,
             "account_identity_hash": account_hash,
             "account_fingerprint": account_hash[:16],
