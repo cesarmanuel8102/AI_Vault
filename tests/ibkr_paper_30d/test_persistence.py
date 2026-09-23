@@ -155,3 +155,47 @@ def test_autonomous_persistence_contract_distinguishes_legacy_tables() -> None:
         "market_data_gate_results",
     } <= LEGACY_COMPATIBILITY_TABLES
     assert AUTONOMOUS_CANONICAL_TABLES.isdisjoint(LEGACY_COMPATIBILITY_TABLES)
+
+
+def test_order_action_attempt_cycle_is_database_unique_globally(db_path) -> None:
+    sql = (
+        "INSERT INTO experiment_order_registry("
+        "registry_id,order_ref,client_order_id,perm_id,ibkr_order_id,"
+        "contract_id,action,quantity,payload_json,payload_sha256,created_at_utc"
+        ") VALUES(?,?,?,?,?,?,?,?,?,?,?)"
+    )
+    with Database.open(db_path) as db:
+        db.execute(
+            sql,
+            (
+                "attempt-a",
+                "codex-ibkr-paper-30d-a-one",
+                41,
+                9001,
+                41,
+                756733,
+                "BUY",
+                "1",
+                '{"decision_cycle_id":"cycle-one","lifecycle_event":"CANCEL_ATTEMPT"}',
+                "hash-a",
+                "2026-09-23T12:00:00Z",
+            ),
+        )
+
+        with pytest.raises(sqlite3.IntegrityError):
+            db.execute(
+                sql,
+                (
+                    "attempt-b",
+                    "codex-ibkr-paper-30d-a-two",
+                    42,
+                    9002,
+                    42,
+                    756733,
+                    "SELL",
+                    "1",
+                    '{"decision_cycle_id":"cycle-one","lifecycle_event":"MODIFY_ATTEMPT"}',
+                    "hash-b",
+                    "2026-09-23T12:00:01Z",
+                ),
+            )

@@ -169,6 +169,108 @@ def test_successful_order_management_triggers_one_observation_only_refresh(
     ]
 
 
+def test_uncertain_order_management_triggers_one_observation_only_refresh(
+    tmp_path, monkeypatch
+):
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    results = [
+        {
+            "status": "PASS",
+            "outcome": {"decision": "MODIFY_ORDER"},
+            "execution": {
+                "success": False,
+                "status": "UNCERTAIN",
+                "order": {"order_management": "MODIFY_ORDER", "fills": []},
+            },
+        },
+        {"status": "PASS", "outcome": {"decision": "NO_TRADE"}},
+    ]
+    with Database.open(tmp_path / "service.sqlite3") as db:
+        service = make_service(db, clock, stop_after=2, results=results)
+        service.run_forever()
+
+    assert service.triggers == [
+        ("SCHEDULED_SCAN", None),
+        ("POSITION_EVENT", False),
+    ]
+
+
+def test_filled_during_cancel_triggers_one_observation_only_refresh(
+    tmp_path, monkeypatch
+):
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    results = [
+        {
+            "status": "PASS",
+            "outcome": {"decision": "CANCEL_ORDER"},
+            "execution": {
+                "success": False,
+                "status": "FILLED",
+                "reason_codes": ["ORDER_FILLED_DURING_CANCELLATION"],
+                "order": {"order_management": "CANCEL_ORDER", "fills": []},
+            },
+        },
+        {"status": "PASS", "outcome": {"decision": "NO_TRADE"}},
+    ]
+    with Database.open(tmp_path / "service.sqlite3") as db:
+        service = make_service(db, clock, stop_after=2, results=results)
+        service.run_forever()
+
+    assert service.triggers == [
+        ("SCHEDULED_SCAN", None),
+        ("POSITION_EVENT", False),
+    ]
+
+
+@pytest.mark.parametrize(
+    "execution",
+    [
+        {
+            "success": True,
+            "status": "MODIFIED",
+            "order": {"order_management": "MODIFY_ORDER", "fills": []},
+        },
+        {
+            "success": False,
+            "status": "UNCERTAIN",
+            "order": {"order_management": "MODIFY_ORDER", "fills": []},
+        },
+        {
+            "success": False,
+            "status": "FILLED",
+            "reason_codes": ["ORDER_FILLED_DURING_CANCELLATION"],
+            "order": {"order_management": "CANCEL_ORDER", "fills": []},
+        },
+    ],
+)
+def test_run_once_order_management_includes_observation_only_refresh(
+    tmp_path, execution
+):
+    clock = Clock()
+    follow_up = {"status": "PASS", "outcome": {"decision": "NO_TRADE"}}
+    results = [
+        {
+            "status": "PASS",
+            "outcome": {"decision": execution["order"]["order_management"]},
+            "execution": execution,
+        },
+        follow_up,
+    ]
+    with Database.open(tmp_path / "service.sqlite3") as db:
+        service = make_service(db, clock, stop_after=3, results=results)
+        result = service.run_once()
+
+    assert service.triggers == [
+        ("SCHEDULED_SCAN", None),
+        ("POSITION_EVENT", False),
+    ]
+    assert result["observation_only_follow_up"] == follow_up
+
+
 
 class PassGate:
     def evaluate(self, *args, **kwargs):

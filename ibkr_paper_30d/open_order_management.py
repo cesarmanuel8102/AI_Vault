@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+from dataclasses import fields, is_dataclass
+from datetime import date, datetime
 from decimal import Decimal
+from enum import Enum
 from typing import Any
 
 from .canonical import sha256_json
@@ -13,8 +16,26 @@ EXPERIMENT_ORDER_PREFIX = "codex-ibkr-paper-30d"
 ACTIONABLE_ORDER_STATUSES = frozenset(
     {"PENDINGSUBMIT", "PRESUBMITTED", "SUBMITTED", "PENDINGCANCEL"}
 )
+MODIFIABLE_ORDER_STATUSES = frozenset(
+    {"PENDINGSUBMIT", "PRESUBMITTED", "SUBMITTED"}
+)
 CANCELLED_ORDER_STATUSES = frozenset(
     {"CANCELLED", "APICANCELLED", "API CANCELLED"}
+)
+V2_OWNERSHIP_ANCHOR_KEYS = frozenset(
+    {
+        "schema",
+        "lifecycle_event",
+        "order_ref",
+        "client_order_id",
+        "perm_id",
+        "ibkr_order_id",
+        "contract_id",
+        "action",
+        "quantity",
+        "execution_client_id",
+        "account",
+    }
 )
 
 
@@ -30,6 +51,54 @@ def _decimal_text(value: Any) -> str:
         raise ValueError("open-order numeric field must be finite")
     normalized = parsed.normalize()
     return "0" if normalized == 0 else format(normalized, "f")
+
+
+def _semantic_value(value: Any) -> Any:
+    if value is None or isinstance(value, (bool, int, str)):
+        return value
+    if isinstance(value, (Decimal, float)):
+        return _decimal_text(value)
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, Enum):
+        return _semantic_value(value.value)
+    if isinstance(value, dict):
+        return {
+            str(key): _semantic_value(item)
+            for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+        }
+    if isinstance(value, (list, tuple)):
+        return [_semantic_value(item) for item in value]
+    if is_dataclass(value):
+        return {
+            field.name: _semantic_value(getattr(value, field.name))
+            for field in fields(value)
+        }
+    attributes = getattr(value, "__dict__", None)
+    if isinstance(attributes, dict):
+        return {
+            str(key): _semantic_value(item)
+            for key, item in sorted(attributes.items())
+            if not str(key).startswith("_")
+        }
+    return str(value)
+
+
+def _semantic_attributes(value: Any, decimal_fields: frozenset[str]) -> Any:
+    attributes = _semantic_value(value)
+    if not isinstance(attributes, dict):
+        return attributes
+    for name in decimal_fields:
+        if name not in attributes:
+            continue
+        raw = getattr(value, name, None)
+        if raw is None or raw == "":
+            continue
+        try:
+            attributes[name] = _decimal_text(raw)
+        except (ValueError, TypeError):
+            pass
+    return attributes
 
 
 def canonical_open_order(trade: Any) -> dict[str, Any]:
@@ -49,6 +118,24 @@ def canonical_open_order(trade: Any) -> dict[str, Any]:
         "auxPrice": _decimal_text(getattr(order, "auxPrice", 0)),
         "tif": str(getattr(order, "tif", "") or "").upper(),
         "outsideRth": bool(getattr(order, "outsideRth", False)),
+        "orderAttributes": _semantic_attributes(
+            order,
+            frozenset(
+                {
+                    "totalQuantity",
+                    "lmtPrice",
+                    "auxPrice",
+                    "cashQty",
+                    "discretionaryAmt",
+                    "percentOffset",
+                    "trailStopPrice",
+                    "trailingPercent",
+                    "competeAgainstBestOffset",
+                    "midOffsetAtWhole",
+                    "midOffsetAtHalf",
+                }
+            ),
+        ),
         "status": str(getattr(status, "status", "") or ""),
         "filled": _decimal_text(getattr(status, "filled", 0)),
         "remaining": _decimal_text(getattr(status, "remaining", 0)),
@@ -65,9 +152,33 @@ def canonical_open_order(trade: Any) -> dict[str, Any]:
             "strike": _decimal_text(getattr(contract, "strike", 0)),
             "right": str(getattr(contract, "right", "") or "").upper(),
             "multiplier": _decimal_text(getattr(contract, "multiplier", 1) or 1),
+            "attributes": _semantic_attributes(
+                contract, frozenset({"strike", "multiplier"})
+            ),
         },
     }
     return {**payload, "state_sha256": sha256_json(payload)}
+
+
+def preserved_open_order_sha256(snapshot: dict[str, Any]) -> str:
+    preserved = {
+        key: value
+        for key, value in snapshot.items()
+        if key
+        not in {
+            "state_sha256",
+            "status",
+            "filled",
+            "remaining",
+            "totalQuantity",
+            "limitPrice",
+        }
+    }
+    order_attributes = dict(preserved.get("orderAttributes") or {})
+    order_attributes.pop("totalQuantity", None)
+    order_attributes.pop("lmtPrice", None)
+    preserved["orderAttributes"] = order_attributes
+    return sha256_json(preserved)
 
 
 def _registry_payload(raw: Any) -> dict[str, Any]:
@@ -85,27 +196,70 @@ def resolve_owned_open_trade(
     *,
     execution_client_id: int,
 ) -> tuple[Any, dict[str, Any]]:
-    if not action.order_ref.startswith(EXPERIMENT_ORDER_PREFIX):
+    if not action.order_ref.startswith(f"{EXPERIMENT_ORDER_PREFIX}-"):
         raise OpenOrderOwnershipError("ORDER_REF_NAMESPACE_MISMATCH")
 
     rows = db.execute(
-        "SELECT client_order_id,perm_id,contract_id,action,payload_json "
+        "SELECT client_order_id,perm_id,ibkr_order_id,contract_id,action,"
+        "quantity,payload_json,payload_sha256 "
         "FROM experiment_order_registry WHERE order_ref=? ORDER BY sequence",
         (action.order_ref,),
     ).fetchall()
-    anchors = [
-        (row, _registry_payload(row[4]))
-        for row in rows
-        if _registry_payload(row[4]).get(
-            "lifecycle_event", "ISSUED_PRE_SEND"
+    anchors = []
+    for row in rows:
+        payload = _registry_payload(row[6])
+        lifecycle_event = payload.get("lifecycle_event")
+        if lifecycle_event not in {
+            "ISSUED_PRE_SEND",
+            "BROKER_BOUND",
+        }:
+            if (
+                payload.get("schema") == "EXPERIMENT_ORDER_REGISTRY_V2"
+                and "lifecycle_event" not in payload
+            ):
+                if sha256_json(payload) != str(row[7] or ""):
+                    raise OpenOrderOwnershipError(
+                        "ORDER_REGISTRY_PAYLOAD_HASH_MISMATCH"
+                    )
+                raise OpenOrderOwnershipError(
+                    "ORDER_REGISTRY_V2_PAYLOAD_INCOMPLETE"
+                )
+            continue
+        if sha256_json(payload) != str(row[7] or ""):
+            raise OpenOrderOwnershipError("ORDER_REGISTRY_PAYLOAD_HASH_MISMATCH")
+        if not V2_OWNERSHIP_ANCHOR_KEYS.issubset(payload):
+            raise OpenOrderOwnershipError(
+                "ORDER_REGISTRY_V2_PAYLOAD_INCOMPLETE"
+            )
+        payload_identity_matches = (
+            str(payload.get("order_ref") or "") == action.order_ref
+            and int(payload.get("client_order_id") or 0) == int(row[0] or 0)
+            and int(payload.get("perm_id") or 0) == int(row[1] or 0)
+            and int(payload.get("ibkr_order_id") or 0) == int(row[2] or 0)
+            and int(payload.get("contract_id") or 0) == int(row[3] or 0)
+            and str(payload.get("action") or "").upper()
+            == str(row[4] or "").upper()
+            and _decimal_text(payload.get("quantity")) == _decimal_text(row[5])
         )
-        in {"ISSUED_PRE_SEND", "BROKER_BOUND"}
-    ]
+        if not payload_identity_matches:
+            raise OpenOrderOwnershipError(
+                "ORDER_REGISTRY_PAYLOAD_IDENTITY_MISMATCH"
+            )
+        if not str(payload.get("account") or ""):
+            raise OpenOrderOwnershipError("OPEN_ORDER_ACCOUNT_MISMATCH")
+        anchors.append((row, payload))
     if not anchors:
         raise OpenOrderOwnershipError("ORDER_REGISTRY_OWNERSHIP_REQUIRED")
-    if not any(int(row[0] or 0) == action.order_id for row, _ in anchors):
+    if any(
+        payload.get("schema") != "EXPERIMENT_ORDER_REGISTRY_V2"
+        for _, payload in anchors
+    ):
+        raise OpenOrderOwnershipError("ORDER_REGISTRY_V2_OWNERSHIP_REQUIRED")
+    if any(int(row[0] or 0) != action.order_id for row, _ in anchors):
         raise OpenOrderOwnershipError("ORDER_REGISTRY_ORDER_ID_MISMATCH")
-    if not any(int(row[2] or 0) == action.contract_id for row, _ in anchors):
+    if any(int(row[2] or 0) != action.order_id for row, _ in anchors):
+        raise OpenOrderOwnershipError("ORDER_REGISTRY_IBKR_ORDER_ID_MISMATCH")
+    if any(int(row[3] or 0) != action.contract_id for row, _ in anchors):
         raise OpenOrderOwnershipError("ORDER_REGISTRY_CONTRACT_ID_MISMATCH")
     if action.perm_id is not None:
         positive_registry_perm_ids = {
@@ -113,7 +267,7 @@ def resolve_owned_open_trade(
         }
         if (
             positive_registry_perm_ids
-            and action.perm_id not in positive_registry_perm_ids
+            and positive_registry_perm_ids != {action.perm_id}
         ):
             raise OpenOrderOwnershipError("ORDER_REGISTRY_PERM_ID_MISMATCH")
     if action.client_id != execution_client_id:
@@ -148,44 +302,26 @@ def resolve_owned_open_trade(
     if snapshot["contract"]["conId"] != action.contract_id:
         raise OpenOrderOwnershipError("OPEN_ORDER_CONTRACT_ID_MISMATCH")
 
-    matching_anchors = [
-        (row, payload)
-        for row, payload in anchors
-        if int(row[0] or 0) == snapshot["orderId"]
-        and int(row[2] or 0) == snapshot["contract"]["conId"]
-    ]
-    if not matching_anchors:
-        raise OpenOrderOwnershipError("ORDER_REGISTRY_IDENTITY_MISMATCH")
     positive_anchor_perm_ids = {
-        int(row[1]) for row, _ in matching_anchors if int(row[1] or 0) > 0
+        int(row[1]) for row, _ in anchors if int(row[1] or 0) > 0
     }
-    if (
-        snapshot["permId"] > 0
-        and positive_anchor_perm_ids
-        and snapshot["permId"] not in positive_anchor_perm_ids
-    ):
+    if positive_anchor_perm_ids and positive_anchor_perm_ids != {
+        snapshot["permId"]
+    }:
         raise OpenOrderOwnershipError("OPEN_ORDER_PERM_ID_MISMATCH")
-    if not any(str(row[3] or "").upper() == snapshot["action"] for row, _ in matching_anchors):
+    if any(str(row[4] or "").upper() != snapshot["action"] for row, _ in anchors):
         raise OpenOrderOwnershipError("OPEN_ORDER_SIDE_MISMATCH")
 
-    v2_payloads = [
-        payload
-        for _, payload in matching_anchors
-        if payload.get("schema") == "EXPERIMENT_ORDER_REGISTRY_V2"
-    ]
-    if v2_payloads:
-        if not any(
-            int(payload.get("execution_client_id") or 0) == execution_client_id
-            for payload in v2_payloads
-        ):
-            raise OpenOrderOwnershipError("OPEN_ORDER_CLIENT_ID_MISMATCH")
-        expected_accounts = {
-            str(payload.get("account") or "")
-            for payload in v2_payloads
-            if str(payload.get("account") or "")
-        }
-        if expected_accounts and snapshot["account"] not in expected_accounts:
-            raise OpenOrderOwnershipError("OPEN_ORDER_ACCOUNT_MISMATCH")
+    if any(
+        int(payload.get("execution_client_id") or 0) != execution_client_id
+        for _, payload in anchors
+    ):
+        raise OpenOrderOwnershipError("OPEN_ORDER_CLIENT_ID_MISMATCH")
+    expected_accounts = {
+        str(payload.get("account") or "") for _, payload in anchors
+    }
+    if expected_accounts != {snapshot["account"]}:
+        raise OpenOrderOwnershipError("OPEN_ORDER_ACCOUNT_MISMATCH")
 
     if snapshot["state_sha256"] != action.observed_state_sha256:
         raise OpenOrderOwnershipError("OPEN_ORDER_STATE_CHANGED")
@@ -199,8 +335,7 @@ def lifecycle_attempt_exists(
 ) -> bool:
     rows = db.execute(
         "SELECT payload_json FROM experiment_order_registry "
-        "WHERE order_ref=? ORDER BY sequence",
-        (order_ref,),
+        "ORDER BY sequence",
     ).fetchall()
     for row in rows:
         payload = _registry_payload(row[0])

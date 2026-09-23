@@ -4,8 +4,11 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from types import SimpleNamespace
 
+import pytest
+
 from ibkr_paper_30d.autonomous_research import ResearchResult, ResearchTool
 from ibkr_paper_30d.autonomous_state import AutonomousStateBuilder
+from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.open_order_management import canonical_open_order
 from ibkr_paper_30d.persistence import Database
 
@@ -54,21 +57,28 @@ class FakeMarketGate:
 
 
 class FakeToolbox:
-    def __init__(self, broker_quantity="1"):
+    def __init__(
+        self,
+        broker_quantity="1",
+        include_spoofed_fill=False,
+        fill_updates=None,
+    ):
         self.broker_quantity = broker_quantity
+        self.include_spoofed_fill = include_spoofed_fill
+        self.fill_updates = fill_updates or {}
         self.calls = []
 
     def execute(self, request, bundle):
         self.calls.append(request.tool)
         if request.tool == ResearchTool.EXECUTIONS:
-            data = {
-                "executions": [{
+            executions = [{
                     "execution_id_hash": "exec-1",
                     "orderRef": "codex-ibkr-paper-30d-autonomous",
                     "orderId": 44,
                     "permId": 55,
-                    "clientId": 7,
+                    "clientId": 19761,
                     "execution_time": "2026-09-21T13:31:00Z",
+                    "cumQty": "1",
                     "side": "BUY",
                     "quantity": "1",
                     "price": "2.00",
@@ -79,8 +89,17 @@ class FakeToolbox:
                         "secType": "OPT",
                         "multiplier": "100",
                     },
+                    **self.fill_updates,
                 }]
-            }
+            if self.include_spoofed_fill:
+                executions.append(
+                    {
+                        **executions[0],
+                        "execution_id_hash": "exec-spoofed",
+                        "orderRef": "codex-ibkr-paper-30devil",
+                    }
+                )
+            data = {"executions": executions}
         elif request.tool == ResearchTool.QUOTE:
             data = {"marketPrice": 3.0}
         elif request.tool == ResearchTool.ACCOUNT_STATE:
@@ -103,6 +122,10 @@ class FakeToolbox:
             data = {
                 "open_orders": [
                     {"orderRef": "unrelated", "orderId": 1},
+                    {
+                        "orderRef": "codex-ibkr-paper-30devil",
+                        "orderId": 2,
+                    },
                     owned,
                 ]
             }
@@ -116,7 +139,26 @@ class FakeToolbox:
         )
 
 
-def builder(db, toolbox):
+def builder(
+    db,
+    toolbox,
+    *,
+    anchor_perm_id=55,
+    payload_sha256=None,
+):
+    payload = {
+        "schema": "EXPERIMENT_ORDER_REGISTRY_V2",
+        "lifecycle_event": "ISSUED_PRE_SEND",
+        "order_ref": "codex-ibkr-paper-30d-autonomous",
+        "client_order_id": 44,
+        "perm_id": anchor_perm_id,
+        "ibkr_order_id": 44,
+        "contract_id": 101,
+        "action": "BUY",
+        "quantity": "1",
+        "execution_client_id": 19761,
+        "account": "DU1234567",
+    }
     db.execute(
         "INSERT INTO experiment_order_registry("
         "registry_id,order_ref,client_order_id,perm_id,ibkr_order_id,"
@@ -126,13 +168,13 @@ def builder(db, toolbox):
             "registry-1",
             "codex-ibkr-paper-30d-autonomous",
             44,
-            55,
+            anchor_perm_id,
             44,
             101,
             "BUY",
             "1",
-            "{}",
-            "a" * 64,
+            canonical_bytes(payload).decode("utf-8"),
+            payload_sha256 or sha256_json(payload),
             "2026-09-21T13:30:00Z",
         ),
     )
@@ -194,3 +236,64 @@ def test_repeated_build_does_not_duplicate_same_execution(tmp_path):
         assert first.experiment_subledger_snapshot["equity"] == "599.00"
         assert second.experiment_subledger_snapshot["equity"] == "599.00"
         assert second.experiment_subledger_snapshot["fees"] == "1.00"
+
+
+def test_state_builder_ignores_fill_without_namespace_boundary(tmp_path):
+    with Database.open(tmp_path / "spoofed-fill.sqlite3") as db:
+        subject = builder(db, FakeToolbox(include_spoofed_fill=True))
+        value = subject.build(trigger="SCHEDULED_SCAN")
+
+        assert value.reconciliation_receipt["status"] == "PASS"
+        assert value.experiment_subledger_snapshot["cash"] == "299.00"
+        assert value.experiment_subledger_snapshot["fees"] == "1.00"
+
+
+def test_state_builder_rejects_fill_from_foreign_execution_client(tmp_path):
+    with Database.open(tmp_path / "foreign-client-fill.sqlite3") as db:
+        subject = builder(db, FakeToolbox(fill_updates={"clientId": 7}))
+        value = subject.build(trigger="SCHEDULED_SCAN")
+
+        assert value.reconciliation_receipt["status"] == "BLOCK"
+        assert "UNREGISTERED_EXPERIMENT_FILL:44" in (
+            value.reconciliation_receipt["reason_codes"]
+        )
+
+
+def test_state_builder_rejects_fill_without_hash_valid_v2_anchor(tmp_path):
+    with Database.open(tmp_path / "invalid-anchor-fill.sqlite3") as db:
+        subject = builder(db, FakeToolbox(), payload_sha256="0" * 64)
+        value = subject.build(trigger="SCHEDULED_SCAN")
+
+        assert value.reconciliation_receipt["status"] == "BLOCK"
+        assert "UNREGISTERED_EXPERIMENT_FILL:44" in (
+            value.reconciliation_receipt["reason_codes"]
+        )
+
+
+def test_state_builder_accepts_late_perm_id_when_v2_anchor_has_zero(tmp_path):
+    with Database.open(tmp_path / "late-perm-fill.sqlite3") as db:
+        subject = builder(db, FakeToolbox(), anchor_perm_id=0)
+        value = subject.build(trigger="SCHEDULED_SCAN")
+
+        assert value.reconciliation_receipt["status"] == "PASS"
+        assert value.experiment_subledger_snapshot["equity"] == "599.00"
+
+
+@pytest.mark.parametrize(
+    "fill_updates",
+    [
+        {"quantity": "2", "cumQty": "2"},
+        {"quantity": "1", "cumQty": "2"},
+    ],
+)
+def test_state_builder_rejects_fill_quantity_exceeding_issuance(
+    tmp_path, fill_updates
+):
+    with Database.open(tmp_path / "oversized-fill.sqlite3") as db:
+        subject = builder(db, FakeToolbox(fill_updates=fill_updates))
+        value = subject.build(trigger="SCHEDULED_SCAN")
+
+        assert value.reconciliation_receipt["status"] == "BLOCK"
+        assert "UNREGISTERED_EXPERIMENT_FILL:44" in (
+            value.reconciliation_receipt["reason_codes"]
+        )

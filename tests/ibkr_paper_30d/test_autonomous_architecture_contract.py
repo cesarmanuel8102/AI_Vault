@@ -59,10 +59,17 @@ def test_open_order_writes_exist_only_in_authoritative_executor():
 
 
 def test_open_order_management_retains_paper_arm_and_live_route_guards():
-    source = Path("ibkr_paper_30d/autonomous_execution.py").read_text(
+    executor = Path("ibkr_paper_30d/autonomous_execution.py").read_text(
         encoding="utf-8"
     )
-    assert "IBKR_AUTONOMOUS_PAPER_ARMED" in source
-    assert "EXECUTION_CLIENT_ID" in source
-    assert "7497" not in source
-    assert "7496" not in source
+    toolbox = Path("ibkr_paper_30d/ibkr_research_tools.py").read_text(
+        encoding="utf-8"
+    )
+    assert "IBKR_AUTONOMOUS_PAPER_ARMED" in executor
+    assert "EXECUTION_CLIENT_ID" in executor
+    assert 'startswith("DU")' in executor
+    assert 'PAPER_HOSTS = {"127.0.0.1", "localhost"}' in toolbox
+    assert "PAPER_PORT = 4002" in toolbox
+    assert "host not in PAPER_HOSTS or port != PAPER_PORT" in toolbox
+    assert "7497" not in executor
+    assert "7496" not in executor

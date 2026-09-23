@@ -10,6 +10,11 @@ from .canonical import sha256_json
 from .experiment_control import ExperimentClockStore, KillSwitchStore
 from .experiment_ledger import AutonomousExperimentLedger
 from .ibkr_research_tools import IBKRResearchToolbox
+from .open_order_management import (
+    EXECUTION_CLIENT_ID,
+    EXPERIMENT_ORDER_PREFIX,
+    V2_OWNERSHIP_ANCHOR_KEYS,
+)
 from .persistence import Database
 from .market_data import DecisionClass
 from .repositories import utc_now
@@ -111,40 +116,118 @@ class AutonomousStateBuilder:
 
     def _registered_fill(self, fill: dict[str, Any]) -> bool:
         order_ref = str(fill.get("orderRef") or "")
-        if not order_ref.startswith("codex-ibkr-paper-30d"):
+        if not order_ref.startswith(f"{EXPERIMENT_ORDER_PREFIX}-"):
             return False
-        order_id = int(fill.get("orderId") or 0)
-        perm_id = int(fill.get("permId") or 0)
+        try:
+            order_id = int(fill.get("orderId") or 0)
+            perm_id = int(fill.get("permId") or 0)
+            client_id = int(fill.get("clientId") or 0)
+            contract_id = int((fill.get("contract") or {}).get("conId") or 0)
+        except (TypeError, ValueError):
+            return False
+        side = str(fill.get("side") or "").upper()
+        if (
+            order_id <= 0
+            or client_id != EXECUTION_CLIENT_ID
+            or contract_id <= 0
+            or side not in {"BUY", "SELL"}
+        ):
+            return False
         rows = self.db.execute(
-            "SELECT client_order_id,perm_id FROM experiment_order_registry "
+            "SELECT client_order_id,perm_id,ibkr_order_id,contract_id,action,"
+            "quantity,payload_json,payload_sha256 "
+            "FROM experiment_order_registry "
             "WHERE order_ref=? ORDER BY sequence DESC",
             (order_ref,),
         ).fetchall()
-        for client_order_id, registered_perm_id in rows:
-            registered_order_id = int(client_order_id or 0)
-            registered_perm = int(registered_perm_id or 0)
-
-            # When the broker supplies both identifiers, require both to match the
-            # same registry row. If only one identifier is available, match that
-            # identifier. Never allow a correct permId to mask a wrong orderId (or
-            # vice versa).
-            if order_id > 0:
-                if registered_order_id <= 0 or registered_order_id != order_id:
-                    continue
-            if perm_id > 0:
-                if registered_perm <= 0 or registered_perm != perm_id:
-                    continue
-            if order_id <= 0 and perm_id <= 0:
+        anchors: list[tuple[Any, dict[str, Any]]] = []
+        for row in rows:
+            try:
+                payload = json.loads(row[6] or "{}")
+            except (TypeError, ValueError):
                 continue
-            return True
-        return False
+            if not isinstance(payload, dict) or payload.get("schema") != (
+                "EXPERIMENT_ORDER_REGISTRY_V2"
+            ):
+                continue
+            if payload.get("lifecycle_event") not in {
+                "ISSUED_PRE_SEND",
+                "BROKER_BOUND",
+            }:
+                continue
+            if (
+                not V2_OWNERSHIP_ANCHOR_KEYS.issubset(payload)
+                or sha256_json(payload) != str(row[7] or "")
+            ):
+                return False
+            try:
+                coherent = (
+                    str(payload.get("order_ref") or "") == order_ref
+                    and int(payload.get("client_order_id") or 0)
+                    == int(row[0] or 0)
+                    and int(payload.get("perm_id") or 0) == int(row[1] or 0)
+                    and int(payload.get("ibkr_order_id") or 0)
+                    == int(row[2] or 0)
+                    and int(payload.get("contract_id") or 0)
+                    == int(row[3] or 0)
+                    and str(payload.get("action") or "").upper()
+                    == str(row[4] or "").upper()
+                    and Decimal(str(payload.get("quantity") or 0))
+                    == Decimal(str(row[5] or 0))
+                )
+            except (TypeError, ValueError):
+                return False
+            if not coherent:
+                return False
+            anchors.append((row, payload))
+
+        if not anchors:
+            return False
+        if any(
+            int(row[0] or 0) != order_id
+            or int(row[2] or 0) != order_id
+            or int(row[3] or 0) != contract_id
+            or str(row[4] or "").upper() != side
+            or int(payload.get("execution_client_id") or 0)
+            != EXECUTION_CLIENT_ID
+            or not str(payload.get("account") or "")
+            for row, payload in anchors
+        ):
+            return False
+        positive_perm_ids = {
+            int(row[1]) for row, _ in anchors if int(row[1] or 0) > 0
+        }
+        if positive_perm_ids and positive_perm_ids != {perm_id}:
+            return False
+        try:
+            issued_quantities = {
+                Decimal(str(row[5] or 0)) for row, _ in anchors
+            }
+            fill_quantity = Decimal(
+                str(fill.get("quantity") or fill.get("shares") or 0)
+            )
+            cumulative_quantity = Decimal(
+                str(fill.get("cumQty") or fill_quantity)
+            )
+        except (TypeError, ValueError):
+            return False
+        return (
+            len(issued_quantities) == 1
+            and all(value.is_finite() and value > 0 for value in issued_quantities)
+            and fill_quantity.is_finite()
+            and fill_quantity > 0
+            and cumulative_quantity.is_finite()
+            and cumulative_quantity >= fill_quantity
+            and fill_quantity <= next(iter(issued_quantities))
+            and cumulative_quantity <= next(iter(issued_quantities))
+        )
 
     def _sync_executions(self) -> list[str]:
         executions = self._tool(ResearchTool.EXECUTIONS)
         reasons: list[str] = []
         for fill in executions.get("executions", []) or []:
             order_ref = str(fill.get("orderRef") or "")
-            if not order_ref.startswith("codex-ibkr-paper-30d"):
+            if not order_ref.startswith("codex-ibkr-paper-30d-"):
                 continue
             if not self._registered_fill(fill):
                 reasons.append(
@@ -314,7 +397,9 @@ class AutonomousStateBuilder:
         isolated_orders = [
             item
             for item in open_orders.get("open_orders", []) or []
-            if str(item.get("orderRef") or "").startswith("codex-ibkr-paper-30d")
+            if str(item.get("orderRef") or "").startswith(
+                "codex-ibkr-paper-30d-"
+            )
         ]
         isolated_positions = [
             {

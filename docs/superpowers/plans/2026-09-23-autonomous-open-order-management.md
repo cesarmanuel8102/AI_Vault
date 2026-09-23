@@ -575,7 +575,7 @@ git commit -m "feat: bind paper orders to stable execution identity"
 - Modify: `tests/ibkr_paper_30d/test_autonomous_execution.py`
 
 **Interfaces:**
-- Consumes: `AutonomousOpenOrderAction`, canonical open-order snapshots, V1/V2 rows from `experiment_order_registry`, executor fresh safety and operator callbacks.
+- Consumes: `AutonomousOpenOrderAction`, canonical open-order snapshots, hash-valid V2 ownership rows from `experiment_order_registry`, executor fresh safety and operator callbacks. V1 rows remain history only and cannot independently authorize lifecycle writes.
 - Produces: `resolve_owned_open_trade(...)`, append-only lifecycle evidence, and `AutonomousPaperExecutor.execute_open_order_action(...)` for `CANCEL_ORDER`.
 
 - [ ] **Step 1: Write failing pure ownership tests**

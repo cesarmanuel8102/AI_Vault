@@ -196,6 +196,12 @@ def test_modify_order_requires_an_effective_change():
         )
 
 
+@pytest.mark.parametrize("field", ["new_total_quantity", "new_limit_price"])
+def test_open_order_action_rejects_positive_infinity(field):
+    with pytest.raises(ValidationError):
+        open_order_action(**{field: "Infinity"})
+
+
 @pytest.mark.parametrize(
     ("decision", "action"),
     [

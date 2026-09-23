@@ -93,8 +93,10 @@ class RecordingExecutor:
     def __init__(self):
         self.open_order_calls = []
 
-    def execute_open_order_action(self, action, bundle, decision):
-        self.open_order_calls.append((action, decision))
+    def execute_open_order_action(
+        self, action, bundle, decision, *, invocation_id=None
+    ):
+        self.open_order_calls.append((action, decision, invocation_id))
         return PaperExecutionResult(
             success=True,
             status="Cancelled",
@@ -193,6 +195,7 @@ def test_runtime_dispatches_accepted_cancel_to_open_order_executor(tmp_path):
         ).fetchone()[0]
 
     assert executor.open_order_calls[0][1] == TraderDecision.CANCEL_ORDER
+    assert executor.open_order_calls[0][2].startswith("autonomous-")
     assert result["execution"]["order"]["order_management"] == "CANCEL_ORDER"
     assert '"open_order_action"' in final_payload
 

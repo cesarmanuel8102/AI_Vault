@@ -403,9 +403,36 @@ class AutonomousExperimentService:
             actor="runtime",
         )
 
+    @staticmethod
+    def _needs_observation_only_refresh(result: dict[str, Any]) -> bool:
+        execution = result.get("execution") or {}
+        execution_order = execution.get("order") or {}
+        if execution_order.get("fills", []) or []:
+            return True
+        order_management = str(execution_order.get("order_management") or "")
+        if order_management not in {"CANCEL_ORDER", "MODIFY_ORDER"}:
+            return False
+        return bool(execution.get("success")) or str(
+            execution.get("status") or ""
+        ) in {"UNCERTAIN", "FILLED"}
+
+    def _observation_only_follow_up(
+        self, result: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        if self.stop_event.is_set() or not self._needs_observation_only_refresh(result):
+            return None
+        return self._run_cycle("POSITION_EVENT", allow_execution=False)
+
     def run_once(self, trigger: str = "SCHEDULED_SCAN") -> dict[str, Any]:
         result = self._run_cycle(trigger)
         self._handle_pause(result)
+        follow_up = self._observation_only_follow_up(result)
+        if follow_up is not None:
+            result["observation_only_follow_up"] = follow_up
+            if str(follow_up.get("status") or "") == "EXPERIMENT_EXPIRED":
+                self._terminal_event("CLOCK_EXPIRED")
+            else:
+                self._handle_pause(follow_up)
         return result
 
     def run_forever(self) -> None:
@@ -465,20 +492,8 @@ class AutonomousExperimentService:
                     )
                     continue
 
-                execution = result.get("execution") or {}
-                execution_order = execution.get("order") or {}
-                fills = execution_order.get("fills", []) or []
-                order_management = str(
-                    execution_order.get("order_management") or ""
-                )
-                lifecycle_success = bool(execution.get("success")) and (
-                    order_management in {"CANCEL_ORDER", "MODIFY_ORDER"}
-                )
-                if (fills or lifecycle_success) and not self.stop_event.is_set():
-                    # Immediate post-action state/reasoning refresh is observation-only.
-                    follow_up = self._run_cycle(
-                        "POSITION_EVENT", allow_execution=False
-                    )
+                follow_up = self._observation_only_follow_up(result)
+                if follow_up is not None:
                     next_position = self.monotonic() + self.position_interval_seconds
                     if str(follow_up.get("status") or "") == "EXPERIMENT_EXPIRED":
                         self._terminal_event("CLOCK_EXPIRED")

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import os
+import sqlite3
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any, Callable
@@ -20,6 +21,7 @@ from .open_order_management import (
     OpenOrderOwnershipError,
     canonical_open_order,
     lifecycle_attempt_exists,
+    preserved_open_order_sha256,
     resolve_owned_open_trade,
 )
 from .persistence import Database
@@ -156,6 +158,13 @@ class AutonomousPaperExecutor:
     def _connect_execution(self):
         return self.toolbox._connect(client_id=self.execution_client_id)
 
+    @staticmethod
+    def _execution_account(ib: Any) -> str:
+        accounts = list(ib.managedAccounts())
+        if len(accounts) != 1 or not str(accounts[0]).upper().startswith("DU"):
+            raise PermissionError("single DU paper account identity required")
+        return str(accounts[0])
+
     def _register_order(
         self,
         *,
@@ -168,8 +177,11 @@ class AutonomousPaperExecutor:
     ) -> None:
         if self.database is None:
             raise RuntimeError("persistent database required for armed paper execution")
+        account = str(getattr(order, "account", "") or "")
+        if not account:
+            raise RuntimeError("order account identity required")
         payload = {
-            "schema": "EXPERIMENT_ORDER_REGISTRY_V1",
+            "schema": "EXPERIMENT_ORDER_REGISTRY_V2",
             "order_ref": order_ref,
             "client_order_id": int(getattr(order, "orderId", 0) or 0),
             "perm_id": int(getattr(order, "permId", 0) or 0),
@@ -178,6 +190,7 @@ class AutonomousPaperExecutor:
             "action": action,
             "quantity": str(quantity),
             "execution_client_id": self.execution_client_id,
+            "account": account,
             "lifecycle_event": lifecycle_event,
             "created_at_utc": utc_now(),
         }
@@ -211,6 +224,7 @@ class AutonomousPaperExecutor:
         snapshot: dict[str, Any],
         reason_codes: tuple[str, ...] = (),
         broker_evidence: dict[str, Any] | None = None,
+        invocation_id: str | None = None,
     ) -> None:
         if self.database is None:
             raise RuntimeError("persistent database required for lifecycle evidence")
@@ -230,6 +244,26 @@ class AutonomousPaperExecutor:
             "observed_state_sha256": action.observed_state_sha256,
             "reason_codes": list(reason_codes),
             "broker_evidence": broker_evidence or {},
+            "previous_snapshot": snapshot,
+            "requested_change": {
+                "new_total_quantity": (
+                    None
+                    if action.new_total_quantity is None
+                    else str(action.new_total_quantity)
+                ),
+                "new_limit_price": (
+                    None
+                    if action.new_limit_price is None
+                    else str(action.new_limit_price)
+                ),
+            },
+            "action_invocation_id": invocation_id
+            or f"{bundle.decision_cycle_id}:{decision.value}:{action.order_id}",
+            "confirmation_state_sha256": (
+                (broker_evidence or {})
+                .get("post_action_reconciliation", {})
+                .get("confirmed_state_sha256")
+            ),
             "created_at_utc": utc_now(),
         }
         self.database.execute(
@@ -268,17 +302,25 @@ class AutonomousPaperExecutor:
         action: AutonomousOpenOrderAction,
         bundle: TraderInputBundle,
         decision: TraderDecision,
+        *,
+        invocation_id: str | None = None,
     ) -> PaperExecutionResult:
         if decision == TraderDecision.CANCEL_ORDER:
-            return self._cancel_open_order(action, bundle)
+            return self._cancel_open_order(
+                action, bundle, invocation_id=invocation_id
+            )
         if decision == TraderDecision.MODIFY_ORDER:
-            return self._modify_open_order(action, bundle)
+            return self._modify_open_order(
+                action, bundle, invocation_id=invocation_id
+            )
         raise ValueError("unsupported open-order decision")
 
     def _modify_open_order(
         self,
         action: AutonomousOpenOrderAction,
         bundle: TraderInputBundle,
+        *,
+        invocation_id: str | None = None,
     ) -> PaperExecutionResult:
         if not self.armed:
             raise AutonomousPaperExecutionNotArmed(
@@ -411,21 +453,13 @@ class AutonomousPaperExecutor:
                 if action.new_limit_price is not None
                 else Decimal(refreshed_snapshot["limitPrice"])
             )
+            expected_preserved_sha256 = preserved_open_order_sha256(
+                refreshed_snapshot
+            )
             modified = copy.deepcopy(selected_trade.order)
-            modified.orderId = refreshed_snapshot["orderId"]
-            modified.permId = refreshed_snapshot["permId"]
-            modified.clientId = refreshed_snapshot["clientId"]
-            modified.orderRef = refreshed_snapshot["orderRef"]
-            modified.account = refreshed_snapshot["account"]
-            modified.action = refreshed_snapshot["action"]
-            modified.orderType = refreshed_snapshot["orderType"]
-            modified.tif = refreshed_snapshot["tif"]
-            modified.outsideRth = refreshed_snapshot["outsideRth"]
             modified.totalQuantity = float(requested_total)
             if action.new_limit_price is not None:
                 modified.lmtPrice = float(requested_limit)
-            modified.whatIf = False
-            modified.transmit = True
 
             try:
                 self._register_lifecycle_event(
@@ -435,6 +469,23 @@ class AutonomousPaperExecutor:
                     bundle=bundle,
                     snapshot=refreshed_snapshot,
                     broker_evidence=validation.broker_evidence,
+                    invocation_id=invocation_id,
+                )
+            except sqlite3.IntegrityError as exc:
+                if "experiment_order_registry_action_cycle" in str(exc):
+                    return PaperExecutionResult(
+                        success=False,
+                        status="BLOCKED",
+                        reason_codes=("DUPLICATE_ORDER_ACTION_REQUEST",),
+                        order={},
+                        broker_validation=validation.broker_evidence,
+                    )
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("LIFECYCLE_ATTEMPT_PERSISTENCE_FAILED",),
+                    order={},
+                    broker_validation=validation.broker_evidence,
                 )
             except Exception:
                 return PaperExecutionResult(
@@ -447,48 +498,87 @@ class AutonomousPaperExecutor:
 
             try:
                 ib.placeOrder(selected_trade.contract, modified)
-            except Exception:
-                return PaperExecutionResult(
+            except Exception as exc:
+                return self._modify_result(
+                    action=action,
+                    bundle=bundle,
+                    snapshot=refreshed_snapshot,
                     success=False,
                     status="UNCERTAIN",
                     reason_codes=("BROKER_CONFIRMATION_UNAVAILABLE",),
-                    order={"pre_action_state": refreshed_snapshot},
-                    broker_validation=validation.broker_evidence,
+                    post_action_reconciliation={
+                        "acknowledged": False,
+                        "confirmation_stage": "BROKER_INVOCATION",
+                    },
+                    broker_evidence={
+                        **validation.broker_evidence,
+                        "confirmation_stage": "BROKER_INVOCATION",
+                        "exception_type": type(exc).__name__,
+                    },
+                    invocation_id=invocation_id,
                 )
             try:
                 ib.sleep(self.fill_wait_seconds)
                 post_trades = list(ib.reqOpenOrders())
-            except Exception:
-                return PaperExecutionResult(
+                post_snapshots = [canonical_open_order(item) for item in post_trades]
+                matching = [
+                    item
+                    for item in post_snapshots
+                    if item["orderRef"] == action.order_ref
+                    and item["orderId"] == action.order_id
+                    and item["clientId"] == action.client_id
+                    and item["contract"]["conId"] == action.contract_id
+                ]
+                confirmed_state = matching[0] if len(matching) == 1 else None
+                confirmed_preserved_sha256 = (
+                    preserved_open_order_sha256(confirmed_state)
+                    if confirmed_state is not None
+                    else None
+                )
+                preserved_state_matches = (
+                    confirmed_preserved_sha256 == expected_preserved_sha256
+                )
+                acknowledged = (
+                    len(matching) == 1
+                    and Decimal(matching[0]["totalQuantity"]) == requested_total
+                    and Decimal(matching[0]["limitPrice"]) == requested_limit
+                    and matching[0]["status"].upper() in ACTIONABLE_ORDER_STATUSES
+                    and preserved_state_matches
+                )
+                post_reconciliation = {
+                    "acknowledged": acknowledged,
+                    "matching_order_count": len(matching),
+                    "requested_total_quantity": str(requested_total),
+                    "requested_limit_price": str(requested_limit),
+                    "confirmed_state": confirmed_state,
+                    "confirmed_state_sha256": (
+                        confirmed_state.get("state_sha256")
+                        if confirmed_state is not None
+                        else None
+                    ),
+                    "expected_preserved_state_sha256": expected_preserved_sha256,
+                    "confirmed_preserved_state_sha256": confirmed_preserved_sha256,
+                    "preserved_state_matches": preserved_state_matches,
+                }
+            except Exception as exc:
+                return self._modify_result(
+                    action=action,
+                    bundle=bundle,
+                    snapshot=refreshed_snapshot,
                     success=False,
                     status="UNCERTAIN",
                     reason_codes=("BROKER_CONFIRMATION_UNAVAILABLE",),
-                    order={"pre_action_state": refreshed_snapshot},
-                    broker_validation=validation.broker_evidence,
+                    post_action_reconciliation={
+                        "acknowledged": False,
+                        "confirmation_stage": "POST_WRITE_RECONCILIATION",
+                    },
+                    broker_evidence={
+                        **validation.broker_evidence,
+                        "confirmation_stage": "POST_WRITE_RECONCILIATION",
+                        "exception_type": type(exc).__name__,
+                    },
+                    invocation_id=invocation_id,
                 )
-
-            post_snapshots = [canonical_open_order(item) for item in post_trades]
-            matching = [
-                item
-                for item in post_snapshots
-                if item["orderRef"] == action.order_ref
-                and item["orderId"] == action.order_id
-                and item["clientId"] == action.client_id
-                and item["contract"]["conId"] == action.contract_id
-            ]
-            acknowledged = (
-                len(matching) == 1
-                and Decimal(matching[0]["totalQuantity"]) == requested_total
-                and Decimal(matching[0]["limitPrice"]) == requested_limit
-                and matching[0]["status"].upper() in ACTIONABLE_ORDER_STATUSES
-            )
-            post_reconciliation = {
-                "acknowledged": acknowledged,
-                "matching_order_count": len(matching),
-                "requested_total_quantity": str(requested_total),
-                "requested_limit_price": str(requested_limit),
-                "confirmed_state": matching[0] if len(matching) == 1 else None,
-            }
             reasons = () if acknowledged else ("BROKER_MODIFICATION_UNCONFIRMED",)
             return self._modify_result(
                 action=action,
@@ -499,9 +589,14 @@ class AutonomousPaperExecutor:
                 reason_codes=reasons,
                 post_action_reconciliation=post_reconciliation,
                 broker_evidence=validation.broker_evidence,
+                invocation_id=invocation_id,
             )
         finally:
-            ib.disconnect()
+            try:
+                ib.disconnect()
+            # Durable broker confirmation is authoritative; teardown is best effort.
+            except Exception:  # nosec B110
+                pass
 
     def _modify_result(
         self,
@@ -514,6 +609,7 @@ class AutonomousPaperExecutor:
         reason_codes: tuple[str, ...],
         post_action_reconciliation: dict[str, Any],
         broker_evidence: dict[str, Any],
+        invocation_id: str | None = None,
     ) -> PaperExecutionResult:
         evidence = {
             **broker_evidence,
@@ -528,6 +624,7 @@ class AutonomousPaperExecutor:
                 snapshot=snapshot,
                 reason_codes=reason_codes,
                 broker_evidence=evidence,
+                invocation_id=invocation_id,
             )
         except Exception:
             return PaperExecutionResult(
@@ -557,6 +654,8 @@ class AutonomousPaperExecutor:
         self,
         action: AutonomousOpenOrderAction,
         bundle: TraderInputBundle,
+        *,
+        invocation_id: str | None = None,
     ) -> PaperExecutionResult:
         if not self.armed:
             raise AutonomousPaperExecutionNotArmed(
@@ -649,6 +748,23 @@ class AutonomousPaperExecutor:
                     action=action,
                     bundle=bundle,
                     snapshot=snapshot,
+                    invocation_id=invocation_id,
+                )
+            except sqlite3.IntegrityError as exc:
+                if "experiment_order_registry_action_cycle" in str(exc):
+                    return PaperExecutionResult(
+                        success=False,
+                        status="BLOCKED",
+                        reason_codes=("DUPLICATE_ORDER_ACTION_REQUEST",),
+                        order={},
+                        broker_validation={},
+                    )
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("LIFECYCLE_ATTEMPT_PERSISTENCE_FAILED",),
+                    order={},
+                    broker_validation={},
                 )
             except Exception:
                 return PaperExecutionResult(
@@ -661,73 +777,111 @@ class AutonomousPaperExecutor:
 
             try:
                 ib.cancelOrder(selected_trade.order)
-            except ConnectionError:
-                return PaperExecutionResult(
-                    success=False,
-                    status="UNCERTAIN",
-                    reason_codes=("BROKER_CONFIRMATION_UNAVAILABLE",),
-                    order={"pre_action_state": snapshot},
-                    broker_validation={},
-                )
             except Exception as exc:
-                reason_codes = ("BROKER_CANCEL_REJECTED",)
-                evidence = {"exception_type": type(exc).__name__}
                 return self._cancel_result(
                     action=action,
                     bundle=bundle,
                     snapshot=snapshot,
                     success=False,
-                    status="BLOCKED",
-                    reason_codes=reason_codes,
-                    post_action_reconciliation={"target_actionable": True},
-                    broker_evidence=evidence,
+                    status="UNCERTAIN",
+                    reason_codes=("BROKER_CONFIRMATION_UNAVAILABLE",),
+                    post_action_reconciliation={
+                        "target_actionable": True,
+                        "confirmation_stage": "BROKER_INVOCATION",
+                    },
+                    broker_evidence={
+                        "confirmation_stage": "BROKER_INVOCATION",
+                        "exception_type": type(exc).__name__,
+                    },
+                    invocation_id=invocation_id,
                 )
 
             try:
                 ib.sleep(self.fill_wait_seconds)
                 refreshed = list(ib.reqOpenOrders())
-            except Exception:
-                return PaperExecutionResult(
+                refreshed_snapshots = [
+                    canonical_open_order(item) for item in refreshed
+                ]
+                target_snapshots = [
+                    item
+                    for item in refreshed_snapshots
+                    if item["orderRef"] == action.order_ref
+                    and item["orderId"] == action.order_id
+                ]
+                target_actionable = any(
+                    item["status"].upper() in ACTIONABLE_ORDER_STATUSES
+                    for item in target_snapshots
+                )
+                target_cancelled = (
+                    str(getattr(selected_trade.orderStatus, "status", "")).upper()
+                    in CANCELLED_ORDER_STATUSES
+                )
+                selected_status = str(
+                    getattr(selected_trade.orderStatus, "status", "") or ""
+                ).upper()
+                selected_filled = Decimal(
+                    str(getattr(selected_trade.orderStatus, "filled", 0) or 0)
+                )
+                selected_remaining = Decimal(
+                    str(getattr(selected_trade.orderStatus, "remaining", 0) or 0)
+                )
+                target_filled = selected_status == "FILLED" or (
+                    selected_filled > 0 and selected_remaining == 0
+                )
+                terminal_snapshot = canonical_open_order(selected_trade)
+                reconciliation = {
+                    "target_present": bool(target_snapshots),
+                    "target_actionable": target_actionable,
+                    "target_cancelled": target_cancelled,
+                    "target_filled": target_filled,
+                    "open_order_count": len(refreshed_snapshots),
+                    "confirmed_state": terminal_snapshot,
+                    "confirmed_state_sha256": terminal_snapshot["state_sha256"],
+                }
+                success = not target_actionable and target_cancelled
+                if success:
+                    status = "CANCELLED"
+                    reason_codes = ()
+                elif target_filled:
+                    status = "FILLED"
+                    reason_codes = ("ORDER_FILLED_DURING_CANCELLATION",)
+                else:
+                    status = "UNCERTAIN"
+                    reason_codes = ("BROKER_CANCELLATION_UNCONFIRMED",)
+            except Exception as exc:
+                return self._cancel_result(
+                    action=action,
+                    bundle=bundle,
+                    snapshot=snapshot,
                     success=False,
                     status="UNCERTAIN",
                     reason_codes=("BROKER_CONFIRMATION_UNAVAILABLE",),
-                    order={"pre_action_state": snapshot},
-                    broker_validation={},
+                    post_action_reconciliation={
+                        "target_actionable": True,
+                        "confirmation_stage": "POST_WRITE_RECONCILIATION",
+                    },
+                    broker_evidence={
+                        "confirmation_stage": "POST_WRITE_RECONCILIATION",
+                        "exception_type": type(exc).__name__,
+                    },
+                    invocation_id=invocation_id,
                 )
-            refreshed_snapshots = [canonical_open_order(item) for item in refreshed]
-            target_snapshots = [
-                item
-                for item in refreshed_snapshots
-                if item["orderRef"] == action.order_ref
-                and item["orderId"] == action.order_id
-            ]
-            target_actionable = any(
-                item["status"].upper() in ACTIONABLE_ORDER_STATUSES
-                for item in target_snapshots
-            )
-            target_cancelled = (
-                str(getattr(selected_trade.orderStatus, "status", "")).upper()
-                in CANCELLED_ORDER_STATUSES
-            )
-            reconciliation = {
-                "target_present": bool(target_snapshots),
-                "target_actionable": target_actionable,
-                "target_cancelled": target_cancelled,
-                "open_order_count": len(refreshed_snapshots),
-            }
-            success = not target_actionable and (target_cancelled or not target_snapshots)
-            reason_codes = () if success else ("BROKER_CANCELLATION_UNCONFIRMED",)
             return self._cancel_result(
                 action=action,
                 bundle=bundle,
                 snapshot=snapshot,
                 success=success,
-                status="CANCELLED" if success else "UNCERTAIN",
+                status=status,
                 reason_codes=reason_codes,
                 post_action_reconciliation=reconciliation,
+                invocation_id=invocation_id,
             )
         finally:
-            ib.disconnect()
+            try:
+                ib.disconnect()
+            # Durable broker confirmation is authoritative; teardown is best effort.
+            except Exception:  # nosec B110
+                pass
 
     def _cancel_result(
         self,
@@ -740,6 +894,7 @@ class AutonomousPaperExecutor:
         reason_codes: tuple[str, ...],
         post_action_reconciliation: dict[str, Any],
         broker_evidence: dict[str, Any] | None = None,
+        invocation_id: str | None = None,
     ) -> PaperExecutionResult:
         evidence = {
             **(broker_evidence or {}),
@@ -754,6 +909,7 @@ class AutonomousPaperExecutor:
                 snapshot=snapshot,
                 reason_codes=reason_codes,
                 broker_evidence=evidence,
+                invocation_id=invocation_id,
             )
         except Exception:
             return PaperExecutionResult(
@@ -876,6 +1032,7 @@ class AutonomousPaperExecutor:
                 transmit=True,
                 whatIf=False,
                 orderRef=order_ref,
+                account=self._execution_account(ib),
             )
             if proposal.limit_price is not None:
                 order.lmtPrice = float(proposal.limit_price)
@@ -1133,6 +1290,7 @@ class AutonomousPaperExecutor:
                 transmit=True,
                 whatIf=False,
                 orderRef=order_ref,
+                account=self._execution_account(ib),
             )
             if action.limit_price is not None:
                 order.lmtPrice = float(action.limit_price)

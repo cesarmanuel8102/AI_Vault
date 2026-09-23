@@ -210,6 +210,10 @@ CREATE INDEX IF NOT EXISTS experiment_order_registry_client_order_id
 ON experiment_order_registry(client_order_id);
 CREATE INDEX IF NOT EXISTS experiment_order_registry_perm_id
 ON experiment_order_registry(perm_id);
+CREATE UNIQUE INDEX IF NOT EXISTS experiment_order_registry_action_cycle
+ON experiment_order_registry(json_extract(payload_json, '$.decision_cycle_id'))
+WHERE json_extract(payload_json, '$.lifecycle_event')
+IN ('CANCEL_ATTEMPT', 'MODIFY_ATTEMPT');
 CREATE TABLE IF NOT EXISTS risk_snapshots(
     snapshot_id TEXT PRIMARY KEY,
     decision_id TEXT REFERENCES decision_records(decision_id),

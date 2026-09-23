@@ -148,8 +148,10 @@ Immediately before cancel or modify, the executor must resolve exactly one live
 open trade and prove all of the following:
 
 1. The order ref uses the experiment namespace.
-2. The registry contains an issuance anchor for that order ref.
-3. The live and requested order IDs match the registry anchor.
+2. The registry contains a hash-valid V2 issuance anchor with every required
+   identity key present before value coercion.
+3. The anchor's client order ID and IBKR order ID both match the live and
+   requested order ID.
 4. Positive perm IDs match whenever the registry and broker provide them.
 5. Client ID equals the reserved execution client ID.
 6. Contract ID, side, and experiment account identity match.
@@ -179,9 +181,12 @@ The cancel path is:
 11. Append `CANCEL_RESULT` with the broker status and reconciliation evidence.
 
 If the broker rejects the cancellation, confirmation times out, the connection
-drops, or persistence fails, the outcome is not reported as success. An
-attempt recorded without a result is intentionally non-replayable and requires
-a fresh state cycle to determine the broker's actual state.
+drops before durable confirmation, or persistence fails, the outcome is not
+reported as success. A local disconnect-cleanup exception after the broker
+state has already been confirmed and the result durably persisted does not
+erase that confirmation. An attempt recorded without a result is intentionally
+non-replayable and requires a fresh state cycle to determine the broker's
+actual state.
 
 ## Modify Flow
 
@@ -233,12 +238,15 @@ Lifecycle rows use a versioned payload with:
 - timestamps and canonical payload hash
 
 The table's existing `action` and `quantity` columns retain the broker side and
-current/requested quantity for searchable evidence. Existing V1 issuance rows
-remain valid ownership anchors.
+current/requested quantity for searchable evidence. Lifecycle writes require
+hash-valid V2 issuance anchors with coherent order, contract, side, execution
+client, perm-ID, and account evidence. V1 rows remain immutable history but do
+not independently authorize cancel or modify.
 
 The decision cycle is the idempotency key. Any prior lifecycle attempt for the
 same cycle blocks another broker write, including when the first attempt lacks
-a result because the process lost broker confirmation.
+a result because the process lost broker confirmation. A partial unique SQLite
+index on lifecycle-attempt payloads enforces this globally and atomically.
 
 Economic ledger state continues to change only from reconciled fills and
 commissions. Cancel and unfilled modification events do not fabricate cash,
@@ -248,9 +256,9 @@ position, or P&L changes.
 
 The executor performs an immediate narrow broker reconciliation of the target
 order before returning. The service then schedules an immediate
-observation-only state/reasoning refresh after any acknowledged cancel or
-modify result, using the same no-second-transmission rule already applied after
-fills.
+observation-only state/reasoning refresh after any acknowledged or uncertain
+cancel/modify result and after a fill wins a cancellation race, using the same
+no-second-transmission rule already applied after fills.
 
 The refresh synchronizes executions, positions, open orders, experiment
 ledger, and control-plane state. A discrepancy blocks subsequent execution.

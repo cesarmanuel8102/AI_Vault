@@ -18,7 +18,11 @@ from .autonomous_research import (
 )
 from .ibkr_readonly import expected_identity_hash
 from .ibkr_readonly_session import ExpectedPaperIdentityStore
-from .open_order_management import ACTIONABLE_ORDER_STATUSES, canonical_open_order
+from .open_order_management import (
+    ACTIONABLE_ORDER_STATUSES,
+    MODIFIABLE_ORDER_STATUSES,
+    canonical_open_order,
+)
 from .risk import CapitalBoundaryInputs, CapitalBoundaryRiskEngine, RiskResult
 from .trader_invocation import TraderDecision, TraderInputBundle
 
@@ -451,6 +455,12 @@ class IBKRResearchToolbox:
                     reason_codes=("UNSUPPORTED_OPEN_ORDER_DECISION",),
                     broker_evidence={},
                 )
+            if snapshot["status"].upper() not in MODIFIABLE_ORDER_STATUSES:
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("OPEN_ORDER_PENDING_CANCEL",),
+                    broker_evidence={"live_state": snapshot},
+                )
 
             current_total = Decimal(snapshot["totalQuantity"])
             filled = Decimal(snapshot["filled"])
@@ -460,6 +470,18 @@ class IBKRResearchToolbox:
                 if action.new_limit_price is not None
                 else Decimal(snapshot["limitPrice"])
             )
+            if not requested_total.is_finite():
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("OPEN_ORDER_TOTAL_NON_FINITE",),
+                    broker_evidence={"old_state": snapshot},
+                )
+            if not requested_limit.is_finite():
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=("OPEN_ORDER_LIMIT_PRICE_NON_FINITE",),
+                    broker_evidence={"old_state": snapshot},
+                )
             if requested_total > current_total:
                 return ProposalValidation(
                     passed=False,

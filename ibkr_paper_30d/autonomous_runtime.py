@@ -257,6 +257,7 @@ def run_autonomous_cycle(
                 outcome.open_order_action,
                 bundle,
                 outcome.decision,
+                invocation_id=request.invocation_id,
             )
 
     if execution is not None and database is not None:

@@ -115,6 +115,16 @@ def lifecycle_trade(*, total=2, filled=0, limit_price=10):
             auxPrice=0,
             tif="DAY",
             outsideRth=False,
+            parentId=0,
+            ocaGroup="",
+            transmit=False,
+            conditions=[],
+            goodAfterTime="",
+            goodTillDate="",
+            smartComboRoutingParams=[],
+            algoStrategy="",
+            algoParams=[],
+            orderMiscOptions=[],
         ),
         orderStatus=SimpleNamespace(
             status="Submitted",
@@ -145,6 +155,12 @@ def register_issuance(db, value):
         "schema": "EXPERIMENT_ORDER_REGISTRY_V2",
         "lifecycle_event": "ISSUED_PRE_SEND",
         "order_ref": snapshot["orderRef"],
+        "client_order_id": snapshot["orderId"],
+        "perm_id": snapshot["permId"],
+        "ibkr_order_id": snapshot["orderId"],
+        "contract_id": snapshot["contract"]["conId"],
+        "action": snapshot["action"],
+        "quantity": snapshot["totalQuantity"],
         "execution_client_id": snapshot["clientId"],
         "account": snapshot["account"],
     }
@@ -177,11 +193,17 @@ class FakeLifecycleIB:
         disconnect_after_cancel=False,
         reject_cancel=False,
         confirmation_timeout=False,
+        fill_during_cancel=False,
+        corrupt_confirmation=False,
+        disconnect_raises=False,
     ):
         self.target = target
         self.disconnect_after_cancel = disconnect_after_cancel
         self.reject_cancel = reject_cancel
         self.confirmation_timeout = confirmation_timeout
+        self.fill_during_cancel = fill_during_cancel
+        self.corrupt_confirmation = corrupt_confirmation
+        self.disconnect_raises = disconnect_raises
         self.cancel_calls = 0
         self.cancelled_order_ids = []
         self.global_cancel_calls = 0
@@ -192,15 +214,25 @@ class FakeLifecycleIB:
         return self.openTrades()
 
     def openTrades(self):
-        return [] if self.target.orderStatus.status == "Cancelled" else [self.target]
+        return (
+            []
+            if self.target.orderStatus.status in {"Cancelled", "Filled"}
+            else [self.target]
+        )
 
     def cancelOrder(self, order):
         self.cancel_calls += 1
         self.cancelled_order_ids.append(order.orderId)
         if self.reject_cancel:
             raise RuntimeError("cancel rejected")
-        if not self.confirmation_timeout:
+        if self.fill_during_cancel:
+            self.target.orderStatus.status = "Filled"
+            self.target.orderStatus.filled = self.target.order.totalQuantity
+            self.target.orderStatus.remaining = 0
+        elif not self.confirmation_timeout:
             self.target.orderStatus.status = "Cancelled"
+        if self.corrupt_confirmation:
+            self.target.order.totalQuantity = "not-a-number"
         if self.disconnect_after_cancel:
             raise ConnectionError("disconnected after cancel")
         return self.target
@@ -209,6 +241,8 @@ class FakeLifecycleIB:
         return True
 
     def disconnect(self):
+        if self.disconnect_raises:
+            raise RuntimeError("disconnect cleanup failed")
         return None
 
 
@@ -257,10 +291,18 @@ class FakeModifyIB(FakeLifecycleIB):
         *,
         change_state_after_what_if=False,
         disconnect_after_place=False,
+        mutate_preserved_field_after_place=None,
+        corrupt_confirmation=False,
+        disconnect_raises=False,
     ):
-        super().__init__(target)
+        super().__init__(
+            target,
+            corrupt_confirmation=corrupt_confirmation,
+            disconnect_raises=disconnect_raises,
+        )
         self.change_state_after_what_if = change_state_after_what_if
         self.disconnect_after_place = disconnect_after_place
+        self.mutate_preserved_field_after_place = mutate_preserved_field_after_place
         self.what_if_calls = 0
 
     def reqAllOpenOrders(self):
@@ -282,10 +324,15 @@ class FakeModifyIB(FakeLifecycleIB):
     def placeOrder(self, contract, order):
         self.place_calls.append((contract, order))
         self.target.order = order
+        if self.mutate_preserved_field_after_place is not None:
+            field, value = self.mutate_preserved_field_after_place
+            setattr(self.target.order, field, value)
         self.target.orderStatus.status = "Submitted"
         self.target.orderStatus.remaining = Decimal(str(order.totalQuantity)) - Decimal(
             str(self.target.orderStatus.filled)
         )
+        if self.corrupt_confirmation:
+            self.target.order.totalQuantity = "not-a-number"
         if self.disconnect_after_place:
             raise ConnectionError("disconnected after modify")
         return self.target
@@ -299,9 +346,11 @@ def modification_validation_fixture(
     quote_success=True,
     what_if_state=None,
     order_type="LMT",
+    status="Submitted",
 ):
     target = lifecycle_trade(total=total, filled=filled)
     target.order.orderType = order_type
+    target.orderStatus.status = status
     snapshot = canonical_open_order(target)
     action = open_order_action_from_trade(target).model_copy(
         update={
@@ -331,6 +380,9 @@ def armed_modify_fixture(
     *,
     change_state_after_what_if=False,
     disconnect_after_place=False,
+    mutate_preserved_field_after_place=None,
+    corrupt_confirmation=False,
+    disconnect_raises=False,
 ):
     from ibkr_paper_30d.persistence import Database
 
@@ -348,6 +400,9 @@ def armed_modify_fixture(
             target,
             change_state_after_what_if=change_state_after_what_if,
             disconnect_after_place=disconnect_after_place,
+            mutate_preserved_field_after_place=mutate_preserved_field_after_place,
+            corrupt_confirmation=corrupt_confirmation,
+            disconnect_raises=disconnect_raises,
         )
         toolbox = IBKRResearchToolbox()
         toolbox._connect = lambda *, client_id=None: broker
@@ -377,6 +432,9 @@ def armed_cancel_fixture(
     disconnect_after_cancel=False,
     reject_cancel=False,
     confirmation_timeout=False,
+    fill_during_cancel=False,
+    corrupt_confirmation=False,
+    disconnect_raises=False,
     fail_connects=0,
     fresh_safety_check=lambda scope: (),
     operator_control_check=lambda: (),
@@ -392,6 +450,9 @@ def armed_cancel_fixture(
             disconnect_after_cancel=disconnect_after_cancel,
             reject_cancel=reject_cancel,
             confirmation_timeout=confirmation_timeout,
+            fill_during_cancel=fill_during_cancel,
+            corrupt_confirmation=corrupt_confirmation,
+            disconnect_raises=disconnect_raises,
         )
         toolbox = LifecycleToolbox(broker, fail_connects=fail_connects)
         executor = AutonomousPaperExecutor(
@@ -446,6 +507,9 @@ class _FakeIB:
     def __init__(self):
         self.place_calls = 0
         self.client = SimpleNamespace(getReqId=lambda: 4242)
+
+    def managedAccounts(self):
+        return ["DU1234567"]
 
     def placeOrder(self, contract, order):
         self.place_calls += 1
@@ -637,8 +701,10 @@ def test_order_registry_appends_broker_perm_id_without_rewriting_pre_send_identi
             operator_control_check=lambda: (),
         )
         contract = SimpleNamespace(conId=123)
-        pre_send = SimpleNamespace(orderId=77, permId=0)
-        post_send = SimpleNamespace(orderId=77, permId=9001)
+        pre_send = SimpleNamespace(orderId=77, permId=0, account="DU1234567")
+        post_send = SimpleNamespace(
+            orderId=77, permId=9001, account="DU1234567"
+        )
 
         executor._register_order(
             order=pre_send,
@@ -670,6 +736,37 @@ def test_order_registry_appends_broker_perm_id_without_rewriting_pre_send_identi
         "BROKER_BOUND",
     ]
     assert [item["execution_client_id"] for item in payloads] == [19761, 19761]
+    assert [item["account"] for item in payloads] == [
+        "DU1234567",
+        "DU1234567",
+    ]
+
+
+def test_order_registry_rejects_blank_account_anchor(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    with Database.open(tmp_path / "registry.sqlite3") as db:
+        executor = AutonomousPaperExecutor(
+            NoCallToolbox(),
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        )
+
+        with pytest.raises(RuntimeError, match="order account identity required"):
+            executor._register_order(
+                order=SimpleNamespace(orderId=77, permId=0, account=""),
+                contract=SimpleNamespace(conId=123),
+                order_ref="codex-ibkr-paper-30d-a-test",
+                action="BUY",
+                quantity=Decimal("1"),
+                lifecycle_event="ISSUED_PRE_SEND",
+            )
+
+        assert db.execute(
+            "SELECT COUNT(*) FROM experiment_order_registry"
+        ).fetchone()[0] == 0
 
 
 def test_cancel_calls_only_selected_owned_order_and_persists_attempt_and_result(
@@ -711,13 +808,45 @@ def test_cancel_post_write_disconnect_persists_attempt_and_blocks_replay(tmp_pat
     assert [item["lifecycle_event"] for item in events] == [
         "ISSUED_PRE_SEND",
         "CANCEL_ATTEMPT",
+        "CANCEL_RESULT",
+    ]
+    assert events[-1]["broker_evidence"]["exception_type"] == "ConnectionError"
+
+
+def test_confirmed_cancel_is_not_overridden_by_disconnect_cleanup_failure(tmp_path):
+    with armed_cancel_fixture(tmp_path, disconnect_raises=True) as fixture:
+        executor, _, fake_ib, action, value = fixture
+        result = executor.execute_open_order_action(
+            action, value, TraderDecision.CANCEL_ORDER
+        )
+
+    assert result.success is True
+    assert fake_ib.cancel_calls == 1
+
+
+def test_cancel_does_not_report_cancelled_when_order_filled_during_request(tmp_path):
+    with armed_cancel_fixture(tmp_path, fill_during_cancel=True) as fixture:
+        executor, db, fake_ib, action, value = fixture
+        result = executor.execute_open_order_action(
+            action, value, TraderDecision.CANCEL_ORDER
+        )
+        events = lifecycle_events(db, action.order_ref)
+
+    assert result.success is False
+    assert result.status == "FILLED"
+    assert result.reason_codes == ("ORDER_FILLED_DURING_CANCELLATION",)
+    assert fake_ib.cancel_calls == 1
+    assert [item["lifecycle_event"] for item in events] == [
+        "ISSUED_PRE_SEND",
+        "CANCEL_ATTEMPT",
+        "CANCEL_RESULT",
     ]
 
 
 @pytest.mark.parametrize(
     ("fixture_kwargs", "reason"),
     [
-        ({"reject_cancel": True}, "BROKER_CANCEL_REJECTED"),
+        ({"reject_cancel": True}, "BROKER_CONFIRMATION_UNAVAILABLE"),
         ({"confirmation_timeout": True}, "BROKER_CANCELLATION_UNCONFIRMED"),
     ],
 )
@@ -731,6 +860,8 @@ def test_cancel_broker_failure_is_explicit(tmp_path, fixture_kwargs, reason):
     assert result.success is False
     assert reason in result.reason_codes
     assert fake_ib.cancel_calls == 1
+    if fixture_kwargs.get("reject_cancel"):
+        assert result.status == "UNCERTAIN"
 
 
 @pytest.mark.parametrize(
@@ -800,6 +931,24 @@ def test_cancel_result_persistence_failure_is_uncertain_and_not_replayed(
     assert fake_ib.cancel_calls == 1
 
 
+def test_cancel_confirmation_processing_failure_is_persisted_uncertain(tmp_path):
+    with armed_cancel_fixture(tmp_path, corrupt_confirmation=True) as fixture:
+        executor, db, fake_ib, action, value = fixture
+        result = executor.execute_open_order_action(
+            action, value, TraderDecision.CANCEL_ORDER
+        )
+        events = lifecycle_events(db, action.order_ref)
+
+    assert result.success is False
+    assert result.status == "UNCERTAIN"
+    assert result.reason_codes == ("BROKER_CONFIRMATION_UNAVAILABLE",)
+    assert fake_ib.cancel_calls == 1
+    assert events[-1]["lifecycle_event"] == "CANCEL_RESULT"
+    assert events[-1]["broker_evidence"]["confirmation_stage"] == (
+        "POST_WRITE_RECONCILIATION"
+    )
+
+
 def test_modify_validation_requires_fresh_quote_and_what_if():
     toolbox, fake_ib, value, action = modification_validation_fixture()
 
@@ -811,6 +960,41 @@ def test_modify_validation_requires_fresh_quote_and_what_if():
     assert fake_ib.quote_contract_ids == [action.contract_id]
     assert fake_ib.what_if_calls == 1
     assert result.broker_evidence["whatIf"] is True
+
+
+def test_modify_validation_rejects_pending_cancel_before_quote_or_what_if():
+    toolbox, fake_ib, value, action = modification_validation_fixture(
+        status="PendingCancel"
+    )
+
+    result = toolbox.validate_open_order_action(
+        action, value, TraderDecision.MODIFY_ORDER, ib=fake_ib
+    )
+
+    assert result.passed is False
+    assert result.reason_codes == ("OPEN_ORDER_PENDING_CANCEL",)
+    assert fake_ib.quote_contract_ids == []
+    assert fake_ib.what_if_calls == 0
+
+
+@pytest.mark.parametrize(
+    ("field", "reason"),
+    [
+        ("new_total_quantity", "OPEN_ORDER_TOTAL_NON_FINITE"),
+        ("new_limit_price", "OPEN_ORDER_LIMIT_PRICE_NON_FINITE"),
+    ],
+)
+def test_modify_validation_rejects_non_finite_values_before_what_if(field, reason):
+    toolbox, fake_ib, value, action = modification_validation_fixture()
+    action = action.model_copy(update={field: Decimal("Infinity")})
+
+    result = toolbox.validate_open_order_action(
+        action, value, TraderDecision.MODIFY_ORDER, ib=fake_ib
+    )
+
+    assert result.passed is False
+    assert result.reason_codes == (reason,)
+    assert fake_ib.what_if_calls == 0
 
 
 @pytest.mark.parametrize(
@@ -960,6 +1144,7 @@ def test_modify_preserves_identity_and_submits_same_order_id(tmp_path):
     assert submitted.action == "BUY"
     assert submitted.orderType == "LMT"
     assert submitted.tif == "DAY"
+    assert submitted.transmit is False
     assert submitted.totalQuantity == 1
     assert submitted.lmtPrice == 9.50
     assert contract.conId == action.contract_id
@@ -968,6 +1153,76 @@ def test_modify_preserves_identity_and_submits_same_order_id(tmp_path):
         "MODIFY_ATTEMPT",
         "MODIFY_RESULT",
     ]
+
+
+def test_modify_confirmation_rejects_changed_preserved_semantics(tmp_path):
+    with armed_modify_fixture(
+        tmp_path,
+        mutate_preserved_field_after_place=("parentId", 88),
+    ) as fixture:
+        executor, _, fake_ib, action, value = fixture
+        result = executor.execute_open_order_action(
+            action, value, TraderDecision.MODIFY_ORDER
+        )
+
+    assert result.success is False
+    assert result.status == "UNCERTAIN"
+    assert result.reason_codes == ("BROKER_MODIFICATION_UNCONFIRMED",)
+    assert len(fake_ib.place_calls) == 1
+    reconciliation = result.order["post_action_reconciliation"]
+    assert reconciliation["preserved_state_matches"] is False
+
+
+def test_modify_confirmation_processing_failure_is_persisted_uncertain(tmp_path):
+    with armed_modify_fixture(tmp_path, corrupt_confirmation=True) as fixture:
+        executor, db, fake_ib, action, value = fixture
+        result = executor.execute_open_order_action(
+            action, value, TraderDecision.MODIFY_ORDER
+        )
+        events = lifecycle_events(db, action.order_ref)
+
+    assert result.success is False
+    assert result.status == "UNCERTAIN"
+    assert result.reason_codes == ("BROKER_CONFIRMATION_UNAVAILABLE",)
+    assert len(fake_ib.place_calls) == 1
+    assert events[-1]["lifecycle_event"] == "MODIFY_RESULT"
+    assert events[-1]["broker_evidence"]["confirmation_stage"] == (
+        "POST_WRITE_RECONCILIATION"
+    )
+
+
+def test_modify_result_persistence_failure_is_uncertain_and_not_replayed(
+    tmp_path, monkeypatch
+):
+    with armed_modify_fixture(tmp_path) as fixture:
+        executor, _, fake_ib, action, value = fixture
+        original = executor._register_lifecycle_event
+
+        def fail_result(**kwargs):
+            if kwargs["lifecycle_event"] == "MODIFY_RESULT":
+                raise RuntimeError("database unavailable")
+            return original(**kwargs)
+
+        monkeypatch.setattr(executor, "_register_lifecycle_event", fail_result)
+        result = executor.execute_open_order_action(
+            action, value, TraderDecision.MODIFY_ORDER
+        )
+
+    assert result.success is False
+    assert result.status == "UNCERTAIN"
+    assert result.reason_codes == ("LIFECYCLE_RESULT_PERSISTENCE_FAILED",)
+    assert len(fake_ib.place_calls) == 1
+
+
+def test_confirmed_modify_is_not_overridden_by_disconnect_cleanup_failure(tmp_path):
+    with armed_modify_fixture(tmp_path, disconnect_raises=True) as fixture:
+        executor, _, fake_ib, action, value = fixture
+        result = executor.execute_open_order_action(
+            action, value, TraderDecision.MODIFY_ORDER
+        )
+
+    assert result.success is True
+    assert len(fake_ib.place_calls) == 1
 
 
 def test_state_change_after_what_if_blocks_modify_before_place_order(tmp_path):
@@ -984,15 +1239,22 @@ def test_state_change_after_what_if_blocks_modify_before_place_order(tmp_path):
 
 def test_modify_post_write_disconnect_is_not_replayed(tmp_path):
     with armed_modify_fixture(tmp_path, disconnect_after_place=True) as fixture:
-        executor, _, fake_ib, action, value = fixture
+        executor, db, fake_ib, action, value = fixture
         first = executor.execute_open_order_action(
             action, value, TraderDecision.MODIFY_ORDER
         )
         second = executor.execute_open_order_action(
             action, value, TraderDecision.MODIFY_ORDER
         )
+        events = lifecycle_events(db, action.order_ref)
 
     assert first.success is False
     assert "BROKER_CONFIRMATION_UNAVAILABLE" in first.reason_codes
     assert second.reason_codes == ("DUPLICATE_ORDER_ACTION_REQUEST",)
     assert len(fake_ib.place_calls) == 1
+    assert [item["lifecycle_event"] for item in events] == [
+        "ISSUED_PRE_SEND",
+        "MODIFY_ATTEMPT",
+        "MODIFY_RESULT",
+    ]
+    assert events[-1]["broker_evidence"]["exception_type"] == "ConnectionError"
