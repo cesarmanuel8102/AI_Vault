@@ -515,6 +515,7 @@ def discover_ibkr_capabilities(
             ("AAPL_STK_OVERNIGHT", _spec(symbol="AAPL", sec_type="STK", exchange="OVERNIGHT", currency="USD", primary_exchange="NASDAQ")),
             ("SPY_STK_OVERNIGHT", _spec(symbol="SPY", sec_type="STK", exchange="OVERNIGHT", currency="USD", primary_exchange="ARCA")),
             ("EURUSD_CASH", _spec(symbol="EUR", sec_type="CASH", exchange="IDEALPRO", currency="USD")),
+            ("AAPL_CFD", _spec(symbol="AAPL", sec_type="CFD", exchange="SMART", currency="USD")),
             ("ES_FUT", _spec(symbol="ES", sec_type="FUT", exchange="CME", currency="USD")),
             ("BTC_CRYPTO", _spec(symbol="BTC", sec_type="CRYPTO", exchange="PAXOS", currency="USD")),
             ("XAUUSD_CMDTY", _spec(symbol="XAUUSD", sec_type="CMDTY", exchange="IBCMDTY", currency="USD")),
