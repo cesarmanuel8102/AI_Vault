@@ -163,3 +163,16 @@ def test_discovery_rejects_nonpaper_endpoint_before_network(host: str, port: int
             port=port,
             expected_account_hash="a" * 64,
         )
+
+
+def test_nonfinite_broker_scalars_fail_closed_to_none() -> None:
+    assert discovery._safe_scalar(float("nan")) is None
+    assert discovery._safe_scalar(float("inf")) is None
+
+
+def test_capability_discovery_source_marks_permissions_unproven() -> None:
+    source = inspect.getsource(discovery)
+
+    assert "UNPROVEN_READ_ONLY_DISCOVERY" in source
+    assert '"account_trading_permission_proven": False' in source
+    assert '"what_if_orders": False' in source
