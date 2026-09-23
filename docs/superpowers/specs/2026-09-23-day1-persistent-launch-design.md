@@ -1,7 +1,7 @@
 # Day 1 Persistent PAPER Launch Design
 
 Date: 2026-09-23
-Status: APPROVED IN CHAT; WRITTEN SPEC PENDING OWNER REVIEW
+Status: OWNER-REVIEW REVISIONS INCORPORATED; PENDING FINAL OWNER APPROVAL
 Repository: `C:\AI_VAULT_IBKR`
 
 ## Purpose
@@ -48,17 +48,21 @@ In scheduled mode the script performs these stages in order:
 
 1. Collect the three regular-session windows and freeze/validate
    `MARKET_DATA_POLICY_V1` using the existing evidence-backed implementation.
-2. Run `FINALIZE_IBKR_PREREQUISITES.ps1 -SkipTaskRegistration` in the same
-   elevated task token. This creates a fresh read-only identity receipt and a
-   matching fresh Auditor V2 receipt after market collection has finished.
-3. Invoke `python -m ibkr_paper_30d.day1_launch` in the foreground.
+2. Generate a unique launch-attempt UUID and run
+   `FINALIZE_IBKR_PREREQUISITES.ps1 -SkipTaskRegistration -LaunchAttemptId`
+   in the same elevated task token. This validates the pre-existing explicit
+   Owner authorization, creates a fresh read-only identity receipt and matching
+   fresh Auditor V2 receipt, then binds both hashes to that attempt UUID.
+3. Invoke `python -m ibkr_paper_30d.day1_launch --launch-attempt-id` with the
+   same UUID in the foreground.
 4. Keep the scheduled task alive for the lifetime of the authoritative Python
    service. The task must not unregister itself before a terminal experiment
    state.
 
 Task Scheduler supplies persistence, `IgnoreNew` multiple-instance behavior,
-start-when-available behavior, a 31-day execution limit, and bounded restart
-attempts separated by five minutes. The Python launch boundary supplies a
+start-when-available behavior, a weekday 09:35 trigger plus Owner-logon
+recovery trigger on the same task, a 31-day execution limit, and bounded
+restart attempts separated by five minutes. The Python launch boundary supplies a
 second database-backed single-instance guard so direct or accidental duplicate
 invocations fail closed. The task uses the interactive Owner token because
 IBKR Gateway and Codex credentials live in that session; after logout or reboot,
@@ -71,25 +75,27 @@ methods. It imports the existing authoritative components and performs:
 
 1. Validate the approved repository root and ensure system UTC is not before
    `2026-09-23T13:30:00Z`.
-2. Load the latest read-only receipt and require host `127.0.0.1`, port `4002`,
-   PAPER mode, exactly one expected identity, `DU` namespace, heartbeat PASS,
-   complete positions/executions/open-orders visibility, and reconciliation
-   PASS.
+2. Validate the caller's launch-attempt UUID against the fresh reconciliation
+   and Auditor V2 receipt hashes. Load the read-only receipt and require host
+   `127.0.0.1`, port `4002`, PAPER mode, observed managed-account count one,
+   sanitized `DU` namespace evidence, heartbeat PASS, complete
+   positions/executions/open-orders visibility, and reconciliation PASS.
 3. Export only the receipt's expected account hash to the child process as
    `IBKR_PAPER_ACCOUNT_SHA256`.
 4. Evaluate fresh Runtime Auditor V2 and Runtime Market Data gates. New-trade
    evaluation must be PASS; delayed/frozen data remains forbidden.
 5. Open the canonical SQLite database, require `PRAGMA integrity_check=ok`,
    validate the current schema, and require a valid experiment ledger.
-6. Initialize or load the immutable clock with start
-   `2026-09-23T13:30:00Z`, 30 days, and USD 500. Any mismatch is terminal and
-   cannot be rewritten.
-7. Record the exact owner authorization phrase
-   `AUTHORIZE 30-DAY PAPER EXPERIMENT` bound to that clock hash only when no
-   authorization event exists. Existing authorization must already be valid
-   for the same clock.
-8. Clear the kill switch only on the first launch when no kill-switch event
-   exists. A later triggered kill switch is never auto-cleared.
+6. Load and validate the immutable clock with start `2026-09-23T13:30:00Z`,
+   end `2026-10-23T13:30:00Z`, 30 days, and USD 500. Delayed launch consumes
+   clock time; the launcher never initializes or rewrites the clock.
+7. Consume and validate the exact Owner authorization phrase
+   `AUTHORIZE 30-DAY PAPER EXPERIMENT`, created only during an explicit
+   elevated Owner finalizer invocation and bound to that clock hash. The
+   scheduled finalizer and launcher never create authorization.
+8. Require monotonic kill-switch history: exactly the initial explicit CLEAR
+   and no TRIGGERED event anywhere later. A TRIGGERED event is permanent for
+   this experiment even if a later CLEAR row exists.
 9. Set `IBKR_AUTONOMOUS_PAPER_ARMED=true` only in the service process
    environment and instantiate `AutonomousExperimentService` with
    `execute_paper=True`, `gpt-5.6-sol`, reasoning effort `max`, five-minute scan
@@ -120,6 +126,7 @@ Evidence includes:
 - process ID, task identity, startup time, first-cycle identifier, and latest
   heartbeat;
 - sanitized reason codes and corrective-action history.
+- launch-attempt UUID plus fresh reconciliation and Auditor V2 receipt hashes.
 
 Raw account IDs, credentials, tokens, and prompts are forbidden from launch
 evidence.
@@ -150,6 +157,12 @@ Repeated scheduled or manual invocation must produce one of three outcomes:
 Clock, authorization, policy, and append-only ledger artifacts are never
 silently replaced.
 
+Native autonomous discovery remains active throughout the experiment. No fixed
+symbol, asset-class, strategy, expiration, strike, market, or session whitelist
+is introduced. Capability-discovery and candidate-screen results are advisory;
+actual IBKR permissions, contract qualification, what-if, market data, and
+execution gates remain authoritative.
+
 ## Testing
 
 Implementation follows TDD and covers:
@@ -159,12 +172,17 @@ Implementation follows TDD and covers:
 - PAPER endpoint/identity and LIVE-route refusal;
 - missing or blocked auditor, reconciliation, market-data, ledger, and model
   gates;
-- first-launch authorization and kill-switch initialization;
+- explicit elevated Owner-boundary clock, authorization, and initial kill-switch creation;
+- explicit elevated Owner authorization with no launcher synthesis;
+- per-attempt freshness binding across reconciliation and Auditor V2;
 - refusal to auto-clear a later kill switch;
+- refusal to rehabilitate any historical triggered kill switch;
 - double-start exclusion and stale PID handling;
 - scheduled PowerShell chaining, exit codes, and persistent foreground service;
 - recovery requiring reconciliation before restart;
 - zero broker-write calls in every launcher/preflight test;
+- executor and IB transport write tripwires wired into integration tests;
+- empty-candidate Native discovery and fail-closed unknown cycle statuses;
 - unchanged auditor runtime and trust-anchor hashes.
 
 Verification includes the complete `tests/ibkr_paper_30d` suite, PowerShell AST
