@@ -1123,6 +1123,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             port=args.port,
             client_id=args.client_id,
             timeout_seconds=args.timeout_seconds,
+            expected_account_hash=_configured_paper_account_hash(),
         )
         if report.get("status") != "BLOCK":
             report_sha256 = capability_report_sha256(report)
