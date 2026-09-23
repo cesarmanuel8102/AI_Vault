@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import threading
 import time
 from dataclasses import asdict, dataclass
@@ -78,10 +79,15 @@ DEFAULT_PROBES: tuple[ProbeSpec, ...] = (
 
 
 def _safe_scalar(value: Any) -> Any:
-    if value is None or isinstance(value, (str, int, float, bool)):
+    if value is None or isinstance(value, (str, bool)):
         return value
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
     try:
-        return float(value)
+        parsed = float(value)
+        return parsed if math.isfinite(parsed) else None
     except (TypeError, ValueError):
         return str(value)
 
@@ -224,13 +230,13 @@ class _CapabilityClient(EWrapper, EClient):
     def tickPrice(self, reqId: int, tickType: int, price: float, attrib: Any) -> None:
         quote = self.quotes.setdefault(reqId, {})
         if tickType == 1:
-            quote["bid"] = price
+            quote["bid"] = _safe_scalar(price)
         elif tickType == 2:
-            quote["ask"] = price
+            quote["ask"] = _safe_scalar(price)
         elif tickType == 4:
-            quote["last"] = price
+            quote["last"] = _safe_scalar(price)
         elif tickType == 9:
-            quote["close"] = price
+            quote["close"] = _safe_scalar(price)
         quote["last_update_utc"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
     def tickSize(self, reqId: int, tickType: int, size: Any) -> None:
@@ -357,6 +363,22 @@ def discover_capabilities(
             event.wait(timeout_seconds)
             details = list(client.contract_values.get(request_id, []))
             selected = _select_detail(spec, details)
+            selected_payload = (
+                None if selected is None else _serialize_contract_details(selected)
+            )
+            valid_exchanges = []
+            order_types = []
+            if selected_payload is not None:
+                valid_exchanges = [
+                    item.strip()
+                    for item in str(selected_payload.get("validExchanges") or "").split(",")
+                    if item.strip()
+                ]
+                order_types = [
+                    item.strip()
+                    for item in str(selected_payload.get("orderTypes") or "").split(",")
+                    if item.strip()
+                ]
             row: dict[str, Any] = {
                 "probe": asdict(spec),
                 "contract_detail_count": len(details),
@@ -364,11 +386,17 @@ def discover_capabilities(
                     _serialize_contract_details(item) for item in details[:12]
                 ],
                 "contract_details_truncated": len(details) > 12,
-                "selected_contract": (
-                    None
-                    if selected is None
-                    else _serialize_contract_details(selected)
-                ),
+                "selected_contract": selected_payload,
+                "capability_facts": {
+                    "contract_resolved": selected is not None,
+                    "requested_exchange_listed": (
+                        spec.exchange in valid_exchanges if valid_exchanges else None
+                    ),
+                    "valid_exchanges": valid_exchanges,
+                    "broker_advertised_order_types": order_types,
+                    "account_trading_permission": "UNPROVEN_READ_ONLY_DISCOVERY",
+                    "execution_attempted": False,
+                },
                 "market_data": None,
                 "status": "UNRESOLVED" if not details else "RESOLVED",
             }
@@ -405,7 +433,11 @@ def discover_capabilities(
                 "port": port,
                 "mode": "PAPER",
                 "server_version": client.serverVersion(),
-                "connection_time": client.twsConnectionTime(),
+                "connection_time": (
+                    client.twsConnectionTime().decode("ascii", errors="replace")
+                    if isinstance(client.twsConnectionTime(), bytes)
+                    else str(client.twsConnectionTime())
+                ),
                 "server_timestamp_utc": server_timestamp,
             },
             "paper_identity": {
@@ -417,6 +449,13 @@ def discover_capabilities(
             "probes": results,
             "broker_errors": client.errors,
             "outbound_message_ids": client.outbound_message_ids,
+            "discovery_scope": {
+                "contract_details": True,
+                "market_data": True,
+                "orders": False,
+                "what_if_orders": False,
+                "account_trading_permission_proven": False,
+            },
             "read_only_transport_guard": True,
             "real_order_writes_attempted": 0,
             "paper_execution_armed": False,
