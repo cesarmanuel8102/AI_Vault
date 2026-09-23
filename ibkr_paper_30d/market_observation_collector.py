@@ -509,6 +509,11 @@ class IBKRMarketDataSource:
         if len(self.client.managed_accounts_value) != 1:
             raise ObservationAborted("MANAGED_ACCOUNT_COUNT_INVALID")
 
+        # Fail closed on the intended feed class. A separate read-only
+        # reconciliation connection may request delayed data for diagnostics,
+        # but the Market Data Gate always requests LIVE explicitly.
+        self.client.reqMarketDataType(1)
+
         resolved: list[tuple[Contract, tuple[str, int, str, str]]] = []
         for offset, symbol in enumerate(symbols):
             contract = Contract()
