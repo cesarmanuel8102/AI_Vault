@@ -156,6 +156,18 @@ def test_future_selection_prefers_nearest_nonexpired_contract() -> None:
     assert chosen.contract.conId == 2
 
 
+def test_missing_expected_paper_identity_blocks_before_connect() -> None:
+    result = discover_ibkr_capabilities(
+        host="127.0.0.1",
+        port=4002,
+        expected_account_hash=None,
+    )
+
+    assert result["status"] == "BLOCK"
+    assert result["reason_codes"] == ["EXPECTED_ACCOUNT_IDENTITY_NOT_CONFIGURED"]
+    assert result["real_order_writes_attempted"] == 0
+
+
 def test_wrong_endpoint_blocks_without_touching_broker() -> None:
     result = discover_ibkr_capabilities(host="127.0.0.1", port=4001)
 
