@@ -10,6 +10,7 @@ from ibkr_paper_30d.capability_discovery import (
     CAPABILITY_ALLOWED_MESSAGE_IDS,
     REQ_SEC_DEF_OPT_PARAMS_ID,
     _contract_capability,
+    _sample_derivative_spec,
     discover_ibkr_capabilities,
     report_sha256,
     select_contract_details,
@@ -90,6 +91,41 @@ def test_contract_projection_exposes_route_hours_and_order_types() -> None:
     assert result.valid_exchanges == ("SMART", "NASDAQ", "OVERNIGHT")
     assert result.trading_hours
     assert result.liquid_hours
+
+
+def test_sample_derivative_spec_uses_reference_data_without_order_preview() -> None:
+    client = SimpleNamespace(
+        secdef_values={
+            21000: [
+                {
+                    "exchange": "SMART",
+                    "underlying_con_id": 265598,
+                    "trading_class": "AAPL",
+                    "multiplier": "100",
+                    "expirations": ("20260923", "20261016"),
+                    "strikes": (330.0, 340.0, 350.0),
+                }
+            ]
+        }
+    )
+
+    contract = _sample_derivative_spec(
+        client,
+        secdef_req_id=21000,
+        symbol="AAPL",
+        sec_type="OPT",
+        currency="USD",
+        preferred_exchange="SMART",
+    )
+
+    assert contract is not None
+    assert contract.secType == "OPT"
+    assert contract.exchange == "SMART"
+    assert contract.lastTradeDateOrContractMonth == "20260923"
+    assert contract.strike == 340.0
+    assert contract.right == "C"
+    assert contract.multiplier == "100"
+    assert contract.tradingClass == "AAPL"
 
 
 def test_future_selection_prefers_nearest_nonexpired_contract() -> None:
