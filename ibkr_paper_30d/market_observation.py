@@ -26,6 +26,7 @@ class ClockSample(BaseModel, frozen=True):
     local_receive_utc: datetime
     round_trip_ms: int = Field(ge=0)
     clock_skew_ms: int
+    timestamp_resolution_ms: int = Field(default=1, ge=1)
 
     @classmethod
     def from_round_trip(
@@ -33,6 +34,8 @@ class ClockSample(BaseModel, frozen=True):
         local_send_utc: datetime,
         broker_time_utc: datetime,
         local_receive_utc: datetime,
+        *,
+        timestamp_resolution_ms: int = 1,
     ) -> "ClockSample":
         for value in (local_send_utc, broker_time_utc, local_receive_utc):
             if value.tzinfo is None or value.utcoffset() is None:
@@ -49,6 +52,7 @@ class ClockSample(BaseModel, frozen=True):
             clock_skew_ms=round(
                 (midpoint - broker_time_utc).total_seconds() * 1_000
             ),
+            timestamp_resolution_ms=timestamp_resolution_ms,
         )
 
     @field_validator(
@@ -85,6 +89,7 @@ class MarketObservation(BaseModel, frozen=True):
     corrected_quote_age_ms: int | None = None
     clock_skew_ms: int | None = None
     round_trip_ms: int | None = Field(default=None, ge=0)
+    timestamp_resolution_ms: int = Field(default=1, ge=1)
     source_health: str
     identity_receipt_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     reconciliation_receipt_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -234,7 +239,10 @@ def corrected_quote_age_ms(
         (local_receipt_timestamp - broker_quote_timestamp).total_seconds() * 1_000
     )
     corrected = raw_age - clock_sample.clock_skew_ms
-    uncertainty = max(1, clock_sample.round_trip_ms // 2)
+    uncertainty = max(
+        1,
+        clock_sample.timestamp_resolution_ms + clock_sample.round_trip_ms // 2,
+    )
     if corrected < -uncertainty:
         return None
     return corrected

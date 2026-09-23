@@ -74,6 +74,7 @@ class RawQuote(BaseModel, frozen=True):
     monotonic_receipt_ns: int = Field(ge=0)
     clock_skew_ms: int | None = None
     round_trip_ms: int | None = Field(default=None, ge=0)
+    timestamp_resolution_ms: int = Field(default=1, ge=1)
     source_health: str
 
     @field_validator("broker_quote_timestamp", "local_receipt_timestamp")
@@ -209,6 +210,7 @@ class MarketObservationCollector:
                 local_receive_utc=raw.local_receipt_timestamp,
                 round_trip_ms=raw.round_trip_ms,
                 clock_skew_ms=raw.clock_skew_ms,
+                timestamp_resolution_ms=raw.timestamp_resolution_ms,
             )
             corrected_age = corrected_quote_age_ms(
                 raw.broker_quote_timestamp,
@@ -246,6 +248,7 @@ class MarketObservationCollector:
             corrected_quote_age_ms=corrected_age,
             clock_skew_ms=raw.clock_skew_ms,
             round_trip_ms=raw.round_trip_ms,
+            timestamp_resolution_ms=raw.timestamp_resolution_ms,
             source_health=raw.source_health,
             identity_receipt_sha256=prerequisites.identity_receipt_sha256,
             reconciliation_receipt_sha256=(
@@ -304,6 +307,7 @@ class _IBKRMarketDataClient(EWrapper, EClient):
                 self._clock_send_utc,
                 datetime.fromtimestamp(time_value, timezone.utc),
                 local_receive,
+                timestamp_resolution_ms=1000,
             )
         self.current_time_event.set()
 
@@ -452,6 +456,11 @@ class _IBKRMarketDataClient(EWrapper, EClient):
             monotonic_receipt_ns=int(quote.get("monotonic_receipt_ns", 0)),
             clock_skew_ms=skew,
             round_trip_ms=round_trip,
+            timestamp_resolution_ms=(
+                self.clock_sample.timestamp_resolution_ms
+                if self.clock_sample is not None
+                else 1
+            ),
             source_health="HEALTHY",
         )
 

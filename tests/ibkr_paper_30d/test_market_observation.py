@@ -104,6 +104,43 @@ def test_negative_corrected_age_beyond_uncertainty_is_rejected() -> None:
     assert corrected_quote_age_ms(base + timedelta(seconds=1), base, sample) is None
 
 
+def test_integer_second_timestamps_accept_negative_age_within_resolution() -> None:
+    base = utc(2026, 9, 23, 19, 10)
+    sample = ClockSample(
+        local_send_utc=base,
+        broker_time_utc=base,
+        local_receive_utc=base + timedelta(milliseconds=18),
+        round_trip_ms=18,
+        clock_skew_ms=340,
+        timestamp_resolution_ms=1000,
+    )
+    quote_time = base + timedelta(seconds=26)
+    local_receipt = quote_time + timedelta(milliseconds=270)
+
+    assert corrected_quote_age_ms(quote_time, local_receipt, sample) == -70
+
+
+def test_integer_second_timestamps_reject_age_beyond_resolution_and_rtt() -> None:
+    base = utc(2026, 9, 23, 19, 10)
+    sample = ClockSample(
+        local_send_utc=base,
+        broker_time_utc=base,
+        local_receive_utc=base + timedelta(milliseconds=18),
+        round_trip_ms=18,
+        clock_skew_ms=0,
+        timestamp_resolution_ms=1000,
+    )
+
+    assert (
+        corrected_quote_age_ms(
+            base + timedelta(milliseconds=1010),
+            base,
+            sample,
+        )
+        is None
+    )
+
+
 def test_observation_rejects_naive_datetime_and_nonfinite_price() -> None:
     with pytest.raises(ValidationError):
         observation(local_receipt_timestamp=datetime(2026, 9, 21, 14))

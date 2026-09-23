@@ -165,6 +165,37 @@ def test_collector_builds_accepted_regular_realtime_observations() -> None:
     }
 
 
+def test_collector_applies_integer_second_timestamp_resolution() -> None:
+    observed = NOW.replace(microsecond=0)
+    local_receipt = observed + timedelta(milliseconds=270)
+    source = FakeSource(
+        ["a" * 64, "a" * 64],
+        {
+            symbol: quote(
+                symbol,
+                broker_quote_timestamp=observed,
+                local_receipt_timestamp=local_receipt,
+                clock_skew_ms=340,
+                round_trip_ms=18,
+                timestamp_resolution_ms=1000,
+            )
+            for symbol in config().symbols
+        },
+    )
+    times = iter((NOW, NOW + timedelta(seconds=1)))
+
+    window = MarketObservationCollector(
+        source,
+        now_utc=lambda: next(times),
+        monotonic_ns=lambda: 1,
+        sleep=lambda _: None,
+    ).collect_window(config(), prerequisites())
+
+    assert all(item.accepted for item in window.observations)
+    assert all(item.corrected_quote_age_ms == -70 for item in window.observations)
+    assert all(item.timestamp_resolution_ms == 1000 for item in window.observations)
+
+
 @pytest.mark.parametrize(
     "updates,reason",
     [
@@ -257,6 +288,7 @@ def test_broker_clock_sample_uses_round_trip_midpoint() -> None:
     assert client.clock_sample is not None
     assert client.clock_sample.round_trip_ms == 200
     assert client.clock_sample.clock_skew_ms == 100
+    assert client.clock_sample.timestamp_resolution_ms == 1000
 
 
 def test_callback_before_request_registration_is_ignored() -> None:
