@@ -1125,10 +1125,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             timeout_seconds=args.timeout_seconds,
         )
         if report.get("status") != "BLOCK":
+            report_sha256 = capability_report_sha256(report)
             write_capability_discovery(report, args.output)
             report = dict(report)
             report["report_path"] = str(args.output)
-            report["report_sha256"] = capability_report_sha256(report)
+            report["report_sha256"] = report_sha256
     elif args.command == "probe-auditor-isolation":
         report = write_isolation_report(
             secrets_dir=Path("Secrets"),
