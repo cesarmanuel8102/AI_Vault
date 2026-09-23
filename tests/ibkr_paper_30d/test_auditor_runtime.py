@@ -668,6 +668,7 @@ def test_probe_report_binds_effective_sid_and_elevation_state(tmp_path) -> None:
             "EXECUTION_LOCK_ACCESS": str(tmp_path / "missing-lock"),
             "LIVE_DATABASE_MUTATION": str(tmp_path / "missing.sqlite3"),
             "BROKER_WRITE_PATH_ACCESS": str(tmp_path / "missing-broker"),
+            "BROKER_NETWORK_SOCKET_ACCESS": str(tmp_path / "missing-broker"),
             "TRADER_CONTEXT_ACCESS": str(tmp_path / "missing-context"),
             "AUDIT_INPUT_MUTATION": str(tmp_path / "missing-export"),
             "IMMUTABLE_EXPORT_READ": str(tmp_path / "missing-readable"),
