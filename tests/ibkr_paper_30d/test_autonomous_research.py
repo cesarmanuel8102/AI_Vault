@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+import pytest
+from pydantic import ValidationError
+
 from ibkr_paper_30d.autonomous_research import (
+    AutonomousOpenOrderAction,
     AutonomousPositionAction,
     AutonomousResearchLoop,
     AutonomousTradeProposal,
@@ -30,6 +34,7 @@ class FakeToolbox:
     def __init__(self, *, validation=True):
         self.requests = []
         self.validation = validation
+        self.open_order_validations = []
 
     def manifest(self):
         return [{"tool": item.value} for item in ResearchTool]
@@ -55,6 +60,14 @@ class FakeToolbox:
             passed=self.validation,
             reason_codes=() if self.validation else ("POSITION_ACTION_BLOCKED",),
             broker_evidence={"position_action": decision.value},
+        )
+
+    def validate_open_order_action(self, action, bundle, decision):
+        self.open_order_validations.append((action, decision))
+        return ProposalValidation(
+            passed=self.validation,
+            reason_codes=() if self.validation else ("OPEN_ORDER_ACTION_BLOCKED",),
+            broker_evidence={"decision": decision.value},
         )
 
 
@@ -130,6 +143,101 @@ def proposal(maximum_loss="500.00", symbol="NVDA"):
         disconfirming_evidence=["event risk"],
         confidence="0.72",
     )
+
+
+def open_order_action(**updates):
+    values = {
+        "order_ref": "codex-ibkr-paper-30d-a-cycle",
+        "order_id": 41,
+        "perm_id": 9001,
+        "client_id": 19761,
+        "contract_id": 756733,
+        "observed_state_sha256": "a" * 64,
+        "new_total_quantity": None,
+        "new_limit_price": None,
+        "reason": "The resting order no longer has acceptable expected value.",
+    }
+    values.update(updates)
+    return AutonomousOpenOrderAction(**values)
+
+
+def test_cancel_order_requires_target_and_forbids_modification_fields():
+    turn = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        research_requests=[],
+        decision=TraderDecision.CANCEL_ORDER,
+        proposal=None,
+        position_action=None,
+        open_order_action=open_order_action(),
+        confidence="0.8",
+        reasoning_summary="Cancel the stale resting order.",
+        reason_codes=["EDGE_DECAYED"],
+    )
+
+    assert turn.open_order_action.order_id == 41
+    invalid = turn.model_dump(mode="json")
+    invalid["open_order_action"]["new_limit_price"] = "9.50"
+    with pytest.raises(ValidationError):
+        AutonomousTurn.model_validate(invalid)
+
+
+def test_modify_order_requires_an_effective_change():
+    with pytest.raises(ValidationError):
+        AutonomousTurn(
+            mode=AutonomousTurnMode.FINAL,
+            research_requests=[],
+            decision=TraderDecision.MODIFY_ORDER,
+            proposal=None,
+            position_action=None,
+            open_order_action=open_order_action(),
+            confidence="0.8",
+            reasoning_summary="No actual change.",
+            reason_codes=[],
+        )
+
+
+@pytest.mark.parametrize(
+    ("decision", "action"),
+    [
+        (TraderDecision.CANCEL_ORDER, open_order_action()),
+        (
+            TraderDecision.MODIFY_ORDER,
+            open_order_action(new_total_quantity="1", new_limit_price="9.50"),
+        ),
+    ],
+)
+def test_research_loop_validates_open_order_actions(decision, action):
+    value = bundle().model_copy(
+        update={
+            "open_orders_snapshot": [
+                {
+                    "orderRef": action.order_ref,
+                    "orderId": action.order_id,
+                    "state_sha256": action.observed_state_sha256,
+                }
+            ]
+        }
+    )
+    final = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        research_requests=[],
+        decision=decision,
+        proposal=None,
+        position_action=None,
+        open_order_action=action,
+        confidence="0.8",
+        reasoning_summary="Manage the resting experiment order.",
+        reason_codes=["RESTING_ORDER_MANAGEMENT"],
+    )
+    toolbox = FakeToolbox()
+
+    outcome = AutonomousResearchLoop(SequenceProvider([final]), toolbox).run(
+        request(value), value
+    )
+
+    assert outcome.accepted is True
+    assert outcome.open_order_action == action
+    assert toolbox.open_order_validations == [(action, decision)]
 
 
 def test_codex_can_research_then_trade_symbol_outside_frozen_candidates():

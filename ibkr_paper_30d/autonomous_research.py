@@ -88,6 +88,20 @@ class AutonomousPositionAction(BaseModel, frozen=True):
     reason: str
 
 
+class AutonomousOpenOrderAction(BaseModel, frozen=True):
+    model_config = ConfigDict(extra="forbid")
+
+    order_ref: str = Field(min_length=1)
+    order_id: int = Field(gt=0)
+    perm_id: int | None = Field(default=None, gt=0)
+    client_id: int = Field(ge=0)
+    contract_id: int = Field(gt=0)
+    observed_state_sha256: str = Field(min_length=64, max_length=64)
+    new_total_quantity: Decimal | None = Field(default=None, gt=0)
+    new_limit_price: Decimal | None = Field(default=None, gt=0)
+    reason: str = Field(min_length=1)
+
+
 class AutonomousTradeProposal(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
@@ -139,6 +153,7 @@ class AutonomousTurn(BaseModel, frozen=True):
     decision: TraderDecision | None = None
     proposal: AutonomousTradeProposal | None = None
     position_action: AutonomousPositionAction | None = None
+    open_order_action: AutonomousOpenOrderAction | None = None
     confidence: Decimal = Field(ge=0, le=1)
     reasoning_summary: str
     reason_codes: list[str] = Field(default_factory=list)
@@ -148,7 +163,12 @@ class AutonomousTurn(BaseModel, frozen=True):
         if self.mode == AutonomousTurnMode.RESEARCH:
             if not self.research_requests:
                 raise ValueError("RESEARCH mode requires at least one research request")
-            if self.decision is not None or self.proposal is not None or self.position_action is not None:
+            if (
+                self.decision is not None
+                or self.proposal is not None
+                or self.position_action is not None
+                or self.open_order_action is not None
+            ):
                 raise ValueError("RESEARCH mode cannot contain a final decision")
         else:
             if self.research_requests:
@@ -156,12 +176,44 @@ class AutonomousTurn(BaseModel, frozen=True):
             if self.decision is None:
                 raise ValueError("FINAL mode requires decision")
             if self.decision == TraderDecision.PROPOSE_TRADE:
-                if self.proposal is None or self.position_action is not None:
+                if (
+                    self.proposal is None
+                    or self.position_action is not None
+                    or self.open_order_action is not None
+                ):
                     raise ValueError("PROPOSE_TRADE requires proposal only")
             elif self.decision in {TraderDecision.REDUCE_POSITION, TraderDecision.CLOSE_POSITION}:
-                if self.position_action is None or self.proposal is not None:
+                if (
+                    self.position_action is None
+                    or self.proposal is not None
+                    or self.open_order_action is not None
+                ):
                     raise ValueError("position-management decision requires position_action only")
-            elif self.proposal is not None or self.position_action is not None:
+            elif self.decision == TraderDecision.CANCEL_ORDER:
+                if (
+                    self.open_order_action is None
+                    or self.proposal is not None
+                    or self.position_action is not None
+                    or self.open_order_action.new_total_quantity is not None
+                    or self.open_order_action.new_limit_price is not None
+                ):
+                    raise ValueError("CANCEL_ORDER requires an unmodified open_order_action only")
+            elif self.decision == TraderDecision.MODIFY_ORDER:
+                if (
+                    self.open_order_action is None
+                    or self.proposal is not None
+                    or self.position_action is not None
+                    or (
+                        self.open_order_action.new_total_quantity is None
+                        and self.open_order_action.new_limit_price is None
+                    )
+                ):
+                    raise ValueError("MODIFY_ORDER requires an effective open_order_action only")
+            elif (
+                self.proposal is not None
+                or self.position_action is not None
+                or self.open_order_action is not None
+            ):
                 raise ValueError("trade payload not allowed for this decision")
         return self
 
@@ -183,6 +235,12 @@ class ResearchToolbox(Protocol):
     def validate_position_action(
         self,
         action: AutonomousPositionAction,
+        bundle: TraderInputBundle,
+        decision: TraderDecision,
+    ) -> ProposalValidation: ...
+    def validate_open_order_action(
+        self,
+        action: AutonomousOpenOrderAction,
         bundle: TraderInputBundle,
         decision: TraderDecision,
     ) -> ProposalValidation: ...
@@ -371,6 +429,7 @@ class AutonomousResearchOutcome(BaseModel, frozen=True):
     decision: TraderDecision
     proposal: AutonomousTradeProposal | None
     position_action: AutonomousPositionAction | None
+    open_order_action: AutonomousOpenOrderAction | None
     reason_codes: tuple[str, ...]
     rounds: int
     transcript: list[dict[str, Any]]
@@ -451,6 +510,44 @@ class AutonomousResearchLoop:
                 continue
 
             decision = turn.decision or TraderDecision.NO_TRADE
+            if decision in {TraderDecision.CANCEL_ORDER, TraderDecision.MODIFY_ORDER}:
+                action = turn.open_order_action
+                if action is None:
+                    return self._blocked(history, round_index, "MISSING_OPEN_ORDER_ACTION")
+                validation = self.toolbox.validate_open_order_action(
+                    action, bundle, decision
+                )
+                history.append({
+                    "round": round_index,
+                    "type": "open_order_action_validation",
+                    "payload": validation.model_dump(mode="json"),
+                })
+                if not validation.passed:
+                    return self._finish(
+                        history=history,
+                        rounds=round_index,
+                        decision=TraderDecision.NO_TRADE,
+                        proposal=None,
+                        position_action=None,
+                        open_order_action=None,
+                        accepted=False,
+                        validation="BLOCK",
+                        reason_codes=validation.reason_codes,
+                        broker_validation=validation.broker_evidence,
+                    )
+                return self._finish(
+                    history=history,
+                    rounds=round_index,
+                    decision=decision,
+                    proposal=None,
+                    position_action=None,
+                    open_order_action=action,
+                    accepted=True,
+                    validation="PASS",
+                    reason_codes=tuple(turn.reason_codes),
+                    broker_validation=validation.broker_evidence,
+                )
+
             if decision in {TraderDecision.REDUCE_POSITION, TraderDecision.CLOSE_POSITION}:
                 action = turn.position_action
                 if action is None:
@@ -566,6 +663,7 @@ class AutonomousResearchLoop:
         validation: str,
         reason_codes: tuple[str, ...],
         broker_validation: dict[str, Any] | None = None,
+        open_order_action: AutonomousOpenOrderAction | None = None,
     ) -> AutonomousResearchOutcome:
         transcript_hash = sha256_json(history)
         return AutonomousResearchOutcome(
@@ -574,6 +672,7 @@ class AutonomousResearchLoop:
             decision=decision,
             proposal=proposal,
             position_action=position_action,
+            open_order_action=open_order_action,
             reason_codes=reason_codes,
             rounds=rounds,
             transcript=history,

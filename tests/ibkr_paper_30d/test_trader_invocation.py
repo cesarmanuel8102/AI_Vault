@@ -8,9 +8,15 @@ from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.trader_invocation import (
     InvocationRequest,
     ProviderResponse,
+    TraderDecision,
     TraderInputBundle,
     TraderInvocationAdapter,
 )
+
+
+def test_open_order_decisions_are_first_class():
+    assert TraderDecision.CANCEL_ORDER.value == "CANCEL_ORDER"
+    assert TraderDecision.MODIFY_ORDER.value == "MODIFY_ORDER"
 
 
 class StubProvider:
