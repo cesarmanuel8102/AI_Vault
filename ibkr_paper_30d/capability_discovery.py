@@ -478,6 +478,24 @@ def _parse_probe_json(values: Sequence[str]) -> list[ProbeSpec]:
     return probes
 
 
+def _parse_probe_file(path: str | Path) -> list[ProbeSpec]:
+    source = Path(path)
+    raw = source.read_text(encoding="utf-8-sig")
+    parsed = json.loads(raw)
+    if isinstance(parsed, dict) and "probes" in parsed:
+        parsed = parsed["probes"]
+    if isinstance(parsed, dict):
+        parsed = [parsed]
+    if not isinstance(parsed, list) or not parsed:
+        raise ValueError("--probe-file must contain a nonempty JSON object/list")
+    probes: list[ProbeSpec] = []
+    for item in parsed:
+        if not isinstance(item, dict):
+            raise ValueError("--probe-file probe entries must be objects")
+        probes.append(ProbeSpec.from_mapping(item))
+    return probes
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ibkr-capability-discovery")
     parser.add_argument("--host", default="127.0.0.1")
@@ -487,12 +505,38 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--expected-account-sha256")
     parser.add_argument("--no-default-probes", action="store_true")
     parser.add_argument("--probe-json", action="append", default=[])
+    parser.add_argument(
+        "--probe-file",
+        action="append",
+        default=[],
+        help="Path to a UTF-8 JSON object/list of probes. Preferred on Windows PowerShell.",
+    )
+    parser.add_argument(
+        "--parse-only",
+        action="store_true",
+        help="Parse and print probe definitions without connecting to IBKR.",
+    )
     args = parser.parse_args(argv)
 
     probes: list[ProbeSpec] = []
     if not args.no_default_probes:
         probes.extend(DEFAULT_PROBES)
     probes.extend(_parse_probe_json(args.probe_json))
+    for probe_file in args.probe_file:
+        probes.extend(_parse_probe_file(probe_file))
+
+    if args.parse_only:
+        print(
+            canonical_bytes(
+                {
+                    "schema": "IBKR_CAPABILITY_DISCOVERY_PROBE_SET_V1",
+                    "probe_count": len(probes),
+                    "probes": [asdict(item) for item in probes],
+                }
+            ).decode("utf-8")
+        )
+        return 0
+
     report = discover_capabilities(
         probes,
         host=args.host,
