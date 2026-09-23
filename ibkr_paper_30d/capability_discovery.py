@@ -377,6 +377,48 @@ def _request_secdef(
     return results
 
 
+def _sample_derivative_spec(
+    client: _CapabilityClient,
+    *,
+    secdef_req_id: int,
+    symbol: str,
+    sec_type: str,
+    currency: str,
+    preferred_exchange: str,
+) -> Contract | None:
+    rows = list(client.secdef_values.get(secdef_req_id, ()))
+    if not rows:
+        return None
+    row = next(
+        (item for item in rows if str(item.get("exchange")) == preferred_exchange),
+        rows[0],
+    )
+    expirations = tuple(row.get("expirations", ()))
+    strikes = tuple(row.get("strikes", ()))
+    if not expirations or not strikes:
+        return None
+    expiry = next(
+        (
+            item
+            for item in expirations
+            if str(item).replace("-", "")[:8] >= date.today().strftime("%Y%m%d")
+        ),
+        expirations[0],
+    )
+    strike = strikes[len(strikes) // 2]
+    contract = Contract()
+    contract.symbol = symbol
+    contract.secType = sec_type
+    contract.exchange = str(row.get("exchange") or preferred_exchange)
+    contract.currency = currency
+    contract.lastTradeDateOrContractMonth = str(expiry)
+    contract.strike = float(strike)
+    contract.right = "C"
+    contract.multiplier = str(row.get("multiplier") or "")
+    contract.tradingClass = str(row.get("trading_class") or "")
+    return contract
+
+
 def _request_market_snapshot(
     client: _CapabilityClient,
     *,
@@ -507,6 +549,50 @@ def discover_ibkr_capabilities(
                     timeout_seconds=timeout_seconds,
                 )
             )
+
+        derivative_specs = [
+            (
+                "AAPL_OPT_SAMPLE",
+                _sample_derivative_spec(
+                    client,
+                    secdef_req_id=21_000,
+                    symbol="AAPL",
+                    sec_type="OPT",
+                    currency="USD",
+                    preferred_exchange="SMART",
+                ),
+            ),
+            (
+                "ES_FOP_SAMPLE",
+                _sample_derivative_spec(
+                    client,
+                    secdef_req_id=21_001,
+                    symbol="ES",
+                    sec_type="FOP",
+                    currency="USD",
+                    preferred_exchange="CME",
+                ),
+            ),
+        ]
+        derivative_req_id = 21_100
+        for label, contract in derivative_specs:
+            if contract is None:
+                reasons.append(f"{label}_UNRESOLVED")
+                derivative_req_id += 1
+                continue
+            rows = _request_details(
+                client,
+                req_id=derivative_req_id,
+                contract=contract,
+                timeout_seconds=timeout_seconds,
+            )
+            chosen = select_contract_details(rows, sec_type=contract.secType)
+            if chosen is None:
+                reasons.append(f"{label}_UNRESOLVED")
+            else:
+                selected[label] = chosen
+                contracts.append(_contract_capability(label, chosen))
+            derivative_req_id += 1
 
         req_id = 22_000
         for label, details in selected.items():
