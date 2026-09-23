@@ -1,19 +1,31 @@
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import os
 import re
+import socket
+import threading
+import time
+from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Iterator, Sequence
 from uuid import uuid4
 
 from .autonomous_service import AutonomousExperimentService
 from .canonical import canonical_bytes, sha256_json
 from .execution_lock import ExecutionLock, LockOwner
+from .experiment_control import (
+    ExperimentClockStore,
+    ExperimentControlError,
+    KillSwitchStore,
+    OwnerAuthorizationStore,
+)
+from .experiment_ledger import AutonomousExperimentLedger
 from .market_data import DecisionClass
 from .market_policy import load_verified_policy
 from .owner_authorization import (
@@ -96,6 +108,13 @@ class LaunchPreflight:
     market_policy_sha256: str
     market_validation_sha256: str
     actual_start_utc: datetime
+
+
+@dataclass(frozen=True)
+class LaunchControls:
+    clock_event_sha256: str
+    authorization_event_id: str
+    kill_switch_state: str
 
 
 def _read_json(path: Path, code: str) -> tuple[bytes, dict[str, object]]:
@@ -322,7 +341,268 @@ def write_launch_evidence(
     return latest
 
 
+def assert_integrity_check_ok(db: Database) -> None:
+    try:
+        rows = [str(row[0]) for row in db.execute("PRAGMA integrity_check").fetchall()]
+    except Exception as exc:
+        raise LaunchError("DATABASE_INTEGRITY_CHECK_FAILED") from exc
+    if rows != ["ok"]:
+        raise LaunchError("DATABASE_INTEGRITY_CHECK_FAILED")
+
+
+def _latest_authorization_event_id(db: Database) -> str:
+    row = db.execute(
+        "SELECT event_id FROM experiment_authorization_events "
+        "ORDER BY sequence DESC LIMIT 1"
+    ).fetchone()
+    if row is None:
+        raise LaunchError("OWNER_AUTHORIZATION_MISSING")
+    return str(row[0])
+
+
+def validate_launch_controls(db: Database, config: Day1LaunchConfig) -> LaunchControls:
+    assert_integrity_check_ok(db)
+    schema_rows = db.execute(
+        "SELECT version FROM schema_versions ORDER BY version"
+    ).fetchall()
+    if [int(row[0]) for row in schema_rows] != [1]:
+        raise LaunchError("DATABASE_SCHEMA_INVALID")
+    try:
+        clock = ExperimentClockStore(db).load()
+    except ExperimentControlError as exc:
+        raise LaunchError(str(exc)) from exc
+    if clock is None:
+        raise LaunchError("EXPERIMENT_CLOCK_MISSING")
+    expected_end = config.scheduled_start_utc + timedelta(days=config.duration_days)
+    if (
+        clock.start_utc != config.scheduled_start_utc
+        or clock.end_utc != expected_end
+        or clock.duration_days != config.duration_days
+        or clock.initial_allocation != config.initial_allocation
+    ):
+        raise LaunchError("EXPERIMENT_CLOCK_MISMATCH")
+    if (
+        OwnerAuthorizationStore(db).current(
+            clock_event_sha256=clock.event_sha256
+        )
+        != "AUTHORIZED"
+    ):
+        raise LaunchError("OWNER_AUTHORIZATION_INVALID")
+    authorization_event_id = _latest_authorization_event_id(db)
+    states = tuple(
+        str(row[0])
+        for row in db.execute(
+            "SELECT state FROM kill_switch_events ORDER BY sequence"
+        ).fetchall()
+    )
+    if states != ("KILL_SWITCH_CLEAR",):
+        raise LaunchError("KILL_SWITCH_TRIGGERED")
+    ledger = AutonomousExperimentLedger(
+        db, allocation=config.initial_allocation
+    ).project()
+    if not ledger.valid:
+        raise LaunchError("EXPERIMENT_LEDGER_INVALID")
+    return LaunchControls(
+        clock_event_sha256=clock.event_sha256,
+        authorization_event_id=authorization_event_id,
+        kill_switch_state=states[0],
+    )
+
+
+def _consume_launch_attempt(
+    db: Database,
+    config: Day1LaunchConfig,
+    preflight: LaunchPreflight,
+    controls: LaunchControls,
+) -> None:
+    with db.transaction():
+        rows = db.execute(
+            "SELECT payload_json FROM state_events "
+            "WHERE event_type='DAY1_LAUNCH_ATTEMPT_ACCEPTED'"
+        ).fetchall()
+        for row in rows:
+            try:
+                prior = json.loads(str(row[0]))
+            except json.JSONDecodeError as exc:
+                raise LaunchError("LAUNCH_ATTEMPT_HISTORY_INVALID") from exc
+            if prior.get("launch_attempt_id") == config.launch_attempt_id:
+                raise LaunchError("LAUNCH_ATTEMPT_REUSED")
+
+        predecessor = db.execute(
+            "SELECT event_sha256 FROM state_events ORDER BY sequence DESC LIMIT 1"
+        ).fetchone()
+        previous_sha = str(predecessor[0]) if predecessor is not None else None
+        payload = {
+            "schema": "DAY1_LAUNCH_ATTEMPT_ACCEPTED_V1",
+            "launch_attempt_id": config.launch_attempt_id,
+            "authorization_event_id": controls.authorization_event_id,
+            "clock_event_sha256": controls.clock_event_sha256,
+            "identity_receipt_sha256": preflight.identity_receipt_sha256,
+            "auditor_receipt_sha256": preflight.auditor_receipt_sha256,
+            "market_policy_sha256": preflight.market_policy_sha256,
+            "market_validation_sha256": preflight.market_validation_sha256,
+            "created_at_utc": preflight.actual_start_utc,
+        }
+        event_sha = sha256_json(
+            {"previous_event_sha256": previous_sha, "payload": payload}
+        )
+        db.execute(
+            "INSERT INTO state_events("
+            "sequence,event_id,event_type,payload_json,payload_sha256,"
+            "previous_event_sha256,event_sha256,created_at_utc"
+            ") VALUES((SELECT COALESCE(MAX(sequence),0)+1 FROM state_events),?,?,?,?,?,?,?)",
+            (
+                str(uuid4()),
+                "DAY1_LAUNCH_ATTEMPT_ACCEPTED",
+                canonical_bytes(payload).decode("utf-8"),
+                sha256_json(payload),
+                previous_sha,
+                event_sha,
+                preflight.actual_start_utc.isoformat().replace("+00:00", "Z"),
+            ),
+        )
+
+
+def _restore_environment(name: str, previous: str | None) -> None:
+    if previous is None:
+        os.environ.pop(name, None)
+    else:
+        os.environ[name] = previous
+
+
+@contextmanager
+def paper_arm_environment(expected_account_hash: str) -> Iterator[None]:
+    previous_arm = os.environ.get("IBKR_AUTONOMOUS_PAPER_ARMED")
+    previous_hash = os.environ.get("IBKR_PAPER_ACCOUNT_SHA256")
+    os.environ["IBKR_AUTONOMOUS_PAPER_ARMED"] = "true"
+    os.environ["IBKR_PAPER_ACCOUNT_SHA256"] = expected_account_hash
+    try:
+        yield
+    finally:
+        _restore_environment("IBKR_AUTONOMOUS_PAPER_ARMED", previous_arm)
+        _restore_environment("IBKR_PAPER_ACCOUNT_SHA256", previous_hash)
+
+
+class _LockHeartbeat:
+    def __init__(
+        self,
+        *,
+        config: Day1LaunchConfig,
+        dependencies: LaunchDependencies,
+        receipt: Any,
+        service: Any,
+        interval_seconds: float = 30.0,
+    ) -> None:
+        self.config = config
+        self.dependencies = dependencies
+        self.receipt = receipt
+        self.service = service
+        self.interval_seconds = interval_seconds
+        self.stop_event = threading.Event()
+        self.failure_code: str | None = None
+        self.thread = threading.Thread(
+            target=self._run,
+            name="ibkr-paper-launch-lock-heartbeat",
+            daemon=True,
+        )
+
+    def start(self) -> None:
+        self.thread.start()
+
+    def stop(self) -> None:
+        self.stop_event.set()
+        self.thread.join(timeout=max(self.interval_seconds + 1.0, 2.0))
+
+    def _stop_service(self, reason: str) -> None:
+        self.failure_code = reason
+        try:
+            write_launch_evidence(
+                self.config,
+                "OWNER_ACTION_REQUIRED",
+                {"reason_codes": [reason]},
+            )
+        finally:
+            stop = getattr(self.service, "stop", None)
+            if callable(stop):
+                stop()
+
+    def _run(self) -> None:
+        while not self.stop_event.wait(self.interval_seconds):
+            try:
+                with self.dependencies.database_factory(self.config.db_path) as db:
+                    result = self.dependencies.lock_factory(db).heartbeat(self.receipt)
+                if result.accepted is not True:
+                    self._stop_service("EXECUTION_LOCK_HEARTBEAT_REJECTED")
+                    return
+            except Exception:
+                self._stop_service("EXECUTION_LOCK_HEARTBEAT_FAILED")
+                return
+
+
+def run_day1_launch(
+    config: Day1LaunchConfig, dependencies: LaunchDependencies
+) -> str:
+    try:
+        preflight = evaluate_launch_preflight(config, dependencies)
+    except LaunchError as exc:
+        if exc.code == "KILL_SWITCH_HISTORY_INVALID":
+            raise LaunchError("KILL_SWITCH_TRIGGERED") from exc
+        raise
+
+    with dependencies.database_factory(config.db_path) as db:
+        lock = dependencies.lock_factory(db)
+        owner = dependencies.lock_owner_factory(preflight.actual_start_utc)
+        receipt = lock.acquire(owner)
+        if receipt.reason == "OS_MUTEX_HELD":
+            status = "AUTONOMOUS_PAPER_EXPERIMENT_ALREADY_RUNNING"
+            write_launch_evidence(config, status, {"reason_codes": []})
+            return status
+        if not receipt.acquired:
+            raise LaunchError("EXECUTION_LOCK_OWNER_ACTION_REQUIRED")
+
+        try:
+            controls = validate_launch_controls(db, config)
+            if controls.authorization_event_id != preflight.authorization_event_id:
+                raise LaunchError("OWNER_AUTHORIZATION_CHANGED_DURING_PREFLIGHT")
+            _consume_launch_attempt(db, config, preflight, controls)
+            with paper_arm_environment(preflight.expected_account_hash):
+                auditor_gate = dependencies.auditor_gate_factory(config)
+                market_gate = dependencies.market_gate_factory(
+                    config, preflight.expected_account_hash
+                )
+                service = dependencies.service_factory(
+                    db,
+                    experiment_start_utc=config.scheduled_start_utc,
+                    allocation=config.initial_allocation,
+                    duration_days=config.duration_days,
+                    scan_interval_seconds=300.0,
+                    position_interval_seconds=60.0,
+                    model=config.model,
+                    reasoning_effort=config.reasoning_effort,
+                    execute_paper=True,
+                    runtime_market_gate=market_gate,
+                    runtime_auditor_gate=auditor_gate,
+                )
+                heartbeat = _LockHeartbeat(
+                    config=config,
+                    dependencies=dependencies,
+                    receipt=receipt,
+                    service=service,
+                )
+                heartbeat.start()
+                try:
+                    service.run_forever()
+                finally:
+                    heartbeat.stop()
+                if heartbeat.failure_code is not None:
+                    raise LaunchError("EXECUTION_LOCK_OWNER_ACTION_REQUIRED")
+            return "AUTONOMOUS_PAPER_EXPERIMENT_STOPPED"
+        finally:
+            lock.release(receipt)
+
+
 def current_process_sid() -> str:
+    token = None
     try:
         import win32api
         import win32con
@@ -335,3 +615,120 @@ def current_process_sid() -> str:
         return str(win32security.ConvertSidToStringSid(sid))
     except Exception as exc:
         raise LaunchError("CURRENT_OWNER_SID_UNAVAILABLE") from exc
+    finally:
+        if token is not None:
+            try:
+                win32api.CloseHandle(token)
+            except Exception:
+                pass
+
+
+def _lock_owner(now: datetime) -> LockOwner:
+    host = socket.gethostname().encode("utf-8")
+    try:
+        import win32api
+
+        boot_epoch = int(time.time() - (win32api.GetTickCount64() / 1000.0))
+    except Exception:
+        boot_epoch = 0
+    return LockOwner(
+        owner_id=str(uuid4()),
+        pid=os.getpid(),
+        process_start=now.isoformat().replace("+00:00", "Z"),
+        host_fingerprint=hashlib.sha256(host).hexdigest(),
+        boot_session_id=hashlib.sha256(str(boot_epoch).encode("ascii")).hexdigest(),
+    )
+
+
+def _default_config(repo_root: Path, launch_attempt_id: str) -> Day1LaunchConfig:
+    reports = repo_root / "state" / "ibkr_paper_30d" / "reports"
+    return Day1LaunchConfig(
+        repo_root=repo_root,
+        db_path=repo_root / "state" / "ibkr_paper_30d" / "autonomous.sqlite3",
+        launch_root=repo_root / "state" / "ibkr_paper_30d" / "launch",
+        expected_identity_path=(
+            repo_root / "Secrets" / "expected_paper_account_identity_v1.json"
+        ),
+        identity_receipt_path=reports / "read_only_real_paper_reconciliation.json",
+        auditor_receipt_path=reports / "auditor_gate_v2_receipt.json",
+        market_policy_path=reports / "market_data_policy_v1.json",
+        market_validation_path=reports / "market_data_validation.json",
+        owner_authorization_path=reports / "owner_authorization_v1.json",
+        launch_attempt_binding_path=reports / "launch_attempt_binding_v1.json",
+        launch_attempt_id=launch_attempt_id,
+    )
+
+
+def _default_dependencies() -> LaunchDependencies:
+    return LaunchDependencies(
+        now_utc=lambda: datetime.now(timezone.utc),
+        auditor_gate_factory=lambda config: RuntimeAuditorGate(
+            readonly_receipt_path=config.identity_receipt_path,
+            auditor_receipt_path=config.auditor_receipt_path,
+        ),
+        market_gate_factory=lambda config, expected_hash: RuntimeMarketDataGate(
+            policy_path=config.market_policy_path,
+            expected_account_hash=expected_hash,
+        ),
+        database_factory=Database.open,
+        lock_factory=ExecutionLock,
+        service_factory=AutonomousExperimentService,
+        lock_owner_factory=_lock_owner,
+        current_sid=current_process_sid,
+    )
+
+
+def _is_owner_action_required(code: str) -> bool:
+    return code in {
+        "EXECUTION_LOCK_OWNER_ACTION_REQUIRED",
+        "KILL_SWITCH_TRIGGERED",
+        "DATABASE_INTEGRITY_CHECK_FAILED",
+        "DATABASE_SCHEMA_INVALID",
+        "EXPERIMENT_LEDGER_INVALID",
+        "OWNER_AUTHORIZATION_CHANGED_DURING_PREFLIGHT",
+    }
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="python -m ibkr_paper_30d.day1_launch")
+    parser.add_argument("--launch-attempt-id", required=True)
+    parser.add_argument("--repo-root", type=Path, default=Path.cwd())
+    args = parser.parse_args(argv)
+    config = _default_config(args.repo_root.resolve(), args.launch_attempt_id)
+    try:
+        status = run_day1_launch(config, _default_dependencies())
+        result = {"status": status, "reason_codes": []}
+        exit_code = 0
+    except LaunchError as exc:
+        owner_action = _is_owner_action_required(exc.code)
+        status = "OWNER_ACTION_REQUIRED" if owner_action else "BLOCK"
+        result = {"status": status, "reason_codes": [exc.code]}
+        exit_code = 30 if owner_action else 20
+        try:
+            write_launch_evidence(config, status, {"reason_codes": [exc.code]})
+        except Exception:
+            pass
+    except Exception as exc:
+        result = {
+            "status": "FAILED",
+            "reason_codes": ["UNEXPECTED_LAUNCH_FAILURE"],
+            "error_type": type(exc).__name__,
+        }
+        exit_code = 1
+        try:
+            write_launch_evidence(
+                config,
+                "FAILED",
+                {
+                    "reason_codes": ["UNEXPECTED_LAUNCH_FAILURE"],
+                    "error_type": type(exc).__name__,
+                },
+            )
+        except Exception:
+            pass
+    print(canonical_bytes(result).decode("utf-8"))
+    return exit_code
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

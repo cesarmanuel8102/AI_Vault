@@ -7,8 +7,12 @@ from types import SimpleNamespace
 import pytest
 
 from ibkr_paper_30d.autonomous_research import ResearchResult, ResearchTool
-from ibkr_paper_30d.autonomous_state import AutonomousStateBuilder
+from ibkr_paper_30d.autonomous_state import (
+    AutonomousStateBuildError,
+    AutonomousStateBuilder,
+)
 from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
+from ibkr_paper_30d.experiment_control import KillSwitchStore
 from ibkr_paper_30d.open_order_management import canonical_open_order
 from ibkr_paper_30d.persistence import Database
 
@@ -146,6 +150,11 @@ def builder(
     anchor_perm_id=55,
     payload_sha256=None,
 ):
+    KillSwitchStore(db).set(
+        "KILL_SWITCH_CLEAR",
+        reason="explicit test Owner authorization boundary",
+        actor="test-owner",
+    )
     payload = {
         "schema": "EXPERIMENT_ORDER_REGISTRY_V2",
         "lifecycle_event": "ISSUED_PRE_SEND",
@@ -184,9 +193,24 @@ def builder(
         allocation=Decimal("500.00"),
         experiment_start_utc=datetime.now(timezone.utc) - timedelta(days=1),
         duration_days=30,
-        kill_switch_state="KILL_SWITCH_CLEAR",
         runtime_market_gate=FakeMarketGate(),
     )
+
+
+def test_state_builder_cannot_override_default_kill_switch(tmp_path):
+    with Database.open(tmp_path / "state.sqlite3") as db:
+        with pytest.raises(
+            AutonomousStateBuildError, match="KILL_SWITCH_OVERRIDE_FORBIDDEN"
+        ):
+            AutonomousStateBuilder(
+                db,
+                FakeToolbox(),
+                experiment_start_utc=datetime.now(timezone.utc),
+                kill_switch_state="KILL_SWITCH_CLEAR",
+                runtime_market_gate=FakeMarketGate(),
+            )
+        assert KillSwitchStore(db).current() == "KILL_SWITCH_TRIGGERED"
+        assert db.execute("SELECT COUNT(*) FROM kill_switch_events").fetchone()[0] == 0
 
 
 def test_state_builder_refreshes_equity_and_keeps_discovery_unconstrained(tmp_path):

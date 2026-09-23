@@ -62,13 +62,11 @@ class AutonomousStateBuilder:
             initial_allocation=allocation,
         )
         self.kill_switch_store = KillSwitchStore(db)
-        if kill_switch_state is not None and self.kill_switch_store.current() == "KILL_SWITCH_TRIGGERED":
-            if kill_switch_state == "KILL_SWITCH_CLEAR":
-                self.kill_switch_store.set(
-                    "KILL_SWITCH_CLEAR",
-                    reason="explicit builder initialization",
-                    actor="runtime",
-                )
+        if (
+            kill_switch_state is not None
+            and kill_switch_state != self.kill_switch_store.current()
+        ):
+            raise AutonomousStateBuildError("KILL_SWITCH_OVERRIDE_FORBIDDEN")
         expected_hash = getattr(toolbox, "expected_account_hash", None)
         self.runtime_market_gate = runtime_market_gate or (
             RuntimeMarketDataGate(expected_account_hash=expected_hash)
