@@ -627,6 +627,8 @@ def discover_ibkr_capabilities(
             "account_identity_hash": account_hash,
             "account_fingerprint": account_hash[:16],
             "raw_account_identity_persisted": False,
+            "representative_probe_only": True,
+            "probe_catalog_not_trading_universe": True,
             "contracts": [asdict(item) for item in contracts],
             "option_chains": [asdict(item) for item in option_chains],
             "market_data": [asdict(item) for item in market_data],
