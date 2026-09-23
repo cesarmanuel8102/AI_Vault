@@ -42,6 +42,11 @@ from .ibkr_readonly_session import (
     ReadOnlyMessageGuard,
 )
 from .canonical import canonical_bytes
+from .capability_discovery import (
+    discover_ibkr_capabilities,
+    report_sha256 as capability_report_sha256,
+    write_capability_discovery,
+)
 from .market_data import (
     DecisionClass,
     MarketDataGate,
@@ -85,6 +90,7 @@ MARKET_OBSERVATION_REPORT = REPORT_ROOT / "market_observation.json"
 MARKET_POLICY = REPORT_ROOT / "market_data_policy_v1.json"
 MARKET_POLICY_REPORT = REPORT_ROOT / "market_policy_freeze.json"
 MARKET_VALIDATION_REPORT = REPORT_ROOT / "market_data_validation.json"
+CAPABILITY_DISCOVERY_REPORT = REPORT_ROOT / "ibkr_capability_discovery_v1.json"
 
 
 def inspect_readonly(
@@ -1065,6 +1071,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     validate_parser.add_argument("--host", default="127.0.0.1")
     validate_parser.add_argument("--port", type=int, default=4002)
     validate_parser.add_argument("--policy", type=Path, default=MARKET_POLICY)
+    capability_parser = commands.add_parser("discover-ibkr-capabilities")
+    capability_parser.add_argument("--host", default="127.0.0.1")
+    capability_parser.add_argument("--port", type=int, default=4002)
+    capability_parser.add_argument("--client-id", type=int, default=19751)
+    capability_parser.add_argument("--timeout-seconds", type=float, default=8.0)
+    capability_parser.add_argument(
+        "--output", type=Path, default=CAPABILITY_DISCOVERY_REPORT
+    )
     args = parser.parse_args(argv)
 
     if args.command == "inspect-ibkr-readonly":
@@ -1103,6 +1117,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             source=IBKRMarketDataSource(host=args.host, port=args.port),
             expected_account_hash=_configured_paper_account_hash(),
         )
+    elif args.command == "discover-ibkr-capabilities":
+        report = discover_ibkr_capabilities(
+            host=args.host,
+            port=args.port,
+            client_id=args.client_id,
+            timeout_seconds=args.timeout_seconds,
+        )
+        if report.get("status") != "BLOCK":
+            write_capability_discovery(report, args.output)
+            report = dict(report)
+            report["report_path"] = str(args.output)
+            report["report_sha256"] = capability_report_sha256(report)
     elif args.command == "probe-auditor-isolation":
         report = write_isolation_report(
             secrets_dir=Path("Secrets"),
