@@ -1,0 +1,62 @@
+name: capability-discovery-ci
+
+on:
+  push:
+    branches:
+      - chatgpt/ibkr-capability-discovery-final-v2
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pytest-asyncio "pydantic>=2,<3" pydantic-settings sqlalchemy defusedxml tomli ibapi ib-insync pywin32
+
+      - name: Targeted capability tests
+        shell: pwsh
+        run: |
+          python -m pytest -q tests/ibkr_paper_30d/test_capability_discovery.py
+
+      - name: Native Windows PowerShell probe-file argument smoke test
+        shell: powershell
+        run: |
+          $probe = Join-Path $env:TEMP "ibkr-capability-probes.json"
+          @'
+          [
+            {
+              "label": "AAPL_OPT_TEST",
+              "symbol": "AAPL",
+              "sec_type": "OPT",
+              "exchange": "SMART",
+              "currency": "USD",
+              "con_id": 123,
+              "expiry": "20261016",
+              "strike": 340,
+              "right": "C",
+              "multiplier": "100"
+            }
+          ]
+          '@ | Set-Content -LiteralPath $probe -Encoding UTF8
+
+          $raw = & python -m ibkr_paper_30d.capability_discovery --no-default-probes --probe-file $probe --parse-only
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $parsed = ($raw -join [Environment]::NewLine) | ConvertFrom-Json
+          if ($parsed.schema -ne "IBKR_CAPABILITY_DISCOVERY_PROBE_SET_V1") { throw "SCHEMA_FAIL" }
+          if ($parsed.probe_count -ne 1) { throw "COUNT_FAIL" }
+          if ($parsed.probes[0].label -ne "AAPL_OPT_TEST") { throw "LABEL_FAIL" }
+
+      - name: Full IBKR regression
+        shell: pwsh
+        run: |
+          python -m pytest -q tests/ibkr_paper_30d
