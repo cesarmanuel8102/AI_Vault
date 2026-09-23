@@ -87,6 +87,16 @@ MARKET_POLICY_REPORT = REPORT_ROOT / "market_policy_freeze.json"
 MARKET_VALIDATION_REPORT = REPORT_ROOT / "market_data_validation.json"
 
 
+def _sanitized_account_facts(accounts: Sequence[str]) -> dict[str, object]:
+    normalized = tuple(str(account).strip().upper() for account in accounts)
+    return {
+        "managed_account_count": len(normalized),
+        "paper_account_namespace_ok": (
+            len(normalized) == 1 and normalized[0].startswith("DU")
+        ),
+    }
+
+
 def inspect_readonly(
     *,
     host: str,
@@ -214,6 +224,7 @@ def inspect_readonly(
         "broker_reconciliation_gate": "PASS" if reconciliation_pass else "BLOCK",
         "expected_account_identity_bound": identity_store.path.exists(),
         "expected_account_identity_hash": configured_hash,
+        **_sanitized_account_facts(evidence.managed_accounts),
         "account_fingerprint": inspection.identity.account_fingerprint,
         "identity_factor_count": inspection.identity.factor_count,
         "connector_comparison": "UNAVAILABLE",

@@ -147,6 +147,34 @@ def test_python_json_wrapper_captures_native_stderr_before_failing():
     assert "PYTHON_COMMAND_FAILED:" in block
 
 
+def test_finalizer_owns_explicit_authorization_and_fresh_attempt_binding():
+    text = FINALIZER.read_text(encoding="utf-8")
+
+    assert "[string]$OwnerAuthorization" in text
+    assert "[string]$LaunchAttemptId" in text
+    assert '"AUTHORIZE 30-DAY PAPER EXPERIMENT"' in text
+    assert '"ibkr_paper_30d.owner_authorization", "create"' in text
+    assert '"ibkr_paper_30d.owner_authorization", "validate"' in text
+    assert "OWNER_AUTHORIZATION_MISSING" in text
+    assert "LAUNCH_ATTEMPT_ID_REQUIRED" in text
+    assert '"bind-launch-attempt"' in text
+
+    readonly_index = text.index('"inspect-ibkr-readonly"')
+    auditor_index = text.index("$AuditorEvaluation = Invoke-PythonJson")
+    binding_index = text.index('"bind-launch-attempt"')
+    assert readonly_index < auditor_index < binding_index
+
+
+def test_scheduled_finalizer_cannot_create_owner_authorization():
+    text = FINALIZER.read_text(encoding="utf-8")
+    guard = text.index("if ($SkipTaskRegistration)")
+    create = text.index('"ibkr_paper_30d.owner_authorization", "create"')
+    validate = text.index('"ibkr_paper_30d.owner_authorization", "validate"')
+
+    assert guard < create
+    assert validate < create
+
+
 def test_auditor_account_enablement_is_inside_cleanup_guard():
     text = FINALIZER.read_text(encoding="utf-8")
     assert text.count("Enable-LocalUser -Name $AuditorUser") == 1

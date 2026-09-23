@@ -4,9 +4,12 @@ import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
+
 from ibkr_paper_30d.cli import (
     _market_behavior,
     _required_summary_complete,
+    _sanitized_account_facts,
     _settled_cash,
     build_capability_matrix,
     build_implementation_status,
@@ -135,6 +138,32 @@ def test_sanitized_inspection_contains_capabilities_but_no_account_id() -> None:
     assert report.cash == "512.70"
     assert ACCOUNT not in serialized
     assert report.identity.account_fingerprint in serialized
+
+
+def test_sanitized_account_facts_prove_one_du_without_persisting_identity() -> None:
+    facts = _sanitized_account_facts((ACCOUNT,))
+
+    assert facts == {
+        "managed_account_count": 1,
+        "paper_account_namespace_ok": True,
+    }
+    assert ACCOUNT not in str(facts)
+
+
+@pytest.mark.parametrize(
+    ("accounts", "expected_count", "namespace_ok"),
+    [
+        ((), 0, False),
+        (("U123456",), 1, False),
+        (("DU123456", "DU654321"), 2, False),
+    ],
+)
+def test_sanitized_account_facts_fail_closed(accounts, expected_count, namespace_ok) -> None:
+    facts = _sanitized_account_facts(accounts)
+
+    assert facts["managed_account_count"] == expected_count
+    assert facts["paper_account_namespace_ok"] is namespace_ok
+    assert all(account not in str(facts) for account in accounts)
 
 
 def test_identity_hash_is_normalized_and_one_way() -> None:

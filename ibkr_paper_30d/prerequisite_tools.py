@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import stat
@@ -8,7 +9,9 @@ import subprocess
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
+from uuid import UUID, uuid4
 
+from .canonical import canonical_bytes
 from .auditor_export import AuditExporter
 from .auditor_gate_v2 import (
     PaperIdentityBinding,
@@ -188,6 +191,97 @@ def evaluate_auditor(
     }
 
 
+def _canonical_attempt_id(value: str) -> str:
+    try:
+        parsed = UUID(value)
+    except (ValueError, AttributeError) as exc:
+        raise ValueError("LAUNCH_ATTEMPT_ID_INVALID") from exc
+    canonical = str(parsed)
+    if canonical != value:
+        raise ValueError("LAUNCH_ATTEMPT_ID_INVALID")
+    return canonical
+
+
+def _sha256_file(path: Path) -> str:
+    if not path.is_file():
+        raise ValueError("LAUNCH_ATTEMPT_RECEIPT_MISSING")
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _atomic_canonical_json(path: Path, payload: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
+    try:
+        with temporary.open("xb") as handle:
+            handle.write(canonical_bytes(payload))
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+
+def bind_launch_attempt(
+    launch_attempt_id: str,
+    readonly_receipt: Path,
+    auditor_receipt: Path,
+    destination: Path,
+) -> dict[str, object]:
+    canonical_id = _canonical_attempt_id(launch_attempt_id)
+    try:
+        readonly = json.loads(readonly_receipt.read_bytes())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("LAUNCH_ATTEMPT_READONLY_RECEIPT_INVALID") from exc
+    expected_hash = str(readonly.get("expected_account_identity_hash") or "")
+    if len(expected_hash) != 64 or any(c not in "0123456789abcdef" for c in expected_hash):
+        raise ValueError("LAUNCH_ATTEMPT_EXPECTED_ACCOUNT_HASH_INVALID")
+    payload: dict[str, object] = {
+        "schema": "DAY1_LAUNCH_ATTEMPT_BINDING_V1",
+        "launch_attempt_id": canonical_id,
+        "readonly_receipt_sha256": _sha256_file(readonly_receipt),
+        "auditor_receipt_sha256": _sha256_file(auditor_receipt),
+        "expected_account_identity_hash": expected_hash,
+        "created_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "real_order_writes_attempted": 0,
+    }
+    _atomic_canonical_json(destination, payload)
+    return payload
+
+
+def validate_launch_attempt_binding(
+    launch_attempt_id: str,
+    readonly_receipt: Path,
+    auditor_receipt: Path,
+    binding_path: Path,
+) -> dict[str, object]:
+    canonical_id = _canonical_attempt_id(launch_attempt_id)
+    try:
+        payload = json.loads(binding_path.read_bytes())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("LAUNCH_ATTEMPT_BINDING_INVALID") from exc
+    if payload.get("schema") != "DAY1_LAUNCH_ATTEMPT_BINDING_V1":
+        raise ValueError("LAUNCH_ATTEMPT_BINDING_SCHEMA_INVALID")
+    if payload.get("launch_attempt_id") != canonical_id:
+        raise ValueError("LAUNCH_ATTEMPT_ID_MISMATCH")
+    if (
+        payload.get("readonly_receipt_sha256") != _sha256_file(readonly_receipt)
+        or payload.get("auditor_receipt_sha256") != _sha256_file(auditor_receipt)
+    ):
+        raise ValueError("LAUNCH_ATTEMPT_RECEIPT_HASH_MISMATCH")
+    try:
+        readonly = json.loads(readonly_receipt.read_bytes())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("LAUNCH_ATTEMPT_READONLY_RECEIPT_INVALID") from exc
+    if payload.get("expected_account_identity_hash") != readonly.get(
+        "expected_account_identity_hash"
+    ):
+        raise ValueError("LAUNCH_ATTEMPT_ACCOUNT_HASH_MISMATCH")
+    if payload.get("real_order_writes_attempted") != 0:
+        raise ValueError("LAUNCH_ATTEMPT_WRITE_COUNT_INVALID")
+    return payload
+
+
 def readiness(report_root: Path) -> dict[str, object]:
     auditor_receipt = report_root / "auditor_gate_v2_receipt.json"
     market_policy = report_root / "market_data_policy_v1.json"
@@ -253,6 +347,18 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("state/ibkr_paper_30d/reports"),
     )
 
+    bind = sub.add_parser("bind-launch-attempt")
+    bind.add_argument("--launch-attempt-id", required=True)
+    bind.add_argument("--readonly-receipt", type=Path, required=True)
+    bind.add_argument("--auditor-receipt", type=Path, required=True)
+    bind.add_argument("--destination", type=Path, required=True)
+
+    validate = sub.add_parser("validate-launch-attempt")
+    validate.add_argument("--launch-attempt-id", required=True)
+    validate.add_argument("--readonly-receipt", type=Path, required=True)
+    validate.add_argument("--auditor-receipt", type=Path, required=True)
+    validate.add_argument("--binding", type=Path, required=True)
+
     args = parser.parse_args(argv)
     if args.command == "create-audit-export":
         result = create_audit_export(args.readonly_report, args.export_root)
@@ -267,6 +373,20 @@ def main(argv: list[str] | None = None) -> int:
         )
     elif args.command == "evaluate-runtime-trust-anchor":
         result = evaluate_runtime_trust_anchor(args.repo_root, args.anchor)
+    elif args.command == "bind-launch-attempt":
+        result = bind_launch_attempt(
+            args.launch_attempt_id,
+            args.readonly_receipt,
+            args.auditor_receipt,
+            args.destination,
+        )
+    elif args.command == "validate-launch-attempt":
+        result = validate_launch_attempt_binding(
+            args.launch_attempt_id,
+            args.readonly_receipt,
+            args.auditor_receipt,
+            args.binding,
+        )
     else:
         result = readiness(args.report_root)
     print(json.dumps(result, sort_keys=True))

@@ -3,7 +3,9 @@
 param(
     [string]$RepoRoot = "C:\AI_VAULT_IBKR",
     [string]$PythonExe = "python",
-    [switch]$SkipTaskRegistration
+    [switch]$SkipTaskRegistration,
+    [string]$OwnerAuthorization = "",
+    [string]$LaunchAttemptId = ""
 )
 
 Set-StrictMode -Version Latest
@@ -42,6 +44,9 @@ $CanonicalReportRoot = Join-Path $ResolvedRepoRoot "state\ibkr_paper_30d\reports
 $ReadOnlyReport = Join-Path $CanonicalReportRoot "read_only_real_paper_reconciliation.json"
 $CanonicalAuditorReceipt = Join-Path $CanonicalReportRoot "auditor_gate_v2_receipt.json"
 $MarketValidation = Join-Path $CanonicalReportRoot "market_data_validation.json"
+$AutonomousDatabase = Join-Path $ResolvedRepoRoot "state\ibkr_paper_30d\autonomous.sqlite3"
+$OwnerAuthorizationReceipt = Join-Path $CanonicalReportRoot "owner_authorization_v1.json"
+$LaunchAttemptBinding = Join-Path $CanonicalReportRoot "launch_attempt_binding_v1.json"
 $MarketTaskName = "CodexIBKRMarketDataGate"
 $ProbeFirewallRuleName = "CodexAuditorV2-Probe-PowerShell-Broker-Block"
 $CanonicalAcceptance = Join-Path $ResolvedRepoRoot "AUDITOR_MONTH1_PAPER_RESIDUAL_RISK_ACCEPTANCE_V1.json"
@@ -204,6 +209,57 @@ if (-not (Test-Path -LiteralPath $ResolvedRepoRoot -PathType Container)) {
 }
 Set-Location -LiteralPath $ResolvedRepoRoot
 [void](New-Item -ItemType Directory -Path $CanonicalReportRoot -Force)
+
+$CurrentOwnerSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+$AuthorizationExists = (
+    (Test-Path -LiteralPath $AutonomousDatabase -PathType Leaf) -and
+    (Test-Path -LiteralPath $OwnerAuthorizationReceipt -PathType Leaf)
+)
+if ($SkipTaskRegistration) {
+    if ($OwnerAuthorization) {
+        throw "OWNER_AUTHORIZATION_CREATE_FORBIDDEN_IN_SCHEDULED_MODE"
+    }
+    if (-not $AuthorizationExists) {
+        throw "OWNER_AUTHORIZATION_MISSING"
+    }
+    if (-not $LaunchAttemptId) {
+        throw "LAUNCH_ATTEMPT_ID_REQUIRED"
+    }
+    $ParsedAttempt = [Guid]::Empty
+    if (-not [Guid]::TryParseExact($LaunchAttemptId, "D", [ref]$ParsedAttempt)) {
+        throw "LAUNCH_ATTEMPT_ID_INVALID"
+    }
+    $OwnerAuthorizationState = Invoke-PythonJson -Arguments @(
+        "-m", "ibkr_paper_30d.owner_authorization", "validate",
+        "--db", $AutonomousDatabase,
+        "--receipt", $OwnerAuthorizationReceipt,
+        "--actor-sid", $CurrentOwnerSid
+    )
+}
+elseif ($AuthorizationExists) {
+    $OwnerAuthorizationState = Invoke-PythonJson -Arguments @(
+        "-m", "ibkr_paper_30d.owner_authorization", "validate",
+        "--db", $AutonomousDatabase,
+        "--receipt", $OwnerAuthorizationReceipt,
+        "--actor-sid", $CurrentOwnerSid
+    )
+}
+else {
+    if ($OwnerAuthorization -cne "AUTHORIZE 30-DAY PAPER EXPERIMENT") {
+        throw "OWNER_AUTHORIZATION_MISSING"
+    }
+    $OwnerAuthorizationState = Invoke-PythonJson -Arguments @(
+        "-m", "ibkr_paper_30d.owner_authorization", "create",
+        "--db", $AutonomousDatabase,
+        "--receipt", $OwnerAuthorizationReceipt,
+        "--phrase", $OwnerAuthorization,
+        "--actor-sid", $CurrentOwnerSid,
+        "--elevated"
+    )
+}
+if ($OwnerAuthorizationState.status -ne "PASS") {
+    throw "OWNER_AUTHORIZATION_INVALID"
+}
 
 if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 4002 -InformationLevel Quiet)) {
     throw "IBKR_PAPER_GATEWAY_4002_NOT_LISTENING"
@@ -500,6 +556,20 @@ $AuditorEvaluation = Invoke-PythonJson -Arguments @(
 )
 if ($AuditorEvaluation.canonical_gate -ne "PASS" -or $AuditorEvaluation.compatibility_gate -ne "PASS") {
     throw "AUDITOR_GATE_V2_BLOCK:$($AuditorEvaluation.reason_codes -join ',')"
+}
+
+$AttemptBinding = $null
+if ($LaunchAttemptId) {
+    $AttemptBinding = Invoke-PythonJson -Arguments @(
+        "-m", "ibkr_paper_30d.prerequisite_tools", "bind-launch-attempt",
+        "--launch-attempt-id", $LaunchAttemptId,
+        "--readonly-receipt", $ReadOnlyReport,
+        "--auditor-receipt", $CanonicalAuditorReceipt,
+        "--destination", $LaunchAttemptBinding
+    )
+    if ([string]$AttemptBinding.launch_attempt_id -ne $LaunchAttemptId) {
+        throw "LAUNCH_ATTEMPT_BINDING_MISMATCH"
+    }
 }
 
 $AcceptanceCreated = $false
