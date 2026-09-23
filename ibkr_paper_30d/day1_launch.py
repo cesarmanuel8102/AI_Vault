@@ -582,6 +582,7 @@ def run_day1_launch(
                     execute_paper=True,
                     runtime_market_gate=market_gate,
                     runtime_auditor_gate=auditor_gate,
+                    launch_attempt_id=config.launch_attempt_id,
                 )
                 heartbeat = _LockHeartbeat(
                     config=config,

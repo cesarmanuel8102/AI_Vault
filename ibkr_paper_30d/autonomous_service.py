@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 import sys
 import threading
@@ -29,6 +30,19 @@ from .types import new_uuid7
 
 class AutonomousServiceError(RuntimeError):
     pass
+
+
+OPERATIONAL_DECISIONS = frozenset(
+    {
+        "NO_TRADE",
+        "PROPOSE_TRADE",
+        "CANCEL_ORDER",
+        "MODIFY_ORDER",
+        "MONITOR_POSITION",
+        "REDUCE_POSITION",
+        "CLOSE_POSITION",
+    }
+)
 
 
 def _append_alert(db: Database, event_type: str, payload: dict[str, Any]) -> None:
@@ -110,6 +124,7 @@ class AutonomousExperimentService:
         runtime_market_gate: RuntimeMarketDataGate | None = None,
         runtime_auditor_gate: RuntimeAuditorGate | None = None,
         broker_now: Callable[[], datetime] | None = None,
+        launch_attempt_id: str | None = None,
         sleep: Callable[[float], None] = time.sleep,
         monotonic: Callable[[], float] = time.monotonic,
     ) -> None:
@@ -142,6 +157,9 @@ class AutonomousExperimentService:
             declared_options_level=options_level
         )
         self.broker_now = broker_now or self._read_broker_time
+        self.launch_attempt_id = launch_attempt_id
+        self._running_event_emitted = False
+        self._service_started_at_utc: datetime | None = None
         expected_hash = getattr(self.toolbox, "expected_account_hash", None)
         self.runtime_market_gate = runtime_market_gate or (
             RuntimeMarketDataGate(
@@ -347,6 +365,14 @@ class AutonomousExperimentService:
                     },
                 )
             raise
+        outcome = result.get("outcome") or {}
+        if "status" not in result:
+            result["status"] = (
+                "PASS"
+                if outcome.get("validation") == "PASS"
+                and str(outcome.get("decision") or "") in OPERATIONAL_DECISIONS
+                else "BLOCK"
+            )
         result["auditor_gate"] = auditor
         return result
 
@@ -421,10 +447,75 @@ class AutonomousExperimentService:
     ) -> dict[str, Any] | None:
         if self.stop_event.is_set() or not self._needs_observation_only_refresh(result):
             return None
-        return self._run_cycle("POSITION_EVENT", allow_execution=False)
+        return self._run_cycle_with_lifecycle(
+            "POSITION_EVENT", allow_execution=False
+        )
+
+    def _run_cycle_with_lifecycle(
+        self,
+        trigger: str,
+        *,
+        allow_execution: bool | None = None,
+    ) -> dict[str, Any]:
+        _append_state_event(
+            self.db,
+            "AUTONOMOUS_CYCLE_STARTED",
+            {"trigger": trigger},
+        )
+        try:
+            result = self._run_cycle(trigger, allow_execution=allow_execution)
+        except Exception as exc:
+            _append_state_event(
+                self.db,
+                "AUTONOMOUS_CYCLE_FAILED",
+                {"trigger": trigger, "error_type": type(exc).__name__},
+            )
+            raise
+
+        status = str(result.get("status") or "UNKNOWN")
+        outcome = result.get("outcome") or {}
+        decision = str(outcome.get("decision") or "UNKNOWN")
+        request = result.get("request") or {}
+        decision_cycle_id = str(request.get("decision_cycle_id") or "")
+        _append_state_event(
+            self.db,
+            "AUTONOMOUS_CYCLE_COMPLETED",
+            {
+                "trigger": trigger,
+                "status": status,
+                "decision": decision,
+                "decision_cycle_id": decision_cycle_id,
+            },
+        )
+        if (
+            not self._running_event_emitted
+            and status == "PASS"
+            and decision in OPERATIONAL_DECISIONS
+        ):
+            actual_start = self._service_started_at_utc or datetime.now(timezone.utc)
+            delay_seconds = max(
+                0.0, (actual_start - self.clock.start_utc).total_seconds()
+            )
+            _append_state_event(
+                self.db,
+                "AUTONOMOUS_PAPER_EXPERIMENT_RUNNING",
+                {
+                    "decision_cycle_id": decision_cycle_id,
+                    "decision": decision,
+                    "launch_attempt_id": self.launch_attempt_id or "",
+                    "model": self.model,
+                    "reasoning_effort": self.reasoning_effort,
+                    "pid": os.getpid(),
+                    "scheduled_start_utc": self.clock.start_utc,
+                    "actual_service_start_utc": actual_start,
+                    "delay_seconds": delay_seconds,
+                },
+            )
+            self._running_event_emitted = True
+        return result
 
     def run_once(self, trigger: str = "SCHEDULED_SCAN") -> dict[str, Any]:
-        result = self._run_cycle(trigger)
+        result = self._run_cycle_with_lifecycle(trigger)
         self._handle_pause(result)
         follow_up = self._observation_only_follow_up(result)
         if follow_up is not None:
@@ -436,6 +527,25 @@ class AutonomousExperimentService:
         return result
 
     def run_forever(self) -> None:
+        self._service_started_at_utc = datetime.now(timezone.utc)
+        _append_state_event(
+            self.db,
+            "AUTONOMOUS_SERVICE_STARTED",
+            {
+                "launch_attempt_id": self.launch_attempt_id or "",
+                "model": self.model,
+                "reasoning_effort": self.reasoning_effort,
+                "pid": os.getpid(),
+                "scheduled_start_utc": self.clock.start_utc,
+                "actual_service_start_utc": self._service_started_at_utc,
+                "delay_seconds": max(
+                    0.0,
+                    (
+                        self._service_started_at_utc - self.clock.start_utc
+                    ).total_seconds(),
+                ),
+            },
+        )
         next_scan = self.monotonic()
         next_position = self.monotonic()
         while not self.stop_event.is_set():
@@ -468,7 +578,7 @@ class AutonomousExperimentService:
                     self.sleep(min(waits))
                     continue
 
-                result = self._run_cycle(trigger)
+                result = self._run_cycle_with_lifecycle(trigger)
                 status = str(result.get("status") or "")
                 if status == "EXPERIMENT_NOT_STARTED":
                     self.sleep(
@@ -529,9 +639,7 @@ class AutonomousExperimentService:
                     )
                 except Exception:
                     pass
-                if self.stop_event.is_set():
-                    return
-                self.sleep(30.0)
+                raise
 
 
 def _parse_utc(value: str | None) -> datetime | None:

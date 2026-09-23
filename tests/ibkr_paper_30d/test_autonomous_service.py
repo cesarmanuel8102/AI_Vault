@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal
+from unittest.mock import Mock
 
 import pytest
 import ibkr_paper_30d.autonomous_service as service_module
@@ -417,3 +419,135 @@ def test_provider_failure_is_observed_without_claiming_policy_attribution(tmp_pa
         assert row is not None
         assert '"provider_failure_code":"RETURN_CODE_1"' in row[0]
         assert '"provider_policy_attribution":"UNDETERMINED"' in row[0]
+
+
+def state_event_types(db):
+    return [
+        str(row[0])
+        for row in db.execute(
+            "SELECT event_type FROM state_events ORDER BY sequence"
+        ).fetchall()
+    ]
+
+
+def latest_state_event(db, event_type):
+    row = db.execute(
+        "SELECT payload_json FROM state_events WHERE event_type=? "
+        "ORDER BY sequence DESC LIMIT 1",
+        (event_type,),
+    ).fetchone()
+    assert row is not None
+    return json.loads(str(row[0]))
+
+
+def test_run_forever_records_first_operational_cycle_lifecycle(tmp_path, monkeypatch):
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    result = {
+        "status": "PASS",
+        "outcome": {"decision": "NO_TRADE"},
+        "request": {"decision_cycle_id": "cycle-1"},
+        "execution": None,
+    }
+    with Database.open(tmp_path / "lifecycle.sqlite3") as db:
+        service = make_service(db, clock, stop_after=1, results=[result])
+        service.launch_attempt_id = "11111111-1111-4111-8111-111111111111"
+
+        service.run_forever()
+
+        event_types = state_event_types(db)
+        running = latest_state_event(db, "AUTONOMOUS_PAPER_EXPERIMENT_RUNNING")
+    assert "AUTONOMOUS_SERVICE_STARTED" in event_types
+    assert "AUTONOMOUS_CYCLE_STARTED" in event_types
+    assert "AUTONOMOUS_CYCLE_COMPLETED" in event_types
+    assert running["decision"] == "NO_TRADE"
+    assert running["decision_cycle_id"] == "cycle-1"
+    assert running["launch_attempt_id"] == service.launch_attempt_id
+
+
+@pytest.mark.parametrize("status", ["UNKNOWN", "PARTIAL", "RECOVERING", "BLOCK"])
+def test_nonoperational_status_never_declares_running(tmp_path, monkeypatch, status):
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    result = {
+        "status": status,
+        "outcome": {"decision": "NO_TRADE"},
+        "request": {"decision_cycle_id": "cycle-1"},
+        "execution": None,
+    }
+    with Database.open(tmp_path / f"nonoperational-{status}.sqlite3") as db:
+        service = make_service(db, clock, stop_after=1, results=[result])
+        service.run_forever()
+        assert "AUTONOMOUS_PAPER_EXPERIMENT_RUNNING" not in state_event_types(db)
+
+
+def test_cycle_exception_records_sanitized_failure_and_reraises(tmp_path, monkeypatch):
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    with Database.open(tmp_path / "failed-cycle.sqlite3") as db:
+        service = make_service(db, clock, stop_after=2)
+        service._run_cycle = Mock(side_effect=RuntimeError("secret-token-value"))
+        service.sleep = lambda _: service.stop()
+
+        with pytest.raises(RuntimeError, match="secret-token-value"):
+            service.run_forever()
+
+        failure = latest_state_event(db, "AUTONOMOUS_CYCLE_FAILED")
+        assert failure["error_type"] == "RuntimeError"
+        assert "secret-token-value" not in json.dumps(failure)
+        assert "AUTONOMOUS_PAPER_EXPERIMENT_RUNNING" not in state_event_types(db)
+
+
+def test_model_substitution_fails_first_cycle_before_executor(tmp_path, monkeypatch):
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+
+    class ExecutorTripwire:
+        def __init__(self):
+            self.calls = []
+
+        def execute(self, *args, **kwargs):
+            self.calls.append("execute")
+            raise AssertionError("executor reached")
+
+        def execute_position_action(self, *args, **kwargs):
+            self.calls.append("execute_position_action")
+            raise AssertionError("executor reached")
+
+        def execute_open_order_action(self, *args, **kwargs):
+            self.calls.append("execute_open_order_action")
+            raise AssertionError("executor reached")
+
+    executor = ExecutorTripwire()
+    with Database.open(tmp_path / "model-substitution.sqlite3") as db:
+        service = AutonomousExperimentService(
+            db,
+            experiment_start_utc=datetime.now(timezone.utc),
+            allocation=Decimal("500.00"),
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=executor,
+            runtime_market_gate=PassGate(),
+            runtime_auditor_gate=PassGate(),
+            sleep=clock.sleep,
+            monotonic=clock.monotonic,
+        )
+        monkeypatch.setattr(service, "_builder", lambda: _ReadyBuilder())
+
+        def reject_substitution(*args, **kwargs):
+            raise ValueError("MODEL_ATTESTATION_MISMATCH:secret-model-value")
+
+        monkeypatch.setattr(service_module, "run_autonomous_cycle", reject_substitution)
+
+        with pytest.raises(ValueError, match="MODEL_ATTESTATION_MISMATCH"):
+            service.run_forever()
+
+        failure = latest_state_event(db, "AUTONOMOUS_CYCLE_FAILED")
+        assert failure["error_type"] == "ValueError"
+        assert "secret-model-value" not in json.dumps(failure)
+        assert executor.calls == []

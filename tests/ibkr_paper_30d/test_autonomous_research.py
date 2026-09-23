@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from ibkr_paper_30d.autonomous_research import (
     AutonomousOpenOrderAction,
+    CodexAutonomousCLIProvider,
     AutonomousPositionAction,
     AutonomousResearchLoop,
     AutonomousTradeProposal,
@@ -272,7 +273,7 @@ def test_blocked_open_order_action_falls_back_to_no_trade():
 
 
 def test_codex_can_research_then_trade_symbol_outside_frozen_candidates():
-    value = bundle()
+    value = bundle().model_copy(update={"candidate_screen_results": []})
     research = AutonomousTurn(
         mode=AutonomousTurnMode.RESEARCH,
         research_requests=[ResearchRequest(
@@ -304,9 +305,22 @@ def test_codex_can_research_then_trade_symbol_outside_frozen_candidates():
     assert outcome.accepted is True
     assert outcome.decision == TraderDecision.PROPOSE_TRADE
     assert outcome.proposal.symbol == "NVDA"
-    assert value.candidate_screen_results == [{"symbol": "SPY"}]
+    assert value.candidate_screen_results == []
     assert toolbox.requests[0].tool == ResearchTool.MARKET_SCANNER
     assert provider.histories[1][1]["payload"]["data"]["discovered_symbol"] == "NVDA"
+
+
+def test_native_prompt_mandate_preserves_unconstrained_discovery():
+    value = bundle().model_copy(update={"candidate_screen_results": []})
+
+    payload = CodexAutonomousCLIProvider._prompt_payload(
+        request(value), value, [], FakeToolbox().manifest()
+    )
+
+    assert payload["mandate"]["predefined_symbol_universe"] is False
+    assert payload["mandate"]["predefined_strategy_family"] is False
+    assert payload["mandate"]["broker_and_account_permissions_are_authoritative"] is True
+    assert payload["bundle"]["candidate_screen_results"] == []
 
 
 def test_full_experimental_equity_may_be_risked():

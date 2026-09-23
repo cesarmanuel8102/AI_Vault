@@ -15,6 +15,13 @@ from unittest.mock import Mock
 import pytest
 
 import ibkr_paper_30d.day1_launch as launch_module
+from ibkr_paper_30d.autonomous_research import (
+    AutonomousTurn,
+    AutonomousTurnMode,
+    ResearchResult,
+    ResearchTool,
+)
+from ibkr_paper_30d.autonomous_service import AutonomousExperimentService
 from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.day1_launch import (
     Day1LaunchConfig,
@@ -43,6 +50,7 @@ from ibkr_paper_30d.owner_authorization import (
 )
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.prerequisite_tools import bind_launch_attempt
+from ibkr_paper_30d.trader_invocation import TraderDecision
 
 
 OWNER_SID = "S-1-5-21-test-owner"
@@ -52,6 +60,8 @@ NOW = datetime(2026, 9, 23, 20, 0, tzinfo=timezone.utc)
 
 
 class ExecutorTripwire:
+    armed = True
+
     def __init__(self) -> None:
         self.calls: list[str] = []
 
@@ -992,3 +1002,89 @@ def test_cli_emits_one_sanitized_status_line(
     assert captured.out.count("\n") == 1
     assert "DU" not in captured.out
     assert "secret" not in captured.out
+
+
+class NoTradeProvider:
+    def next_turn(self, request, bundle, history, toolbox_manifest):
+        return AutonomousTurn(
+            mode=AutonomousTurnMode.FINAL,
+            research_requests=[],
+            decision=TraderDecision.NO_TRADE,
+            proposal=None,
+            confidence="0.8",
+            reasoning_summary="No qualified opportunity in the current evidence.",
+            reason_codes=["NO_EDGE"],
+        )
+
+
+class ReadOnlyLaunchToolbox:
+    expected_account_hash = ACCOUNT_HASH
+
+    def __init__(self, ib_client: IBWriteTripwire) -> None:
+        self.ib_client = ib_client
+
+    def manifest(self):
+        return [{"tool": item.value} for item in ResearchTool]
+
+    def execute(self, request, bundle):
+        payloads = {
+            ResearchTool.EXECUTIONS: {"executions": []},
+            ResearchTool.ACCOUNT_STATE: {
+                "server_time_utc": "2026-09-23T20:00:00Z",
+                "paper_account": True,
+                "declared_options_level": 4,
+            },
+            ResearchTool.POSITIONS: {"positions": []},
+            ResearchTool.OPEN_ORDERS: {"open_orders": []},
+        }
+        return ResearchResult(
+            request_id=request.request_id,
+            tool=request.tool,
+            success=request.tool in payloads,
+            data=payloads.get(request.tool, {}),
+            error=None if request.tool in payloads else "unsupported read-only test tool",
+        )
+
+
+def test_complete_fake_launch_persists_running_without_broker_write(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    install_fake_lock(ctx)
+    holder: dict[str, AutonomousExperimentService] = {}
+    toolbox = ReadOnlyLaunchToolbox(ctx.ib_tripwire)
+
+    def stop_after_first_wait(_seconds: float) -> None:
+        holder["service"].stop()
+
+    def real_service_factory(db, **kwargs):
+        service = AutonomousExperimentService(
+            db,
+            **kwargs,
+            toolbox=toolbox,
+            provider=NoTradeProvider(),
+            executor=ctx.executor_tripwire,
+            broker_now=lambda: NOW,
+            sleep=stop_after_first_wait,
+            monotonic=lambda: 0.0,
+        )
+        holder["service"] = service
+        return service
+
+    ctx.dependencies.service_factory = real_service_factory
+
+    status = run_day1_launch(ctx.config, ctx.dependencies)
+
+    assert status == "AUTONOMOUS_PAPER_EXPERIMENT_STOPPED"
+    with Database.open(ctx.config.db_path) as db:
+        row = db.execute(
+            "SELECT payload_json FROM state_events "
+            "WHERE event_type='AUTONOMOUS_PAPER_EXPERIMENT_RUNNING' "
+            "ORDER BY sequence DESC LIMIT 1"
+        ).fetchone()
+        assert row is not None
+        running = json.loads(str(row[0]))
+    assert running["decision"] == "NO_TRADE"
+    assert running["launch_attempt_id"] == ctx.config.launch_attempt_id
+    assert ctx.executor_tripwire.calls == []
+    assert ctx.ib_tripwire.calls == []
