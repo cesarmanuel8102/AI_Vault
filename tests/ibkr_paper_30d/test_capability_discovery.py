@@ -197,3 +197,12 @@ def test_runner_is_unarmed_and_fail_closed() -> None:
     assert "CAPABILITY_DISCOVERY_TRANSPORT_ALLOWLIST_BROKEN" in text
     assert "CAPABILITY_DISCOVERY_NOT_PAPER" in text
     assert "IBKR_AUTONOMOUS_PAPER_ARMED=true" not in text
+
+
+def test_probe_catalog_is_explicitly_non_restrictive_in_source() -> None:
+    source = (ROOT / "ibkr_paper_30d" / "capability_discovery.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert '"representative_probe_only": True' in source
+    assert '"probe_catalog_not_trading_universe": True' in source
