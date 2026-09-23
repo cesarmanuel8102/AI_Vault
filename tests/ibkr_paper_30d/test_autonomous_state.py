@@ -2,10 +2,44 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from types import SimpleNamespace
 
 from ibkr_paper_30d.autonomous_research import ResearchResult, ResearchTool
 from ibkr_paper_30d.autonomous_state import AutonomousStateBuilder
+from ibkr_paper_30d.open_order_management import canonical_open_order
 from ibkr_paper_30d.persistence import Database
+
+
+def open_order_trade():
+    return SimpleNamespace(
+        contract=SimpleNamespace(
+            conId=756733,
+            symbol="SPY",
+            localSymbol="SPY",
+            secType="STK",
+            exchange="SMART",
+            currency="USD",
+            lastTradeDateOrContractMonth="",
+            strike=0,
+            right="",
+            multiplier="1",
+        ),
+        order=SimpleNamespace(
+            orderRef="codex-ibkr-paper-30d-a-cycle",
+            orderId=41,
+            permId=9001,
+            clientId=19761,
+            account="DU1234567",
+            action="BUY",
+            orderType="LMT",
+            totalQuantity=2,
+            lmtPrice=10,
+            auxPrice=0,
+            tif="DAY",
+            outsideRth=False,
+        ),
+        orderStatus=SimpleNamespace(status="Submitted", filled=0, remaining=2),
+    )
 
 
 class FakeMarketGate:
@@ -65,10 +99,11 @@ class FakeToolbox:
                 }]
             }
         elif request.tool == ResearchTool.OPEN_ORDERS:
+            owned = canonical_open_order(open_order_trade())
             data = {
                 "open_orders": [
                     {"orderRef": "unrelated", "orderId": 1},
-                    {"orderRef": "codex-ibkr-paper-30d-position-management", "orderId": 2},
+                    owned,
                 ]
             }
         else:
@@ -129,9 +164,12 @@ def test_state_builder_refreshes_equity_and_keeps_discovery_unconstrained(tmp_pa
         assert value.broker_account_snapshot["experiment_buying_power"] == "599.00"
         assert value.broker_account_snapshot["global_broker_balances_redacted"] is True
         assert value.experiment_clock["remaining_days"] > 28
-        assert value.open_orders_snapshot == [
-            {"orderRef": "codex-ibkr-paper-30d-position-management", "orderId": 2}
-        ]
+        assert len(value.open_orders_snapshot) == 1
+        open_order = value.open_orders_snapshot[0]
+        assert open_order["permId"] == 9001
+        assert open_order["clientId"] == 19761
+        assert open_order["contract"]["conId"] == 756733
+        assert len(open_order["state_sha256"]) == 64
 
 
 def test_state_builder_blocks_when_tracked_position_does_not_match_broker(tmp_path):

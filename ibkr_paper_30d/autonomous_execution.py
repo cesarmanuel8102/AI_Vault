@@ -8,6 +8,7 @@ from typing import Any, Callable
 from .autonomous_research import AutonomousPositionAction, AutonomousTradeProposal
 from .canonical import canonical_bytes, sha256_json
 from .ibkr_research_tools import IBKRResearchToolbox
+from .open_order_management import EXECUTION_CLIENT_ID
 from .persistence import Database
 from .repositories import utc_now
 from .types import new_uuid7
@@ -34,6 +35,8 @@ class AutonomousPaperExecutor:
     transmission, the proposal is revalidated against the current isolated
     experimental equity and IBKR what-if feasibility.
     """
+
+    execution_client_id = EXECUTION_CLIENT_ID
 
     def __init__(
         self,
@@ -137,6 +140,9 @@ class AutonomousPaperExecutor:
         except Exception as exc:
             return (f"FRESH_OPERATOR_CONTROL_CHECK_FAILED:{type(exc).__name__}",)
 
+    def _connect_execution(self):
+        return self.toolbox._connect(client_id=self.execution_client_id)
+
     def _register_order(
         self,
         *,
@@ -145,6 +151,7 @@ class AutonomousPaperExecutor:
         order_ref: str,
         action: str,
         quantity: Decimal,
+        lifecycle_event: str,
     ) -> None:
         if self.database is None:
             raise RuntimeError("persistent database required for armed paper execution")
@@ -157,6 +164,8 @@ class AutonomousPaperExecutor:
             "contract_id": int(getattr(contract, "conId", 0) or 0),
             "action": action,
             "quantity": str(quantity),
+            "execution_client_id": self.execution_client_id,
+            "lifecycle_event": lifecycle_event,
             "created_at_utc": utc_now(),
         }
         self.database.execute(
@@ -214,7 +223,7 @@ class AutonomousPaperExecutor:
 
         from ib_insync import Order
 
-        ib = self.toolbox._connect()
+        ib = self._connect_execution()
         try:
             fresh_reasons = self._fresh_safety_reasons("NEW_TRADE")
             if fresh_reasons:
@@ -287,6 +296,7 @@ class AutonomousPaperExecutor:
                 order_ref=order_ref,
                 action=proposal.action.upper(),
                 quantity=proposal.quantity,
+                lifecycle_event="ISSUED_PRE_SEND",
             )
             operator_reasons = self._operator_control_reasons()
             if operator_reasons:
@@ -309,6 +319,7 @@ class AutonomousPaperExecutor:
                     order_ref=order_ref,
                     action=proposal.action.upper(),
                     quantity=proposal.quantity,
+                    lifecycle_event="BROKER_BOUND",
                 )
             status = getattr(trade.orderStatus, "status", "UNKNOWN") or "UNKNOWN"
             payload = {
@@ -370,7 +381,7 @@ class AutonomousPaperExecutor:
 
         from ib_insync import Order
 
-        ib = self.toolbox._connect()
+        ib = self._connect_execution()
         try:
             fresh_reasons = self._fresh_safety_reasons("POSITION_MANAGEMENT")
             if fresh_reasons:
@@ -542,6 +553,7 @@ class AutonomousPaperExecutor:
                 order_ref=order_ref,
                 action=action.action.upper(),
                 quantity=action.quantity,
+                lifecycle_event="ISSUED_PRE_SEND",
             )
             operator_reasons = self._operator_control_reasons()
             if operator_reasons:
@@ -564,6 +576,7 @@ class AutonomousPaperExecutor:
                     order_ref=order_ref,
                     action=action.action.upper(),
                     quantity=action.quantity,
+                    lifecycle_event="BROKER_BOUND",
                 )
             status = getattr(trade.orderStatus, "status", "UNKNOWN") or "UNKNOWN"
             payload = {
@@ -588,4 +601,3 @@ class AutonomousPaperExecutor:
             )
         finally:
             ib.disconnect()
-

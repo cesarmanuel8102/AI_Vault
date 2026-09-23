@@ -16,6 +16,7 @@ from .autonomous_research import (
 )
 from .ibkr_readonly import expected_identity_hash
 from .ibkr_readonly_session import ExpectedPaperIdentityStore
+from .open_order_management import canonical_open_order
 from .risk import CapitalBoundaryInputs, CapitalBoundaryRiskEngine, RiskResult
 from .trader_invocation import TraderDecision, TraderInputBundle
 
@@ -381,12 +382,21 @@ class IBKRResearchToolbox:
             return position
         return None
 
-    def _connect(self):
+    def _connect(self, *, client_id: int | None = None):
         from ib_insync import IB
 
         ib = IB()
-        client_id = random.randint(self.client_id_min, self.client_id_max)
-        ib.connect(self.host, self.port, clientId=client_id, timeout=self.timeout_seconds)
+        selected_client_id = (
+            random.randint(self.client_id_min, self.client_id_max)
+            if client_id is None
+            else int(client_id)
+        )
+        ib.connect(
+            self.host,
+            self.port,
+            clientId=selected_client_id,
+            timeout=self.timeout_seconds,
+        )
         if not ib.isConnected():
             raise ConnectionError("IBKR paper Gateway connection failed")
         accounts = ib.managedAccounts()
@@ -658,17 +668,7 @@ class IBKRResearchToolbox:
     def _open_orders(self, _: dict[str, Any]) -> dict[str, Any]:
         ib = self._connect()
         try:
-            items = []
-            for trade in ib.openTrades():
-                items.append({
-                    "contract": self._serialize_contract(trade.contract),
-                    "orderId": int(getattr(trade.order, "orderId", 0) or 0),
-                    "action": str(getattr(trade.order, "action", "")),
-                    "orderType": str(getattr(trade.order, "orderType", "")),
-                    "quantity": str(getattr(trade.order, "totalQuantity", "")),
-                    "status": str(getattr(trade.orderStatus, "status", "")),
-                    "orderRef": str(getattr(trade.order, "orderRef", "") or ""),
-                })
+            items = [canonical_open_order(trade) for trade in ib.reqAllOpenOrders()]
             return {"success": True, "open_orders": items}
         finally:
             ib.disconnect()

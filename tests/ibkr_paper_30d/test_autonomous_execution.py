@@ -1,14 +1,21 @@
 from __future__ import annotations
 
-import pytest
+import json
+from decimal import Decimal
 from types import SimpleNamespace
+
+import pytest
 
 from ibkr_paper_30d.autonomous_execution import (
     AutonomousPaperExecutionNotArmed,
     AutonomousPaperExecutor,
 )
-from ibkr_paper_30d.autonomous_research import AutonomousTradeProposal, ProposalValidation
-from ibkr_paper_30d.trader_invocation import TraderInputBundle
+from ibkr_paper_30d.autonomous_research import (
+    AutonomousPositionAction,
+    AutonomousTradeProposal,
+    ProposalValidation,
+)
+from ibkr_paper_30d.trader_invocation import TraderDecision, TraderInputBundle
 
 
 class NoCallToolbox:
@@ -115,8 +122,10 @@ class _FakeIB:
 class _PassUntilOperatorControlToolbox:
     def __init__(self):
         self.ib = _FakeIB()
+        self.requested_client_ids = []
 
-    def _connect(self):
+    def _connect(self, *, client_id=None):
+        self.requested_client_ids.append(client_id)
         return self.ib
 
     def _proposal_contract(self, ib, proposal):
@@ -150,6 +159,37 @@ def test_immediate_operator_control_blocks_place_order(tmp_path):
     assert result.success is False
     assert result.status == "BLOCKED"
     assert "OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE" in result.reason_codes
+    assert toolbox.ib.place_calls == 0
+    assert toolbox.requested_client_ids == [19761]
+
+
+def test_position_management_uses_stable_execution_client(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _PassUntilOperatorControlToolbox()
+    action = AutonomousPositionAction(
+        symbol="SPY",
+        sec_type="STK",
+        action="SELL",
+        quantity="1",
+        order_type="MKT",
+        reason="Reduce exposure.",
+    )
+    with Database.open(tmp_path / "execution.sqlite3") as db:
+        executor = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: ("TEST_BLOCK_BEFORE_WRITE",),
+            operator_control_check=lambda: (),
+        )
+
+        result = executor.execute_position_action(
+            action, bundle(), TraderDecision.REDUCE_POSITION
+        )
+
+    assert result.reason_codes == ("TEST_BLOCK_BEFORE_WRITE",)
+    assert toolbox.requested_client_ids == [19761]
     assert toolbox.ib.place_calls == 0
 
 
@@ -250,7 +290,6 @@ def test_immediate_fill_payload_inherits_issued_order_identity():
 
 
 def test_order_registry_appends_broker_perm_id_without_rewriting_pre_send_identity(tmp_path):
-    from decimal import Decimal
     from ibkr_paper_30d.persistence import Database
 
     with Database.open(tmp_path / "registry.sqlite3") as db:
@@ -271,6 +310,7 @@ def test_order_registry_appends_broker_perm_id_without_rewriting_pre_send_identi
             order_ref="codex-ibkr-paper-30d-a-test",
             action="BUY",
             quantity=Decimal("1"),
+            lifecycle_event="ISSUED_PRE_SEND",
         )
         executor._register_order(
             order=post_send,
@@ -278,12 +318,19 @@ def test_order_registry_appends_broker_perm_id_without_rewriting_pre_send_identi
             order_ref="codex-ibkr-paper-30d-a-test",
             action="BUY",
             quantity=Decimal("1"),
+            lifecycle_event="BROKER_BOUND",
         )
 
         rows = db.execute(
-            "SELECT client_order_id,perm_id FROM experiment_order_registry "
+            "SELECT client_order_id,perm_id,payload_json FROM experiment_order_registry "
             "WHERE order_ref=? ORDER BY sequence",
             ("codex-ibkr-paper-30d-a-test",),
         ).fetchall()
 
-    assert rows == [(77, 0), (77, 9001)]
+    assert [(row[0], row[1]) for row in rows] == [(77, 0), (77, 9001)]
+    payloads = [json.loads(row[2]) for row in rows]
+    assert [item["lifecycle_event"] for item in payloads] == [
+        "ISSUED_PRE_SEND",
+        "BROKER_BOUND",
+    ]
+    assert [item["execution_client_id"] for item in payloads] == [19761, 19761]

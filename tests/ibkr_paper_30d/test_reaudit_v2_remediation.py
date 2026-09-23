@@ -171,7 +171,7 @@ class _LateInversionToolbox:
             multiplier="100",
         )
 
-    def _connect(self):
+    def _connect(self, *, client_id=None):
         return self.ib
 
     def validate_position_action(self, action, bundle, decision, *, ib=None):
