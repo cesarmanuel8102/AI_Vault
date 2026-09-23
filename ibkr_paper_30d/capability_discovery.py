@@ -72,6 +72,8 @@ DEFAULT_PROBES: tuple[ProbeSpec, ...] = (
     ProbeSpec("ES_FUT_CME", "ES", "FUT", "CME", currency="USD"),
     ProbeSpec("SPX_IND_CBOE", "SPX", "IND", "CBOE", currency="USD"),
     ProbeSpec("BTC_CRYPTO_PAXOS", "BTC", "CRYPTO", "PAXOS", currency="USD"),
+    ProbeSpec("XAUUSD_CMDTY_IBCMDTY", "XAUUSD", "CMDTY", "IBCMDTY", currency="USD"),
+    ProbeSpec("AAPL_CFD_SMART", "AAPL", "CFD", "SMART", currency="USD"),
 )
 
 
