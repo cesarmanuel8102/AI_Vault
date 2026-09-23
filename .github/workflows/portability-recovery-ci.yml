@@ -3,7 +3,7 @@ name: portability-recovery-ci
 on:
   push:
     branches:
-      - chatgpt/ibkr-portability-recovery-v1
+      - chatgpt/ibkr-capability-discovery-v1
 
 jobs:
   windows-portability:
