@@ -63,6 +63,8 @@ def test_default_probes_cover_session_and_asset_class_discovery() -> None:
     assert by_label["ES_FUT_CME"].sec_type == "FUT"
     assert by_label["SPX_IND_CBOE"].sec_type == "IND"
     assert by_label["BTC_CRYPTO_PAXOS"].sec_type == "CRYPTO"
+    assert by_label["XAUUSD_CMDTY_IBCMDTY"].sec_type == "CMDTY"
+    assert by_label["AAPL_CFD_SMART"].sec_type == "CFD"
 
 
 def test_probe_spec_accepts_arbitrary_contract_identity_fields() -> None:
