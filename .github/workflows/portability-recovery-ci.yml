@@ -30,6 +30,7 @@ jobs:
             'AUDITOR_WINDOWS_PROVISIONING_V1.ps1',
             'FINALIZE_IBKR_PREREQUISITES.ps1',
             'RUN_IBKR_MARKET_DATA_GATE.ps1',
+            'RUN_IBKR_CAPABILITY_DISCOVERY.ps1',
             'SYNC_LOCAL_CODEX_IBKR.ps1'
           )
           foreach ($file in $files) {
@@ -46,7 +47,7 @@ jobs:
       - name: Targeted Auditor portability tests
         shell: pwsh
         run: |
-          python -m pytest -q tests/ibkr_paper_30d/test_auditor_provisioning.py tests/ibkr_paper_30d/test_prerequisite_finalizer.py tests/ibkr_paper_30d/test_auditor_runtime.py tests/ibkr_paper_30d/test_auditor_portability.py
+          python -m pytest -q tests/ibkr_paper_30d/test_auditor_provisioning.py tests/ibkr_paper_30d/test_prerequisite_finalizer.py tests/ibkr_paper_30d/test_auditor_runtime.py tests/ibkr_paper_30d/test_auditor_portability.py tests/ibkr_paper_30d/test_capability_discovery.py
 
       - name: Full IBKR regression
         shell: pwsh
