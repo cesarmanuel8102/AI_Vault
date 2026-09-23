@@ -459,12 +459,23 @@ def discover_ibkr_capabilities(
     port: int = 4002,
     client_id: int = 19751,
     timeout_seconds: float = 8.0,
+    expected_account_hash: str | None = None,
 ) -> dict[str, object]:
     if host not in {"127.0.0.1", "localhost"} or port != 4002:
         return {
             "schema": CAPABILITY_DISCOVERY_SCHEMA,
             "status": "BLOCK",
             "reason_codes": ["PAPER_ENDPOINT_REQUIRED"],
+            "real_order_writes_attempted": 0,
+        }
+
+    if not expected_account_hash:
+        return {
+            "schema": CAPABILITY_DISCOVERY_SCHEMA,
+            "status": "BLOCK",
+            "reason_codes": ["EXPECTED_ACCOUNT_IDENTITY_NOT_CONFIGURED"],
+            "host": host,
+            "port": port,
             "real_order_writes_attempted": 0,
         }
 
@@ -492,6 +503,9 @@ def discover_ibkr_capabilities(
         raw_account = client.managed_accounts[0].strip().upper()
         if not raw_account.startswith("DU"):
             raise RuntimeError("PAPER_ACCOUNT_NAMESPACE_REQUIRED")
+        actual_account_hash = expected_identity_hash(raw_account)
+        if actual_account_hash != expected_account_hash:
+            raise RuntimeError("PAPER_ACCOUNT_IDENTITY_MISMATCH")
 
         client.reqCurrentTime()
         client.current_time_event.wait(timeout_seconds)
@@ -610,7 +624,7 @@ def discover_ibkr_capabilities(
         if not option_chains:
             reasons.append("OPTION_REFERENCE_DATA_UNAVAILABLE")
 
-        account_hash = expected_identity_hash(raw_account)
+        account_hash = actual_account_hash
         connection_time = client.twsConnectionTime()
         if isinstance(connection_time, bytes):
             connection_time = connection_time.decode("ascii", errors="replace")
