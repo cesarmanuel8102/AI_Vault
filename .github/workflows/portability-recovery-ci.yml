@@ -48,6 +48,11 @@ jobs:
         run: |
           python -m pytest -q tests/ibkr_paper_30d/test_auditor_provisioning.py tests/ibkr_paper_30d/test_prerequisite_finalizer.py tests/ibkr_paper_30d/test_auditor_runtime.py tests/ibkr_paper_30d/test_auditor_portability.py
 
+      - name: Targeted capability discovery tests
+        shell: pwsh
+        run: |
+          python -m pytest -q tests/ibkr_paper_30d/test_capability_discovery.py tests/ibkr_paper_30d/test_market_observation_collector.py tests/ibkr_paper_30d/test_market_policy.py
+
       - name: Full IBKR regression
         shell: pwsh
         run: |
