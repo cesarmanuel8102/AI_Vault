@@ -12,15 +12,17 @@ from ibkr_paper_30d.prerequisite_tools import create_audit_export
 ROOT = Path(__file__).resolve().parents[2]
 FINALIZER = ROOT / "FINALIZE_IBKR_PREREQUISITES.ps1"
 MARKET_RUNNER = ROOT / "RUN_IBKR_MARKET_DATA_GATE.ps1"
+DAY1_RUNNER = ROOT / "RUN_IBKR_DAY1_SERVICE.ps1"
 DENIAL_PROBE = ROOT / "auditor_runtime" / "AUDITOR_DENIAL_PROBE_V1.ps1"
 
 
 def test_prerequisite_scripts_exist_and_never_arm_trading():
-    for path in (FINALIZER, MARKET_RUNNER):
+    for path in (FINALIZER, MARKET_RUNNER, DAY1_RUNNER):
         text = path.read_text(encoding="utf-8")
         assert "IBKR_AUTONOMOUS_PAPER_ARMED=true" not in text
         assert "placeOrder" not in text
         assert "create_order_instruction" not in text
+        assert "--port 4001" not in text
 
     finalizer = FINALIZER.read_text(encoding="utf-8")
     assert "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1" in finalizer
@@ -50,7 +52,7 @@ def test_prerequisite_scripts_exist_and_never_arm_trading():
 
 
 @pytest.mark.skipif(os.name != "nt", reason="PowerShell 5.1 parser validation is Windows-only")
-@pytest.mark.parametrize("path", [FINALIZER, MARKET_RUNNER])
+@pytest.mark.parametrize("path", [FINALIZER, MARKET_RUNNER, DAY1_RUNNER])
 def test_powershell_51_ast_has_no_parse_errors(path: Path):
     escaped = str(path).replace("'", "''")
     command = (
@@ -71,13 +73,16 @@ def test_powershell_51_ast_has_no_parse_errors(path: Path):
 def test_scheduled_task_objects_can_be_constructed_without_registration():
     command = (
         "$a=New-ScheduledTaskAction -Execute 'PowerShell.exe' -Argument '-NoProfile';"
-        "$t=New-ScheduledTaskTrigger -Weekly -WeeksInterval 1 "
+        "$t1=New-ScheduledTaskTrigger -Weekly -WeeksInterval 1 "
         "-DaysOfWeek Monday,Tuesday,Wednesday,Thursday,Friday -At 9:35AM;"
+        "$t2=New-ScheduledTaskTrigger -AtLogOn -User ($env:USERDOMAIN+'\\'+$env:USERNAME);"
         "$p=New-ScheduledTaskPrincipal -UserId ($env:USERDOMAIN+'\\'+$env:USERNAME) "
         "-LogonType Interactive -RunLevel Highest;"
         "$s=New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries "
-        "-DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 3);"
-        "if($null -eq $a -or $null -eq $t -or $null -eq $p -or $null -eq $s){exit 1}"
+        "-DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew "
+        "-ExecutionTimeLimit (New-TimeSpan -Days 31) -RestartCount 3 "
+        "-RestartInterval (New-TimeSpan -Minutes 5);"
+        "if($null -eq $a -or $null -eq $t1 -or $null -eq $t2 -or $null -eq $p -or $null -eq $s){exit 1}"
     )
     result = subprocess.run(
         ["powershell.exe", "-NoProfile", "-Command", command],
@@ -160,9 +165,12 @@ def test_finalizer_owns_explicit_authorization_and_fresh_attempt_binding():
     assert '"bind-launch-attempt"' in text
 
     readonly_index = text.index('"inspect-ibkr-readonly"')
+    authorization_index = text.index(
+        '"ibkr_paper_30d.owner_authorization", "validate"'
+    )
     auditor_index = text.index("$AuditorEvaluation = Invoke-PythonJson")
     binding_index = text.index('"bind-launch-attempt"')
-    assert readonly_index < auditor_index < binding_index
+    assert authorization_index < readonly_index < auditor_index < binding_index
 
 
 def test_scheduled_finalizer_cannot_create_owner_authorization():
@@ -173,6 +181,96 @@ def test_scheduled_finalizer_cannot_create_owner_authorization():
 
     assert guard < create
     assert validate < create
+
+
+@pytest.mark.skipif(os.name != "nt", reason="PowerShell execution is Windows-only")
+def test_day1_handoff_validate_only_reports_foreground_commands():
+    result = subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(DAY1_RUNNER),
+            "-RepoRoot",
+            str(ROOT),
+            "-ValidateOnly",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    payload = json.loads(result.stdout.strip().splitlines()[-1])
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "-SkipTaskRegistration" in payload["finalizer_arguments"]
+    assert payload["python_arguments"][:3] == [
+        "-m",
+        "ibkr_paper_30d.day1_launch",
+        "--repo-root",
+    ]
+    assert payload["launch_attempt_id"] in payload["finalizer_arguments"]
+    assert payload["launch_attempt_id"] in payload["python_arguments"]
+    assert payload["foreground"] is True
+    assert payload["broker_write_calls"] == 0
+
+
+@pytest.mark.skipif(os.name != "nt", reason="PowerShell execution is Windows-only")
+def test_nonzero_finalizer_prevents_launcher_invocation(tmp_path: Path):
+    fake_finalizer = tmp_path / "fake-finalizer.cmd"
+    fake_launcher = tmp_path / "fake-launcher.cmd"
+    launcher_marker = tmp_path / "launcher-called.txt"
+    fake_finalizer.write_text("@exit /b 42\n", encoding="ascii")
+    fake_launcher.write_text(
+        f'@echo called>"{launcher_marker}"\n@exit /b 0\n', encoding="ascii"
+    )
+    launch_root = ROOT / "state" / "ibkr_paper_30d" / "launch"
+    before = set(launch_root.glob("day1-*-pid*.log")) if launch_root.exists() else set()
+    try:
+        result = subprocess.run(
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(DAY1_RUNNER),
+                "-RepoRoot",
+                str(ROOT),
+                "-PowerShellExe",
+                str(fake_finalizer),
+                "-PythonExe",
+                str(fake_launcher),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode != 0
+        assert not launcher_marker.exists()
+    finally:
+        if launch_root.exists():
+            for path in set(launch_root.glob("day1-*-pid*.log")) - before:
+                path.unlink(missing_ok=True)
+
+
+def test_market_runner_hands_both_scheduled_pass_paths_to_foreground_service():
+    text = MARKET_RUNNER.read_text(encoding="utf-8")
+    assert "function Invoke-Day1ForegroundService" in text
+    assert text.count("Invoke-Day1ForegroundService") >= 3
+    assert "RUN_IBKR_DAY1_SERVICE.ps1" in text
+    assert "Unregister-ScheduledTask" not in text
+
+
+def test_finalizer_registers_one_persistent_task_with_two_triggers():
+    text = FINALIZER.read_text(encoding="utf-8")
+    assert "-ExecutionTimeLimit (New-TimeSpan -Days 31)" in text
+    assert "-MultipleInstances IgnoreNew" in text
+    assert "-RestartCount 3" in text
+    assert "-RestartInterval (New-TimeSpan -Minutes 5)" in text
+    assert "New-ScheduledTaskTrigger -AtLogOn -User $OwnerPrincipal" in text
+    assert "$Triggers = @(" in text
+    assert "-Trigger $Triggers" in text
 
 
 def test_auditor_account_enablement_is_inside_cleanup_guard():

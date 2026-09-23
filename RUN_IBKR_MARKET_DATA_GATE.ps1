@@ -37,6 +37,19 @@ function Invoke-PythonJson {
     return ([string]$Candidates[-1] | ConvertFrom-Json)
 }
 
+function Invoke-Day1ForegroundService {
+    $Day1Script = Join-Path $ResolvedRepoRoot "RUN_IBKR_DAY1_SERVICE.ps1"
+    if (-not (Test-Path -LiteralPath $Day1Script -PathType Leaf)) {
+        throw "DAY1_SERVICE_SCRIPT_MISSING"
+    }
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Day1Script `
+        -RepoRoot $ResolvedRepoRoot -PythonExe $PythonExe
+    $Day1ExitCode = $LASTEXITCODE
+    if ($Day1ExitCode -ne 0) {
+        throw "DAY1_FOREGROUND_SERVICE_FAILED:$Day1ExitCode"
+    }
+}
+
 function Get-EasternNow {
     $Zone = [TimeZoneInfo]::FindSystemTimeZoneById("Eastern Standard Time")
     return [TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $Zone)
@@ -134,7 +147,8 @@ if (Test-Path -LiteralPath $ValidationPath) {
         $ExistingValidation = Get-Content -LiteralPath $ValidationPath -Raw | ConvertFrom-Json
         if ($ExistingValidation.market_data_gate -eq "PASS") {
             if ($Scheduled) {
-                Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
+                Invoke-Day1ForegroundService
+                exit 0
             }
             Write-Output '{"status":"ALREADY_PASS","market_data_gate":"PASS"}'
             exit 0
@@ -203,7 +217,8 @@ $Ready = Invoke-PythonJson -Arguments @(
 )
 
 if ($Scheduled) {
-    Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
+    Invoke-Day1ForegroundService
+    exit 0
 }
 
 [ordered]@{

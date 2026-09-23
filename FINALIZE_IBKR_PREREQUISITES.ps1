@@ -594,7 +594,7 @@ if (Test-Path -LiteralPath $MarketValidation -PathType Leaf) {
 }
 
 $TaskRegistered = $false
-if (-not $MarketAlreadyPass -and -not $SkipTaskRegistration) {
+if (-not $SkipTaskRegistration) {
     $MarketScript = Join-Path $ResolvedRepoRoot "RUN_IBKR_MARKET_DATA_GATE.ps1"
     if (-not (Test-Path -LiteralPath $MarketScript -PathType Leaf)) {
         throw "MARKET_DATA_GATE_SCRIPT_MISSING"
@@ -607,11 +607,21 @@ if (-not $MarketAlreadyPass -and -not $SkipTaskRegistration) {
         " -PythonExe " + (Quote-Argument $ResolvedPython) +
         " -Scheduled"
     )
-    $TaskTrigger = New-ScheduledTaskTrigger -Weekly -WeeksInterval 1 -DaysOfWeek Monday,Tuesday,Wednesday,Thursday,Friday -At 9:35AM
-    $CurrentIdentityName = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-    $Principal = New-ScheduledTaskPrincipal -UserId $CurrentIdentityName -LogonType Interactive -RunLevel Highest
-    $Settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 3)
-    Register-ScheduledTask -TaskName $MarketTaskName -Action $TaskAction -Trigger $TaskTrigger -Principal $Principal -Settings $Settings -Force | Out-Null
+    $OwnerPrincipal = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+    $Triggers = @(
+        (New-ScheduledTaskTrigger -Weekly -WeeksInterval 1 -DaysOfWeek Monday,Tuesday,Wednesday,Thursday,Friday -At 9:35AM),
+        (New-ScheduledTaskTrigger -AtLogOn -User $OwnerPrincipal)
+    )
+    $Principal = New-ScheduledTaskPrincipal -UserId $OwnerPrincipal -LogonType Interactive -RunLevel Highest
+    $Settings = New-ScheduledTaskSettingsSet `
+        -StartWhenAvailable `
+        -AllowStartIfOnBatteries `
+        -DontStopIfGoingOnBatteries `
+        -MultipleInstances IgnoreNew `
+        -ExecutionTimeLimit (New-TimeSpan -Days 31) `
+        -RestartCount 3 `
+        -RestartInterval (New-TimeSpan -Minutes 5)
+    Register-ScheduledTask -TaskName $MarketTaskName -Action $TaskAction -Trigger $Triggers -Principal $Principal -Settings $Settings -Force | Out-Null
     $TaskRegistered = $true
 }
 
