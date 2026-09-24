@@ -440,15 +440,20 @@ def _observe_regrets_and_outcomes(
             decision_cycle_id=bundle.decision_cycle_id,
         )
 
+    resolved_this_pass: set[str] = set()
     for match in matches:
+        regret_record_id = str(match.get("regret_record_id") or "")
+        if regret_record_id in resolved_this_pass:
+            continue
         source_key = "{record}:{source}".format(
-            record=str(match.get("regret_record_id") or ""),
+            record=regret_record_id,
             source=str(match.get("source_event_sha256") or ""),
         )
         if source_key in known_outcome_keys:
             continue
         persist_regret_outcome(database, match)
         known_outcome_keys.add(source_key)
+        resolved_this_pass.add(regret_record_id)
 
 
 class AutonomousTraderBoundary:

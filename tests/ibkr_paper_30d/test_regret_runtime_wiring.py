@@ -191,12 +191,12 @@ def no_trade_turn():
     )
 
 
-def research_quote_turn(symbol="NVDA"):
+def research_quote_turn(symbol="NVDA", request_id="rq1"):
     return AutonomousTurn(
         mode=AutonomousTurnMode.RESEARCH,
         research_requests=[
             ResearchRequest(
-                request_id="rq1",
+                request_id=request_id,
                 tool=ResearchTool.QUOTE,
                 arguments={"symbol": symbol},
                 purpose="observe current price",
@@ -572,5 +572,115 @@ def test_resolved_regret_does_not_accept_second_outcome(tmp_path):
         outcomes = [
             observation_payload(row) for row in regret_outcome_rows(db)
         ]
+        assert len(outcomes) == 1
+        assert outcomes[0]["observed_value"] == "6.10"
+
+
+class MultiQuoteToolbox:
+    """Toolbox returning distinct successive quotes per request id."""
+
+    def __init__(self, prices):
+        self.prices = list(prices)
+        self.calls = 0
+
+    def manifest(self):
+        return [{"tool": item.value} for item in ResearchTool]
+
+    def execute(self, request, bundle):
+        price = self.prices[min(self.calls, len(self.prices) - 1)]
+        self.calls += 1
+        return ResearchResult(
+            request_id=request.request_id,
+            tool=request.tool,
+            success=True,
+            data={
+                "contract": {
+                    "symbol": str(request.arguments.get("symbol", "")).upper()
+                },
+                "last": price,
+            },
+        )
+
+    def validate_proposal(self, proposal, bundle):
+        return ProposalValidation(passed=True, reason_codes=(), broker_evidence={})
+
+
+def test_two_distinct_quotes_in_same_later_cycle_produce_one_regret_outcome(
+    tmp_path,
+):
+    cycle1 = bundle("cycle-multi-1")
+    cycle2 = bundle("cycle-multi-2")
+    with Database.open(tmp_path / "autonomous.sqlite3") as db:
+        run_autonomous_cycle(
+            cycle1,
+            database=db,
+            provider=SequenceProvider([propose_trade_turn("NVDA")]),
+            toolbox=RejectingToolbox(),
+        )
+        original = observation_payload(regret_rows(db)[0])
+        record_id = original["record_id"]
+        assert len(regret_outcome_rows(db)) == 0
+
+        run_autonomous_cycle(
+            cycle2,
+            database=db,
+            provider=SequenceProvider(
+                [
+                    research_quote_turn("NVDA", request_id="rq1"),
+                    research_quote_turn("NVDA", request_id="rq2"),
+                    no_trade_turn(),
+                ]
+            ),
+            toolbox=MultiQuoteToolbox(["6.10", "7.20"]),
+        )
+
+        outcomes = [observation_payload(row) for row in regret_outcome_rows(db)]
+        assert len(outcomes) == 1, "PENDING -> FIRST LEGITIMATE OBSERVATION -> RESOLVED"
+        outcome = outcomes[0]
+        assert outcome["regret_record_id"] == record_id
+        # The FIRST legitimate quote in transcript order wins.
+        assert outcome["observed_value"] == "6.10"
+        assert outcome["sample_size"] == 1
+        # The record is resolved: a further cycle cannot re-resolve it.
+        run_autonomous_cycle(
+            bundle("cycle-multi-3"),
+            database=db,
+            provider=SequenceProvider(
+                [
+                    research_quote_turn("NVDA", request_id="rq1"),
+                    no_trade_turn(),
+                ]
+            ),
+            toolbox=MultiQuoteToolbox(["9.99"]),
+        )
+        assert len(regret_outcome_rows(db)) == 1
+
+
+def test_three_quotes_same_cycle_still_produce_one_outcome(tmp_path):
+    cycle1 = bundle("cycle-three-1")
+    cycle2 = bundle("cycle-three-2")
+    with Database.open(tmp_path / "autonomous.sqlite3") as db:
+        run_autonomous_cycle(
+            cycle1,
+            database=db,
+            provider=SequenceProvider([propose_trade_turn("NVDA")]),
+            toolbox=RejectingToolbox(),
+        )
+
+        run_autonomous_cycle(
+            cycle2,
+            database=db,
+            provider=SequenceProvider(
+                [
+                    research_quote_turn("NVDA", request_id="rq1"),
+                    research_quote_turn("NVDA", request_id="rq2"),
+                    research_quote_turn("NVDA", request_id="rq3"),
+                    no_trade_turn(),
+                ]
+            ),
+            toolbox=MultiQuoteToolbox(["6.10", "7.20", "8.30"]),
+        )
+
+        outcomes = [observation_payload(row) for row in regret_outcome_rows(db)]
         assert len(outcomes) == 1
         assert outcomes[0]["observed_value"] == "6.10"
