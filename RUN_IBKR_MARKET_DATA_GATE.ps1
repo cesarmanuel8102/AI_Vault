@@ -180,7 +180,7 @@ try {
             "-m", "ibkr_paper_30d.cli", "observe-market-data",
             "--host", "127.0.0.1", "--port", "4002",
             "--symbols", "SPY", "QQQ", "IEF",
-            "--cadence-seconds", "5",
+            "--cadence-seconds", "4",
             "--window-seconds", "330"
         )
         if ($Observation.status -ne "PASS") {

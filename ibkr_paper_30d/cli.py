@@ -270,7 +270,7 @@ def observe_market_data(
     source: MarketDataSource | None = None,
     expected_account_hash: str | None = None,
     symbols: Sequence[str] = ("SPY", "QQQ", "IEF"),
-    cadence_seconds: float = 5,
+    cadence_seconds: float = 4,
     window_seconds: float = 330,
     now_utc=None,
 ) -> dict[str, object]:
@@ -1067,7 +1067,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     observe_parser.add_argument("--host", default="127.0.0.1")
     observe_parser.add_argument("--port", type=int, default=4002)
     observe_parser.add_argument("--symbols", nargs="+", default=["SPY", "QQQ", "IEF"])
-    observe_parser.add_argument("--cadence-seconds", type=float, default=5)
+    observe_parser.add_argument("--cadence-seconds", type=float, default=4)
     observe_parser.add_argument("--window-seconds", type=float, default=330)
     freeze_parser = commands.add_parser("freeze-market-policy")
     freeze_parser.add_argument("--ledger", type=Path, default=MARKET_LEDGER)
