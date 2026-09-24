@@ -377,3 +377,347 @@ def build_risk_diagnostics(state: Any, *, fills: list[dict[str, Any]] | None = N
         "peak_gross_exposure_ratio": _ratio(gross, allocation),
         "capital_utilization": _ratio(gross, allocation),
     }
+
+
+REGRET_OUTCOME_SCHEMA = "CODEX_REGRET_OUTCOME_V1"
+ANALYTICAL_FAILURE_SCHEMA = "CODEX_ANALYTICAL_OBSERVER_FAILURE_V1"
+RISK_DIAGNOSTICS_EVENT = "risk_diagnostics"
+
+
+def extract_regret_observations(
+    outcome: Any, *, rejection_mechanism: str, decision_cycle_id: str = ""
+) -> list[dict[str, Any]]:
+    """Extract regret observations from a REAL cycle transcript.
+
+    Only identifiable candidates that were actually proposed and then
+    rejected by observable validation evidence produce records. Nothing is
+    fabricated: no proposal, no rejection evidence, no record. This
+    function is pure analysis over the in-memory transcript and never
+    touches the broker, risk, sizing or authorization.
+    """
+
+    records: list[dict[str, Any]] = []
+    transcripts = list(getattr(outcome, "transcript", ()) or ())
+    validations: dict[int, dict[str, Any]] = {}
+    for event in transcripts:
+        if event.get("type") != "proposal_validation":
+            continue
+        payload = dict(event.get("payload") or {})
+        if payload.get("passed") is False:
+            validations[int(event.get("round") or 0)] = payload
+
+    for event in transcripts:
+        if event.get("type") != "model_turn":
+            continue
+        payload = dict(event.get("payload") or {})
+        if str(payload.get("decision") or "") != "PROPOSE_TRADE":
+            continue
+        proposal = payload.get("proposal")
+        if not isinstance(proposal, dict):
+            continue
+        symbol = str(proposal.get("symbol") or "").strip().upper()
+        if not symbol:
+            continue
+        round_index = int(event.get("round") or 0)
+        validation = validations.get(round_index)
+        if validation is None:
+            continue
+        reasons = tuple(str(code) for code in (validation.get("reason_codes") or ()))
+        if not reasons:
+            continue
+        ex_ante_evidence = {
+            "proposal": {
+                key: str(value)
+                for key, value in proposal.items()
+                if key
+                in (
+                    "symbol",
+                    "sec_type",
+                    "direction",
+                    "action",
+                    "quantity",
+                    "order_type",
+                    "limit_price",
+                    "expiry",
+                    "strike",
+                    "right",
+                    "maximum_loss",
+                    "loss_is_bounded",
+                    "entry_condition",
+                    "thesis",
+                    "catalyst",
+                )
+            },
+            "broker_evidence": {
+                key: value
+                for key, value in dict(validation.get("broker_evidence") or {}).items()
+                if isinstance(value, (str, int, float, bool))
+            },
+        }
+        if not ex_ante_evidence["broker_evidence"]:
+            ex_ante_evidence["broker_evidence"] = {
+                "validation_passed": False
+            }
+        records.append(
+            build_regret_record(
+                decision_cycle_id=str(decision_cycle_id),
+                candidate={
+                    "symbol": symbol,
+                    "sec_type": str(proposal.get("sec_type") or ""),
+                },
+                ex_ante_evidence=ex_ante_evidence,
+                rejection_reason_codes=reasons,
+                rejection_mechanism=rejection_mechanism,
+            )
+        )
+    return records
+
+
+def _cycle_id_from_transcript(transcripts: list[dict[str, Any]]) -> str:
+    for event in transcripts:
+        cycle = event.get("decision_cycle_id")
+        if cycle:
+            return str(cycle)
+    return ""
+
+
+def _observation_from_row(raw_payload: str) -> dict[str, Any] | None:
+    try:
+        payload = json.loads(str(raw_payload))
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    observation = payload.get("observation")
+    return observation if isinstance(observation, dict) else None
+
+
+def load_pending_regret_records(db: Any) -> list[dict[str, Any]]:
+    """Regret records with no ex-post outcome yet (read-only structural read)."""
+
+    rows = db.execute(
+        "SELECT payload_json FROM autonomous_research_events "
+        "WHERE event_type='regret_observation' ORDER BY created_at_utc, rowid"
+    ).fetchall()
+    resolved = load_regret_outcome_source_keys(db)
+    pending: list[dict[str, Any]] = []
+    for (raw_payload,) in rows:
+        observation = _observation_from_row(raw_payload)
+        if observation is None:
+            continue
+        record_id = str(observation.get("record_id") or "")
+        if not record_id or record_id in resolved:
+            continue
+        pending.append(observation)
+    return pending
+
+
+def load_regret_outcome_source_keys(db: Any) -> set[str]:
+    """Already-persisted (regret_record_id, source_event_sha256) keys."""
+
+    rows = db.execute(
+        "SELECT payload_json FROM autonomous_research_events "
+        "WHERE event_type='regret_outcome'"
+    ).fetchall()
+    keys: set[str] = set()
+    for (raw_payload,) in rows:
+        observation = _observation_from_row(raw_payload)
+        if observation is None:
+            continue
+        keys.add(_outcome_source_key(observation))
+    return keys
+
+
+def _outcome_source_key(observation: dict[str, Any]) -> str:
+    return "{record}:{source}".format(
+        record=str(observation.get("regret_record_id") or ""),
+        source=str(observation.get("source_event_sha256") or ""),
+    )
+
+
+def match_post_outcome_observations(
+    pending: list[dict[str, Any]],
+    transcript: list[dict[str, Any]],
+    *,
+    current_cycle_id: str,
+) -> list[dict[str, Any]]:
+    """Match pending regrets against ALREADY-OBSERVED tool results.
+
+    Strictly observational: this never requests market data, never calls
+    the broker and never executes research. It only consumes results that
+    the runtime legitimately observed in the current cycle's transcript.
+    A cycle can never resolve its own rejection (same-cycle filter).
+    """
+
+    matches: list[dict[str, Any]] = []
+    for event in transcript:
+        if event.get("type") != "research_result":
+            continue
+        payload = dict(event.get("payload") or {})
+        if str(payload.get("tool") or "") != "QUOTE":
+            continue
+        if payload.get("success") is not True:
+            continue
+        data = dict(payload.get("data") or {})
+        contract = dict(data.get("contract") or {})
+        observed_symbol = str(contract.get("symbol") or "").strip().upper()
+        if not observed_symbol:
+            continue
+        price, price_source = _observable_quote_price(data)
+        if price is None:
+            continue
+        source_event = {
+            "type": "research_result",
+            "round": event.get("round"),
+            "tool": "QUOTE",
+            "symbol": observed_symbol,
+            "price": price,
+            "price_source": price_source,
+            "request_id": str(payload.get("request_id") or ""),
+        }
+        for record in pending:
+            candidate = dict(record.get("candidate") or {})
+            record_symbol = str(candidate.get("symbol") or "").strip().upper()
+            if record_symbol != observed_symbol:
+                continue
+            if str(record.get("decision_cycle_id") or "") == str(current_cycle_id):
+                continue
+            matches.append(
+                {
+                    "schema": REGRET_OUTCOME_SCHEMA,
+                    "regret_record_id": str(record.get("record_id") or ""),
+                    "decision_cycle_id": str(record.get("decision_cycle_id") or ""),
+                    "observed_at_utc": _utc_now(),
+                    "observed_symbol": observed_symbol,
+                    "observed_value": price,
+                    "price_source": price_source,
+                    "source_event_sha256": sha256_json(source_event),
+                    "sample_size": int(record.get("sample_size") or 1) + 1,
+                    "repeated_mechanism": bool(record.get("repeated_mechanism")),
+                    "policy_status": "OBSERVATION",
+                }
+            )
+    return matches
+
+
+def _observable_quote_price(data: dict[str, Any]) -> tuple[str | None, str]:
+    from decimal import Decimal, InvalidOperation
+
+    def _finite(value: Any) -> Decimal | None:
+        try:
+            parsed = Decimal(str(value))
+        except (InvalidOperation, TypeError, ValueError):
+            return None
+        return parsed if parsed.is_finite() and parsed > 0 else None
+
+    last = _finite(data.get("last"))
+    if last is not None:
+        return str(last), "last"
+    bid = _finite(data.get("bid"))
+    ask = _finite(data.get("ask"))
+    if bid is not None and ask is not None and bid <= ask:
+        return str((bid + ask) / 2), "mid"
+    return None, ""
+
+
+def persist_regret_outcome(db: Any, observation: dict[str, Any]) -> str:
+    if observation.get("schema") != REGRET_OUTCOME_SCHEMA:
+        raise ValueError("unknown regret outcome schema for persistence")
+    event_id = str(new_uuid7())
+    payload = {
+        "decision_cycle_id": str(observation.get("decision_cycle_id") or ""),
+        "invocation_id": "observation-only",
+        "observation": observation,
+    }
+    db.execute(
+        "INSERT INTO autonomous_research_events("
+        "event_id,decision_cycle_id,invocation_id,round_index,event_type,"
+        "payload_json,payload_sha256,created_at_utc) VALUES(?,?,?,?,?,?,?,?)",
+        (
+            event_id,
+            str(observation.get("decision_cycle_id") or ""),
+            "observation-only",
+            0,
+            "regret_outcome",
+            canonical_bytes(payload).decode("utf-8"),
+            sha256_json(payload),
+            _utc_now(),
+        ),
+    )
+    return event_id
+
+
+def persist_analytical_failure(
+    db: Any, *, stage: str, error_class: str, decision_cycle_id: str
+) -> str:
+    """Sanitized note when the analytical observer itself fails.
+
+    Only the observer's own analysis failures land here — never structural
+    SQLite/ledger/identity/authorization errors, which keep propagating.
+    The note carries stage + error class only; no raw messages or
+    tracebacks are persisted.
+    """
+
+    event_id = str(new_uuid7())
+    note = {
+        "schema": ANALYTICAL_FAILURE_SCHEMA,
+        "stage": str(stage),
+        "error_class": str(error_class),
+        "decision_cycle_id": str(decision_cycle_id),
+        "timestamp_utc": _utc_now(),
+        "authoritative": False,
+    }
+    payload = {
+        "decision_cycle_id": str(decision_cycle_id),
+        "invocation_id": "observation-only",
+        "observation": note,
+    }
+    db.execute(
+        "INSERT INTO autonomous_research_events("
+        "event_id,decision_cycle_id,invocation_id,round_index,event_type,"
+        "payload_json,payload_sha256,created_at_utc) VALUES(?,?,?,?,?,?,?,?)",
+        (
+            event_id,
+            str(decision_cycle_id),
+            "observation-only",
+            0,
+            "analytical_observer_failure",
+            canonical_bytes(payload).decode("utf-8"),
+            sha256_json(payload),
+            _utc_now(),
+        ),
+    )
+    return event_id
+
+
+def persist_risk_diagnostics(
+    db: Any,
+    *,
+    decision_cycle_id: str,
+    invocation_id: str,
+    rounds: int,
+    diagnostics: dict[str, Any],
+) -> str:
+    event_id = str(new_uuid7())
+    payload = {
+        "decision_cycle_id": str(decision_cycle_id),
+        "invocation_id": str(invocation_id),
+        "rounds": int(rounds),
+        "observation": diagnostics,
+    }
+    db.execute(
+        "INSERT INTO autonomous_research_events("
+        "event_id,decision_cycle_id,invocation_id,round_index,event_type,"
+        "payload_json,payload_sha256,created_at_utc) VALUES(?,?,?,?,?,?,?,?)",
+        (
+            event_id,
+            str(decision_cycle_id),
+            str(invocation_id),
+            int(rounds),
+            RISK_DIAGNOSTICS_EVENT,
+            canonical_bytes(payload).decode("utf-8"),
+            sha256_json(payload),
+            _utc_now(),
+        ),
+    )
+    return event_id

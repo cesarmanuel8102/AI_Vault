@@ -9,6 +9,17 @@ from typing import Any
 from .autonomous_execution import AutonomousPaperExecutor
 from .autonomous_research import AutonomousResearchLoop, CodexAutonomousCLIProvider
 from .canonical import canonical_bytes, sha256_json
+from .decision_diagnostics import (
+    build_risk_diagnostics,
+    extract_regret_observations,
+    load_pending_regret_records,
+    load_regret_outcome_source_keys,
+    match_post_outcome_observations,
+    persist_analytical_failure,
+    persist_regret_outcome,
+    persist_regret_record,
+    persist_risk_diagnostics,
+)
 from .experiment_ledger import AutonomousExperimentLedger
 from .ibkr_research_tools import IBKRResearchToolbox
 from .interference_observability import build_interference_observation
@@ -280,6 +291,28 @@ def run_autonomous_cycle(
             "valid": projected.valid,
             "reason_codes": list(projected.reason_codes),
         }
+        # Observational risk diagnostics from the real ledger projection.
+        # Analytical failures are noted and never affect the cycle; the
+        # persistence itself is structural and must propagate its errors.
+        cycle_fills = list((getattr(execution, "order", None) or {}).get("fills") or [])
+        try:
+            diagnostics = build_risk_diagnostics(projected, fills=cycle_fills)
+        except Exception as exc:
+            diagnostics = None
+            persist_analytical_failure(
+                database,
+                stage="risk_diagnostics",
+                error_class=type(exc).__name__,
+                decision_cycle_id=bundle.decision_cycle_id,
+            )
+        if diagnostics is not None:
+            persist_risk_diagnostics(
+                database,
+                decision_cycle_id=bundle.decision_cycle_id,
+                invocation_id=request.invocation_id,
+                rounds=outcome.rounds,
+                diagnostics=diagnostics,
+            )
 
     execution_payload = None if execution is None else {
         "success": execution.success,
@@ -304,6 +337,15 @@ def run_autonomous_cycle(
             observation=interference,
         )
 
+    if database is not None:
+        _observe_regrets_and_outcomes(
+            database,
+            bundle=bundle,
+            request=request,
+            outcome=outcome,
+            interference=interference,
+        )
+
     return {
         "schema": "CODEX_IBKR_AUTONOMOUS_CYCLE_V1",
         "request": request.model_dump(mode="json"),
@@ -312,6 +354,98 @@ def run_autonomous_cycle(
         "execution": execution_payload,
         "interference": interference,
     }
+
+
+def _observe_regrets_and_outcomes(
+    database: Database,
+    *,
+    bundle: TraderInputBundle,
+    request: InvocationRequest,
+    outcome: Any,
+    interference: dict[str, Any],
+) -> None:
+    """Observational regret wiring. Strictly non-authoritative.
+
+    Extracts regret observations for identifiable rejected proposals and
+    resolves pending regrets against evidence already observed in this
+    cycle's transcript. Only the analysis steps are fail-open (sanitized
+    note); structural reads and persistence errors propagate. This never
+    touches decisions, risk, sizing, authorization or execution.
+    """
+
+    pending = load_pending_regret_records(database)
+    known_outcome_keys = load_regret_outcome_source_keys(database)
+
+    try:
+        new_regrets = extract_regret_observations(
+            outcome,
+            rejection_mechanism=str(interference.get("interference_source") or ""),
+            decision_cycle_id=bundle.decision_cycle_id,
+        )
+    except Exception as exc:
+        new_regrets = []
+        persist_analytical_failure(
+            database,
+            stage="regret_extraction",
+            error_class=type(exc).__name__,
+            decision_cycle_id=bundle.decision_cycle_id,
+        )
+
+    persisted_regret_keys: set[str] = set()
+    for row in database.execute(
+        "SELECT payload_json FROM autonomous_research_events "
+        "WHERE event_type='regret_observation'"
+    ).fetchall():
+        payload = json.loads(str(row[0]))
+        observation = payload.get("observation") if isinstance(payload, dict) else None
+        if not isinstance(observation, dict):
+            continue
+        candidate = observation.get("candidate") or {}
+        persisted_regret_keys.add(
+            "{cycle}:{symbol}:{sec}".format(
+                cycle=str(observation.get("decision_cycle_id") or ""),
+                symbol=str(candidate.get("symbol") or "").upper(),
+                sec=str(candidate.get("sec_type") or ""),
+            )
+        )
+
+    for record in new_regrets:
+        candidate = record.get("candidate") or {}
+        key = "{cycle}:{symbol}:{sec}".format(
+            cycle=str(record.get("decision_cycle_id") or ""),
+            symbol=str(candidate.get("symbol") or "").upper(),
+            sec=str(candidate.get("sec_type") or ""),
+        )
+        if key in persisted_regret_keys:
+            continue
+        persist_regret_record(database, record)
+        persisted_regret_keys.add(key)
+        pending.append(record)
+
+    try:
+        matches = match_post_outcome_observations(
+            pending,
+            outcome.transcript,
+            current_cycle_id=bundle.decision_cycle_id,
+        )
+    except Exception as exc:
+        matches = []
+        persist_analytical_failure(
+            database,
+            stage="regret_outcome_matching",
+            error_class=type(exc).__name__,
+            decision_cycle_id=bundle.decision_cycle_id,
+        )
+
+    for match in matches:
+        source_key = "{record}:{source}".format(
+            record=str(match.get("regret_record_id") or ""),
+            source=str(match.get("source_event_sha256") or ""),
+        )
+        if source_key in known_outcome_keys:
+            continue
+        persist_regret_outcome(database, match)
+        known_outcome_keys.add(source_key)
 
 
 class AutonomousTraderBoundary:
