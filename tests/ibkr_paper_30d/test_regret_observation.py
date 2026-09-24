@@ -158,3 +158,28 @@ def test_persisted_payload_hash_matches(tmp_path):
 
     payload = json.loads(row[0])
     assert sha256_json(payload) == row[1]
+
+
+def test_persist_survives_decimal_evidence_in_ex_ante_snapshot(tmp_path):
+    """A record whose ex-ante evidence contains canonical-JSON extended
+    types (Decimal) must persist identically to how it hashes."""
+
+    from decimal import Decimal as D
+
+    item = build_regret_record(
+        decision_cycle_id="cycle-decimal-1",
+        candidate={"symbol": "AAPL", "sec_type": "STK"},
+        ex_ante_evidence={"implied_vol": D("0.23"), "delta": D("-0.42")},
+        rejection_reason_codes=("NO_EDGE_FOUND",),
+    )
+
+    with Database.open(tmp_path / "autonomous.sqlite3") as db:
+        persist_regret_record(db, item)
+        row = db.execute(
+            "SELECT payload_json, payload_sha256 FROM autonomous_research_events "
+            "WHERE event_type='regret_observation'"
+        ).fetchone()
+
+    payload = json.loads(row[0])
+    assert payload["observation"]["candidate"]["symbol"] == "AAPL"
+    assert sha256_json(payload) == row[1]

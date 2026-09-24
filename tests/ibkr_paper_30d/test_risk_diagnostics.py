@@ -96,6 +96,33 @@ def test_diagnostics_marks_unclosed_history_as_unavailable(tmp_path):
     assert diagnostics["realized_pnl"] == "0.00"
 
 
+def test_diagnostics_without_fill_events_reports_realized_as_unavailable(tmp_path):
+    """Without the ledger's fill events, per-trade realized P&L cannot be
+    computed honestly. It must be reported as unavailable — never relabeled
+    as unrealized or fabricated from equity alone."""
+
+    state, _ = ledger_with_fills(
+        tmp_path,
+        fills=[_fill("AAPL", "BUY", 2, "100.00", con_id=265598)],
+        marks={265598: "110.00"},
+    )
+
+    diagnostics = build_risk_diagnostics(state)
+
+    assert diagnostics["realized_pnl"] == "unavailable"
+    assert diagnostics["unrealized_pnl"] == "unavailable"
+    assert diagnostics["win_count"] == "unavailable"
+    assert diagnostics["loss_count"] == "unavailable"
+    assert diagnostics["payoff_asymmetry"] == "unavailable"
+    assert diagnostics["largest_winner_contribution"] == "unavailable"
+    assert diagnostics["largest_loser_contribution"] == "unavailable"
+    assert diagnostics["profit_concentration"] == "unavailable"
+    # Continuous exposure metrics remain computable from the projection.
+    assert diagnostics["current_equity"] == "519.00"
+    assert diagnostics["gross_exposure"] == "220.00"
+    assert diagnostics["capital_utilization"] == "0.44"
+
+
 def test_no_invented_threshold_flags(tmp_path):
     state, fills = ledger_with_fills(
         tmp_path,

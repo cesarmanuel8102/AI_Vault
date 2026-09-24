@@ -496,20 +496,20 @@ class AutonomousResearchLoop:
         self, request: InvocationRequest, bundle: TraderInputBundle
     ) -> AutonomousResearchOutcome:
         history: list[dict[str, Any]] = []
+        telemetry = ResearchTelemetryAccumulator()
         if request.decision_cycle_id != bundle.decision_cycle_id:
-            return self._blocked(history, 0, "CYCLE_MISMATCH")
+            return self._blocked(history, telemetry, 0, "CYCLE_MISMATCH")
         if request.input_bundle_sha256 != bundle.sha256:
-            return self._blocked(history, 0, "INPUT_HASH_MISMATCH")
+            return self._blocked(history, telemetry, 0, "INPUT_HASH_MISMATCH")
         if bundle.reconciliation_receipt.get("status") != "PASS":
-            return self._blocked(history, 0, "BROKER_RECONCILIATION_REQUIRED")
+            return self._blocked(history, telemetry, 0, "BROKER_RECONCILIATION_REQUIRED")
         if bundle.kill_switch_state != "KILL_SWITCH_CLEAR":
-            return self._blocked(history, 0, "KILL_SWITCH_TRIGGERED")
+            return self._blocked(history, telemetry, 0, "KILL_SWITCH_TRIGGERED")
         if bundle.market_data_snapshot.get("gate_status") != "PASS":
-            return self._blocked(history, 0, "MARKET_DATA_GATE_BLOCK")
+            return self._blocked(history, telemetry, 0, "MARKET_DATA_GATE_BLOCK")
 
         manifest = self.toolbox.manifest()
         equity = self._experimental_equity(bundle)
-        telemetry = ResearchTelemetryAccumulator()
 
         for round_index in range(1, self.max_rounds + 1):
             turn = self.provider.next_turn(request, bundle, history, manifest)
@@ -527,8 +527,7 @@ class AutonomousResearchLoop:
                 })
             if turn.mode == AutonomousTurnMode.RESEARCH:
                 if len(turn.research_requests) > self.max_requests_per_round:
-                    return self._blocked(
-                        history, round_index, "RESEARCH_REQUEST_BATCH_TOO_LARGE"
+                    return self._blocked(history, telemetry, round_index, "RESEARCH_REQUEST_BATCH_TOO_LARGE"
                     )
                 for research_request in turn.research_requests:
                     telemetry.observe_request(research_request)
@@ -545,7 +544,7 @@ class AutonomousResearchLoop:
             if decision in {TraderDecision.CANCEL_ORDER, TraderDecision.MODIFY_ORDER}:
                 action = turn.open_order_action
                 if action is None:
-                    return self._blocked(history, round_index, "MISSING_OPEN_ORDER_ACTION")
+                    return self._blocked(history, telemetry, round_index, "MISSING_OPEN_ORDER_ACTION")
                 validation = self.toolbox.validate_open_order_action(
                     action, bundle, decision
                 )
@@ -556,7 +555,8 @@ class AutonomousResearchLoop:
                 })
                 if not validation.passed:
                     return self._finish(
-                        history=history,
+                    telemetry=telemetry,
+                    history=history,
                         rounds=round_index,
                         decision=TraderDecision.NO_TRADE,
                         proposal=None,
@@ -568,6 +568,7 @@ class AutonomousResearchLoop:
                         broker_validation=validation.broker_evidence,
                     )
                 return self._finish(
+                    telemetry=telemetry,
                     history=history,
                     rounds=round_index,
                     decision=decision,
@@ -583,7 +584,7 @@ class AutonomousResearchLoop:
             if decision in {TraderDecision.REDUCE_POSITION, TraderDecision.CLOSE_POSITION}:
                 action = turn.position_action
                 if action is None:
-                    return self._blocked(history, round_index, "MISSING_POSITION_ACTION")
+                    return self._blocked(history, telemetry, round_index, "MISSING_POSITION_ACTION")
                 validation = self.toolbox.validate_position_action(
                     action, bundle, decision
                 )
@@ -594,7 +595,8 @@ class AutonomousResearchLoop:
                 })
                 if not validation.passed:
                     return self._finish(
-                        history=history,
+                    telemetry=telemetry,
+                    history=history,
                         rounds=round_index,
                         decision=TraderDecision.MONITOR_POSITION,
                         proposal=None,
@@ -605,6 +607,7 @@ class AutonomousResearchLoop:
                         broker_validation=validation.broker_evidence,
                     )
                 return self._finish(
+                    telemetry=telemetry,
                     history=history,
                     rounds=round_index,
                     decision=decision,
@@ -618,6 +621,7 @@ class AutonomousResearchLoop:
 
             if decision != TraderDecision.PROPOSE_TRADE:
                 return self._finish(
+                    telemetry=telemetry,
                     history=history,
                     rounds=round_index,
                     decision=decision,
@@ -630,11 +634,11 @@ class AutonomousResearchLoop:
 
             proposal = turn.proposal
             if proposal is None:
-                return self._blocked(history, round_index, "MISSING_PROPOSAL")
+                return self._blocked(history, telemetry, round_index, "MISSING_PROPOSAL")
             if not proposal.loss_is_bounded:
-                return self._blocked(history, round_index, "UNBOUNDED_LIABILITY")
+                return self._blocked(history, telemetry, round_index, "UNBOUNDED_LIABILITY")
             if proposal.maximum_loss > equity:
-                return self._blocked(history, round_index, "EXPERIMENT_CAPITAL_BOUNDARY")
+                return self._blocked(history, telemetry, round_index, "EXPERIMENT_CAPITAL_BOUNDARY")
             # capital_required is a model estimate, not an authority boundary.
             # IBKR what-if margin/commission is authoritative for executability.
             validation = self.toolbox.validate_proposal(proposal, bundle)
@@ -645,6 +649,7 @@ class AutonomousResearchLoop:
             })
             if not validation.passed:
                 return self._finish(
+                    telemetry=telemetry,
                     history=history,
                     rounds=round_index,
                     decision=TraderDecision.NO_TRADE,
@@ -656,7 +661,8 @@ class AutonomousResearchLoop:
                     broker_validation=validation.broker_evidence,
                 )
             return self._finish(
-                history=history,
+                    telemetry=telemetry,
+                    history=history,
                 rounds=round_index,
                 decision=decision,
                 proposal=proposal,
@@ -667,12 +673,17 @@ class AutonomousResearchLoop:
                 broker_validation=validation.broker_evidence,
             )
 
-        return self._blocked(history, self.max_rounds, "RESEARCH_ROUND_LIMIT_REACHED")
+        return self._blocked(history, telemetry, self.max_rounds, "RESEARCH_ROUND_LIMIT_REACHED")
 
     def _blocked(
-        self, history: list[dict[str, Any]], rounds: int, reason: str
+        self,
+        history: list[dict[str, Any]],
+        telemetry: ResearchTelemetryAccumulator,
+        rounds: int,
+        reason: str,
     ) -> AutonomousResearchOutcome:
         return self._finish(
+            telemetry=telemetry,
             history=history,
             rounds=rounds,
             decision=TraderDecision.NO_TRADE,
@@ -686,6 +697,7 @@ class AutonomousResearchLoop:
     @staticmethod
     def _finish(
         *,
+        telemetry: ResearchTelemetryAccumulator,
         history: list[dict[str, Any]],
         rounds: int,
         decision: TraderDecision,
@@ -700,7 +712,7 @@ class AutonomousResearchLoop:
         history.append({
             "round": rounds,
             "type": "research_telemetry_summary",
-            "payload": build_telemetry_summary_from_history(history),
+            "payload": telemetry.summary(),
         })
         transcript_hash = sha256_json(history)
         return AutonomousResearchOutcome(
@@ -716,3 +728,4 @@ class AutonomousResearchLoop:
             transcript_sha256=transcript_hash,
             broker_validation=broker_validation or {},
         )
+

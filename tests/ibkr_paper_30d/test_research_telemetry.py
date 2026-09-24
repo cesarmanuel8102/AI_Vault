@@ -287,6 +287,43 @@ def test_runtime_persists_telemetry_summary_event(tmp_path):
     assert event["scanner_results_received"] == 3
 
 
+def test_persisted_elapsed_ms_reflects_live_research_duration_not_replay():
+    import time
+
+    class SlowToolbox(ScannerToolbox):
+        def execute(self, request, bundle):
+            time.sleep(0.12)
+            return super().execute(request, bundle)
+
+    value = bundle()
+    turns = [research_turn([scanner_request("r1")]), final_no_trade()]
+    toolbox = SlowToolbox(results=SCANNER_RESULTS)
+
+    outcome = AutonomousResearchLoop(SequenceProvider(turns), toolbox).run(
+        request(value), value
+    )
+
+    summary_events = [
+        e for e in outcome.transcript if e["type"] == "research_telemetry_summary"
+    ]
+    assert summary_events
+    elapsed = summary_events[-1]["payload"]["research_elapsed_ms"]
+    # The persisted summary must come from the live accumulator that observed
+    # the real (slow) research execution — not from a post-hoc replay whose
+    # clock starts at replay time and would report only a few ms.
+    assert elapsed >= 100, f"live research elapsed must reflect real duration, got {elapsed}"
+    replay = build_telemetry_summary_from_history(outcome.transcript)
+    # Replay must agree on all non-temporal fields.
+    for key in (
+        "research_requests_executed",
+        "scanner_queries",
+        "scanner_results_received",
+        "symbols_examined",
+        "tools_used",
+    ):
+        assert summary_events[-1]["payload"][key] == replay[key], key
+
+
 def test_telemetry_summary_is_canonical_serializable():
     accumulator = ResearchTelemetryAccumulator()
     accumulator.observe_request(scanner_request())

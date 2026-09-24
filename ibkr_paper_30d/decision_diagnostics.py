@@ -5,7 +5,7 @@ import sqlite3
 from datetime import datetime, timezone
 from typing import Any
 
-from .canonical import sha256_json
+from .canonical import canonical_bytes, sha256_json
 from .types import new_uuid7
 
 
@@ -122,6 +122,7 @@ def persist_regret_record(db: Any, record: dict[str, Any]) -> str:
         "invocation_id": "observation-only",
         "observation": record,
     }
+    encoded = canonical_bytes(payload).decode("utf-8")
     db.execute(
         "INSERT INTO autonomous_research_events("
         "event_id,decision_cycle_id,invocation_id,round_index,event_type,"
@@ -134,7 +135,7 @@ def persist_regret_record(db: Any, record: dict[str, Any]) -> str:
             "regret_observation"
             if record["schema"] == REGRET_SCHEMA
             else "no_identifiable_rejected_candidate",
-            json.dumps(payload, sort_keys=True, separators=(",", ":")),
+            encoded,
             sha256_json(payload),
             _utc_now(),
         ),
@@ -328,22 +329,48 @@ def build_risk_diagnostics(state: Any, *, fills: list[dict[str, Any]] | None = N
         _ratio(largest_win, win_total) if win_total > 0 else "unavailable"
     )
 
+    if fills is None:
+        # Without the ledger's fill events, per-trade realized P&L cannot be
+        # computed honestly. Report unavailable rather than relabeling
+        # equity drift as unrealized P&L or fabricating trade counts.
+        realized_str = "unavailable"
+        unrealized_str = "unavailable"
+        win_count: object = "unavailable"
+        loss_count: object = "unavailable"
+        largest_winner_str = "unavailable"
+        largest_loser_str = "unavailable"
+        payoff_asymmetry = "unavailable"
+        profit_concentration = "unavailable"
+        turnover = "unavailable"
+    else:
+        realized_str = _money_str(realized)
+        unrealized_str = _money_str(unrealized)
+        win_count = len(wins)
+        loss_count = len(losses)
+        largest_winner_str = _money_str(largest_win)
+        largest_loser_str = _money_str(largest_loss)
+        turnover = (
+            _ratio(traded_notional, allocation)
+            if traded_notional > 0
+            else "0.00"
+        )
+
     return {
         "schema": RISK_DIAGNOSTICS_SCHEMA,
         "diagnostic_status": "OBSERVATION_ONLY",
         "current_equity": _money_str(equity),
-        "realized_pnl": _money_str(realized),
-        "unrealized_pnl": _money_str(unrealized),
+        "realized_pnl": realized_str,
+        "unrealized_pnl": unrealized_str,
         "max_drawdown": _money_str(drawdown),
         "equity_variability": "unavailable",
         "gross_exposure": _money_str(gross),
         "net_exposure": _money_str(net),
-        "turnover": _ratio(traded_notional, allocation) if traded_notional > 0 else "0.00",
-        "win_count": len(wins),
-        "loss_count": len(losses),
+        "turnover": turnover,
+        "win_count": win_count,
+        "loss_count": loss_count,
         "payoff_asymmetry": payoff_asymmetry,
-        "largest_winner_contribution": _money_str(largest_win),
-        "largest_loser_contribution": _money_str(largest_loss),
+        "largest_winner_contribution": largest_winner_str,
+        "largest_loser_contribution": largest_loser_str,
         "profit_concentration": profit_concentration,
         "time_under_water": "unavailable",
         "largest_position_fraction": _ratio(largest_position_value, gross),
