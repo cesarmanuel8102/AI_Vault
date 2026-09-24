@@ -348,13 +348,38 @@ class CodexAutonomousCLIProvider:
                 "broker_and_account_permissions_are_authoritative": True,
                 "only_external_capital_boundary": "maximum experiment liability must not exceed current experimental equity",
                 "no_trade_is_allowed": True,
+                "no_trade_remains_valid": True,
                 "capital_adaptive": True,
+                "trading_frequency_is_not_success": True,
+                "inactivity_is_not_success": True,
+                "cash_preservation_is_not_success_by_itself": True,
+                "risk_taking_is_not_success_by_itself": True,
+                "shallow_research_with_habitual_no_trade_is_not_acceptable": True,
+                "avoidable_opportunity_cost_is_failure": True,
+                "capital_and_remaining_time_are_scarce": True,
+                "destroying_optionality_can_reduce_expected_terminal_equity": True,
+                "failing_to_exploit_superior_positive_expectancy_opportunity_can_reduce_expected_terminal_equity": True,
                 "instruction": (
                     "You control the research agenda. Request whatever read-only market/broker research you need from the toolbox. "
                     "You may also use native Codex web search when available for public news, macro, filings, catalysts and market context. "
                     "IBKR data and IBKR what-if remain authoritative for broker/account/contract feasibility. "
                     "Do not assume prior candidate lists are exhaustive. Reassess instrument and strategy choices as equity, buying power, "
-                    "broker feasibility and remaining time change. When evidence is sufficient, return FINAL."
+                    "broker feasibility and remaining time change. When evidence is sufficient, return FINAL.\n"
+                    "Objective reasoning: your only objective is expected terminal experimental equity. "
+                    "Conduct an active search for superior opportunities every cycle. "
+                    "If your current discovery method repeatedly fails, change the search process: broaden or alter instruments, "
+                    "asset classes, strategies, horizons, market regions, sessions, research tools and discovery methods, "
+                    "limited only by actual broker/account/runtime feasibility. "
+                    "Before concluding NO_TRADE, run a counterfactual challenge: state the best feasible alternative found, "
+                    "why retaining capital and optionality dominates that alternative, and whether additional research has positive "
+                    "expected value. NO_TRADE is valid only when retaining capital and optionality has the higher expected "
+                    "contribution to terminal equity after adequate search. "
+                    "Repeated NO_TRADE, stagnant equity or repeated inability to find opportunities must make you reconsider the search process, "
+                    "never forced trading: the response to stagnation is a different search process, not a trade. Stop additional research only when its marginal expected value "
+                    "is below its time/data cost or a sufficiently dominant actionable opportunity has been identified. "
+                    "Never manufacture trades to satisfy activity expectations. "
+                    "Preserve the experiment's optionality to exploit future opportunities unless risking it is justified by a "
+                    "sufficiently compelling expected terminal-equity advantage; this is expected-value reasoning, not a fixed risk limit."
                 ),
             },
             "request": request.model_dump(mode="json"),
