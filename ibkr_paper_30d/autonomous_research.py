@@ -12,6 +12,10 @@ from typing import Any, Protocol
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from .canonical import canonical_bytes, sha256_json
+from .research_telemetry import (
+    ResearchTelemetryAccumulator,
+    build_telemetry_summary_from_history,
+)
 from .trader_invocation import (
     InvocationRequest,
     TraderDecision,
@@ -505,6 +509,7 @@ class AutonomousResearchLoop:
 
         manifest = self.toolbox.manifest()
         equity = self._experimental_equity(bundle)
+        telemetry = ResearchTelemetryAccumulator()
 
         for round_index in range(1, self.max_rounds + 1):
             turn = self.provider.next_turn(request, bundle, history, manifest)
@@ -526,7 +531,9 @@ class AutonomousResearchLoop:
                         history, round_index, "RESEARCH_REQUEST_BATCH_TOO_LARGE"
                     )
                 for research_request in turn.research_requests:
+                    telemetry.observe_request(research_request)
                     result = self.toolbox.execute(research_request, bundle)
+                    telemetry.observe_result(result)
                     history.append({
                         "round": round_index,
                         "type": "research_result",
@@ -690,6 +697,11 @@ class AutonomousResearchLoop:
         broker_validation: dict[str, Any] | None = None,
         open_order_action: AutonomousOpenOrderAction | None = None,
     ) -> AutonomousResearchOutcome:
+        history.append({
+            "round": rounds,
+            "type": "research_telemetry_summary",
+            "payload": build_telemetry_summary_from_history(history),
+        })
         transcript_hash = sha256_json(history)
         return AutonomousResearchOutcome(
             accepted=accepted,
