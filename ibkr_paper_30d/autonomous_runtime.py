@@ -294,9 +294,12 @@ def run_autonomous_cycle(
         # Observational risk diagnostics from the real ledger projection.
         # Analytical failures are noted and never affect the cycle; the
         # persistence itself is structural and must propagate its errors.
-        cycle_fills = list((getattr(execution, "order", None) or {}).get("fills") or [])
+        canonical_fills = ledger.canonical_fill_events()
         try:
-            diagnostics = build_risk_diagnostics(projected, fills=cycle_fills)
+            diagnostics = build_risk_diagnostics(
+                projected,
+                fills=canonical_fills if canonical_fills else None,
+            )
         except Exception as exc:
             diagnostics = None
             persist_analytical_failure(

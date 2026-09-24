@@ -298,6 +298,21 @@ class AutonomousExperimentLedger:
             ids.append(self.record_fill(fill))
         return ids
 
+    def canonical_fill_events(self) -> list[dict[str, Any]]:
+        """Return validated BROKER_FILL events in canonical ledger order."""
+
+        events, integrity_reasons = self._events()
+        if integrity_reasons:
+            raise RuntimeError(
+                "AUTONOMOUS_LEDGER_INTEGRITY_ERROR:"
+                + ",".join(integrity_reasons)
+            )
+        return [
+            dict(event)
+            for event in events
+            if event.get("event_type") == "BROKER_FILL"
+        ]
+
     def project(self) -> ExperimentLedgerState:
         cash = self.allocation
         fees = Decimal("0")

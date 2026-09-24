@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import json
 from decimal import Decimal
 from pathlib import Path
@@ -83,6 +84,46 @@ class FillingExecutor:
                 "broker_validation": {},
             },
         )()
+
+
+class ExecutionWithFills:
+    def __init__(self, fills):
+        self.fills = list(fills)
+        self.execute_calls = []
+
+    def execute(self, proposal, bundle):
+        self.execute_calls.append(proposal)
+        return type(
+            "Result",
+            (),
+            {
+                "success": True,
+                "status": "FILLED",
+                "reason_codes": (),
+                "order": {"fills": list(self.fills)},
+                "broker_validation": {},
+            },
+        )()
+
+
+def fill(side, price, execution_time):
+    return {
+        "contract": {
+            "conId": 265598,
+            "symbol": "AAPL",
+            "secType": "STK",
+            "multiplier": "1",
+        },
+        "side": side,
+        "quantity": "2",
+        "price": price,
+        "commission": "1.00",
+        "orderRef": "codex-ibkr-paper-30d-a-canonical-fill",
+        "permId": 9001,
+        "orderId": 41,
+        "clientId": 19761,
+        "execution_time": execution_time,
+    }
 
 
 def bundle(cycle="cycle-diag-1", equity="500.00"):
@@ -247,3 +288,87 @@ def test_execution_and_validation_never_consume_risk_diagnostics():
         source = (REPO / path).read_text(encoding="utf-8")
         assert "risk_diagnostics" not in source, f"{path} must not consume diagnostics"
         assert "build_risk_diagnostics" not in source, f"{path} must not build diagnostics"
+
+
+def test_runtime_diagnostics_use_canonical_fills_across_cycles(tmp_path):
+    buy = fill("BUY", "100.00", "2026-09-24T15:00:00Z")
+    sell = fill("SELL", "110.00", "2026-09-25T15:00:00Z")
+    with Database.open(tmp_path / "autonomous.sqlite3") as db:
+        run_autonomous_cycle(
+            bundle("cycle-canonical-buy"),
+            execute_paper=True,
+            database=db,
+            provider=SequenceProvider([propose_trade_turn()]),
+            toolbox=AcceptingToolbox(),
+            executor=ExecutionWithFills([buy]),
+        )
+        run_autonomous_cycle(
+            bundle("cycle-canonical-sell"),
+            execute_paper=True,
+            database=db,
+            provider=SequenceProvider([propose_trade_turn()]),
+            toolbox=AcceptingToolbox(),
+            executor=ExecutionWithFills([sell]),
+        )
+
+        payload = json.loads(diagnostics_rows(db)[-1][0])
+        diagnostics = payload["observation"]
+        assert diagnostics["current_equity"] == "518.00"
+        assert diagnostics["realized_pnl"] == "18.00"
+        assert diagnostics["unrealized_pnl"] == "0.00"
+        assert diagnostics["win_count"] == 1
+        assert diagnostics["loss_count"] == 0
+        assert diagnostics["turnover"] == "0.84"
+
+
+def test_runtime_without_canonical_fills_reports_unavailable(tmp_path):
+    with Database.open(tmp_path / "autonomous.sqlite3") as db:
+        run_autonomous_cycle(
+            bundle("cycle-no-canonical-fills"),
+            execute_paper=True,
+            database=db,
+            provider=SequenceProvider([propose_trade_turn()]),
+            toolbox=AcceptingToolbox(),
+            executor=ExecutionWithFills([]),
+        )
+
+        payload = json.loads(diagnostics_rows(db)[-1][0])
+        diagnostics = payload["observation"]
+        for field in (
+            "realized_pnl",
+            "unrealized_pnl",
+            "turnover",
+            "win_count",
+            "loss_count",
+            "payoff_asymmetry",
+            "largest_winner_contribution",
+            "largest_loser_contribution",
+            "profit_concentration",
+        ):
+            assert diagnostics[field] == "unavailable", field
+
+
+def test_runtime_diagnostics_ignore_duplicate_fill_rejected_by_ledger(tmp_path):
+    duplicate = fill("BUY", "100.00", "2026-09-24T15:00:00Z")
+    with Database.open(tmp_path / "autonomous.sqlite3") as db:
+        for cycle_id in ("cycle-dedupe-1", "cycle-dedupe-2"):
+            run_autonomous_cycle(
+                bundle(cycle_id),
+                execute_paper=True,
+                database=db,
+                provider=SequenceProvider([propose_trade_turn()]),
+                toolbox=AcceptingToolbox(),
+                executor=ExecutionWithFills([duplicate]),
+            )
+
+        ledger = runtime.AutonomousExperimentLedger(db, allocation=Decimal("500.00"))
+        canonical = ledger.canonical_fill_events()
+        assert len(canonical) == 1
+        payload = json.loads(diagnostics_rows(db)[-1][0])
+        assert payload["observation"]["turnover"] == "0.40"
+
+
+def test_diagnostics_source_is_ledger_not_execution_payload():
+    source = inspect.getsource(runtime.run_autonomous_cycle)
+    assert "ledger.canonical_fill_events()" in source
+    assert 'get("fills")' not in source
