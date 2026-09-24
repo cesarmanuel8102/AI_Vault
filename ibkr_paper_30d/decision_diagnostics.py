@@ -11,6 +11,7 @@ from .types import new_uuid7
 
 REGRET_SCHEMA = "CODEX_REGRET_OBSERVATION_V1"
 NO_CANDIDATE_SCHEMA = "CODEX_NO_IDENTIFIABLE_REJECTED_CANDIDATE_V1"
+RISK_DIAGNOSTICS_SCHEMA = "CODEX_RISK_DIAGNOSTICS_V1"
 
 IDENTIFIABLE_CANDIDATE_FIELDS = ("symbol",)
 
@@ -168,3 +169,184 @@ def load_regret_records(db_path: Any) -> list[dict[str, Any]]:
         if isinstance(observation, dict):
             records.append(observation)
     return records
+def _money_str(value: Any) -> str:
+    from decimal import Decimal, InvalidOperation
+
+    try:
+        parsed = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return "unavailable"
+    if not parsed.is_finite():
+        return "unavailable"
+    return str(parsed.quantize(Decimal("0.01")))
+
+
+def _ratio(numerator: Any, denominator: Any) -> str:
+    from decimal import Decimal, InvalidOperation
+
+    try:
+        num = Decimal(str(numerator))
+        den = Decimal(str(denominator))
+    except (InvalidOperation, TypeError, ValueError):
+        return "unavailable"
+    if den == 0 or not num.is_finite() or not den.is_finite():
+        return "unavailable"
+    return str((num / den).quantize(Decimal("0.01")))
+
+
+
+def _closed_trade_pnls(fills: list[dict[str, Any]] | None) -> list[Any]:
+    """Per-closed-trade P&L from the ledger's own validated fill events.
+
+    Ruling U3: no new accounting engine. This is simple aggregation over
+    the same append-only BROKER_FILL events the AutonomousExperimentLedger
+    already accepts; a contract contributes a closed-trade P&L only when
+    its signed quantity returns to exactly zero (full round trip), using
+    weighted average open cost. Partial closes are NOT split into multiple
+    realized trades — that would require lot accounting the ledger does
+    not provide.
+    """
+
+    from decimal import Decimal
+
+    if not fills:
+        return []
+    by_contract: dict[int, list[dict[str, Any]]] = {}
+    for fill in fills:
+        contract = fill.get("contract") or {}
+        contract_id = int(contract.get("conId") or fill.get("contract_id") or 0)
+        by_contract.setdefault(contract_id, []).append(fill)
+
+    closed: list[Decimal] = []
+    for contract_id in sorted(by_contract):
+        open_qty = Decimal("0")
+        open_cost = Decimal("0")
+        realized = Decimal("0")
+        commissions = Decimal("0")
+        touched = False
+        for fill in by_contract[contract_id]:
+            side = str(fill.get("side") or fill.get("action") or "").upper()
+            quantity = abs(Decimal(str(fill.get("quantity") or fill.get("shares") or "0")))
+            price = Decimal(str(fill.get("price") or "0"))
+            multiplier = Decimal(str((fill.get("contract") or {}).get("multiplier") or fill.get("multiplier") or "1"))
+            commission = Decimal(str(fill.get("commission") or "0"))
+            commissions += commission
+            touched = True
+            signed = quantity if side == "BUY" else -quantity
+            if open_qty == 0 or (open_qty > 0) == (signed > 0):
+                open_qty += signed
+                open_cost += quantity * price * multiplier
+            else:
+                closing = min(quantity, abs(open_qty))
+                avg_cost = open_cost / abs(open_qty) if open_qty != 0 else Decimal("0")
+                direction = Decimal("1") if open_qty > 0 else Decimal("-1")
+                proceeds = closing * price * multiplier
+                basis = closing * avg_cost
+                realized += (proceeds - basis) * direction
+                open_qty += direction * closing * Decimal("-1")
+                open_cost -= closing * avg_cost
+                if open_cost < 0:
+                    open_cost = Decimal("0")
+                leftover = quantity - closing
+                if leftover > 0:
+                    open_qty = leftover if signed > 0 else -leftover
+                    open_cost = leftover * price * multiplier
+        if touched and open_qty == 0:
+            closed.append(realized - commissions)
+    return closed
+
+
+def build_risk_diagnostics(state: Any, *, fills: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Observational risk diagnostics from an existing ledger projection.
+
+    Ruling U3 (user correction 2026-09-23): continuous metrics only — no
+    invented threshold flags, no labels from magic percentages. Metrics the
+    current ledger state cannot support honestly are reported as
+    "unavailable" instead of being estimated. These numbers exist to
+    interpret terminal results; they are diagnostics only and are never
+    consumed by validation, sizing or authorization paths.
+    """
+
+    from decimal import Decimal
+
+    allocation = getattr(state, "allocation", None)
+    equity = getattr(state, "equity", None)
+    positions = tuple(getattr(state, "positions", ()) or ())
+    fees = getattr(state, "fees", None)
+    drawdown = getattr(state, "drawdown", None)
+
+    closed_pnls = _closed_trade_pnls(fills)
+
+    traded_notional = Decimal("0")
+    if fills is not None:
+        for fill in fills:
+            quantity = abs(
+                Decimal(str(fill.get("quantity") or fill.get("shares") or "0"))
+            )
+            price = Decimal(str(fill.get("price") or "0"))
+            multiplier = Decimal(
+                str(
+                    (fill.get("contract") or {}).get("multiplier")
+                    or fill.get("multiplier")
+                    or "1"
+                )
+            )
+            traded_notional += quantity * price * multiplier
+
+    wins = [pnl for pnl in closed_pnls if pnl > 0]
+    losses = [pnl for pnl in closed_pnls if pnl < 0]
+    win_total = sum(wins, Decimal("0"))
+    loss_total = sum((abs(p) for p in losses), Decimal("0"))
+    largest_win = max(wins, default=Decimal("0"))
+    largest_loss = max((abs(p) for p in losses), default=Decimal("0"))
+    realized = sum(closed_pnls, Decimal("0"))
+
+    unrealized = (
+        Decimal(str(equity or "0"))
+        - Decimal(str(allocation or "0"))
+        - realized
+    )
+
+    gross = sum(
+        (abs(Decimal(str(getattr(p, "market_value", "0")))) for p in positions),
+        Decimal("0"),
+    )
+    net = sum(
+        (Decimal(str(getattr(p, "market_value", "0"))) for p in positions),
+        Decimal("0"),
+    )
+    largest_position_value = max(
+        (abs(Decimal(str(getattr(p, "market_value", "0")))) for p in positions),
+        default=Decimal("0"),
+    )
+
+    if wins and losses:
+        payoff_asymmetry = _ratio(win_total / len(wins), loss_total / len(losses))
+    else:
+        payoff_asymmetry = "unavailable"
+    profit_concentration = (
+        _ratio(largest_win, win_total) if win_total > 0 else "unavailable"
+    )
+
+    return {
+        "schema": RISK_DIAGNOSTICS_SCHEMA,
+        "diagnostic_status": "OBSERVATION_ONLY",
+        "current_equity": _money_str(equity),
+        "realized_pnl": _money_str(realized),
+        "unrealized_pnl": _money_str(unrealized),
+        "max_drawdown": _money_str(drawdown),
+        "equity_variability": "unavailable",
+        "gross_exposure": _money_str(gross),
+        "net_exposure": _money_str(net),
+        "turnover": _ratio(traded_notional, allocation) if traded_notional > 0 else "0.00",
+        "win_count": len(wins),
+        "loss_count": len(losses),
+        "payoff_asymmetry": payoff_asymmetry,
+        "largest_winner_contribution": _money_str(largest_win),
+        "largest_loser_contribution": _money_str(largest_loss),
+        "profit_concentration": profit_concentration,
+        "time_under_water": "unavailable",
+        "largest_position_fraction": _ratio(largest_position_value, gross),
+        "peak_gross_exposure_ratio": _ratio(gross, allocation),
+        "capital_utilization": _ratio(gross, allocation),
+    }
