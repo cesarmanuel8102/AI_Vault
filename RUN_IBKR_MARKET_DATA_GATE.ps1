@@ -68,14 +68,15 @@ function Assert-RegularCollectionStart {
 
 function Archive-CollectionEvidence {
     param([string]$Reason)
-    $Existing = @(
+    $CandidatePaths = @(
         $LedgerPath,
         $PolicyPath,
         (Join-Path $ReportRoot "market_observation.json"),
         (Join-Path $ReportRoot "market_policy_freeze.json"),
         $ValidationPath,
         $StatePath
-    ) | Where-Object { Test-Path -LiteralPath $_ }
+    )
+    $Existing = @($CandidatePaths | Where-Object { Test-Path -LiteralPath $_ })
     if ($Existing.Count -eq 0) { return }
     $Stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssZ")
     $Archive = Join-Path $ReportRoot ("archive\market-gate-" + $Stamp + "-" + $Reason)
@@ -88,13 +89,14 @@ function Archive-CollectionEvidence {
 function Initialize-CleanEvidence {
     if (Test-Path -LiteralPath $StatePath) { return }
     [void](New-Item -ItemType Directory -Path $ReportRoot -Force)
-    $Existing = @(
+    $CandidatePaths = @(
         $LedgerPath,
         $PolicyPath,
         (Join-Path $ReportRoot "market_observation.json"),
         (Join-Path $ReportRoot "market_policy_freeze.json"),
         $ValidationPath
-    ) | Where-Object { Test-Path -LiteralPath $_ }
+    )
+    $Existing = @($CandidatePaths | Where-Object { Test-Path -LiteralPath $_ })
     if ($Existing.Count -gt 0) {
         $Stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssZ")
         $Archive = Join-Path $ReportRoot ("archive\market-gate-" + $Stamp)
