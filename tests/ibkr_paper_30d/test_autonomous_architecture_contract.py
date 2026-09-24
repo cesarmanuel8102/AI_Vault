@@ -7,6 +7,9 @@ AUTONOMOUS_MODULES = [
     Path("ibkr_paper_30d/autonomous_state.py"),
     Path("ibkr_paper_30d/autonomous_service.py"),
     Path("ibkr_paper_30d/ibkr_research_tools.py"),
+    Path("ibkr_paper_30d/scanner_capability.py"),
+    Path("ibkr_paper_30d/research_telemetry.py"),
+    Path("ibkr_paper_30d/decision_diagnostics.py"),
 ]
 
 
@@ -56,6 +59,71 @@ def test_open_order_writes_exist_only_in_authoritative_executor():
             continue
         source = path.read_text(encoding="utf-8")
         assert ".cancelOrder(" not in source
+
+
+def test_no_quantitative_activity_targets_across_autonomous_modules():
+    source = combined_source()
+    for forbidden in (
+        "min_trades",
+        "min_exposure",
+        "trade_quota",
+        "mandatory_scanner",
+        "minimum_research",
+        "required_symbols",
+    ):
+        assert forbidden not in source, forbidden
+
+
+def test_shared_readonly_guard_is_unchanged():
+    from ibapi.message import OUT
+
+    from ibkr_paper_30d.ibkr_readonly_session import ReadOnlyMessageGuard
+
+    assert set(ReadOnlyMessageGuard.ALLOWED_MESSAGE_IDS) == {
+        OUT.START_API,
+        OUT.REQ_MANAGED_ACCTS,
+        OUT.REQ_ACCT_DATA,
+        OUT.REQ_ACCOUNT_SUMMARY,
+        OUT.CANCEL_ACCOUNT_SUMMARY,
+        OUT.REQ_POSITIONS,
+        OUT.CANCEL_POSITIONS,
+        OUT.REQ_ALL_OPEN_ORDERS,
+        OUT.REQ_EXECUTIONS,
+        OUT.REQ_CURRENT_TIME,
+        OUT.REQ_MKT_DATA,
+        OUT.CANCEL_MKT_DATA,
+        OUT.REQ_MARKET_DATA_TYPE,
+        OUT.REQ_CONTRACT_DATA,
+        OUT.REQ_TICK_BY_TICK_DATA,
+        OUT.CANCEL_TICK_BY_TICK_DATA,
+    }
+
+
+def test_client_id_authority_separation_is_preserved():
+    from ibkr_paper_30d.open_order_management import EXECUTION_CLIENT_ID
+    from ibkr_paper_30d import scanner_capability
+
+    assert EXECUTION_CLIENT_ID == 19761
+    assert scanner_capability.SCANNER_CLIENT_ID == 19791
+    assert scanner_capability.SCANNER_CLIENT_ID != EXECUTION_CLIENT_ID
+
+
+def test_telemetry_and_diagnostics_never_gate_execution():
+    validation_modules = [
+        Path("ibkr_paper_30d/autonomous_research.py"),
+        Path("ibkr_paper_30d/autonomous_execution.py"),
+        Path("ibkr_paper_30d/ibkr_research_tools.py"),
+    ]
+    for path in validation_modules:
+        source = path.read_text(encoding="utf-8")
+        assert "build_risk_diagnostics" not in source
+        assert "classify_research_depth" not in source
+
+
+def test_scanner_output_never_becomes_authorized_universe():
+    source = combined_source()
+    assert "authorized_universe" not in source
+    assert "discovery_evidence_only" in source
 
 
 def test_open_order_management_retains_paper_arm_and_live_route_guards():
