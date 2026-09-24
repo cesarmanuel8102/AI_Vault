@@ -16,6 +16,10 @@ from ibkr_paper_30d.autonomous_research import (
     ResearchTool,
 )
 from ibkr_paper_30d.autonomous_runtime import run_autonomous_cycle
+from ibkr_paper_30d.decision_diagnostics import (
+    load_pending_regret_records,
+    match_post_outcome_observations,
+)
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.trader_invocation import (
     InvocationRequest,
@@ -432,3 +436,141 @@ def test_same_cycle_observation_never_becomes_ex_post_outcome(tmp_path):
 
         assert len(regret_rows(db)) == 1
         assert regret_outcome_rows(db) == []
+
+
+def test_first_outcome_removes_regret_from_pending(tmp_path):
+    cycle1 = bundle("cycle-pending-1")
+    cycle2 = bundle("cycle-pending-2")
+    with Database.open(tmp_path / "autonomous.sqlite3") as db:
+        run_autonomous_cycle(
+            cycle1,
+            database=db,
+            provider=SequenceProvider([propose_trade_turn("NVDA")]),
+            toolbox=RejectingToolbox(),
+        )
+        record_id = load_pending_regret_records(db)[0]["record_id"]
+
+        run_autonomous_cycle(
+            cycle2,
+            database=db,
+            provider=SequenceProvider(
+                [research_quote_turn("NVDA"), no_trade_turn()]
+            ),
+            toolbox=QuoteToolbox(quote_price="6.10"),
+        )
+
+        pending_ids = {
+            item["record_id"] for item in load_pending_regret_records(db)
+        }
+        assert record_id not in pending_ids
+
+
+def test_first_regret_outcome_has_sample_size_one(tmp_path):
+    cycle1 = bundle("cycle-sample-1")
+    cycle2 = bundle("cycle-sample-2")
+    with Database.open(tmp_path / "autonomous.sqlite3") as db:
+        run_autonomous_cycle(
+            cycle1,
+            database=db,
+            provider=SequenceProvider([propose_trade_turn("NVDA")]),
+            toolbox=RejectingToolbox(),
+        )
+        run_autonomous_cycle(
+            cycle2,
+            database=db,
+            provider=SequenceProvider(
+                [research_quote_turn("NVDA"), no_trade_turn()]
+            ),
+            toolbox=QuoteToolbox(quote_price="6.10"),
+        )
+
+        outcome = observation_payload(regret_outcome_rows(db)[0])
+        assert outcome["sample_size"] == 1
+
+
+def test_same_value_from_new_cycle_has_distinct_source_identity():
+    rejected_cycle = bundle("cycle-source-rejected")
+    rejected = AutonomousResearchLoop(
+        SequenceProvider([propose_trade_turn("NVDA")]),
+        RejectingToolbox(),
+    ).run(request(rejected_cycle), rejected_cycle)
+    record = runtime.extract_regret_observations(
+        rejected,
+        rejection_mechanism="BROKER_OR_EXECUTION_FEASIBILITY",
+        decision_cycle_id=rejected_cycle.decision_cycle_id,
+    )[0]
+
+    def source_hash(cycle_id):
+        value = bundle(cycle_id)
+        observed = AutonomousResearchLoop(
+            SequenceProvider([research_quote_turn("NVDA"), no_trade_turn()]),
+            QuoteToolbox(quote_price="6.10"),
+        ).run(request(value), value)
+        return match_post_outcome_observations(
+            [record],
+            observed.transcript,
+            current_cycle_id=value.decision_cycle_id,
+        )[0]["source_event_sha256"]
+
+    assert source_hash("cycle-source-a") != source_hash("cycle-source-b")
+
+
+def test_same_cycle_same_observation_is_idempotent():
+    rejected_cycle = bundle("cycle-idempotent-rejected")
+    rejected = AutonomousResearchLoop(
+        SequenceProvider([propose_trade_turn("NVDA")]),
+        RejectingToolbox(),
+    ).run(request(rejected_cycle), rejected_cycle)
+    record = runtime.extract_regret_observations(
+        rejected,
+        rejection_mechanism="BROKER_OR_EXECUTION_FEASIBILITY",
+        decision_cycle_id=rejected_cycle.decision_cycle_id,
+    )[0]
+    observed_cycle = bundle("cycle-idempotent-observed")
+    observed = AutonomousResearchLoop(
+        SequenceProvider([research_quote_turn("NVDA"), no_trade_turn()]),
+        QuoteToolbox(quote_price="6.10"),
+    ).run(request(observed_cycle), observed_cycle)
+
+    first = match_post_outcome_observations(
+        [record],
+        observed.transcript,
+        current_cycle_id=observed_cycle.decision_cycle_id,
+    )[0]
+    replay = match_post_outcome_observations(
+        [record],
+        observed.transcript,
+        current_cycle_id=observed_cycle.decision_cycle_id,
+    )[0]
+
+    assert first["source_event_sha256"] == replay["source_event_sha256"]
+
+
+def test_resolved_regret_does_not_accept_second_outcome(tmp_path):
+    cycles = [
+        bundle("cycle-resolved-1"),
+        bundle("cycle-resolved-2"),
+        bundle("cycle-resolved-3"),
+    ]
+    with Database.open(tmp_path / "autonomous.sqlite3") as db:
+        run_autonomous_cycle(
+            cycles[0],
+            database=db,
+            provider=SequenceProvider([propose_trade_turn("NVDA")]),
+            toolbox=RejectingToolbox(),
+        )
+        for value, price in zip(cycles[1:], ("6.10", "7.20"), strict=True):
+            run_autonomous_cycle(
+                value,
+                database=db,
+                provider=SequenceProvider(
+                    [research_quote_turn("NVDA"), no_trade_turn()]
+                ),
+                toolbox=QuoteToolbox(quote_price=price),
+            )
+
+        outcomes = [
+            observation_payload(row) for row in regret_outcome_rows(db)
+        ]
+        assert len(outcomes) == 1
+        assert outcomes[0]["observed_value"] == "6.10"

@@ -499,7 +499,7 @@ def load_pending_regret_records(db: Any) -> list[dict[str, Any]]:
         "SELECT payload_json FROM autonomous_research_events "
         "WHERE event_type='regret_observation' ORDER BY created_at_utc, rowid"
     ).fetchall()
-    resolved = load_regret_outcome_source_keys(db)
+    resolved = load_resolved_regret_record_ids(db)
     pending: list[dict[str, Any]] = []
     for (raw_payload,) in rows:
         observation = _observation_from_row(raw_payload)
@@ -510,6 +510,24 @@ def load_pending_regret_records(db: Any) -> list[dict[str, Any]]:
             continue
         pending.append(observation)
     return pending
+
+
+def load_resolved_regret_record_ids(db: Any) -> set[str]:
+    """Regret record ids closed by their first canonical ex-post outcome."""
+
+    rows = db.execute(
+        "SELECT payload_json FROM autonomous_research_events "
+        "WHERE event_type='regret_outcome'"
+    ).fetchall()
+    resolved: set[str] = set()
+    for (raw_payload,) in rows:
+        observation = _observation_from_row(raw_payload)
+        if observation is None:
+            continue
+        record_id = str(observation.get("regret_record_id") or "")
+        if record_id:
+            resolved.add(record_id)
+    return resolved
 
 
 def load_regret_outcome_source_keys(db: Any) -> set[str]:
@@ -568,6 +586,7 @@ def match_post_outcome_observations(
             continue
         source_event = {
             "type": "research_result",
+            "decision_cycle_id": str(current_cycle_id),
             "round": event.get("round"),
             "tool": "QUOTE",
             "symbol": observed_symbol,
@@ -592,7 +611,7 @@ def match_post_outcome_observations(
                     "observed_value": price,
                     "price_source": price_source,
                     "source_event_sha256": sha256_json(source_event),
-                    "sample_size": int(record.get("sample_size") or 1) + 1,
+                    "sample_size": 1,
                     "repeated_mechanism": bool(record.get("repeated_mechanism")),
                     "policy_status": "OBSERVATION",
                 }
