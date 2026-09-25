@@ -501,6 +501,36 @@ def test_cycle_exception_records_sanitized_failure_and_reraises(tmp_path, monkey
         assert "AUTONOMOUS_PAPER_EXPERIMENT_RUNNING" not in state_event_types(db)
 
 
+def test_provider_failure_is_retried_without_terminating_service(tmp_path, monkeypatch):
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    with Database.open(tmp_path / "provider-retry.sqlite3") as db:
+        service = make_service(db, clock, stop_after=2)
+        service.provider = FailingProvider()
+        calls = []
+
+        def cycle(_trigger, *, allow_execution=None):
+            calls.append(allow_execution)
+            if len(calls) == 1:
+                raise RuntimeError("AUTONOMOUS_CODEX_PROVIDER_FAILED")
+            service.stop()
+            return {
+                "status": "PASS",
+                "outcome": {"decision": "NO_TRADE"},
+                "request": {"decision_cycle_id": "cycle-recovered"},
+                "execution": None,
+            }
+
+        service._run_cycle = cycle
+
+        service.run_forever()
+
+        assert calls == [None, None]
+        assert clock.sleeps == [60.0]
+        assert "AUTONOMOUS_PAPER_EXPERIMENT_RUNNING" in state_event_types(db)
+
+
 def test_model_substitution_fails_first_cycle_before_executor(tmp_path, monkeypatch):
     FakeLedger.positions = ()
     monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)

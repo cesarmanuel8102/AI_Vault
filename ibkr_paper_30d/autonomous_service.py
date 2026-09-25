@@ -639,6 +639,15 @@ class AutonomousExperimentService:
                     )
                 except Exception:
                     pass
+                if getattr(self.provider, "last_failure_code", None):
+                    retry_delay = min(
+                        self.position_interval_seconds,
+                        self.scan_interval_seconds,
+                    )
+                    self.sleep(retry_delay)
+                    next_scan = self.monotonic()
+                    next_position = self.monotonic()
+                    continue
                 raise
 
 

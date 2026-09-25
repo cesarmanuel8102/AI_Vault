@@ -370,22 +370,37 @@ class CodexAutonomousCLIProvider:
                     self.last_failure_code = "TIMEOUT"
                     raise TimeoutError("autonomous Codex provider timed out") from exc
                 if completed.returncode == 0:
+                    try:
+                        if self.owner_model_attestation_exception_sha256 is None:
+                            self._assert_effective_model(
+                                completed.stdout, request.requested_model
+                            )
+                            self.last_model_attestation_mode = "SERVER_REPORTED"
+                        else:
+                            self._assert_effective_model_with_owner_exception(
+                                completed.stdout, request.requested_model
+                            )
+                            self.last_model_attestation_mode = (
+                                "OWNER_EXCEPTION_REQUEST_PIN"
+                            )
+                    except RuntimeError as exc:
+                        transient_jsonl = (
+                            self.owner_model_attestation_exception_sha256 is not None
+                            and str(exc).endswith(":invalid_jsonl")
+                        )
+                        if not transient_jsonl:
+                            raise
+                        self.last_failure_code = "ATTESTATION_INVALID_JSONL"
+                        if attempt == len(retry_delays):
+                            raise
+                        self.retry_sleep(retry_delays[attempt])
+                        continue
                     break
                 self.last_failure_code = f"RETURN_CODE_{completed.returncode}"
                 if completed.returncode != 1 or attempt == len(retry_delays):
                     raise RuntimeError("AUTONOMOUS_CODEX_PROVIDER_FAILED")
                 self.retry_sleep(retry_delays[attempt])
             assert completed is not None
-            if self.owner_model_attestation_exception_sha256 is None:
-                self._assert_effective_model(
-                    completed.stdout, request.requested_model
-                )
-                self.last_model_attestation_mode = "SERVER_REPORTED"
-            else:
-                self._assert_effective_model_with_owner_exception(
-                    completed.stdout, request.requested_model
-                )
-                self.last_model_attestation_mode = "OWNER_EXCEPTION_REQUEST_PIN"
             self.last_native_tool_events = self._native_tool_events(completed.stdout)
             try:
                 raw = json.loads(output_path.read_text(encoding="utf-8"))
