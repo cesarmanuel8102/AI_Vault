@@ -18,6 +18,7 @@ import ibkr_paper_30d.day1_launch as launch_module
 from ibkr_paper_30d.autonomous_research import (
     AutonomousTurn,
     AutonomousTurnMode,
+    CodexAutonomousCLIProvider,
     ResearchResult,
     ResearchTool,
 )
@@ -183,6 +184,35 @@ def _bind(ctx: LaunchTestContext) -> None:
     )
 
 
+def _write_model_attestation_exception(config: Day1LaunchConfig) -> None:
+    owner_receipt_sha256 = hashlib.sha256(
+        config.owner_authorization_path.read_bytes()
+    ).hexdigest()
+    unsigned = {
+        "schema": "MODEL_ATTESTATION_OWNER_EXCEPTION_V1",
+        "authorization_state": "AUTHORIZED",
+        "scope": "MONTH1_PAPER_ONLY",
+        "requested_model": "gpt-5.6-sol",
+        "reasoning_effort": "max",
+        "actual_model_attestation_available": False,
+        "requested_model_pin_required": True,
+        "model_mismatch_forbidden": True,
+        "paper_only": True,
+        "live_allowed": False,
+        "paper_host": "127.0.0.1",
+        "paper_port": 4002,
+        "expected_account_identity_hash": ACCOUNT_HASH,
+        "owner_authorization_receipt_sha256": owner_receipt_sha256,
+        "start_utc": "2026-09-23T13:30:00Z",
+        "end_utc": "2026-10-23T13:30:00Z",
+    }
+    config.model_attestation_exception_path.write_bytes(
+        canonical_bytes(
+            {**unsigned, "artifact_sha256": sha256_json(unsigned)}
+        )
+    )
+
+
 def write_identity_receipt(
     ctx: LaunchTestContext, *, rebind: bool = True, **updates: object
 ) -> None:
@@ -207,6 +237,9 @@ def passing_context(tmp_path: Path) -> LaunchTestContext:
         market_policy_path=reports / "market_data_policy_v1.json",
         market_validation_path=reports / "market_data_validation.json",
         owner_authorization_path=reports / "owner_authorization_v1.json",
+        model_attestation_exception_path=(
+            reports / "model_attestation_owner_exception_v1.json"
+        ),
         launch_attempt_binding_path=reports / "launch_attempt_binding_v1.json",
         launch_attempt_id=ATTEMPT_ID,
     )
@@ -272,6 +305,7 @@ def passing_context(tmp_path: Path) -> LaunchTestContext:
         elevated=True,
         receipt_path=config.owner_authorization_path,
     )
+    _write_model_attestation_exception(config)
     bind_launch_attempt(
         config.launch_attempt_id,
         config.identity_receipt_path,
@@ -334,7 +368,24 @@ def test_passing_preflight_returns_only_sanitized_bindings(tmp_path: Path) -> No
     assert len(result.auditor_receipt_sha256) == 64
     assert len(result.market_policy_sha256) == 64
     assert len(result.market_validation_sha256) == 64
+    assert len(result.model_attestation_exception_sha256) == 64
     ctx.market_gate.evaluate.assert_called_once_with(DecisionClass.NEW_TRADE)
+    assert_no_write_authority(ctx)
+
+
+def test_model_attestation_exception_wrong_model_blocks_before_write(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    payload = json.loads(ctx.config.model_attestation_exception_path.read_bytes())
+    payload["requested_model"] = "gpt-5.5"
+    unsigned = {k: v for k, v in payload.items() if k != "artifact_sha256"}
+    payload["artifact_sha256"] = sha256_json(unsigned)
+    ctx.config.model_attestation_exception_path.write_bytes(canonical_bytes(payload))
+
+    with pytest.raises(LaunchError, match="MODEL_ATTESTATION_EXCEPTION_INVALID"):
+        evaluate_launch_preflight(ctx.config, ctx.dependencies)
+
     assert_no_write_authority(ctx)
 
 
@@ -1082,11 +1133,11 @@ def test_complete_fake_launch_persists_running_without_broker_write(
         holder["service"].stop()
 
     def real_service_factory(db, **kwargs):
+        kwargs["provider"] = NoTradeProvider()
         service = AutonomousExperimentService(
             db,
             **kwargs,
             toolbox=toolbox,
-            provider=NoTradeProvider(),
             executor=ctx.executor_tripwire,
             broker_now=lambda: NOW,
             sleep=stop_after_first_wait,

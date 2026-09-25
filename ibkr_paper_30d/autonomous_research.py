@@ -299,11 +299,24 @@ class CodexAutonomousCLIProvider:
         *,
         runner: Any = subprocess.run,
         codex_executable: str | None = None,
+        owner_model_attestation_exception_sha256: str | None = None,
     ):
+        if owner_model_attestation_exception_sha256 is not None and (
+            len(owner_model_attestation_exception_sha256) != 64
+            or any(
+                character not in "0123456789abcdef"
+                for character in owner_model_attestation_exception_sha256
+            )
+        ):
+            raise ValueError("MODEL_ATTESTATION_EXCEPTION_SHA256_INVALID")
         self.runner = runner
         self.codex_executable = codex_executable
+        self.owner_model_attestation_exception_sha256 = (
+            owner_model_attestation_exception_sha256
+        )
         self.last_failure_code: str | None = None
         self.last_native_tool_events: list[dict[str, Any]] = []
+        self.last_model_attestation_mode = "SERVER_REPORTED"
 
     def next_turn(
         self,
@@ -353,9 +366,16 @@ class CodexAutonomousCLIProvider:
             if completed.returncode != 0:
                 self.last_failure_code = f"RETURN_CODE_{completed.returncode}"
                 raise RuntimeError("AUTONOMOUS_CODEX_PROVIDER_FAILED")
-            self._assert_effective_model(
-                completed.stdout, request.requested_model
-            )
+            if self.owner_model_attestation_exception_sha256 is None:
+                self._assert_effective_model(
+                    completed.stdout, request.requested_model
+                )
+                self.last_model_attestation_mode = "SERVER_REPORTED"
+            else:
+                self._assert_effective_model_with_owner_exception(
+                    completed.stdout, request.requested_model
+                )
+                self.last_model_attestation_mode = "OWNER_EXCEPTION_REQUEST_PIN"
             self.last_native_tool_events = self._native_tool_events(completed.stdout)
             try:
                 raw = json.loads(output_path.read_text(encoding="utf-8"))
@@ -479,6 +499,17 @@ class CodexAutonomousCLIProvider:
             output,
             requested_model,
             error_prefix="AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED",
+        )
+
+    @staticmethod
+    def _assert_effective_model_with_owner_exception(
+        output: object, requested_model: str
+    ) -> None:
+        _assert_codex_actual_model(
+            output,
+            requested_model,
+            error_prefix="AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED",
+            allow_missing_actual_model=True,
         )
 
     @classmethod

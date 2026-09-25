@@ -4,6 +4,8 @@ import json
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from ibkr_paper_30d.autonomous_research import (
     CodexAutonomousCLIProvider,
     _resolve_codex_executable,
@@ -216,3 +218,78 @@ def test_autonomous_codex_rejects_reported_model_substitution():
         RuntimeError, match="AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED"
     ):
         provider.next_turn(request(value), value, [], [{"tool": "MARKET_SCANNER"}])
+
+
+def test_owner_exception_accepts_only_completed_pinned_model_invocation():
+    value = bundle()
+
+    def runner(command, **kwargs):
+        output_path = command[command.index("--output-last-message") + 1]
+        Path(output_path).write_text(
+            json.dumps(
+                {
+                    "mode": "FINAL",
+                    "research_requests": [],
+                    "decision": "NO_TRADE",
+                    "proposal": None,
+                    "position_action": None,
+                    "open_order_action": None,
+                    "confidence": "0.75",
+                    "reasoning_summary": "No trade.",
+                    "reason_codes": ["NO_EDGE_FOUND"],
+                }
+            ),
+            encoding="utf-8",
+        )
+        stdout = "\n".join(
+            [
+                json.dumps({"type": "thread.started", "thread_id": "t"}),
+                json.dumps({"type": "turn.completed"}),
+            ]
+        )
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    provider = CodexAutonomousCLIProvider(
+        runner=runner,
+        owner_model_attestation_exception_sha256="e" * 64,
+    )
+
+    turn = provider.next_turn(
+        request(value), value, [], [{"tool": "MARKET_SCANNER"}]
+    )
+
+    assert turn.decision.value == "NO_TRADE"
+    assert provider.last_model_attestation_mode == "OWNER_EXCEPTION_REQUEST_PIN"
+
+
+def test_owner_exception_still_rejects_conflicting_model_evidence():
+    output = "\n".join(
+        [
+            json.dumps(
+                {
+                    "type": "thread.started",
+                    "thread_id": "t",
+                    "model": "gpt-5.5",
+                }
+            ),
+            json.dumps({"type": "turn.completed"}),
+        ]
+    )
+
+    with pytest.raises(
+        RuntimeError, match="AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED"
+    ):
+        CodexAutonomousCLIProvider._assert_effective_model_with_owner_exception(
+            output, "gpt-5.6-sol"
+        )
+
+
+def test_owner_exception_rejects_incomplete_invocation():
+    output = json.dumps({"type": "thread.started", "thread_id": "t"})
+
+    with pytest.raises(
+        RuntimeError, match="AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED"
+    ):
+        CodexAutonomousCLIProvider._assert_effective_model_with_owner_exception(
+            output, "gpt-5.6-sol"
+        )

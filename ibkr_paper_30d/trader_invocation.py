@@ -146,6 +146,7 @@ def _assert_codex_actual_model(
     requested_model: str,
     *,
     error_prefix: str = "CODEX_MODEL_ATTESTATION_FAILED",
+    allow_missing_actual_model: bool = False,
 ) -> str:
     """Authenticate the model reported by Codex JSONL; absence is a hard failure."""
     if not isinstance(requested_model, str) or not requested_model.strip():
@@ -183,6 +184,9 @@ def _assert_codex_actual_model(
                 collect(child)
 
     saw_event = False
+    saw_thread_started = False
+    saw_turn_completed = False
+    saw_failure = False
     for line in output.splitlines():
         if not line.strip():
             continue
@@ -191,14 +195,25 @@ def _assert_codex_actual_model(
             event = json.loads(line, object_pairs_hook=strict_object)
         except (json.JSONDecodeError, ValueError) as exc:
             raise RuntimeError(f"{error_prefix}:invalid_jsonl") from exc
+        if isinstance(event, dict):
+            event_type = event.get("type")
+            saw_thread_started = saw_thread_started or event_type == "thread.started"
+            saw_turn_completed = saw_turn_completed or event_type == "turn.completed"
+            saw_failure = saw_failure or event_type in {"error", "turn.failed"}
         collect(event)
-
-    if not saw_event or not actual_models:
-        raise RuntimeError(f"{error_prefix}:actual_model_missing")
 
     mismatches = sorted(model for model in observed if model != requested)
     if mismatches:
         raise RuntimeError(f"{error_prefix}:" + ",".join(mismatches))
+    if not saw_event or not actual_models:
+        if (
+            allow_missing_actual_model
+            and saw_thread_started
+            and saw_turn_completed
+            and not saw_failure
+        ):
+            return requested
+        raise RuntimeError(f"{error_prefix}:actual_model_missing")
     if any(model != requested for model in actual_models):
         raise RuntimeError(f"{error_prefix}:actual_model_mismatch")
     return requested

@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterator, Sequence
 from uuid import uuid4
 
+from .autonomous_research import CodexAutonomousCLIProvider
 from .autonomous_service import AutonomousExperimentService
 from .canonical import canonical_bytes, sha256_json
 from .execution_lock import ExecutionLock, LockOwner
@@ -67,6 +68,7 @@ class Day1LaunchConfig:
     market_policy_path: Path
     market_validation_path: Path
     owner_authorization_path: Path
+    model_attestation_exception_path: Path
     launch_attempt_binding_path: Path
     launch_attempt_id: str
     scheduled_start_utc: datetime = datetime(
@@ -115,6 +117,7 @@ class LaunchPreflight:
     auditor_receipt_sha256: str
     market_policy_sha256: str
     market_validation_sha256: str
+    model_attestation_exception_sha256: str
     actual_start_utc: datetime
 
 
@@ -156,6 +159,71 @@ def _validate_expected_identity(config: Day1LaunchConfig) -> str:
     ):
         raise LaunchError("EXPECTED_ACCOUNT_IDENTITY_INVALID")
     return account_hash
+
+
+def _validate_model_attestation_exception(
+    config: Day1LaunchConfig,
+    *,
+    actual_start: datetime,
+    expected_account_hash: str,
+    owner_authorization_receipt_sha256: str,
+) -> str:
+    raw, payload = _read_json(
+        config.model_attestation_exception_path,
+        "MODEL_ATTESTATION_EXCEPTION_INVALID",
+    )
+    expected_keys = {
+        "schema",
+        "authorization_state",
+        "scope",
+        "requested_model",
+        "reasoning_effort",
+        "actual_model_attestation_available",
+        "requested_model_pin_required",
+        "model_mismatch_forbidden",
+        "paper_only",
+        "live_allowed",
+        "paper_host",
+        "paper_port",
+        "expected_account_identity_hash",
+        "owner_authorization_receipt_sha256",
+        "start_utc",
+        "end_utc",
+        "artifact_sha256",
+    }
+    unsigned = dict(payload)
+    artifact_sha256 = unsigned.pop("artifact_sha256", None)
+    expected_start = config.scheduled_start_utc.isoformat().replace("+00:00", "Z")
+    expected_end = (
+        config.scheduled_start_utc + timedelta(days=config.duration_days)
+    ).isoformat().replace("+00:00", "Z")
+    if (
+        set(payload) != expected_keys
+        or payload.get("schema") != "MODEL_ATTESTATION_OWNER_EXCEPTION_V1"
+        or payload.get("authorization_state") != "AUTHORIZED"
+        or payload.get("scope") != "MONTH1_PAPER_ONLY"
+        or payload.get("requested_model") != config.model
+        or payload.get("reasoning_effort") != config.reasoning_effort
+        or payload.get("actual_model_attestation_available") is not False
+        or payload.get("requested_model_pin_required") is not True
+        or payload.get("model_mismatch_forbidden") is not True
+        or payload.get("paper_only") is not True
+        or payload.get("live_allowed") is not False
+        or payload.get("paper_host") != config.paper_host
+        or payload.get("paper_port") != config.paper_port
+        or payload.get("expected_account_identity_hash") != expected_account_hash
+        or payload.get("owner_authorization_receipt_sha256")
+        != owner_authorization_receipt_sha256
+        or payload.get("start_utc") != expected_start
+        or payload.get("end_utc") != expected_end
+        or not isinstance(artifact_sha256, str)
+        or _SHA256_RE.fullmatch(artifact_sha256) is None
+        or artifact_sha256 != sha256_json(unsigned)
+        or actual_start >= config.scheduled_start_utc
+        + timedelta(days=config.duration_days)
+    ):
+        raise LaunchError("MODEL_ATTESTATION_EXCEPTION_INVALID")
+    return _sha256(raw)
 
 
 def _validate_identity_receipt(
@@ -258,6 +326,16 @@ def evaluate_launch_preflight(
         raise LaunchError(str(exc)) from exc
 
     expected_hash = _validate_expected_identity(config)
+    try:
+        owner_authorization_raw = config.owner_authorization_path.read_bytes()
+    except OSError as exc:
+        raise LaunchError("MODEL_ATTESTATION_EXCEPTION_INVALID") from exc
+    model_exception_hash = _validate_model_attestation_exception(
+        config,
+        actual_start=actual_start,
+        expected_account_hash=expected_hash,
+        owner_authorization_receipt_sha256=_sha256(owner_authorization_raw),
+    )
     identity_raw, identity = _read_json(
         config.identity_receipt_path, "READONLY_RECEIPT_INVALID"
     )
@@ -318,6 +396,7 @@ def evaluate_launch_preflight(
         auditor_receipt_sha256=auditor_hash,
         market_policy_sha256=policy_hash,
         market_validation_sha256=market_validation_hash,
+        model_attestation_exception_sha256=model_exception_hash,
         actual_start_utc=actual_start,
     )
 
@@ -618,6 +697,11 @@ def run_day1_launch(
                     runtime_market_gate=market_gate,
                     runtime_auditor_gate=auditor_gate,
                     launch_attempt_id=config.launch_attempt_id,
+                    provider=CodexAutonomousCLIProvider(
+                        owner_model_attestation_exception_sha256=(
+                            preflight.model_attestation_exception_sha256
+                        )
+                    ),
                 )
                 heartbeat = _LockHeartbeat(
                     config=config,
@@ -690,6 +774,9 @@ def _default_config(repo_root: Path, launch_attempt_id: str) -> Day1LaunchConfig
         market_policy_path=reports / "market_data_policy_v1.json",
         market_validation_path=reports / "market_data_validation.json",
         owner_authorization_path=reports / "owner_authorization_v1.json",
+        model_attestation_exception_path=(
+            reports / "model_attestation_owner_exception_v1.json"
+        ),
         launch_attempt_binding_path=reports / "launch_attempt_binding_v1.json",
         launch_attempt_id=launch_attempt_id,
     )
