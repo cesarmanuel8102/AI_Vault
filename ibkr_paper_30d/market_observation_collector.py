@@ -592,10 +592,32 @@ class IBKRMarketDataSource:
         return self.client.isConnected() and self.client.current_time_event.is_set()
 
     def source_health(self) -> str:
-        unhealthy_codes = {502, 503, 504, 1100, 1300, 2103, 2105}
+        fatal_codes = {502, 503, 504, 1100, 1300}
+        farm_events = {
+            2103: ("market", False),
+            2104: ("market", True),
+            2105: ("historical", False),
+            2106: ("historical", True),
+        }
+        farm_health: dict[tuple[str, str], bool] = {}
+        for item in self.client.error_values:
+            code = int(item["code"])
+            if code in fatal_codes:
+                return "DEGRADED"
+            event = farm_events.get(code)
+            if event is None:
+                continue
+            family, healthy = event
+            message = str(item.get("message", ""))
+            farm = (
+                message.rsplit(":", 1)[-1].strip().lower()
+                if ":" in message
+                else "*"
+            )
+            farm_health[(family, farm)] = healthy
         return (
             "DEGRADED"
-            if any(int(item["code"]) in unhealthy_codes for item in self.client.error_values)
+            if any(not value for value in farm_health.values())
             else "HEALTHY"
         )
 

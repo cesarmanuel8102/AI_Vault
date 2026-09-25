@@ -309,6 +309,22 @@ def test_disconnect_and_farm_failures_degrade_source(error_code: int) -> None:
     assert source.source_health() == "DEGRADED"
 
 
+@pytest.mark.parametrize(
+    "failure,recovery,farm",
+    [(2103, 2104, "usfarm"), (2105, 2106, "ushmds")],
+)
+def test_observed_farm_recovery_restores_source_health(
+    failure: int, recovery: int, farm: str
+) -> None:
+    from ibkr_paper_30d.market_observation_collector import IBKRMarketDataSource
+
+    source = IBKRMarketDataSource()
+    source.client.error(-1, failure, f"synthetic farm failure:{farm}")
+    source.client.error(-1, recovery, f"synthetic farm recovery:{farm}")
+
+    assert source.source_health() == "HEALTHY"
+
+
 def test_prerequisite_primary_exchange_mapping_matches_ibkr() -> None:
     from ibkr_paper_30d.market_observation_collector import PRIMARY_EXCHANGE_BY_SYMBOL
 
