@@ -62,6 +62,65 @@ def test_codex_executable_resolves_from_desktop_install_when_path_is_missing(
     assert _resolve_codex_executable() == str(executable)
 
 
+def test_strict_schema_encodes_dynamic_research_arguments_as_json_string() -> None:
+    schema = CodexAutonomousCLIProvider.strict_output_schema()
+
+    arguments = schema["$defs"]["ResearchRequest"]["properties"]["arguments"]
+
+    assert arguments["type"] == "string"
+    assert "JSON object" in arguments["description"]
+
+
+def test_autonomous_codex_decodes_strict_research_arguments() -> None:
+    value = bundle()
+
+    def runner(command, **kwargs):
+        output_path = command[command.index("--output-last-message") + 1]
+        with open(output_path, "w", encoding="utf-8") as handle:
+            json.dump(
+                {
+                    "mode": "RESEARCH",
+                    "research_requests": [
+                        {
+                            "request_id": "scan-1",
+                            "tool": "MARKET_SCANNER",
+                            "arguments": '{"scan_code":"TOP_PERC_GAIN"}',
+                            "purpose": "Discover candidates",
+                        }
+                    ],
+                    "decision": None,
+                    "proposal": None,
+                    "position_action": None,
+                    "open_order_action": None,
+                    "confidence": "0.5",
+                    "reasoning_summary": "Need discovery",
+                    "reason_codes": ["NEED_DISCOVERY"],
+                },
+                handle,
+            )
+        stdout = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "thread.started",
+                        "thread_id": "t",
+                        "actual_model": "gpt-5.6-sol",
+                    }
+                ),
+                json.dumps({"type": "turn.completed"}),
+            ]
+        )
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    turn = CodexAutonomousCLIProvider(runner=runner).next_turn(
+        request(value), value, [], [{"tool": "MARKET_SCANNER"}]
+    )
+
+    assert turn.research_requests[0].arguments == {
+        "scan_code": "TOP_PERC_GAIN"
+    }
+
+
 def test_autonomous_codex_invocation_enables_live_search_and_max_reasoning():
     value = bundle()
     captured = {}

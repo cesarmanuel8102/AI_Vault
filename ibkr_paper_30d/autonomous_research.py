@@ -359,6 +359,16 @@ class CodexAutonomousCLIProvider:
             self.last_native_tool_events = self._native_tool_events(completed.stdout)
             try:
                 raw = json.loads(output_path.read_text(encoding="utf-8"))
+                for item in raw.get("research_requests", []):
+                    if isinstance(item, dict) and isinstance(
+                        item.get("arguments"), str
+                    ):
+                        decoded_arguments = json.loads(item["arguments"])
+                        if not isinstance(decoded_arguments, dict):
+                            raise ValueError(
+                                "research request arguments must decode to an object"
+                            )
+                        item["arguments"] = decoded_arguments
                 turn = AutonomousTurn.model_validate(raw)
             except (OSError, json.JSONDecodeError, ValidationError, ValueError) as exc:
                 self.last_failure_code = "OUTPUT_INVALID"
@@ -423,6 +433,12 @@ class CodexAutonomousCLIProvider:
             "bundle": bundle.model_dump(mode="json"),
             "toolbox": toolbox_manifest,
             "research_history": history,
+            "output_contract": {
+                "research_request_arguments": (
+                    "Encode each research_requests[].arguments value as a JSON "
+                    "object string. The host decodes and validates it before use."
+                )
+            },
         }
 
     @staticmethod
@@ -443,6 +459,18 @@ class CodexAutonomousCLIProvider:
                     normalize(value)
 
         normalize(schema)
+        arguments_schema = schema["$defs"]["ResearchRequest"]["properties"][
+            "arguments"
+        ]
+        arguments_schema.clear()
+        arguments_schema.update(
+            {
+                "type": "string",
+                "description": (
+                    "JSON object string containing the selected research tool arguments"
+                ),
+            }
+        )
         return schema
 
     @staticmethod
