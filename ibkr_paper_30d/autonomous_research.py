@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
 from decimal import Decimal
 from enum import Enum
 from pathlib import Path
@@ -299,6 +300,7 @@ class CodexAutonomousCLIProvider:
         *,
         runner: Any = subprocess.run,
         codex_executable: str | None = None,
+        retry_sleep: Any = time.sleep,
         owner_model_attestation_exception_sha256: str | None = None,
     ):
         if owner_model_attestation_exception_sha256 is not None and (
@@ -311,6 +313,7 @@ class CodexAutonomousCLIProvider:
             raise ValueError("MODEL_ATTESTATION_EXCEPTION_SHA256_INVALID")
         self.runner = runner
         self.codex_executable = codex_executable
+        self.retry_sleep = retry_sleep
         self.owner_model_attestation_exception_sha256 = (
             owner_model_attestation_exception_sha256
         )
@@ -349,23 +352,30 @@ class CodexAutonomousCLIProvider:
                 "--output-last-message", str(output_path), "-",
             ]
             payload = self._prompt_payload(request, bundle, history, toolbox_manifest)
-            try:
-                completed = self.runner(
-                    command,
-                    input=canonical_bytes(payload).decode("utf-8"),
-                    text=True,
-                    capture_output=True,
-                    timeout=request.timeout_seconds,
-                    cwd=workdir,
-                    env=self._sanitized_environment(),
-                    check=False,
-                )
-            except subprocess.TimeoutExpired as exc:
-                self.last_failure_code = "TIMEOUT"
-                raise TimeoutError("autonomous Codex provider timed out") from exc
-            if completed.returncode != 0:
+            completed = None
+            retry_delays = (1.0, 3.0)
+            for attempt in range(len(retry_delays) + 1):
+                try:
+                    completed = self.runner(
+                        command,
+                        input=canonical_bytes(payload).decode("utf-8"),
+                        text=True,
+                        capture_output=True,
+                        timeout=request.timeout_seconds,
+                        cwd=workdir,
+                        env=self._sanitized_environment(),
+                        check=False,
+                    )
+                except subprocess.TimeoutExpired as exc:
+                    self.last_failure_code = "TIMEOUT"
+                    raise TimeoutError("autonomous Codex provider timed out") from exc
+                if completed.returncode == 0:
+                    break
                 self.last_failure_code = f"RETURN_CODE_{completed.returncode}"
-                raise RuntimeError("AUTONOMOUS_CODEX_PROVIDER_FAILED")
+                if completed.returncode != 1 or attempt == len(retry_delays):
+                    raise RuntimeError("AUTONOMOUS_CODEX_PROVIDER_FAILED")
+                self.retry_sleep(retry_delays[attempt])
+            assert completed is not None
             if self.owner_model_attestation_exception_sha256 is None:
                 self._assert_effective_model(
                     completed.stdout, request.requested_model
