@@ -477,9 +477,12 @@ def test_runtime_market_block_is_fail_closed(tmp_path: Path) -> None:
         "reason_codes": ["DELAYED_DATA"],
     }
 
-    with pytest.raises(LaunchError, match="MARKET_DATA_GATE_BLOCKED"):
+    with pytest.raises(LaunchError, match="MARKET_DATA_GATE_BLOCKED") as caught:
         evaluate_launch_preflight(ctx.config, ctx.dependencies)
 
+    assert caught.value.details == {
+        "market_data_reason_codes": ["DELAYED_DATA"]
+    }
     assert_no_write_authority(ctx)
 
 

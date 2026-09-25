@@ -38,6 +38,7 @@ from .runtime_integrity import RuntimeAuditorGate, RuntimeMarketDataGate
 
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_REASON_CODE_RE = re.compile(r"^[A-Z0-9_.:-]{1,100}$")
 _QUERY_KEYS = frozenset(
     {
         "account_summary",
@@ -93,8 +94,14 @@ class LaunchDependencies:
 
 
 class LaunchError(RuntimeError):
-    def __init__(self, code: str):
+    def __init__(
+        self,
+        code: str,
+        *,
+        details: dict[str, object] | None = None,
+    ):
         self.code = code
+        self.details = details or {}
         super().__init__(code)
 
 
@@ -276,7 +283,18 @@ def evaluate_launch_preflight(
         DecisionClass.NEW_TRADE
     )
     if not isinstance(market_result, dict) or market_result.get("gate_status") != "PASS":
-        raise LaunchError("MARKET_DATA_GATE_BLOCKED")
+        raw_reasons = market_result.get("reason_codes", []) if isinstance(
+            market_result, dict
+        ) else []
+        market_reasons = [
+            reason
+            for reason in raw_reasons
+            if isinstance(reason, str) and _REASON_CODE_RE.fullmatch(reason)
+        ][:10]
+        raise LaunchError(
+            "MARKET_DATA_GATE_BLOCKED",
+            details={"market_data_reason_codes": market_reasons},
+        )
 
     authorization_event_id = authorization.get("authorization_event_id")
     if not isinstance(authorization_event_id, str) or not authorization_event_id:
@@ -709,10 +727,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     except LaunchError as exc:
         owner_action = _is_owner_action_required(exc.code)
         status = "OWNER_ACTION_REQUIRED" if owner_action else "BLOCK"
-        result = {"status": status, "reason_codes": [exc.code]}
+        result = {
+            "status": status,
+            "reason_codes": [exc.code],
+            **exc.details,
+        }
         exit_code = 30 if owner_action else 20
         try:
-            write_launch_evidence(config, status, {"reason_codes": [exc.code]})
+            write_launch_evidence(
+                config,
+                status,
+                {"reason_codes": [exc.code], **exc.details},
+            )
         except Exception:
             pass
     except Exception as exc:
