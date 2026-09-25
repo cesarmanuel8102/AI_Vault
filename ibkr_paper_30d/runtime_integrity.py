@@ -111,7 +111,7 @@ class RuntimeMarketDataGate:
                 ObservationConfig(
                     symbols=tuple(sorted(MarketPolicyFreezer.REQUIRED_SYMBOLS)),
                     cadence_seconds=5,
-                    window_seconds=0,
+                    window_seconds=5,
                 ),
                 ObservationPrerequisites(
                     identity_receipt_sha256=self.expected_account_hash,
@@ -122,9 +122,14 @@ class RuntimeMarketDataGate:
                     broker_reconciliation_gate="PASS",
                 ),
             )
+            latest_by_symbol = {
+                observation.symbol: observation
+                for observation in window.observations
+            }
+            observations = list(latest_by_symbol.values())
             rejected = [
                 reason
-                for observation in window.observations
+                for observation in observations
                 if not observation.accepted
                 for reason in observation.reason_codes
             ]
@@ -147,7 +152,7 @@ class RuntimeMarketDataGate:
                     declared_quote_age_ms=item.corrected_quote_age_ms,
                     source_health=item.source_health,
                 )
-                for item in window.observations
+                for item in observations
             ]
             evaluation_now = self.now_utc()
             snapshot = MarketDataSnapshot.freeze(
