@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import json
 import subprocess
+from pathlib import Path
 
-from ibkr_paper_30d.autonomous_research import CodexAutonomousCLIProvider
+from ibkr_paper_30d.autonomous_research import (
+    CodexAutonomousCLIProvider,
+    _resolve_codex_executable,
+)
 from ibkr_paper_30d.trader_invocation import InvocationRequest, TraderInputBundle
 
 
@@ -44,6 +48,18 @@ def request(value: TraderInputBundle) -> InvocationRequest:
         invocation_trigger="SCHEDULED_SCAN",
         timeout_seconds=60,
     )
+
+
+def test_codex_executable_resolves_from_desktop_install_when_path_is_missing(
+    tmp_path: Path, monkeypatch
+) -> None:
+    executable = tmp_path / "OpenAI" / "Codex" / "bin" / "build" / "codex.exe"
+    executable.parent.mkdir(parents=True)
+    executable.write_bytes(b"")
+    monkeypatch.setenv("PATH", "")
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+
+    assert _resolve_codex_executable() == str(executable)
 
 
 def test_autonomous_codex_invocation_enables_live_search_and_max_reasoning():

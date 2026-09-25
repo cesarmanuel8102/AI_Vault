@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 from decimal import Decimal
@@ -22,6 +23,25 @@ from .trader_invocation import (
     TraderInputBundle,
     _assert_codex_actual_model,
 )
+
+
+def _resolve_codex_executable() -> str:
+    explicit = os.environ.get("CODEX_CLI_EXECUTABLE")
+    if explicit and Path(explicit).is_file():
+        return explicit
+    discovered = shutil.which("codex")
+    if discovered:
+        return discovered
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if local_app_data:
+        candidates = list(
+            (Path(local_app_data) / "OpenAI" / "Codex" / "bin").glob(
+                "*/codex.exe"
+            )
+        )
+        if candidates:
+            return str(max(candidates, key=lambda path: path.stat().st_mtime_ns))
+    raise FileNotFoundError("CODEX_CLI_EXECUTABLE_NOT_FOUND")
 
 
 class ResearchTool(str, Enum):
@@ -274,8 +294,14 @@ class CodexAutonomousCLIProvider:
 
     NATIVE_TOOL_TYPES = frozenset({"web_search", "command_execution", "mcp_tool_call", "file_change"})
 
-    def __init__(self, *, runner: Any = subprocess.run):
+    def __init__(
+        self,
+        *,
+        runner: Any = subprocess.run,
+        codex_executable: str | None = None,
+    ):
         self.runner = runner
+        self.codex_executable = codex_executable
         self.last_failure_code: str | None = None
         self.last_native_tool_events: list[dict[str, Any]] = []
 
@@ -293,8 +319,15 @@ class CodexAutonomousCLIProvider:
             schema_path.write_text(
                 json.dumps(self.strict_output_schema(), sort_keys=True), encoding="utf-8"
             )
+            executable = self.codex_executable
+            if executable is None:
+                executable = (
+                    _resolve_codex_executable()
+                    if self.runner is subprocess.run
+                    else "codex"
+                )
             command = [
-                "codex", "exec", "--ephemeral", "--ignore-rules",
+                executable, "exec", "--ephemeral", "--ignore-rules",
                 "--ignore-user-config", "--skip-git-repo-check",
                 "--sandbox", "read-only", "--search", "--json",
                 "--model", request.requested_model,
