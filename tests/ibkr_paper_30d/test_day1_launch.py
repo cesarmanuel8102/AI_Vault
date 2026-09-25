@@ -259,7 +259,7 @@ def passing_context(tmp_path: Path) -> LaunchTestContext:
                 "status": "PASS",
                 "market_data_gate": "PASS",
                 "market_data_policy_frozen": True,
-                "broker_calls_made": 0,
+                "broker_calls_made": 25,
                 "real_order_writes_attempted": 0,
                 "reason_codes": [],
             }
@@ -335,6 +335,22 @@ def test_passing_preflight_returns_only_sanitized_bindings(tmp_path: Path) -> No
     assert len(result.market_policy_sha256) == 64
     assert len(result.market_validation_sha256) == 64
     ctx.market_gate.evaluate.assert_called_once_with(DecisionClass.NEW_TRADE)
+    assert_no_write_authority(ctx)
+
+
+def test_passing_preflight_accepts_real_read_only_market_validation(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    payload = json.loads(ctx.config.market_validation_path.read_bytes())
+    payload["broker_calls_made"] = 25
+    ctx.config.market_validation_path.write_bytes(canonical_bytes(payload))
+
+    result = evaluate_launch_preflight(ctx.config, ctx.dependencies)
+
+    assert result.market_validation_sha256 == hashlib.sha256(
+        ctx.config.market_validation_path.read_bytes()
+    ).hexdigest()
     assert_no_write_authority(ctx)
 
 
@@ -473,7 +489,10 @@ def test_runtime_market_block_is_fail_closed(tmp_path: Path) -> None:
         ("status", "BLOCK"),
         ("market_data_gate", "BLOCK"),
         ("market_data_policy_frozen", False),
-        ("broker_calls_made", 1),
+        ("broker_calls_made", 0),
+        ("broker_calls_made", -1),
+        ("broker_calls_made", True),
+        ("broker_calls_made", "25"),
         ("real_order_writes_attempted", 1),
     ],
 )

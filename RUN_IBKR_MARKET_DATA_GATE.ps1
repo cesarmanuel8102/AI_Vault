@@ -144,19 +144,20 @@ if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 4002 -InformationLeve
     throw "IBKR_PAPER_GATEWAY_4002_NOT_LISTENING"
 }
 
+$ExistingValidation = $null
 if (Test-Path -LiteralPath $ValidationPath) {
     try {
         $ExistingValidation = Get-Content -LiteralPath $ValidationPath -Raw | ConvertFrom-Json
-        if ($ExistingValidation.market_data_gate -eq "PASS") {
-            if ($Scheduled) {
-                Invoke-Day1ForegroundService
-                exit 0
-            }
-            Write-Output '{"status":"ALREADY_PASS","market_data_gate":"PASS"}'
-            exit 0
-        }
     }
     catch { }
+}
+if ($null -ne $ExistingValidation -and $ExistingValidation.market_data_gate -eq "PASS") {
+    if ($Scheduled) {
+        Invoke-Day1ForegroundService
+        exit 0
+    }
+    Write-Output '{"status":"ALREADY_PASS","market_data_gate":"PASS"}'
+    exit 0
 }
 
 Assert-RegularCollectionStart

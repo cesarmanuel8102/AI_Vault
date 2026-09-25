@@ -262,6 +262,22 @@ def test_market_runner_hands_both_scheduled_pass_paths_to_foreground_service():
     assert "Unregister-ScheduledTask" not in text
 
 
+def test_market_runner_does_not_swallow_foreground_service_failures():
+    text = MARKET_RUNNER.read_text(encoding="utf-8")
+    start = text.index("if (Test-Path -LiteralPath $ValidationPath)")
+    end = text.index("Assert-RegularCollectionStart", start)
+    existing_validation_branch = text[start:end]
+
+    parse_catch = existing_validation_branch.index("catch { }")
+    pass_branch = existing_validation_branch.index(
+        "if ($null -ne $ExistingValidation -and "
+        "$ExistingValidation.market_data_gate -eq \"PASS\")"
+    )
+    service_launch = existing_validation_branch.index("Invoke-Day1ForegroundService")
+
+    assert parse_catch < pass_branch < service_launch
+
+
 def test_finalizer_registers_one_persistent_task_with_two_triggers():
     text = FINALIZER.read_text(encoding="utf-8")
     assert "-ExecutionTimeLimit (New-TimeSpan -Days 31)" in text

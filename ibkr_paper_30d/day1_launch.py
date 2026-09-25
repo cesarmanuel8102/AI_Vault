@@ -207,10 +207,16 @@ def _validate_market_artifacts(config: Day1LaunchConfig) -> tuple[str, str]:
         "status": "PASS",
         "market_data_gate": "PASS",
         "market_data_policy_frozen": True,
-        "broker_calls_made": 0,
         "real_order_writes_attempted": 0,
     }
     if any(validation.get(key) != value for key, value in expected.items()):
+        raise LaunchError("MARKET_VALIDATION_INVALID")
+    broker_calls_made = validation.get("broker_calls_made")
+    if (
+        isinstance(broker_calls_made, bool)
+        or not isinstance(broker_calls_made, int)
+        or broker_calls_made <= 0
+    ):
         raise LaunchError("MARKET_VALIDATION_INVALID")
     return _sha256(policy_raw), _sha256(validation_raw)
 
