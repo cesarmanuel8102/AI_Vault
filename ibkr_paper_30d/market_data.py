@@ -193,18 +193,26 @@ class MarketDataGate:
             if age is None or receipt_age is None:
                 _add_reason(reasons, "TIMESTAMP_PROVENANCE_UNCERTAIN")
                 continue
+            effective_age = age
+            if quote.declared_quote_age_ms is None:
+                _add_reason(reasons, "TIMESTAMP_MISMATCH")
+            else:
+                corrected_age_at_decision = (
+                    quote.declared_quote_age_ms + receipt_age
+                )
+                if (
+                    abs(age - corrected_age_at_decision)
+                    > self.policy.max_clock_skew_ms
+                ):
+                    _add_reason(reasons, "TIMESTAMP_MISMATCH")
+                else:
+                    effective_age = corrected_age_at_decision
             timestamps.append(quote.quote_timestamp)
-            ages.append(age)
+            ages.append(effective_age)
             if age < -self.policy.max_clock_skew_ms:
                 _add_reason(reasons, "CLOCK_SKEW")
-            if age > max_age:
+            if effective_age > max_age:
                 _add_reason(reasons, "STALE_QUOTE")
-            if (
-                quote.declared_quote_age_ms is None
-                or abs(age - quote.declared_quote_age_ms)
-                > self.policy.max_clock_skew_ms
-            ):
-                _add_reason(reasons, "TIMESTAMP_MISMATCH")
 
         oldest_index = ages.index(max(ages)) if ages else None
         oldest_timestamp = (

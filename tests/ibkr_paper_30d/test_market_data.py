@@ -52,7 +52,7 @@ def fresh_quote() -> QuoteSnapshot:
         market_session="REGULAR",
         realtime_or_delayed="REALTIME",
         data_entitlement_status="AVAILABLE",
-        declared_quote_age_ms=500,
+        declared_quote_age_ms=50,
         source_health="HEALTHY",
     )
 
@@ -97,7 +97,7 @@ def test_new_trade_and_position_management_use_distinct_freshness(
     old = fresh_quote.model_copy(
         update={
             "quote_timestamp": NOW - timedelta(milliseconds=3_000),
-            "declared_quote_age_ms": 3_000,
+            "declared_quote_age_ms": 2_550,
         }
     )
 
@@ -130,6 +130,30 @@ def test_declared_age_timestamp_mismatch_blocks(gate, fresh_quote) -> None:
 
     assert result.status == "BLOCK"
     assert "TIMESTAMP_MISMATCH" in result.reason_codes
+
+
+def test_freshness_uses_validated_clock_corrected_age_at_decision(
+    fresh_quote,
+) -> None:
+    clock_corrected_policy = MarketDataPolicy(
+        version="MD_CLOCK_CORRECTED_TEST",
+        max_new_trade_age_ms=1_000,
+        max_position_management_age_ms=2_000,
+        max_clock_skew_ms=1_000,
+    )
+    quote = fresh_quote.model_copy(
+        update={
+            "quote_timestamp": NOW - timedelta(milliseconds=1_300),
+            "local_receipt_timestamp": NOW - timedelta(milliseconds=100),
+            "declared_quote_age_ms": 300,
+        }
+    )
+
+    result = evaluate(MarketDataGate(clock_corrected_policy), quote)
+
+    assert result.status == "PASS"
+    assert result.reason_codes == ()
+    assert result.quote_age_at_decision_ms == 400
 
 
 def test_missing_timestamp_provenance_blocks(gate, fresh_quote) -> None:
@@ -169,7 +193,7 @@ def test_gate_reports_oldest_and_latest_quote_timestamps(gate, fresh_quote) -> N
             "contract_id": 320227571,
             "quote_timestamp": NOW - timedelta(milliseconds=900),
             "local_receipt_timestamp": NOW - timedelta(milliseconds=850),
-            "declared_quote_age_ms": 900,
+            "declared_quote_age_ms": 50,
         }
     )
     newer = fresh_quote.model_copy(
@@ -178,7 +202,7 @@ def test_gate_reports_oldest_and_latest_quote_timestamps(gate, fresh_quote) -> N
             "contract_id": 15547844,
             "quote_timestamp": NOW - timedelta(milliseconds=100),
             "local_receipt_timestamp": NOW - timedelta(milliseconds=90),
-            "declared_quote_age_ms": 100,
+            "declared_quote_age_ms": 10,
         }
     )
     snapshot = MarketDataSnapshot.freeze(
@@ -226,7 +250,7 @@ def test_runtime_gate_surfaces_oldest_and_latest_quote_timestamps(
             market_session=SimpleNamespace(value="REGULAR"),
             realtime_or_delayed="REALTIME",
             entitlement_state="AVAILABLE",
-            corrected_quote_age_ms=900,
+            corrected_quote_age_ms=50,
             source_health="HEALTHY",
         ),
         SimpleNamespace(
@@ -246,7 +270,7 @@ def test_runtime_gate_surfaces_oldest_and_latest_quote_timestamps(
             market_session=SimpleNamespace(value="REGULAR"),
             realtime_or_delayed="REALTIME",
             entitlement_state="AVAILABLE",
-            corrected_quote_age_ms=100,
+            corrected_quote_age_ms=10,
             source_health="HEALTHY",
         ),
     ]
@@ -337,7 +361,7 @@ def test_runtime_gate_evaluates_with_time_captured_after_collection(
 
     assert result["gate_status"] == "PASS"
     assert result["reason_codes"] == []
-    assert result["quote_age_at_decision_ms"] == 100
+    assert result["quote_age_at_decision_ms"] == 150
 
 
 def test_runtime_gate_evaluates_latest_observation_per_symbol(
