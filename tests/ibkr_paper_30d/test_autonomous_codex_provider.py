@@ -101,6 +101,7 @@ def test_autonomous_codex_invocation_enables_live_search_and_max_reasoning():
 
     command = captured["command"]
     assert "--search" in command
+    assert command.index("--search") < command.index("exec")
     assert command[command.index("--model") + 1] == "gpt-5.6-sol"
     assert 'model_reasoning_effort="max"' in command
     assert turn.decision.value == "NO_TRADE"
