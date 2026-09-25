@@ -1147,7 +1147,7 @@ class IBKRResearchToolbox:
         broker = None
         try:
             broker = self._connect()
-            contract = self._qualify(broker, args)
+            contract = self._feasibility_contract_from_args(broker, args)
             contract_error = self._qualified_contract_error(args, contract)
             if contract_error is not None:
                 return self._model_research_feasibility(contract_error)
@@ -1204,6 +1204,51 @@ class IBKRResearchToolbox:
         )
         if not has_contract_id and not str(args.get("symbol") or "").strip():
             return invalid("BROKER_FEASIBILITY_CONTRACT_REQUIRED")
+        sec_type = str(
+            args.get("sec_type") or args.get("secType") or ""
+        ).upper()
+        legs = args.get("legs")
+        if sec_type == "BAG":
+            if not isinstance(legs, list) or len(legs) < 2:
+                return invalid("BROKER_FEASIBILITY_COMBO_LEGS_REQUIRED")
+            for leg in legs:
+                if not isinstance(leg, dict):
+                    return invalid("BROKER_FEASIBILITY_COMBO_LEG_INVALID")
+                contract_id = next(
+                    (
+                        leg.get(key)
+                        for key in ("conId", "con_id", "contract_id")
+                        if leg.get(key) not in (None, "", 0, "0")
+                    ),
+                    None,
+                )
+                try:
+                    valid_contract_id = (
+                        not isinstance(contract_id, bool)
+                        and int(contract_id) > 0
+                    )
+                except (TypeError, ValueError):
+                    valid_contract_id = False
+                if not valid_contract_id:
+                    return invalid(
+                        "BROKER_FEASIBILITY_COMBO_LEG_CONTRACT_REQUIRED"
+                    )
+                if str(leg.get("action") or "").upper() not in {
+                    "BUY",
+                    "SELL",
+                }:
+                    return invalid("BROKER_FEASIBILITY_COMBO_LEG_ACTION_INVALID")
+                ratio = cls._decimal_or_none(leg.get("ratio"))
+                if (
+                    ratio is None
+                    or ratio <= 0
+                    or ratio != ratio.to_integral_value()
+                ):
+                    return invalid(
+                        "BROKER_FEASIBILITY_COMBO_LEG_RATIO_INVALID"
+                    )
+        elif legs:
+            return invalid("BROKER_FEASIBILITY_COMBO_SEC_TYPE_REQUIRED")
         if str(args.get("action") or "").upper() not in {"BUY", "SELL"}:
             return invalid("BROKER_FEASIBILITY_ACTION_INVALID")
         quantity = cls._decimal_or_none(args.get("quantity"))
@@ -1250,6 +1295,51 @@ class IBKRResearchToolbox:
             "whatIf": True,
             "paper_only": True,
         }
+
+    def _feasibility_contract_from_args(
+        self, broker: Any, args: dict[str, Any]
+    ) -> Any:
+        sec_type = str(
+            args.get("sec_type") or args.get("secType") or ""
+        ).upper()
+        if sec_type != "BAG":
+            return self._qualify(broker, args)
+
+        from ib_insync import ComboLeg, Contract
+
+        combo_legs = []
+        for leg in args.get("legs") or []:
+            contract_id = int(
+                leg.get("contract_id") or leg.get("con_id") or leg.get("conId")
+            )
+            leg_contract = Contract(
+                conId=contract_id,
+                exchange=str(leg.get("exchange") or "SMART"),
+                currency=str(
+                    leg.get("currency") or args.get("currency") or "USD"
+                ),
+            )
+            qualified = broker.qualifyContracts(leg_contract)
+            if not qualified:
+                raise LookupError("IBKR combo leg contract not found")
+            resolved = qualified[0]
+            if int(getattr(resolved, "conId", 0) or 0) != contract_id:
+                raise LookupError("IBKR combo leg contract mismatch")
+            combo_legs.append(
+                ComboLeg(
+                    conId=contract_id,
+                    ratio=int(leg.get("ratio") or 1),
+                    action=str(leg.get("action") or "").upper(),
+                    exchange=str(leg.get("exchange") or "SMART"),
+                )
+            )
+        return Contract(
+            symbol=str(args.get("symbol") or "").upper(),
+            secType="BAG",
+            exchange=str(args.get("exchange") or "SMART"),
+            currency=str(args.get("currency") or "USD"),
+            comboLegs=combo_legs,
+        )
 
     @staticmethod
     def _request_what_if(broker: Any, contract: Any, order: Any):

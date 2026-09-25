@@ -130,6 +130,161 @@ def test_flat_runtime_request_reaches_authoritative_what_if(
     assert broker.disconnected is True
 
 
+def test_flat_combo_request_builds_qualified_bag_for_authoritative_what_if(
+    monkeypatch,
+):
+    class ComboBroker(WhatIfOnlyBroker):
+        def qualifyContracts(self, contract):
+            self.qualified_contracts.append(contract)
+            contract.localSymbol = f"QQQ-{contract.conId}"
+            contract.secType = "OPT"
+            contract.exchange = "SMART"
+            contract.currency = "USD"
+            return [contract]
+
+    broker = ComboBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id="feasibility-qqq-bear-put-spread",
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "action": "BUY",
+            "currency": "USD",
+            "exchange": "SMART",
+            "legs": [
+                {
+                    "action": "BUY",
+                    "contract_id": 911011733,
+                    "exchange": "SMART",
+                    "ratio": 1,
+                },
+                {
+                    "action": "SELL",
+                    "contract_id": 910640656,
+                    "exchange": "SMART",
+                    "ratio": 1,
+                },
+            ],
+            "limit_price": 2.0,
+            "order_type": "LMT",
+            "quantity": 1,
+            "sec_type": "BAG",
+            "symbol": "QQQ",
+        },
+        purpose="authoritative paper combo what-if",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.success is True
+    assert result.error is None
+    assert [contract.conId for contract in broker.qualified_contracts] == [
+        911011733,
+        910640656,
+    ]
+    assert len(broker.what_if_calls) == 1
+    contract, order = broker.what_if_calls[0]
+    assert contract.symbol == "QQQ"
+    assert contract.secType == "BAG"
+    assert contract.exchange == "SMART"
+    assert contract.currency == "USD"
+    assert [leg.conId for leg in contract.comboLegs] == [911011733, 910640656]
+    assert [leg.action for leg in contract.comboLegs] == ["BUY", "SELL"]
+    assert [leg.ratio for leg in contract.comboLegs] == [1, 1]
+    assert order.tif == "DAY"
+    assert order.whatIf is True
+    assert order.transmit is True
+    assert broker.disconnected is True
+
+
+@pytest.mark.parametrize(
+    ("legs", "error_code"),
+    (
+        ([], "BROKER_FEASIBILITY_COMBO_LEGS_REQUIRED"),
+        (
+            [
+                {
+                    "action": "BUY",
+                    "contract_id": 911011733,
+                    "exchange": "SMART",
+                    "ratio": 1,
+                },
+                {
+                    "action": "SELL",
+                    "exchange": "SMART",
+                    "ratio": 1,
+                },
+            ],
+            "BROKER_FEASIBILITY_COMBO_LEG_CONTRACT_REQUIRED",
+        ),
+        (
+            [
+                {
+                    "action": "HOLD",
+                    "contract_id": 911011733,
+                    "exchange": "SMART",
+                    "ratio": 1,
+                },
+                {
+                    "action": "SELL",
+                    "contract_id": 910640656,
+                    "exchange": "SMART",
+                    "ratio": 1,
+                },
+            ],
+            "BROKER_FEASIBILITY_COMBO_LEG_ACTION_INVALID",
+        ),
+        (
+            [
+                {
+                    "action": "BUY",
+                    "contract_id": 911011733,
+                    "exchange": "SMART",
+                    "ratio": 0,
+                },
+                {
+                    "action": "SELL",
+                    "contract_id": 910640656,
+                    "exchange": "SMART",
+                    "ratio": 1,
+                },
+            ],
+            "BROKER_FEASIBILITY_COMBO_LEG_RATIO_INVALID",
+        ),
+    ),
+)
+def test_flat_combo_request_rejects_invalid_legs_before_broker_call(
+    monkeypatch, legs, error_code
+):
+    broker = WhatIfOnlyBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id="feasibility-invalid-combo",
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "action": "BUY",
+            "legs": legs,
+            "limit_price": 2.0,
+            "order_type": "LMT",
+            "quantity": 1,
+            "sec_type": "BAG",
+            "symbol": "QQQ",
+        },
+        purpose="reject malformed combo",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.success is False
+    assert result.error == "BROKER_FEASIBILITY_ARGUMENTS_INVALID"
+    assert result.data["error_code"] == error_code
+    assert result.data["stage"] == "REQUEST_VALIDATION"
+    assert broker.qualified_contracts == []
+    assert broker.what_if_calls == []
+
+
 def test_flat_runtime_request_missing_contract_fails_closed_without_broker_call(
     monkeypatch,
 ):
