@@ -44,6 +44,14 @@ class RuntimeMarketDataGate:
     _TRANSIENT_TIMESTAMP_REASONS = frozenset(
         {"CLOCK_SKEW_UNCERTAIN", "STALE_QUOTE", "TIMESTAMP_MISMATCH"}
     )
+    _TRANSIENT_EVALUATION_ERRORS = frozenset(
+        {
+            "ObservationAborted:BROKER_CLOCK_TIMEOUT",
+            "ObservationAborted:BROKER_HANDSHAKE_TIMEOUT",
+            "ObservationAborted:CONTRACT_DETAILS_TIMEOUT",
+            "ObservationAborted:INITIAL_REALTIME_QUOTE_TIMEOUT",
+        }
+    )
 
     def __init__(
         self,
@@ -77,11 +85,16 @@ class RuntimeMarketDataGate:
             if result.get("gate_status") == "PASS":
                 return result
             reasons = result.get("reason_codes")
-            if (
-                not isinstance(reasons, list)
-                or not reasons
-                or not set(reasons).issubset(self._TRANSIENT_TIMESTAMP_REASONS)
-            ):
+            retryable_timestamp = (
+                isinstance(reasons, list)
+                and bool(reasons)
+                and set(reasons).issubset(self._TRANSIENT_TIMESTAMP_REASONS)
+            )
+            retryable_evaluation = (
+                reasons == ["RUNTIME_MARKET_DATA_EVALUATION_FAILED"]
+                and result.get("error") in self._TRANSIENT_EVALUATION_ERRORS
+            )
+            if not retryable_timestamp and not retryable_evaluation:
                 return result
         return result
 

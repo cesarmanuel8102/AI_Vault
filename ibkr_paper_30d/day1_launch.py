@@ -39,6 +39,7 @@ from .runtime_integrity import RuntimeAuditorGate, RuntimeMarketDataGate
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _REASON_CODE_RE = re.compile(r"^[A-Z0-9_.:-]{1,100}$")
+_MARKET_ERROR_CODE_RE = re.compile(r"^[A-Za-z]+:[A-Z0-9_]{1,100}$")
 _QUERY_KEYS = frozenset(
     {
         "account_summary",
@@ -291,9 +292,19 @@ def evaluate_launch_preflight(
             for reason in raw_reasons
             if isinstance(reason, str) and _REASON_CODE_RE.fullmatch(reason)
         ][:10]
+        details: dict[str, object] = {
+            "market_data_reason_codes": market_reasons
+        }
+        market_error = market_result.get("error") if isinstance(
+            market_result, dict
+        ) else None
+        if isinstance(market_error, str) and _MARKET_ERROR_CODE_RE.fullmatch(
+            market_error
+        ):
+            details["market_data_error_code"] = market_error
         raise LaunchError(
             "MARKET_DATA_GATE_BLOCKED",
-            details={"market_data_reason_codes": market_reasons},
+            details=details,
         )
 
     authorization_event_id = authorization.get("authorization_event_id")

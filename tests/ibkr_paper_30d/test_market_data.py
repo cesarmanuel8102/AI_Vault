@@ -455,3 +455,39 @@ def test_runtime_gate_does_not_retry_non_timestamp_blocks(
     assert result["gate_status"] == "BLOCK"
     assert result["reason_codes"] == ["DELAYED_DATA"]
     evaluate_once.assert_called_once_with(policy, DecisionClass.NEW_TRADE)
+
+
+def test_runtime_gate_retries_initial_read_only_quote_timeout(
+    monkeypatch, policy
+) -> None:
+    monkeypatch.setattr(
+        "ibkr_paper_30d.runtime_integrity.load_verified_policy",
+        lambda path: policy,
+    )
+    gate = RuntimeMarketDataGate(
+        policy_path=__import__("pathlib").Path("unused.json"),
+        expected_account_hash="a" * 64,
+        source_factory=lambda: object(),
+        now_utc=lambda: NOW,
+    )
+    passed = {
+        "gate_status": "PASS",
+        "reason_codes": [],
+        "quote_timestamp": NOW.isoformat(),
+    }
+    evaluate_once = Mock(
+        side_effect=[
+            {
+                "gate_status": "BLOCK",
+                "reason_codes": ["RUNTIME_MARKET_DATA_EVALUATION_FAILED"],
+                "error": "ObservationAborted:INITIAL_REALTIME_QUOTE_TIMEOUT",
+            },
+            passed,
+        ]
+    )
+    monkeypatch.setattr(gate, "_evaluate_once", evaluate_once)
+
+    result = gate.evaluate(DecisionClass.NEW_TRADE)
+
+    assert result == passed
+    assert evaluate_once.call_count == 2

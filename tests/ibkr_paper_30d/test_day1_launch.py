@@ -475,13 +475,15 @@ def test_runtime_market_block_is_fail_closed(tmp_path: Path) -> None:
     ctx.market_gate.evaluate.return_value = {
         "gate_status": "BLOCK",
         "reason_codes": ["DELAYED_DATA"],
+        "error": "ObservationAborted:INITIAL_REALTIME_QUOTE_TIMEOUT",
     }
 
     with pytest.raises(LaunchError, match="MARKET_DATA_GATE_BLOCKED") as caught:
         evaluate_launch_preflight(ctx.config, ctx.dependencies)
 
     assert caught.value.details == {
-        "market_data_reason_codes": ["DELAYED_DATA"]
+        "market_data_reason_codes": ["DELAYED_DATA"],
+        "market_data_error_code": "ObservationAborted:INITIAL_REALTIME_QUOTE_TIMEOUT",
     }
     assert_no_write_authority(ctx)
 
