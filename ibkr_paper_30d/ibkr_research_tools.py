@@ -128,6 +128,9 @@ class IBKRResearchToolbox:
         {
             "success",
             "error",
+            "error_type",
+            "error_code",
+            "stage",
             "contract",
             "commission",
             "minCommission",
@@ -149,6 +152,40 @@ class IBKRResearchToolbox:
             key: value
             for key, value in feasibility.items()
             if key in cls.MODEL_SAFE_FEASIBILITY_FIELDS
+        }
+
+    @classmethod
+    def _model_research_feasibility(
+        cls, feasibility: dict[str, Any]
+    ) -> dict[str, Any]:
+        safe = cls._model_safe_feasibility(feasibility)
+        if not feasibility.get("success"):
+            return safe
+
+        init_margin = cls._decimal_or_none(feasibility.get("initMarginChange"))
+        maint_margin = cls._decimal_or_none(feasibility.get("maintMarginChange"))
+        if init_margin is None or maint_margin is None:
+            error_code = "BROKER_MARGIN_EVIDENCE_MISSING"
+        else:
+            commissions = (
+                cls._decimal_or_none(feasibility.get("commission")),
+                cls._decimal_or_none(feasibility.get("minCommission")),
+                cls._decimal_or_none(feasibility.get("maxCommission")),
+            )
+            error_code = (
+                "BROKER_COMMISSION_EVIDENCE_MISSING"
+                if all(value is None for value in commissions)
+                else None
+            )
+        if error_code is None:
+            return safe
+        return {
+            **safe,
+            "success": False,
+            "error": "BROKER_FEASIBILITY_EVIDENCE_INCOMPLETE",
+            "error_type": "ValueError",
+            "error_code": error_code,
+            "stage": "WHAT_IF_NORMALIZATION",
         }
 
     def _feasibility_common(
@@ -327,13 +364,13 @@ class IBKRResearchToolbox:
                 action=action.action.upper(),
                 orderType=action.order_type.upper(),
                 totalQuantity=float(quantity),
-                transmit=False,
+                transmit=True,
                 whatIf=True,
             )
             if action.limit_price is not None:
                 order.lmtPrice = float(action.limit_price)
             try:
-                state = broker.whatIfOrder(matched.contract, order)
+                state = self._request_what_if(broker, matched.contract, order)
             except Exception as exc:
                 state = None
                 state_error = f"{type(exc).__name__}:broker_operation_failed"
@@ -531,9 +568,9 @@ class IBKRResearchToolbox:
             if action.new_limit_price is not None:
                 what_if_order.lmtPrice = float(requested_limit)
             what_if_order.whatIf = True
-            what_if_order.transmit = False
+            what_if_order.transmit = True
             try:
-                state = broker.whatIfOrder(trade.contract, what_if_order)
+                state = self._request_what_if(broker, trade.contract, what_if_order)
             except Exception as exc:
                 state = None
                 state_error = f"{type(exc).__name__}:broker_operation_failed"
@@ -817,8 +854,9 @@ class IBKRResearchToolbox:
             contract.right = str(spec["right"]).upper()
         if spec.get("multiplier"):
             contract.multiplier = str(spec["multiplier"])
-        if spec.get("conId") or spec.get("con_id"):
-            contract.conId = int(spec.get("conId") or spec.get("con_id"))
+        contract_id = spec.get("conId") or spec.get("con_id") or spec.get("contract_id")
+        if contract_id:
+            contract.conId = int(contract_id)
         return contract
 
     def _qualify(self, ib: Any, spec: dict[str, Any]):
@@ -1096,8 +1134,184 @@ class IBKRResearchToolbox:
             ib.disconnect()
 
     def _broker_feasibility_from_args(self, args: dict[str, Any]) -> dict[str, Any]:
-        proposal = AutonomousTradeProposal.model_validate(args["proposal"])
-        return self._model_safe_feasibility(self._broker_feasibility(proposal))
+        if "proposal" in args:
+            proposal = AutonomousTradeProposal.model_validate(args["proposal"])
+            return self._model_research_feasibility(
+                self._broker_feasibility(proposal)
+            )
+
+        validation_error = self._validate_flat_feasibility_args(args)
+        if validation_error is not None:
+            return self._model_research_feasibility(validation_error)
+
+        broker = None
+        try:
+            broker = self._connect()
+            contract = self._qualify(broker, args)
+            contract_error = self._qualified_contract_error(args, contract)
+            if contract_error is not None:
+                return self._model_research_feasibility(contract_error)
+            evidence = self._what_if_evidence(
+                broker,
+                contract,
+                action=str(args["action"]).upper(),
+                order_type=str(args["order_type"]).upper(),
+                quantity=Decimal(str(args["quantity"])),
+                limit_price=(
+                    None
+                    if args.get("limit_price") is None
+                    else Decimal(str(args["limit_price"]))
+                ),
+                time_in_force=str(
+                    args.get("time_in_force") or args.get("tif") or "DAY"
+                ).upper(),
+            )
+            return self._model_research_feasibility(evidence)
+        except Exception as exc:
+            return self._model_research_feasibility(
+                {
+                    "success": False,
+                    "error": f"{type(exc).__name__}:broker_operation_failed",
+                    "error_type": type(exc).__name__,
+                    "error_code": "BROKER_FEASIBILITY_BROKER_OPERATION_FAILED",
+                    "stage": "BROKER_WHAT_IF",
+                    "whatIf": True,
+                    "paper_only": True,
+                }
+            )
+        finally:
+            if broker is not None:
+                broker.disconnect()
+
+    @classmethod
+    def _validate_flat_feasibility_args(
+        cls, args: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        def invalid(error_code: str) -> dict[str, Any]:
+            return {
+                "success": False,
+                "error": "BROKER_FEASIBILITY_ARGUMENTS_INVALID",
+                "error_type": "ValueError",
+                "error_code": error_code,
+                "stage": "REQUEST_VALIDATION",
+                "whatIf": True,
+                "paper_only": True,
+            }
+
+        has_contract_id = any(
+            args.get(key) not in (None, "", 0, "0")
+            for key in ("conId", "con_id", "contract_id")
+        )
+        if not has_contract_id and not str(args.get("symbol") or "").strip():
+            return invalid("BROKER_FEASIBILITY_CONTRACT_REQUIRED")
+        if str(args.get("action") or "").upper() not in {"BUY", "SELL"}:
+            return invalid("BROKER_FEASIBILITY_ACTION_INVALID")
+        quantity = cls._decimal_or_none(args.get("quantity"))
+        if quantity is None or quantity <= 0:
+            return invalid("BROKER_FEASIBILITY_QUANTITY_INVALID")
+        order_type = str(args.get("order_type") or "").upper()
+        if not order_type:
+            return invalid("BROKER_FEASIBILITY_ORDER_TYPE_REQUIRED")
+        if order_type == "LMT":
+            limit_price = cls._decimal_or_none(args.get("limit_price"))
+            if limit_price is None or limit_price <= 0:
+                return invalid("BROKER_FEASIBILITY_LIMIT_PRICE_INVALID")
+        return None
+
+    def _qualified_contract_error(
+        self, args: dict[str, Any], contract: Any
+    ) -> dict[str, Any] | None:
+        requested_id = next(
+            (
+                args.get(key)
+                for key in ("conId", "con_id", "contract_id")
+                if args.get(key) not in (None, "", 0, "0")
+            ),
+            None,
+        )
+        actual_id = int(getattr(contract, "conId", 0) or 0)
+        requested_symbol = str(args.get("symbol") or "").strip().upper()
+        actual_symbol = str(getattr(contract, "symbol", "") or "").strip().upper()
+        id_mismatch = requested_id is not None and actual_id != int(requested_id)
+        symbol_mismatch = (
+            bool(requested_symbol)
+            and bool(actual_symbol)
+            and actual_symbol != requested_symbol
+        )
+        if not id_mismatch and not symbol_mismatch:
+            return None
+        return {
+            "success": False,
+            "error": "BROKER_FEASIBILITY_CONTRACT_MISMATCH",
+            "error_type": "ValueError",
+            "error_code": "BROKER_FEASIBILITY_CONTRACT_MISMATCH",
+            "stage": "CONTRACT_QUALIFICATION",
+            "contract": self._serialize_contract(contract),
+            "whatIf": True,
+            "paper_only": True,
+        }
+
+    @staticmethod
+    def _request_what_if(broker: Any, contract: Any, order: Any):
+        if getattr(order, "whatIf", False) is not True:
+            raise RuntimeError("BROKER_FEASIBILITY_WHAT_IF_REQUIRED")
+        # IBKR requires transmit=True on a what-if request.
+        # whatIf=True keeps the request simulated.
+        if getattr(order, "transmit", False) is not True:
+            raise RuntimeError("BROKER_FEASIBILITY_WHAT_IF_TRANSMIT_REQUIRED")
+        return broker.whatIfOrder(contract, order)
+
+    def _what_if_evidence(
+        self,
+        broker: Any,
+        contract: Any,
+        *,
+        action: str,
+        order_type: str,
+        quantity: Decimal,
+        limit_price: Decimal | None,
+        time_in_force: str = "",
+    ) -> dict[str, Any]:
+        from ib_insync import Order
+
+        order = Order(
+            action=action,
+            orderType=order_type,
+            totalQuantity=float(quantity),
+            tif=time_in_force,
+            transmit=True,
+            whatIf=True,
+        )
+        if limit_price is not None:
+            order.lmtPrice = float(limit_price)
+        state = self._request_what_if(broker, contract, order)
+        if state is None:
+            return {
+                "success": False,
+                "error": "WHAT_IF_RETURNED_NONE",
+                "contract": self._serialize_contract(contract),
+                "whatIf": True,
+                "paper_only": True,
+            }
+        return {
+            "success": True,
+            "contract": self._serialize_contract(contract),
+            "commission": getattr(state, "commission", None),
+            "minCommission": getattr(state, "minCommission", None),
+            "maxCommission": getattr(state, "maxCommission", None),
+            "initMarginBefore": getattr(state, "initMarginBefore", None),
+            "initMarginChange": getattr(state, "initMarginChange", None),
+            "initMarginAfter": getattr(state, "initMarginAfter", None),
+            "maintMarginBefore": getattr(state, "maintMarginBefore", None),
+            "maintMarginChange": getattr(state, "maintMarginChange", None),
+            "maintMarginAfter": getattr(state, "maintMarginAfter", None),
+            "equityWithLoanBefore": getattr(state, "equityWithLoanBefore", None),
+            "equityWithLoanChange": getattr(state, "equityWithLoanChange", None),
+            "equityWithLoanAfter": getattr(state, "equityWithLoanAfter", None),
+            "warningText": getattr(state, "warningText", None),
+            "whatIf": True,
+            "paper_only": True,
+        }
 
     def _proposal_contract(self, ib: Any, proposal: AutonomousTradeProposal):
         from ib_insync import ComboLeg, Contract
@@ -1140,50 +1354,18 @@ class IBKRResearchToolbox:
         *,
         ib: Any | None = None,
     ) -> dict[str, Any]:
-        from ib_insync import Order
-
         owns_connection = ib is None
         broker = ib or self._connect()
         try:
             contract = self._proposal_contract(broker, proposal)
-            order = Order(
+            return self._what_if_evidence(
+                broker,
+                contract,
                 action=proposal.action.upper(),
-                orderType=proposal.order_type.upper(),
-                totalQuantity=float(proposal.quantity),
-                transmit=False,
-                whatIf=True,
+                order_type=proposal.order_type.upper(),
+                quantity=proposal.quantity,
+                limit_price=proposal.limit_price,
             )
-            if proposal.limit_price is not None:
-                order.lmtPrice = float(proposal.limit_price)
-            state = broker.whatIfOrder(contract, order)
-            if state is None:
-                return {
-                    "success": False,
-                    "error": "WHAT_IF_RETURNED_NONE",
-                    "contract": self._serialize_contract(contract),
-                    "whatIf": True,
-                    "paper_only": True,
-                }
-            evidence = {
-                "success": True,
-                "contract": self._serialize_contract(contract),
-                "commission": getattr(state, "commission", None),
-                "minCommission": getattr(state, "minCommission", None),
-                "maxCommission": getattr(state, "maxCommission", None),
-                "initMarginBefore": getattr(state, "initMarginBefore", None),
-                "initMarginChange": getattr(state, "initMarginChange", None),
-                "initMarginAfter": getattr(state, "initMarginAfter", None),
-                "maintMarginBefore": getattr(state, "maintMarginBefore", None),
-                "maintMarginChange": getattr(state, "maintMarginChange", None),
-                "maintMarginAfter": getattr(state, "maintMarginAfter", None),
-                "equityWithLoanBefore": getattr(state, "equityWithLoanBefore", None),
-                "equityWithLoanChange": getattr(state, "equityWithLoanChange", None),
-                "equityWithLoanAfter": getattr(state, "equityWithLoanAfter", None),
-                "warningText": getattr(state, "warningText", None),
-                "whatIf": True,
-                "paper_only": True,
-            }
-            return evidence
         except Exception as exc:
             return {
                 "success": False,
