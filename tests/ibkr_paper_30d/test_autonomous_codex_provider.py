@@ -64,6 +64,24 @@ def test_codex_executable_resolves_from_desktop_install_when_path_is_missing(
     assert _resolve_codex_executable() == str(executable)
 
 
+def test_codex_executable_prefers_desktop_install_over_older_path_cli(
+    tmp_path: Path, monkeypatch
+) -> None:
+    path_cli = tmp_path / "npm" / "codex.cmd"
+    path_cli.parent.mkdir(parents=True)
+    path_cli.write_bytes(b"")
+    desktop_cli = tmp_path / "OpenAI" / "Codex" / "bin" / "build" / "codex.exe"
+    desktop_cli.parent.mkdir(parents=True)
+    desktop_cli.write_bytes(b"")
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    monkeypatch.setattr(
+        "ibkr_paper_30d.autonomous_research.shutil.which",
+        lambda _name: str(path_cli),
+    )
+
+    assert _resolve_codex_executable() == str(desktop_cli)
+
+
 def test_strict_schema_encodes_dynamic_research_arguments_as_json_string() -> None:
     schema = CodexAutonomousCLIProvider.strict_output_schema()
 

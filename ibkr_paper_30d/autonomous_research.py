@@ -30,9 +30,6 @@ def _resolve_codex_executable() -> str:
     explicit = os.environ.get("CODEX_CLI_EXECUTABLE")
     if explicit and Path(explicit).is_file():
         return explicit
-    discovered = shutil.which("codex")
-    if discovered:
-        return discovered
     local_app_data = os.environ.get("LOCALAPPDATA")
     if local_app_data:
         candidates = list(
@@ -42,6 +39,9 @@ def _resolve_codex_executable() -> str:
         )
         if candidates:
             return str(max(candidates, key=lambda path: path.stat().st_mtime_ns))
+    discovered = shutil.which("codex")
+    if discovered:
+        return discovered
     raise FileNotFoundError("CODEX_CLI_EXECUTABLE_NOT_FOUND")
 
 
