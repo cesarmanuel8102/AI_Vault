@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
@@ -337,3 +338,120 @@ def test_runtime_gate_evaluates_with_time_captured_after_collection(
     assert result["gate_status"] == "PASS"
     assert result["reason_codes"] == []
     assert result["quote_age_at_decision_ms"] == 100
+
+
+def test_runtime_gate_retries_only_transient_timestamp_blocks(
+    monkeypatch, policy
+) -> None:
+    stale_time = NOW - timedelta(seconds=2)
+    fresh_time = NOW - timedelta(milliseconds=100)
+    observations = iter(
+        (
+            SimpleNamespace(
+                accepted=False,
+                reason_codes=("CLOCK_SKEW_UNCERTAIN",),
+                symbol="SPY",
+                contract_id=1,
+                source="IBKR",
+                bid=Decimal("500.00"),
+                ask=Decimal("500.02"),
+                last=Decimal("500.01"),
+                bid_size=Decimal("10"),
+                ask_size=Decimal("10"),
+                last_size=Decimal("1"),
+                broker_quote_timestamp=stale_time,
+                local_receipt_timestamp=stale_time,
+                market_session=SimpleNamespace(value="REGULAR"),
+                realtime_or_delayed="REALTIME",
+                entitlement_state="AVAILABLE",
+                corrected_quote_age_ms=None,
+                source_health="HEALTHY",
+            ),
+            SimpleNamespace(
+                accepted=True,
+                reason_codes=(),
+                symbol="SPY",
+                contract_id=1,
+                source="IBKR",
+                bid=Decimal("500.00"),
+                ask=Decimal("500.02"),
+                last=Decimal("500.01"),
+                bid_size=Decimal("10"),
+                ask_size=Decimal("10"),
+                last_size=Decimal("1"),
+                broker_quote_timestamp=fresh_time,
+                local_receipt_timestamp=fresh_time,
+                market_session=SimpleNamespace(value="REGULAR"),
+                realtime_or_delayed="REALTIME",
+                entitlement_state="AVAILABLE",
+                corrected_quote_age_ms=100,
+                source_health="HEALTHY",
+            ),
+        )
+    )
+
+    class RetryCollector:
+        def __init__(self, source, now_utc):
+            self.source = source
+            self.now_utc = now_utc
+
+        def collect_window(self, config, prerequisites):
+            assert config.cadence_seconds == 5
+            assert config.window_seconds == 0
+            return SimpleNamespace(observations=[next(observations)])
+
+    monkeypatch.setattr(
+        "ibkr_paper_30d.runtime_integrity.load_verified_policy",
+        lambda path: policy,
+    )
+    monkeypatch.setattr(
+        "ibkr_paper_30d.runtime_integrity.MarketObservationCollector",
+        RetryCollector,
+    )
+
+    sources = []
+
+    def source_factory():
+        source = object()
+        sources.append(source)
+        return source
+
+    result = RuntimeMarketDataGate(
+        policy_path=__import__("pathlib").Path("unused.json"),
+        expected_account_hash="a" * 64,
+        source_factory=source_factory,
+        now_utc=lambda: NOW,
+    ).evaluate(DecisionClass.NEW_TRADE)
+
+    assert result["gate_status"] == "PASS"
+    assert result["reason_codes"] == []
+    assert result["quote_timestamp"] == fresh_time.isoformat()
+    assert len(sources) == 2
+
+
+def test_runtime_gate_does_not_retry_non_timestamp_blocks(
+    monkeypatch, policy
+) -> None:
+    monkeypatch.setattr(
+        "ibkr_paper_30d.runtime_integrity.load_verified_policy",
+        lambda path: policy,
+    )
+    gate = RuntimeMarketDataGate(
+        policy_path=__import__("pathlib").Path("unused.json"),
+        expected_account_hash="a" * 64,
+        source_factory=lambda: object(),
+        now_utc=lambda: NOW,
+    )
+    evaluate_once = Mock(
+        return_value={
+            "gate_status": "BLOCK",
+            "reason_codes": ["DELAYED_DATA"],
+        }
+    )
+    monkeypatch.setattr(gate, "_evaluate_once", evaluate_once)
+
+    result = gate.evaluate(DecisionClass.NEW_TRADE)
+
+    assert result["gate_status"] == "BLOCK"
+    assert result["reason_codes"] == ["DELAYED_DATA"]
+    evaluate_once.assert_called_once_with(policy, DecisionClass.NEW_TRADE)

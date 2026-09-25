@@ -14,6 +14,7 @@ from .auditor_gate_v2 import (
 from .market_data import (
     DecisionClass,
     MarketDataGate,
+    MarketDataPolicy,
     MarketDataSnapshot,
     QuoteSnapshot,
 )
@@ -40,6 +41,10 @@ def _sha256(path: Path) -> str:
 
 
 class RuntimeMarketDataGate:
+    _TRANSIENT_TIMESTAMP_REASONS = frozenset(
+        {"CLOCK_SKEW_UNCERTAIN", "STALE_QUOTE", "TIMESTAMP_MISMATCH"}
+    )
+
     def __init__(
         self,
         *,
@@ -66,6 +71,25 @@ class RuntimeMarketDataGate:
                 "error": f"{type(exc).__name__}:{exc}",
             }
 
+        result: dict[str, Any] = {}
+        for _ in range(3):
+            result = self._evaluate_once(policy, decision_class)
+            if result.get("gate_status") == "PASS":
+                return result
+            reasons = result.get("reason_codes")
+            if (
+                not isinstance(reasons, list)
+                or not reasons
+                or not set(reasons).issubset(self._TRANSIENT_TIMESTAMP_REASONS)
+            ):
+                return result
+        return result
+
+    def _evaluate_once(
+        self,
+        policy: MarketDataPolicy,
+        decision_class: DecisionClass,
+    ) -> dict[str, Any]:
         source = self.source_factory()
         try:
             window = MarketObservationCollector(
