@@ -67,7 +67,6 @@ class RuntimeMarketDataGate:
             }
 
         source = self.source_factory()
-        now = self.now_utc()
         try:
             window = MarketObservationCollector(
                 source, now_utc=self.now_utc
@@ -113,9 +112,12 @@ class RuntimeMarketDataGate:
                 )
                 for item in window.observations
             ]
-            snapshot = MarketDataSnapshot.freeze(quotes, created_at_utc=now)
+            evaluation_now = self.now_utc()
+            snapshot = MarketDataSnapshot.freeze(
+                quotes, created_at_utc=evaluation_now
+            )
             result = MarketDataGate(policy).evaluate(
-                snapshot, decision_class, now=now
+                snapshot, decision_class, now=evaluation_now
             )
             reasons = list(result.reason_codes)
             reasons.extend(rejected)

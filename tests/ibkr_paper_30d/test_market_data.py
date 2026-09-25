@@ -279,3 +279,61 @@ def test_runtime_gate_surfaces_oldest_and_latest_quote_timestamps(
     assert result["oldest_quote_timestamp"] == older_ts.isoformat()
     assert result["latest_quote_timestamp"] == newer_ts.isoformat()
 
+
+def test_runtime_gate_evaluates_with_time_captured_after_collection(
+    monkeypatch, policy
+) -> None:
+    collection_started = NOW
+    collection_finished = NOW + timedelta(seconds=3)
+    clock = {"now": collection_started}
+
+    observation = SimpleNamespace(
+        accepted=True,
+        reason_codes=(),
+        symbol="SPY",
+        contract_id=1,
+        source="IBKR",
+        bid=Decimal("500.00"),
+        ask=Decimal("500.02"),
+        last=Decimal("500.01"),
+        bid_size=Decimal("10"),
+        ask_size=Decimal("10"),
+        last_size=Decimal("1"),
+        broker_quote_timestamp=collection_finished - timedelta(milliseconds=100),
+        local_receipt_timestamp=collection_finished - timedelta(milliseconds=50),
+        market_session=SimpleNamespace(value="REGULAR"),
+        realtime_or_delayed="REALTIME",
+        entitlement_state="AVAILABLE",
+        corrected_quote_age_ms=100,
+        source_health="HEALTHY",
+    )
+
+    class DelayedCollector:
+        def __init__(self, source, now_utc):
+            self.source = source
+            self.now_utc = now_utc
+
+        def collect_window(self, config, prerequisites):
+            clock["now"] = collection_finished
+            return SimpleNamespace(observations=[observation])
+
+    monkeypatch.setattr(
+        "ibkr_paper_30d.runtime_integrity.load_verified_policy",
+        lambda path: policy,
+    )
+    monkeypatch.setattr(
+        "ibkr_paper_30d.runtime_integrity.MarketObservationCollector",
+        DelayedCollector,
+    )
+
+    gate = RuntimeMarketDataGate(
+        policy_path=__import__("pathlib").Path("unused.json"),
+        expected_account_hash="a" * 64,
+        source_factory=lambda: object(),
+        now_utc=lambda: clock["now"],
+    )
+    result = gate.evaluate(DecisionClass.NEW_TRADE)
+
+    assert result["gate_status"] == "PASS"
+    assert result["reason_codes"] == []
+    assert result["quote_age_at_decision_ms"] == 100
