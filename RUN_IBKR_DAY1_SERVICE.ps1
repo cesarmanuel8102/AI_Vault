@@ -15,6 +15,7 @@ $ApprovedRepoRoot = [IO.Path]::GetFullPath("C:\AI_VAULT_IBKR").TrimEnd('\')
 if ($ResolvedRepoRoot -ine $ApprovedRepoRoot) {
     throw "REPO_ROOT_NOT_APPROVED:$ResolvedRepoRoot"
 }
+Set-Location -LiteralPath $ResolvedRepoRoot
 $Finalizer = Join-Path $ResolvedRepoRoot "FINALIZE_IBKR_PREREQUISITES.ps1"
 $LaunchAttemptId = [guid]::NewGuid().ToString("D")
 $FinalizerArguments = @(

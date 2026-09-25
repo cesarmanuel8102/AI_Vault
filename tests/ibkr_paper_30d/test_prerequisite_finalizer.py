@@ -215,6 +215,15 @@ def test_day1_handoff_validate_only_reports_foreground_commands():
     assert payload["broker_write_calls"] == 0
 
 
+def test_day1_runner_anchors_python_module_launch_to_approved_repo():
+    text = DAY1_RUNNER.read_text(encoding="utf-8")
+
+    anchor = text.index("Set-Location -LiteralPath $ResolvedRepoRoot")
+    launch = text.index("& $PythonExe @PythonArguments")
+
+    assert anchor < launch
+
+
 @pytest.mark.skipif(os.name != "nt", reason="PowerShell execution is Windows-only")
 def test_nonzero_finalizer_prevents_launcher_invocation(tmp_path: Path):
     fake_finalizer = tmp_path / "fake-finalizer.cmd"
