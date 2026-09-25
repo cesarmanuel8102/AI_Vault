@@ -1365,6 +1365,7 @@ class IBKRResearchToolbox:
                 order_type=proposal.order_type.upper(),
                 quantity=proposal.quantity,
                 limit_price=proposal.limit_price,
+                time_in_force="DAY",
             )
         except Exception as exc:
             return {

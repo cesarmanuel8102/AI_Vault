@@ -215,6 +215,7 @@ def test_proposal_validation_what_if_uses_required_transmit_flag(monkeypatch):
     _, order = broker.what_if_calls[0]
     assert order.whatIf is True
     assert order.transmit is True
+    assert order.tif == "DAY"
 
 
 @pytest.mark.parametrize(
