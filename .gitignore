@@ -121,3 +121,4 @@ memory/semantic/*.npz
 memory/semantic/*_ids.json
 # <<< WT-HYGIENE-02 runtime artifacts <<<
 
+state/ibkr_paper_30d/reports/autonomy_epoch_manifest.json

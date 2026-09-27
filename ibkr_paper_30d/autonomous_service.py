@@ -16,6 +16,8 @@ from .autonomous_execution import AutonomousPaperExecutor
 from .autonomous_research import CodexAutonomousCLIProvider
 from .autonomous_runtime import run_autonomous_cycle
 from .autonomous_state import AutonomousStateBuilder
+from .autonomy_toolbox import AutonomyToolbox
+from .autonomy_workspace import AutonomyWorkspace
 from .canonical import canonical_bytes, sha256_json
 from .experiment_control import ExperimentClockStore, KillSwitchStore, OwnerAuthorizationStore
 from .experiment_ledger import AutonomousExperimentLedger
@@ -153,8 +155,20 @@ class AutonomousExperimentService:
         self.timeout_seconds = timeout_seconds
         self.options_level = options_level
         self.execute_paper = execute_paper
-        self.toolbox = toolbox or IBKRResearchToolbox(
+        base_toolbox = toolbox or IBKRResearchToolbox(
             declared_options_level=options_level
+        )
+        workspace_root = Path(
+            os.environ.get(
+                "IBKR_AUTONOMY_WORKSPACE_ROOT",
+                "state/ibkr_paper_30d/autonomy_workspace",
+            )
+        )
+        self.workspace = AutonomyWorkspace(workspace_root)
+        self.toolbox = (
+            base_toolbox
+            if isinstance(base_toolbox, AutonomyToolbox)
+            else AutonomyToolbox(base_toolbox, self.workspace)
         )
         self.broker_now = broker_now or self._read_broker_time
         self.launch_attempt_id = launch_attempt_id

@@ -19,6 +19,12 @@ from uuid import uuid4
 from .autonomous_research import CodexAutonomousCLIProvider
 from .autonomous_service import AutonomousExperimentService
 from .canonical import canonical_bytes, sha256_json
+from .epoch_manifest import (
+    EpochManifestInputs,
+    build_epoch_manifest,
+    build_kernel_manifest,
+    epoch_manifest_hash,
+)
 from .execution_lock import ExecutionLock, LockOwner
 from .experiment_control import (
     ExperimentClockStore,
@@ -71,6 +77,7 @@ class Day1LaunchConfig:
     model_attestation_exception_path: Path
     launch_attempt_binding_path: Path
     launch_attempt_id: str
+    epoch_manifest_path: Path | None = None
     scheduled_start_utc: datetime = datetime(
         2026, 9, 23, 13, 30, tzinfo=timezone.utc
     )
@@ -653,6 +660,106 @@ class _LockHeartbeat:
                 return
 
 
+def _write_epoch_manifest(
+    config: Day1LaunchConfig, preflight: Any
+) -> dict[str, Any]:
+    """Observational epoch provenance (AUTONOMY_EPOCH_1).
+
+    Never influences strategy; never blocks launch when optional
+    capabilities are unavailable. Failures to hash optional artifacts
+    degrade to None, but kernel hashing is required (structural).
+    """
+
+    repo_root = Path(config.repo_root).resolve()
+    code_root = Path(__file__).resolve().parents[1]
+    kernel = build_kernel_manifest(code_root)
+
+    def _optional_file_hash(relative: str) -> str | None:
+        try:
+            target = repo_root / relative
+            if not target.exists():
+                return None
+            return hashlib.sha256(target.read_bytes()).hexdigest()
+        except OSError:
+            return None
+
+    from .autonomy_toolbox import quantconnect_available
+    from .autonomy_workspace import AutonomyWorkspace
+
+    workspace_root = repo_root / "state" / "ibkr_paper_30d" / "autonomy_workspace"
+    manifest = build_epoch_manifest(
+        EpochManifestInputs(
+            git_commit_sha=_current_git_commit(repo_root),
+            model=config.model,
+            reasoning_effort=config.reasoning_effort,
+            primary_objective_hash=hashlib.sha256(
+                b"Maximize terminal experimental PAPER equity over the remaining experiment horizon."
+            ).hexdigest(),
+            effective_prompt_hash=_effective_prompt_hash(),
+            tool_manifest_hash=_tool_manifest_hash(),
+            immutable_kernel_manifest_hash=kernel["kernel_manifest_sha256"],
+            market_policy_hash=_optional_file_hash(
+                "state/ibkr_paper_30d/reports/market_data_policy_v1.json"
+            ),
+            risk_policy_hash=_optional_file_hash(
+                "state/ibkr_paper_30d/reports/owner_authorization_v1.json"
+            ),
+            authorization_receipt_hash=preflight.authorization_event_id,
+            paper_identity_hash=preflight.expected_account_hash,
+            quantconnect_capability=(
+                "OPTIONAL_AVAILABLE" if quantconnect_available() else "OPTIONAL_UNAVAILABLE"
+            ),
+            self_tooling_enabled=True,
+            persistent_workspace_enabled=workspace_root.exists() or True,
+        )
+    )
+    manifest["epoch_manifest_sha256"] = epoch_manifest_hash(manifest)
+    destination = config.epoch_manifest_path or (
+        repo_root
+        / "state"
+        / "ibkr_paper_30d"
+        / "reports"
+        / "autonomy_epoch_manifest.json"
+    )
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(
+        canonical_bytes(manifest).decode("utf-8"), encoding="utf-8"
+    )
+    return manifest
+
+
+def _current_git_commit(repo_root: Path) -> str:
+    import subprocess
+
+    try:
+        completed = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            cwd=str(repo_root),
+            check=False,
+        )
+        return completed.stdout.strip() or "UNKNOWN"
+    except (OSError, subprocess.SubprocessError):
+        return "UNKNOWN"
+
+
+def _effective_prompt_hash() -> str:
+    from .autonomous_research import CodexAutonomousCLIProvider
+
+    payload = CodexAutonomousCLIProvider._prompt_payload
+    source = __import__("inspect").getsource(payload)
+    return hashlib.sha256(source.encode("utf-8")).hexdigest()
+
+
+def _tool_manifest_hash() -> str:
+    from .ibkr_research_tools import IBKRResearchToolbox
+
+    manifest = IBKRResearchToolbox.manifest(None)
+    return sha256_json(manifest)
+
+
 def run_day1_launch(
     config: Day1LaunchConfig, dependencies: LaunchDependencies
 ) -> str:
@@ -675,6 +782,7 @@ def run_day1_launch(
             raise LaunchError("EXECUTION_LOCK_OWNER_ACTION_REQUIRED")
 
         try:
+            _write_epoch_manifest(config, preflight)
             controls = validate_launch_controls(db, config)
             if controls.authorization_event_id != preflight.authorization_event_id:
                 raise LaunchError("OWNER_AUTHORIZATION_CHANGED_DURING_PREFLIGHT")

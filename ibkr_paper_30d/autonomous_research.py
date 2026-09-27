@@ -57,6 +57,9 @@ class ResearchTool(str, Enum):
     OPTION_CHAIN = "OPTION_CHAIN"
     NEWS_SEARCH = "NEWS_SEARCH"
     BROKER_FEASIBILITY = "BROKER_FEASIBILITY"
+    WORKSPACE = "WORKSPACE"
+    RUN_RESEARCH_SCRIPT = "RUN_RESEARCH_SCRIPT"
+    QUANTCONNECT = "QUANTCONNECT"
 
 
 class ResearchRequest(BaseModel, frozen=True):
@@ -131,7 +134,7 @@ class AutonomousTradeProposal(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
     thesis: str
-    catalyst: str
+    catalyst: str | None = None
     symbol: str
     sec_type: str
     direction: str
@@ -156,7 +159,7 @@ class AutonomousTradeProposal(BaseModel, frozen=True):
     entry_condition: str
     invalidation_condition: str
     exit_plan: str
-    why_now: str
+    why_now: str | None = None
     alternatives_considered: list[str]
     evidence_used: list[str]
     disconfirming_evidence: list[str]
@@ -351,7 +354,13 @@ class CodexAutonomousCLIProvider:
                 "--output-schema", str(schema_path),
                 "--output-last-message", str(output_path), "-",
             ]
-            payload = self._prompt_payload(request, bundle, history, toolbox_manifest)
+            payload = self._prompt_payload(
+                request,
+                bundle,
+                history,
+                toolbox_manifest,
+                workspace_context=getattr(self, "workspace_context", None),
+            )
             completed = None
             retry_delays = (1.0, 3.0)
             for attempt in range(len(retry_delays) + 1):
@@ -427,11 +436,12 @@ class CodexAutonomousCLIProvider:
         bundle: TraderInputBundle,
         history: list[dict[str, Any]],
         toolbox_manifest: list[dict[str, Any]],
+        workspace_context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "schema": "CODEX_AUTONOMOUS_RESEARCH_TURN_V1",
             "mandate": {
-                "objective": "Maximize terminal experimental equity over the remaining 30-day paper-trading experiment.",
+                "objective": "Maximize terminal experimental PAPER equity over the remaining experiment horizon.",
                 "capital_can_be_fully_lost": True,
                 "fixed_percent_risk_limits": False,
                 "predefined_symbol_universe": False,
@@ -446,32 +456,59 @@ class CodexAutonomousCLIProvider:
                 "inactivity_is_not_success": True,
                 "cash_preservation_is_not_success_by_itself": True,
                 "risk_taking_is_not_success_by_itself": True,
-                "shallow_research_with_habitual_no_trade_is_not_acceptable": True,
                 "avoidable_opportunity_cost_is_failure": True,
                 "capital_and_remaining_time_are_scarce": True,
                 "destroying_optionality_can_reduce_expected_terminal_equity": True,
                 "failing_to_exploit_superior_positive_expectancy_opportunity_can_reduce_expected_terminal_equity": True,
+                "immutable_environmental_constraints": [
+                    "PAPER account only",
+                    "LIVE execution prohibited",
+                    "experimental capital boundary",
+                    "account identity",
+                    "execution authorization",
+                    "kill switch",
+                    "broker-write authority",
+                    "execution idempotency",
+                    "stale-data protections",
+                    "audit integrity",
+                    "no falsification or concealment of state",
+                ],
+                "may_not_modify_boundaries_to_improve_objective": True,
                 "instruction": (
-                    "You control the research agenda. Request whatever read-only market/broker research you need from the toolbox. "
-                    "You may also use native Codex web search when available for public news, macro, filings, catalysts and market context. "
-                    "IBKR data and IBKR what-if remain authoritative for broker/account/contract feasibility. "
-                    "Do not assume prior candidate lists are exhaustive. Reassess instrument and strategy choices as equity, buying power, "
-                    "broker feasibility and remaining time change. When evidence is sufficient, return FINAL.\n"
-                    "Objective reasoning: your only objective is expected terminal experimental equity. "
-                    "Conduct an active search for superior opportunities every cycle. "
-                    "If your current discovery method repeatedly fails, change the search process: broaden or alter instruments, "
-                    "asset classes, strategies, horizons, market regions, sessions, research tools and discovery methods, "
-                    "limited only by actual broker/account/runtime feasibility. "
-                    "Before concluding NO_TRADE, run a counterfactual challenge: state the best feasible alternative found, "
-                    "why retaining capital and optionality dominates that alternative, and whether additional research has positive "
-                    "expected value. NO_TRADE is valid only when retaining capital and optionality has the higher expected "
-                    "contribution to terminal equity after adequate search. "
-                    "Repeated NO_TRADE, stagnant equity or repeated inability to find opportunities must make you reconsider the search process, "
-                    "never forced trading: the response to stagnation is a different search process, not a trade. Stop additional research only when its marginal expected value "
-                    "is below its time/data cost or a sufficiently dominant actionable opportunity has been identified. "
-                    "Never manufacture trades to satisfy activity expectations. "
-                    "Preserve the experiment's optionality to exploit future opportunities unless risking it is justified by a "
-                    "sufficiently compelling expected terminal-equity advantage; this is expected-value reasoning, not a fixed risk limit."
+                    "You decide how to pursue the objective. You may decide what markets to investigate, what instruments "
+                    "to consider, what strategies to formulate, what time horizons to use, what evidence matters, how much "
+                    "research has marginal value, when to trade, when not to trade, when to change methodology, what tools "
+                    "to build, what hypotheses to test, what information to retain, and how to learn from previous "
+                    "observations and outcomes. There is no prescribed trading strategy, predefined universe, required "
+                    "setup type, required research sequence, or required asset class.\n"
+                    "NO_TRADE is a valid local decision whenever it is preferable to the available alternatives. Do not "
+                    "trade merely to demonstrate activity. However, if your current process is not producing useful "
+                    "progress toward the objective, you are expected to diagnose the cause, reconsider assumptions, "
+                    "explore alternatives, acquire better information, develop useful capabilities, or replace an "
+                    "ineffective methodology when doing so has positive expected value. Persist toward the objective "
+                    "with adaptive methodology; neither a losing trade nor a failed strategy ends the pursuit.\n"
+                    "You may use any legally permissible and technically authorized research resource available to the "
+                    "environment when you judge that its expected value justifies its use, including public web "
+                    "information, market data, news, IBKR read-only data, historical data, local Python, statistical "
+                    "computation, local databases, QuantConnect, existing connected research services, public "
+                    "documentation, and research tools you build yourself. You must not create paid subscriptions, "
+                    "incur external financial costs, accept new contractual terms, expose credentials, create "
+                    "financial accounts, circumvent access controls, violate licenses or terms, scrape illegally, or "
+                    "evade paywalls. IBKR data and IBKR what-if remain authoritative for broker/account/contract "
+                    "feasibility.\n"
+                    "QuantConnect is available as an optional research laboratory for backtesting, historical "
+                    "experiments, simulation, strategy validation, or other research if you decide it is useful. You "
+                    "are not required to use QuantConnect.\n"
+                    "You may build your own research tools and maintain persistent research artifacts when useful. "
+                    "Use the WORKSPACE tool to inspect, create and manage your persistent research workspace, and "
+                    "run your own research scripts with the RUN_RESEARCH_SCRIPT tool. Artifacts you create persist "
+                    "across cycles.\n"
+                    "If a useful investigation cannot fit within the current cycle, you may persist the research "
+                    "objective and artifacts in your workspace and resume in a later cycle. This capability is "
+                    "optional, not required.\n"
+                    "The immutable environmental constraints listed in this mandate are properties of the "
+                    "environment, not strategy suggestions. You may not improve the measured objective by modifying, "
+                    "bypassing, disabling, or redefining them."
                 ),
             },
             "request": request.model_dump(mode="json"),
@@ -485,6 +522,9 @@ class CodexAutonomousCLIProvider:
                 )
             },
         }
+        if workspace_context:
+            payload["workspace_context"] = workspace_context
+        return payload
 
     @staticmethod
     def strict_output_schema() -> dict[str, Any]:

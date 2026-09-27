@@ -185,7 +185,7 @@ def test_autonomous_codex_invocation_enables_live_search_and_max_reasoning():
     assert 'model_reasoning_effort="max"' in command
     assert turn.decision.value == "NO_TRADE"
     prompt_payload = json.loads(captured["input"])
-    assert prompt_payload["mandate"]["objective"].startswith("Maximize terminal experimental equity")
+    assert prompt_payload["mandate"]["objective"].startswith("Maximize terminal experimental PAPER equity")
     assert "trader_style" not in prompt_payload["mandate"]
     assert prompt_payload["mandate"]["predefined_symbol_universe"] is False
     assert prompt_payload["mandate"]["predefined_strategy_family"] is False
