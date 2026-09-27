@@ -1,3 +1,12 @@
+"""Mandate invariants for the AUTONOMY_EPOCH_1 charter.
+
+The pre-epoch mandate tests pinned strategic prescription (counterfactual
+ritual, per-cycle active-search duty, conditional NO_TRADE validity).
+The Epoch-1 charter intentionally removes those prescriptions; these
+tests now pin the charter's guarantees: the hard boundaries, the
+objective, freedom fields, and the absence of forced action.
+"""
+
 from __future__ import annotations
 
 import json
@@ -12,8 +21,8 @@ REPO = Path(__file__).resolve().parents[2]
 
 def bundle() -> TraderInputBundle:
     return TraderInputBundle(
-        decision_cycle_id="cycle-mandate-1",
-        utc_timestamp="2026-09-23T20:00:00Z",
+        decision_cycle_id="cycle-mandate-epoch1",
+        utc_timestamp="2026-09-25T22:00:00Z",
         market_session_state="REGULAR",
         reconciliation_receipt={"status": "PASS"},
         experiment_subledger_snapshot={"equity": "500.00"},
@@ -34,8 +43,8 @@ def bundle() -> TraderInputBundle:
 def request(value: TraderInputBundle) -> InvocationRequest:
     return InvocationRequest(
         decision_cycle_id=value.decision_cycle_id,
-        invocation_id="inv-mandate-1",
-        utc_timestamp="2026-09-23T20:00:01Z",
+        invocation_id="inv-mandate-epoch1",
+        utc_timestamp="2026-09-25T22:00:01Z",
         requested_model="gpt-5.6-sol",
         actual_model="gpt-5.6-sol",
         model_configuration={"mode": "autonomous_research"},
@@ -60,12 +69,15 @@ def instruction() -> str:
 
 
 def test_primary_objective_remains_maximize_terminal_experimental_equity():
-    assert mandate()["objective"].startswith("Maximize terminal experimental equity")
+    assert mandate()["objective"].startswith("Maximize terminal experimental")
+    assert "PAPER equity" in mandate()["objective"]
+    assert "30-day" not in mandate()["objective"]
 
 
 def test_no_trade_remains_valid():
-    assert mandate()["no_trade_is_allowed"] is True
-    assert mandate()["no_trade_remains_valid"] is True
+    m = mandate()
+    assert m["no_trade_is_allowed"] is True
+    assert m["no_trade_remains_valid"] is True
 
 
 def test_activity_narratives_are_explicitly_not_success():
@@ -76,10 +88,8 @@ def test_activity_narratives_are_explicitly_not_success():
     assert m["risk_taking_is_not_success_by_itself"] is True
 
 
-def test_shallow_habitual_no_trade_is_explicitly_unacceptable():
-    m = mandate()
-    assert m["shallow_research_with_habitual_no_trade_is_not_acceptable"] is True
-    assert m["avoidable_opportunity_cost_is_failure"] is True
+def test_avoidable_opportunity_cost_is_failure():
+    assert mandate()["avoidable_opportunity_cost_is_failure"] is True
 
 
 def test_scarcity_and_optionality_are_part_of_expected_terminal_equity_reasoning():
@@ -91,46 +101,59 @@ def test_scarcity_and_optionality_are_part_of_expected_terminal_equity_reasoning
     ] is True
 
 
-def test_instruction_requires_active_search_and_search_process_change():
+def test_immutable_constraints_are_environmental_not_strategic():
+    m = mandate()
+    assert isinstance(m["immutable_environmental_constraints"], list)
+    assert m["may_not_modify_boundaries_to_improve_objective"] is True
+    constraints = " ".join(m["immutable_environmental_constraints"]).lower()
+    assert "live execution prohibited" in constraints
+    assert "paper account only" in constraints
+
+
+def test_persistence_toward_objective_without_per_cycle_duty():
     text = instruction().lower()
-    assert "active search" in text
-    assert "search process" in text
-    assert "change the search process" in text
+    assert "if your current process is not producing useful progress" in text
+    assert "replace an ineffective methodology" in text
+    # The old per-cycle "active search" duty is gone.
+    assert "active search for superior opportunities every cycle" not in text
 
 
-def test_instruction_requires_counterfactual_challenge_before_no_trade():
+def test_counterfactual_ritual_is_retired():
     text = instruction().lower()
-    assert "counterfactual" in text
-    assert "best feasible alternative" in text
+    assert "counterfactual challenge" not in text
+    assert "before concluding no_trade" not in text
 
 
-def test_instruction_requires_optionality_survival_reasoning():
+def test_optionality_reasoning_is_expected_value_not_risk_limit():
+    text = json.dumps(mandate()).lower()
+    assert "destroying_optionality_can_reduce_expected_terminal_equity" in text
+
+
+def test_no_forced_trades_and_no_manufactured_activity():
     text = instruction().lower()
-    assert "optionality" in text
+    assert "do not trade merely to demonstrate activity" in text
+    assert "must trade" not in text
+    assert "must take risk" not in text
+    assert "must be aggressive" not in text
 
 
-def test_instruction_forbids_manufactured_trades():
+def test_stagnation_redirects_to_methodology_not_trading():
     text = instruction().lower()
-    assert "never manufacture trades" in text
+    assert "diagnose the cause" in text
+    assert "reconsider assumptions" in text
+    assert "replace an ineffective methodology" in text
 
 
-def test_stagnation_redirects_to_search_process_never_forced_trading():
+def test_methodological_freedom_dimensions_are_open():
     text = instruction().lower()
-    assert "reconsider the search process" in text
-    assert "never force" in text or "not forced" in text
-
-
-def test_instruction_permits_broadening_discovery_dimensions():
-    text = instruction().lower()
-    for dimension in (
-        "instruments",
-        "asset classes",
-        "strategies",
-        "horizons",
-        "regions",
-        "sessions",
+    for freedom in (
+        "what markets to investigate",
+        "what strategies to formulate",
+        "when to trade",
+        "when not to trade",
+        "what tools to build",
     ):
-        assert dimension in text
+        assert freedom in text, freedom
 
 
 def test_mandate_contains_no_quantitative_activity_targets():
@@ -180,3 +203,4 @@ def test_mandate_preserves_existing_native_freedom_fields():
     assert m["capital_can_be_fully_lost"] is True
     assert m["fixed_percent_risk_limits"] is False
     assert "trader_style" not in m
+    assert "maximum experiment liability" in m["only_external_capital_boundary"]

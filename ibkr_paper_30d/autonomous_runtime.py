@@ -242,6 +242,11 @@ def run_autonomous_cycle(
     )
     toolbox = toolbox or IBKRResearchToolbox(declared_options_level=options_level)
     provider = provider or CodexAutonomousCLIProvider()
+    workspace_summary = getattr(toolbox, "workspace_summary", None)
+    if callable(workspace_summary):
+        context = workspace_summary()
+        if context is not None:
+            provider.workspace_context = context
     outcome = AutonomousResearchLoop(provider, toolbox).run(request, bundle)
 
     if database is not None:

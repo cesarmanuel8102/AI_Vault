@@ -1163,3 +1163,47 @@ def test_complete_fake_launch_persists_running_without_broker_write(
     assert running["launch_attempt_id"] == ctx.config.launch_attempt_id
     assert ctx.executor_tripwire.calls == []
     assert ctx.ib_tripwire.calls == []
+
+
+def test_launch_writes_epoch_observational_manifest(tmp_path: Path) -> None:
+    """AUTONOMY_EPOCH_1: launch writes the observational epoch manifest with
+    provenance hashes. It must never influence strategy and must not leak
+    secrets."""
+
+    ctx = passing_context(tmp_path)
+    install_fake_lock(ctx)
+    ctx.service_factory.return_value.run_forever.side_effect = StopTestService
+
+    with pytest.raises(StopTestService):
+        run_day1_launch(ctx.config, ctx.dependencies)
+
+    manifest_path = (
+        tmp_path
+        / "state"
+        / "ibkr_paper_30d"
+        / "reports"
+        / "autonomy_epoch_manifest.json"
+    )
+    assert manifest_path.exists()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["schema"] == "AUTONOMY_EPOCH_MANIFEST_V1"
+    assert manifest["epoch_id"] == "AUTONOMY_EPOCH_1"
+    assert manifest["model"] == "gpt-5.6-sol"
+    assert manifest["reasoning_effort"] == "max"
+    assert manifest["self_tooling_enabled"] is True
+    assert manifest["persistent_workspace_enabled"] is True
+    assert manifest["quantconnect_capability"] in {
+        "OPTIONAL_AVAILABLE",
+        "OPTIONAL_UNAVAILABLE",
+    }
+    assert manifest["observational_only"] is True
+    assert len(manifest["immutable_kernel_manifest_hash"]) == 64
+    assert len(manifest["primary_objective_hash"]) == 64
+    assert len(manifest["effective_prompt_hash"]) == 64
+    assert len(manifest["epoch_manifest_sha256"]) == 64
+    # No raw account identity in the manifest (hash only).
+    assert "DU" not in manifest_path.read_text(encoding="utf-8")
+    # Strategy-free: no trading prescriptions.
+    lowered = json.dumps(manifest).lower()
+    for forbidden in ("must trade", "strategy", "quota", "minimum trades"):
+        assert forbidden not in lowered, forbidden

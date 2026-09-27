@@ -1,0 +1,118 @@
+{
+  "file_count": 22,
+  "generated_at_utc": "2026-09-27T00:35:11.894017Z",
+  "kernel_files": [
+    {
+      "path": "ibkr_paper_30d/autonomous_execution.py",
+      "sha256": "bdd5f253c90bcde10dbb22f5822b124f2da20f114dd92f8530ece7bac71a0eef",
+      "size_bytes": 55175
+    },
+    {
+      "path": "ibkr_paper_30d/ibkr_readonly_session.py",
+      "sha256": "498550a68710939705a3563e30868c07ad5179ea58257b1585fab7d1e4b616d1",
+      "size_bytes": 16426
+    },
+    {
+      "path": "ibkr_paper_30d/ibkr_readonly.py",
+      "sha256": "159196a06375f2d6adbe449cf6f26468f87f9e87fa58342681c81ad26d924386",
+      "size_bytes": 6391
+    },
+    {
+      "path": "ibkr_paper_30d/ibkr_research_tools.py",
+      "sha256": "b98da4f16f076546de07bd3831bb91f164571cfd3a1f3ce3b9e7263f865e7998",
+      "size_bytes": 66892
+    },
+    {
+      "path": "ibkr_paper_30d/owner_authorization.py",
+      "sha256": "1382ee6c704a0a9e64c4c4c13f4776ea86a3ee8d05cf08ecdfa9c53967b7fa11",
+      "size_bytes": 8788
+    },
+    {
+      "path": "ibkr_paper_30d/execution_lock.py",
+      "sha256": "b1d495a5af59803ee87adfbe1c827880149e5304d9176c556c9d430d3923ae4c",
+      "size_bytes": 9454
+    },
+    {
+      "path": "ibkr_paper_30d/experiment_control.py",
+      "sha256": "ff5da5470ca9a082304936c50ad1b879543043e08a768aa1788d410a03996d6d",
+      "size_bytes": 10021
+    },
+    {
+      "path": "ibkr_paper_30d/experiment_ledger.py",
+      "sha256": "0b98e0c52e025567fc466a16eb1e9943181065b765bc8e2c740d459adff32457",
+      "size_bytes": 17713
+    },
+    {
+      "path": "ibkr_paper_30d/risk.py",
+      "sha256": "1def81a00943b45e1c5805d4e20268046082eb597e1b5bbafdc8bfe49144edaf",
+      "size_bytes": 6682
+    },
+    {
+      "path": "ibkr_paper_30d/reconciliation.py",
+      "sha256": "c1e33f1246c8d1302f15a207df94974df08d4ddb197a95cb20ef70414320871b",
+      "size_bytes": 8120
+    },
+    {
+      "path": "ibkr_paper_30d/state_machine.py",
+      "sha256": "465d46c9bac45065ef61bcceb2eeda61e4d4d8725093a834f375dccdd7a857db",
+      "size_bytes": 11334
+    },
+    {
+      "path": "ibkr_paper_30d/persistence.py",
+      "sha256": "0ad45b29bf545c3c75770ec409af93540f737b2abdd4b2b22286cc38bdf9f56f",
+      "size_bytes": 13150
+    },
+    {
+      "path": "ibkr_paper_30d/evidence.py",
+      "sha256": "849c8571f02bcd8bb4efd85a9e154317473e8fe2efc24a8e344cd8197222c246",
+      "size_bytes": 4189
+    },
+    {
+      "path": "ibkr_paper_30d/market_policy.py",
+      "sha256": "a341dbbe12b67dc02f4ec10496a0460053ab6d6b0d2565db7dcf131069de564f",
+      "size_bytes": 18847
+    },
+    {
+      "path": "ibkr_paper_30d/market_data.py",
+      "sha256": "15ef9b22c4e744078c26289f67ae83d9187fa3650eb96c23a3de001e9b7dbb79",
+      "size_bytes": 8491
+    },
+    {
+      "path": "ibkr_paper_30d/market_observation.py",
+      "sha256": "2f39295a91e852fbde30f407bfb4cd63b924650802889ccf08d04753ccbc4ba7",
+      "size_bytes": 9714
+    },
+    {
+      "path": "ibkr_paper_30d/market_observation_collector.py",
+      "sha256": "07c0f67657a15f0b22c837260785ea4318a2a6f7889da2794ceba10e5642f215",
+      "size_bytes": 24060
+    },
+    {
+      "path": "ibkr_paper_30d/open_order_management.py",
+      "sha256": "14c3b5232cb188725853d889c51a0b3f8357016b49a61f775ca0e03db5f069c0",
+      "size_bytes": 13170
+    },
+    {
+      "path": "ibkr_paper_30d/auditor.py",
+      "sha256": "557daff4ab1d2fbf6d20fbb235d9518f8040eb2779866bccd1b019db7e74749f",
+      "size_bytes": 6996
+    },
+    {
+      "path": "ibkr_paper_30d/auditor_gate_v2.py",
+      "sha256": "3d5200878e4ca62030cca5ffc0f6118f4599df64dd414ddcbca6f932b7e2f786",
+      "size_bytes": 25342
+    },
+    {
+      "path": "ibkr_paper_30d/auditor_runtime_v2.py",
+      "sha256": "bd90e1af2f4cecb7dbbe66ce63eea7cb21b69bcb3d5c96c82192d5501a995858",
+      "size_bytes": 18547
+    },
+    {
+      "path": "ibkr_paper_30d/redaction.py",
+      "sha256": "e718f68faf0d43fa6628250d348868ca95b9c1cf99574914a2f1369d53519cd3",
+      "size_bytes": 401
+    }
+  ],
+  "kernel_manifest_sha256": "62ae49d4e8e208a89597a2963809d4ec5607dce92271bcb976e15cbf42873419",
+  "schema": "IMMUTABLE_EXECUTION_KERNEL_MANIFEST_V1"
+}
