@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import subprocess
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
@@ -8,12 +10,14 @@ from ibkr_paper_30d.scheduler_validation import (
     RuntimeGateSnapshot,
     SchedulerExpectation,
     SchedulerTaskSnapshot,
+    collect_runtime_snapshot,
     validate_scheduler_startup,
 )
 
 HEAD = "a" * 40
 ROOT = r"C:\AI_VAULT_IBKR"
 USER = r"CXASUS_TUF_F16\cesar"
+REPO = Path(__file__).resolve().parents[2]
 
 
 def expectation(**updates) -> SchedulerExpectation:
@@ -162,3 +166,13 @@ def test_windows_scheduled_action_command_line_is_parsed_without_truncation():
     report = validate_scheduler_startup(parsed, runtime(), expectation())
 
     assert report["status"] == "PASS"
+
+
+def test_runtime_collection_verifies_checked_in_kernel_manifest():
+    approved_head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=REPO, text=True
+    ).strip()
+
+    snapshot = collect_runtime_snapshot(REPO, approved_head)
+
+    assert snapshot.kernel_verified is True

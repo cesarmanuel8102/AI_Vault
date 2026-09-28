@@ -255,8 +255,20 @@ def _lock_storage_diagnostic(root: Path) -> str:
 def collect_runtime_snapshot(root: Path, approved_head: str) -> RuntimeGateSnapshot:
     current_head = _git_head(root)
     try:
-        kernel_verified = bool(verify_kernel_manifest(root)["verified"])
-    except (OSError, RuntimeError, ValueError, KeyError, TypeError):
+        manifest = json.loads(
+            (root / "IMMUTABLE_EXECUTION_KERNEL_MANIFEST.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        kernel_verified = bool(verify_kernel_manifest(root, manifest)["verified"])
+    except (
+        OSError,
+        RuntimeError,
+        ValueError,
+        KeyError,
+        TypeError,
+        json.JSONDecodeError,
+    ):
         kernel_verified = False
     try:
         material = build_approved_runtime_material(root, approved_head)
