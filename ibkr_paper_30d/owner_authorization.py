@@ -19,7 +19,6 @@ from .experiment_control import (
 )
 from .persistence import Database
 
-
 OWNER_PHRASE = "AUTHORIZE 30-DAY PAPER EXPERIMENT"
 START_UTC = datetime(2026, 9, 23, 13, 30, tzinfo=timezone.utc)
 DURATION_DAYS = 30
@@ -32,7 +31,7 @@ class OwnerAuthorizationError(RuntimeError):
     pass
 
 
-def _atomic_json(path: Path, payload: dict[str, object]) -> None:
+def atomic_authorization_receipt(path: Path, payload: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
     try:
@@ -44,6 +43,10 @@ def _atomic_json(path: Path, payload: dict[str, object]) -> None:
     finally:
         if temporary.exists():
             temporary.unlink()
+
+
+def owner_phrase_sha256() -> str:
+    return hashlib.sha256(OWNER_PHRASE.encode("utf-8")).hexdigest()
 
 
 def _authorization_rows(db: Database) -> list[tuple[str, str, str, str, str]]:
@@ -89,7 +92,9 @@ def _validate_authorization_event(
     rows = _authorization_rows(db)
     if len(rows) != 1:
         raise OwnerAuthorizationError(
-            "OWNER_AUTHORIZATION_MISSING" if not rows else "OWNER_AUTHORIZATION_HISTORY_INVALID"
+            "OWNER_AUTHORIZATION_MISSING"
+            if not rows
+            else "OWNER_AUTHORIZATION_HISTORY_INVALID"
         )
     event_id, state, bound_clock, payload_json, payload_sha256 = rows[0]
     try:
@@ -111,7 +116,9 @@ def _validate_authorization_event(
     return event_id
 
 
-def _receipt(clock: ExperimentClock, event_id: str, actor_sid: str) -> dict[str, object]:
+def _receipt(
+    clock: ExperimentClock, event_id: str, actor_sid: str
+) -> dict[str, object]:
     return {
         "schema": RECEIPT_SCHEMA,
         "experiment_id": EXPERIMENT_ID,
@@ -123,7 +130,7 @@ def _receipt(clock: ExperimentClock, event_id: str, actor_sid: str) -> dict[str,
         "end_utc": clock.end_utc.isoformat().replace("+00:00", "Z"),
         "duration_days": clock.duration_days,
         "initial_allocation": str(clock.initial_allocation),
-        "owner_phrase_sha256": hashlib.sha256(OWNER_PHRASE.encode("utf-8")).hexdigest(),
+        "owner_phrase_sha256": owner_phrase_sha256(),
     }
 
 
@@ -184,7 +191,7 @@ def create_owner_authorization(
             raise OwnerAuthorizationError("KILL_SWITCH_HISTORY_INVALID")
 
     payload = _receipt(clock, event_id, actor_sid)
-    _atomic_json(receipt_path, payload)
+    atomic_authorization_receipt(receipt_path, payload)
     return payload
 
 
@@ -207,7 +214,9 @@ def validate_owner_authorization(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="python -m ibkr_paper_30d.owner_authorization")
+    parser = argparse.ArgumentParser(
+        prog="python -m ibkr_paper_30d.owner_authorization"
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
     create_parser = subparsers.add_parser("create")
     create_parser.add_argument("--db", type=Path, required=True)
@@ -236,9 +245,15 @@ def main(argv: Sequence[str] | None = None) -> int:
                 expected_actor_sid=args.actor_sid,
             )
     except OwnerAuthorizationError as exc:
-        print(json.dumps({"status": "BLOCK", "reason": str(exc)}, separators=(",", ":")))
+        print(
+            json.dumps({"status": "BLOCK", "reason": str(exc)}, separators=(",", ":"))
+        )
         return 2
-    print(json.dumps({"status": "PASS", "receipt": result}, sort_keys=True, separators=(",", ":")))
+    print(
+        json.dumps(
+            {"status": "PASS", "receipt": result}, sort_keys=True, separators=(",", ":")
+        )
+    )
     return 0
 
 
