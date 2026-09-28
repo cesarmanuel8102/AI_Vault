@@ -29,6 +29,10 @@ EPOCH_ID = "AUTONOMY_EPOCH_1"
 # PAPER/LIVE boundary enforcement, identity, authorization, execution,
 # capital, locking, audit integrity and market-data gating.
 IMMUTABLE_KERNEL_FILES: tuple[str, ...] = (
+    "ibkr_paper_30d/autonomous_research.py",
+    "ibkr_paper_30d/autonomous_runtime.py",
+    "ibkr_paper_30d/autonomous_service.py",
+    "ibkr_paper_30d/day1_launch.py",
     "ibkr_paper_30d/autonomous_execution.py",
     "ibkr_paper_30d/ibkr_readonly_session.py",
     "ibkr_paper_30d/ibkr_readonly.py",

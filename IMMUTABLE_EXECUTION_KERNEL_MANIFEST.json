@@ -1,7 +1,27 @@
 {
-  "file_count": 22,
-  "generated_at_utc": "2026-09-27T00:35:11.894017Z",
+  "file_count": 26,
+  "generated_at_utc": "2026-09-28T00:10:49.464100Z",
   "kernel_files": [
+    {
+      "path": "ibkr_paper_30d/autonomous_research.py",
+      "sha256": "289f87762614a01ad18ca632c2718f3c210778bfd118b3b678c38e1650a5df0e",
+      "size_bytes": 37722
+    },
+    {
+      "path": "ibkr_paper_30d/autonomous_runtime.py",
+      "sha256": "08f4b071f98fc7613486491fd1493ada16581d5f5a82445a91ee94f428c12bd4",
+      "size_bytes": 20377
+    },
+    {
+      "path": "ibkr_paper_30d/autonomous_service.py",
+      "sha256": "14b30b6202b916af87740dd5d273d5d4cb0868dda033f2a613a19e59bdb0761b",
+      "size_bytes": 31065
+    },
+    {
+      "path": "ibkr_paper_30d/day1_launch.py",
+      "sha256": "c33c96009e513f5372eda6dff03394b88debebca13b0b5caf0f747528a09bb3f",
+      "size_bytes": 35916
+    },
     {
       "path": "ibkr_paper_30d/autonomous_execution.py",
       "sha256": "bdd5f253c90bcde10dbb22f5822b124f2da20f114dd92f8530ece7bac71a0eef",
@@ -113,6 +133,6 @@
       "size_bytes": 401
     }
   ],
-  "kernel_manifest_sha256": "62ae49d4e8e208a89597a2963809d4ec5607dce92271bcb976e15cbf42873419",
+  "kernel_manifest_sha256": "06f4dd4db7121292aed4c2a56b6f3f0b3524ee6df99b83f4ed93ad053fa732a9",
   "schema": "IMMUTABLE_EXECUTION_KERNEL_MANIFEST_V1"
 }
