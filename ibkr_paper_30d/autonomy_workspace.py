@@ -7,10 +7,8 @@ Design rulings encoded here:
    auditability.
 2. Structural isolation: all workspace writes resolve strictly inside the
    workspace root. Model-created code may only live under ``tools/`` and is
-   executed in a detached ``python -I`` subprocess that never receives
-   broker credentials, never imports the execution kernel and never gains
-   broker-write authority. The immutable kernel files are never writable
-   through this module.
+   delegated to an OS-enforced research sandbox. There is no Owner-context
+   execution fallback.
 3. Every artifact creation is recorded in an append-only registry with
    content hashes so later cycles/audits can reconstruct what code was
    used, when, and by which cycle.
@@ -20,14 +18,10 @@ from __future__ import annotations
 
 import hashlib
 import os
-import shutil
-import subprocess
-import sys
-import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from .canonical import canonical_bytes, sha256_json
 from .types import new_uuid7
@@ -52,6 +46,17 @@ def _utc_now() -> str:
 
 class WorkspaceViolation(PermissionError):
     pass
+
+
+class ResearchSandbox(Protocol):
+    def run(
+        self,
+        *,
+        workspace_root: Path,
+        script_relative: str,
+        arguments: tuple[str, ...],
+        timeout_seconds: float,
+    ) -> dict[str, Any]: ...
 
 
 def _validate_relative_path(relative: str) -> Path:
@@ -106,13 +111,18 @@ class AutonomyWorkspace:
     """Model-controlled persistent workspace with structural isolation.
 
     All artifacts resolve inside the workspace root. Python code can only
-    be written into ``tools/``. Script execution is a detached subprocess
-    with a sanitized environment; it cannot reach the broker, the
-    execution kernel, or credentials by construction.
+    be written into ``tools/``. Script execution requires an injected secure
+    sandbox and never falls back to an Owner-context subprocess.
     """
 
-    def __init__(self, root: str | Path) -> None:
+    def __init__(
+        self,
+        root: str | Path,
+        *,
+        sandbox: ResearchSandbox | None = None,
+    ) -> None:
         self.paths = WorkspacePaths(root=Path(root))
+        self.sandbox = sandbox
         self.paths.root.mkdir(parents=True, exist_ok=True)
         for subdirectory in WORKSPACE_SUBDIRS:
             (self.paths.root / subdirectory).mkdir(parents=True, exist_ok=True)
@@ -247,28 +257,21 @@ class AutonomyWorkspace:
         timeout = min(
             max(float(timeout_seconds), 1.0), MAX_SCRIPT_TIMEOUT_SECONDS
         )
-        command = [sys.executable, "-I", str(target), *(arguments or [])]
-        started = time.monotonic()
-        try:
-            completed = subprocess.run(
-                command,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                cwd=str(self.paths.experiments),
-                env=self._script_environment(),
-                check=False,
-            )
-            status = "COMPLETED" if completed.returncode == 0 else "FAILED"
-            stdout = completed.stdout or ""
-            stderr = completed.stderr or ""
-            returncode = completed.returncode
-        except subprocess.TimeoutExpired as exc:
-            status = "TIMEOUT"
-            stdout = (exc.stdout or b"").decode("utf-8", errors="replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
-            stderr = (exc.stderr or b"").decode("utf-8", errors="replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")
-            returncode = None
-        elapsed_ms = int((time.monotonic() - started) * 1000)
+        if self.sandbox is None:
+            raise WorkspaceViolation("secure research sandbox unavailable")
+        receipt = self.sandbox.run(
+            workspace_root=self.paths.root.resolve(),
+            script_relative=str(target.relative_to(self.paths.root)).replace(
+                "\\", "/"
+            ),
+            arguments=tuple(str(item) for item in (arguments or ())),
+            timeout_seconds=timeout,
+        )
+        if not isinstance(receipt, dict):
+            raise WorkspaceViolation("secure research sandbox returned invalid receipt")
+        status = str(receipt.get("status") or "FAILED")
+        stdout = str(receipt.get("stdout") or "")
+        stderr = str(receipt.get("stderr") or "")
         run = {
             "schema": RUN_SCHEMA,
             "run_id": f"run-{new_uuid7()}",
@@ -276,31 +279,21 @@ class AutonomyWorkspace:
             "script_sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
             "cycle_id": cycle_id,
             "status": status,
-            "returncode": returncode,
-            "elapsed_ms": elapsed_ms,
+            "returncode": receipt.get("returncode"),
+            "elapsed_ms": int(receipt.get("elapsed_ms") or 0),
             "stdout_sha256": hashlib.sha256(stdout.encode("utf-8")).hexdigest(),
             "stderr_sha256": hashlib.sha256(stderr.encode("utf-8")).hexdigest(),
             "stdout": stdout[:MAX_SCRIPT_OUTPUT_BYTES],
             "stderr": stderr[:MAX_SCRIPT_OUTPUT_BYTES],
+            "resource_usage": receipt.get("resource_usage") or {},
+            "generated_artifacts": receipt.get("generated_artifacts") or [],
+            "failure_reason": receipt.get("failure_reason"),
             "ran_at_utc": _utc_now(),
         }
         self._append_registry(
             {"event_type": "SCRIPT_RUN", "run": _run_without_large_output(run)}
         )
         return run
-
-    @staticmethod
-    def _script_environment() -> dict[str, str]:
-        """No broker credentials, no kernel reachability by environment.
-
-        PATH is deliberately excluded: research scripts must not spawn
-        external CLIs (lean, codex, git) from the host environment. The
-        model reaches QuantConnect through the QUANTCONNECT research tool
-        instead, keeping provider credits and lab access host-mediated.
-        """
-
-        allowed = ("SYSTEMROOT", "WINDIR", "TEMP", "TMP")
-        return {name: os.environ[name] for name in allowed if name in os.environ}
 
     # ------------------------------------------------------------------
     # workspace summary for prompt context (model-controlled content)
