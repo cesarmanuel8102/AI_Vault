@@ -17,6 +17,7 @@ from .auditor_gate_v2 import (
     PaperIdentityBinding,
     load_and_evaluate_auditor_gate_v2,
 )
+from .successor_authorization import validate_successor_authorization
 
 
 def _git_blob(repo_root: Path, commit: str, path: str) -> bytes:
@@ -375,6 +376,29 @@ def readiness(report_root: Path) -> dict[str, object]:
     }
 
 
+def validate_successor_owner_authorization(
+    *,
+    db_path: Path,
+    receipt_path: Path,
+    epoch_id: str,
+    definition_sha256: str,
+    actor_sid: str,
+) -> dict[str, object]:
+    payload = validate_successor_authorization(
+        db_path=db_path,
+        receipt_path=receipt_path,
+        epoch_id=epoch_id,
+        definition_sha256=definition_sha256,
+        expected_actor_sid=actor_sid,
+    )
+    return {
+        "status": "PASS",
+        "authorization_event_id": payload["authorization_event_id"],
+        "epoch_id": payload["epoch_id"],
+        "definition_sha256": payload["definition_sha256"],
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m ibkr_paper_30d.prerequisite_tools")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -418,6 +442,13 @@ def main(argv: list[str] | None = None) -> int:
     validate.add_argument("--target-successor-epoch-id")
     validate.add_argument("--target-successor-definition-sha256")
 
+    successor_authorization = sub.add_parser("validate-successor-authorization")
+    successor_authorization.add_argument("--db", type=Path, required=True)
+    successor_authorization.add_argument("--receipt", type=Path, required=True)
+    successor_authorization.add_argument("--epoch-id", required=True)
+    successor_authorization.add_argument("--definition-sha256", required=True)
+    successor_authorization.add_argument("--actor-sid", required=True)
+
     args = parser.parse_args(argv)
     if args.command == "create-audit-export":
         result = create_audit_export(args.readonly_report, args.export_root)
@@ -453,6 +484,14 @@ def main(argv: list[str] | None = None) -> int:
             target_successor_definition_sha256=(
                 args.target_successor_definition_sha256
             ),
+        )
+    elif args.command == "validate-successor-authorization":
+        result = validate_successor_owner_authorization(
+            db_path=args.db,
+            receipt_path=args.receipt,
+            epoch_id=args.epoch_id,
+            definition_sha256=args.definition_sha256,
+            actor_sid=args.actor_sid,
         )
     else:
         result = readiness(args.report_root)

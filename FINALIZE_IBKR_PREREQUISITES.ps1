@@ -50,6 +50,7 @@ $CanonicalAuditorReceipt = Join-Path $CanonicalReportRoot "auditor_gate_v2_recei
 $MarketValidation = Join-Path $CanonicalReportRoot "market_data_validation.json"
 $AutonomousDatabase = Join-Path $ResolvedRepoRoot "state\ibkr_paper_30d\autonomous.sqlite3"
 $OwnerAuthorizationReceipt = Join-Path $CanonicalReportRoot "owner_authorization_v1.json"
+$SuccessorOwnerAuthorizationReceipt = Join-Path $CanonicalReportRoot "owner_successor_authorization_v2.json"
 $LaunchAttemptBinding = Join-Path $CanonicalReportRoot "launch_attempt_binding_v1.json"
 $MarketTaskName = "CodexIBKRMarketDataGate"
 $ProbeFirewallRuleName = "CodexAuditorV2-Probe-PowerShell-Broker-Block"
@@ -282,12 +283,16 @@ $AuthorizationExists = (
     (Test-Path -LiteralPath $AutonomousDatabase -PathType Leaf) -and
     (Test-Path -LiteralPath $OwnerAuthorizationReceipt -PathType Leaf)
 )
+$SuccessorAuthorizationExists = (
+    (Test-Path -LiteralPath $AutonomousDatabase -PathType Leaf) -and
+    (Test-Path -LiteralPath $SuccessorOwnerAuthorizationReceipt -PathType Leaf)
+)
 if ($Stage -eq "Receipts") {
     if ($OwnerAuthorization) {
         throw "OWNER_AUTHORIZATION_CREATE_FORBIDDEN_IN_RECEIPTS_STAGE"
     }
     if ($SkipTaskRegistration) {
-        if (-not $AuthorizationExists) {
+        if (-not $AuthorizationExists -and -not $SuccessorAuthorizationExists) {
             throw "OWNER_AUTHORIZATION_MISSING"
         }
         if (-not $LaunchAttemptId) {
@@ -297,12 +302,31 @@ if ($Stage -eq "Receipts") {
         if (-not [Guid]::TryParseExact($LaunchAttemptId, "D", [ref]$ParsedAttempt)) {
             throw "LAUNCH_ATTEMPT_ID_INVALID"
         }
-        $OwnerAuthorizationState = Invoke-PythonJson -Arguments @(
-            "-m", "ibkr_paper_30d.owner_authorization", "validate",
-            "--db", $AutonomousDatabase,
-            "--receipt", $OwnerAuthorizationReceipt,
-            "--actor-sid", $CurrentOwnerSid
-        )
+        if ($SuccessorAuthorizationExists) {
+            $SuccessorReceipt = Get-Content -LiteralPath $SuccessorOwnerAuthorizationReceipt -Raw | ConvertFrom-Json
+            if (
+                [string]$SuccessorReceipt.epoch_id -eq "" -or
+                [string]$SuccessorReceipt.definition_sha256 -notmatch '^[0-9a-f]{64}$'
+            ) {
+                throw "SUCCESSOR_AUTHORIZATION_RECEIPT_INVALID"
+            }
+            $OwnerAuthorizationState = Invoke-PythonJson -Arguments @(
+                "-m", "ibkr_paper_30d.prerequisite_tools", "validate-successor-authorization",
+                "--db", $AutonomousDatabase,
+                "--receipt", $SuccessorOwnerAuthorizationReceipt,
+                "--epoch-id", ([string]$SuccessorReceipt.epoch_id),
+                "--definition-sha256", ([string]$SuccessorReceipt.definition_sha256),
+                "--actor-sid", $CurrentOwnerSid
+            )
+        }
+        else {
+            $OwnerAuthorizationState = Invoke-PythonJson -Arguments @(
+                "-m", "ibkr_paper_30d.owner_authorization", "validate",
+                "--db", $AutonomousDatabase,
+                "--receipt", $OwnerAuthorizationReceipt,
+                "--actor-sid", $CurrentOwnerSid
+            )
+        }
     }
     else {
         $OwnerAuthorizationState = [pscustomobject]@{ status = "PASS" }

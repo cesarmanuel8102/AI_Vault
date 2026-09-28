@@ -6,11 +6,13 @@ from uuid import uuid4
 
 import pytest
 
+import ibkr_paper_30d.prerequisite_tools as prerequisite_tools
 from ibkr_paper_30d.prerequisite_tools import (
     bind_launch_attempt,
     create_audit_export,
     readiness,
     validate_launch_attempt_binding,
+    validate_successor_owner_authorization,
 )
 
 
@@ -62,6 +64,37 @@ def test_readiness_requires_both_auditor_and_market_pass(tmp_path, monkeypatch):
     final = readiness(root)
     assert final["prerequisites_structurally_present"] is True
     assert final["paper_execution_armed"] is False
+
+
+def test_successor_authorization_validation_reports_pass(tmp_path, monkeypatch):
+    captured = {}
+
+    def validate(**kwargs):
+        captured.update(kwargs)
+        return {
+            "authorization_event_id": "owner-v2",
+            "epoch_id": "AUTONOMY_EPOCH_2",
+            "definition_sha256": "d" * 64,
+        }
+
+    monkeypatch.setattr(
+        prerequisite_tools, "validate_successor_authorization", validate
+    )
+    result = validate_successor_owner_authorization(
+        db_path=tmp_path / "state.sqlite3",
+        receipt_path=tmp_path / "owner-v2.json",
+        epoch_id="AUTONOMY_EPOCH_2",
+        definition_sha256="d" * 64,
+        actor_sid="S-1-5-21-owner",
+    )
+
+    assert result == {
+        "status": "PASS",
+        "authorization_event_id": "owner-v2",
+        "epoch_id": "AUTONOMY_EPOCH_2",
+        "definition_sha256": "d" * 64,
+    }
+    assert captured["expected_actor_sid"] == "S-1-5-21-owner"
 
 
 def test_attempt_binding_hashes_receipts_and_requires_same_attempt(tmp_path: Path):

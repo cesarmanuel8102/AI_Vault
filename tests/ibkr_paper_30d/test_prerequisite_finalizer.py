@@ -176,6 +176,18 @@ def test_finalizer_owns_explicit_authorization_and_fresh_attempt_binding():
     assert authorization_index < readonly_index < auditor_index < binding_index
 
 
+def test_finalizer_receipts_validates_successor_authorization_when_present():
+    text = FINALIZER.read_text(encoding="utf-8")
+
+    assert '"owner_successor_authorization_v2.json"' in text
+    assert '"validate-successor-authorization"' in text
+    successor = text.index('"validate-successor-authorization"')
+    legacy = text.index('"ibkr_paper_30d.owner_authorization", "validate"')
+    readonly = text.index('"inspect-ibkr-readonly"')
+    assert successor < readonly
+    assert legacy < readonly
+
+
 def test_scheduled_finalizer_cannot_create_owner_authorization():
     text = FINALIZER.read_text(encoding="utf-8")
     guard = text.index("if ($SkipTaskRegistration)")
