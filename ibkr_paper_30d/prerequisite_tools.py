@@ -19,7 +19,6 @@ from .auditor_gate_v2 import (
 )
 
 
-
 def _git_blob(repo_root: Path, commit: str, path: str) -> bytes:
     result = subprocess.run(
         ["git", "-C", str(repo_root), "show", f"{commit}:{path}"],
@@ -93,7 +92,9 @@ def evaluate_runtime_trust_anchor(
 
     runtime_text = _manifest_text("AUDITOR_RUNTIME_MANIFEST_V2", payload_hashes)
     deployment_hashes = dict(payload_hashes)
-    deployment_hashes[manifest_name] = __import__("hashlib").sha256(runtime_text).hexdigest()
+    deployment_hashes[manifest_name] = (
+        __import__("hashlib").sha256(runtime_text).hexdigest()
+    )
     deployment_text = _manifest_text(
         "AUDITOR_RUNTIME_DEPLOYMENT_MANIFEST_V2", deployment_hashes
     )
@@ -105,8 +106,12 @@ def evaluate_runtime_trust_anchor(
         "source_matches_anchor": source_matches,
         "source_blob_sha256": source_blob_sha256,
         "payload_sha256": payload_hashes,
-        "runtime_manifest_sha256": __import__("hashlib").sha256(runtime_text).hexdigest(),
-        "deployment_manifest_sha256": __import__("hashlib").sha256(deployment_text).hexdigest(),
+        "runtime_manifest_sha256": __import__("hashlib")
+        .sha256(runtime_text)
+        .hexdigest(),
+        "deployment_manifest_sha256": __import__("hashlib")
+        .sha256(deployment_text)
+        .hexdigest(),
     }
 
 
@@ -227,6 +232,9 @@ def bind_launch_attempt(
     readonly_receipt: Path,
     auditor_receipt: Path,
     destination: Path,
+    *,
+    target_successor_epoch_id: str | None = None,
+    target_successor_definition_sha256: str | None = None,
 ) -> dict[str, object]:
     canonical_id = _canonical_attempt_id(launch_attempt_id)
     try:
@@ -234,10 +242,30 @@ def bind_launch_attempt(
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError("LAUNCH_ATTEMPT_READONLY_RECEIPT_INVALID") from exc
     expected_hash = str(readonly.get("expected_account_identity_hash") or "")
-    if len(expected_hash) != 64 or any(c not in "0123456789abcdef" for c in expected_hash):
+    if len(expected_hash) != 64 or any(
+        c not in "0123456789abcdef" for c in expected_hash
+    ):
         raise ValueError("LAUNCH_ATTEMPT_EXPECTED_ACCOUNT_HASH_INVALID")
+    successor_values = (
+        target_successor_epoch_id,
+        target_successor_definition_sha256,
+    )
+    if any(value is not None for value in successor_values) and not all(
+        isinstance(value, str) and value for value in successor_values
+    ):
+        raise ValueError("SUCCESSOR_TARGET_BINDING_INCOMPLETE")
+    if target_successor_definition_sha256 is not None and (
+        len(target_successor_definition_sha256) != 64
+        or any(c not in "0123456789abcdef" for c in target_successor_definition_sha256)
+    ):
+        raise ValueError("SUCCESSOR_TARGET_DEFINITION_HASH_INVALID")
+    successor_mode = target_successor_epoch_id is not None
     payload: dict[str, object] = {
-        "schema": "DAY1_LAUNCH_ATTEMPT_BINDING_V1",
+        "schema": (
+            "DAY1_LAUNCH_ATTEMPT_BINDING_V2"
+            if successor_mode
+            else "DAY1_LAUNCH_ATTEMPT_BINDING_V1"
+        ),
         "launch_attempt_id": canonical_id,
         "readonly_receipt_sha256": _sha256_file(readonly_receipt),
         "auditor_receipt_sha256": _sha256_file(auditor_receipt),
@@ -245,6 +273,15 @@ def bind_launch_attempt(
         "created_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "real_order_writes_attempted": 0,
     }
+    if successor_mode:
+        payload.update(
+            {
+                "target_successor_epoch_id": target_successor_epoch_id,
+                "target_successor_definition_sha256": (
+                    target_successor_definition_sha256
+                ),
+            }
+        )
     _atomic_canonical_json(destination, payload)
     return payload
 
@@ -254,20 +291,30 @@ def validate_launch_attempt_binding(
     readonly_receipt: Path,
     auditor_receipt: Path,
     binding_path: Path,
+    *,
+    target_successor_epoch_id: str | None = None,
+    target_successor_definition_sha256: str | None = None,
 ) -> dict[str, object]:
     canonical_id = _canonical_attempt_id(launch_attempt_id)
     try:
         payload = json.loads(binding_path.read_bytes())
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError("LAUNCH_ATTEMPT_BINDING_INVALID") from exc
-    if payload.get("schema") != "DAY1_LAUNCH_ATTEMPT_BINDING_V1":
+    successor_mode = target_successor_epoch_id is not None or (
+        target_successor_definition_sha256 is not None
+    )
+    expected_schema = (
+        "DAY1_LAUNCH_ATTEMPT_BINDING_V2"
+        if successor_mode
+        else "DAY1_LAUNCH_ATTEMPT_BINDING_V1"
+    )
+    if payload.get("schema") != expected_schema:
         raise ValueError("LAUNCH_ATTEMPT_BINDING_SCHEMA_INVALID")
     if payload.get("launch_attempt_id") != canonical_id:
         raise ValueError("LAUNCH_ATTEMPT_ID_MISMATCH")
-    if (
-        payload.get("readonly_receipt_sha256") != _sha256_file(readonly_receipt)
-        or payload.get("auditor_receipt_sha256") != _sha256_file(auditor_receipt)
-    ):
+    if payload.get("readonly_receipt_sha256") != _sha256_file(
+        readonly_receipt
+    ) or payload.get("auditor_receipt_sha256") != _sha256_file(auditor_receipt):
         raise ValueError("LAUNCH_ATTEMPT_RECEIPT_HASH_MISMATCH")
     try:
         readonly = json.loads(readonly_receipt.read_bytes())
@@ -279,6 +326,14 @@ def validate_launch_attempt_binding(
         raise ValueError("LAUNCH_ATTEMPT_ACCOUNT_HASH_MISMATCH")
     if payload.get("real_order_writes_attempted") != 0:
         raise ValueError("LAUNCH_ATTEMPT_WRITE_COUNT_INVALID")
+    if successor_mode and (
+        not target_successor_epoch_id
+        or not target_successor_definition_sha256
+        or payload.get("target_successor_epoch_id") != target_successor_epoch_id
+        or payload.get("target_successor_definition_sha256")
+        != target_successor_definition_sha256
+    ):
+        raise ValueError("SUCCESSOR_TARGET_BINDING_MISMATCH")
     return payload
 
 
@@ -352,12 +407,16 @@ def main(argv: list[str] | None = None) -> int:
     bind.add_argument("--readonly-receipt", type=Path, required=True)
     bind.add_argument("--auditor-receipt", type=Path, required=True)
     bind.add_argument("--destination", type=Path, required=True)
+    bind.add_argument("--target-successor-epoch-id")
+    bind.add_argument("--target-successor-definition-sha256")
 
     validate = sub.add_parser("validate-launch-attempt")
     validate.add_argument("--launch-attempt-id", required=True)
     validate.add_argument("--readonly-receipt", type=Path, required=True)
     validate.add_argument("--auditor-receipt", type=Path, required=True)
     validate.add_argument("--binding", type=Path, required=True)
+    validate.add_argument("--target-successor-epoch-id")
+    validate.add_argument("--target-successor-definition-sha256")
 
     args = parser.parse_args(argv)
     if args.command == "create-audit-export":
@@ -379,6 +438,10 @@ def main(argv: list[str] | None = None) -> int:
             args.readonly_receipt,
             args.auditor_receipt,
             args.destination,
+            target_successor_epoch_id=args.target_successor_epoch_id,
+            target_successor_definition_sha256=(
+                args.target_successor_definition_sha256
+            ),
         )
     elif args.command == "validate-launch-attempt":
         result = validate_launch_attempt_binding(
@@ -386,6 +449,10 @@ def main(argv: list[str] | None = None) -> int:
             args.readonly_receipt,
             args.auditor_receipt,
             args.binding,
+            target_successor_epoch_id=args.target_successor_epoch_id,
+            target_successor_definition_sha256=(
+                args.target_successor_definition_sha256
+            ),
         )
     else:
         result = readiness(args.report_root)

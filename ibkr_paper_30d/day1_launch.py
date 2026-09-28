@@ -9,7 +9,7 @@ import socket
 import threading
 import time
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -32,6 +32,7 @@ from .epoch_manifest import (
 )
 from .execution_lock import ExecutionLock, LockIntegrityError, LockOwner
 from .experiment_control import (
+    ExperimentClock,
     ExperimentClockStore,
     ExperimentControlError,
     KillSwitchStore,
@@ -58,6 +59,18 @@ from .runtime_provenance import (
     verify_runtime_provenance,
 )
 from .trader_invocation import TraderInputBundle
+from .successor_authorization import (
+    SuccessorAuthorizationError,
+    validate_successor_authorization,
+    validate_successor_authorization_record,
+)
+from .successor_clock import BrokerTimeObservation, clock_for_epoch
+from .successor_epoch import (
+    BrokerTransitionEvidence,
+    SuccessorEpochError,
+    SuccessorEpochStore,
+    commit_successor_transition,
+)
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _REASON_CODE_RE = re.compile(r"^[A-Z0-9_.:-]{1,100}$")
@@ -92,6 +105,8 @@ class Day1LaunchConfig:
     model_attestation_exception_path: Path
     launch_attempt_binding_path: Path
     launch_attempt_id: str
+    target_successor_epoch_id: str | None = None
+    target_successor_definition_sha256: str | None = None
     epoch_manifest_path: Path | None = None
     scheduled_start_utc: datetime = datetime(2026, 9, 23, 13, 30, tzinfo=timezone.utc)
     duration_days: int = 30
@@ -117,6 +132,9 @@ class LaunchDependencies:
     ) = None
     runtime_provenance_validator: (
         Callable[[Day1LaunchConfig], dict[str, Any]] | None
+    ) = None
+    successor_broker_evidence_collector: (
+        Callable[[Day1LaunchConfig, "LaunchPreflight"], BrokerTransitionEvidence] | None
     ) = None
 
 
@@ -144,6 +162,10 @@ class LaunchPreflight:
     owner_authorization_receipt_sha256: str
     model_attestation_exception_sha256: str
     actual_start_utc: datetime
+    owner_sid: str
+    owner_authorization_receipt: dict[str, Any]
+    target_successor_epoch_id: str | None = None
+    target_successor_definition_sha256: str | None = None
 
 
 @dataclass(frozen=True)
@@ -151,6 +173,7 @@ class LaunchControls:
     clock_event_sha256: str
     authorization_event_id: str
     kill_switch_state: str
+    clock: ExperimentClock | None = None
 
 
 def _read_json(path: Path, code: str) -> tuple[bytes, dict[str, object]]:
@@ -197,7 +220,7 @@ def _validate_model_attestation_exception(
         config.model_attestation_exception_path,
         "MODEL_ATTESTATION_EXCEPTION_INVALID",
     )
-    expected_keys = {
+    legacy_keys = {
         "schema",
         "authorization_state",
         "scope",
@@ -216,6 +239,19 @@ def _validate_model_attestation_exception(
         "end_utc",
         "artifact_sha256",
     }
+    successor_mode = config.target_successor_epoch_id is not None
+    expected_keys = (
+        legacy_keys
+        if not successor_mode
+        else (
+            legacy_keys - {"start_utc", "end_utc"}
+            | {
+                "target_successor_epoch_id",
+                "target_successor_definition_sha256",
+                "clock_start_policy",
+            }
+        )
+    )
     unsigned = dict(payload)
     artifact_sha256 = unsigned.pop("artifact_sha256", None)
     expected_start = config.scheduled_start_utc.isoformat().replace("+00:00", "Z")
@@ -226,7 +262,12 @@ def _validate_model_attestation_exception(
     )
     if (
         set(payload) != expected_keys
-        or payload.get("schema") != "MODEL_ATTESTATION_OWNER_EXCEPTION_V1"
+        or payload.get("schema")
+        != (
+            "MODEL_ATTESTATION_OWNER_EXCEPTION_V2"
+            if successor_mode
+            else "MODEL_ATTESTATION_OWNER_EXCEPTION_V1"
+        )
         or payload.get("authorization_state") != "AUTHORIZED"
         or payload.get("scope") != "MONTH1_PAPER_ONLY"
         or payload.get("requested_model") != config.model
@@ -241,13 +282,32 @@ def _validate_model_attestation_exception(
         or payload.get("expected_account_identity_hash") != expected_account_hash
         or payload.get("owner_authorization_receipt_sha256")
         != owner_authorization_receipt_sha256
-        or payload.get("start_utc") != expected_start
-        or payload.get("end_utc") != expected_end
+        or (
+            not successor_mode
+            and (
+                payload.get("start_utc") != expected_start
+                or payload.get("end_utc") != expected_end
+            )
+        )
+        or (
+            successor_mode
+            and (
+                payload.get("target_successor_epoch_id")
+                != config.target_successor_epoch_id
+                or payload.get("target_successor_definition_sha256")
+                != config.target_successor_definition_sha256
+                or payload.get("clock_start_policy")
+                != "BROKER_SERVER_TIME_AT_AUTHORIZED_LAUNCH"
+            )
+        )
         or not isinstance(artifact_sha256, str)
         or _SHA256_RE.fullmatch(artifact_sha256) is None
         or artifact_sha256 != sha256_json(unsigned)
-        or actual_start
-        >= config.scheduled_start_utc + timedelta(days=config.duration_days)
+        or (
+            not successor_mode
+            and actual_start
+            >= config.scheduled_start_utc + timedelta(days=config.duration_days)
+        )
     ):
         raise LaunchError("MODEL_ATTESTATION_EXCEPTION_INVALID")
     return _sha256(raw)
@@ -336,13 +396,32 @@ def evaluate_launch_preflight(
     if actual_start < config.scheduled_start_utc:
         raise LaunchError("EXPERIMENT_NOT_STARTED")
 
+    successor_values = (
+        config.target_successor_epoch_id,
+        config.target_successor_definition_sha256,
+    )
+    if any(value is not None for value in successor_values) and not all(
+        isinstance(value, str) and value for value in successor_values
+    ):
+        raise LaunchError("SUCCESSOR_TARGET_BINDING_INCOMPLETE")
+    successor_mode = config.target_successor_epoch_id is not None
+    owner_sid = dependencies.current_sid()
     try:
-        authorization = validate_owner_authorization(
-            db_path=config.db_path,
-            receipt_path=config.owner_authorization_path,
-            expected_actor_sid=dependencies.current_sid(),
-        )
-    except OwnerAuthorizationError as exc:
+        if successor_mode:
+            authorization = validate_successor_authorization(
+                db_path=config.db_path,
+                receipt_path=config.owner_authorization_path,
+                epoch_id=str(config.target_successor_epoch_id),
+                definition_sha256=str(config.target_successor_definition_sha256),
+                expected_actor_sid=owner_sid,
+            )
+        else:
+            authorization = validate_owner_authorization(
+                db_path=config.db_path,
+                receipt_path=config.owner_authorization_path,
+                expected_actor_sid=owner_sid,
+            )
+    except (OwnerAuthorizationError, SuccessorAuthorizationError) as exc:
         raise LaunchError(str(exc)) from exc
 
     try:
@@ -351,6 +430,10 @@ def evaluate_launch_preflight(
             config.identity_receipt_path,
             config.auditor_receipt_path,
             config.launch_attempt_binding_path,
+            target_successor_epoch_id=config.target_successor_epoch_id,
+            target_successor_definition_sha256=(
+                config.target_successor_definition_sha256
+            ),
         )
     except ValueError as exc:
         raise LaunchError(str(exc)) from exc
@@ -435,6 +518,10 @@ def evaluate_launch_preflight(
         owner_authorization_receipt_sha256=_sha256(owner_authorization_raw),
         model_attestation_exception_sha256=model_exception_hash,
         actual_start_utc=actual_start,
+        owner_sid=owner_sid,
+        owner_authorization_receipt=dict(authorization),
+        target_successor_epoch_id=config.target_successor_epoch_id,
+        target_successor_definition_sha256=(config.target_successor_definition_sha256),
     )
 
 
@@ -470,12 +557,25 @@ def write_launch_evidence(
     if _contains_forbidden_key(payload):
         raise LaunchError("LAUNCH_EVIDENCE_FORBIDDEN_KEY")
     event = {
-        "schema": "DAY1_LAUNCH_EVENT_V1",
+        "schema": (
+            "DAY1_LAUNCH_EVENT_V2"
+            if config.target_successor_epoch_id is not None
+            else "DAY1_LAUNCH_EVENT_V1"
+        ),
         "event_type": event_type,
         "launch_attempt_id": config.launch_attempt_id,
         "created_at_utc": datetime.now(timezone.utc),
         "payload": payload,
     }
+    if config.target_successor_epoch_id is not None:
+        event.update(
+            {
+                "target_successor_epoch_id": config.target_successor_epoch_id,
+                "target_successor_definition_sha256": (
+                    config.target_successor_definition_sha256
+                ),
+            }
+        )
     envelope = {
         "schema": "DAY1_LAUNCH_EVIDENCE_V1",
         "event": event,
@@ -516,28 +616,60 @@ def validate_launch_controls(db: Database, config: Day1LaunchConfig) -> LaunchCo
     schema_rows = db.execute(
         "SELECT version FROM schema_versions ORDER BY version"
     ).fetchall()
-    if [int(row[0]) for row in schema_rows] != [1]:
+    successor_mode = config.target_successor_epoch_id is not None
+    expected_schema_versions = [1, 2] if successor_mode else [1]
+    if [int(row[0]) for row in schema_rows] != expected_schema_versions:
         raise LaunchError("DATABASE_SCHEMA_INVALID")
-    try:
-        clock = ExperimentClockStore(db).load()
-    except ExperimentControlError as exc:
-        raise LaunchError(str(exc)) from exc
-    if clock is None:
-        raise LaunchError("EXPERIMENT_CLOCK_MISSING")
-    expected_end = config.scheduled_start_utc + timedelta(days=config.duration_days)
-    if (
-        clock.start_utc != config.scheduled_start_utc
-        or clock.end_utc != expected_end
-        or clock.duration_days != config.duration_days
-        or clock.initial_allocation != config.initial_allocation
-    ):
-        raise LaunchError("EXPERIMENT_CLOCK_MISMATCH")
-    if (
-        OwnerAuthorizationStore(db).current(clock_event_sha256=clock.event_sha256)
-        != "AUTHORIZED"
-    ):
-        raise LaunchError("OWNER_AUTHORIZATION_INVALID")
-    authorization_event_id = _latest_authorization_event_id(db)
+    clock: ExperimentClock | None = None
+    if successor_mode:
+        try:
+            definition = SuccessorEpochStore(db).validate_transition_eligibility(
+                str(config.target_successor_epoch_id),
+                str(config.target_successor_definition_sha256),
+            )
+            _, receipt = _read_json(
+                config.owner_authorization_path,
+                "SUCCESSOR_AUTHORIZATION_RECEIPT_MISSING",
+            )
+            authorization = validate_successor_authorization_record(
+                db=db,
+                epoch_id=str(config.target_successor_epoch_id),
+                definition_sha256=str(config.target_successor_definition_sha256),
+                expected_actor_sid=str(receipt.get("actor_sid") or ""),
+                receipt=receipt,
+            )
+        except (SuccessorEpochError, SuccessorAuthorizationError) as exc:
+            raise LaunchError(str(exc)) from exc
+        if (
+            definition.get("duration_days") != config.duration_days
+            or Decimal(str(definition.get("initial_allocation")))
+            != config.initial_allocation
+        ):
+            raise LaunchError("SUCCESSOR_POLICY_MISMATCH")
+        authorization_event_id = str(authorization["authorization_event_id"])
+        clock_event_sha256 = ""
+    else:
+        try:
+            clock = ExperimentClockStore(db).load()
+        except ExperimentControlError as exc:
+            raise LaunchError(str(exc)) from exc
+        if clock is None:
+            raise LaunchError("EXPERIMENT_CLOCK_MISSING")
+        expected_end = config.scheduled_start_utc + timedelta(days=config.duration_days)
+        if (
+            clock.start_utc != config.scheduled_start_utc
+            or clock.end_utc != expected_end
+            or clock.duration_days != config.duration_days
+            or clock.initial_allocation != config.initial_allocation
+        ):
+            raise LaunchError("EXPERIMENT_CLOCK_MISMATCH")
+        if (
+            OwnerAuthorizationStore(db).current(clock_event_sha256=clock.event_sha256)
+            != "AUTHORIZED"
+        ):
+            raise LaunchError("OWNER_AUTHORIZATION_INVALID")
+        authorization_event_id = _latest_authorization_event_id(db)
+        clock_event_sha256 = clock.event_sha256
     states = tuple(
         str(row[0])
         for row in db.execute(
@@ -552,9 +684,10 @@ def validate_launch_controls(db: Database, config: Day1LaunchConfig) -> LaunchCo
     if not ledger.valid:
         raise LaunchError("EXPERIMENT_LEDGER_INVALID")
     return LaunchControls(
-        clock_event_sha256=clock.event_sha256,
+        clock_event_sha256=clock_event_sha256,
         authorization_event_id=authorization_event_id,
         kill_switch_state=states[0],
+        clock=clock,
     )
 
 
@@ -578,7 +711,11 @@ def _consume_launch_attempt(
                 raise LaunchError("LAUNCH_ATTEMPT_REUSED")
 
         payload = {
-            "schema": "DAY1_LAUNCH_ATTEMPT_ACCEPTED_V1",
+            "schema": (
+                "DAY1_LAUNCH_ATTEMPT_ACCEPTED_V2"
+                if config.target_successor_epoch_id is not None
+                else "DAY1_LAUNCH_ATTEMPT_ACCEPTED_V1"
+            ),
             "launch_attempt_id": config.launch_attempt_id,
             "authorization_event_id": controls.authorization_event_id,
             "clock_event_sha256": controls.clock_event_sha256,
@@ -588,6 +725,15 @@ def _consume_launch_attempt(
             "market_validation_sha256": preflight.market_validation_sha256,
             "created_at_utc": preflight.actual_start_utc,
         }
+        if config.target_successor_epoch_id is not None:
+            payload.update(
+                {
+                    "target_successor_epoch_id": config.target_successor_epoch_id,
+                    "target_successor_definition_sha256": (
+                        config.target_successor_definition_sha256
+                    ),
+                }
+            )
         EventRepository(db).append("DAY1_LAUNCH_ATTEMPT_ACCEPTED", payload)
 
 
@@ -680,7 +826,7 @@ def _launch_bootstrap_bundle(
     preflight: LaunchPreflight,
     controls: LaunchControls,
 ) -> TraderInputBundle:
-    clock = ExperimentClockStore(db).load()
+    clock = controls.clock or ExperimentClockStore(db).load()
     if clock is None:
         raise LaunchError("EXPERIMENT_CLOCK_MISSING")
     clock_snapshot = clock.snapshot(preflight.actual_start_utc)
@@ -906,6 +1052,64 @@ def _verify_current_runtime_provenance(
     return verify_runtime_provenance(code_root, material)
 
 
+def _lock_receipt_is_current(db: Database, receipt: Any) -> bool:
+    row = db.execute(
+        "SELECT payload_json,payload_sha256 FROM experiment_state "
+        "WHERE experiment_id='EXECUTION_LOCK_V1'"
+    ).fetchone()
+    if row is None:
+        return False
+    try:
+        payload = json.loads(str(row[0]))
+    except json.JSONDecodeError:
+        return False
+    return bool(
+        isinstance(payload, dict)
+        and sha256_json(payload) == str(row[1])
+        and payload.get("state") == "ACTIVE"
+        and payload.get("owner_id") == receipt.owner_id
+        and int(payload.get("generation", -1)) == receipt.generation
+        and receipt.acquired is True
+    )
+
+
+def _collect_successor_broker_evidence(
+    config: Day1LaunchConfig, preflight: LaunchPreflight
+) -> BrokerTransitionEvidence:
+    toolbox = IBKRResearchToolbox(
+        host=config.paper_host,
+        port=config.paper_port,
+        declared_options_level=4,
+        expected_account_hash=preflight.expected_account_hash,
+    )
+    broker = toolbox._connect()
+    try:
+        broker.accountSummary()
+        server_time = broker.reqCurrentTime()
+        positions = [
+            position
+            for position in broker.positions()
+            if Decimal(str(getattr(position, "position", 0) or 0)) != 0
+        ]
+        open_orders = list(broker.reqAllOpenOrders())
+        collected_at = datetime.now(timezone.utc)
+        return BrokerTransitionEvidence(
+            account_identity_sha256=preflight.expected_account_hash,
+            collected_at_utc=collected_at,
+            observation=BrokerTimeObservation(
+                server_time_utc=server_time,
+                observed_at_utc=collected_at,
+                authenticated=bool(broker.isConnected()),
+                paper_session=True,
+            ),
+            positions_count=len(positions),
+            open_orders_count=len(open_orders),
+            broker_write_count=0,
+        )
+    finally:
+        broker.disconnect()
+
+
 def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) -> str:
     try:
         preflight = evaluate_launch_preflight(config, dependencies)
@@ -942,6 +1146,57 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
             controls = validate_launch_controls(db, config)
             if controls.authorization_event_id != preflight.authorization_event_id:
                 raise LaunchError("OWNER_AUTHORIZATION_CHANGED_DURING_PREFLIGHT")
+            if config.target_successor_epoch_id is not None:
+                fresh_auditor = dependencies.auditor_gate_factory(config).evaluate()
+                if (
+                    not isinstance(fresh_auditor, dict)
+                    or fresh_auditor.get("gate_status") != "PASS"
+                    or fresh_auditor.get("receipt_sha256")
+                    != preflight.auditor_receipt_sha256
+                ):
+                    raise LaunchError("AUDITOR_GATE_CHANGED_AFTER_LOCK")
+                fresh_market = dependencies.market_gate_factory(
+                    config, preflight.expected_account_hash
+                ).evaluate(DecisionClass.NEW_TRADE)
+                if (
+                    not isinstance(fresh_market, dict)
+                    or fresh_market.get("gate_status") != "PASS"
+                ):
+                    raise LaunchError("MARKET_DATA_GATE_CHANGED_AFTER_LOCK")
+                collector = dependencies.successor_broker_evidence_collector
+                if collector is None:
+                    raise LaunchError("SUCCESSOR_BROKER_EVIDENCE_COLLECTOR_UNAVAILABLE")
+                try:
+                    transition = commit_successor_transition(
+                        db=db,
+                        launch_attempt_id=config.launch_attempt_id,
+                        target_successor_epoch_id=str(config.target_successor_epoch_id),
+                        target_successor_definition_sha256=str(
+                            config.target_successor_definition_sha256
+                        ),
+                        expected_account_identity_sha256=(
+                            preflight.expected_account_hash
+                        ),
+                        expected_owner_sid=preflight.owner_sid,
+                        owner_authorization_receipt=(
+                            preflight.owner_authorization_receipt
+                        ),
+                        execution_lock_verifier=lambda: _lock_receipt_is_current(
+                            db, receipt
+                        ),
+                        broker_evidence_collector=lambda: collector(config, preflight),
+                        now_utc=dependencies.now_utc,
+                    )
+                except SuccessorEpochError as exc:
+                    raise LaunchError(str(exc)) from exc
+                exact_clock = clock_for_epoch(db, str(config.target_successor_epoch_id))
+                if exact_clock.event_sha256 != transition.clock_event_sha256:
+                    raise LaunchError("SUCCESSOR_CLOCK_BINDING_MISMATCH")
+                controls = replace(
+                    controls,
+                    clock_event_sha256=transition.clock_event_sha256,
+                    clock=exact_clock,
+                )
             _consume_launch_attempt(db, config, preflight, controls)
             prepared = _write_epoch_manifest(
                 db, config, preflight, controls, dependencies
@@ -954,7 +1209,11 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 try:
                     service = dependencies.service_factory(
                         db,
-                        experiment_start_utc=config.scheduled_start_utc,
+                        experiment_start_utc=(
+                            controls.clock.start_utc
+                            if controls.clock is not None
+                            else config.scheduled_start_utc
+                        ),
                         allocation=config.initial_allocation,
                         duration_days=config.duration_days,
                         scan_interval_seconds=300.0,
@@ -1053,7 +1312,13 @@ def _lock_owner(now: datetime) -> LockOwner:
     )
 
 
-def _default_config(repo_root: Path, launch_attempt_id: str) -> Day1LaunchConfig:
+def _default_config(
+    repo_root: Path,
+    launch_attempt_id: str,
+    *,
+    target_successor_epoch_id: str | None = None,
+    target_successor_definition_sha256: str | None = None,
+) -> Day1LaunchConfig:
     reports = repo_root / "state" / "ibkr_paper_30d" / "reports"
     return Day1LaunchConfig(
         repo_root=repo_root,
@@ -1066,12 +1331,29 @@ def _default_config(repo_root: Path, launch_attempt_id: str) -> Day1LaunchConfig
         auditor_receipt_path=reports / "auditor_gate_v2_receipt.json",
         market_policy_path=reports / "market_data_policy_v1.json",
         market_validation_path=reports / "market_data_validation.json",
-        owner_authorization_path=reports / "owner_authorization_v1.json",
-        model_attestation_exception_path=(
-            reports / "model_attestation_owner_exception_v1.json"
+        owner_authorization_path=reports
+        / (
+            "owner_successor_authorization_v2.json"
+            if target_successor_epoch_id is not None
+            else "owner_authorization_v1.json"
         ),
-        launch_attempt_binding_path=reports / "launch_attempt_binding_v1.json",
+        model_attestation_exception_path=(
+            reports
+            / (
+                "model_attestation_owner_exception_v2.json"
+                if target_successor_epoch_id is not None
+                else "model_attestation_owner_exception_v1.json"
+            )
+        ),
+        launch_attempt_binding_path=reports
+        / (
+            "launch_attempt_binding_v2.json"
+            if target_successor_epoch_id is not None
+            else "launch_attempt_binding_v1.json"
+        ),
         launch_attempt_id=launch_attempt_id,
+        target_successor_epoch_id=target_successor_epoch_id,
+        target_successor_definition_sha256=(target_successor_definition_sha256),
     )
 
 
@@ -1092,6 +1374,7 @@ def _default_dependencies() -> LaunchDependencies:
         lock_owner_factory=_lock_owner,
         current_sid=current_process_sid,
         runtime_provenance_validator=_verify_current_runtime_provenance,
+        successor_broker_evidence_collector=_collect_successor_broker_evidence,
     )
 
 
@@ -1110,8 +1393,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m ibkr_paper_30d.day1_launch")
     parser.add_argument("--launch-attempt-id", required=True)
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
+    parser.add_argument("--target-successor-epoch-id")
+    parser.add_argument("--target-successor-definition-sha256")
     args = parser.parse_args(argv)
-    config = _default_config(args.repo_root.resolve(), args.launch_attempt_id)
+    config = _default_config(
+        args.repo_root.resolve(),
+        args.launch_attempt_id,
+        target_successor_epoch_id=args.target_successor_epoch_id,
+        target_successor_definition_sha256=(args.target_successor_definition_sha256),
+    )
     try:
         status = run_day1_launch(config, _default_dependencies())
         result = {"status": status, "reason_codes": []}

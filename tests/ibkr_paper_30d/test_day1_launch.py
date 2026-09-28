@@ -6,7 +6,7 @@ import os
 import time
 from dataclasses import dataclass
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
@@ -44,6 +44,7 @@ from ibkr_paper_30d.experiment_control import (
     OwnerAuthorizationStore,
 )
 from ibkr_paper_30d.experiment_ledger import AutonomousExperimentLedger
+from ibkr_paper_30d.experiment_epoch import ExperimentEpochStore
 from ibkr_paper_30d.market_data import DecisionClass
 from ibkr_paper_30d.market_observation_collector import (
     MARKET_OBSERVATION_COLLECTOR_VERSION,
@@ -55,7 +56,16 @@ from ibkr_paper_30d.owner_authorization import (
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.repositories import EventRepository
 from ibkr_paper_30d.prerequisite_tools import bind_launch_attempt
+from ibkr_paper_30d.successor_epoch import (
+    BrokerTransitionEvidence,
+    SuccessorEpochStore,
+)
+from ibkr_paper_30d.successor_clock import BrokerTimeObservation
 from ibkr_paper_30d.trader_invocation import TraderDecision
+from successor_test_support import (
+    SUCCESSOR_START,
+    build_authorized_successor,
+)
 
 OWNER_SID = "S-1-5-21-test-owner"
 ACCOUNT_HASH = "a" * 64
@@ -208,6 +218,37 @@ def _write_model_attestation_exception(config: Day1LaunchConfig) -> None:
         "owner_authorization_receipt_sha256": owner_receipt_sha256,
         "start_utc": "2026-09-23T13:30:00Z",
         "end_utc": "2026-10-23T13:30:00Z",
+    }
+    config.model_attestation_exception_path.write_bytes(
+        canonical_bytes({**unsigned, "artifact_sha256": sha256_json(unsigned)})
+    )
+
+
+def _write_successor_model_attestation_exception(
+    config: Day1LaunchConfig,
+) -> None:
+    unsigned = {
+        "schema": "MODEL_ATTESTATION_OWNER_EXCEPTION_V2",
+        "authorization_state": "AUTHORIZED",
+        "scope": "MONTH1_PAPER_ONLY",
+        "requested_model": config.model,
+        "reasoning_effort": config.reasoning_effort,
+        "actual_model_attestation_available": False,
+        "requested_model_pin_required": True,
+        "model_mismatch_forbidden": True,
+        "paper_only": True,
+        "live_allowed": False,
+        "paper_host": config.paper_host,
+        "paper_port": config.paper_port,
+        "expected_account_identity_hash": ACCOUNT_HASH,
+        "owner_authorization_receipt_sha256": hashlib.sha256(
+            config.owner_authorization_path.read_bytes()
+        ).hexdigest(),
+        "target_successor_epoch_id": config.target_successor_epoch_id,
+        "target_successor_definition_sha256": (
+            config.target_successor_definition_sha256
+        ),
+        "clock_start_policy": "BROKER_SERVER_TIME_AT_AUTHORIZED_LAUNCH",
     }
     config.model_attestation_exception_path.write_bytes(
         canonical_bytes({**unsigned, "artifact_sha256": sha256_json(unsigned)})
@@ -714,6 +755,105 @@ def test_validate_launch_controls_only_consumes_preexisting_state(
     assert controls.authorization_event_id
     assert len(controls.clock_event_sha256) == 64
     assert control_event_counts(ctx.config.db_path) == before
+
+
+def test_successor_launch_remains_bound_to_a_when_b_is_defined_later(
+    tmp_path: Path, monkeypatch
+) -> None:
+    ctx = passing_context(tmp_path)
+    successor_receipt_path = (
+        ctx.config.owner_authorization_path.parent
+        / "owner_successor_authorization_v2.json"
+    )
+    definition_a, _ = build_authorized_successor(
+        ctx.config.db_path, successor_receipt_path
+    )
+    with Database.open(ctx.config.db_path) as db:
+        store = SuccessorEpochStore(db)
+        definition_b = store.define(
+            store.preview(
+                epoch_id="AUTONOMY_EPOCH_B",
+                predecessor_epoch_id="AUTONOMY_EPOCH_1",
+                duration_days=30,
+                initial_allocation=Decimal("500"),
+                approved_git_head="3" * 40,
+                objective_sha256="b" * 64,
+                configuration_sha256="c" * 64,
+                reason="PRE_START_RUNTIME_FAILURE",
+            )
+        )
+    config = replace(
+        ctx.config,
+        owner_authorization_path=successor_receipt_path,
+        model_attestation_exception_path=(
+            successor_receipt_path.parent / "model_attestation_owner_exception_v2.json"
+        ),
+        launch_attempt_binding_path=(
+            successor_receipt_path.parent / "launch_attempt_binding_v2.json"
+        ),
+        target_successor_epoch_id=str(definition_a["epoch_id"]),
+        target_successor_definition_sha256=str(definition_a["definition_sha256"]),
+    )
+    _write_successor_model_attestation_exception(config)
+    bind_launch_attempt(
+        config.launch_attempt_id,
+        config.identity_receipt_path,
+        config.auditor_receipt_path,
+        config.launch_attempt_binding_path,
+        target_successor_epoch_id=config.target_successor_epoch_id,
+        target_successor_definition_sha256=(config.target_successor_definition_sha256),
+    )
+    ctx.config = config
+    ctx.dependencies.now_utc = lambda: SUCCESSOR_START + timedelta(seconds=2)
+    ctx.dependencies.successor_broker_evidence_collector = (
+        lambda _config, _preflight: BrokerTransitionEvidence(
+            account_identity_sha256=ACCOUNT_HASH,
+            collected_at_utc=SUCCESSOR_START + timedelta(seconds=1),
+            observation=BrokerTimeObservation(
+                server_time_utc=SUCCESSOR_START,
+                observed_at_utc=SUCCESSOR_START + timedelta(seconds=1),
+                authenticated=True,
+                paper_session=True,
+            ),
+            positions_count=0,
+            open_orders_count=0,
+            broker_write_count=0,
+        )
+    )
+    install_fake_lock(ctx)
+    monkeypatch.setattr(launch_module, "_lock_receipt_is_current", lambda *_: True)
+
+    def stop_after_transition(db, _config, _preflight, controls, _dependencies):
+        assert controls.clock is not None
+        assert controls.clock.epoch_id == "AUTONOMY_EPOCH_2"
+        raise StopTestService
+
+    monkeypatch.setattr(launch_module, "_write_epoch_manifest", stop_after_transition)
+
+    with pytest.raises(StopTestService):
+        run_day1_launch(config, ctx.dependencies)
+
+    with Database.open(config.db_path) as db:
+        assert ExperimentEpochStore(db).current().epoch_id == "AUTONOMY_EPOCH_2"
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM experiment_epoch_clock_events_v2 "
+                "WHERE epoch_id=?",
+                (definition_b.epoch_id,),
+            ).fetchone()[0]
+            == 0
+        )
+        accepted = json.loads(
+            db.execute(
+                "SELECT payload_json FROM state_events "
+                "WHERE event_type='DAY1_LAUNCH_ATTEMPT_ACCEPTED'"
+            ).fetchone()[0]
+        )
+        assert accepted["target_successor_epoch_id"] == "AUTONOMY_EPOCH_2"
+        assert (
+            accepted["target_successor_definition_sha256"]
+            == definition_a["definition_sha256"]
+        )
 
 
 def test_validate_launch_controls_rejects_clock_mismatch_without_writes(

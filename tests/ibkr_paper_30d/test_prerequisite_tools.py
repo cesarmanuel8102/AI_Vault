@@ -30,7 +30,9 @@ def readonly_payload():
 def test_create_audit_export_preserves_readonly_receipt_bytes(tmp_path):
     source = tmp_path / "readonly.json"
     payload = readonly_payload()
-    source.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+    source.write_text(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")), encoding="utf-8"
+    )
     output = create_audit_export(source, tmp_path / "exports")
 
     bundle = Path(output["bundle_path"])
@@ -78,9 +80,62 @@ def test_attempt_binding_hashes_receipts_and_requires_same_attempt(tmp_path: Pat
     assert binding["launch_attempt_id"] == attempt_id
     assert binding["expected_account_identity_hash"] == "a" * 64
     assert binding["real_order_writes_attempted"] == 0
-    assert validate_launch_attempt_binding(attempt_id, readonly, auditor, target) == binding
+    assert (
+        validate_launch_attempt_binding(attempt_id, readonly, auditor, target)
+        == binding
+    )
     with pytest.raises(ValueError, match="LAUNCH_ATTEMPT_ID_MISMATCH"):
         validate_launch_attempt_binding(str(uuid4()), readonly, auditor, target)
+
+
+def test_successor_attempt_binding_requires_and_validates_exact_target(tmp_path: Path):
+    readonly = tmp_path / "readonly.json"
+    readonly.write_text(json.dumps(readonly_payload()), encoding="utf-8")
+    auditor = tmp_path / "auditor.json"
+    auditor.write_text('{"gate_status":"PASS"}', encoding="utf-8")
+    target = tmp_path / "binding-v2.json"
+    attempt_id = str(uuid4())
+    definition_sha = "b" * 64
+
+    binding = bind_launch_attempt(
+        attempt_id,
+        readonly,
+        auditor,
+        target,
+        target_successor_epoch_id="AUTONOMY_EPOCH_2",
+        target_successor_definition_sha256=definition_sha,
+    )
+
+    assert binding["schema"] == "DAY1_LAUNCH_ATTEMPT_BINDING_V2"
+    assert binding["target_successor_epoch_id"] == "AUTONOMY_EPOCH_2"
+    assert (
+        validate_launch_attempt_binding(
+            attempt_id,
+            readonly,
+            auditor,
+            target,
+            target_successor_epoch_id="AUTONOMY_EPOCH_2",
+            target_successor_definition_sha256=definition_sha,
+        )
+        == binding
+    )
+    with pytest.raises(ValueError, match="SUCCESSOR_TARGET_BINDING_MISMATCH"):
+        validate_launch_attempt_binding(
+            attempt_id,
+            readonly,
+            auditor,
+            target,
+            target_successor_epoch_id="AUTONOMY_EPOCH_3",
+            target_successor_definition_sha256=definition_sha,
+        )
+    with pytest.raises(ValueError, match="SUCCESSOR_TARGET_BINDING_INCOMPLETE"):
+        bind_launch_attempt(
+            attempt_id,
+            readonly,
+            auditor,
+            target,
+            target_successor_epoch_id="AUTONOMY_EPOCH_2",
+        )
 
 
 @pytest.mark.parametrize("which", ["readonly", "auditor"])
@@ -99,7 +154,9 @@ def test_attempt_binding_rejects_receipt_mutation(tmp_path: Path, which: str):
         validate_launch_attempt_binding(attempt_id, readonly, auditor, target)
 
 
-@pytest.mark.parametrize("attempt_id", ["", "not-a-uuid", "{11111111-1111-1111-1111-111111111111}"])
+@pytest.mark.parametrize(
+    "attempt_id", ["", "not-a-uuid", "{11111111-1111-1111-1111-111111111111}"]
+)
 def test_attempt_binding_rejects_noncanonical_uuid(tmp_path: Path, attempt_id: str):
     readonly = tmp_path / "readonly.json"
     readonly.write_text(json.dumps(readonly_payload()), encoding="utf-8")
