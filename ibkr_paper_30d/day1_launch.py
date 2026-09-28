@@ -52,6 +52,11 @@ from .repositories import EventRepository
 from .research_sandbox import WSLResearchSandbox
 from .risk import CapitalBoundaryRiskPolicy
 from .runtime_integrity import RuntimeAuditorGate, RuntimeMarketDataGate
+from .runtime_provenance import (
+    RuntimeProvenanceError,
+    build_approved_runtime_material,
+    verify_runtime_provenance,
+)
 from .trader_invocation import TraderInputBundle
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -109,6 +114,9 @@ class LaunchDependencies:
     current_sid: Callable[[], str]
     research_toolbox_factory: (
         Callable[[AutonomyWorkspace, "LaunchPreflight"], Any] | None
+    ) = None
+    runtime_provenance_validator: (
+        Callable[[Day1LaunchConfig], dict[str, Any]] | None
     ) = None
 
 
@@ -887,6 +895,17 @@ def _current_git_commit(repo_root: Path) -> str:
         return "UNKNOWN"
 
 
+def _verify_current_runtime_provenance(
+    _config: Day1LaunchConfig,
+) -> dict[str, Any]:
+    code_root = Path(__file__).resolve().parents[1]
+    approved_commit = _current_git_commit(code_root)
+    if approved_commit == "UNKNOWN":
+        raise RuntimeProvenanceError("approved runtime commit is unavailable")
+    material = build_approved_runtime_material(code_root, approved_commit)
+    return verify_runtime_provenance(code_root, material)
+
+
 def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) -> str:
     try:
         preflight = evaluate_launch_preflight(config, dependencies)
@@ -894,6 +913,16 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
         if exc.code == "KILL_SWITCH_HISTORY_INVALID":
             raise LaunchError("KILL_SWITCH_TRIGGERED") from exc
         raise
+
+    validator = dependencies.runtime_provenance_validator
+    if validator is None:
+        raise LaunchError("RUNTIME_SOURCE_PROVENANCE_GATE_UNAVAILABLE")
+    try:
+        provenance = validator(config)
+    except RuntimeProvenanceError as exc:
+        raise LaunchError("RUNTIME_SOURCE_PROVENANCE_BLOCK") from exc
+    if not isinstance(provenance, dict) or provenance.get("gate_status") != "PASS":
+        raise LaunchError("RUNTIME_SOURCE_PROVENANCE_BLOCK")
 
     with dependencies.database_factory(config.db_path) as db:
         lock = dependencies.lock_factory(db)
@@ -1049,6 +1078,7 @@ def _default_dependencies() -> LaunchDependencies:
         service_factory=AutonomousExperimentService,
         lock_owner_factory=_lock_owner,
         current_sid=current_process_sid,
+        runtime_provenance_validator=_verify_current_runtime_provenance,
     )
 
 

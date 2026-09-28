@@ -334,6 +334,11 @@ def passing_context(tmp_path: Path) -> LaunchTestContext:
         service_factory=service_factory,
         lock_owner_factory=Mock(),
         current_sid=lambda: OWNER_SID,
+        runtime_provenance_validator=lambda _config: {
+            "gate_status": "PASS",
+            "reason_codes": [],
+            "material_sha256": "a" * 64,
+        },
     )
     return LaunchTestContext(
         config=config,
@@ -966,6 +971,7 @@ def test_launch_order_is_preflight_lock_controls_arm_service(
     events: list[str] = []
     original_preflight = launch_module.evaluate_launch_preflight
     original_controls = launch_module.validate_launch_controls
+    original_provenance = ctx.dependencies.runtime_provenance_validator
 
     def preflight(config, dependencies):
         events.append("preflight")
@@ -975,6 +981,11 @@ def test_launch_order_is_preflight_lock_controls_arm_service(
         events.append("controls")
         return original_controls(db, config)
 
+    def provenance(config):
+        events.append("provenance")
+        assert original_provenance is not None
+        return original_provenance(config)
+
     class OrderedLock(FakeExecutionLock):
         def acquire(self, owner):
             events.append("lock")
@@ -982,6 +993,7 @@ def test_launch_order_is_preflight_lock_controls_arm_service(
 
     lock = OrderedLock()
     ctx.dependencies.lock_factory = lambda _db: lock
+    ctx.dependencies.runtime_provenance_validator = provenance
     ctx.dependencies.lock_owner_factory = lambda now: SimpleNamespace(
         owner_id="ordered-owner",
         pid=1234,
@@ -1008,9 +1020,40 @@ def test_launch_order_is_preflight_lock_controls_arm_service(
     with pytest.raises(StopTestService):
         run_day1_launch(ctx.config, ctx.dependencies)
 
-    assert events == ["preflight", "lock", "controls", "service", "run"]
+    assert events == [
+        "preflight",
+        "provenance",
+        "lock",
+        "controls",
+        "service",
+        "run",
+    ]
     assert ctx.executor_tripwire.calls == []
     assert ctx.ib_tripwire.calls == []
+
+
+def test_runtime_provenance_block_occurs_before_lock_or_manifest(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    lock = install_fake_lock(ctx)
+    ctx.dependencies.runtime_provenance_validator = lambda _config: {
+        "gate_status": "BLOCK",
+        "reason_codes": ["UNTRACKED_RUNTIME_SOURCE"],
+    }
+
+    with pytest.raises(LaunchError, match="RUNTIME_SOURCE_PROVENANCE_BLOCK"):
+        run_day1_launch(ctx.config, ctx.dependencies)
+
+    assert lock.calls == []
+    assert not (
+        tmp_path
+        / "state"
+        / "ibkr_paper_30d"
+        / "reports"
+        / "autonomy_epoch_manifest.json"
+    ).exists()
+    assert_no_write_authority(ctx)
 
 
 def test_active_database_projection_without_live_mutex_requires_owner_action(
