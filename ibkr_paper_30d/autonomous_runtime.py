@@ -8,6 +8,7 @@ from typing import Any
 
 from .autonomous_execution import AutonomousPaperExecutor
 from .autonomous_research import AutonomousResearchLoop, CodexAutonomousCLIProvider
+from .autonomy_bootstrap import AutonomyBootstrapBuilder
 from .canonical import canonical_bytes, sha256_json
 from .decision_diagnostics import (
     build_risk_diagnostics,
@@ -242,6 +243,20 @@ def run_autonomous_cycle(
     )
     toolbox = toolbox or IBKRResearchToolbox(declared_options_level=options_level)
     provider = provider or CodexAutonomousCLIProvider()
+    if database is not None and not getattr(
+        provider, "_autonomy_bootstrap_initialized", False
+    ):
+        bootstrap = AutonomyBootstrapBuilder(database).build(
+            bundle=bundle,
+            toolbox=toolbox,
+            execute_paper=execute_paper,
+        )
+        installer = getattr(provider, "install_first_process_bootstrap", None)
+        if callable(installer):
+            installer(bootstrap)
+        else:
+            provider.first_process_bootstrap = bootstrap
+        provider._autonomy_bootstrap_initialized = True
     workspace_summary = getattr(toolbox, "workspace_summary", None)
     if callable(workspace_summary):
         context = workspace_summary()

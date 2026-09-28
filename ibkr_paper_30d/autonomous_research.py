@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import os
 import shutil
@@ -323,6 +324,17 @@ class CodexAutonomousCLIProvider:
         self.last_failure_code: str | None = None
         self.last_native_tool_events: list[dict[str, Any]] = []
         self.last_model_attestation_mode = "SERVER_REPORTED"
+        self._first_process_bootstrap: dict[str, Any] | None = None
+
+    def install_first_process_bootstrap(self, value: dict[str, Any]) -> None:
+        if self._first_process_bootstrap is not None:
+            raise RuntimeError("FIRST_PROCESS_BOOTSTRAP_ALREADY_INSTALLED")
+        self._first_process_bootstrap = copy.deepcopy(value)
+
+    def _take_first_process_bootstrap(self) -> dict[str, Any] | None:
+        value = self._first_process_bootstrap
+        self._first_process_bootstrap = None
+        return value
 
     def next_turn(
         self,
@@ -360,6 +372,7 @@ class CodexAutonomousCLIProvider:
                 history,
                 toolbox_manifest,
                 workspace_context=getattr(self, "workspace_context", None),
+                first_process_bootstrap=self._take_first_process_bootstrap(),
             )
             completed = None
             retry_delays = (1.0, 3.0)
@@ -437,6 +450,7 @@ class CodexAutonomousCLIProvider:
         history: list[dict[str, Any]],
         toolbox_manifest: list[dict[str, Any]],
         workspace_context: dict[str, Any] | None = None,
+        first_process_bootstrap: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "schema": "CODEX_AUTONOMOUS_RESEARCH_TURN_V1",
@@ -524,6 +538,8 @@ class CodexAutonomousCLIProvider:
         }
         if workspace_context:
             payload["workspace_context"] = workspace_context
+        if first_process_bootstrap:
+            payload["first_process_bootstrap"] = first_process_bootstrap
         return payload
 
     @staticmethod
