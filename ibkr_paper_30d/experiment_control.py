@@ -25,6 +25,7 @@ class ExperimentClock:
     duration_days: int
     initial_allocation: Decimal
     event_sha256: str
+    epoch_id: str | None = None
 
     def snapshot(self, now: datetime) -> dict[str, Any]:
         if now.tzinfo is None or now.utcoffset() is None:
@@ -62,7 +63,7 @@ class ExperimentClockStore:
             raise ExperimentControlError("EXPERIMENT_CLOCK_TIMESTAMP_INVALID")
         return parsed.astimezone(timezone.utc)
 
-    def load(self) -> ExperimentClock | None:
+    def load_legacy(self) -> ExperimentClock | None:
         row = self.db.execute(
             "SELECT payload_json,event_sha256 FROM experiment_clock_events "
             "WHERE experiment_id=? ORDER BY sequence ASC LIMIT 1",
@@ -91,6 +92,26 @@ class ExperimentClockStore:
             event_sha256=stored_event_sha,
         )
 
+    def load(self) -> ExperimentClock | None:
+        v2_table = self.db.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' "
+            "AND name='experiment_epoch_clock_events_v2'"
+        ).fetchone()
+        if v2_table is not None:
+            v2_count = int(
+                self.db.execute(
+                    "SELECT COUNT(*) FROM experiment_epoch_clock_events_v2"
+                ).fetchone()[0]
+            )
+            if v2_count:
+                raise ExperimentControlError("EXPERIMENT_CLOCK_EPOCH_REQUIRED")
+        return self.load_legacy()
+
+    def clock_for_epoch(self, epoch_id: str) -> ExperimentClock:
+        from .successor_clock import clock_for_epoch
+
+        return clock_for_epoch(self.db, epoch_id, experiment_id=self.experiment_id)
+
     def initialize_or_load(
         self,
         *,
@@ -112,7 +133,10 @@ class ExperimentClockStore:
 
         if requested_start_utc is None:
             raise ExperimentControlError("EXPERIMENT_START_REQUIRED_FOR_FIRST_RUN")
-        if requested_start_utc.tzinfo is None or requested_start_utc.utcoffset() is None:
+        if (
+            requested_start_utc.tzinfo is None
+            or requested_start_utc.utcoffset() is None
+        ):
             raise ExperimentControlError("EXPERIMENT_START_MUST_BE_TIMEZONE_AWARE")
         if duration_days <= 0:
             raise ExperimentControlError("EXPERIMENT_DURATION_INVALID")
@@ -131,9 +155,7 @@ class ExperimentClockStore:
             "created_at_utc": utc_now(),
         }
         payload_json = canonical_bytes(payload).decode("utf-8")
-        event_sha = sha256_json(
-            {"previous_event_sha256": None, "payload": payload}
-        )
+        event_sha = sha256_json({"previous_event_sha256": None, "payload": payload})
         self.db.execute(
             "INSERT INTO experiment_clock_events("
             "event_id,experiment_id,event_type,payload_json,payload_sha256,"
@@ -211,7 +233,6 @@ class RuntimeGateState:
     @property
     def passed(self) -> bool:
         return self.auditor_gate == "PASS" and self.market_data_gate == "PASS"
-
 
 
 class OwnerAuthorizationStore:
