@@ -14,9 +14,7 @@ FINALIZER = ROOT / "FINALIZE_IBKR_PREREQUISITES.ps1"
 MARKET_RUNNER = ROOT / "RUN_IBKR_MARKET_DATA_GATE.ps1"
 DAY1_RUNNER = ROOT / "RUN_IBKR_DAY1_SERVICE.ps1"
 DENIAL_PROBE = ROOT / "auditor_runtime" / "AUDITOR_DENIAL_PROBE_V1.ps1"
-MARKET_HARNESS = (
-    ROOT / "tests" / "ibkr_paper_30d" / "_market_gate_evidence_harness.ps1"
-)
+MARKET_HARNESS = ROOT / "tests" / "ibkr_paper_30d" / "_market_gate_evidence_harness.ps1"
 
 
 def test_prerequisite_scripts_exist_and_never_arm_trading():
@@ -54,7 +52,9 @@ def test_prerequisite_scripts_exist_and_never_arm_trading():
     assert "Archive-CollectionEvidence" in market
 
 
-@pytest.mark.skipif(os.name != "nt", reason="PowerShell 5.1 parser validation is Windows-only")
+@pytest.mark.skipif(
+    os.name != "nt", reason="PowerShell 5.1 parser validation is Windows-only"
+)
 @pytest.mark.parametrize("path", [FINALIZER, MARKET_RUNNER, DAY1_RUNNER])
 def test_powershell_51_ast_has_no_parse_errors(path: Path):
     escaped = str(path).replace("'", "''")
@@ -72,7 +72,9 @@ def test_powershell_51_ast_has_no_parse_errors(path: Path):
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-@pytest.mark.skipif(os.name != "nt", reason="ScheduledTasks module validation is Windows-only")
+@pytest.mark.skipif(
+    os.name != "nt", reason="ScheduledTasks module validation is Windows-only"
+)
 def test_scheduled_task_objects_can_be_constructed_without_registration():
     command = (
         "$a=New-ScheduledTaskAction -Execute 'PowerShell.exe' -Argument '-NoProfile';"
@@ -119,8 +121,8 @@ def test_create_audit_export_preserves_identity_receipt_bytes(tmp_path: Path):
 def test_denial_probe_classifies_acl_errors_explicitly():
     text = DENIAL_PROBE.read_text(encoding="utf-8")
     assert "Test-Path -LiteralPath $Target -ErrorAction Stop" in text
-    assert "catch [UnauthorizedAccessException] { return \"DENIED\" }" in text
-    assert "catch [Security.SecurityException] { return \"DENIED\" }" in text
+    assert 'catch [UnauthorizedAccessException] { return "DENIED" }' in text
+    assert 'catch [Security.SecurityException] { return "DENIED" }' in text
 
 
 def test_external_provisioning_invocation_does_not_pass_switch_false_as_string():
@@ -135,7 +137,7 @@ def test_market_runner_python_wrapper_captures_native_stderr_before_failing():
     end = text.index("function Get-EasternNow")
     block = text[start:end]
 
-    assert '$PriorErrorActionPreference = $ErrorActionPreference' in block
+    assert "$PriorErrorActionPreference = $ErrorActionPreference" in block
     assert '$ErrorActionPreference = "Continue"' in block
     assert "$PythonExitCode = $LASTEXITCODE" in block
     assert "$ErrorActionPreference = $PriorErrorActionPreference" in block
@@ -148,7 +150,7 @@ def test_python_json_wrapper_captures_native_stderr_before_failing():
     end = text.index("function New-RandomSecurePassword")
     block = text[start:end]
 
-    assert '$PriorErrorActionPreference = $ErrorActionPreference' in block
+    assert "$PriorErrorActionPreference = $ErrorActionPreference" in block
     assert '$ErrorActionPreference = "Continue"' in block
     assert "$PythonExitCode = $LASTEXITCODE" in block
     assert "$ErrorActionPreference = $PriorErrorActionPreference" in block
@@ -168,9 +170,7 @@ def test_finalizer_owns_explicit_authorization_and_fresh_attempt_binding():
     assert '"bind-launch-attempt"' in text
 
     readonly_index = text.index('"inspect-ibkr-readonly"')
-    authorization_index = text.index(
-        '"ibkr_paper_30d.owner_authorization", "validate"'
-    )
+    authorization_index = text.index('"ibkr_paper_30d.owner_authorization", "validate"')
     auditor_index = text.index("$AuditorEvaluation = Invoke-PythonJson")
     binding_index = text.index('"bind-launch-attempt"')
     assert authorization_index < readonly_index < auditor_index < binding_index
@@ -188,6 +188,9 @@ def test_scheduled_finalizer_cannot_create_owner_authorization():
 
 @pytest.mark.skipif(os.name != "nt", reason="PowerShell execution is Windows-only")
 def test_day1_handoff_validate_only_reports_foreground_commands():
+    approved_head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+    ).strip()
     result = subprocess.run(
         [
             "powershell.exe",
@@ -198,6 +201,8 @@ def test_day1_handoff_validate_only_reports_foreground_commands():
             str(DAY1_RUNNER),
             "-RepoRoot",
             str(ROOT),
+            "-ApprovedHead",
+            approved_head,
             "-ValidateOnly",
         ],
         capture_output=True,
@@ -216,6 +221,20 @@ def test_day1_handoff_validate_only_reports_foreground_commands():
     assert payload["launch_attempt_id"] in payload["python_arguments"]
     assert payload["foreground"] is True
     assert payload["broker_write_calls"] == 0
+    assert payload["mutations_performed"] == 0
+    assert payload["scheduler_validation"]["approved_head"] == approved_head
+    assert payload["scheduler_validation"]["status"] in {"PASS", "BLOCK"}
+
+
+def test_day1_runner_refuses_head_mismatch_before_mutating_launch_state():
+    text = DAY1_RUNNER.read_text(encoding="utf-8")
+    mismatch = text.index("APPROVED_HEAD_MISMATCH")
+    launch_root = text.index(
+        'Join-Path $ResolvedRepoRoot "state\\ibkr_paper_30d\\launch"'
+    )
+    finalizer = text.index("& $PowerShellExe @FinalizerArguments")
+    launcher = text.index("& $PythonExe @PythonArguments")
+    assert mismatch < launch_root < finalizer < launcher
 
 
 def test_day1_runner_anchors_python_module_launch_to_approved_repo():
@@ -368,7 +387,9 @@ def test_market_gate_requires_exactly_one_explicit_mode(
     payload = json.loads(result.stdout.strip().splitlines()[-1])
     if expected_mode is None:
         assert payload["status"] == "ERROR"
-        assert "EXACTLY_ONE_MARKET_GATE_MODE_REQUIRED" in payload["exception_message_head"]
+        assert (
+            "EXACTLY_ONE_MARKET_GATE_MODE_REQUIRED" in payload["exception_message_head"]
+        )
     else:
         assert payload["mode"] == expected_mode
         assert payload["existing_pass_reusable_for_launch"] is False
@@ -393,7 +414,9 @@ def test_auditor_account_enablement_is_inside_cleanup_guard():
     trust_anchor = text.index("AUDITOR_TRUST_ANCHOR_HASH_MISMATCH")
     assert preflight_disable < trust_anchor
 
-    marker = text.index("# Keep the account disabled until the bounded probe window starts.")
+    marker = text.index(
+        "# Keep the account disabled until the bounded probe window starts."
+    )
     try_index = text.index("try {", marker)
     enable_index = text.index("Enable-LocalUser -Name $AuditorUser", marker)
     finally_index = text.index("finally {", enable_index)
@@ -404,7 +427,6 @@ def test_auditor_account_enablement_is_inside_cleanup_guard():
     assert marker < try_index < enable_index < finally_index < cleanup_disable
     assert "$AuditorEnabledForProbe = $true" in text[enable_index:finally_index]
     assert "$ProbeFirewallInstalled = $true" in text[enable_index:finally_index]
-
 
 
 def test_auditor_probe_launch_uses_clean_explicit_environment():
@@ -445,9 +467,13 @@ def test_auditor_probe_environment_allowlist_is_minimal():
             assigned_keys.add(stripped.split("[")[1].split("]")[0].strip('"'))
 
     assert assigned_keys, "no environment keys assigned to probe child"
-    assert assigned_keys <= {"SystemRoot", "WINDIR", "ComSpec", "PATH", "PATHEXT"}, (
-        f"unexpected environment keys forwarded to auditor child: {assigned_keys}"
-    )
+    assert assigned_keys <= {
+        "SystemRoot",
+        "WINDIR",
+        "ComSpec",
+        "PATH",
+        "PATHEXT",
+    }, f"unexpected environment keys forwarded to auditor child: {assigned_keys}"
     assert "SystemRoot" in assigned_keys
 
     for forbidden in (
@@ -464,7 +490,9 @@ def test_auditor_probe_environment_allowlist_is_minimal():
         assert forbidden not in allowlist_block, forbidden
 
 
-@pytest.mark.skipif(os.name != "nt", reason="PowerShell path validation is Windows-only")
+@pytest.mark.skipif(
+    os.name != "nt", reason="PowerShell path validation is Windows-only"
+)
 def test_clean_environment_probe_child_boots_windows_powershell():
     """Mechanism proof for explicit clean child environment."""
     probe_script = Path(os.environ.get("TEMP", ".")) / "glm_probe_child_env_probe.ps1"

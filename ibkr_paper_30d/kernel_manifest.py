@@ -34,6 +34,7 @@ PYTHON_ROOT_ROLES: dict[str, str] = {
     "ibkr_paper_30d/reconciliation.py": "broker_reconciliation",
     "ibkr_paper_30d/risk.py": "capital_risk_boundary",
     "ibkr_paper_30d/runtime_integrity.py": "runtime_auditor_market_gate",
+    "ibkr_paper_30d/scheduler_validation.py": "scheduler_startup_gate",
 }
 
 POWERSHELL_ROOT_ROLES: dict[str, str] = {

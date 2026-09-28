@@ -3,6 +3,7 @@
 param(
     [string]$RepoRoot = "C:\AI_VAULT_IBKR",
     [string]$PythonExe = "python",
+    [Parameter(Mandatory = $true)][string]$ApprovedHead,
     [switch]$Scheduled,
     [switch]$InspectStatus
 )
@@ -44,7 +45,7 @@ function Invoke-Day1ForegroundService {
         throw "DAY1_SERVICE_SCRIPT_MISSING"
     }
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Day1Script `
-        -RepoRoot $ResolvedRepoRoot -PythonExe $PythonExe
+        -RepoRoot $ResolvedRepoRoot -PythonExe $PythonExe -ApprovedHead $ApprovedHead
     $Day1ExitCode = $LASTEXITCODE
     if ($Day1ExitCode -ne 0) {
         throw "DAY1_FOREGROUND_SERVICE_FAILED:$Day1ExitCode"
