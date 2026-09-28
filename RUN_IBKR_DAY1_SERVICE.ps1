@@ -32,6 +32,8 @@ $FinalizerArguments = @(
     "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $Finalizer,
     "-RepoRoot", $ResolvedRepoRoot,
     "-PythonExe", $PythonExe,
+    "-Stage", "Receipts",
+    "-ConfirmStage",
     "-SkipTaskRegistration",
     "-LaunchAttemptId", $LaunchAttemptId
 )

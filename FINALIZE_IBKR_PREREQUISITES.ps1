@@ -3,6 +3,10 @@
 param(
     [string]$RepoRoot = "C:\AI_VAULT_IBKR",
     [string]$PythonExe = "python",
+    [ValidateSet("Check", "Provision", "Receipts", "Activate")][string]$Stage = "Check",
+    [switch]$DryRun,
+    [switch]$ConfirmStage,
+    [string]$ApprovedHead = "",
     [switch]$SkipTaskRegistration,
     [string]$OwnerAuthorization = "",
     [string]$LaunchAttemptId = ""
@@ -15,7 +19,7 @@ function Resolve-ApprovedRepoRoot {
     param([string]$RepoRoot)
     $Resolved = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\')
     $Approved = [IO.Path]::GetFullPath("C:\AI_VAULT_IBKR").TrimEnd('\')
-    if ($Resolved -ine $Approved) {
+    if ($Resolved -ine $Approved -and -not $DryRun -and $Stage -ne "Check") {
         throw "REPO_ROOT_NOT_APPROVED:$Resolved"
     }
     return $Resolved
@@ -202,12 +206,75 @@ function Test-AuditorTargetManifestCurrent {
     return Test-StringSetEqualOrdinalIgnoreCase -Left $ActualApprovedRoots -Right $ExpectedApprovedRoots
 }
 
+$PlannedMutations = [ordered]@{
+    security = $(if ($Stage -eq "Provision") { @("auditor ACL/runtime provisioning") } else { @() })
+    service = $(if ($Stage -eq "Receipts") { @("bounded Secondary Logon probe window") } else { @() })
+    firewall = $(if ($Stage -eq "Receipts") { @("temporary broker-port denial rule") } else { @() })
+    account = $(if ($Stage -eq "Receipts") { @("temporary auditor enable/password rotation") } elseif ($Stage -eq "Provision") { @("auditor provisioning and disable") } else { @() })
+    scheduler = $(if ($Stage -eq "Activate") { @("register pinned market gate task") } else { @() })
+    receipts = $(if ($Stage -eq "Receipts") { @("refresh read-only identity, auditor, and launch receipts") } elseif ($Stage -eq "Activate") { @("create or validate explicit Owner authorization") } else { @() })
+}
+
+if ($DryRun -or $Stage -eq "Check") {
+    [ordered]@{
+        schema = "IBKR_PREREQUISITE_FINALIZER_PLAN_V1"
+        status = $(if ($DryRun) { "DRY_RUN" } else { "CHECK_ONLY" })
+        stage = $Stage
+        dry_run = [bool]$DryRun
+        planned_mutations = $PlannedMutations
+        mutations_performed = 0
+        broker_write_calls = 0
+        paper_execution_armed = $false
+        autonomous_experiment_started = $false
+    } | ConvertTo-Json -Depth 8 -Compress
+    exit 0
+}
+if (-not $ConfirmStage) {
+    throw "STAGE_CONFIRMATION_REQUIRED:$Stage"
+}
+
 Assert-Administrator
 
 if (-not (Test-Path -LiteralPath $ResolvedRepoRoot -PathType Container)) {
     throw "REPO_ROOT_NOT_FOUND:$ResolvedRepoRoot"
 }
 Set-Location -LiteralPath $ResolvedRepoRoot
+
+if ($Stage -eq "Provision") {
+    $ExistingAuditor = Get-LocalUser -Name $AuditorUser -ErrorAction SilentlyContinue
+    $TargetManifestCurrent = Test-AuditorTargetManifestCurrent -LiteralPath $TargetManifest -ExpectedSid $ExpectedAuditorSid -RepoRoot $ResolvedRepoRoot
+    if ($null -eq $ExistingAuditor -or -not $TargetManifestCurrent) {
+        & PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_WINDOWS_PROVISIONING_V1.ps1") -Mode Apply -RepoRoot $ResolvedRepoRoot
+        if ($LASTEXITCODE -ne 0) { throw "AUDITOR_PROVISIONING_V1_FAILED" }
+    }
+    $User = Get-LocalUser -Name $AuditorUser -ErrorAction Stop
+    if ($User.SID.Value -ne $ExpectedAuditorSid) {
+        throw "AUDITOR_SID_MISMATCH:ACTUAL=$($User.SID.Value):EXPECTED=$ExpectedAuditorSid"
+    }
+    if ($User.Enabled) {
+        Disable-LocalUser -Name $AuditorUser -ErrorAction Stop
+    }
+    if ((Get-Sha256Lower -LiteralPath $TrustAnchorPath) -ne $ExpectedTrustAnchorSha256) {
+        throw "AUDITOR_TRUST_ANCHOR_HASH_MISMATCH"
+    }
+    & PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1") -Mode Install -ConfirmRuntimeMutation
+    if ($LASTEXITCODE -ne 0) { throw "AUDITOR_RUNTIME_V2_INSTALL_FAILED" }
+    $ProvisionReview = @(& PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1") -Mode Review)
+    $ProvisionReviewJson = ($ProvisionReview -join [Environment]::NewLine) | ConvertFrom-Json
+    if ($ProvisionReviewJson.INSTALLED_RUNTIME_EXACT -ne $true) {
+        throw "AUDITOR_RUNTIME_V2_NOT_EXACT"
+    }
+    [ordered]@{
+        schema = "IBKR_PREREQUISITE_FINALIZER_RESULT_V1"
+        status = "PROVISIONED"
+        stage = $Stage
+        paper_execution_armed = $false
+        autonomous_experiment_started = $false
+        broker_write_calls = 0
+    } | ConvertTo-Json -Depth 6 -Compress
+    exit 0
+}
+
 [void](New-Item -ItemType Directory -Path $CanonicalReportRoot -Force)
 
 $CurrentOwnerSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
@@ -215,60 +282,74 @@ $AuthorizationExists = (
     (Test-Path -LiteralPath $AutonomousDatabase -PathType Leaf) -and
     (Test-Path -LiteralPath $OwnerAuthorizationReceipt -PathType Leaf)
 )
-if ($SkipTaskRegistration) {
+if ($Stage -eq "Receipts") {
     if ($OwnerAuthorization) {
-        throw "OWNER_AUTHORIZATION_CREATE_FORBIDDEN_IN_SCHEDULED_MODE"
+        throw "OWNER_AUTHORIZATION_CREATE_FORBIDDEN_IN_RECEIPTS_STAGE"
     }
-    if (-not $AuthorizationExists) {
-        throw "OWNER_AUTHORIZATION_MISSING"
+    if ($SkipTaskRegistration) {
+        if (-not $AuthorizationExists) {
+            throw "OWNER_AUTHORIZATION_MISSING"
+        }
+        if (-not $LaunchAttemptId) {
+            throw "LAUNCH_ATTEMPT_ID_REQUIRED"
+        }
+        $ParsedAttempt = [Guid]::Empty
+        if (-not [Guid]::TryParseExact($LaunchAttemptId, "D", [ref]$ParsedAttempt)) {
+            throw "LAUNCH_ATTEMPT_ID_INVALID"
+        }
+        $OwnerAuthorizationState = Invoke-PythonJson -Arguments @(
+            "-m", "ibkr_paper_30d.owner_authorization", "validate",
+            "--db", $AutonomousDatabase,
+            "--receipt", $OwnerAuthorizationReceipt,
+            "--actor-sid", $CurrentOwnerSid
+        )
     }
-    if (-not $LaunchAttemptId) {
-        throw "LAUNCH_ATTEMPT_ID_REQUIRED"
+    else {
+        $OwnerAuthorizationState = [pscustomobject]@{ status = "PASS" }
     }
-    $ParsedAttempt = [Guid]::Empty
-    if (-not [Guid]::TryParseExact($LaunchAttemptId, "D", [ref]$ParsedAttempt)) {
-        throw "LAUNCH_ATTEMPT_ID_INVALID"
-    }
-    $OwnerAuthorizationState = Invoke-PythonJson -Arguments @(
-        "-m", "ibkr_paper_30d.owner_authorization", "validate",
-        "--db", $AutonomousDatabase,
-        "--receipt", $OwnerAuthorizationReceipt,
-        "--actor-sid", $CurrentOwnerSid
-    )
 }
-elseif ($AuthorizationExists) {
-    $OwnerAuthorizationState = Invoke-PythonJson -Arguments @(
-        "-m", "ibkr_paper_30d.owner_authorization", "validate",
-        "--db", $AutonomousDatabase,
-        "--receipt", $OwnerAuthorizationReceipt,
-        "--actor-sid", $CurrentOwnerSid
-    )
-}
-else {
-    if ($OwnerAuthorization -cne "AUTHORIZE 30-DAY PAPER EXPERIMENT") {
-        throw "OWNER_AUTHORIZATION_MISSING"
+elseif ($Stage -eq "Activate") {
+    if ($AuthorizationExists) {
+        $OwnerAuthorizationState = Invoke-PythonJson -Arguments @(
+            "-m", "ibkr_paper_30d.owner_authorization", "validate",
+            "--db", $AutonomousDatabase,
+            "--receipt", $OwnerAuthorizationReceipt,
+            "--actor-sid", $CurrentOwnerSid
+        )
     }
-    $OwnerAuthorizationState = Invoke-PythonJson -Arguments @(
-        "-m", "ibkr_paper_30d.owner_authorization", "create",
-        "--db", $AutonomousDatabase,
-        "--receipt", $OwnerAuthorizationReceipt,
-        "--phrase", $OwnerAuthorization,
-        "--actor-sid", $CurrentOwnerSid,
-        "--elevated"
-    )
+    else {
+        if ($OwnerAuthorization -cne "AUTHORIZE 30-DAY PAPER EXPERIMENT") {
+            throw "OWNER_AUTHORIZATION_MISSING"
+        }
+        $OwnerAuthorizationState = Invoke-PythonJson -Arguments @(
+            "-m", "ibkr_paper_30d.owner_authorization", "create",
+            "--db", $AutonomousDatabase,
+            "--receipt", $OwnerAuthorizationReceipt,
+            "--phrase", $OwnerAuthorization,
+            "--actor-sid", $CurrentOwnerSid,
+            "--elevated"
+        )
+    }
 }
 if ($OwnerAuthorizationState.status -ne "PASS") {
     throw "OWNER_AUTHORIZATION_INVALID"
 }
 
-if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 4002 -InformationLevel Quiet)) {
-    throw "IBKR_PAPER_GATEWAY_4002_NOT_LISTENING"
+if ($Stage -eq "Receipts") {
+    if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 4002 -InformationLevel Quiet)) {
+        throw "IBKR_PAPER_GATEWAY_4002_NOT_LISTENING"
+    }
+    $ReadOnly = Invoke-PythonJson -Arguments @(
+        "-m", "ibkr_paper_30d.cli", "inspect-ibkr-readonly",
+        "--host", "127.0.0.1", "--port", "4002"
+    )
 }
-
-$ReadOnly = Invoke-PythonJson -Arguments @(
-    "-m", "ibkr_paper_30d.cli", "inspect-ibkr-readonly",
-    "--host", "127.0.0.1", "--port", "4002"
-)
+else {
+    if (-not (Test-Path -LiteralPath $ReadOnlyReport -PathType Leaf)) {
+        throw "READONLY_IDENTITY_RECEIPT_MISSING"
+    }
+    $ReadOnly = Get-Content -LiteralPath $ReadOnlyReport -Raw | ConvertFrom-Json
+}
 if ($ReadOnly.status -ne "PASS") {
     throw "READONLY_IDENTITY_GATE_NOT_PASS:$($ReadOnly.reason_codes -join ',')"
 }
@@ -284,8 +365,7 @@ if (
 $ExistingAuditor = Get-LocalUser -Name $AuditorUser -ErrorAction SilentlyContinue
 $TargetManifestCurrent = Test-AuditorTargetManifestCurrent -LiteralPath $TargetManifest -ExpectedSid $ExpectedAuditorSid -RepoRoot $ResolvedRepoRoot
 if ($null -eq $ExistingAuditor -or -not $TargetManifestCurrent) {
-    & PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_WINDOWS_PROVISIONING_V1.ps1") -Mode Apply -RepoRoot $ResolvedRepoRoot
-    if ($LASTEXITCODE -ne 0) { throw "AUDITOR_PROVISIONING_V1_FAILED" }
+    throw "AUDITOR_PROVISION_STAGE_REQUIRED"
 }
 if (-not (Test-AuditorTargetManifestCurrent -LiteralPath $TargetManifest -ExpectedSid $ExpectedAuditorSid -RepoRoot $ResolvedRepoRoot)) {
     throw "AUDITOR_TARGET_MANIFEST_STALE_AFTER_PROVISIONING"
@@ -296,7 +376,7 @@ if ($User.SID.Value -ne $ExpectedAuditorSid) {
     throw "AUDITOR_SID_MISMATCH:ACTUAL=$($User.SID.Value):EXPECTED=$ExpectedAuditorSid"
 }
 if ($User.Enabled) {
-    Disable-LocalUser -Name $AuditorUser -ErrorAction Stop
+    throw "AUDITOR_ACCOUNT_MUST_BE_DISABLED_BEFORE_STAGE:$Stage"
 }
 
 if ((Get-Sha256Lower -LiteralPath $TrustAnchorPath) -ne $ExpectedTrustAnchorSha256) {
@@ -314,15 +394,13 @@ if ([string]$TrustAnchor.anchor_sha256 -ne $ExpectedTrustAnchorSha256) {
     throw "AUDITOR_TRUST_ANCHOR_EVALUATION_MISMATCH"
 }
 
-& PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1") -Mode Install -ConfirmRuntimeMutation
-if ($LASTEXITCODE -ne 0) { throw "AUDITOR_RUNTIME_V2_INSTALL_FAILED" }
-
 $ReviewOutput = @(& PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ResolvedRepoRoot "AUDITOR_RUNTIME_V2_DEPLOYMENT.ps1") -Mode Review)
 $ReviewJson = ($ReviewOutput -join [Environment]::NewLine) | ConvertFrom-Json
 if ($ReviewJson.INSTALLED_RUNTIME_EXACT -ne $true) {
     throw "AUDITOR_RUNTIME_V2_NOT_EXACT"
 }
 
+if ($Stage -eq "Receipts") {
 $AuditExport = Invoke-PythonJson -Arguments @(
     "-m", "ibkr_paper_30d.prerequisite_tools", "create-audit-export",
     "--readonly-report", $ReadOnlyReport,
@@ -594,36 +672,6 @@ if (Test-Path -LiteralPath $MarketValidation -PathType Leaf) {
 }
 
 $TaskRegistered = $false
-if (-not $SkipTaskRegistration) {
-    $MarketScript = Join-Path $ResolvedRepoRoot "RUN_IBKR_MARKET_DATA_GATE.ps1"
-    if (-not (Test-Path -LiteralPath $MarketScript -PathType Leaf)) {
-        throw "MARKET_DATA_GATE_SCRIPT_MISSING"
-    }
-
-    $TaskAction = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument (
-        "-NoProfile -ExecutionPolicy Bypass -File " +
-        (Quote-Argument $MarketScript) +
-        " -RepoRoot " + (Quote-Argument $ResolvedRepoRoot) +
-        " -PythonExe " + (Quote-Argument $ResolvedPython) +
-        " -Scheduled"
-    )
-    $OwnerPrincipal = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-    $Triggers = @(
-        (New-ScheduledTaskTrigger -Weekly -WeeksInterval 1 -DaysOfWeek Monday,Tuesday,Wednesday,Thursday,Friday -At 9:35AM),
-        (New-ScheduledTaskTrigger -AtLogOn -User $OwnerPrincipal)
-    )
-    $Principal = New-ScheduledTaskPrincipal -UserId $OwnerPrincipal -LogonType Interactive -RunLevel Highest
-    $Settings = New-ScheduledTaskSettingsSet `
-        -StartWhenAvailable `
-        -AllowStartIfOnBatteries `
-        -DontStopIfGoingOnBatteries `
-        -MultipleInstances IgnoreNew `
-        -ExecutionTimeLimit (New-TimeSpan -Days 31) `
-        -RestartCount 3 `
-        -RestartInterval (New-TimeSpan -Minutes 5)
-    Register-ScheduledTask -TaskName $MarketTaskName -Action $TaskAction -Trigger $Triggers -Principal $Principal -Settings $Settings -Force | Out-Null
-    $TaskRegistered = $true
-}
 
 $Ready = Invoke-PythonJson -Arguments @(
     "-m", "ibkr_paper_30d.prerequisite_tools", "readiness",
@@ -641,3 +689,76 @@ $Ready = Invoke-PythonJson -Arguments @(
     autonomous_experiment_started = $false
     readiness = $Ready
 } | ConvertTo-Json -Depth 8
+exit 0
+}
+
+if ($Stage -eq "Activate") {
+    if ($ApprovedHead -notmatch '^[0-9a-fA-F]{40}$') {
+        throw "APPROVED_HEAD_INVALID"
+    }
+    $ApprovedHead = $ApprovedHead.ToLowerInvariant()
+    $CurrentHead = ([string]((& git -C $ResolvedRepoRoot rev-parse HEAD 2>$null) | Select-Object -First 1)).Trim().ToLowerInvariant()
+    if ($CurrentHead -ne $ApprovedHead) {
+        throw "APPROVED_HEAD_MISMATCH:EXPECTED=$ApprovedHead:ACTUAL=$CurrentHead"
+    }
+    if (-not (Test-Path -LiteralPath $CanonicalAuditorReceipt -PathType Leaf)) {
+        throw "AUDITOR_RECEIPT_STAGE_REQUIRED"
+    }
+    if (-not (Test-Path -LiteralPath $CanonicalAcceptance -PathType Leaf)) {
+        throw "AUDITOR_ACCEPTANCE_STAGE_REQUIRED"
+    }
+    $ActivationTargetManifestSha = Get-Sha256Lower -LiteralPath $TargetManifest
+    $ActivationAuditorEvaluation = Invoke-PythonJson -Arguments @(
+        "-m", "ibkr_paper_30d.prerequisite_tools", "evaluate-auditor",
+        "--receipt", $CanonicalAuditorReceipt,
+        "--readonly-report", $ReadOnlyReport,
+        "--runtime-manifest-sha256", ([string]$TrustAnchor.runtime_manifest_sha256),
+        "--deployment-manifest-sha256", ([string]$TrustAnchor.deployment_manifest_sha256),
+        "--probe-sha256", (Get-Sha256Lower -LiteralPath $ProbePath),
+        "--probe-manifest-sha256", $ActivationTargetManifestSha
+    )
+    if ($ActivationAuditorEvaluation.canonical_gate -ne "PASS" -or $ActivationAuditorEvaluation.compatibility_gate -ne "PASS") {
+        throw "AUDITOR_GATE_V2_BLOCK:$($ActivationAuditorEvaluation.reason_codes -join ',')"
+    }
+    $MarketScript = Join-Path $ResolvedRepoRoot "RUN_IBKR_MARKET_DATA_GATE.ps1"
+    if (-not (Test-Path -LiteralPath $MarketScript -PathType Leaf)) {
+        throw "MARKET_DATA_GATE_SCRIPT_MISSING"
+    }
+    $TaskAction = New-ScheduledTaskAction -Execute "PowerShell.exe" -WorkingDirectory $ResolvedRepoRoot -Argument (
+        "-NoProfile -ExecutionPolicy Bypass -File " +
+        (Quote-Argument $MarketScript) +
+        " -RepoRoot " + (Quote-Argument $ResolvedRepoRoot) +
+        " -PythonExe " + (Quote-Argument $ResolvedPython) +
+        " -ApprovedHead " + (Quote-Argument $ApprovedHead) +
+        " -Scheduled"
+    )
+    $OwnerPrincipal = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+    $Triggers = @(
+        (New-ScheduledTaskTrigger -Weekly -WeeksInterval 1 -DaysOfWeek Monday,Tuesday,Wednesday,Thursday,Friday -At 9:35AM),
+        (New-ScheduledTaskTrigger -AtLogOn -User $OwnerPrincipal)
+    )
+    $Principal = New-ScheduledTaskPrincipal -UserId $OwnerPrincipal -LogonType Interactive -RunLevel Highest
+    $Settings = New-ScheduledTaskSettingsSet `
+        -StartWhenAvailable `
+        -AllowStartIfOnBatteries `
+        -DontStopIfGoingOnBatteries `
+        -MultipleInstances IgnoreNew `
+        -ExecutionTimeLimit (New-TimeSpan -Days 31) `
+        -RestartCount 3 `
+        -RestartInterval (New-TimeSpan -Minutes 5)
+    Register-ScheduledTask -TaskName $MarketTaskName -Action $TaskAction -Trigger $Triggers -Principal $Principal -Settings $Settings -Force | Out-Null
+    [ordered]@{
+        schema = "IBKR_PREREQUISITE_FINALIZER_RESULT_V1"
+        status = "ACTIVATED"
+        stage = $Stage
+        approved_head = $ApprovedHead
+        market_data_task_registered = $true
+        market_data_task_name = $MarketTaskName
+        paper_execution_armed = $false
+        autonomous_experiment_started = $false
+        broker_write_calls = 0
+    } | ConvertTo-Json -Depth 6 -Compress
+    exit 0
+}
+
+throw "UNREACHABLE_FINALIZER_STAGE:$Stage"

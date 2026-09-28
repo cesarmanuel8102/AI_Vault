@@ -212,6 +212,9 @@ def test_day1_handoff_validate_only_reports_foreground_commands():
     payload = json.loads(result.stdout.strip().splitlines()[-1])
     assert result.returncode == 0, result.stdout + result.stderr
     assert "-SkipTaskRegistration" in payload["finalizer_arguments"]
+    assert "-Stage" in payload["finalizer_arguments"]
+    assert "Receipts" in payload["finalizer_arguments"]
+    assert "-ConfirmStage" in payload["finalizer_arguments"]
     assert payload["python_arguments"][:3] == [
         "-m",
         "ibkr_paper_30d.day1_launch",
@@ -404,6 +407,75 @@ def test_finalizer_registers_one_persistent_task_with_two_triggers():
     assert "New-ScheduledTaskTrigger -AtLogOn -User $OwnerPrincipal" in text
     assert "$Triggers = @(" in text
     assert "-Trigger $Triggers" in text
+
+
+def test_finalizer_stages_have_disjoint_explicit_authority():
+    text = FINALIZER.read_text(encoding="utf-8")
+    assert '[ValidateSet("Check", "Provision", "Receipts", "Activate")]' in text
+    assert "[switch]$DryRun" in text
+    assert "[switch]$ConfirmStage" in text
+    assert "STAGE_CONFIRMATION_REQUIRED" in text
+    assert 'if ($Stage -eq "Provision") {' in text
+    assert 'if ($Stage -eq "Receipts") {' in text
+    assert 'if ($Stage -eq "Activate") {' in text
+
+    provision = text.index('if ($Stage -eq "Provision") {')
+    runtime_install = text.index("-Mode Install -ConfirmRuntimeMutation")
+    provision_exit = text.index("exit 0", runtime_install)
+    receipts = text.rindex('if ($Stage -eq "Receipts") {')
+    probe_enable = text.index("Enable-LocalUser -Name $AuditorUser", receipts)
+    activate = text.rindex('if ($Stage -eq "Activate") {')
+    register = text.index("Register-ScheduledTask", activate)
+    assert provision < runtime_install < provision_exit < receipts < probe_enable
+    assert probe_enable < activate < register
+
+
+def test_finalizer_activation_pins_head_and_working_directory():
+    text = FINALIZER.read_text(encoding="utf-8")
+    assert '" -ApprovedHead " + (Quote-Argument $ApprovedHead)' in text
+    assert "-WorkingDirectory $ResolvedRepoRoot" in text
+    assert "APPROVED_HEAD_MISMATCH" in text
+
+
+@pytest.mark.skipif(os.name != "nt", reason="PowerShell execution is Windows-only")
+@pytest.mark.parametrize("stage", ["Check", "Provision", "Receipts", "Activate"])
+def test_finalizer_dry_run_is_zero_mutation_for_every_stage(tmp_path: Path, stage: str):
+    before = {path.relative_to(ROOT) for path in ROOT.rglob("*") if path.is_file()}
+    result = subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(FINALIZER),
+            "-RepoRoot",
+            str(ROOT),
+            "-Stage",
+            stage,
+            "-DryRun",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    after = {path.relative_to(ROOT) for path in ROOT.rglob("*") if path.is_file()}
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout.strip().splitlines()[-1])
+    assert payload["stage"] == stage
+    assert payload["dry_run"] is True
+    assert payload["mutations_performed"] == 0
+    assert payload["broker_write_calls"] == 0
+    assert payload["paper_execution_armed"] is False
+    assert set(payload["planned_mutations"]) == {
+        "security",
+        "service",
+        "firewall",
+        "account",
+        "scheduler",
+        "receipts",
+    }
+    assert after == before
 
 
 def test_auditor_account_enablement_is_inside_cleanup_guard():
