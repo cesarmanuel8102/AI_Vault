@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
@@ -15,7 +16,13 @@ from ibkr_paper_30d.experiment_epoch import (
 )
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.repositories import EventRepository
-from ibkr_paper_30d.successor_clock import BrokerTimeObservation, SuccessorClockStore
+from ibkr_paper_30d.owner_authorization import OWNER_PHRASE
+from ibkr_paper_30d.successor_authorization import create_successor_authorization
+from ibkr_paper_30d.successor_clock import (
+    BrokerTimeObservation,
+    SuccessorClockStore,
+    clock_for_epoch,
+)
 from ibkr_paper_30d.successor_epoch import (
     SUCCESSOR_DEFINITION_SCHEMA,
     SuccessorEpochError,
@@ -132,7 +139,21 @@ def _append_transition(
     definition: dict[str, object],
     *,
     predecessor_definition_sha256: str | None = None,
+    owner_receipt_sha256: str | None = None,
+    activation_receipt_sha256: str | None = None,
 ) -> None:
+    db_path = Path(str(db.execute("PRAGMA database_list").fetchone()[2]))
+    authorization = create_successor_authorization(
+        db_path=db_path,
+        receipt_path=db_path.with_name(
+            f"{db_path.stem}-{definition['epoch_id']}-owner.json"
+        ),
+        epoch_id=str(definition["epoch_id"]),
+        definition_sha256=str(definition["definition_sha256"]),
+        phrase=OWNER_PHRASE,
+        actor_sid="S-1-5-21-test-owner",
+        elevated=True,
+    )
     clock = SuccessorClockStore(db).start(
         epoch_id=str(definition["epoch_id"]),
         definition_sha256=str(definition["definition_sha256"]),
@@ -149,8 +170,8 @@ def _append_transition(
         duration_days=30,
         initial_allocation=Decimal("500"),
         approved_git_head=HEAD_2,
-        owner_authorization_event_id="owner-v2",
-        owner_authorization_receipt_sha256="f" * 64,
+        owner_authorization_event_id=str(authorization["authorization_event_id"]),
+        owner_authorization_receipt_sha256=str(authorization["receipt_sha256"]),
     )
     events = EventRepository(db)
     supersession = {
@@ -169,13 +190,24 @@ def _append_transition(
         "successor_definition_sha256": definition["definition_sha256"],
         "successor_clock_event_sha256": clock.event_sha256,
         "reason": "PRE_START_RUNTIME_FAILURE",
-        "owner_authorization_event_id": "owner-v2",
-        "owner_authorization_receipt_sha256": "f" * 64,
+        "approved_git_head": definition["approved_git_head"],
+        "owner_authorization_event_id": authorization["authorization_event_id"],
+        "owner_authorization_receipt_sha256": owner_receipt_sha256
+        or authorization["receipt_sha256"],
     }
     events.append("EXPERIMENT_EPOCH_SUPERSEDED", supersession)
     supersession_row = db.execute(
         "SELECT event_sha256 FROM state_events ORDER BY sequence DESC LIMIT 1"
     ).fetchone()
+    computed_activation_receipt_sha256 = sha256_json(
+        {
+            "definition_sha256": definition["definition_sha256"],
+            "clock_event_sha256": clock.event_sha256,
+            "supersession_event_sha256": str(supersession_row[0]),
+            "owner_authorization_receipt_sha256": owner_receipt_sha256
+            or authorization["receipt_sha256"],
+        }
+    )
     events.append(
         "EXPERIMENT_EPOCH_ACTIVATED",
         {
@@ -187,9 +219,11 @@ def _append_transition(
             "predecessor_epoch_id": definition["predecessor_epoch_id"],
             "supersession_event_sha256": str(supersession_row[0]),
             "approved_git_head": HEAD_2,
-            "owner_authorization_event_id": "owner-v2",
-            "owner_authorization_receipt_sha256": "f" * 64,
-            "activation_receipt_sha256": "9" * 64,
+            "owner_authorization_event_id": authorization["authorization_event_id"],
+            "owner_authorization_receipt_sha256": owner_receipt_sha256
+            or authorization["receipt_sha256"],
+            "activation_receipt_sha256": activation_receipt_sha256
+            or computed_activation_receipt_sha256,
             "activated_at_utc": "2026-09-28T16:30:00Z",
         },
     )
@@ -381,6 +415,33 @@ def test_broken_predecessor_binding_blocks_graph_projection(tmp_path) -> None:
             ExperimentEpochStore(db).current()
 
 
+@pytest.mark.parametrize(
+    "override",
+    ["owner_authorization_receipt", "activation_receipt"],
+)
+def test_broken_successor_authority_binding_blocks_graph_projection(
+    tmp_path, override
+) -> None:
+    with Database.open(tmp_path / f"broken-{override}.sqlite3") as db:
+        _root(db)
+        install_successor_schema_v2(db)
+        definition = SuccessorEpochStore(db).define(_preview(db))
+        payload, _ = _event_row(db, "EXPERIMENT_EPOCH_DEFINED", definition.epoch_id)
+        _append_transition(
+            db,
+            payload,
+            owner_receipt_sha256=(
+                "0" * 64 if override == "owner_authorization_receipt" else None
+            ),
+            activation_receipt_sha256=(
+                "0" * 64 if override == "activation_receipt" else None
+            ),
+        )
+
+        with pytest.raises(EpochError, match="SUCCESSOR_CHAIN_INVALID"):
+            ExperimentEpochStore(db).current()
+
+
 def test_independent_v2_activation_blocks_graph_projection(tmp_path) -> None:
     with Database.open(tmp_path / "independent.sqlite3") as db:
         _root(db)
@@ -480,3 +541,31 @@ def test_repeated_explicit_successor_chaining_reaches_one_terminal(tmp_path) -> 
         current = ExperimentEpochStore(db).current()
 
     assert current is not None and current.epoch_id == "AUTONOMY_EPOCH_3"
+
+
+def test_next_successor_binds_v2_epoch_manifest_hash(tmp_path) -> None:
+    with Database.open(tmp_path / "v2-manifest-chain.sqlite3") as db:
+        _root(db)
+        install_successor_schema_v2(db)
+        second = SuccessorEpochStore(db).define(_preview(db))
+        second_payload, _ = _event_row(db, "EXPERIMENT_EPOCH_DEFINED", second.epoch_id)
+        _append_transition(db, second_payload)
+        EventRepository(db).append(
+            "EPOCH_MANIFEST_CREATED",
+            {
+                "schema": "EPOCH_MANIFEST_CREATED_V1",
+                "epoch_id": second.epoch_id,
+                "definition_sha256": second.definition_sha256,
+                "clock_event_sha256": clock_for_epoch(db, second.epoch_id).event_sha256,
+                "epoch_manifest_sha256": "f" * 64,
+            },
+        )
+
+        third = _preview(
+            db,
+            epoch_id="AUTONOMY_EPOCH_3",
+            predecessor_epoch_id=second.epoch_id,
+        )
+
+    assert third["predecessor_manifest_present"] is True
+    assert third["predecessor_manifest_sha256"] == "f" * 64

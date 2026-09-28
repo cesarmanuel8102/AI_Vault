@@ -176,6 +176,17 @@ def test_cases_a_g_l_t_u_v_production_successor_chain(tmp_path) -> None:
             launch_attempt_id="launch-epoch-2",
             server_time=ROOT_START + timedelta(days=5),
         )
+        second_manifest_sha256 = "f" * 64
+        EventRepository(db).append(
+            "EPOCH_MANIFEST_CREATED",
+            {
+                "schema": "EPOCH_MANIFEST_CREATED_V1",
+                "epoch_id": second.epoch_id,
+                "definition_sha256": second.definition_sha256,
+                "clock_event_sha256": second_transition.clock_event_sha256,
+                "epoch_manifest_sha256": second_manifest_sha256,
+            },
+        )
         EventRepository(db).append(
             "EPOCH_PRE_START_FAILED",
             {
@@ -184,7 +195,7 @@ def test_cases_a_g_l_t_u_v_production_successor_chain(tmp_path) -> None:
                 "definition_sha256": second.definition_sha256,
                 "clock_event_sha256": second_transition.clock_event_sha256,
                 "launch_attempt_id": "launch-epoch-2",
-                "epoch_manifest_sha256": None,
+                "epoch_manifest_sha256": second_manifest_sha256,
                 "reason_codes": ["TEST_PRE_START_FAILURE"],
             },
         )
@@ -201,6 +212,7 @@ def test_cases_a_g_l_t_u_v_production_successor_chain(tmp_path) -> None:
             )
         )
         third_payload = store.definition(third.epoch_id)
+        assert third_payload["predecessor_manifest_sha256"] == second_manifest_sha256
         third_transition = _authorize_and_commit(
             db,
             db_path=fixture.db_path,

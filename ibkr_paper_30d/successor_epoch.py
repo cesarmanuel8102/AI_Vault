@@ -15,7 +15,11 @@ from .persistence import Database
 from .repositories import EventRepository
 from .successor_clock import SuccessorClockError, clock_for_epoch
 from .successor_clock import BrokerTimeObservation, SuccessorClockStore
-from .successor_schema import verify_successor_schema_v2
+from .successor_schema import (
+    AUTHORIZATION_TABLE,
+    CLOCK_TABLE,
+    verify_successor_schema_v2,
+)
 
 SUCCESSOR_DEFINITION_SCHEMA = "AUTONOMY_EXPERIMENT_SUCCESSOR_DEFINITION_V2"
 SUCCESSOR_ACTIVATION_SCHEMA = "AUTONOMY_EXPERIMENT_EPOCH_ACTIVATION_V2"
@@ -125,6 +129,80 @@ def _one_record(
     return matches[0] if matches else None
 
 
+def _manifest_sha256(record: _StateRecord | None) -> str | None:
+    if record is None:
+        return None
+    values = [
+        value
+        for value in (
+            record.payload.get("epoch_manifest_sha256"),
+            record.payload.get("manifest_sha256"),
+        )
+        if value is not None
+    ]
+    if (
+        len(values) != 1
+        or not isinstance(values[0], str)
+        or not _SHA256.fullmatch(values[0])
+    ):
+        raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
+    return values[0]
+
+
+def _v2_clock_payload(db: Database, epoch_id: str) -> dict[str, Any]:
+    row = db.execute(
+        f"SELECT payload_json FROM {CLOCK_TABLE} "
+        "WHERE experiment_id='ibkr-paper-30d' AND epoch_id=? AND event_type='START'",
+        (epoch_id,),
+    ).fetchone()
+    if row is None:
+        raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
+    try:
+        payload = json.loads(str(row[0]))
+    except (json.JSONDecodeError, TypeError, ValueError) as exc:
+        raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID") from exc
+    if not isinstance(payload, dict):
+        raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
+    return payload
+
+
+def _validated_authorization_payload(
+    db: Database,
+    *,
+    epoch_id: str,
+    definition_sha256: str,
+) -> dict[str, Any]:
+    row = db.execute(
+        f"SELECT payload_json FROM {AUTHORIZATION_TABLE} "
+        "WHERE experiment_id='ibkr-paper-30d' AND epoch_id=? "
+        "ORDER BY sequence DESC LIMIT 1",
+        (epoch_id,),
+    ).fetchone()
+    if row is None:
+        raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
+    try:
+        receipt = json.loads(str(row[0]))
+    except (json.JSONDecodeError, TypeError, ValueError) as exc:
+        raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID") from exc
+    if not isinstance(receipt, dict) or not isinstance(receipt.get("actor_sid"), str):
+        raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
+    from .successor_authorization import (
+        SuccessorAuthorizationError,
+        validate_successor_authorization_record,
+    )
+
+    try:
+        return validate_successor_authorization_record(
+            db=db,
+            epoch_id=epoch_id,
+            definition_sha256=definition_sha256,
+            expected_actor_sid=str(receipt["actor_sid"]),
+            receipt=receipt,
+        )
+    except SuccessorAuthorizationError as exc:
+        raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID") from exc
+
+
 def _definition_records(records: list[_StateRecord]) -> dict[str, _StateRecord]:
     definitions: dict[str, _StateRecord] = {}
     for record in records:
@@ -216,9 +294,7 @@ def _validate_successor_definition_record(
         "predecessor_activation_event_sha256": predecessor_activation.event_sha256,
         "predecessor_clock_event_sha256": predecessor_clock.event_sha256,
         "predecessor_manifest_present": manifest is not None,
-        "predecessor_manifest_sha256": (
-            None if manifest is None else manifest.payload.get("manifest_sha256")
-        ),
+        "predecessor_manifest_sha256": _manifest_sha256(manifest),
         "predecessor_manifest_event_sha256": (
             None if manifest is None else manifest.event_sha256
         ),
@@ -291,6 +367,7 @@ def current_epoch_definition(db: Database) -> EpochDefinition | None:
             raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
         predecessor_clock = clock_for_epoch(db, predecessor_id)
         successor_clock = clock_for_epoch(db, successor_id)
+        successor_clock_payload = _v2_clock_payload(db, successor_id)
         predecessor_receipt = predecessor_activation.payload.get(
             "activation_receipt_sha256"
         )
@@ -317,6 +394,30 @@ def current_epoch_definition(db: Database) -> EpochDefinition | None:
         ):
             raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
         activation = successor_activation.payload
+        authorization = _validated_authorization_payload(
+            db,
+            epoch_id=successor_id,
+            definition_sha256=str(successor_payload["definition_sha256"]),
+        )
+        owner_event_id = authorization.get("authorization_event_id")
+        owner_receipt_sha256 = authorization.get("receipt_sha256")
+        expected_clock_bindings = {
+            "epoch_id": successor_id,
+            "definition_sha256": successor_payload.get("definition_sha256"),
+            "predecessor_epoch_id": predecessor_id,
+            "predecessor_clock_event_sha256": predecessor_clock.event_sha256,
+            "duration_days": successor_payload.get("duration_days"),
+            "initial_allocation": successor_payload.get("initial_allocation"),
+            "approved_git_head": successor_payload.get("approved_git_head"),
+            "owner_authorization_event_id": owner_event_id,
+            "owner_authorization_receipt_sha256": owner_receipt_sha256,
+            "start_authority": "BROKER_SERVER_TIME",
+        }
+        if any(
+            successor_clock_payload.get(key) != value
+            for key, value in expected_clock_bindings.items()
+        ):
+            raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
         if (
             activation.get("schema") != SUCCESSOR_ACTIVATION_SCHEMA
             or activation.get("definition_sha256")
@@ -326,10 +427,26 @@ def current_epoch_definition(db: Database) -> EpochDefinition | None:
             or activation.get("supersession_event_sha256") != edge.event_sha256
             or activation.get("approved_git_head")
             != successor_payload.get("approved_git_head")
-            or activation.get("owner_authorization_event_id")
-            != payload.get("owner_authorization_event_id")
+            or activation.get("owner_authorization_event_id") != owner_event_id
             or activation.get("owner_authorization_receipt_sha256")
-            != payload.get("owner_authorization_receipt_sha256")
+            != owner_receipt_sha256
+            or payload.get("approved_git_head")
+            != successor_payload.get("approved_git_head")
+            or payload.get("owner_authorization_event_id") != owner_event_id
+            or payload.get("owner_authorization_receipt_sha256") != owner_receipt_sha256
+        ):
+            raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
+        expected_activation_receipt_sha256 = sha256_json(
+            {
+                "definition_sha256": successor_payload.get("definition_sha256"),
+                "clock_event_sha256": successor_clock.event_sha256,
+                "supersession_event_sha256": edge.event_sha256,
+                "owner_authorization_receipt_sha256": owner_receipt_sha256,
+            }
+        )
+        if (
+            activation.get("activation_receipt_sha256")
+            != expected_activation_receipt_sha256
         ):
             raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
         edges[predecessor_id] = successor_id
@@ -489,9 +606,7 @@ class SuccessorEpochStore:
             "predecessor_activation_event_sha256": predecessor_activation.event_sha256,
             "predecessor_clock_event_sha256": clock.event_sha256,
             "predecessor_manifest_present": manifest is not None,
-            "predecessor_manifest_sha256": (
-                None if manifest is None else manifest.payload.get("manifest_sha256")
-            ),
+            "predecessor_manifest_sha256": _manifest_sha256(manifest),
             "predecessor_manifest_event_sha256": (
                 None if manifest is None else manifest.event_sha256
             ),
