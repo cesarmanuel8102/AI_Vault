@@ -644,6 +644,10 @@ def test_successor_service_events_bind_exact_epoch_definition_and_clock(
         )
         service.launch_attempt_id = "launch-successor-service"
 
+        builder = service._builder()
+        assert builder.experiment_clock.event_sha256 == transition.clock_event_sha256
+        assert builder.experiment_clock.epoch_id == definition["epoch_id"]
+
         service.run_forever()
 
         started = latest_state_event(db, "AUTONOMOUS_SERVICE_STARTED")

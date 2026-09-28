@@ -64,13 +64,18 @@ from .successor_authorization import (
     validate_successor_authorization,
     validate_successor_authorization_record,
 )
-from .successor_clock import BrokerTimeObservation, clock_for_epoch
+from .successor_clock import (
+    BrokerTimeObservation,
+    SuccessorClockError,
+    clock_for_epoch,
+)
 from .successor_epoch import (
     BrokerTransitionEvidence,
     SuccessorEpochError,
     SuccessorEpochStore,
     SuccessorTransitionResult,
     commit_successor_transition,
+    current_epoch_definition,
 )
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -175,6 +180,7 @@ class LaunchControls:
     authorization_event_id: str
     kill_switch_state: str
     clock: ExperimentClock | None = None
+    resume_started_epoch: bool = False
 
 
 def _read_json(path: Path, code: str) -> tuple[bytes, dict[str, object]]:
@@ -631,10 +637,66 @@ def validate_launch_controls(db: Database, config: Day1LaunchConfig) -> LaunchCo
         if failed is not None:
             raise LaunchError("FAILED_EPOCH_REQUIRES_EXPLICIT_SUCCESSOR")
         try:
-            definition = SuccessorEpochStore(db).validate_transition_eligibility(
-                str(config.target_successor_epoch_id),
-                str(config.target_successor_definition_sha256),
+            target_epoch_id = str(config.target_successor_epoch_id)
+            target_definition_sha256 = str(
+                config.target_successor_definition_sha256
             )
+            successor_store = SuccessorEpochStore(db)
+            definition = successor_store.definition(target_epoch_id)
+            if definition.get("definition_sha256") != target_definition_sha256:
+                raise SuccessorEpochError("SUCCESSOR_DEFINITION_HASH_MISMATCH")
+            current = current_epoch_definition(db)
+            resume_started_epoch = (
+                current is not None and current.epoch_id == target_epoch_id
+            )
+            if resume_started_epoch:
+                if current.definition_sha256 != target_definition_sha256:
+                    raise SuccessorEpochError("SUCCESSOR_DEFINITION_HASH_MISMATCH")
+                clock = clock_for_epoch(db, target_epoch_id)
+                manifest_rows = db.execute(
+                    "SELECT payload_json FROM state_events "
+                    "WHERE event_type='EPOCH_MANIFEST_CREATED' "
+                    "AND json_extract(payload_json,'$.epoch_id')=? ORDER BY sequence",
+                    (target_epoch_id,),
+                ).fetchall()
+                started_rows = db.execute(
+                    "SELECT payload_json FROM state_events "
+                    "WHERE event_type='EPOCH_STARTED' "
+                    "AND json_extract(payload_json,'$.epoch_id')=? ORDER BY sequence",
+                    (target_epoch_id,),
+                ).fetchall()
+                if len(manifest_rows) != 1 or len(started_rows) != 1:
+                    raise SuccessorEpochError(
+                        "STARTED_SUCCESSOR_RESUME_EVIDENCE_INVALID"
+                    )
+                manifest_event = json.loads(str(manifest_rows[0][0]))
+                started_event = json.loads(str(started_rows[0][0]))
+                expected_bindings = {
+                    "epoch_id": target_epoch_id,
+                    "definition_sha256": target_definition_sha256,
+                    "clock_event_sha256": clock.event_sha256,
+                }
+                if (
+                    manifest_event.get("schema") != "EPOCH_MANIFEST_CREATED_V1"
+                    or started_event.get("schema") != "EPOCH_STARTED_V1"
+                    or any(
+                        manifest_event.get(key) != value
+                        or started_event.get(key) != value
+                        for key, value in expected_bindings.items()
+                    )
+                    or started_event.get("epoch_manifest_sha256")
+                    != manifest_event.get("epoch_manifest_sha256")
+                    or started_event.get("service_constructed") is not True
+                    or started_event.get("initial_safety_gate") != "PASS"
+                ):
+                    raise SuccessorEpochError(
+                        "STARTED_SUCCESSOR_RESUME_EVIDENCE_INVALID"
+                    )
+            else:
+                definition = successor_store.validate_transition_eligibility(
+                    target_epoch_id,
+                    target_definition_sha256,
+                )
             _, receipt = _read_json(
                 config.owner_authorization_path,
                 "SUCCESSOR_AUTHORIZATION_RECEIPT_MISSING",
@@ -646,7 +708,12 @@ def validate_launch_controls(db: Database, config: Day1LaunchConfig) -> LaunchCo
                 expected_actor_sid=str(receipt.get("actor_sid") or ""),
                 receipt=receipt,
             )
-        except (SuccessorEpochError, SuccessorAuthorizationError) as exc:
+        except (
+            json.JSONDecodeError,
+            SuccessorClockError,
+            SuccessorEpochError,
+            SuccessorAuthorizationError,
+        ) as exc:
             raise LaunchError(str(exc)) from exc
         if (
             definition.get("duration_days") != config.duration_days
@@ -655,7 +722,7 @@ def validate_launch_controls(db: Database, config: Day1LaunchConfig) -> LaunchCo
         ):
             raise LaunchError("SUCCESSOR_POLICY_MISMATCH")
         authorization_event_id = str(authorization["authorization_event_id"])
-        clock_event_sha256 = ""
+        clock_event_sha256 = "" if clock is None else clock.event_sha256
     else:
         try:
             clock = ExperimentClockStore(db).load()
@@ -696,6 +763,7 @@ def validate_launch_controls(db: Database, config: Day1LaunchConfig) -> LaunchCo
         authorization_event_id=authorization_event_id,
         kill_switch_state=states[0],
         clock=clock,
+        resume_started_epoch=(successor_mode and resume_started_epoch),
     )
 
 
@@ -910,6 +978,8 @@ def _write_epoch_manifest(
     preflight: LaunchPreflight,
     controls: LaunchControls,
     dependencies: LaunchDependencies,
+    *,
+    persist: bool = True,
 ) -> PreparedEpochLaunch:
     repo_root = Path(config.repo_root).resolve()
     code_root = Path(__file__).resolve().parents[1]
@@ -1020,22 +1090,23 @@ def _write_epoch_manifest(
         / "reports"
         / "autonomy_epoch_manifest.json"
     )
-    _atomic_write(destination, canonical_bytes(manifest))
-    EventRepository(db).append(
-        "EPOCH_MANIFEST_CREATED",
-        {
-            "schema": "EPOCH_MANIFEST_CREATED_V1",
-            "epoch_id": manifest["epoch_id"],
-            "definition_sha256": manifest["definition_sha256"],
-            "clock_event_sha256": manifest["clock_event_sha256"],
-            "launch_attempt_id": config.launch_attempt_id,
-            "epoch_manifest_sha256": manifest["epoch_manifest_sha256"],
-            "immutable_kernel_manifest_hash": manifest[
-                "immutable_kernel_manifest_hash"
-            ],
-            "created_at_utc": preflight.actual_start_utc,
-        },
-    )
+    if persist:
+        _atomic_write(destination, canonical_bytes(manifest))
+        EventRepository(db).append(
+            "EPOCH_MANIFEST_CREATED",
+            {
+                "schema": "EPOCH_MANIFEST_CREATED_V1",
+                "epoch_id": manifest["epoch_id"],
+                "definition_sha256": manifest["definition_sha256"],
+                "clock_event_sha256": manifest["clock_event_sha256"],
+                "launch_attempt_id": config.launch_attempt_id,
+                "epoch_manifest_sha256": manifest["epoch_manifest_sha256"],
+                "immutable_kernel_manifest_hash": manifest[
+                    "immutable_kernel_manifest_hash"
+                ],
+                "created_at_utc": preflight.actual_start_utc,
+            },
+        )
     return PreparedEpochLaunch(manifest=manifest, provider=provider, toolbox=toolbox)
 
 
@@ -1222,44 +1293,63 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                     or fresh_market.get("gate_status") != "PASS"
                 ):
                     raise LaunchError("MARKET_DATA_GATE_CHANGED_AFTER_LOCK")
-                collector = dependencies.successor_broker_evidence_collector
-                if collector is None:
-                    raise LaunchError("SUCCESSOR_BROKER_EVIDENCE_COLLECTOR_UNAVAILABLE")
-                try:
-                    transition = commit_successor_transition(
-                        db=db,
-                        launch_attempt_id=config.launch_attempt_id,
-                        target_successor_epoch_id=str(config.target_successor_epoch_id),
-                        target_successor_definition_sha256=str(
-                            config.target_successor_definition_sha256
-                        ),
-                        expected_account_identity_sha256=(
-                            preflight.expected_account_hash
-                        ),
-                        expected_owner_sid=preflight.owner_sid,
-                        owner_authorization_receipt=(
-                            preflight.owner_authorization_receipt
-                        ),
-                        execution_lock_verifier=lambda: _lock_receipt_is_current(
-                            db, receipt
-                        ),
-                        broker_evidence_collector=lambda: collector(config, preflight),
-                        now_utc=dependencies.now_utc,
+                if not controls.resume_started_epoch:
+                    collector = dependencies.successor_broker_evidence_collector
+                    if collector is None:
+                        raise LaunchError(
+                            "SUCCESSOR_BROKER_EVIDENCE_COLLECTOR_UNAVAILABLE"
+                        )
+                    try:
+                        transition = commit_successor_transition(
+                            db=db,
+                            launch_attempt_id=config.launch_attempt_id,
+                            target_successor_epoch_id=str(
+                                config.target_successor_epoch_id
+                            ),
+                            target_successor_definition_sha256=str(
+                                config.target_successor_definition_sha256
+                            ),
+                            expected_account_identity_sha256=(
+                                preflight.expected_account_hash
+                            ),
+                            expected_owner_sid=preflight.owner_sid,
+                            owner_authorization_receipt=(
+                                preflight.owner_authorization_receipt
+                            ),
+                            execution_lock_verifier=lambda: _lock_receipt_is_current(
+                                db, receipt
+                            ),
+                            broker_evidence_collector=lambda: collector(
+                                config, preflight
+                            ),
+                            now_utc=dependencies.now_utc,
+                        )
+                    except SuccessorEpochError as exc:
+                        raise LaunchError(str(exc)) from exc
+                    exact_clock = clock_for_epoch(
+                        db, str(config.target_successor_epoch_id)
                     )
-                except SuccessorEpochError as exc:
-                    raise LaunchError(str(exc)) from exc
-                exact_clock = clock_for_epoch(db, str(config.target_successor_epoch_id))
-                if exact_clock.event_sha256 != transition.clock_event_sha256:
-                    raise LaunchError("SUCCESSOR_CLOCK_BINDING_MISMATCH")
-                controls = replace(
-                    controls,
-                    clock_event_sha256=transition.clock_event_sha256,
-                    clock=exact_clock,
-                )
+                    if exact_clock.event_sha256 != transition.clock_event_sha256:
+                        raise LaunchError("SUCCESSOR_CLOCK_BINDING_MISMATCH")
+                    controls = replace(
+                        controls,
+                        clock_event_sha256=transition.clock_event_sha256,
+                        clock=exact_clock,
+                    )
             _consume_launch_attempt(db, config, preflight, controls)
-            prepared = _write_epoch_manifest(
-                db, config, preflight, controls, dependencies
-            )
+            if controls.resume_started_epoch:
+                prepared = _write_epoch_manifest(
+                    db,
+                    config,
+                    preflight,
+                    controls,
+                    dependencies,
+                    persist=False,
+                )
+            else:
+                prepared = _write_epoch_manifest(
+                    db, config, preflight, controls, dependencies
+                )
             with paper_arm_environment(preflight.expected_account_hash):
                 auditor_gate = dependencies.auditor_gate_factory(config)
                 market_gate = dependencies.market_gate_factory(
@@ -1313,22 +1403,27 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                         "AUTONOMOUS_SERVICE_CONSTRUCTION_BLOCK",
                         details={"service_reason_codes": reason_codes},
                     ) from exc
-                EventRepository(db).append(
-                    "EPOCH_STARTED",
-                    {
-                        "schema": "EPOCH_STARTED_V1",
-                        "epoch_id": prepared.manifest["epoch_id"],
-                        "definition_sha256": prepared.manifest["definition_sha256"],
-                        "clock_event_sha256": prepared.manifest["clock_event_sha256"],
-                        "launch_attempt_id": config.launch_attempt_id,
-                        "epoch_manifest_sha256": prepared.manifest[
-                            "epoch_manifest_sha256"
-                        ],
-                        "service_constructed": True,
-                        "initial_safety_gate": "PASS",
-                        "started_at_utc": datetime.now(timezone.utc),
-                    },
-                )
+                if not controls.resume_started_epoch:
+                    EventRepository(db).append(
+                        "EPOCH_STARTED",
+                        {
+                            "schema": "EPOCH_STARTED_V1",
+                            "epoch_id": prepared.manifest["epoch_id"],
+                            "definition_sha256": prepared.manifest[
+                                "definition_sha256"
+                            ],
+                            "clock_event_sha256": prepared.manifest[
+                                "clock_event_sha256"
+                            ],
+                            "launch_attempt_id": config.launch_attempt_id,
+                            "epoch_manifest_sha256": prepared.manifest[
+                                "epoch_manifest_sha256"
+                            ],
+                            "service_constructed": True,
+                            "initial_safety_gate": "PASS",
+                            "started_at_utc": datetime.now(timezone.utc),
+                        },
+                    )
                 heartbeat = _LockHeartbeat(
                     config=config,
                     dependencies=dependencies,

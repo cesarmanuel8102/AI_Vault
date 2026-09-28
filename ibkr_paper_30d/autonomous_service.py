@@ -346,6 +346,7 @@ class AutonomousExperimentService:
             self.toolbox,
             allocation=self.allocation,
             experiment_start_utc=self.experiment_start_utc,
+            experiment_clock=(self.clock if self.clock.epoch_id is not None else None),
             duration_days=self.duration_days,
             runtime_market_gate=self.runtime_market_gate,
         )

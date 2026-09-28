@@ -873,6 +873,122 @@ def test_successor_launch_remains_bound_to_a_when_b_is_defined_later(
         run_day1_launch(config, ctx.dependencies)
 
 
+def test_started_successor_resumes_with_fresh_attempt_without_duplicate_transition(
+    tmp_path: Path, monkeypatch
+) -> None:
+    ctx = passing_context(tmp_path)
+    successor_receipt_path = (
+        ctx.config.owner_authorization_path.parent
+        / "owner_successor_authorization_v2.json"
+    )
+    definition, _ = build_authorized_successor(
+        ctx.config.db_path, successor_receipt_path
+    )
+    config = replace(
+        ctx.config,
+        owner_authorization_path=successor_receipt_path,
+        model_attestation_exception_path=(
+            successor_receipt_path.parent / "model_attestation_owner_exception_v2.json"
+        ),
+        launch_attempt_binding_path=(
+            successor_receipt_path.parent / "launch_attempt_binding_v2.json"
+        ),
+        target_successor_epoch_id=str(definition["epoch_id"]),
+        target_successor_definition_sha256=str(definition["definition_sha256"]),
+    )
+    _write_successor_model_attestation_exception(config)
+    bind_launch_attempt(
+        config.launch_attempt_id,
+        config.identity_receipt_path,
+        config.auditor_receipt_path,
+        config.launch_attempt_binding_path,
+        target_successor_epoch_id=config.target_successor_epoch_id,
+        target_successor_definition_sha256=(config.target_successor_definition_sha256),
+    )
+    ctx.config = config
+    ctx.dependencies.now_utc = lambda: SUCCESSOR_START + timedelta(seconds=2)
+    collector = Mock(
+        return_value=BrokerTransitionEvidence(
+            account_identity_sha256=ACCOUNT_HASH,
+            collected_at_utc=SUCCESSOR_START + timedelta(seconds=1),
+            observation=BrokerTimeObservation(
+                server_time_utc=SUCCESSOR_START,
+                observed_at_utc=SUCCESSOR_START + timedelta(seconds=1),
+                authenticated=True,
+                paper_session=True,
+            ),
+            positions_count=0,
+            open_orders_count=0,
+            broker_write_count=0,
+        )
+    )
+    ctx.dependencies.successor_broker_evidence_collector = collector
+    install_fake_lock(ctx)
+    monkeypatch.setattr(launch_module, "_lock_receipt_is_current", lambda *_: True)
+    monkeypatch.setattr(
+        launch_module, "verify_kernel_manifest", lambda *_: {"verified": True}
+    )
+
+    assert (
+        run_day1_launch(config, ctx.dependencies)
+        == "AUTONOMOUS_PAPER_EXPERIMENT_STOPPED"
+    )
+    manifest_path = (
+        tmp_path
+        / "state"
+        / "ibkr_paper_30d"
+        / "reports"
+        / "autonomy_epoch_manifest.json"
+    )
+    original_manifest = manifest_path.read_bytes()
+
+    resumed = replace(
+        config,
+        launch_attempt_id="22222222-2222-4222-8222-222222222222",
+    )
+    bind_launch_attempt(
+        resumed.launch_attempt_id,
+        resumed.identity_receipt_path,
+        resumed.auditor_receipt_path,
+        resumed.launch_attempt_binding_path,
+        target_successor_epoch_id=resumed.target_successor_epoch_id,
+        target_successor_definition_sha256=(resumed.target_successor_definition_sha256),
+    )
+
+    assert (
+        run_day1_launch(resumed, ctx.dependencies)
+        == "AUTONOMOUS_PAPER_EXPERIMENT_STOPPED"
+    )
+
+    assert collector.call_count == 1
+    assert manifest_path.read_bytes() == original_manifest
+    with Database.open(config.db_path) as db:
+        assert db.execute(
+            "SELECT COUNT(*) FROM experiment_epoch_clock_events_v2 "
+            "WHERE epoch_id='AUTONOMY_EPOCH_2'"
+        ).fetchone()[0] == 1
+        assert db.execute(
+            "SELECT COUNT(*) FROM state_events "
+            "WHERE event_type='EXPERIMENT_EPOCH_ACTIVATED' "
+            "AND json_extract(payload_json,'$.epoch_id')='AUTONOMY_EPOCH_2'"
+        ).fetchone()[0] == 1
+        assert db.execute(
+            "SELECT COUNT(*) FROM state_events "
+            "WHERE event_type='EPOCH_MANIFEST_CREATED' "
+            "AND json_extract(payload_json,'$.epoch_id')='AUTONOMY_EPOCH_2'"
+        ).fetchone()[0] == 1
+        assert db.execute(
+            "SELECT COUNT(*) FROM state_events WHERE event_type='EPOCH_STARTED' "
+            "AND json_extract(payload_json,'$.epoch_id')='AUTONOMY_EPOCH_2'"
+        ).fetchone()[0] == 1
+        assert db.execute(
+            "SELECT COUNT(*) FROM state_events "
+            "WHERE event_type='DAY1_LAUNCH_ATTEMPT_ACCEPTED' "
+            "AND json_extract(payload_json,'$.target_successor_epoch_id')="
+            "'AUTONOMY_EPOCH_2'"
+        ).fetchone()[0] == 2
+
+
 def test_validate_launch_controls_rejects_clock_mismatch_without_writes(
     tmp_path: Path,
 ) -> None:

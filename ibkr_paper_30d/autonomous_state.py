@@ -7,7 +7,7 @@ from typing import Any
 
 from .autonomous_research import ResearchRequest, ResearchTool
 from .canonical import sha256_json
-from .experiment_control import ExperimentClockStore, KillSwitchStore
+from .experiment_control import ExperimentClock, ExperimentClockStore, KillSwitchStore
 from .experiment_epoch import ExperimentEpochStore
 from .experiment_ledger import AutonomousExperimentLedger
 from .ibkr_research_tools import IBKRResearchToolbox
@@ -20,6 +20,7 @@ from .persistence import Database
 from .market_data import DecisionClass
 from .repositories import utc_now
 from .runtime_integrity import RuntimeMarketDataGate
+from .successor_clock import clock_for_epoch
 from .trader_invocation import TraderInputBundle
 from .types import new_uuid7
 
@@ -43,6 +44,7 @@ class AutonomousStateBuilder:
         *,
         allocation: Decimal = Decimal("500.00"),
         experiment_start_utc: datetime | None,
+        experiment_clock: ExperimentClock | None = None,
         duration_days: int = 30,
         kill_switch_state: str | None = None,
         runtime_market_gate: RuntimeMarketDataGate | None = None,
@@ -57,11 +59,23 @@ class AutonomousStateBuilder:
         self.db = db
         self.toolbox = toolbox
         self.ledger = AutonomousExperimentLedger(db, allocation=allocation)
-        self.experiment_clock = ExperimentClockStore(db).initialize_or_load(
-            requested_start_utc=experiment_start_utc,
-            duration_days=duration_days,
-            initial_allocation=allocation,
-        )
+        if experiment_clock is None:
+            self.experiment_clock = ExperimentClockStore(db).initialize_or_load(
+                requested_start_utc=experiment_start_utc,
+                duration_days=duration_days,
+                initial_allocation=allocation,
+            )
+        else:
+            if (
+                experiment_clock.epoch_id is None
+                or experiment_start_utc != experiment_clock.start_utc
+                or experiment_clock.duration_days != duration_days
+                or experiment_clock.initial_allocation != allocation
+                or clock_for_epoch(db, experiment_clock.epoch_id).event_sha256
+                != experiment_clock.event_sha256
+            ):
+                raise AutonomousStateBuildError("SUCCESSOR_CLOCK_BINDING_MISMATCH")
+            self.experiment_clock = experiment_clock
         self.epoch_store = ExperimentEpochStore(db)
         self.kill_switch_store = KillSwitchStore(db)
         if (
