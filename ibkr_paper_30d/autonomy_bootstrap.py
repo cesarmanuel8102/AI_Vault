@@ -10,7 +10,6 @@ from .canonical import canonical_bytes, sha256_json
 from .persistence import Database
 from .trader_invocation import TraderInputBundle
 
-
 BOOTSTRAP_SCHEMA = "AUTONOMY_FIRST_PROCESS_BOOTSTRAP_V1"
 UNTRUSTED = "UNTRUSTED_MODEL_AUTHORED"
 MAX_BOOTSTRAP_BYTES = 32 * 1024
@@ -19,8 +18,17 @@ MAX_WORKSPACE_ARTIFACTS = 12
 MAX_HISTORY_SCAN = 64
 MAX_CONTENT_BYTES = 768
 _EXCLUDED_COMPONENTS = frozenset(
-    {"audit", "audits", "development", "docs", "evidence", "mandate",
-     "mandates", "remediation", "security"}
+    {
+        "audit",
+        "audits",
+        "development",
+        "docs",
+        "evidence",
+        "mandate",
+        "mandates",
+        "remediation",
+        "security",
+    }
 )
 
 
@@ -60,7 +68,9 @@ class AutonomyBootstrapBuilder:
             except (json.JSONDecodeError, TypeError, ValueError):
                 malformed += 1
                 continue
-            if not isinstance(payload, dict) or sha256_json(payload) != str(payload_hash):
+            if not isinstance(payload, dict) or sha256_json(payload) != str(
+                payload_hash
+            ):
                 malformed += 1
                 continue
             if payload.get("accepted") is not True:
@@ -77,7 +87,9 @@ class AutonomyBootstrapBuilder:
             accepted.append(
                 {
                     "trust": UNTRUSTED,
-                    "decision_cycle_id": _bounded_text(payload.get("decision_cycle_id"), 128),
+                    "decision_cycle_id": _bounded_text(
+                        payload.get("decision_cycle_id"), 128
+                    ),
                     "decision": _bounded_text(payload.get("decision"), 32),
                     "proposal": proposal_summary,
                     "reason_codes": [
@@ -142,17 +154,21 @@ class AutonomyBootstrapBuilder:
     def _quantconnect(toolbox: Any) -> dict[str, Any]:
         execute = getattr(getattr(toolbox, "quantconnect", None), "execute", None)
         if not callable(execute):
-            return {"status": "OPTIONAL_UNAVAILABLE", "required": False,
-                    "reason": "MEDIATOR_UNAVAILABLE"}
+            return {
+                "status": "OPTIONAL_UNAVAILABLE",
+                "required": False,
+                "reason": "MEDIATOR_UNAVAILABLE",
+            }
         result = execute({"operation": "STATUS"})
         if not isinstance(result, dict):
-            return {"status": "FAILED", "required": False,
-                    "reason": "INVALID_STATUS"}
+            return {"status": "FAILED", "required": False, "reason": "INVALID_STATUS"}
         return {
             "status": _bounded_text(result.get("status"), 48),
             "required": False,
             "reason": _bounded_text(result.get("reason"), 128),
-            "secure_backtest_backend": bool(result.get("secure_backtest_backend", False)),
+            "secure_backtest_backend": bool(
+                result.get("secure_backtest_backend", False)
+            ),
         }
 
     @staticmethod
@@ -166,7 +182,9 @@ class AutonomyBootstrapBuilder:
                     item for item in continuity["hypotheses"] if item["path"] != path
                 ]
                 continuity["unresolved_questions"] = [
-                    item for item in continuity["unresolved_questions"] if item["path"] != path
+                    item
+                    for item in continuity["unresolved_questions"]
+                    if item["path"] != path
                 ]
                 continue
             if continuity["recent_accepted_decisions"]:
@@ -175,13 +193,18 @@ class AutonomyBootstrapBuilder:
             raise ValueError("bootstrap fixed fields exceed byte limit")
         return payload
 
-    def build(self, *, bundle: TraderInputBundle, toolbox: Any,
-              execute_paper: bool) -> dict[str, Any]:
+    def build(
+        self, *, bundle: TraderInputBundle, toolbox: Any, execute_paper: bool
+    ) -> dict[str, Any]:
         clock = dict(bundle.experiment_clock or {})
         decisions, malformed = self._decisions()
         artifacts = self._workspace(toolbox)
-        hypotheses = [dict(item) for item in artifacts if "hypoth" in item["path"].lower()]
-        questions = [dict(item) for item in artifacts if "question" in item["path"].lower()]
+        hypotheses = [
+            dict(item) for item in artifacts if "hypoth" in item["path"].lower()
+        ]
+        questions = [
+            dict(item) for item in artifacts if "question" in item["path"].lower()
+        ]
         payload = {
             "schema": BOOTSTRAP_SCHEMA,
             "trust_boundary": {
@@ -192,9 +215,12 @@ class AutonomyBootstrapBuilder:
                 ),
             },
             "epoch": {
-                "state": _bounded_text(clock.get("epoch_state") or "PRE_EPOCH_HISTORY", 32),
+                "state": _bounded_text(
+                    clock.get("epoch_state") or "PRE_EPOCH_HISTORY", 32
+                ),
                 "epoch_id": clock.get("epoch_id"),
                 "definition_sha256": clock.get("definition_sha256"),
+                "clock_event_sha256": clock.get("clock_event_sha256"),
             },
             "remaining_horizon": {
                 "start_utc": clock.get("start_utc"),
@@ -209,15 +235,25 @@ class AutonomyBootstrapBuilder:
                 "self_tooling": "ISOLATED_RESEARCH_WORKER_ONLY",
             },
             "constraints": {
-                "paper_only": True, "live_allowed": False, "real_money_allowed": False,
-                "predefined_strategy": False, "predefined_universe": False,
-                "predefined_timeframe": False, "no_trade_valid": True,
+                "paper_only": True,
+                "live_allowed": False,
+                "real_money_allowed": False,
+                "predefined_strategy": False,
+                "predefined_universe": False,
+                "predefined_timeframe": False,
+                "no_trade_valid": True,
                 "broker_direct_access_from_research": False,
             },
             "paper_identity": {
-                "class": "IBKR_PAPER" if bundle.broker_account_snapshot.get("paper_account") is True else "UNVERIFIED",
+                "class": (
+                    "IBKR_PAPER"
+                    if bundle.broker_account_snapshot.get("paper_account") is True
+                    else "UNVERIFIED"
+                ),
                 "raw_account_identity_included": False,
-                "declared_options_level": bundle.broker_account_snapshot.get("declared_options_level"),
+                "declared_options_level": bundle.broker_account_snapshot.get(
+                    "declared_options_level"
+                ),
             },
             "current_state": {
                 "utc_timestamp": bundle.utc_timestamp,

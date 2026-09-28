@@ -702,6 +702,11 @@ def _existing_transition(
     activations: list[_StateRecord] = []
     for record in _state_records(db):
         if (
+            record.event_type == "EPOCH_PRE_START_FAILED"
+            and record.payload.get("epoch_id") == epoch_id
+        ):
+            raise SuccessorEpochError("FAILED_EPOCH_REQUIRES_EXPLICIT_SUCCESSOR")
+        if (
             record.event_type == "EXPERIMENT_EPOCH_SUPERSEDED"
             and record.payload.get("successor_epoch_id") == epoch_id
         ):

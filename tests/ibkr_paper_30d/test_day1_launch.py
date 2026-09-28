@@ -854,6 +854,23 @@ def test_successor_launch_remains_bound_to_a_when_b_is_defined_later(
             accepted["target_successor_definition_sha256"]
             == definition_a["definition_sha256"]
         )
+        failed = json.loads(
+            db.execute(
+                "SELECT payload_json FROM state_events "
+                "WHERE event_type='EPOCH_PRE_START_FAILED'"
+            ).fetchone()[0]
+        )
+        clock_sha = str(
+            db.execute(
+                "SELECT event_sha256 FROM experiment_epoch_clock_events_v2 "
+                "WHERE epoch_id='AUTONOMY_EPOCH_2'"
+            ).fetchone()[0]
+        )
+        assert failed["epoch_id"] == "AUTONOMY_EPOCH_2"
+        assert failed["clock_event_sha256"] == clock_sha
+
+    with pytest.raises(LaunchError, match="FAILED_EPOCH_REQUIRES_EXPLICIT_SUCCESSOR"):
+        run_day1_launch(config, ctx.dependencies)
 
 
 def test_validate_launch_controls_rejects_clock_mismatch_without_writes(

@@ -69,6 +69,7 @@ from .successor_epoch import (
     BrokerTransitionEvidence,
     SuccessorEpochError,
     SuccessorEpochStore,
+    SuccessorTransitionResult,
     commit_successor_transition,
 )
 
@@ -622,6 +623,13 @@ def validate_launch_controls(db: Database, config: Day1LaunchConfig) -> LaunchCo
         raise LaunchError("DATABASE_SCHEMA_INVALID")
     clock: ExperimentClock | None = None
     if successor_mode:
+        failed = db.execute(
+            "SELECT 1 FROM state_events WHERE event_type='EPOCH_PRE_START_FAILED' "
+            "AND json_extract(payload_json,'$.epoch_id')=? LIMIT 1",
+            (config.target_successor_epoch_id,),
+        ).fetchone()
+        if failed is not None:
+            raise LaunchError("FAILED_EPOCH_REQUIRES_EXPLICIT_SUCCESSOR")
         try:
             definition = SuccessorEpochStore(db).validate_transition_eligibility(
                 str(config.target_successor_epoch_id),
@@ -968,6 +976,11 @@ def _write_epoch_manifest(
     risk_policy = CapitalBoundaryRiskPolicy().model_dump(mode="json")
     manifest = build_epoch_manifest(
         EpochManifestInputs(
+            epoch_id=str(bundle.experiment_clock.get("epoch_id") or "AUTONOMY_EPOCH_1"),
+            definition_sha256=str(
+                bundle.experiment_clock.get("definition_sha256") or "0" * 64
+            ),
+            clock_event_sha256=controls.clock_event_sha256,
             created_at_utc=preflight.actual_start_utc.isoformat().replace(
                 "+00:00", "Z"
             ),
@@ -1013,6 +1026,8 @@ def _write_epoch_manifest(
         {
             "schema": "EPOCH_MANIFEST_CREATED_V1",
             "epoch_id": manifest["epoch_id"],
+            "definition_sha256": manifest["definition_sha256"],
+            "clock_event_sha256": manifest["clock_event_sha256"],
             "launch_attempt_id": config.launch_attempt_id,
             "epoch_manifest_sha256": manifest["epoch_manifest_sha256"],
             "immutable_kernel_manifest_hash": manifest[
@@ -1110,6 +1125,48 @@ def _collect_successor_broker_evidence(
         broker.disconnect()
 
 
+def _append_successor_pre_start_failure(
+    db: Database,
+    config: Day1LaunchConfig,
+    transition: SuccessorTransitionResult,
+    exc: Exception,
+    manifest: dict[str, Any] | None,
+) -> None:
+    already_started = db.execute(
+        "SELECT 1 FROM state_events WHERE event_type='EPOCH_STARTED' "
+        "AND json_extract(payload_json,'$.epoch_id')=? LIMIT 1",
+        (transition.epoch_id,),
+    ).fetchone()
+    if already_started is not None:
+        return
+    existing = db.execute(
+        "SELECT 1 FROM state_events WHERE event_type='EPOCH_PRE_START_FAILED' "
+        "AND json_extract(payload_json,'$.epoch_id')=? LIMIT 1",
+        (transition.epoch_id,),
+    ).fetchone()
+    if existing is not None:
+        return
+    reason = (
+        exc.code if isinstance(exc, LaunchError) else "UNEXPECTED_PRE_START_FAILURE"
+    )
+    if not _REASON_CODE_RE.fullmatch(reason):
+        reason = "UNEXPECTED_PRE_START_FAILURE"
+    EventRepository(db).append(
+        "EPOCH_PRE_START_FAILED",
+        {
+            "schema": "EPOCH_PRE_START_FAILED_V1",
+            "epoch_id": transition.epoch_id,
+            "definition_sha256": transition.definition_sha256,
+            "clock_event_sha256": transition.clock_event_sha256,
+            "launch_attempt_id": config.launch_attempt_id,
+            "epoch_manifest_sha256": (
+                None if manifest is None else manifest.get("epoch_manifest_sha256")
+            ),
+            "reason_codes": [reason],
+        },
+    )
+
+
 def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) -> str:
     try:
         preflight = evaluate_launch_preflight(config, dependencies)
@@ -1142,6 +1199,8 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
         if not receipt.acquired:
             raise LaunchError("EXECUTION_LOCK_OWNER_ACTION_REQUIRED")
 
+        transition: SuccessorTransitionResult | None = None
+        prepared: PreparedEpochLaunch | None = None
         try:
             controls = validate_launch_controls(db, config)
             if controls.authorization_event_id != preflight.authorization_event_id:
@@ -1214,6 +1273,21 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                             if controls.clock is not None
                             else config.scheduled_start_utc
                         ),
+                        experiment_clock=(
+                            controls.clock
+                            if config.target_successor_epoch_id is not None
+                            else None
+                        ),
+                        successor_owner_authorization_receipt=(
+                            preflight.owner_authorization_receipt
+                            if config.target_successor_epoch_id is not None
+                            else None
+                        ),
+                        successor_owner_sid=(
+                            preflight.owner_sid
+                            if config.target_successor_epoch_id is not None
+                            else None
+                        ),
                         allocation=config.initial_allocation,
                         duration_days=config.duration_days,
                         scan_interval_seconds=300.0,
@@ -1244,6 +1318,8 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                     {
                         "schema": "EPOCH_STARTED_V1",
                         "epoch_id": prepared.manifest["epoch_id"],
+                        "definition_sha256": prepared.manifest["definition_sha256"],
+                        "clock_event_sha256": prepared.manifest["clock_event_sha256"],
                         "launch_attempt_id": config.launch_attempt_id,
                         "epoch_manifest_sha256": prepared.manifest[
                             "epoch_manifest_sha256"
@@ -1267,6 +1343,21 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 if heartbeat.failure_code is not None:
                     raise LaunchError("EXECUTION_LOCK_OWNER_ACTION_REQUIRED")
             return "AUTONOMOUS_PAPER_EXPERIMENT_STOPPED"
+        except Exception as exc:
+            if transition is not None:
+                try:
+                    _append_successor_pre_start_failure(
+                        db,
+                        config,
+                        transition,
+                        exc,
+                        None if prepared is None else prepared.manifest,
+                    )
+                except Exception as audit_exc:
+                    raise LaunchError(
+                        "EPOCH_PRE_START_FAILURE_AUDIT_FAILED"
+                    ) from audit_exc
+            raise
         finally:
             lock.release(receipt)
 

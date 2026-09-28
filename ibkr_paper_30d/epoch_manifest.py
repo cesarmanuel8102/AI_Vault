@@ -23,11 +23,13 @@ from .kernel_manifest import (
 )
 
 EPOCH_MANIFEST_SCHEMA = "AUTONOMY_EPOCH_MANIFEST_V2"
-EPOCH_ID = "AUTONOMY_EPOCH_1"
 
 
 @dataclass(frozen=True)
 class EpochManifestInputs:
+    epoch_id: str
+    definition_sha256: str
+    clock_event_sha256: str
     created_at_utc: str
     git_commit_sha: str
     model: str
@@ -53,7 +55,9 @@ def build_epoch_manifest(inputs: EpochManifestInputs) -> dict[str, Any]:
     }
     unsigned = {
         "schema": EPOCH_MANIFEST_SCHEMA,
-        "epoch_id": EPOCH_ID,
+        "epoch_id": inputs.epoch_id,
+        "definition_sha256": inputs.definition_sha256,
+        "clock_event_sha256": inputs.clock_event_sha256,
         "manifest_state": "CREATED",
         "service_started": False,
         "created_at_utc": inputs.created_at_utc,

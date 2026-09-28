@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from unittest.mock import Mock
 
@@ -20,6 +20,17 @@ from ibkr_paper_30d.experiment_control import (
     OwnerAuthorizationStore,
 )
 from ibkr_paper_30d.research_sandbox import WSLResearchSandbox
+from ibkr_paper_30d.successor_clock import BrokerTimeObservation, clock_for_epoch
+from ibkr_paper_30d.successor_epoch import (
+    BrokerTransitionEvidence,
+    commit_successor_transition,
+)
+from successor_test_support import (
+    ACCOUNT_HASH,
+    OWNER_SID,
+    SUCCESSOR_START,
+    build_authorized_successor,
+)
 
 
 @dataclass
@@ -572,6 +583,79 @@ def test_run_forever_records_first_operational_cycle_lifecycle(tmp_path, monkeyp
     assert running["decision"] == "NO_TRADE"
     assert running["decision_cycle_id"] == "cycle-1"
     assert running["launch_attempt_id"] == service.launch_attempt_id
+
+
+def test_successor_service_events_bind_exact_epoch_definition_and_clock(
+    tmp_path, monkeypatch
+):
+    db_path = tmp_path / "successor-service.sqlite3"
+    receipt_path = tmp_path / "owner-successor-v2.json"
+    definition, receipt = build_authorized_successor(db_path, receipt_path)
+    collected_at = SUCCESSOR_START + timedelta(seconds=1)
+    evidence = BrokerTransitionEvidence(
+        account_identity_sha256=ACCOUNT_HASH,
+        collected_at_utc=collected_at,
+        observation=BrokerTimeObservation(
+            server_time_utc=SUCCESSOR_START,
+            observed_at_utc=collected_at,
+            authenticated=True,
+            paper_session=True,
+        ),
+        positions_count=0,
+        open_orders_count=0,
+        broker_write_count=0,
+    )
+    result_payload = {
+        "status": "PASS",
+        "outcome": {"decision": "NO_TRADE"},
+        "request": {"decision_cycle_id": "cycle-successor"},
+        "execution": None,
+    }
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+
+    with Database.open(db_path) as db:
+        transition = commit_successor_transition(
+            db=db,
+            launch_attempt_id="launch-successor-service",
+            target_successor_epoch_id=str(definition["epoch_id"]),
+            target_successor_definition_sha256=str(definition["definition_sha256"]),
+            expected_account_identity_sha256=ACCOUNT_HASH,
+            expected_owner_sid=OWNER_SID,
+            owner_authorization_receipt=receipt,
+            execution_lock_verifier=lambda: True,
+            broker_evidence_collector=lambda: evidence,
+            now_utc=lambda: SUCCESSOR_START + timedelta(seconds=2),
+        )
+        successor_clock = clock_for_epoch(db, str(definition["epoch_id"]))
+        service = RecordingService(
+            db,
+            experiment_start_utc=successor_clock.start_utc,
+            experiment_clock=successor_clock,
+            successor_owner_authorization_receipt=receipt,
+            successor_owner_sid=OWNER_SID,
+            allocation=Decimal("500.00"),
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=StubExecutor(),
+            stop_after=1,
+            results=[result_payload],
+        )
+        service.launch_attempt_id = "launch-successor-service"
+
+        service.run_forever()
+
+        started = latest_state_event(db, "AUTONOMOUS_SERVICE_STARTED")
+        running = latest_state_event(db, "AUTONOMOUS_PAPER_EXPERIMENT_RUNNING")
+
+    expected = {
+        "epoch_id": definition["epoch_id"],
+        "definition_sha256": definition["definition_sha256"],
+        "clock_event_sha256": transition.clock_event_sha256,
+    }
+    assert {key: started[key] for key in expected} == expected
+    assert {key: running[key] for key in expected} == expected
 
 
 @pytest.mark.parametrize("status", ["UNKNOWN", "PARTIAL", "RECOVERING", "BLOCK"])

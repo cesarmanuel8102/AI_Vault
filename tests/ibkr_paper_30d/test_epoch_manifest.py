@@ -9,7 +9,6 @@ import pytest
 
 from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.epoch_manifest import (
-    EPOCH_ID,
     EpochManifestInputs,
     build_epoch_manifest,
     build_kernel_manifest,
@@ -61,6 +60,9 @@ def test_epoch_manifest_is_correct_and_hashable():
     tools = [{"tool": "WORKSPACE"}]
     risk_policy = {"version": "AGGRESSIVE_CAPITAL_BOUNDARY_V1"}
     inputs = EpochManifestInputs(
+        epoch_id="AUTONOMY_EPOCH_2",
+        definition_sha256="b" * 64,
+        clock_event_sha256="c" * 64,
         created_at_utc="2026-09-28T13:30:00Z",
         git_commit_sha="a" * 40,
         model="gpt-5.6-sol",
@@ -83,7 +85,9 @@ def test_epoch_manifest_is_correct_and_hashable():
         persistent_workspace_enabled=True,
     )
     manifest = build_epoch_manifest(inputs)
-    assert manifest["epoch_id"] == EPOCH_ID == "AUTONOMY_EPOCH_1"
+    assert manifest["epoch_id"] == "AUTONOMY_EPOCH_2"
+    assert manifest["definition_sha256"] == "b" * 64
+    assert manifest["clock_event_sha256"] == "c" * 64
     assert manifest["git_commit_sha"] == "a" * 40
     assert manifest["self_tooling_enabled"] is True
     assert manifest["persistent_workspace_enabled"] is True
@@ -112,6 +116,9 @@ def test_epoch_manifest_is_correct_and_hashable():
 
 def test_epoch_manifest_does_not_influence_strategy():
     inputs = EpochManifestInputs(
+        epoch_id="AUTONOMY_EPOCH_2",
+        definition_sha256="b" * 64,
+        clock_event_sha256="c" * 64,
         created_at_utc="2026-09-28T13:30:00Z",
         git_commit_sha="a" * 40,
         model="gpt-5.6-sol",

@@ -18,7 +18,6 @@ from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.trader_invocation import TraderDecision, TraderInputBundle
 from ibkr_paper_30d.types import new_uuid7
 
-
 NOW = "2026-09-28T14:00:00Z"
 
 
@@ -28,7 +27,11 @@ def _bundle() -> TraderInputBundle:
         utc_timestamp=NOW,
         market_session_state="REGULAR",
         reconciliation_receipt={"status": "PASS", "account": "DU-SHOULD-NOT-LEAK"},
-        experiment_subledger_snapshot={"allocation": "500", "cash": "475", "equity": "500"},
+        experiment_subledger_snapshot={
+            "allocation": "500",
+            "cash": "475",
+            "equity": "500",
+        },
         broker_account_snapshot={
             "paper_account": True,
             "declared_options_level": 4,
@@ -38,7 +41,10 @@ def _bundle() -> TraderInputBundle:
         open_orders_snapshot=[],
         risk_snapshot={"policy": "AGGRESSIVE_CAPITAL_BOUNDARY_V1"},
         kill_switch_state="KILL_SWITCH_CLEAR",
-        market_data_snapshot={"gate_status": "PASS", "policy_version": "MARKET_DATA_POLICY_V1"},
+        market_data_snapshot={
+            "gate_status": "PASS",
+            "policy_version": "MARKET_DATA_POLICY_V1",
+        },
         candidate_screen_results=[],
         relevant_previous_immutable_decisions=[],
         process_policy_version="AUTONOMOUS_RESEARCH_V1",
@@ -52,6 +58,7 @@ def _bundle() -> TraderInputBundle:
             "remaining_days": 29.979,
             "remaining_seconds": 2_590_200,
             "definition_sha256": "d" * 64,
+            "clock_event_sha256": "c" * 64,
         },
     )
 
@@ -162,6 +169,8 @@ def test_empty_bootstrap_has_exact_authority_and_epoch_fields(tmp_path) -> None:
         "continuity",
     }
     assert first["epoch"]["epoch_id"] == "AUTONOMY_EPOCH_1"
+    assert first["epoch"]["definition_sha256"] == "d" * 64
+    assert first["epoch"]["clock_event_sha256"] == "c" * 64
     assert first["remaining_horizon"]["remaining_days"] == 29.979
     assert first["permissions"] == {
         "research_authority": "HOST_MEDIATED_ONLY",
@@ -201,10 +210,14 @@ def test_bootstrap_bounds_records_bytes_and_ignores_malformed_history(tmp_path) 
     assert len(continuity["recent_workspace_artifacts"]) <= MAX_WORKSPACE_ARTIFACTS
     assert continuity["ignored_malformed_records"] == 1
     assert len(canonical_bytes(value)) <= MAX_BOOTSTRAP_BYTES
-    assert continuity["recent_accepted_decisions"][-1]["decision_cycle_id"] == "cycle-019"
+    assert (
+        continuity["recent_accepted_decisions"][-1]["decision_cycle_id"] == "cycle-019"
+    )
 
 
-def test_workspace_continuity_is_untrusted_and_excludes_audit_documents(tmp_path) -> None:
+def test_workspace_continuity_is_untrusted_and_excludes_audit_documents(
+    tmp_path,
+) -> None:
     artifacts = [
         {"path": "hypotheses/volatility.md", "sha256": "1" * 64, "size_bytes": 8},
         {"path": "questions/open.md", "sha256": "2" * 64, "size_bytes": 9},

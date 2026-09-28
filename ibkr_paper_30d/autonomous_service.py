@@ -20,10 +20,16 @@ from .autonomy_toolbox import AutonomyToolbox
 from .autonomy_workspace import AutonomyWorkspace
 from .canonical import canonical_bytes, sha256_json
 from .experiment_control import (
+    ExperimentClock,
     ExperimentClockStore,
     KillSwitchStore,
     OwnerAuthorizationStore,
 )
+from .successor_authorization import (
+    SuccessorAuthorizationError,
+    validate_successor_authorization_record,
+)
+from .successor_clock import clock_for_epoch
 from .experiment_epoch import ExperimentEpochStore
 from .experiment_ledger import AutonomousExperimentLedger
 from .ibkr_research_tools import IBKRResearchToolbox
@@ -103,6 +109,9 @@ class AutonomousExperimentService:
         db: Database,
         *,
         experiment_start_utc: datetime | None,
+        experiment_clock: ExperimentClock | None = None,
+        successor_owner_authorization_receipt: dict[str, Any] | None = None,
+        successor_owner_sid: str | None = None,
         allocation: Decimal = Decimal("500.00"),
         duration_days: int = 30,
         scan_interval_seconds: float = 300.0,
@@ -134,11 +143,27 @@ class AutonomousExperimentService:
         self.db = db
         self.allocation = allocation
         self.duration_days = duration_days
-        self.clock = ExperimentClockStore(db).initialize_or_load(
-            requested_start_utc=experiment_start_utc,
-            duration_days=duration_days,
-            initial_allocation=allocation,
+        if experiment_clock is None:
+            self.clock = ExperimentClockStore(db).initialize_or_load(
+                requested_start_utc=experiment_start_utc,
+                duration_days=duration_days,
+                initial_allocation=allocation,
+            )
+        else:
+            if (
+                experiment_clock.epoch_id is None
+                or experiment_start_utc != experiment_clock.start_utc
+                or experiment_clock.duration_days != duration_days
+                or experiment_clock.initial_allocation != allocation
+                or clock_for_epoch(db, experiment_clock.epoch_id).event_sha256
+                != experiment_clock.event_sha256
+            ):
+                raise AutonomousServiceError("SUCCESSOR_CLOCK_BINDING_MISMATCH")
+            self.clock = experiment_clock
+        self.successor_owner_authorization_receipt = (
+            successor_owner_authorization_receipt
         )
+        self.successor_owner_sid = successor_owner_sid
         self.epoch_store = ExperimentEpochStore(db)
         self.epoch_state = self.epoch_store.projection(datetime.now(timezone.utc))
         self.experiment_start_utc = self.clock.start_utc
@@ -208,6 +233,34 @@ class AutonomousExperimentService:
     def stop(self) -> None:
         self.stop_event.set()
 
+    def _owner_authorization_is_current(self) -> bool:
+        if self.clock.epoch_id is None:
+            return (
+                self.owner_authorization.current(
+                    clock_event_sha256=self.clock.event_sha256
+                )
+                == "AUTHORIZED"
+            )
+        if (
+            self.successor_owner_authorization_receipt is None
+            or not self.successor_owner_sid
+        ):
+            return False
+        try:
+            current = self.epoch_store.current()
+            if current is None or current.epoch_id != self.clock.epoch_id:
+                return False
+            validate_successor_authorization_record(
+                db=self.db,
+                epoch_id=self.clock.epoch_id,
+                definition_sha256=current.definition_sha256,
+                expected_actor_sid=self.successor_owner_sid,
+                receipt=self.successor_owner_authorization_receipt,
+            )
+        except (SuccessorAuthorizationError, RuntimeError):
+            return False
+        return True
+
     def _read_broker_time(self) -> datetime:
         raw = self.toolbox.broker_server_time_utc()
         if not isinstance(raw, str) or not raw:
@@ -238,10 +291,7 @@ class AutonomousExperimentService:
             reasons.append("EXPERIMENT_EXPIRED_FRESH")
         if self.kill_switch.current() != "KILL_SWITCH_CLEAR":
             reasons.append("KILL_SWITCH_TRIGGERED_FRESH")
-        if (
-            self.owner_authorization.current(clock_event_sha256=self.clock.event_sha256)
-            != "AUTHORIZED"
-        ):
+        if not self._owner_authorization_is_current():
             reasons.append("OWNER_AUTHORIZATION_REQUIRED_FRESH")
         auditor = self.runtime_auditor_gate.evaluate()
         if auditor.get("gate_status") != "PASS":
@@ -266,10 +316,7 @@ class AutonomousExperimentService:
         reasons: list[str] = []
         if self.kill_switch.current() != "KILL_SWITCH_CLEAR":
             reasons.append("KILL_SWITCH_TRIGGERED_IMMEDIATE")
-        if (
-            self.owner_authorization.current(clock_event_sha256=self.clock.event_sha256)
-            != "AUTHORIZED"
-        ):
+        if not self._owner_authorization_is_current():
             reasons.append("OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE")
         return tuple(reasons)
 
@@ -279,10 +326,7 @@ class AutonomousExperimentService:
                 "paper execution requested but IBKR_AUTONOMOUS_PAPER_ARMED is not true",
                 reason_codes=("PAPER_EXECUTION_UNARMED",),
             )
-        if (
-            self.owner_authorization.current(clock_event_sha256=self.clock.event_sha256)
-            != "AUTHORIZED"
-        ):
+        if not self._owner_authorization_is_current():
             raise AutonomousServiceError(
                 "paper execution requires explicit owner authorization bound to this experiment clock",
                 reason_codes=("OWNER_AUTHORIZATION_REQUIRED_FRESH",),
@@ -518,6 +562,9 @@ class AutonomousExperimentService:
                     "decision_cycle_id": decision_cycle_id,
                     "decision": decision,
                     "launch_attempt_id": self.launch_attempt_id or "",
+                    "epoch_id": self.clock.epoch_id,
+                    "definition_sha256": self.epoch_state.get("definition_sha256"),
+                    "clock_event_sha256": self.clock.event_sha256,
                     "model": self.model,
                     "reasoning_effort": self.reasoning_effort,
                     "pid": os.getpid(),
@@ -548,6 +595,9 @@ class AutonomousExperimentService:
             "AUTONOMOUS_SERVICE_STARTED",
             {
                 "launch_attempt_id": self.launch_attempt_id or "",
+                "epoch_id": self.clock.epoch_id,
+                "definition_sha256": self.epoch_state.get("definition_sha256"),
+                "clock_event_sha256": self.clock.event_sha256,
                 "model": self.model,
                 "reasoning_effort": self.reasoning_effort,
                 "pid": os.getpid(),
