@@ -22,11 +22,14 @@ REPO = Path(__file__).resolve().parents[2]
 
 def test_kernel_manifest_hashes_every_kernel_file():
     manifest = build_kernel_manifest(REPO)
-    assert manifest["schema"] == "IMMUTABLE_EXECUTION_KERNEL_MANIFEST_V1"
+    assert manifest["schema"] == "IMMUTABLE_EXECUTION_KERNEL_MANIFEST_V2"
     assert manifest["file_count"] >= 20
     for entry in manifest["kernel_files"]:
-        assert entry["path"].startswith("ibkr_paper_30d/")
+        assert entry["path"].startswith("ibkr_paper_30d/") or entry[
+            "path"
+        ].endswith(".ps1")
         assert len(entry["sha256"]) == 64
+        assert entry["authority_role"]
     # Execution authority files must be in the kernel.
     paths = {entry["path"] for entry in manifest["kernel_files"]}
     for required in (
