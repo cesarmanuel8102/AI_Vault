@@ -34,7 +34,7 @@ from ibkr_paper_30d.day1_launch import (
     validate_launch_controls,
     write_launch_evidence,
 )
-from ibkr_paper_30d.execution_lock import ExecutionLock
+from ibkr_paper_30d.execution_lock import ExecutionLock, LockIntegrityError, LockOwner
 from ibkr_paper_30d.experiment_control import (
     ExperimentClockStore,
     KillSwitchStore,
@@ -867,6 +867,21 @@ def test_live_execution_lock_is_idempotent_without_service(tmp_path: Path) -> No
     assert_no_write_authority(ctx)
 
 
+def test_corrupt_execution_lock_projection_requires_owner_action(tmp_path: Path) -> None:
+    ctx = passing_context(tmp_path)
+
+    class CorruptLock:
+        def acquire(self, owner):
+            raise LockIntegrityError("execution lock projection hash is invalid")
+
+    ctx.dependencies.lock_factory = lambda _db: CorruptLock()
+
+    with pytest.raises(LaunchError, match="EXECUTION_LOCK_OWNER_ACTION_REQUIRED"):
+        run_day1_launch(ctx.config, ctx.dependencies)
+
+    assert_no_write_authority(ctx)
+
+
 def test_missing_authorization_blocks_without_recreating_it(tmp_path: Path) -> None:
     ctx = passing_context(tmp_path)
     ctx.config.owner_authorization_path.unlink()
@@ -993,6 +1008,75 @@ def test_active_database_projection_without_live_mutex_requires_owner_action(
         run_day1_launch(ctx.config, ctx.dependencies)
 
     assert_no_write_authority(ctx)
+
+
+def test_day1_launch_recovers_proven_stale_lock_before_service(tmp_path: Path) -> None:
+    ctx = passing_context(tmp_path)
+    stale = LockOwner(
+        owner_id="stale-owner",
+        pid=999999,
+        process_start="2026-09-20T00:00:00Z",
+        host_fingerprint="same-host",
+        boot_session_id="same-boot",
+    )
+    replacement = LockOwner(
+        owner_id="replacement-owner",
+        pid=os.getpid(),
+        process_start="2026-09-23T19:59:00Z",
+        host_fingerprint="same-host",
+        boot_session_id="same-boot",
+    )
+    payload = {
+        "state": "ACTIVE",
+        **stale.model_dump(),
+        "generation": 11,
+        "acquired_at_utc": "2026-09-20T00:00:00Z",
+        "heartbeat_at_utc": "2026-09-20T00:00:00Z",
+        "order_authority": False,
+    }
+    with Database.open(ctx.config.db_path) as db:
+        db.execute(
+            "INSERT INTO experiment_state(experiment_id,version,payload_json,payload_sha256,updated_at_utc) "
+            "VALUES(?,?,?,?,?)",
+            (
+                "EXECUTION_LOCK_V1",
+                1,
+                canonical_bytes(payload).decode("utf-8"),
+                sha256_json(payload),
+                "2026-09-20T00:00:00Z",
+            ),
+        )
+
+    class DeadObserver:
+        def observe(self, pid):
+            return None
+
+        def has_other_execution_authority(self, *, excluding_pid):
+            return False
+
+        def current_boot_session_id(self):
+            return "same-boot"
+
+    mutex_name = f"Local\\CodexIbkrPaper30DRecovery-{tmp_path.name}"
+    ctx.dependencies.lock_factory = lambda db: ExecutionLock(
+        db,
+        mutex_name=mutex_name,
+        process_observer=DeadObserver(),
+        now_utc=lambda: NOW,
+    )
+    ctx.dependencies.lock_owner_factory = lambda now: replacement
+    ctx.service_factory.return_value.run_forever.side_effect = StopTestService
+
+    with pytest.raises(StopTestService):
+        run_day1_launch(ctx.config, ctx.dependencies)
+
+    with Database.open(ctx.config.db_path) as db:
+        events = [row[0] for row in db.execute(
+            "SELECT event_type FROM execution_lock_events WHERE generation IN (11,12) ORDER BY sequence"
+        ).fetchall()]
+    assert events[:2] == ["STALE_OWNER_RECOVERED", "ACQUIRED"]
+    assert ctx.executor_tripwire.calls == []
+    assert ctx.ib_tripwire.calls == []
 
 
 def test_rejected_lock_heartbeat_stops_service_and_records_owner_action(

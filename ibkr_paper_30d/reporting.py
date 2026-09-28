@@ -29,7 +29,7 @@ FAULT_SCENARIO_TEST_MATRIX = {
     "market_data_loss": "tests/ibkr_paper_30d/test_market_data.py::test_invalid_quotes_block",
     "smtp_failure": "tests/ibkr_paper_30d/test_alerts.py::test_smtp_failure_is_durable_and_due_for_retry",
     "event_log_failure": "tests/ibkr_paper_30d/test_alerts.py::test_event_log_failure_does_not_suppress_external_delivery",
-    "stale_execution_lock": "tests/ibkr_paper_30d/test_execution_lock.py::test_confirmed_dead_owner_enters_recovery_without_authority",
+    "stale_execution_lock": "tests/ibkr_paper_30d/test_execution_lock.py::test_dead_pid_and_stale_heartbeat_recover_and_acquire_new_generation",
     "trader_timeout": "tests/ibkr_paper_30d/test_trader_invocation.py::test_timeout_fails_to_no_trade",
     "trader_malformed": "tests/ibkr_paper_30d/test_trader_invocation.py::test_malformed_wrong_schema_and_authority_excess_fail_to_no_trade",
     "auditor_access_attempt": "tests/ibkr_paper_30d/test_auditor_isolation.py::test_isolation_report_stays_blocked_when_forbidden_capabilities_exist",

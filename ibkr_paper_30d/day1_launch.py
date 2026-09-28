@@ -25,7 +25,7 @@ from .epoch_manifest import (
     build_kernel_manifest,
     epoch_manifest_hash,
 )
-from .execution_lock import ExecutionLock, LockOwner
+from .execution_lock import ExecutionLock, LockIntegrityError, LockOwner
 from .experiment_control import (
     ExperimentClockStore,
     ExperimentControlError,
@@ -773,7 +773,10 @@ def run_day1_launch(
     with dependencies.database_factory(config.db_path) as db:
         lock = dependencies.lock_factory(db)
         owner = dependencies.lock_owner_factory(preflight.actual_start_utc)
-        receipt = lock.acquire(owner)
+        try:
+            receipt = lock.acquire(owner)
+        except LockIntegrityError as exc:
+            raise LaunchError("EXECUTION_LOCK_OWNER_ACTION_REQUIRED") from exc
         if receipt.reason == "OS_MUTEX_HELD":
             status = "AUTONOMOUS_PAPER_EXPERIMENT_ALREADY_RUNNING"
             write_launch_evidence(config, status, {"reason_codes": []})
@@ -852,17 +855,17 @@ def current_process_sid() -> str:
 
 
 def _lock_owner(now: datetime) -> LockOwner:
-    host = socket.gethostname().encode("utf-8")
-    try:
-        import win32api
+    import psutil
 
-        boot_epoch = int(time.time() - (win32api.GetTickCount64() / 1000.0))
-    except Exception:
-        boot_epoch = 0
+    host = socket.gethostname().encode("utf-8")
+    process_start = datetime.fromtimestamp(
+        psutil.Process(os.getpid()).create_time(), timezone.utc
+    ).isoformat().replace("+00:00", "Z")
+    boot_epoch = int(psutil.boot_time())
     return LockOwner(
         owner_id=str(uuid4()),
         pid=os.getpid(),
-        process_start=now.isoformat().replace("+00:00", "Z"),
+        process_start=process_start,
         host_fingerprint=hashlib.sha256(host).hexdigest(),
         boot_session_id=hashlib.sha256(str(boot_epoch).encode("ascii")).hexdigest(),
     )
