@@ -437,6 +437,43 @@ def test_finalizer_activation_pins_head_and_working_directory():
     assert "APPROVED_HEAD_MISMATCH" in text
 
 
+def test_finalizer_wires_epoch_transition_before_scheduler_registration():
+    text = FINALIZER.read_text(encoding="utf-8")
+    activate = text.rindex('if ($Stage -eq "Activate") {')
+    epoch_call = text.index(
+        '"-m", "ibkr_paper_30d.experiment_epoch", "activate-production"',
+        activate,
+    )
+    epoch_pass = text.index("EPOCH_ACTIVATION_BLOCK", epoch_call)
+    register = text.index("Register-ScheduledTask", activate)
+
+    assert activate < epoch_call < epoch_pass < register
+    assert '"--approved-head", $ApprovedHead' in text[epoch_call:register]
+    assert '"--owner-receipt", $OwnerAuthorizationReceipt' in text[epoch_call:register]
+    assert '"--db", $AutonomousDatabase' in text[epoch_call:register]
+    assert (
+        '$EpochActivation.status -notin @("PASS", "VALID_ALREADY_ACTIVATED")'
+        in text[epoch_call:register]
+    )
+
+
+def test_finalizer_never_starts_day1_or_calls_broker_during_activation():
+    text = FINALIZER.read_text(encoding="utf-8")
+    block = text[text.rindex('if ($Stage -eq "Activate") {') :]
+
+    for forbidden in (
+        "day1_launch",
+        "AutonomousExperimentService",
+        "placeOrder",
+        "cancelOrder",
+        "reqGlobalCancel",
+        "Start-ScheduledTask",
+    ):
+        assert forbidden not in block
+    assert "broker_write_calls = 0" in block
+    assert "autonomous_experiment_started = $false" in block
+
+
 @pytest.mark.skipif(os.name != "nt", reason="PowerShell execution is Windows-only")
 @pytest.mark.parametrize("stage", ["Check", "Provision", "Receipts", "Activate"])
 def test_finalizer_dry_run_is_zero_mutation_for_every_stage(tmp_path: Path, stage: str):

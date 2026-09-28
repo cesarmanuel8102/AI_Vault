@@ -720,6 +720,26 @@ if ($Stage -eq "Activate") {
     if ($ActivationAuditorEvaluation.canonical_gate -ne "PASS" -or $ActivationAuditorEvaluation.compatibility_gate -ne "PASS") {
         throw "AUDITOR_GATE_V2_BLOCK:$($ActivationAuditorEvaluation.reason_codes -join ',')"
     }
+    $EpochActivation = Invoke-PythonJson -Arguments @(
+        "-m", "ibkr_paper_30d.experiment_epoch", "activate-production",
+        "--repo-root", $ResolvedRepoRoot,
+        "--db", $AutonomousDatabase,
+        "--owner-receipt", $OwnerAuthorizationReceipt,
+        "--actor-sid", $CurrentOwnerSid,
+        "--approved-head", $ApprovedHead
+    )
+    if ($EpochActivation.status -notin @("PASS", "VALID_ALREADY_ACTIVATED")) {
+        throw "EPOCH_ACTIVATION_BLOCK:$($EpochActivation.reason)"
+    }
+    if (
+        [string]$EpochActivation.epoch_id -ne "AUTONOMY_EPOCH_1" -or
+        [string]$EpochActivation.approved_git_head -ne $ApprovedHead -or
+        [string]$EpochActivation.previous_history_classification -ne "PRE_EPOCH_HISTORY" -or
+        [bool]$EpochActivation.day1_started -or
+        [int]$EpochActivation.broker_write_calls -ne 0
+    ) {
+        throw "EPOCH_ACTIVATION_RECEIPT_INVALID"
+    }
     $MarketScript = Join-Path $ResolvedRepoRoot "RUN_IBKR_MARKET_DATA_GATE.ps1"
     if (-not (Test-Path -LiteralPath $MarketScript -PathType Leaf)) {
         throw "MARKET_DATA_GATE_SCRIPT_MISSING"
@@ -752,6 +772,7 @@ if ($Stage -eq "Activate") {
         status = "ACTIVATED"
         stage = $Stage
         approved_head = $ApprovedHead
+        epoch_activation = $EpochActivation
         market_data_task_registered = $true
         market_data_task_name = $MarketTaskName
         paper_execution_armed = $false

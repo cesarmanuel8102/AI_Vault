@@ -6,6 +6,7 @@ from decimal import Decimal
 
 import pytest
 
+import ibkr_paper_30d.experiment_epoch as epoch_module
 from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.experiment_epoch import (
     EpochError,
@@ -17,6 +18,55 @@ from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.repositories import EventRepository
 
 START = datetime(2026, 9, 28, 13, 30, tzinfo=timezone.utc)
+HEAD = "a" * 40
+OWNER_RECEIPT_SHA256 = "b" * 64
+OBJECTIVE_SHA256 = "c" * 64
+CONFIGURATION_SHA256 = "d" * 64
+
+
+def _preview(store: ExperimentEpochStore, **overrides):
+    values = {
+        "epoch_id": "AUTONOMY_EPOCH_1",
+        "start_utc": START,
+        "duration_days": 30,
+        "initial_allocation": Decimal("500"),
+        "approved_git_head": HEAD,
+        "owner_authorization_event_id": "owner-auth-1",
+        "owner_authorization_receipt_sha256": OWNER_RECEIPT_SHA256,
+        "objective_sha256": OBJECTIVE_SHA256,
+        "configuration_sha256": CONFIGURATION_SHA256,
+    }
+    values.update(overrides)
+    return store.preview(**values)
+
+
+def _owner_receipt(event_id: str = "owner-auth-1") -> dict[str, object]:
+    return {
+        "schema": "DAY1_OWNER_AUTHORIZATION_V1",
+        "authorization_event_id": event_id,
+        "authorization_state": "AUTHORIZED",
+        "actor_sid": "S-1-5-21-test",
+    }
+
+
+def _activate(db: Database, **overrides):
+    values = {
+        "epoch_id": "AUTONOMY_EPOCH_1",
+        "start_utc": START,
+        "duration_days": 30,
+        "initial_allocation": Decimal("500"),
+        "approved_git_head": HEAD,
+        "observed_git_head": HEAD,
+        "owner_authorization_receipt": _owner_receipt(),
+        "owner_authorization_receipt_sha256": OWNER_RECEIPT_SHA256,
+        "objective_sha256": OBJECTIVE_SHA256,
+        "configuration_sha256": CONFIGURATION_SHA256,
+        "kernel_status": "PASS",
+        "runtime_provenance_status": "PASS",
+        "activated_at_utc": START - timedelta(minutes=5),
+    }
+    values.update(overrides)
+    return epoch_module.activate_epoch_transition(db, **values)
 
 
 def _legacy_history(db: Database) -> None:
@@ -65,18 +115,8 @@ def test_rebaseline_preview_is_deterministic_and_performs_zero_writes(tmp_path) 
         }
         store = ExperimentEpochStore(db)
 
-        first = store.preview(
-            epoch_id="AUTONOMY_EPOCH_1",
-            start_utc=START,
-            duration_days=30,
-            initial_allocation=Decimal("500"),
-        )
-        second = store.preview(
-            epoch_id="AUTONOMY_EPOCH_1",
-            start_utc=START,
-            duration_days=30,
-            initial_allocation=Decimal("500"),
-        )
+        first = _preview(store)
+        second = _preview(store)
         after = {
             table: [
                 tuple(row)
@@ -98,11 +138,9 @@ def test_rebaseline_preview_is_deterministic_and_performs_zero_writes(tmp_path) 
 def test_epoch_preview_rejects_naive_start_time(tmp_path) -> None:
     with Database.open(tmp_path / "epoch.sqlite3") as db:
         with pytest.raises(EpochError, match="timezone-aware"):
-            ExperimentEpochStore(db).preview(
-                epoch_id="AUTONOMY_EPOCH_1",
+            _preview(
+                ExperimentEpochStore(db),
                 start_utc=datetime(2026, 9, 28, 13, 30),
-                duration_days=30,
-                initial_allocation=Decimal("500"),
             )
 
 
@@ -122,12 +160,7 @@ def test_define_appends_epoch_event_without_rewriting_legacy_bytes(tmp_path) -> 
             "utf-8",
         )
         store = ExperimentEpochStore(db)
-        preview = store.preview(
-            epoch_id="AUTONOMY_EPOCH_1",
-            start_utc=START,
-            duration_days=30,
-            initial_allocation=Decimal("500"),
-        )
+        preview = _preview(store)
 
         definition = store.define(preview)
 
@@ -154,18 +187,13 @@ def test_define_appends_epoch_event_without_rewriting_legacy_bytes(tmp_path) -> 
 def test_activation_requires_owner_receipt_bound_to_definition(tmp_path) -> None:
     with Database.open(tmp_path / "epoch.sqlite3") as db:
         store = ExperimentEpochStore(db)
-        definition = store.define(
-            store.preview(
-                epoch_id="AUTONOMY_EPOCH_1",
-                start_utc=START,
-                duration_days=30,
-                initial_allocation=Decimal("500"),
-            )
-        )
+        definition = store.define(_preview(store))
         invalid = activation_receipt(
             epoch_id=definition.epoch_id,
             definition_sha256="0" * 64,
             owner_authorization_event_id="owner-auth-1",
+            approved_git_head=HEAD,
+            owner_authorization_receipt_sha256=OWNER_RECEIPT_SHA256,
         )
 
         with pytest.raises(EpochError, match="receipt definition hash"):
@@ -177,19 +205,14 @@ def test_activated_projection_scopes_counts_and_horizon_to_epoch(tmp_path) -> No
     with Database.open(tmp_path / "epoch.sqlite3") as db:
         _legacy_history(db)
         store = ExperimentEpochStore(db)
-        definition = store.define(
-            store.preview(
-                epoch_id="AUTONOMY_EPOCH_1",
-                start_utc=START,
-                duration_days=30,
-                initial_allocation=Decimal("500"),
-            )
-        )
+        definition = store.define(_preview(store))
         _owner_authorization(db)
         receipt = activation_receipt(
             epoch_id=definition.epoch_id,
             definition_sha256=definition.definition_sha256,
             owner_authorization_event_id="owner-auth-1",
+            approved_git_head=HEAD,
+            owner_authorization_receipt_sha256=OWNER_RECEIPT_SHA256,
         )
         activated = store.activate(definition.epoch_id, receipt)
         epoch_bundle = {"epoch": 1}
@@ -242,12 +265,7 @@ def test_invalid_legacy_chain_is_anchored_without_rewriting_history(tmp_path) ->
         store = ExperimentEpochStore(db)
 
         projection = store.projection(START)
-        preview = store.preview(
-            epoch_id="AUTONOMY_EPOCH_1",
-            start_utc=START,
-            duration_days=30,
-            initial_allocation=Decimal("500"),
-        )
+        preview = _preview(store)
         definition = store.define(preview)
 
         assert projection["state"] == "PRE_EPOCH_HISTORY"
@@ -271,16 +289,196 @@ def test_invalid_legacy_chain_is_anchored_without_rewriting_history(tmp_path) ->
 def test_tampered_state_event_chain_blocks_epoch_projection(tmp_path) -> None:
     with Database.open(tmp_path / "epoch.sqlite3") as db:
         store = ExperimentEpochStore(db)
-        store.define(
-            store.preview(
-                epoch_id="AUTONOMY_EPOCH_1",
-                start_utc=START,
-                duration_days=30,
-                initial_allocation=Decimal("500"),
-            )
-        )
+        store.define(_preview(store))
         db.execute("DROP TRIGGER state_events_no_update")
         db.execute("UPDATE state_events SET payload_json='{}' WHERE sequence=1")
 
         with pytest.raises(EpochError, match="state event chain"):
             store.current()
+
+
+def test_activation_transition_defines_and_activates_exactly_once(tmp_path) -> None:
+    with Database.open(tmp_path / "epoch.sqlite3") as db:
+        _legacy_history(db)
+        _owner_authorization(db)
+        legacy_rows = db.execute(
+            "SELECT * FROM state_events ORDER BY sequence"
+        ).fetchall()
+
+        result = _activate(db)
+
+        counts = dict(
+            db.execute(
+                "SELECT event_type,COUNT(*) FROM state_events "
+                "WHERE event_type LIKE 'EXPERIMENT_EPOCH_%' GROUP BY event_type"
+            ).fetchall()
+        )
+        definition = json.loads(
+            db.execute(
+                "SELECT payload_json FROM state_events "
+                "WHERE event_type='EXPERIMENT_EPOCH_DEFINED'"
+            ).fetchone()[0]
+        )
+        after_legacy_rows = db.execute(
+            "SELECT * FROM state_events WHERE sequence<=? ORDER BY sequence",
+            (len(legacy_rows),),
+        ).fetchall()
+
+    assert result["status"] == "PASS"
+    assert counts == {
+        "EXPERIMENT_EPOCH_ACTIVATED": 1,
+        "EXPERIMENT_EPOCH_DEFINED": 1,
+    }
+    assert definition["approved_git_head"] == HEAD
+    assert definition["previous_history_classification"] == "PRE_EPOCH_HISTORY"
+    assert definition["owner_authorization_event_id"] == "owner-auth-1"
+    assert definition["owner_authorization_receipt_sha256"] == OWNER_RECEIPT_SHA256
+    assert definition["objective_sha256"] == OBJECTIVE_SHA256
+    assert definition["configuration_sha256"] == CONFIGURATION_SHA256
+    assert definition["owner_activation_required"] is True
+    assert after_legacy_rows == legacy_rows
+    assert result["broker_write_calls"] == 0
+    assert result["day1_started"] is False
+
+
+def test_exact_activation_rerun_is_idempotent(tmp_path) -> None:
+    with Database.open(tmp_path / "epoch.sqlite3") as db:
+        _owner_authorization(db)
+        first = _activate(db)
+        rows_after_first = db.execute(
+            "SELECT * FROM state_events ORDER BY sequence"
+        ).fetchall()
+
+        second = _activate(db)
+        rows_after_second = db.execute(
+            "SELECT * FROM state_events ORDER BY sequence"
+        ).fetchall()
+
+    assert first["status"] == "PASS"
+    assert second["status"] == "VALID_ALREADY_ACTIVATED"
+    assert rows_after_second == rows_after_first
+
+
+@pytest.mark.parametrize(
+    ("overrides", "reason"),
+    [
+        ({"observed_git_head": "f" * 40}, "APPROVED_HEAD_MISMATCH"),
+        ({"kernel_status": "BLOCK"}, "KERNEL_BLOCK"),
+        ({"runtime_provenance_status": "BLOCK"}, "RUNTIME_PROVENANCE_BLOCK"),
+        (
+            {"owner_authorization_receipt": _owner_receipt("missing")},
+            "OWNER_AUTHORIZATION_EVENT_MISMATCH",
+        ),
+    ],
+)
+def test_activation_preconditions_fail_before_epoch_writes(
+    tmp_path, overrides, reason
+) -> None:
+    with Database.open(tmp_path / "epoch.sqlite3") as db:
+        _owner_authorization(db)
+        with pytest.raises(EpochError, match=reason):
+            _activate(db, **overrides)
+        epoch_count = db.execute(
+            "SELECT COUNT(*) FROM state_events "
+            "WHERE event_type LIKE 'EXPERIMENT_EPOCH_%'"
+        ).fetchone()[0]
+
+    assert epoch_count == 0
+
+
+def test_changed_legacy_commitment_blocks_activation(tmp_path) -> None:
+    with Database.open(tmp_path / "epoch.sqlite3") as db:
+        _legacy_history(db)
+        _owner_authorization(db)
+        store = ExperimentEpochStore(db)
+        store.define(_preview(store))
+        db.execute("DROP TRIGGER state_events_no_update")
+        db.execute("UPDATE state_events SET payload_json='{}' WHERE sequence=1")
+
+        with pytest.raises(EpochError, match="pre-epoch history commitment"):
+            _activate(db)
+        activation_count = db.execute(
+            "SELECT COUNT(*) FROM state_events "
+            "WHERE event_type='EXPERIMENT_EPOCH_ACTIVATED'"
+        ).fetchone()[0]
+
+    assert activation_count == 0
+
+
+def test_conflicting_active_epoch_blocks_without_duplicate(tmp_path) -> None:
+    with Database.open(tmp_path / "epoch.sqlite3") as db:
+        _owner_authorization(db)
+        _activate(db)
+
+        with pytest.raises(EpochError, match="CONFLICTING_EPOCH_ACTIVATION"):
+            _activate(db, approved_git_head="e" * 40, observed_git_head="e" * 40)
+        activation_count = db.execute(
+            "SELECT COUNT(*) FROM state_events "
+            "WHERE event_type='EXPERIMENT_EPOCH_ACTIVATED'"
+        ).fetchone()[0]
+
+    assert activation_count == 1
+
+
+def test_exact_rerun_revalidates_owner_authorization_event_hash(tmp_path) -> None:
+    with Database.open(tmp_path / "epoch.sqlite3") as db:
+        _owner_authorization(db)
+        _activate(db)
+        db.execute("DROP TRIGGER experiment_authorization_events_no_update")
+        db.execute(
+            "UPDATE experiment_authorization_events SET payload_json='{}' "
+            "WHERE event_id='owner-auth-1'"
+        )
+
+        with pytest.raises(EpochError, match="OWNER_AUTHORIZATION_EVENT_INVALID"):
+            _activate(db)
+
+
+def test_activation_rejects_invalid_database_integrity_before_writes(
+    tmp_path, monkeypatch
+) -> None:
+    with Database.open(tmp_path / "epoch.sqlite3") as db:
+        original_execute = db.execute
+
+        def execute(sql, parameters=()):
+            if sql == "PRAGMA integrity_check":
+
+                class InvalidIntegrityResult:
+                    @staticmethod
+                    def fetchall():
+                        return [("database disk image is malformed",)]
+
+                return InvalidIntegrityResult()
+            return original_execute(sql, parameters)
+
+        monkeypatch.setattr(db, "execute", execute)
+        with pytest.raises(EpochError, match="DATABASE_INTEGRITY_BLOCK"):
+            _activate(db)
+
+        epoch_count = original_execute(
+            "SELECT COUNT(*) FROM state_events "
+            "WHERE event_type LIKE 'EXPERIMENT_EPOCH_%'"
+        ).fetchone()[0]
+
+    assert epoch_count == 0
+
+
+def test_activation_event_cryptographically_binds_definition(tmp_path) -> None:
+    with Database.open(tmp_path / "epoch.sqlite3") as db:
+        _owner_authorization(db)
+        _activate(db)
+        rows = db.execute(
+            "SELECT event_type,payload_json,payload_sha256 FROM state_events "
+            "WHERE event_type LIKE 'EXPERIMENT_EPOCH_%' ORDER BY sequence"
+        ).fetchall()
+
+    definition = json.loads(rows[0][1])
+    activation = json.loads(rows[1][1])
+    assert sha256_json(definition) == rows[0][2]
+    assert sha256_json(activation) == rows[1][2]
+    assert activation["definition_sha256"] == definition["definition_sha256"]
+    assert activation["approved_git_head"] == definition["approved_git_head"]
+    assert (
+        activation["owner_authorization_receipt_sha256"]
+        == definition["owner_authorization_receipt_sha256"]
+    )

@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import argparse
+import hashlib
 import json
 import re
+import subprocess
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from typing import Any
+from pathlib import Path
+from typing import Any, Sequence
 
 from .canonical import canonical_bytes, sha256_json
 from .persistence import Database
@@ -17,6 +21,12 @@ EPOCH_DEFINITION_SCHEMA = "AUTONOMY_EXPERIMENT_EPOCH_DEFINITION_V1"
 EPOCH_ACTIVATION_SCHEMA = "AUTONOMY_EXPERIMENT_EPOCH_ACTIVATION_V1"
 OWNER_ACTIVATION_SCHEMA = "OWNER_EPOCH_ACTIVATION_AUTHORIZATION_V1"
 _EPOCH_ID = re.compile(r"^[A-Z][A-Z0-9_]{2,63}$")
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_GIT_HEAD = re.compile(r"^[0-9a-f]{40}$")
+AUTONOMY_EPOCH_ID = "AUTONOMY_EPOCH_1"
+AUTONOMY_OBJECTIVE = (
+    "Maximize terminal experimental PAPER equity over the remaining experiment horizon."
+)
 
 
 class EpochError(RuntimeError):
@@ -60,6 +70,8 @@ def activation_receipt(
     epoch_id: str,
     definition_sha256: str,
     owner_authorization_event_id: str,
+    approved_git_head: str,
+    owner_authorization_receipt_sha256: str,
     issued_at_utc: datetime | None = None,
 ) -> dict[str, Any]:
     unsigned = {
@@ -69,6 +81,8 @@ def activation_receipt(
         "epoch_id": epoch_id,
         "definition_sha256": definition_sha256,
         "owner_authorization_event_id": owner_authorization_event_id,
+        "approved_git_head": approved_git_head,
+        "owner_authorization_receipt_sha256": owner_authorization_receipt_sha256,
         "issued_at_utc": _format(issued_at_utc or datetime.now(timezone.utc)),
     }
     return {**unsigned, "receipt_sha256": sha256_json(unsigned)}
@@ -182,12 +196,28 @@ class ExperimentEpochStore:
         start_utc: datetime,
         duration_days: int,
         initial_allocation: Decimal,
+        approved_git_head: str,
+        owner_authorization_event_id: str,
+        owner_authorization_receipt_sha256: str,
+        objective_sha256: str,
+        configuration_sha256: str,
     ) -> dict[str, Any]:
         self._verify_chain()
         if not _EPOCH_ID.fullmatch(epoch_id):
             raise EpochError("epoch id is invalid")
         if duration_days <= 0 or initial_allocation <= 0:
             raise EpochError("epoch duration and allocation must be positive")
+        if not _GIT_HEAD.fullmatch(approved_git_head):
+            raise EpochError("approved Git head is invalid")
+        if not owner_authorization_event_id.strip():
+            raise EpochError("owner authorization event id is invalid")
+        for name, digest in (
+            ("owner authorization receipt", owner_authorization_receipt_sha256),
+            ("objective", objective_sha256),
+            ("configuration", configuration_sha256),
+        ):
+            if not _SHA256.fullmatch(digest):
+                raise EpochError(f"{name} SHA-256 is invalid")
         start = _parse(_format(start_utc))
         end = start + timedelta(days=duration_days)
         last = self.db.execute(
@@ -208,6 +238,11 @@ class ExperimentEpochStore:
             "previous_history_classification": "PRE_EPOCH_HISTORY",
             "previous_history_chain_status": self._legacy_chain_status(),
             "legacy_state_events_sha256": self._rows_sha256(self._state_event_rows()),
+            "approved_git_head": approved_git_head,
+            "owner_authorization_event_id": owner_authorization_event_id,
+            "owner_authorization_receipt_sha256": owner_authorization_receipt_sha256,
+            "objective_sha256": objective_sha256,
+            "configuration_sha256": configuration_sha256,
             "owner_activation_required": True,
         }
         return {**unsigned, "definition_sha256": sha256_json(unsigned)}
@@ -232,6 +267,13 @@ class ExperimentEpochStore:
             start_utc=_parse(str(preview["start_utc"])),
             duration_days=int(preview["duration_days"]),
             initial_allocation=Decimal(str(preview["initial_allocation"])),
+            approved_git_head=str(preview["approved_git_head"]),
+            owner_authorization_event_id=str(preview["owner_authorization_event_id"]),
+            owner_authorization_receipt_sha256=str(
+                preview["owner_authorization_receipt_sha256"]
+            ),
+            objective_sha256=str(preview["objective_sha256"]),
+            configuration_sha256=str(preview["configuration_sha256"]),
         )
         if current_preview != preview:
             raise EpochError("epoch baseline changed after preview")
@@ -300,6 +342,14 @@ class ExperimentEpochStore:
             raise EpochError("owner activation receipt hash is invalid")
         if receipt.get("definition_sha256") != definition_payload["definition_sha256"]:
             raise EpochError("owner activation receipt definition hash mismatch")
+        if receipt.get("approved_git_head") != definition_payload.get(
+            "approved_git_head"
+        ):
+            raise EpochError("owner activation receipt Git head mismatch")
+        if receipt.get("owner_authorization_receipt_sha256") != definition_payload.get(
+            "owner_authorization_receipt_sha256"
+        ):
+            raise EpochError("owner activation authorization receipt mismatch")
         if (
             receipt.get("schema") != OWNER_ACTIVATION_SCHEMA
             or receipt.get("state") != "AUTHORIZED"
@@ -329,6 +379,10 @@ class ExperimentEpochStore:
             "definition_sha256": definition_payload["definition_sha256"],
             "activation_receipt_sha256": receipt["receipt_sha256"],
             "owner_authorization_event_id": authorization_id,
+            "approved_git_head": definition_payload["approved_git_head"],
+            "owner_authorization_receipt_sha256": definition_payload[
+                "owner_authorization_receipt_sha256"
+            ],
             "activated_at_utc": utc_now(),
         }
         with self.db.transaction():
@@ -404,3 +458,335 @@ class ExperimentEpochStore:
             "definition_sha256": active.definition_sha256,
             "activation_receipt_sha256": active.activation_receipt_sha256,
         }
+
+
+def _assert_database_integrity(db: Database) -> None:
+    try:
+        result = [
+            str(row[0]) for row in db.execute("PRAGMA integrity_check").fetchall()
+        ]
+    except Exception as exc:
+        raise EpochError("DATABASE_INTEGRITY_BLOCK") from exc
+    if result != ["ok"]:
+        raise EpochError("DATABASE_INTEGRITY_BLOCK")
+
+
+def _definition_bindings(
+    *,
+    epoch_id: str,
+    approved_git_head: str,
+    owner_authorization_event_id: str,
+    owner_authorization_receipt_sha256: str,
+    objective_sha256: str,
+    configuration_sha256: str,
+) -> dict[str, Any]:
+    return {
+        "epoch_id": epoch_id,
+        "approved_git_head": approved_git_head,
+        "previous_history_classification": "PRE_EPOCH_HISTORY",
+        "owner_authorization_event_id": owner_authorization_event_id,
+        "owner_authorization_receipt_sha256": owner_authorization_receipt_sha256,
+        "objective_sha256": objective_sha256,
+        "configuration_sha256": configuration_sha256,
+        "owner_activation_required": True,
+    }
+
+
+def _validate_definition_bindings(
+    payload: dict[str, Any], expected: dict[str, Any]
+) -> None:
+    if any(payload.get(key) != value for key, value in expected.items()):
+        raise EpochError("CONFLICTING_EPOCH_ACTIVATION")
+
+
+def activate_epoch_transition(
+    db: Database,
+    *,
+    epoch_id: str,
+    start_utc: datetime,
+    duration_days: int,
+    initial_allocation: Decimal,
+    approved_git_head: str,
+    observed_git_head: str,
+    owner_authorization_receipt: dict[str, Any],
+    owner_authorization_receipt_sha256: str,
+    objective_sha256: str,
+    configuration_sha256: str,
+    kernel_status: str,
+    runtime_provenance_status: str,
+    activated_at_utc: datetime | None = None,
+) -> dict[str, Any]:
+    """Define and activate one exact epoch before scheduler authority is granted."""
+
+    _assert_database_integrity(db)
+    if (
+        not _GIT_HEAD.fullmatch(approved_git_head)
+        or observed_git_head != approved_git_head
+    ):
+        raise EpochError("APPROVED_HEAD_MISMATCH")
+    if kernel_status != "PASS":
+        raise EpochError("KERNEL_BLOCK")
+    if runtime_provenance_status != "PASS":
+        raise EpochError("RUNTIME_PROVENANCE_BLOCK")
+    if not isinstance(owner_authorization_receipt, dict):
+        raise EpochError("OWNER_AUTHORIZATION_INVALID")
+    authorization_event_id = str(
+        owner_authorization_receipt.get("authorization_event_id") or ""
+    )
+    if (
+        owner_authorization_receipt.get("authorization_state") != "AUTHORIZED"
+        or not authorization_event_id
+        or not _SHA256.fullmatch(owner_authorization_receipt_sha256)
+    ):
+        raise EpochError("OWNER_AUTHORIZATION_INVALID")
+    authorization_row = db.execute(
+        "SELECT state,payload_json,payload_sha256 FROM "
+        "experiment_authorization_events WHERE event_id=?",
+        (authorization_event_id,),
+    ).fetchone()
+    if authorization_row is None or str(authorization_row[0]) != "AUTHORIZED":
+        raise EpochError("OWNER_AUTHORIZATION_EVENT_MISMATCH")
+    try:
+        authorization_payload = json.loads(str(authorization_row[1]))
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise EpochError("OWNER_AUTHORIZATION_EVENT_INVALID") from exc
+    if sha256_json(authorization_payload) != str(authorization_row[2]):
+        raise EpochError("OWNER_AUTHORIZATION_EVENT_INVALID")
+
+    store = ExperimentEpochStore(db)
+    store._verify_chain()
+    epoch_rows = store._epoch_rows()
+    definitions = [
+        payload for kind, payload in epoch_rows if kind == "EXPERIMENT_EPOCH_DEFINED"
+    ]
+    activations = [
+        payload for kind, payload in epoch_rows if kind == "EXPERIMENT_EPOCH_ACTIVATED"
+    ]
+    expected_bindings = _definition_bindings(
+        epoch_id=epoch_id,
+        approved_git_head=approved_git_head,
+        owner_authorization_event_id=authorization_event_id,
+        owner_authorization_receipt_sha256=owner_authorization_receipt_sha256,
+        objective_sha256=objective_sha256,
+        configuration_sha256=configuration_sha256,
+    )
+    if len(definitions) > 1 or len(activations) > 1:
+        raise EpochError("CONFLICTING_EPOCH_ACTIVATION")
+    if definitions:
+        definition_payload = definitions[0]
+        _validate_definition_bindings(definition_payload, expected_bindings)
+        if (
+            definition_payload.get("start_utc") != _format(start_utc)
+            or int(definition_payload.get("duration_days", 0)) != duration_days
+            or Decimal(str(definition_payload.get("initial_allocation")))
+            != initial_allocation
+        ):
+            raise EpochError("CONFLICTING_EPOCH_ACTIVATION")
+    else:
+        if activations:
+            raise EpochError("CONFLICTING_EPOCH_ACTIVATION")
+        projection = store.projection(activated_at_utc or datetime.now(timezone.utc))
+        if projection.get("state") != "PRE_EPOCH_HISTORY":
+            raise EpochError("PRE_EPOCH_HISTORY_BLOCK")
+        preview = store.preview(
+            epoch_id=epoch_id,
+            start_utc=start_utc,
+            duration_days=duration_days,
+            initial_allocation=initial_allocation,
+            approved_git_head=approved_git_head,
+            owner_authorization_event_id=authorization_event_id,
+            owner_authorization_receipt_sha256=owner_authorization_receipt_sha256,
+            objective_sha256=objective_sha256,
+            configuration_sha256=configuration_sha256,
+        )
+        definition = store.define(preview)
+        definition_payload = store._definition_payload(epoch_id)
+        if (
+            definition_payload is None
+            or definition.definition_sha256
+            != definition_payload.get("definition_sha256")
+        ):
+            raise EpochError("EPOCH_DEFINITION_VALIDATION_BLOCK")
+        _validate_definition_bindings(definition_payload, expected_bindings)
+
+    if activations:
+        activation = activations[0]
+        if (
+            activation.get("epoch_id") != epoch_id
+            or activation.get("definition_sha256")
+            != definition_payload.get("definition_sha256")
+            or activation.get("approved_git_head") != approved_git_head
+            or activation.get("owner_authorization_receipt_sha256")
+            != owner_authorization_receipt_sha256
+        ):
+            raise EpochError("CONFLICTING_EPOCH_ACTIVATION")
+        current = store.current()
+        if current is None or current.epoch_id != epoch_id:
+            raise EpochError("EPOCH_ACTIVATION_VALIDATION_BLOCK")
+        status = "VALID_ALREADY_ACTIVATED"
+    else:
+        receipt = activation_receipt(
+            epoch_id=epoch_id,
+            definition_sha256=str(definition_payload["definition_sha256"]),
+            owner_authorization_event_id=authorization_event_id,
+            approved_git_head=approved_git_head,
+            owner_authorization_receipt_sha256=owner_authorization_receipt_sha256,
+            issued_at_utc=activated_at_utc,
+        )
+        activated = store.activate(epoch_id, receipt)
+        current = store.current()
+        if (
+            current is None
+            or current.epoch_id != epoch_id
+            or current.definition_sha256 != activated.definition_sha256
+        ):
+            raise EpochError("EPOCH_ACTIVATION_VALIDATION_BLOCK")
+        status = "PASS"
+
+    final_rows = store._epoch_rows()
+    if (
+        sum(kind == "EXPERIMENT_EPOCH_DEFINED" for kind, _ in final_rows) != 1
+        or sum(kind == "EXPERIMENT_EPOCH_ACTIVATED" for kind, _ in final_rows) != 1
+    ):
+        raise EpochError("EPOCH_EVENT_CARDINALITY_BLOCK")
+    return {
+        "schema": "AUTONOMY_EPOCH_ACTIVATION_RESULT_V1",
+        "status": status,
+        "epoch_id": epoch_id,
+        "definition_sha256": str(definition_payload["definition_sha256"]),
+        "approved_git_head": approved_git_head,
+        "previous_history_classification": "PRE_EPOCH_HISTORY",
+        "day1_started": False,
+        "autonomous_service_running": False,
+        "broker_write_calls": 0,
+    }
+
+
+def _git(repo_root: Path, *args: str) -> str:
+    completed = subprocess.run(
+        ["git", "-C", str(repo_root), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise EpochError("GIT_STATE_BLOCK")
+    return completed.stdout.strip()
+
+
+def _configuration_identity(repo_root: Path, objective_sha256: str) -> str:
+    source_hashes = {}
+    for relative in (
+        "ibkr_paper_30d/autonomous_research.py",
+        "ibkr_paper_30d/day1_launch.py",
+    ):
+        source_hashes[relative] = hashlib.sha256(
+            (repo_root / relative).read_bytes()
+        ).hexdigest()
+    return sha256_json(
+        {
+            "schema": "AUTONOMY_EPOCH_EFFECTIVE_CONFIGURATION_V1",
+            "epoch_id": AUTONOMY_EPOCH_ID,
+            "objective_sha256": objective_sha256,
+            "duration_days": 30,
+            "initial_allocation": "500",
+            "paper_host": "127.0.0.1",
+            "paper_port": 4002,
+            "model": "gpt-5.6-sol",
+            "reasoning_effort": "max",
+            "source_sha256": source_hashes,
+        }
+    )
+
+
+def activate_production_epoch(
+    *,
+    repo_root: Path,
+    db_path: Path,
+    owner_receipt_path: Path,
+    expected_actor_sid: str,
+    approved_head: str,
+) -> dict[str, Any]:
+    from .kernel_manifest import verify_kernel_manifest
+    from .owner_authorization import validate_owner_authorization
+    from .runtime_provenance import (
+        build_approved_runtime_material,
+        verify_runtime_provenance,
+    )
+
+    root = repo_root.resolve()
+    observed_head = _git(root, "rev-parse", "HEAD").lower()
+    if _git(root, "status", "--porcelain", "--untracked-files=no"):
+        raise EpochError("TRACKED_WORKTREE_DIRTY")
+    try:
+        stored_kernel = json.loads(
+            (root / "IMMUTABLE_EXECUTION_KERNEL_MANIFEST.json").read_text(
+                encoding="utf-8"
+            )
+        )
+    except (OSError, json.JSONDecodeError) as exc:
+        raise EpochError("KERNEL_BLOCK") from exc
+    kernel = verify_kernel_manifest(root, stored_kernel)
+    kernel_status = "PASS" if kernel.get("verified") is True else "BLOCK"
+    material = build_approved_runtime_material(root, approved_head)
+    provenance = verify_runtime_provenance(root, material)
+    provenance_status = str(provenance.get("gate_status") or "BLOCK")
+    owner_receipt = validate_owner_authorization(
+        db_path=db_path,
+        receipt_path=owner_receipt_path,
+        expected_actor_sid=expected_actor_sid,
+    )
+    receipt_sha256 = hashlib.sha256(owner_receipt_path.read_bytes()).hexdigest()
+    objective_sha256 = hashlib.sha256(AUTONOMY_OBJECTIVE.encode("utf-8")).hexdigest()
+    configuration_sha256 = _configuration_identity(root, objective_sha256)
+    with Database.open(db_path) as db:
+        return activate_epoch_transition(
+            db,
+            epoch_id=AUTONOMY_EPOCH_ID,
+            start_utc=_parse(str(owner_receipt["start_utc"])),
+            duration_days=int(owner_receipt["duration_days"]),
+            initial_allocation=Decimal(str(owner_receipt["initial_allocation"])),
+            approved_git_head=approved_head.lower(),
+            observed_git_head=observed_head,
+            owner_authorization_receipt=owner_receipt,
+            owner_authorization_receipt_sha256=receipt_sha256,
+            objective_sha256=objective_sha256,
+            configuration_sha256=configuration_sha256,
+            kernel_status=kernel_status,
+            runtime_provenance_status=provenance_status,
+        )
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="python -m ibkr_paper_30d.experiment_epoch")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    activate_parser = subparsers.add_parser("activate-production")
+    activate_parser.add_argument("--repo-root", type=Path, required=True)
+    activate_parser.add_argument("--db", type=Path, required=True)
+    activate_parser.add_argument("--owner-receipt", type=Path, required=True)
+    activate_parser.add_argument("--actor-sid", required=True)
+    activate_parser.add_argument("--approved-head", required=True)
+    args = parser.parse_args(argv)
+    try:
+        result = activate_production_epoch(
+            repo_root=args.repo_root,
+            db_path=args.db,
+            owner_receipt_path=args.owner_receipt,
+            expected_actor_sid=args.actor_sid,
+            approved_head=args.approved_head,
+        )
+    except Exception as exc:
+        print(
+            json.dumps(
+                {"status": "BLOCK", "reason": str(exc)},
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+        )
+        return 2
+    print(json.dumps(result, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
