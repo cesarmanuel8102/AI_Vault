@@ -27,7 +27,6 @@ from .autonomous_research import ResearchRequest, ResearchResult, ResearchTool
 from .autonomy_workspace import AutonomyWorkspace
 from .redaction import redact_text
 
-
 QUANTCONNECT_TIMEOUT_SECONDS = 120.0
 MAX_OUTPUT = 32 * 1024
 _PROJECT_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
@@ -113,12 +112,18 @@ class QuantConnectMediator:
         if operation == "LIST_LOCAL_PROJECTS":
             root = self.workspace_root / "experiments" / "quantconnect"
             projects = (
-                sorted(item.name for item in root.iterdir() if item.is_dir() and not item.is_symlink())
+                sorted(
+                    item.name
+                    for item in root.iterdir()
+                    if item.is_dir() and not item.is_symlink()
+                )
                 if root.is_dir()
                 else []
             )
             return {
-                "status": "RUNTIME_AVAILABLE" if self.executable else "OPTIONAL_UNAVAILABLE",
+                "status": (
+                    "RUNTIME_AVAILABLE" if self.executable else "OPTIONAL_UNAVAILABLE"
+                ),
                 "operation": operation,
                 "required": False,
                 "projects": projects[:100],
@@ -133,7 +138,11 @@ class QuantConnectMediator:
                 "required": False,
                 "reason": "LEAN_CLI_UNAVAILABLE",
             }
-        environment = {"SystemRoot": os.environ["SystemRoot"]} if "SystemRoot" in os.environ else {}
+        environment = (
+            {"SystemRoot": os.environ["SystemRoot"]}
+            if "SystemRoot" in os.environ
+            else {}
+        )
         try:
             completed = self.runner(
                 [self.executable, "--version"],
@@ -169,14 +178,22 @@ class QuantConnectMediator:
 
     def _run_local_backtest(self, payload: dict[str, Any]) -> dict[str, Any]:
         project_name = payload.get("project")
-        if not isinstance(project_name, str) or not _PROJECT_NAME.fullmatch(project_name):
+        if not isinstance(project_name, str) or not _PROJECT_NAME.fullmatch(
+            project_name
+        ):
             return self._unauthorized("RUN_LOCAL_BACKTEST")
         project_root = (self.workspace_root / "experiments" / "quantconnect").resolve()
         project = (project_root / project_name).resolve()
-        if project_root not in project.parents or not project.is_dir() or project.is_symlink():
+        if (
+            project_root not in project.parents
+            or not project.is_dir()
+            or project.is_symlink()
+        ):
             return self._unauthorized("RUN_LOCAL_BACKTEST")
         try:
-            timeout = float(payload.get("timeout_seconds", QUANTCONNECT_TIMEOUT_SECONDS))
+            timeout = float(
+                payload.get("timeout_seconds", QUANTCONNECT_TIMEOUT_SECONDS)
+            )
         except (TypeError, ValueError):
             return self._unauthorized("RUN_LOCAL_BACKTEST")
         if not 1.0 <= timeout <= 600.0:
@@ -202,7 +219,9 @@ class QuantConnectMediator:
                 "reason": _bounded_redacted(type(exc).__name__),
             }
         return {
-            "status": "RUNTIME_AVAILABLE" if completed.get("returncode") == 0 else "FAILED",
+            "status": (
+                "RUNTIME_AVAILABLE" if completed.get("returncode") == 0 else "FAILED"
+            ),
             "operation": "RUN_LOCAL_BACKTEST",
             "required": False,
             "returncode": int(completed.get("returncode", 1)),
@@ -242,6 +261,15 @@ class AutonomyToolbox:
         if self.workspace is None:
             return None
         return self.workspace.summary()
+
+    def broker_server_time_utc(self) -> str:
+        """Return only the broker clock required by host-side safety checks."""
+
+        payload = self.base._account_state({})
+        server_time_utc = payload.get("server_time_utc")
+        if not isinstance(server_time_utc, str) or not server_time_utc:
+            raise RuntimeError("BROKER_SERVER_TIME_UNAVAILABLE")
+        return server_time_utc
 
     def manifest(self) -> list[dict[str, Any]]:
         manifest = list(self.base.manifest())
@@ -283,13 +311,20 @@ class AutonomyToolbox:
         if request.tool == ResearchTool.QUANTCONNECT:
             data = self.quantconnect.execute(dict(request.arguments or {}))
             data.setdefault("available", data.get("status") == "RUNTIME_AVAILABLE")
-            success = data.get("status") in {"RUNTIME_AVAILABLE", "OPTIONAL_UNAVAILABLE"}
+            success = data.get("status") in {
+                "RUNTIME_AVAILABLE",
+                "OPTIONAL_UNAVAILABLE",
+            }
             return ResearchResult(
                 request_id=request.request_id,
                 tool=request.tool,
                 success=success,
                 data=data,
-                error=None if success else str(data.get("reason") or "quantconnect_failed"),
+                error=(
+                    None
+                    if success
+                    else str(data.get("reason") or "quantconnect_failed")
+                ),
             )
         return self.base.execute(request, bundle)
 

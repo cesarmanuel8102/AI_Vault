@@ -19,7 +19,11 @@ from .autonomous_state import AutonomousStateBuilder
 from .autonomy_toolbox import AutonomyToolbox
 from .autonomy_workspace import AutonomyWorkspace
 from .canonical import canonical_bytes, sha256_json
-from .experiment_control import ExperimentClockStore, KillSwitchStore, OwnerAuthorizationStore
+from .experiment_control import (
+    ExperimentClockStore,
+    KillSwitchStore,
+    OwnerAuthorizationStore,
+)
 from .experiment_epoch import ExperimentEpochStore
 from .experiment_ledger import AutonomousExperimentLedger
 from .ibkr_research_tools import IBKRResearchToolbox
@@ -33,7 +37,14 @@ from .types import new_uuid7
 
 
 class AutonomousServiceError(RuntimeError):
-    pass
+    def __init__(
+        self,
+        message: str,
+        *,
+        reason_codes: tuple[str, ...] = (),
+    ) -> None:
+        super().__init__(message)
+        self.reason_codes = reason_codes
 
 
 OPERATIONAL_DECISIONS = frozenset(
@@ -198,8 +209,7 @@ class AutonomousExperimentService:
         self.stop_event.set()
 
     def _read_broker_time(self) -> datetime:
-        payload = self.toolbox._account_state({})
-        raw = payload.get("server_time_utc")
+        raw = self.toolbox.broker_server_time_utc()
         if not isinstance(raw, str) or not raw:
             raise AutonomousServiceError("broker server time unavailable")
         try:
@@ -214,8 +224,8 @@ class AutonomousExperimentService:
         reasons: list[str] = []
         try:
             broker_now = self.broker_now()
-        except Exception as exc:
-            reasons.append(f"BROKER_TIME_UNAVAILABLE_FRESH:{type(exc).__name__}")
+        except Exception:
+            reasons.append("BROKER_TIME_UNAVAILABLE_FRESH")
             broker_now = None
         clock_snapshot = (
             self.clock.snapshot(broker_now)
@@ -228,9 +238,10 @@ class AutonomousExperimentService:
             reasons.append("EXPERIMENT_EXPIRED_FRESH")
         if self.kill_switch.current() != "KILL_SWITCH_CLEAR":
             reasons.append("KILL_SWITCH_TRIGGERED_FRESH")
-        if self.owner_authorization.current(
-            clock_event_sha256=self.clock.event_sha256
-        ) != "AUTHORIZED":
+        if (
+            self.owner_authorization.current(clock_event_sha256=self.clock.event_sha256)
+            != "AUTHORIZED"
+        ):
             reasons.append("OWNER_AUTHORIZATION_REQUIRED_FRESH")
         auditor = self.runtime_auditor_gate.evaluate()
         if auditor.get("gate_status") != "PASS":
@@ -255,27 +266,32 @@ class AutonomousExperimentService:
         reasons: list[str] = []
         if self.kill_switch.current() != "KILL_SWITCH_CLEAR":
             reasons.append("KILL_SWITCH_TRIGGERED_IMMEDIATE")
-        if self.owner_authorization.current(
-            clock_event_sha256=self.clock.event_sha256
-        ) != "AUTHORIZED":
+        if (
+            self.owner_authorization.current(clock_event_sha256=self.clock.event_sha256)
+            != "AUTHORIZED"
+        ):
             reasons.append("OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE")
         return tuple(reasons)
 
     def _assert_arm_prerequisites(self) -> None:
         if not getattr(self.executor, "armed", False):
             raise AutonomousServiceError(
-                "paper execution requested but IBKR_AUTONOMOUS_PAPER_ARMED is not true"
+                "paper execution requested but IBKR_AUTONOMOUS_PAPER_ARMED is not true",
+                reason_codes=("PAPER_EXECUTION_UNARMED",),
             )
-        if self.owner_authorization.current(
-            clock_event_sha256=self.clock.event_sha256
-        ) != "AUTHORIZED":
+        if (
+            self.owner_authorization.current(clock_event_sha256=self.clock.event_sha256)
+            != "AUTHORIZED"
+        ):
             raise AutonomousServiceError(
-                "paper execution requires explicit owner authorization bound to this experiment clock"
+                "paper execution requires explicit owner authorization bound to this experiment clock",
+                reason_codes=("OWNER_AUTHORIZATION_REQUIRED_FRESH",),
             )
         reasons = self._fresh_execution_safety("NEW_TRADE")
         if reasons:
             raise AutonomousServiceError(
-                "paper execution prerequisites are not PASS: " + ",".join(reasons)
+                "paper execution prerequisites are not PASS: " + ",".join(reasons),
+                reason_codes=reasons,
             )
         # Expiry/not-started is already evaluated from broker server time by
         # _fresh_execution_safety; do not reintroduce wall-clock authority here.
@@ -438,18 +454,17 @@ class AutonomousExperimentService:
         order_management = str(execution_order.get("order_management") or "")
         if order_management not in {"CANCEL_ORDER", "MODIFY_ORDER"}:
             return False
-        return bool(execution.get("success")) or str(
-            execution.get("status") or ""
-        ) in {"UNCERTAIN", "FILLED"}
+        return bool(execution.get("success")) or str(execution.get("status") or "") in {
+            "UNCERTAIN",
+            "FILLED",
+        }
 
     def _observation_only_follow_up(
         self, result: dict[str, Any]
     ) -> dict[str, Any] | None:
         if self.stop_event.is_set() or not self._needs_observation_only_refresh(result):
             return None
-        return self._run_cycle_with_lifecycle(
-            "POSITION_EVENT", allow_execution=False
-        )
+        return self._run_cycle_with_lifecycle("POSITION_EVENT", allow_execution=False)
 
     def _run_cycle_with_lifecycle(
         self,
@@ -661,9 +676,7 @@ def _parse_utc(value: str | None) -> datetime | None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        prog="python -m ibkr_paper_30d.autonomous_service"
-    )
+    parser = argparse.ArgumentParser(prog="python -m ibkr_paper_30d.autonomous_service")
     parser.add_argument(
         "--db",
         type=Path,
@@ -737,12 +750,17 @@ def main(argv: list[str] | None = None) -> int:
                     reason="explicit owner authorization for Day 1",
                     actor="owner",
                 )
-                print(json.dumps({
-                    "status": "AUTHORIZED",
-                    "event_id": event_id,
-                    "clock_event_sha256": clock.event_sha256,
-                    "paper_execution_armed": False,
-                }, sort_keys=True))
+                print(
+                    json.dumps(
+                        {
+                            "status": "AUTHORIZED",
+                            "event_id": event_id,
+                            "clock_event_sha256": clock.event_sha256,
+                            "paper_execution_armed": False,
+                        },
+                        sort_keys=True,
+                    )
+                )
                 return 0
             event_id = auth_store.set(
                 "REVOKED",
@@ -750,11 +768,16 @@ def main(argv: list[str] | None = None) -> int:
                 reason="explicit owner revocation",
                 actor="owner",
             )
-            print(json.dumps({
-                "status": "REVOKED",
-                "event_id": event_id,
-                "paper_execution_armed": False,
-            }, sort_keys=True))
+            print(
+                json.dumps(
+                    {
+                        "status": "REVOKED",
+                        "event_id": event_id,
+                        "paper_execution_armed": False,
+                    },
+                    sort_keys=True,
+                )
+            )
             return 0
 
         service = AutonomousExperimentService(

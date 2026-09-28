@@ -22,7 +22,10 @@ from ibkr_paper_30d.autonomous_research import (
     ResearchResult,
     ResearchTool,
 )
-from ibkr_paper_30d.autonomous_service import AutonomousExperimentService
+from ibkr_paper_30d.autonomous_service import (
+    AutonomousExperimentService,
+    AutonomousServiceError,
+)
 from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.day1_launch import (
     Day1LaunchConfig,
@@ -1442,6 +1445,39 @@ def test_service_construction_failure_never_emits_epoch_started(tmp_path: Path) 
     with pytest.raises(RuntimeError, match="construction failed"):
         run_day1_launch(ctx.config, ctx.dependencies)
 
+    with Database.open(ctx.config.db_path) as db:
+        epoch_events = [
+            row[0]
+            for row in db.execute(
+                "SELECT event_type FROM state_events "
+                "WHERE event_type IN ('EPOCH_MANIFEST_CREATED','EPOCH_STARTED') "
+                "ORDER BY sequence"
+            ).fetchall()
+        ]
+    assert epoch_events == ["EPOCH_MANIFEST_CREATED"]
+
+
+def test_service_prerequisite_failure_is_sanitized_into_launch_reason_codes(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    install_fake_lock(ctx)
+    failure = AutonomousServiceError(
+        "secret-account-id DU123456",
+        reason_codes=(
+            "BROKER_TIME_UNAVAILABLE_FRESH",
+            "EXPERIMENT_NOT_STARTED_FRESH",
+            "EXPERIMENT_EXPIRED_FRESH",
+        ),
+    )
+    ctx.dependencies.service_factory.side_effect = failure
+
+    with pytest.raises(LaunchError) as caught:
+        run_day1_launch(ctx.config, ctx.dependencies)
+
+    assert caught.value.code == "AUTONOMOUS_SERVICE_CONSTRUCTION_BLOCK"
+    assert caught.value.details == {"service_reason_codes": list(failure.reason_codes)}
+    assert "DU123456" not in json.dumps(caught.value.details)
     with Database.open(ctx.config.db_path) as db:
         epoch_events = [
             row[0]

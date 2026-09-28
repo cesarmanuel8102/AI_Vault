@@ -18,7 +18,7 @@ from uuid import uuid4
 
 from .autonomous_research import CodexAutonomousCLIProvider
 from .autonomous_runtime import build_request
-from .autonomous_service import AutonomousExperimentService
+from .autonomous_service import AutonomousExperimentService, AutonomousServiceError
 from .autonomy_bootstrap import AutonomyBootstrapBuilder
 from .autonomy_toolbox import AutonomyToolbox
 from .autonomy_workspace import AutonomyWorkspace
@@ -951,22 +951,35 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 market_gate = dependencies.market_gate_factory(
                     config, preflight.expected_account_hash
                 )
-                service = dependencies.service_factory(
-                    db,
-                    experiment_start_utc=config.scheduled_start_utc,
-                    allocation=config.initial_allocation,
-                    duration_days=config.duration_days,
-                    scan_interval_seconds=300.0,
-                    position_interval_seconds=60.0,
-                    model=config.model,
-                    reasoning_effort=config.reasoning_effort,
-                    execute_paper=True,
-                    runtime_market_gate=market_gate,
-                    runtime_auditor_gate=auditor_gate,
-                    launch_attempt_id=config.launch_attempt_id,
-                    provider=prepared.provider,
-                    toolbox=prepared.toolbox,
-                )
+                try:
+                    service = dependencies.service_factory(
+                        db,
+                        experiment_start_utc=config.scheduled_start_utc,
+                        allocation=config.initial_allocation,
+                        duration_days=config.duration_days,
+                        scan_interval_seconds=300.0,
+                        position_interval_seconds=60.0,
+                        model=config.model,
+                        reasoning_effort=config.reasoning_effort,
+                        execute_paper=True,
+                        runtime_market_gate=market_gate,
+                        runtime_auditor_gate=auditor_gate,
+                        launch_attempt_id=config.launch_attempt_id,
+                        provider=prepared.provider,
+                        toolbox=prepared.toolbox,
+                    )
+                except AutonomousServiceError as exc:
+                    reason_codes = [
+                        code
+                        for code in exc.reason_codes
+                        if isinstance(code, str) and _REASON_CODE_RE.fullmatch(code)
+                    ]
+                    if not reason_codes:
+                        reason_codes = ["AUTONOMOUS_SERVICE_PREREQUISITE_BLOCK"]
+                    raise LaunchError(
+                        "AUTONOMOUS_SERVICE_CONSTRUCTION_BLOCK",
+                        details={"service_reason_codes": reason_codes},
+                    ) from exc
                 EventRepository(db).append(
                     "EPOCH_STARTED",
                     {

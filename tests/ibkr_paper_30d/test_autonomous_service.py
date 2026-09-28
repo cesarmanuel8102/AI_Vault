@@ -8,7 +8,11 @@ from unittest.mock import Mock
 
 import pytest
 import ibkr_paper_30d.autonomous_service as service_module
-from ibkr_paper_30d.autonomous_service import AutonomousExperimentService, AutonomousServiceError
+from ibkr_paper_30d.autonomous_service import (
+    AutonomousExperimentService,
+    AutonomousServiceError,
+)
+from ibkr_paper_30d.autonomy_toolbox import AutonomyToolbox
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.experiment_control import (
     ExperimentClockStore,
@@ -75,7 +79,11 @@ class RecordingService(AutonomousExperimentService):
             self.stop()
         if self.results:
             return self.results.pop(0)
-        return {"schema": "TEST", "outcome": {"decision": "NO_TRADE"}, "execution": None}
+        return {
+            "schema": "TEST",
+            "outcome": {"decision": "NO_TRADE"},
+            "execution": None,
+        }
 
 
 def make_service(db, clock, *, stop_after=2, results=None):
@@ -96,7 +104,9 @@ def make_service(db, clock, *, stop_after=2, results=None):
     )
 
 
-def test_service_wires_the_os_enforced_research_sandbox_by_default(tmp_path, monkeypatch):
+def test_service_wires_the_os_enforced_research_sandbox_by_default(
+    tmp_path, monkeypatch
+):
     monkeypatch.chdir(tmp_path)
     clock = Clock()
     with Database.open(tmp_path / "service.sqlite3") as db:
@@ -119,7 +129,9 @@ def test_no_positions_scans_every_five_minutes(tmp_path, monkeypatch):
     assert clock.sleeps == [300.0]
 
 
-def test_open_position_adds_one_minute_monitoring_without_replacing_scan(tmp_path, monkeypatch):
+def test_open_position_adds_one_minute_monitoring_without_replacing_scan(
+    tmp_path, monkeypatch
+):
     FakeLedger.positions = (object(),)
     monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
     clock = Clock()
@@ -285,7 +297,6 @@ def test_run_once_order_management_includes_observation_only_refresh(
     assert result["observation_only_follow_up"] == follow_up
 
 
-
 class PassGate:
     def evaluate(self, *args, **kwargs):
         return {"gate_status": "PASS", "reason_codes": []}
@@ -293,6 +304,88 @@ class PassGate:
 
 class ArmedExecutor:
     armed = True
+
+
+class ProductionBrokerToolbox:
+    def manifest(self):
+        return []
+
+    def _account_state(self, _arguments):
+        return {
+            "server_time_utc": "2026-09-28T14:43:04Z",
+            "net_liquidation": "DO_NOT_LEAK",
+        }
+
+
+class BlockGate:
+    def __init__(self, code):
+        self.code = code
+
+    def evaluate(self, *args, **kwargs):
+        return {"gate_status": "BLOCK", "reason_codes": [self.code]}
+
+
+def _authorized_production_topology(db, *, market_gate=None, auditor_gate=None):
+    start = datetime(2026, 9, 28, 13, 30, tzinfo=timezone.utc)
+    clock = ExperimentClockStore(db).initialize_or_load(
+        requested_start_utc=start,
+        duration_days=30,
+        initial_allocation=Decimal("500.00"),
+    )
+    KillSwitchStore(db).set("KILL_SWITCH_CLEAR", reason="test", actor="test")
+    OwnerAuthorizationStore(db).set(
+        "AUTHORIZED",
+        clock_event_sha256=clock.event_sha256,
+        reason="owner authorized test",
+        actor="owner",
+    )
+    return AutonomousExperimentService(
+        db,
+        experiment_start_utc=start,
+        execute_paper=True,
+        toolbox=AutonomyToolbox(ProductionBrokerToolbox(), None),
+        provider=StubProvider(),
+        executor=ArmedExecutor(),
+        runtime_market_gate=market_gate or PassGate(),
+        runtime_auditor_gate=auditor_gate or PassGate(),
+    )
+
+
+def test_production_shaped_toolbox_supplies_authoritative_broker_time(tmp_path):
+    with Database.open(tmp_path / "production-toolbox.sqlite3") as db:
+        service = _authorized_production_topology(db)
+
+        assert service._read_broker_time() == datetime(
+            2026, 9, 28, 14, 43, 4, tzinfo=timezone.utc
+        )
+        reasons = service._fresh_execution_safety("NEW_TRADE")
+
+    assert not any(
+        reason.startswith("BROKER_TIME_UNAVAILABLE_FRESH") for reason in reasons
+    )
+    assert "EXPERIMENT_NOT_STARTED_FRESH" not in reasons
+    assert "EXPERIMENT_EXPIRED_FRESH" not in reasons
+
+
+@pytest.mark.parametrize(
+    ("market_gate", "auditor_gate", "expected"),
+    [
+        (BlockGate("NO_MARKET"), PassGate(), "MARKET_DATA_GATE_BLOCK_FRESH"),
+        (PassGate(), BlockGate("NO_AUDITOR"), "AUDITOR_GATE_BLOCK_FRESH"),
+    ],
+)
+def test_production_shaped_toolbox_does_not_bypass_runtime_gates(
+    tmp_path, market_gate, auditor_gate, expected
+):
+    with Database.open(tmp_path / f"{expected}.sqlite3") as db:
+        with pytest.raises(AutonomousServiceError) as caught:
+            _authorized_production_topology(
+                db,
+                market_gate=market_gate,
+                auditor_gate=auditor_gate,
+            )
+
+    assert expected in getattr(caught.value, "reason_codes", ())
 
 
 def test_paper_execution_requires_explicit_clock_bound_owner_authorization(tmp_path):
@@ -357,7 +450,9 @@ def test_fresh_safety_fails_closed_when_broker_time_unavailable(tmp_path):
             broker_now=lambda: (_ for _ in ()).throw(RuntimeError("clock unavailable")),
         )
         reasons = subject._fresh_execution_safety("NEW_TRADE")
-        assert any(reason.startswith("BROKER_TIME_UNAVAILABLE_FRESH") for reason in reasons)
+        assert any(
+            reason.startswith("BROKER_TIME_UNAVAILABLE_FRESH") for reason in reasons
+        )
         assert "EXPERIMENT_NOT_STARTED_FRESH" in reasons
         assert "EXPERIMENT_EXPIRED_FRESH" in reasons
 
@@ -376,7 +471,6 @@ def test_default_runtime_auditor_uses_broker_time_authority(tmp_path):
             broker_now=lambda: fixed,
         )
         assert subject.runtime_auditor_gate.now_utc() == fixed
-
 
 
 class FailingProvider:
@@ -403,7 +497,9 @@ class _ReadyBuilder:
         return _ReadyBundle()
 
 
-def test_provider_failure_is_observed_without_claiming_policy_attribution(tmp_path, monkeypatch):
+def test_provider_failure_is_observed_without_claiming_policy_attribution(
+    tmp_path, monkeypatch
+):
     with Database.open(tmp_path / "provider-failure.sqlite3") as db:
         subject = AutonomousExperimentService(
             db,
