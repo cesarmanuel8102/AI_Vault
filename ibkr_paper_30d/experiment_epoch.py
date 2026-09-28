@@ -13,7 +13,6 @@ from .canonical import canonical_bytes, sha256_json
 from .persistence import Database
 from .repositories import EventRepository, utc_now
 
-
 EPOCH_DEFINITION_SCHEMA = "AUTONOMY_EXPERIMENT_EPOCH_DEFINITION_V1"
 EPOCH_ACTIVATION_SCHEMA = "AUTONOMY_EXPERIMENT_EPOCH_ACTIVATION_V1"
 OWNER_ACTIVATION_SCHEMA = "OWNER_EPOCH_ACTIVATION_AUTHORIZATION_V1"
@@ -81,11 +80,97 @@ class ExperimentEpochStore:
         self.events = EventRepository(db)
 
     def _verify_chain(self) -> None:
-        result = self.events.verify_chain()
-        if not result.valid:
+        definition_row = self.db.execute(
+            "SELECT sequence,payload_json FROM state_events "
+            "WHERE event_type='EXPERIMENT_EPOCH_DEFINED' ORDER BY sequence LIMIT 1"
+        ).fetchone()
+        if definition_row is None:
+            return
+        try:
+            definition = json.loads(str(definition_row[1]))
+            baseline_count = int(definition["baseline_state_event_count"])
+            expected_legacy_hash = str(definition["legacy_state_events_sha256"])
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
             raise EpochError(
-                f"state event chain is invalid at sequence {result.first_invalid_sequence}"
+                "epoch state event chain definition anchor is invalid"
+            ) from exc
+        if int(definition_row[0]) != baseline_count + 1:
+            raise EpochError("epoch definition sequence does not match legacy baseline")
+        rows = self._state_event_rows()
+        legacy_rows = rows[:baseline_count]
+        if (
+            len(legacy_rows) != baseline_count
+            or self._rows_sha256(legacy_rows) != expected_legacy_hash
+        ):
+            raise EpochError("pre-epoch history commitment is invalid")
+
+        expected_previous = None if not legacy_rows else str(legacy_rows[-1][6])
+        for row in rows[baseline_count:]:
+            (
+                sequence,
+                event_id,
+                event_type,
+                payload_json,
+                payload_sha256,
+                previous,
+                digest,
+                created,
+            ) = row
+            try:
+                payload = json.loads(str(payload_json))
+            except (json.JSONDecodeError, TypeError, ValueError) as exc:
+                raise EpochError(
+                    f"epoch state event JSON is invalid at sequence {sequence}"
+                ) from exc
+            if sha256_json(payload) != str(payload_sha256):
+                raise EpochError(
+                    f"epoch state event payload is invalid at sequence {sequence}"
+                )
+            expected = EventRepository._event_hash(
+                int(sequence),
+                str(event_id),
+                str(event_type),
+                str(payload_json),
+                str(payload_sha256),
+                expected_previous,
+                str(created),
             )
+            if previous != expected_previous or str(digest) != expected:
+                raise EpochError(
+                    f"epoch state event chain is invalid at sequence {sequence}"
+                )
+            expected_previous = str(digest)
+
+    def _state_event_rows(self) -> list[tuple[Any, ...]]:
+        return [
+            tuple(row)
+            for row in self.db.execute(
+                "SELECT sequence,event_id,event_type,payload_json,payload_sha256,"
+                "previous_event_sha256,event_sha256,created_at_utc "
+                "FROM state_events ORDER BY sequence"
+            ).fetchall()
+        ]
+
+    @staticmethod
+    def _rows_sha256(rows: list[tuple[Any, ...]]) -> str:
+        keys = (
+            "sequence",
+            "event_id",
+            "event_type",
+            "payload_json",
+            "payload_sha256",
+            "previous_event_sha256",
+            "event_sha256",
+            "created_at_utc",
+        )
+        return sha256_json([dict(zip(keys, row, strict=True)) for row in rows])
+
+    def _legacy_chain_status(self) -> str:
+        return (
+            "VERIFIED"
+            if self.events.verify_chain().valid
+            else "LEGACY_UNVERIFIED_ANCHORED"
+        )
 
     def _count(self, table: str) -> int:
         return int(self.db.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])
@@ -121,6 +206,8 @@ class ExperimentEpochStore:
             "baseline_ledger_event_count": self._count("autonomous_ledger_events"),
             "previous_state_event_sha256": None if last is None else str(last[0]),
             "previous_history_classification": "PRE_EPOCH_HISTORY",
+            "previous_history_chain_status": self._legacy_chain_status(),
+            "legacy_state_events_sha256": self._rows_sha256(self._state_event_rows()),
             "owner_activation_required": True,
         }
         return {**unsigned, "definition_sha256": sha256_json(unsigned)}
@@ -164,14 +251,19 @@ class ExperimentEpochStore:
                 payload = json.loads(str(payload_json))
             except json.JSONDecodeError as exc:
                 raise EpochError("epoch event JSON is invalid") from exc
-            if not isinstance(payload, dict) or sha256_json(payload) != str(payload_hash):
+            if not isinstance(payload, dict) or sha256_json(payload) != str(
+                payload_hash
+            ):
                 raise EpochError("epoch event payload hash is invalid")
             parsed.append((str(event_type), payload))
         return parsed
 
     def _definition_payload(self, epoch_id: str) -> dict[str, Any] | None:
         for event_type, payload in self._epoch_rows():
-            if event_type == "EXPERIMENT_EPOCH_DEFINED" and payload.get("epoch_id") == epoch_id:
+            if (
+                event_type == "EXPERIMENT_EPOCH_DEFINED"
+                and payload.get("epoch_id") == epoch_id
+            ):
                 return payload
         return None
 
@@ -250,7 +342,9 @@ class ExperimentEpochStore:
     def current(self) -> EpochDefinition | None:
         self._verify_chain()
         rows = self._epoch_rows()
-        activations = [payload for kind, payload in rows if kind == "EXPERIMENT_EPOCH_ACTIVATED"]
+        activations = [
+            payload for kind, payload in rows if kind == "EXPERIMENT_EPOCH_ACTIVATED"
+        ]
         if not activations:
             return None
         if len(activations) != 1:
@@ -280,6 +374,10 @@ class ExperimentEpochStore:
                 "historical_cycle_count": total_cycles,
                 "historical_ledger_event_count": total_ledger,
                 "previous_history_classification": "PRE_EPOCH_HISTORY",
+                "previous_history_chain_status": self._legacy_chain_status(),
+                "legacy_state_events_sha256": self._rows_sha256(
+                    self._state_event_rows()
+                ),
             }
         remaining = max((active.end_utc - now).total_seconds(), 0.0)
         elapsed = max((now - active.start_utc).total_seconds(), 0.0)

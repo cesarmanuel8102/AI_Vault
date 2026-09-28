@@ -16,7 +16,6 @@ from ibkr_paper_30d.experiment_ledger import AutonomousExperimentLedger
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.repositories import EventRepository
 
-
 START = datetime(2026, 9, 28, 13, 30, tzinfo=timezone.utc)
 
 
@@ -52,8 +51,17 @@ def test_rebaseline_preview_is_deterministic_and_performs_zero_writes(tmp_path) 
     with Database.open(tmp_path / "epoch.sqlite3") as db:
         _legacy_history(db)
         before = {
-            table: [tuple(row) for row in db.execute(f"SELECT * FROM {table} ORDER BY rowid").fetchall()]
-            for table in ("state_events", "autonomous_ledger_events", "trader_input_bundles")
+            table: [
+                tuple(row)
+                for row in db.execute(
+                    f"SELECT * FROM {table} ORDER BY rowid"
+                ).fetchall()
+            ]
+            for table in (
+                "state_events",
+                "autonomous_ledger_events",
+                "trader_input_bundles",
+            )
         }
         store = ExperimentEpochStore(db)
 
@@ -70,7 +78,12 @@ def test_rebaseline_preview_is_deterministic_and_performs_zero_writes(tmp_path) 
             initial_allocation=Decimal("500"),
         )
         after = {
-            table: [tuple(row) for row in db.execute(f"SELECT * FROM {table} ORDER BY rowid").fetchall()]
+            table: [
+                tuple(row)
+                for row in db.execute(
+                    f"SELECT * FROM {table} ORDER BY rowid"
+                ).fetchall()
+            ]
             for table in before
         }
 
@@ -102,9 +115,12 @@ def test_epoch_projection_rejects_naive_current_time(tmp_path) -> None:
 def test_define_appends_epoch_event_without_rewriting_legacy_bytes(tmp_path) -> None:
     with Database.open(tmp_path / "epoch.sqlite3") as db:
         _legacy_history(db)
-        legacy = bytes(db.execute(
-            "SELECT payload_json FROM state_events WHERE sequence=1"
-        ).fetchone()[0], "utf-8")
+        legacy = bytes(
+            db.execute(
+                "SELECT payload_json FROM state_events WHERE sequence=1"
+            ).fetchone()[0],
+            "utf-8",
+        )
         store = ExperimentEpochStore(db)
         preview = store.preview(
             epoch_id="AUTONOMY_EPOCH_1",
@@ -115,12 +131,21 @@ def test_define_appends_epoch_event_without_rewriting_legacy_bytes(tmp_path) -> 
 
         definition = store.define(preview)
 
-        assert bytes(db.execute(
-            "SELECT payload_json FROM state_events WHERE sequence=1"
-        ).fetchone()[0], "utf-8") == legacy
-        event_types = [row[0] for row in db.execute(
-            "SELECT event_type FROM state_events ORDER BY sequence"
-        ).fetchall()]
+        assert (
+            bytes(
+                db.execute(
+                    "SELECT payload_json FROM state_events WHERE sequence=1"
+                ).fetchone()[0],
+                "utf-8",
+            )
+            == legacy
+        )
+        event_types = [
+            row[0]
+            for row in db.execute(
+                "SELECT event_type FROM state_events ORDER BY sequence"
+            ).fetchall()
+        ]
         assert event_types == ["LEGACY_LAUNCH_ACCEPTED", "EXPERIMENT_EPOCH_DEFINED"]
         assert definition.status == "PROPOSED"
         assert definition.definition_sha256 == preview["definition_sha256"]
@@ -129,12 +154,14 @@ def test_define_appends_epoch_event_without_rewriting_legacy_bytes(tmp_path) -> 
 def test_activation_requires_owner_receipt_bound_to_definition(tmp_path) -> None:
     with Database.open(tmp_path / "epoch.sqlite3") as db:
         store = ExperimentEpochStore(db)
-        definition = store.define(store.preview(
-            epoch_id="AUTONOMY_EPOCH_1",
-            start_utc=START,
-            duration_days=30,
-            initial_allocation=Decimal("500"),
-        ))
+        definition = store.define(
+            store.preview(
+                epoch_id="AUTONOMY_EPOCH_1",
+                start_utc=START,
+                duration_days=30,
+                initial_allocation=Decimal("500"),
+            )
+        )
         invalid = activation_receipt(
             epoch_id=definition.epoch_id,
             definition_sha256="0" * 64,
@@ -150,12 +177,14 @@ def test_activated_projection_scopes_counts_and_horizon_to_epoch(tmp_path) -> No
     with Database.open(tmp_path / "epoch.sqlite3") as db:
         _legacy_history(db)
         store = ExperimentEpochStore(db)
-        definition = store.define(store.preview(
-            epoch_id="AUTONOMY_EPOCH_1",
-            start_utc=START,
-            duration_days=30,
-            initial_allocation=Decimal("500"),
-        ))
+        definition = store.define(
+            store.preview(
+                epoch_id="AUTONOMY_EPOCH_1",
+                start_utc=START,
+                duration_days=30,
+                initial_allocation=Decimal("500"),
+            )
+        )
         _owner_authorization(db)
         receipt = activation_receipt(
             epoch_id=definition.epoch_id,
@@ -184,7 +213,9 @@ def test_activated_projection_scopes_counts_and_horizon_to_epoch(tmp_path) -> No
     assert projection["previous_history_classification"] == "PRE_EPOCH_HISTORY"
 
 
-def test_without_activation_projection_truthfully_classifies_all_history(tmp_path) -> None:
+def test_without_activation_projection_truthfully_classifies_all_history(
+    tmp_path,
+) -> None:
     with Database.open(tmp_path / "epoch.sqlite3") as db:
         _legacy_history(db)
         projection = ExperimentEpochStore(db).projection(START)
@@ -195,15 +226,59 @@ def test_without_activation_projection_truthfully_classifies_all_history(tmp_pat
     assert projection["historical_cycle_count"] == 1
 
 
-def test_tampered_state_event_chain_blocks_epoch_projection(tmp_path) -> None:
+def test_invalid_legacy_chain_is_anchored_without_rewriting_history(tmp_path) -> None:
     with Database.open(tmp_path / "epoch.sqlite3") as db:
+        _legacy_history(db)
+        db.execute("DROP TRIGGER state_events_no_update")
+        db.execute(
+            "UPDATE state_events SET event_sha256=? WHERE sequence=1", ("f" * 64,)
+        )
+        legacy_bytes = bytes(
+            db.execute(
+                "SELECT payload_json FROM state_events WHERE sequence=1"
+            ).fetchone()[0],
+            "utf-8",
+        )
         store = ExperimentEpochStore(db)
-        store.define(store.preview(
+
+        projection = store.projection(START)
+        preview = store.preview(
             epoch_id="AUTONOMY_EPOCH_1",
             start_utc=START,
             duration_days=30,
             initial_allocation=Decimal("500"),
-        ))
+        )
+        definition = store.define(preview)
+
+        assert projection["state"] == "PRE_EPOCH_HISTORY"
+        assert (
+            projection["previous_history_chain_status"] == "LEGACY_UNVERIFIED_ANCHORED"
+        )
+        assert preview["previous_history_chain_status"] == "LEGACY_UNVERIFIED_ANCHORED"
+        assert len(preview["legacy_state_events_sha256"]) == 64
+        assert definition.status == "PROPOSED"
+        assert (
+            bytes(
+                db.execute(
+                    "SELECT payload_json FROM state_events WHERE sequence=1"
+                ).fetchone()[0],
+                "utf-8",
+            )
+            == legacy_bytes
+        )
+
+
+def test_tampered_state_event_chain_blocks_epoch_projection(tmp_path) -> None:
+    with Database.open(tmp_path / "epoch.sqlite3") as db:
+        store = ExperimentEpochStore(db)
+        store.define(
+            store.preview(
+                epoch_id="AUTONOMY_EPOCH_1",
+                start_utc=START,
+                duration_days=30,
+                initial_allocation=Decimal("500"),
+            )
+        )
         db.execute("DROP TRIGGER state_events_no_update")
         db.execute("UPDATE state_events SET payload_json='{}' WHERE sequence=1")
 
