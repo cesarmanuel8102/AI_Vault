@@ -395,6 +395,17 @@ class ExperimentEpochStore:
 
     def current(self) -> EpochDefinition | None:
         self._verify_chain()
+        successor_evidence = self.db.execute(
+            "SELECT 1 FROM state_events WHERE "
+            "event_type='EXPERIMENT_EPOCH_SUPERSEDED' OR "
+            "json_extract(payload_json,'$.schema') IN ("
+            "'AUTONOMY_EXPERIMENT_SUCCESSOR_DEFINITION_V2',"
+            "'AUTONOMY_EXPERIMENT_EPOCH_ACTIVATION_V2') LIMIT 1"
+        ).fetchone()
+        if successor_evidence is not None:
+            from .successor_epoch import current_epoch_definition
+
+            return current_epoch_definition(self.db)
         rows = self._epoch_rows()
         activations = [
             payload for kind, payload in rows if kind == "EXPERIMENT_EPOCH_ACTIVATED"
