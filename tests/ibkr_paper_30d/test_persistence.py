@@ -96,6 +96,21 @@ def test_required_v2_tables_exist(db_path) -> None:
     assert expected <= actual
 
 
+def test_v1_database_open_does_not_implicitly_create_successor_v2_tables(
+    db_path,
+) -> None:
+    with Database.open(db_path) as db:
+        tables = {
+            str(row[0])
+            for row in db.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        }
+
+    assert "experiment_epoch_clock_events_v2" not in tables
+    assert "experiment_epoch_authorization_events_v2" not in tables
+
+
 def test_tampered_hash_chain_is_detected(db_path) -> None:
     with Database.open(db_path) as db:
         EventRepository(db).append("X", {"n": 1})
