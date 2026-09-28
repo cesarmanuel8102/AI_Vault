@@ -10,7 +10,7 @@ from decimal import Decimal
 from typing import Any, Callable
 
 from .canonical import sha256_json
-from .experiment_epoch import EpochDefinition, EpochError
+from .experiment_epoch import EpochDefinition, EpochError, ExperimentEpochStore
 from .persistence import Database
 from .repositories import EventRepository
 from .successor_clock import SuccessorClockError, clock_for_epoch
@@ -99,6 +99,13 @@ def _state_records(db: Database) -> list[_StateRecord]:
             )
         )
     return records
+
+
+def _verify_anchored_state_history(db: Database) -> None:
+    try:
+        ExperimentEpochStore(db)._verify_chain()
+    except EpochError as exc:
+        raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID") from exc
 
 
 def _history_commitment(records: list[_StateRecord]) -> str:
@@ -314,8 +321,7 @@ def _validate_successor_definition_record(
 def current_epoch_definition(db: Database) -> EpochDefinition | None:
     """Return the only terminal epoch reached through the verified graph."""
 
-    if not EventRepository(db).verify_chain().valid:
-        raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
+    _verify_anchored_state_history(db)
     records = _state_records(db)
     definitions = _definition_records(records)
     activations = _activation_records(records)
@@ -530,8 +536,7 @@ class SuccessorEpochStore:
         reason: str,
     ) -> dict[str, Any]:
         verify_successor_schema_v2(self.db)
-        if not self.events.verify_chain().valid:
-            raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
+        _verify_anchored_state_history(self.db)
         if not _EPOCH_ID.fullmatch(epoch_id) or epoch_id == predecessor_epoch_id:
             raise SuccessorEpochError("SUCCESSOR_EPOCH_ID_INVALID")
         if duration_days != 30 or initial_allocation <= 0:

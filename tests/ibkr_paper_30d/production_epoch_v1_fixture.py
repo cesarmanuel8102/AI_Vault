@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -77,14 +78,37 @@ def _insert_v1_authorization(db: Database, clock_sha256: str) -> None:
 def build_production_epoch_v1_fixture(path: Path) -> ProductionEpochV1Fixture:
     with Database.open(path) as db:
         events = EventRepository(db)
+        previous_event_sha256 = None
         for sequence in range(1, 536):
-            events.append(
-                "PRODUCTION_HISTORY_ANCHOR",
+            payload = {
+                "schema": "PRODUCTION_HISTORY_ANCHOR_V0",
+                "sequence": sequence,
+            }
+            payload_json = canonical_bytes(payload).decode("utf-8")
+            payload_sha256 = hashlib.sha256(payload_json.encode("utf-8")).hexdigest()
+            event_sha256 = sha256_json(
                 {
-                    "schema": "PRODUCTION_HISTORY_ANCHOR_V1",
-                    "sequence": sequence,
-                },
+                    "legacy_sequence": sequence,
+                    "payload_sha256": payload_sha256,
+                    "previous_event_sha256": previous_event_sha256,
+                }
             )
+            db.execute(
+                "INSERT INTO state_events(sequence,event_id,event_type,payload_json,"
+                "payload_sha256,previous_event_sha256,event_sha256,created_at_utc) "
+                "VALUES(?,?,?,?,?,?,?,?)",
+                (
+                    sequence,
+                    f"legacy-production-{sequence}",
+                    "PRODUCTION_HISTORY_ANCHOR",
+                    payload_json,
+                    payload_sha256,
+                    previous_event_sha256,
+                    event_sha256,
+                    "2026-09-20T00:00:00Z",
+                ),
+            )
+            previous_event_sha256 = event_sha256
 
         clock = ExperimentClockStore(db).initialize_or_load(
             requested_start_utc=ROOT_START,
@@ -147,8 +171,9 @@ def build_production_epoch_v1_fixture(path: Path) -> ProductionEpochV1Fixture:
         ]
         if tail != expected_tail:
             raise AssertionError(f"production-shaped tail mismatch: {tail!r}")
-        if not events.verify_chain().valid:
-            raise AssertionError("production-shaped state chain is invalid")
+        if events.verify_chain().valid:
+            raise AssertionError("production-shaped legacy chain is unexpectedly valid")
+        epoch_store._verify_chain()
         if db.execute(
             "SELECT COUNT(*) FROM state_events WHERE event_type='EPOCH_STARTED'"
         ).fetchone()[0]:
