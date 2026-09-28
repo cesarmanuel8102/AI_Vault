@@ -19,6 +19,7 @@ from ibkr_paper_30d.autonomous_research import (
     ResearchTool,
 )
 from ibkr_paper_30d.trader_invocation import InvocationRequest, TraderDecision, TraderInputBundle
+from ibkr_paper_30d.autonomy_toolbox import AutonomyToolbox
 
 
 class SequenceProvider:
@@ -236,7 +237,8 @@ def test_research_loop_validates_open_order_actions(decision, action):
         reasoning_summary="Manage the resting experiment order.",
         reason_codes=["RESTING_ORDER_MANAGEMENT"],
     )
-    toolbox = FakeToolbox()
+    base = FakeToolbox()
+    toolbox = AutonomyToolbox(base, None)
 
     outcome = AutonomousResearchLoop(SequenceProvider([final]), toolbox).run(
         request(value), value
@@ -244,7 +246,7 @@ def test_research_loop_validates_open_order_actions(decision, action):
 
     assert outcome.accepted is True
     assert outcome.open_order_action == action
-    assert toolbox.open_order_validations == [(action, decision)]
+    assert base.open_order_validations == [(action, decision)]
 
 
 def test_blocked_open_order_action_falls_back_to_no_trade():
@@ -339,6 +341,29 @@ def test_full_experimental_equity_may_be_risked():
 
     assert outcome.accepted is True
     assert outcome.proposal.maximum_loss == Decimal("500.00")
+
+
+def test_production_shaped_proposal_reaches_wrapped_base_validator():
+    value = bundle("500.00")
+    final = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        research_requests=[],
+        decision=TraderDecision.PROPOSE_TRADE,
+        proposal=proposal(maximum_loss="500.00"),
+        confidence="0.7",
+        reasoning_summary="Production-shaped wrapped validation",
+        reason_codes=["WRAPPER_REGRESSION"],
+    )
+    base = FakeToolbox()
+    toolbox = AutonomyToolbox(base, None)
+
+    outcome = AutonomousResearchLoop(SequenceProvider([final]), toolbox).run(
+        request(value), value
+    )
+
+    assert outcome.accepted is True
+    assert outcome.decision == TraderDecision.PROPOSE_TRADE
+    assert outcome.broker_validation == {"what_if": "PASS"}
 
 
 def test_loss_above_experimental_equity_is_blocked():
@@ -471,7 +496,7 @@ def test_codex_can_reduce_existing_position_autonomously():
     )
 
     outcome = AutonomousResearchLoop(
-        SequenceProvider([final]), FakeToolbox()
+        SequenceProvider([final]), AutonomyToolbox(FakeToolbox(), None)
     ).run(request(value), value)
 
     assert outcome.accepted is True

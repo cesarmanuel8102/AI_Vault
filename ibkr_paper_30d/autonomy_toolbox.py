@@ -23,9 +23,18 @@ import re
 from pathlib import Path
 from typing import Any, Callable, Protocol
 
-from .autonomous_research import ResearchRequest, ResearchResult, ResearchTool
+from .autonomous_research import (
+    AutonomousOpenOrderAction,
+    AutonomousPositionAction,
+    AutonomousTradeProposal,
+    ProposalValidation,
+    ResearchRequest,
+    ResearchResult,
+    ResearchTool,
+)
 from .autonomy_workspace import AutonomyWorkspace
 from .redaction import redact_text
+from .trader_invocation import TraderDecision, TraderInputBundle
 
 QUANTCONNECT_TIMEOUT_SECONDS = 120.0
 MAX_OUTPUT = 32 * 1024
@@ -270,6 +279,69 @@ class AutonomyToolbox:
         if not isinstance(server_time_utc, str) or not server_time_utc:
             raise RuntimeError("BROKER_SERVER_TIME_UNAVAILABLE")
         return server_time_utc
+
+    def validate_proposal(
+        self,
+        proposal: AutonomousTradeProposal,
+        bundle: TraderInputBundle,
+        *,
+        ib: Any | None = None,
+    ) -> ProposalValidation:
+        if ib is None:
+            return self.base.validate_proposal(proposal, bundle)
+        return self.base.validate_proposal(proposal, bundle, ib=ib)
+
+    def validate_position_action(
+        self,
+        action: AutonomousPositionAction,
+        bundle: TraderInputBundle,
+        decision: TraderDecision,
+        *,
+        ib: Any | None = None,
+    ) -> ProposalValidation:
+        if ib is None:
+            return self.base.validate_position_action(action, bundle, decision)
+        return self.base.validate_position_action(action, bundle, decision, ib=ib)
+
+    def validate_open_order_action(
+        self,
+        action: AutonomousOpenOrderAction,
+        bundle: TraderInputBundle,
+        decision: TraderDecision,
+        *,
+        ib: Any | None = None,
+    ) -> ProposalValidation:
+        if ib is None:
+            return self.base.validate_open_order_action(action, bundle, decision)
+        return self.base.validate_open_order_action(action, bundle, decision, ib=ib)
+
+    def _connect(self, *, client_id: int | None = None) -> Any:
+        return self.base._connect(client_id=client_id)
+
+    def _proposal_contract(
+        self, ib: Any, proposal: AutonomousTradeProposal
+    ) -> Any:
+        return self.base._proposal_contract(ib, proposal)
+
+    def _resolve_open_position(
+        self, ib: Any, action: AutonomousPositionAction
+    ) -> Any:
+        return self.base._resolve_open_position(ib, action)
+
+    def live_contract_quote_evidence(
+        self,
+        ib: Any,
+        contract: Any,
+        *,
+        wait_seconds: float = 2.0,
+        max_age_seconds: float = 15.0,
+    ) -> dict[str, Any]:
+        return self.base.live_contract_quote_evidence(
+            ib,
+            contract,
+            wait_seconds=wait_seconds,
+            max_age_seconds=max_age_seconds,
+        )
 
     def manifest(self) -> list[dict[str, Any]]:
         manifest = list(self.base.manifest())

@@ -17,6 +17,7 @@ from ibkr_paper_30d.autonomous_research import (
     AutonomousTradeProposal,
     ProposalValidation,
 )
+from ibkr_paper_30d.autonomy_toolbox import AutonomyToolbox
 from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.ibkr_research_tools import IBKRResearchToolbox
 from ibkr_paper_30d.open_order_management import (
@@ -523,6 +524,7 @@ class _PassUntilOperatorControlToolbox:
     def __init__(self):
         self.ib = _FakeIB()
         self.requested_client_ids = []
+        self.validation_connections = []
 
     def _connect(self, *, client_id=None):
         self.requested_client_ids.append(client_id)
@@ -531,10 +533,13 @@ class _PassUntilOperatorControlToolbox:
     def _proposal_contract(self, ib, proposal):
         return SimpleNamespace(conId=123, symbol=proposal.symbol)
 
-    def live_contract_quote_evidence(self, ib, contract):
+    def live_contract_quote_evidence(
+        self, ib, contract, *, wait_seconds=2.0, max_age_seconds=15.0
+    ):
         return {"success": True, "market_data_type": 1}
 
     def validate_proposal(self, proposal, bundle, *, ib=None):
+        self.validation_connections.append(ib)
         return ProposalValidation(
             passed=True,
             reason_codes=(),
@@ -561,6 +566,27 @@ def test_immediate_operator_control_blocks_place_order(tmp_path):
     assert "OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE" in result.reason_codes
     assert toolbox.ib.place_calls == 0
     assert toolbox.requested_client_ids == [19761]
+
+
+def test_wrapped_executor_reuses_connection_for_proposal_validation(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    base = _PassUntilOperatorControlToolbox()
+    toolbox = AutonomyToolbox(base, None)
+    with Database.open(tmp_path / "wrapped-execution.sqlite3") as db:
+        executor = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: ("TEST_BLOCK_BEFORE_WRITE",),
+        )
+        result = executor.execute(proposal(), bundle())
+
+    assert result.reason_codes == ("TEST_BLOCK_BEFORE_WRITE",)
+    assert base.requested_client_ids == [19761]
+    assert base.validation_connections == [base.ib]
+    assert base.ib.place_calls == 0
 
 
 def test_position_management_uses_stable_execution_client(tmp_path):
