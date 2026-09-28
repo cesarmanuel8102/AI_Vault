@@ -4,11 +4,11 @@ BASE_HEAD: c45421e7539fd63931096904cf4c0051b09c7800
 
 FINAL_HEAD: See the final Owner report emitted after this report commit.
 
-BRANCH: codex/autonomy-epoch1-security-remediation
+BRANCH: codex/ibkr-paper-auditor-gate-v2
 
-WORKTREE: C:\AI_VAULT_IBKR_REMEDIATION
+WORKTREE: C:\AI_VAULT_IBKR
 
-PRODUCTION_LAUNCH_FROZEN: false
+PRODUCTION_LAUNCH_FROZEN: true; `CodexIBKRMarketDataGate` is configured and disabled
 
 PAPER_ARMED: false (no arm was performed by remediation; canonical retains pre-remediation authorization history)
 
@@ -72,7 +72,7 @@ KERNEL_MANIFEST_FILE_COUNT: 48
 
 KERNEL_MANIFEST_COMPLETENESS: PASS; deterministic authority closure and negative unmanifested-authority tests
 
-KERNEL_HASH_STATUS: PASS; expected=actual=da9ca9048a2e691deef677b261a360d0ef4f9b2d54562af42b499826d54e7f94 at pre-report implementation HEAD
+KERNEL_HASH_STATUS: PASS; expected=actual=c3b85cb78e53f38495994d696b1aa905bcabd0b2f5e959810c69dcf1e3e0cc60
 
 EPOCH_MANIFEST_ORDERING: PASS; prerequisites, provenance, lock, controls, and kernel precede EPOCH_MANIFEST_CREATED; service construction precedes EPOCH_STARTED
 
@@ -80,17 +80,17 @@ EPOCH_MANIFEST_HASHES_VALID: PASS
 
 STALE_MARKET_PASS_FIXED: true; scheduled execution always archives and recollects, inspection is explicit/read-only
 
-SCHEDULER_STATUS: BLOCK; production task exists and is enabled/Ready with stale action, no ApprovedHead, no working directory, short principal identity, and canonical base path
+SCHEDULER_STATUS: PASS_FROZEN; task action, canonical root, working directory, exact ApprovedHead, owner SID, weekday/logon triggers, IgnoreNew policy, retries, Gateway, kernel, provenance, and lock diagnostics pass while the task remains disabled
 
 FINALIZER_STATUS: IMPLEMENTED_AND_TESTED_NOT_EXECUTED; Check/Provision/Receipts/Activate are explicit, non-Check stages require confirmation, four stage dry-runs performed zero mutations
 
-UNTRACKED_RUNTIME_CODE_STATUS: REMEDIATION_WORKTREE_PASS; CANONICAL_BLOCK (`ibkr_paper_30d/capability_discovery.py` and other executable state remain untracked)
+UNTRACKED_RUNTIME_CODE_STATUS: CANONICAL_PASS; prior capability-discovery source, test, runner, and PowerShell launcher were preserved with SHA-256 hashes under `C:\AI_VAULT_IBKR_OWNER_ARTIFACT_ARCHIVE\20260928-pre-external-reaudit` and removed from executable/importable repository paths
 
 FOCUSED_TESTS: PASS; scheduler/launch 140, finalizer/authority 137, epoch/kernel/sandbox 94, real sandbox 12
 
-FULL_TRACKED_TESTS: 1088 passed, 0 failed
+FULL_TRACKED_TESTS: 1091 passed, 0 failed
 
-FULL_OPERATIONAL_TESTS: PASS_WITH_EXTERNAL_BLOCKERS; real WSL escape matrix PASS, copied-lock recovery PASS, scheduler ValidateOnly BLOCK as designed, four finalizer dry-runs PASS, real PAPER read-only reconciliation PASS with 0 positions/0 open orders/0 executions
+FULL_OPERATIONAL_TESTS: PASS_FOR_EXTERNAL_REAUDIT; real WSL escape matrix PASS, copied-lock recovery PASS, scheduler ValidateOnly PASS while frozen, four finalizer dry-runs PASS, real PAPER read-only reconciliation PASS with 0 positions/0 open orders/0 executions
 
 SKIPS: 0
 
@@ -100,13 +100,13 @@ POWERSHELL_AST: REMEDIATION_ENTRYPOINTS_PASS; FULL_TRACKED_TREE_BLOCK due to 5 u
 
 GIT_DIFF_CHECK: PASS
 
-CRITICAL_FINDINGS_REMAINING: 2; remediation is not integrated into canonical, and the stale production scheduler remains enabled
+CRITICAL_FINDINGS_REMAINING: 0
 
-HIGH_FINDINGS_REMAINING: 2; canonical runtime provenance is BLOCK due to untracked executable Python, and canonical lock generation 11 remains stale until the remediated serialized recovery is deployed
+HIGH_FINDINGS_REMAINING: 0; remediated serialized recovery is deployed and the frozen startup diagnostic proves the current lock storage is recoverable without starting PAPER
 
 MEDIUM_FINDINGS_REMAINING: 1 class; five unrelated tracked PowerShell files have pre-existing AST failures and were not remediated outside scope
 
-KNOWN_RESIDUAL_RISKS: production is still on base HEAD c45421e; scheduler disable previously failed Access Denied and requires elevated Owner action; canonical contains prior clock/authorization history and an invalid legacy event chain now safely anchorable but not yet integrated; OS/admin deployment and external audit remain outstanding
+KNOWN_RESIDUAL_RISKS: canonical retains prior clock/authorization history and an invalid legacy event chain now classified as PRE_EPOCH_HISTORY and safely anchorable without rewrite; five unrelated tracked PowerShell files retain pre-existing AST failures; finalizer, epoch activation, PAPER arming, and external adversarial audit remain outstanding
 
 READY_FOR_EXTERNAL_REAUDIT: true
 
@@ -117,7 +117,7 @@ NEXT_REQUIRED_ACTION: EXTERNAL_ADVERSARIAL_REAUDIT
 ## Operational Evidence
 
 - Real PAPER reconciliation: PASS, gateway PAPER, heartbeat true, query completeness true, 0 positions, 0 open orders, 0 executions, outbound read-only allowlist only, 0 broker writes.
-- Runtime source provenance on remediation HEAD: PASS, 59 approved Python files, no untracked executable package source.
-- Scheduler ValidateOnly: kernel PASS, provenance PASS, lock storage PASS, mutations 0, broker writes 0, overall BLOCK on the stale production task configuration.
+- Runtime source provenance on canonical HEAD: PASS, no untracked executable package source.
+- Scheduler ValidateOnly: overall PASS while frozen; exact ApprovedHead, owner SID, canonical path/action, Gateway, kernel, provenance, and lock storage PASS; mutations 0 and broker writes 0.
 - Canonical epoch projection from a consistent DB copy: PRE_EPOCH_HISTORY, activation required, legacy chain status LEGACY_UNVERIFIED_ANCHORED, legacy state-event commitment `751d5c316dc9626c8ac5796378b47189cd489090589e645341ceead8a472c215`.
-- No merge, canonical copy, finalizer operation, task registration, task enablement, PAPER activation, Day 1 start, order submit, cancel, replace, global cancel, or LIVE connection was performed.
+- The remediated commit series was fast-forwarded into the canonical tree. The scheduler definition was corrected and left disabled. No finalizer operation, task enablement, PAPER activation, Day 1 start, order submit, cancel, replace, global cancel, or LIVE connection was performed.
