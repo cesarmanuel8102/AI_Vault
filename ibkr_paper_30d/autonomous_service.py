@@ -25,6 +25,7 @@ from .ibkr_research_tools import IBKRResearchToolbox
 from .market_data import DecisionClass
 from .persistence import Database
 from .repositories import utc_now
+from .research_sandbox import WSLResearchSandbox
 from .runtime_integrity import RuntimeAuditorGate, RuntimeMarketDataGate
 from .trader_invocation import TraderDecision
 from .types import new_uuid7
@@ -164,7 +165,10 @@ class AutonomousExperimentService:
                 "state/ibkr_paper_30d/autonomy_workspace",
             )
         )
-        self.workspace = AutonomyWorkspace(workspace_root)
+        self.workspace = AutonomyWorkspace(
+            workspace_root,
+            sandbox=WSLResearchSandbox(repo_root=Path(__file__).resolve().parents[1]),
+        )
         self.toolbox = (
             base_toolbox
             if isinstance(base_toolbox, AutonomyToolbox)

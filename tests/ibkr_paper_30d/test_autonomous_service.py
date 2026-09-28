@@ -15,6 +15,7 @@ from ibkr_paper_30d.experiment_control import (
     KillSwitchStore,
     OwnerAuthorizationStore,
 )
+from ibkr_paper_30d.research_sandbox import WSLResearchSandbox
 
 
 @dataclass
@@ -93,6 +94,15 @@ def make_service(db, clock, *, stop_after=2, results=None):
         stop_after=stop_after,
         results=results,
     )
+
+
+def test_service_wires_the_os_enforced_research_sandbox_by_default(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    clock = Clock()
+    with Database.open(tmp_path / "service.sqlite3") as db:
+        subject = make_service(db, clock)
+
+    assert isinstance(subject.workspace.sandbox, WSLResearchSandbox)
 
 
 def test_no_positions_scans_every_five_minutes(tmp_path, monkeypatch):

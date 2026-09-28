@@ -17,9 +17,27 @@ from ibkr_paper_30d.autonomous_research import (
 )
 from ibkr_paper_30d.autonomy_toolbox import AutonomyToolbox, quantconnect_available
 from ibkr_paper_30d.autonomy_workspace import AutonomyWorkspace, WorkspaceViolation
+from ibkr_paper_30d.research_sandbox import WSLResearchSandbox
 
 
 REPO = Path(__file__).resolve().parents[2]
+
+
+def _wsl_available():
+    try:
+        result = subprocess.run(
+            ["wsl.exe", "-d", "Ubuntu", "--exec", "/bin/true"],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
+
+
+WSL_AVAILABLE = _wsl_available()
 KERNEL_FILES = [
     "ibkr_paper_30d/autonomous_execution.py",
     "ibkr_paper_30d/ibkr_readonly_session.py",
@@ -53,7 +71,9 @@ def request(tool, arguments, rid="r1"):
 
 @pytest.fixture()
 def workspace(tmp_path):
-    return AutonomyWorkspace(tmp_path / "workspace")
+    return AutonomyWorkspace(
+        tmp_path / "workspace", sandbox=WSLResearchSandbox(repo_root=REPO)
+    )
 
 
 @pytest.fixture()
@@ -111,6 +131,7 @@ def test_workspace_cannot_write_immutable_kernel_files(workspace):
         workspace.write_artifact("../../ibkr_paper_30d/execution_lock.py", "bypass")
 
 
+@pytest.mark.skipif(not WSL_AVAILABLE, reason="WSL2 Ubuntu unavailable")
 def test_script_environment_has_no_broker_credentials(workspace):
     workspace.write_artifact(
         "tools/envprobe.py",
@@ -131,20 +152,28 @@ def test_script_environment_has_no_broker_credentials(workspace):
     assert payload["has_path"] is False
 
 
+@pytest.mark.skipif(not WSL_AVAILABLE, reason="WSL2 Ubuntu unavailable")
 def test_script_cannot_spawn_external_clis(workspace):
     """Research scripts must not reach provider CLIs (codex) or other
-    host tools: PATH is absent from the script environment."""
+    host tools: every attempt to cross execve is denied by seccomp."""
 
     workspace.write_artifact(
         "tools/spawnprobe.py",
         textwrap.dedent(
             """
-            import shutil, json
-            print(json.dumps({
-                "codex": shutil.which("codex"),
-                "lean": shutil.which("lean"),
-                "git": shutil.which("git"),
-            }))
+            import json, shutil, subprocess
+            results = {}
+            for name in ("codex", "lean", "git"):
+                executable = shutil.which(name)
+                if executable is None:
+                    results[name] = "ABSENT"
+                    continue
+                try:
+                    subprocess.run([executable, "--version"], check=False)
+                    results[name] = "EXECUTED"
+                except OSError as exc:
+                    results[name] = f"DENIED:{exc.errno}"
+            print(json.dumps(results))
             """
         ),
     )
@@ -152,9 +181,10 @@ def test_script_cannot_spawn_external_clis(workspace):
     assert run["status"] == "COMPLETED", run
     found = json.loads(run["stdout"])
     for cli in ("codex", "lean", "git"):
-        assert found[cli] is None, f"{cli} was reachable from a research script"
+        assert found[cli] != "EXECUTED", f"{cli} was executable from a research script"
 
 
+@pytest.mark.skipif(not WSL_AVAILABLE, reason="WSL2 Ubuntu unavailable")
 def test_script_cannot_import_execution_kernel(workspace):
     probe = textwrap.dedent(
         """
@@ -179,6 +209,7 @@ def test_script_cannot_import_execution_kernel(workspace):
         assert outcome != "IMPORTED", f"{module} was importable by research script"
 
 
+@pytest.mark.skipif(not WSL_AVAILABLE, reason="WSL2 Ubuntu unavailable")
 def test_script_cannot_connect_to_broker_port(workspace):
     probe = textwrap.dedent(
         """
@@ -223,6 +254,7 @@ def port_live(endpoint: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skipif(not WSL_AVAILABLE, reason="WSL2 Ubuntu unavailable")
 def test_research_script_create_run_reuse(workspace):
     workspace.write_artifact(
         "tools/stats.py",
@@ -239,7 +271,7 @@ def test_research_script_create_run_reuse(workspace):
     assert first["status"] == "COMPLETED"
     assert json.loads(first["stdout"])["mean"] == 2.5
     # Reuse in a later cycle with a new workspace instance.
-    later = AutonomyWorkspace(workspace.paths.root)
+    later = AutonomyWorkspace(workspace.paths.root, sandbox=workspace.sandbox)
     second = later.run_script("tools/stats.py", cycle_id="c2")
     assert second["status"] == "COMPLETED"
     # Registry records both runs with script hash + cycle ids.
@@ -277,6 +309,7 @@ def test_unknown_workspace_operation_fails_closed(toolbox):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skipif(not WSL_AVAILABLE, reason="WSL2 Ubuntu unavailable")
 def test_custom_tool_timeout_is_contained(workspace):
     workspace.write_artifact(
         "tools/hang.py",
@@ -294,6 +327,7 @@ def test_custom_tool_timeout_is_contained(workspace):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skipif(not WSL_AVAILABLE, reason="WSL2 Ubuntu unavailable")
 def test_custom_tool_failure_yields_no_trading_permission(toolbox, workspace):
     workspace.write_artifact("tools/failing.py", "raise RuntimeError('boom')\n")
     result = toolbox.execute(
