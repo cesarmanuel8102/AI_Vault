@@ -13,7 +13,6 @@ must never influence strategy; it documents what existed.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Any
 
 from .canonical import sha256_json
@@ -23,57 +22,68 @@ from .kernel_manifest import (
     verify_kernel_manifest,
 )
 
-
-EPOCH_MANIFEST_SCHEMA = "AUTONOMY_EPOCH_MANIFEST_V1"
+EPOCH_MANIFEST_SCHEMA = "AUTONOMY_EPOCH_MANIFEST_V2"
 EPOCH_ID = "AUTONOMY_EPOCH_1"
-
-
-def _utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-
 
 
 @dataclass(frozen=True)
 class EpochManifestInputs:
+    created_at_utc: str
     git_commit_sha: str
     model: str
     reasoning_effort: str
-    primary_objective_hash: str
-    effective_prompt_hash: str
-    tool_manifest_hash: str
+    mandate_payload: dict[str, Any]
+    first_process_bootstrap: dict[str, Any]
+    tool_manifest: list[dict[str, Any]]
     immutable_kernel_manifest_hash: str
-    market_policy_hash: str | None
-    risk_policy_hash: str | None
-    authorization_receipt_hash: str | None
-    paper_identity_hash: str | None
+    market_policy_sha256: str
+    risk_policy_payload: dict[str, Any]
+    receipt_sha256: dict[str, str]
+    expected_paper_identity_hash: str
     quantconnect_capability: str
     self_tooling_enabled: bool
     persistent_workspace_enabled: bool
 
 
 def build_epoch_manifest(inputs: EpochManifestInputs) -> dict[str, Any]:
-    return {
+    effective_payload = {
+        "mandate": inputs.mandate_payload,
+        "first_process_bootstrap": inputs.first_process_bootstrap,
+        "tool_manifest": inputs.tool_manifest,
+    }
+    unsigned = {
         "schema": EPOCH_MANIFEST_SCHEMA,
         "epoch_id": EPOCH_ID,
-        "epoch_start_utc": _utc_now(),
+        "manifest_state": "CREATED",
+        "service_started": False,
+        "created_at_utc": inputs.created_at_utc,
         "git_commit_sha": inputs.git_commit_sha,
         "model": inputs.model,
         "reasoning_effort": inputs.reasoning_effort,
-        "primary_objective_hash": inputs.primary_objective_hash,
-        "effective_prompt_hash": inputs.effective_prompt_hash,
-        "tool_manifest_hash": inputs.tool_manifest_hash,
+        "effective_payload": effective_payload,
+        "effective_payload_sha256": sha256_json(effective_payload),
+        "mandate_sha256": sha256_json(inputs.mandate_payload),
+        "first_process_bootstrap_sha256": sha256_json(inputs.first_process_bootstrap),
+        "tool_manifest_sha256": sha256_json(inputs.tool_manifest),
         "immutable_kernel_manifest_hash": inputs.immutable_kernel_manifest_hash,
-        "market_policy_hash": inputs.market_policy_hash,
-        "risk_policy_hash": inputs.risk_policy_hash,
-        "authorization_receipt_hash": inputs.authorization_receipt_hash,
-        "paper_identity_hash": inputs.paper_identity_hash,
+        "market_policy_sha256": inputs.market_policy_sha256,
+        "risk_policy": inputs.risk_policy_payload,
+        "risk_policy_sha256": sha256_json(inputs.risk_policy_payload),
+        "receipt_sha256": dict(sorted(inputs.receipt_sha256.items())),
+        "expected_paper_identity_hash": inputs.expected_paper_identity_hash,
         "quantconnect_capability": inputs.quantconnect_capability,
         "self_tooling_enabled": inputs.self_tooling_enabled,
         "persistent_workspace_enabled": inputs.persistent_workspace_enabled,
         "observational_only": True,
     }
+    return {**unsigned, "epoch_manifest_sha256": sha256_json(unsigned)}
 
 
 def epoch_manifest_hash(manifest: dict[str, Any]) -> str:
-    return sha256_json(manifest)
+    return sha256_json(
+        {
+            key: value
+            for key, value in manifest.items()
+            if key != "epoch_manifest_sha256"
+        }
+    )

@@ -54,7 +54,6 @@ from ibkr_paper_30d.repositories import EventRepository
 from ibkr_paper_30d.prerequisite_tools import bind_launch_attempt
 from ibkr_paper_30d.trader_invocation import TraderDecision
 
-
 OWNER_SID = "S-1-5-21-test-owner"
 ACCOUNT_HASH = "a" * 64
 ATTEMPT_ID = "11111111-1111-4111-8111-111111111111"
@@ -208,9 +207,7 @@ def _write_model_attestation_exception(config: Day1LaunchConfig) -> None:
         "end_utc": "2026-10-23T13:30:00Z",
     }
     config.model_attestation_exception_path.write_bytes(
-        canonical_bytes(
-            {**unsigned, "artifact_sha256": sha256_json(unsigned)}
-        )
+        canonical_bytes({**unsigned, "artifact_sha256": sha256_json(unsigned)})
     )
 
 
@@ -400,9 +397,10 @@ def test_passing_preflight_accepts_real_read_only_market_validation(
 
     result = evaluate_launch_preflight(ctx.config, ctx.dependencies)
 
-    assert result.market_validation_sha256 == hashlib.sha256(
-        ctx.config.market_validation_path.read_bytes()
-    ).hexdigest()
+    assert (
+        result.market_validation_sha256
+        == hashlib.sha256(ctx.config.market_validation_path.read_bytes()).hexdigest()
+    )
     assert_no_write_authority(ctx)
 
 
@@ -417,12 +415,24 @@ def test_passing_preflight_accepts_real_read_only_market_validation(
         ({"heartbeat_ok": False}, "BROKER_HEARTBEAT_REQUIRED"),
         ({"broker_reconciliation_gate": "BLOCK"}, "BROKER_RECONCILIATION_REQUIRED"),
         ({"paper_account_identity_gate": "BLOCK"}, "PAPER_IDENTITY_REQUIRED"),
-        ({"expected_account_identity_bound": False}, "EXPECTED_ACCOUNT_IDENTITY_REQUIRED"),
-        ({"expected_account_identity_hash": "b" * 64}, "EXPECTED_ACCOUNT_IDENTITY_MISMATCH"),
+        (
+            {"expected_account_identity_bound": False},
+            "EXPECTED_ACCOUNT_IDENTITY_REQUIRED",
+        ),
+        (
+            {"expected_account_identity_hash": "b" * 64},
+            "EXPECTED_ACCOUNT_IDENTITY_MISMATCH",
+        ),
         ({"raw_account_identity_persisted": True}, "RAW_ACCOUNT_IDENTITY_FORBIDDEN"),
         ({"real_order_writes_attempted": 1}, "BROKER_WRITE_DETECTED"),
         (
-            {"query_completeness": {"positions": False, "executions": True, "open_orders": True}},
+            {
+                "query_completeness": {
+                    "positions": False,
+                    "executions": True,
+                    "open_orders": True,
+                }
+            },
             "READONLY_QUERY_INCOMPLETE",
         ),
     ],
@@ -441,7 +451,9 @@ def test_readonly_identity_failures_block_before_write(
 
 def test_preflight_rejects_time_before_immutable_start(tmp_path: Path) -> None:
     ctx = passing_context(tmp_path)
-    ctx.dependencies.now_utc = lambda: datetime(2026, 9, 23, 13, 29, tzinfo=timezone.utc)
+    ctx.dependencies.now_utc = lambda: datetime(
+        2026, 9, 23, 13, 29, tzinfo=timezone.utc
+    )
 
     with pytest.raises(LaunchError, match="EXPERIMENT_NOT_STARTED"):
         evaluate_launch_preflight(ctx.config, ctx.dependencies)
@@ -484,7 +496,9 @@ def test_launch_attempt_id_mismatch_blocks(tmp_path: Path) -> None:
 
 def test_receipt_mutation_after_attempt_binding_blocks(tmp_path: Path) -> None:
     ctx = passing_context(tmp_path)
-    write_identity_receipt(ctx, rebind=False, server_timestamp_utc="2026-09-23T20:00:01Z")
+    write_identity_receipt(
+        ctx, rebind=False, server_timestamp_utc="2026-09-23T20:00:01Z"
+    )
 
     with pytest.raises(LaunchError, match="LAUNCH_ATTEMPT_RECEIPT_HASH_MISMATCH"):
         evaluate_launch_preflight(ctx.config, ctx.dependencies)
@@ -492,7 +506,9 @@ def test_receipt_mutation_after_attempt_binding_blocks(tmp_path: Path) -> None:
     assert_no_write_authority(ctx)
 
 
-def test_identity_receipt_changed_during_auditor_evaluation_blocks(tmp_path: Path) -> None:
+def test_identity_receipt_changed_during_auditor_evaluation_blocks(
+    tmp_path: Path,
+) -> None:
     ctx = passing_context(tmp_path)
 
     def mutate_then_pass():
@@ -577,7 +593,9 @@ def test_invalid_frozen_market_policy_blocks(tmp_path: Path) -> None:
     assert_no_write_authority(ctx)
 
 
-def test_launch_evidence_is_atomic_hashed_append_only_and_sanitized(tmp_path: Path) -> None:
+def test_launch_evidence_is_atomic_hashed_append_only_and_sanitized(
+    tmp_path: Path,
+) -> None:
     ctx = passing_context(tmp_path)
 
     path = write_launch_evidence(
@@ -596,7 +614,9 @@ def test_launch_evidence_is_atomic_hashed_append_only_and_sanitized(tmp_path: Pa
     assert first["event_sha256"] == sha256_json(first["event"])
     assert "DU" not in path.read_text(encoding="utf-8")
     assert not list(path.parent.glob("*.tmp"))
-    history = path.with_name("launch_events.jsonl").read_text(encoding="utf-8").splitlines()
+    history = (
+        path.with_name("launch_events.jsonl").read_text(encoding="utf-8").splitlines()
+    )
     assert len(history) == 2
     assert [json.loads(line)["event"]["event_type"] for line in history] == [
         "PREFLIGHT_PASS",
@@ -604,10 +624,10 @@ def test_launch_evidence_is_atomic_hashed_append_only_and_sanitized(tmp_path: Pa
     ]
 
 
-@pytest.mark.parametrize("forbidden", ["account", "account_id", "credential", "token", "prompt"])
-def test_launch_evidence_rejects_forbidden_keys(
-    tmp_path: Path, forbidden: str
-) -> None:
+@pytest.mark.parametrize(
+    "forbidden", ["account", "account_id", "credential", "token", "prompt"]
+)
+def test_launch_evidence_rejects_forbidden_keys(tmp_path: Path, forbidden: str) -> None:
     ctx = passing_context(tmp_path)
 
     with pytest.raises(LaunchError, match="LAUNCH_EVIDENCE_FORBIDDEN_KEY"):
@@ -646,7 +666,9 @@ class FakeExecutionLock:
         return SimpleNamespace(released=True, reason="RELEASED")
 
 
-def install_fake_lock(ctx: LaunchTestContext, reason: str = "ACQUIRED") -> FakeExecutionLock:
+def install_fake_lock(
+    ctx: LaunchTestContext, reason: str = "ACQUIRED"
+) -> FakeExecutionLock:
     lock = FakeExecutionLock(reason)
     ctx.dependencies.lock_factory = lambda _db: lock
     ctx.dependencies.lock_owner_factory = lambda now: SimpleNamespace(
@@ -671,7 +693,9 @@ def control_event_counts(path: Path) -> tuple[int, int, int]:
         )
 
 
-def test_validate_launch_controls_only_consumes_preexisting_state(tmp_path: Path) -> None:
+def test_validate_launch_controls_only_consumes_preexisting_state(
+    tmp_path: Path,
+) -> None:
     ctx = passing_context(tmp_path)
     before = control_event_counts(ctx.config.db_path)
 
@@ -725,10 +749,14 @@ def test_validate_launch_controls_rejects_any_triggered_kill_history(
                 "SELECT state FROM kill_switch_events ORDER BY sequence"
             ).fetchall()
         )
-    assert after == before == (
-        "KILL_SWITCH_CLEAR",
-        "KILL_SWITCH_TRIGGERED",
-        "KILL_SWITCH_CLEAR",
+    assert (
+        after
+        == before
+        == (
+            "KILL_SWITCH_CLEAR",
+            "KILL_SWITCH_TRIGGERED",
+            "KILL_SWITCH_CLEAR",
+        )
     )
 
 
@@ -826,9 +854,7 @@ def test_launcher_does_not_append_control_events_and_consumes_attempt_once(
         assert clock.duration_days == 30
         assert clock.initial_allocation == Decimal("500")
         assert (
-            OwnerAuthorizationStore(db).current(
-                clock_event_sha256=clock.event_sha256
-            )
+            OwnerAuthorizationStore(db).current(clock_event_sha256=clock.event_sha256)
             == "AUTHORIZED"
         )
         accepted = db.execute(
@@ -868,7 +894,9 @@ def test_live_execution_lock_is_idempotent_without_service(tmp_path: Path) -> No
     assert_no_write_authority(ctx)
 
 
-def test_corrupt_execution_lock_projection_requires_owner_action(tmp_path: Path) -> None:
+def test_corrupt_execution_lock_projection_requires_owner_action(
+    tmp_path: Path,
+) -> None:
     ctx = passing_context(tmp_path)
 
     class CorruptLock:
@@ -891,6 +919,18 @@ def test_missing_authorization_blocks_without_recreating_it(tmp_path: Path) -> N
         run_day1_launch(ctx.config, ctx.dependencies)
 
     assert not ctx.config.owner_authorization_path.exists()
+    assert not (
+        tmp_path
+        / "state"
+        / "ibkr_paper_30d"
+        / "reports"
+        / "autonomy_epoch_manifest.json"
+    ).exists()
+    with Database.open(ctx.config.db_path) as db:
+        epoch_events = db.execute(
+            "SELECT COUNT(*) FROM state_events WHERE event_type LIKE 'EPOCH_%'"
+        ).fetchone()[0]
+    assert epoch_events == 0
     assert_no_write_authority(ctx)
 
 
@@ -1072,9 +1112,12 @@ def test_day1_launch_recovers_proven_stale_lock_before_service(tmp_path: Path) -
         run_day1_launch(ctx.config, ctx.dependencies)
 
     with Database.open(ctx.config.db_path) as db:
-        events = [row[0] for row in db.execute(
-            "SELECT event_type FROM execution_lock_events WHERE generation IN (11,12) ORDER BY sequence"
-        ).fetchall()]
+        events = [
+            row[0]
+            for row in db.execute(
+                "SELECT event_type FROM execution_lock_events WHERE generation IN (11,12) ORDER BY sequence"
+            ).fetchall()
+        ]
     assert events[:2] == ["STALE_OWNER_RECOVERED", "ACQUIRED"]
     assert ctx.executor_tripwire.calls == []
     assert ctx.ib_tripwire.calls == []
@@ -1151,9 +1194,7 @@ def test_cli_emits_one_sanitized_status_line(
     monkeypatch.setattr(launch_module, "_default_dependencies", lambda: object())
     monkeypatch.setattr(launch_module, "write_launch_evidence", Mock())
 
-    exit_code = main(
-        ["--repo-root", str(tmp_path), "--launch-attempt-id", ATTEMPT_ID]
-    )
+    exit_code = main(["--repo-root", str(tmp_path), "--launch-attempt-id", ATTEMPT_ID])
     captured = capsys.readouterr()
     payload = json.loads(captured.out)
 
@@ -1202,7 +1243,9 @@ class ReadOnlyLaunchToolbox:
             tool=request.tool,
             success=request.tool in payloads,
             data=payloads.get(request.tool, {}),
-            error=None if request.tool in payloads else "unsupported read-only test tool",
+            error=(
+                None if request.tool in payloads else "unsupported read-only test tool"
+            ),
         )
 
 
@@ -1222,7 +1265,6 @@ def test_complete_fake_launch_persists_running_without_broker_write(
         service = AutonomousExperimentService(
             db,
             **kwargs,
-            toolbox=toolbox,
             executor=ctx.executor_tripwire,
             broker_now=lambda: NOW,
             sleep=stop_after_first_wait,
@@ -1232,6 +1274,9 @@ def test_complete_fake_launch_persists_running_without_broker_write(
         return service
 
     ctx.dependencies.service_factory = real_service_factory
+    ctx.dependencies.research_toolbox_factory = (
+        lambda workspace, _preflight: launch_module.AutonomyToolbox(toolbox, workspace)
+    )
 
     status = run_day1_launch(ctx.config, ctx.dependencies)
 
@@ -1273,7 +1318,7 @@ def test_launch_writes_epoch_observational_manifest(tmp_path: Path) -> None:
     )
     assert manifest_path.exists()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert manifest["schema"] == "AUTONOMY_EPOCH_MANIFEST_V1"
+    assert manifest["schema"] == "AUTONOMY_EPOCH_MANIFEST_V2"
     assert manifest["epoch_id"] == "AUTONOMY_EPOCH_1"
     assert manifest["model"] == "gpt-5.6-sol"
     assert manifest["reasoning_effort"] == "max"
@@ -1285,12 +1330,82 @@ def test_launch_writes_epoch_observational_manifest(tmp_path: Path) -> None:
     }
     assert manifest["observational_only"] is True
     assert len(manifest["immutable_kernel_manifest_hash"]) == 64
-    assert len(manifest["primary_objective_hash"]) == 64
-    assert len(manifest["effective_prompt_hash"]) == 64
+    assert len(manifest["effective_payload_sha256"]) == 64
+    assert len(manifest["first_process_bootstrap_sha256"]) == 64
+    assert len(manifest["tool_manifest_sha256"]) == 64
+    assert len(manifest["risk_policy_sha256"]) == 64
     assert len(manifest["epoch_manifest_sha256"]) == 64
+    assert manifest["effective_payload_sha256"] == sha256_json(
+        manifest["effective_payload"]
+    )
+    assert manifest["receipt_sha256"] == {
+        "auditor": hashlib.sha256(
+            ctx.config.auditor_receipt_path.read_bytes()
+        ).hexdigest(),
+        "launch_attempt_binding": hashlib.sha256(
+            ctx.config.launch_attempt_binding_path.read_bytes()
+        ).hexdigest(),
+        "market_validation": hashlib.sha256(
+            ctx.config.market_validation_path.read_bytes()
+        ).hexdigest(),
+        "model_attestation_exception": hashlib.sha256(
+            ctx.config.model_attestation_exception_path.read_bytes()
+        ).hexdigest(),
+        "owner_authorization": hashlib.sha256(
+            ctx.config.owner_authorization_path.read_bytes()
+        ).hexdigest(),
+        "paper_identity": hashlib.sha256(
+            ctx.config.identity_receipt_path.read_bytes()
+        ).hexdigest(),
+    }
+    service_kwargs = ctx.service_factory.call_args.kwargs
+    assert (
+        service_kwargs["toolbox"].manifest()
+        == manifest["effective_payload"]["tool_manifest"]
+    )
+    assert (
+        service_kwargs["provider"]._first_process_bootstrap
+        == manifest["effective_payload"]["first_process_bootstrap"]
+    )
+    with Database.open(ctx.config.db_path) as db:
+        epoch_events = [
+            row[0]
+            for row in db.execute(
+                "SELECT event_type FROM state_events "
+                "WHERE event_type IN ('EPOCH_MANIFEST_CREATED','EPOCH_STARTED') "
+                "ORDER BY sequence"
+            ).fetchall()
+        ]
+    assert epoch_events == ["EPOCH_MANIFEST_CREATED", "EPOCH_STARTED"]
     # No raw account identity in the manifest (hash only).
     assert "DU" not in manifest_path.read_text(encoding="utf-8")
     # Strategy-free: no trading prescriptions.
     lowered = json.dumps(manifest).lower()
-    for forbidden in ("must trade", "strategy", "quota", "minimum trades"):
+    for forbidden in (
+        "must trade",
+        "required strategy",
+        "target sharpe",
+        "quota",
+        "minimum trades",
+    ):
         assert forbidden not in lowered, forbidden
+
+
+def test_service_construction_failure_never_emits_epoch_started(tmp_path: Path) -> None:
+    ctx = passing_context(tmp_path)
+    install_fake_lock(ctx)
+    ctx.dependencies.service_factory.side_effect = RuntimeError("construction failed")
+
+    with pytest.raises(RuntimeError, match="construction failed"):
+        run_day1_launch(ctx.config, ctx.dependencies)
+
+    with Database.open(ctx.config.db_path) as db:
+        epoch_events = [
+            row[0]
+            for row in db.execute(
+                "SELECT event_type FROM state_events "
+                "WHERE event_type IN ('EPOCH_MANIFEST_CREATED','EPOCH_STARTED') "
+                "ORDER BY sequence"
+            ).fetchall()
+        ]
+    assert epoch_events == ["EPOCH_MANIFEST_CREATED"]

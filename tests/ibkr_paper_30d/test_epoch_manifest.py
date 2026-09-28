@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.epoch_manifest import (
     EPOCH_ID,
     EpochManifestInputs,
@@ -16,7 +17,6 @@ from ibkr_paper_30d.epoch_manifest import (
     verify_kernel_manifest,
 )
 
-
 REPO = Path(__file__).resolve().parents[2]
 
 
@@ -25,9 +25,9 @@ def test_kernel_manifest_hashes_every_kernel_file():
     assert manifest["schema"] == "IMMUTABLE_EXECUTION_KERNEL_MANIFEST_V2"
     assert manifest["file_count"] >= 20
     for entry in manifest["kernel_files"]:
-        assert entry["path"].startswith("ibkr_paper_30d/") or entry[
-            "path"
-        ].endswith(".ps1")
+        assert entry["path"].startswith("ibkr_paper_30d/") or entry["path"].endswith(
+            ".ps1"
+        )
         assert len(entry["sha256"]) == 64
         assert entry["authority_role"]
     # Execution authority files must be in the kernel.
@@ -56,18 +56,28 @@ def test_kernel_manifest_verification_detects_mutation(tmp_path):
 
 
 def test_epoch_manifest_is_correct_and_hashable():
+    mandate = {"objective": "maximize terminal PAPER equity"}
+    bootstrap = {"schema": "AUTONOMY_FIRST_PROCESS_BOOTSTRAP_V1"}
+    tools = [{"tool": "WORKSPACE"}]
+    risk_policy = {"version": "AGGRESSIVE_CAPITAL_BOUNDARY_V1"}
     inputs = EpochManifestInputs(
+        created_at_utc="2026-09-28T13:30:00Z",
         git_commit_sha="a" * 40,
         model="gpt-5.6-sol",
         reasoning_effort="max",
-        primary_objective_hash="b" * 64,
-        effective_prompt_hash="c" * 64,
-        tool_manifest_hash="d" * 64,
+        mandate_payload=mandate,
+        first_process_bootstrap=bootstrap,
+        tool_manifest=tools,
         immutable_kernel_manifest_hash="e" * 64,
-        market_policy_hash="f" * 64,
-        risk_policy_hash="1" * 64,
-        authorization_receipt_hash="2" * 64,
-        paper_identity_hash="3" * 64,
+        market_policy_sha256="f" * 64,
+        risk_policy_payload=risk_policy,
+        receipt_sha256={
+            "owner_authorization": "1" * 64,
+            "paper_identity": "2" * 64,
+            "auditor": "3" * 64,
+            "market_validation": "4" * 64,
+        },
+        expected_paper_identity_hash="5" * 64,
         quantconnect_capability="OPTIONAL_AVAILABLE",
         self_tooling_enabled=True,
         persistent_workspace_enabled=True,
@@ -79,6 +89,20 @@ def test_epoch_manifest_is_correct_and_hashable():
     assert manifest["persistent_workspace_enabled"] is True
     assert manifest["quantconnect_capability"] == "OPTIONAL_AVAILABLE"
     assert manifest["observational_only"] is True
+    assert manifest["manifest_state"] == "CREATED"
+    assert manifest["service_started"] is False
+    assert manifest["effective_payload"] == {
+        "mandate": mandate,
+        "first_process_bootstrap": bootstrap,
+        "tool_manifest": tools,
+    }
+    assert manifest["effective_payload_sha256"] == sha256_json(
+        manifest["effective_payload"]
+    )
+    assert manifest["mandate_sha256"] == sha256_json(mandate)
+    assert manifest["first_process_bootstrap_sha256"] == sha256_json(bootstrap)
+    assert manifest["tool_manifest_sha256"] == sha256_json(tools)
+    assert manifest["risk_policy_sha256"] == sha256_json(risk_policy)
     # Hashable canonical JSON.
     digest = epoch_manifest_hash(manifest)
     assert len(digest) == 64
@@ -88,17 +112,18 @@ def test_epoch_manifest_is_correct_and_hashable():
 
 def test_epoch_manifest_does_not_influence_strategy():
     inputs = EpochManifestInputs(
+        created_at_utc="2026-09-28T13:30:00Z",
         git_commit_sha="a" * 40,
         model="gpt-5.6-sol",
         reasoning_effort="max",
-        primary_objective_hash="b" * 64,
-        effective_prompt_hash="c" * 64,
-        tool_manifest_hash="d" * 64,
+        mandate_payload={"objective": "maximize terminal PAPER equity"},
+        first_process_bootstrap={"schema": "BOOTSTRAP"},
+        tool_manifest=[],
         immutable_kernel_manifest_hash="e" * 64,
-        market_policy_hash=None,
-        risk_policy_hash=None,
-        authorization_receipt_hash=None,
-        paper_identity_hash=None,
+        market_policy_sha256="f" * 64,
+        risk_policy_payload={"version": "AGGRESSIVE_CAPITAL_BOUNDARY_V1"},
+        receipt_sha256={},
+        expected_paper_identity_hash="3" * 64,
         quantconnect_capability="OPTIONAL_UNAVAILABLE",
         self_tooling_enabled=True,
         persistent_workspace_enabled=True,

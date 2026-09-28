@@ -17,13 +17,18 @@ from typing import Any, Callable, Iterator, Sequence
 from uuid import uuid4
 
 from .autonomous_research import CodexAutonomousCLIProvider
+from .autonomous_runtime import build_request
 from .autonomous_service import AutonomousExperimentService
+from .autonomy_bootstrap import AutonomyBootstrapBuilder
+from .autonomy_toolbox import AutonomyToolbox
+from .autonomy_workspace import AutonomyWorkspace
 from .canonical import canonical_bytes, sha256_json
 from .epoch_manifest import (
     EpochManifestInputs,
     build_epoch_manifest,
     build_kernel_manifest,
     epoch_manifest_hash,
+    verify_kernel_manifest,
 )
 from .execution_lock import ExecutionLock, LockIntegrityError, LockOwner
 from .experiment_control import (
@@ -33,6 +38,8 @@ from .experiment_control import (
     OwnerAuthorizationStore,
 )
 from .experiment_ledger import AutonomousExperimentLedger
+from .experiment_epoch import ExperimentEpochStore
+from .ibkr_research_tools import IBKRResearchToolbox
 from .market_data import DecisionClass
 from .market_policy import load_verified_policy
 from .owner_authorization import (
@@ -42,8 +49,10 @@ from .owner_authorization import (
 from .persistence import Database
 from .prerequisite_tools import validate_launch_attempt_binding
 from .repositories import EventRepository
+from .research_sandbox import WSLResearchSandbox
+from .risk import CapitalBoundaryRiskPolicy
 from .runtime_integrity import RuntimeAuditorGate, RuntimeMarketDataGate
-
+from .trader_invocation import TraderInputBundle
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _REASON_CODE_RE = re.compile(r"^[A-Z0-9_.:-]{1,100}$")
@@ -79,9 +88,7 @@ class Day1LaunchConfig:
     launch_attempt_binding_path: Path
     launch_attempt_id: str
     epoch_manifest_path: Path | None = None
-    scheduled_start_utc: datetime = datetime(
-        2026, 9, 23, 13, 30, tzinfo=timezone.utc
-    )
+    scheduled_start_utc: datetime = datetime(2026, 9, 23, 13, 30, tzinfo=timezone.utc)
     duration_days: int = 30
     initial_allocation: Decimal = Decimal("500")
     paper_host: str = "127.0.0.1"
@@ -94,14 +101,15 @@ class Day1LaunchConfig:
 class LaunchDependencies:
     now_utc: Callable[[], datetime]
     auditor_gate_factory: Callable[[Day1LaunchConfig], RuntimeAuditorGate]
-    market_gate_factory: Callable[
-        [Day1LaunchConfig, str], RuntimeMarketDataGate
-    ]
+    market_gate_factory: Callable[[Day1LaunchConfig, str], RuntimeMarketDataGate]
     database_factory: Callable[[Path], Database]
     lock_factory: Callable[[Database], ExecutionLock]
     service_factory: Callable[..., AutonomousExperimentService]
     lock_owner_factory: Callable[[datetime], LockOwner]
     current_sid: Callable[[], str]
+    research_toolbox_factory: (
+        Callable[[AutonomyWorkspace, "LaunchPreflight"], Any] | None
+    ) = None
 
 
 class LaunchError(RuntimeError):
@@ -125,6 +133,7 @@ class LaunchPreflight:
     auditor_receipt_sha256: str
     market_policy_sha256: str
     market_validation_sha256: str
+    owner_authorization_receipt_sha256: str
     model_attestation_exception_sha256: str
     actual_start_utc: datetime
 
@@ -203,8 +212,10 @@ def _validate_model_attestation_exception(
     artifact_sha256 = unsigned.pop("artifact_sha256", None)
     expected_start = config.scheduled_start_utc.isoformat().replace("+00:00", "Z")
     expected_end = (
-        config.scheduled_start_utc + timedelta(days=config.duration_days)
-    ).isoformat().replace("+00:00", "Z")
+        (config.scheduled_start_utc + timedelta(days=config.duration_days))
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
     if (
         set(payload) != expected_keys
         or payload.get("schema") != "MODEL_ATTESTATION_OWNER_EXCEPTION_V1"
@@ -227,8 +238,8 @@ def _validate_model_attestation_exception(
         or not isinstance(artifact_sha256, str)
         or _SHA256_RE.fullmatch(artifact_sha256) is None
         or artifact_sha256 != sha256_json(unsigned)
-        or actual_start >= config.scheduled_start_utc
-        + timedelta(days=config.duration_days)
+        or actual_start
+        >= config.scheduled_start_utc + timedelta(days=config.duration_days)
     ):
         raise LaunchError("MODEL_ATTESTATION_EXCEPTION_INVALID")
     return _sha256(raw)
@@ -241,7 +252,10 @@ def _validate_identity_receipt(
         raise LaunchError("READONLY_RECEIPT_INVALID")
     if payload.get("gateway_mode") == "LIVE" or payload.get("port") == 4001:
         raise LaunchError("LIVE_ROUTE_FORBIDDEN")
-    if payload.get("host") != config.paper_host or payload.get("port") != config.paper_port:
+    if (
+        payload.get("host") != config.paper_host
+        or payload.get("port") != config.paper_port
+    ):
         raise LaunchError("PAPER_ROUTE_REQUIRED")
     if payload.get("gateway_mode") != "PAPER":
         raise LaunchError("PAPER_ROUTE_REQUIRED")
@@ -360,7 +374,10 @@ def evaluate_launch_preflight(
         raise LaunchError("IDENTITY_RECEIPT_CHANGED_DURING_PREFLIGHT") from exc
     if identity_after != identity_raw:
         raise LaunchError("IDENTITY_RECEIPT_CHANGED_DURING_PREFLIGHT")
-    if not isinstance(auditor_result, dict) or auditor_result.get("gate_status") != "PASS":
+    if (
+        not isinstance(auditor_result, dict)
+        or auditor_result.get("gate_status") != "PASS"
+    ):
         raise LaunchError("AUDITOR_GATE_BLOCKED")
     if auditor_result.get("receipt_sha256") != auditor_hash:
         raise LaunchError("AUDITOR_RECEIPT_BINDING_INVALID")
@@ -369,21 +386,24 @@ def evaluate_launch_preflight(
     market_result = dependencies.market_gate_factory(config, expected_hash).evaluate(
         DecisionClass.NEW_TRADE
     )
-    if not isinstance(market_result, dict) or market_result.get("gate_status") != "PASS":
-        raw_reasons = market_result.get("reason_codes", []) if isinstance(
-            market_result, dict
-        ) else []
+    if (
+        not isinstance(market_result, dict)
+        or market_result.get("gate_status") != "PASS"
+    ):
+        raw_reasons = (
+            market_result.get("reason_codes", [])
+            if isinstance(market_result, dict)
+            else []
+        )
         market_reasons = [
             reason
             for reason in raw_reasons
             if isinstance(reason, str) and _REASON_CODE_RE.fullmatch(reason)
         ][:10]
-        details: dict[str, object] = {
-            "market_data_reason_codes": market_reasons
-        }
-        market_error = market_result.get("error") if isinstance(
-            market_result, dict
-        ) else None
+        details: dict[str, object] = {"market_data_reason_codes": market_reasons}
+        market_error = (
+            market_result.get("error") if isinstance(market_result, dict) else None
+        )
         if isinstance(market_error, str) and _MARKET_ERROR_CODE_RE.fullmatch(
             market_error
         ):
@@ -404,6 +424,7 @@ def evaluate_launch_preflight(
         auditor_receipt_sha256=auditor_hash,
         market_policy_sha256=policy_hash,
         market_validation_sha256=market_validation_hash,
+        owner_authorization_receipt_sha256=_sha256(owner_authorization_raw),
         model_attestation_exception_sha256=model_exception_hash,
         actual_start_utc=actual_start,
     )
@@ -504,9 +525,7 @@ def validate_launch_controls(db: Database, config: Day1LaunchConfig) -> LaunchCo
     ):
         raise LaunchError("EXPERIMENT_CLOCK_MISMATCH")
     if (
-        OwnerAuthorizationStore(db).current(
-            clock_event_sha256=clock.event_sha256
-        )
+        OwnerAuthorizationStore(db).current(clock_event_sha256=clock.event_sha256)
         != "AUTHORIZED"
     ):
         raise LaunchError("OWNER_AUTHORIZATION_INVALID")
@@ -640,60 +659,193 @@ class _LockHeartbeat:
                 return
 
 
+@dataclass(frozen=True)
+class PreparedEpochLaunch:
+    manifest: dict[str, Any]
+    provider: CodexAutonomousCLIProvider
+    toolbox: AutonomyToolbox
+
+
+def _launch_bootstrap_bundle(
+    db: Database,
+    config: Day1LaunchConfig,
+    preflight: LaunchPreflight,
+    controls: LaunchControls,
+) -> TraderInputBundle:
+    clock = ExperimentClockStore(db).load()
+    if clock is None:
+        raise LaunchError("EXPERIMENT_CLOCK_MISSING")
+    clock_snapshot = clock.snapshot(preflight.actual_start_utc)
+    epoch = ExperimentEpochStore(db).projection(preflight.actual_start_utc)
+    clock_snapshot.update(
+        {
+            "epoch_state": epoch["state"],
+            "epoch_id": epoch["epoch_id"],
+            "epoch_activation_required": epoch["activation_required"],
+            "historical_cycle_count": epoch["historical_cycle_count"],
+            "historical_ledger_event_count": epoch["historical_ledger_event_count"],
+            "previous_history_classification": epoch["previous_history_classification"],
+        }
+    )
+    if epoch["state"] == "ACTIVE":
+        clock_snapshot.update(
+            {
+                key: value
+                for key, value in epoch.items()
+                if key not in {"state", "activation_required"}
+            }
+        )
+    ledger = AutonomousExperimentLedger(
+        db, allocation=config.initial_allocation
+    ).project()
+    return TraderInputBundle(
+        decision_cycle_id=f"launch-bootstrap-{config.launch_attempt_id}",
+        utc_timestamp=preflight.actual_start_utc.isoformat().replace("+00:00", "Z"),
+        market_session_state="LAUNCH_PREFLIGHT",
+        reconciliation_receipt={"status": "PASS"},
+        experiment_subledger_snapshot={
+            "allocation": str(ledger.allocation),
+            "cash": str(ledger.cash),
+            "market_value": str(ledger.market_value),
+            "equity": str(ledger.equity),
+            "high_water_mark": str(ledger.high_water_mark),
+            "drawdown": str(ledger.drawdown),
+            "fees": str(ledger.fees),
+        },
+        broker_account_snapshot={
+            "paper_account": True,
+            "declared_options_level": 4,
+            "global_broker_balances_redacted": True,
+        },
+        positions_snapshot=[
+            {
+                "contract_id": position.contract_id,
+                "symbol": position.symbol,
+                "sec_type": position.sec_type,
+                "quantity": str(position.quantity),
+            }
+            for position in ledger.positions
+        ],
+        open_orders_snapshot=[],
+        risk_snapshot={"policy": "AGGRESSIVE_CAPITAL_BOUNDARY_V1"},
+        kill_switch_state=controls.kill_switch_state,
+        market_data_snapshot={
+            "gate_status": "PASS",
+            "policy_version": "MARKET_DATA_POLICY_V1",
+        },
+        candidate_screen_results=[],
+        relevant_previous_immutable_decisions=[],
+        process_policy_version="AUTONOMOUS_RESEARCH_V1",
+        execution_realism_version="IBKR_PAPER_WHATIF_AND_PAPER_EXECUTION_V1",
+        benchmark_state={},
+        experiment_clock=clock_snapshot,
+    )
+
+
 def _write_epoch_manifest(
-    config: Day1LaunchConfig, preflight: Any
-) -> dict[str, Any]:
-    """Observational epoch provenance (AUTONOMY_EPOCH_1).
-
-    Never influences strategy; never blocks launch when optional
-    capabilities are unavailable. Failures to hash optional artifacts
-    degrade to None, but kernel hashing is required (structural).
-    """
-
+    db: Database,
+    config: Day1LaunchConfig,
+    preflight: LaunchPreflight,
+    controls: LaunchControls,
+    dependencies: LaunchDependencies,
+) -> PreparedEpochLaunch:
     repo_root = Path(config.repo_root).resolve()
     code_root = Path(__file__).resolve().parents[1]
     kernel = build_kernel_manifest(code_root)
-
-    def _optional_file_hash(relative: str) -> str | None:
-        try:
-            target = repo_root / relative
-            if not target.exists():
-                return None
-            return hashlib.sha256(target.read_bytes()).hexdigest()
-        except OSError:
-            return None
-
-    from .autonomy_toolbox import quantconnect_available
-    from .autonomy_workspace import AutonomyWorkspace
+    try:
+        stored_kernel = json.loads(
+            (code_root / "IMMUTABLE_EXECUTION_KERNEL_MANIFEST.json").read_text(
+                encoding="utf-8"
+            )
+        )
+    except (OSError, json.JSONDecodeError) as exc:
+        raise LaunchError("IMMUTABLE_KERNEL_MANIFEST_INVALID") from exc
+    if verify_kernel_manifest(code_root, stored_kernel).get("verified") is not True:
+        raise LaunchError("IMMUTABLE_KERNEL_MANIFEST_MISMATCH")
 
     workspace_root = repo_root / "state" / "ibkr_paper_30d" / "autonomy_workspace"
+    workspace = AutonomyWorkspace(
+        workspace_root,
+        sandbox=WSLResearchSandbox(repo_root=code_root),
+    )
+    if dependencies.research_toolbox_factory is None:
+        toolbox = AutonomyToolbox(
+            IBKRResearchToolbox(
+                declared_options_level=4,
+                expected_account_hash=preflight.expected_account_hash,
+            ),
+            workspace,
+        )
+    else:
+        toolbox = dependencies.research_toolbox_factory(workspace, preflight)
+        if not isinstance(toolbox, AutonomyToolbox):
+            raise LaunchError("RESEARCH_TOOLBOX_FACTORY_INVALID")
+    provider = CodexAutonomousCLIProvider(
+        owner_model_attestation_exception_sha256=(
+            preflight.model_attestation_exception_sha256
+        )
+    )
+    bundle = _launch_bootstrap_bundle(db, config, preflight, controls)
+    bootstrap = AutonomyBootstrapBuilder(db).build(
+        bundle=bundle,
+        toolbox=toolbox,
+        execute_paper=True,
+    )
+    provider.install_first_process_bootstrap(bootstrap)
+    provider._autonomy_bootstrap_initialized = True
+    tool_manifest = toolbox.manifest()
+    request = build_request(
+        bundle,
+        model=config.model,
+        reasoning_effort=config.reasoning_effort,
+        experiment_id=str(
+            bundle.experiment_clock.get("epoch_id") or "PRE_EPOCH_HISTORY"
+        ),
+        timeout_seconds=180,
+        trigger="DAY1_LAUNCH",
+    )
+    prompt = provider._prompt_payload(
+        request,
+        bundle,
+        [],
+        tool_manifest,
+        first_process_bootstrap=bootstrap,
+    )
+    risk_policy = CapitalBoundaryRiskPolicy().model_dump(mode="json")
     manifest = build_epoch_manifest(
         EpochManifestInputs(
+            created_at_utc=preflight.actual_start_utc.isoformat().replace(
+                "+00:00", "Z"
+            ),
             git_commit_sha=_current_git_commit(repo_root),
             model=config.model,
             reasoning_effort=config.reasoning_effort,
-            primary_objective_hash=hashlib.sha256(
-                b"Maximize terminal experimental PAPER equity over the remaining experiment horizon."
-            ).hexdigest(),
-            effective_prompt_hash=_effective_prompt_hash(),
-            tool_manifest_hash=_tool_manifest_hash(),
+            mandate_payload=prompt["mandate"],
+            first_process_bootstrap=bootstrap,
+            tool_manifest=tool_manifest,
             immutable_kernel_manifest_hash=kernel["kernel_manifest_sha256"],
-            market_policy_hash=_optional_file_hash(
-                "state/ibkr_paper_30d/reports/market_data_policy_v1.json"
-            ),
-            risk_policy_hash=_optional_file_hash(
-                "state/ibkr_paper_30d/reports/owner_authorization_v1.json"
-            ),
-            authorization_receipt_hash=preflight.authorization_event_id,
-            paper_identity_hash=preflight.expected_account_hash,
-            quantconnect_capability=(
-                "OPTIONAL_AVAILABLE" if quantconnect_available() else "OPTIONAL_UNAVAILABLE"
+            market_policy_sha256=preflight.market_policy_sha256,
+            risk_policy_payload=risk_policy,
+            receipt_sha256={
+                "auditor": preflight.auditor_receipt_sha256,
+                "launch_attempt_binding": hashlib.sha256(
+                    config.launch_attempt_binding_path.read_bytes()
+                ).hexdigest(),
+                "market_validation": preflight.market_validation_sha256,
+                "model_attestation_exception": (
+                    preflight.model_attestation_exception_sha256
+                ),
+                "owner_authorization": (preflight.owner_authorization_receipt_sha256),
+                "paper_identity": preflight.identity_receipt_sha256,
+            },
+            expected_paper_identity_hash=preflight.expected_account_hash,
+            quantconnect_capability=str(
+                bootstrap["quantconnect"].get("status") or "OPTIONAL_UNAVAILABLE"
             ),
             self_tooling_enabled=True,
-            persistent_workspace_enabled=workspace_root.exists() or True,
+            persistent_workspace_enabled=True,
         )
     )
-    manifest["epoch_manifest_sha256"] = epoch_manifest_hash(manifest)
     destination = config.epoch_manifest_path or (
         repo_root
         / "state"
@@ -701,11 +853,21 @@ def _write_epoch_manifest(
         / "reports"
         / "autonomy_epoch_manifest.json"
     )
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(
-        canonical_bytes(manifest).decode("utf-8"), encoding="utf-8"
+    _atomic_write(destination, canonical_bytes(manifest))
+    EventRepository(db).append(
+        "EPOCH_MANIFEST_CREATED",
+        {
+            "schema": "EPOCH_MANIFEST_CREATED_V1",
+            "epoch_id": manifest["epoch_id"],
+            "launch_attempt_id": config.launch_attempt_id,
+            "epoch_manifest_sha256": manifest["epoch_manifest_sha256"],
+            "immutable_kernel_manifest_hash": manifest[
+                "immutable_kernel_manifest_hash"
+            ],
+            "created_at_utc": preflight.actual_start_utc,
+        },
     )
-    return manifest
+    return PreparedEpochLaunch(manifest=manifest, provider=provider, toolbox=toolbox)
 
 
 def _current_git_commit(repo_root: Path) -> str:
@@ -725,24 +887,7 @@ def _current_git_commit(repo_root: Path) -> str:
         return "UNKNOWN"
 
 
-def _effective_prompt_hash() -> str:
-    from .autonomous_research import CodexAutonomousCLIProvider
-
-    payload = CodexAutonomousCLIProvider._prompt_payload
-    source = __import__("inspect").getsource(payload)
-    return hashlib.sha256(source.encode("utf-8")).hexdigest()
-
-
-def _tool_manifest_hash() -> str:
-    from .ibkr_research_tools import IBKRResearchToolbox
-
-    manifest = IBKRResearchToolbox.manifest(None)
-    return sha256_json(manifest)
-
-
-def run_day1_launch(
-    config: Day1LaunchConfig, dependencies: LaunchDependencies
-) -> str:
+def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) -> str:
     try:
         preflight = evaluate_launch_preflight(config, dependencies)
     except LaunchError as exc:
@@ -765,11 +910,13 @@ def run_day1_launch(
             raise LaunchError("EXECUTION_LOCK_OWNER_ACTION_REQUIRED")
 
         try:
-            _write_epoch_manifest(config, preflight)
             controls = validate_launch_controls(db, config)
             if controls.authorization_event_id != preflight.authorization_event_id:
                 raise LaunchError("OWNER_AUTHORIZATION_CHANGED_DURING_PREFLIGHT")
             _consume_launch_attempt(db, config, preflight, controls)
+            prepared = _write_epoch_manifest(
+                db, config, preflight, controls, dependencies
+            )
             with paper_arm_environment(preflight.expected_account_hash):
                 auditor_gate = dependencies.auditor_gate_factory(config)
                 market_gate = dependencies.market_gate_factory(
@@ -788,11 +935,22 @@ def run_day1_launch(
                     runtime_market_gate=market_gate,
                     runtime_auditor_gate=auditor_gate,
                     launch_attempt_id=config.launch_attempt_id,
-                    provider=CodexAutonomousCLIProvider(
-                        owner_model_attestation_exception_sha256=(
-                            preflight.model_attestation_exception_sha256
-                        )
-                    ),
+                    provider=prepared.provider,
+                    toolbox=prepared.toolbox,
+                )
+                EventRepository(db).append(
+                    "EPOCH_STARTED",
+                    {
+                        "schema": "EPOCH_STARTED_V1",
+                        "epoch_id": prepared.manifest["epoch_id"],
+                        "launch_attempt_id": config.launch_attempt_id,
+                        "epoch_manifest_sha256": prepared.manifest[
+                            "epoch_manifest_sha256"
+                        ],
+                        "service_constructed": True,
+                        "initial_safety_gate": "PASS",
+                        "started_at_utc": datetime.now(timezone.utc),
+                    },
                 )
                 heartbeat = _LockHeartbeat(
                     config=config,
@@ -838,9 +996,11 @@ def _lock_owner(now: datetime) -> LockOwner:
     import psutil
 
     host = socket.gethostname().encode("utf-8")
-    process_start = datetime.fromtimestamp(
-        psutil.Process(os.getpid()).create_time(), timezone.utc
-    ).isoformat().replace("+00:00", "Z")
+    process_start = (
+        datetime.fromtimestamp(psutil.Process(os.getpid()).create_time(), timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
     boot_epoch = int(psutil.boot_time())
     return LockOwner(
         owner_id=str(uuid4()),
