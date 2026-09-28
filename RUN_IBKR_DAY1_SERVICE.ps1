@@ -51,6 +51,7 @@ if ($ValidateOnly) {
         execute = ""
         arguments = ""
         user_id = ""
+        user_sid = ""
         logon_type = ""
         run_level = ""
         multiple_instances = ""
@@ -60,6 +61,7 @@ if ($ValidateOnly) {
         weekly_days = @()
         weekly_start = ""
         logon_users = @()
+        logon_user_sids = @()
     }
     try {
         $Task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
@@ -67,6 +69,7 @@ if ($ValidateOnly) {
         $WeeklyDays = New-Object System.Collections.Generic.List[string]
         $WeeklyStart = ""
         $LogonUsers = New-Object System.Collections.Generic.List[string]
+        $LogonUserSids = New-Object System.Collections.Generic.List[string]
         foreach ($Trigger in @($Task.Triggers)) {
             if ($null -ne $Trigger.PSObject.Properties["DaysOfWeek"] -and [string]$Trigger.DaysOfWeek) {
                 $DayMask = 0
@@ -93,13 +96,28 @@ if ($ValidateOnly) {
                 }
             }
             if ($null -ne $Trigger.PSObject.Properties["UserId"] -and [string]$Trigger.UserId) {
-                $LogonUsers.Add([string]$Trigger.UserId)
+                $TriggerUser = [string]$Trigger.UserId
+                $LogonUsers.Add($TriggerUser)
+                try {
+                    $TriggerSid = ([Security.Principal.NTAccount]$TriggerUser).Translate(
+                        [Security.Principal.SecurityIdentifier]
+                    ).Value
+                    $LogonUserSids.Add($TriggerSid)
+                }
+                catch { }
             }
         }
         $RestartMinutes = 0
         if ($null -ne $Task.Settings.PSObject.Properties["RestartInterval"] -and [string]$Task.Settings.RestartInterval) {
             try { $RestartMinutes = [int][Xml.XmlConvert]::ToTimeSpan([string]$Task.Settings.RestartInterval).TotalMinutes } catch { }
         }
+        $TaskUserSid = ""
+        try {
+            $TaskUserSid = ([Security.Principal.NTAccount]([string]$Task.Principal.UserId)).Translate(
+                [Security.Principal.SecurityIdentifier]
+            ).Value
+        }
+        catch { }
         $TaskSnapshot = [ordered]@{
             task_name = [string]$Task.TaskName
             exists = $true
@@ -107,6 +125,7 @@ if ($ValidateOnly) {
             execute = [string]$Action.Execute
             arguments = [string]$Action.Arguments
             user_id = [string]$Task.Principal.UserId
+            user_sid = $TaskUserSid
             logon_type = [string]$Task.Principal.LogonType
             run_level = [string]$Task.Principal.RunLevel
             multiple_instances = [string]$Task.Settings.MultipleInstances
@@ -116,17 +135,21 @@ if ($ValidateOnly) {
             weekly_days = @($WeeklyDays)
             weekly_start = $WeeklyStart
             logon_users = @($LogonUsers)
+            logon_user_sids = @($LogonUserSids)
         }
     }
     catch { }
     $TaskJson = $TaskSnapshot | ConvertTo-Json -Depth 6 -Compress
     $TaskBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($TaskJson))
-    $OwnerUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+    $OwnerIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $OwnerUser = $OwnerIdentity.Name
+    $OwnerSid = $OwnerIdentity.User.Value
     $ValidationOutput = @(& $PythonExe -B -m ibkr_paper_30d.scheduler_validation `
         --repo-root $ResolvedRepoRoot `
         --approved-head $ApprovedHead `
         --expected-repo-root $ApprovedRepoRoot `
         --expected-owner $OwnerUser `
+        --expected-owner-sid $OwnerSid `
         --task-name $TaskName `
         --task-snapshot-base64 $TaskBase64 `
         --require-frozen 2>&1)

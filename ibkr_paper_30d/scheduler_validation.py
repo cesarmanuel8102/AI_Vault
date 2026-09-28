@@ -30,6 +30,7 @@ class SchedulerExpectation:
     repo_root: str
     approved_head: str
     owner_user: str
+    owner_sid: str
     require_frozen: bool
 
 
@@ -50,6 +51,8 @@ class SchedulerTaskSnapshot:
     weekly_days: tuple[str, ...]
     weekly_start: str
     logon_users: tuple[str, ...]
+    user_sid: str
+    logon_user_sids: tuple[str, ...]
 
     @classmethod
     def from_mapping(cls, payload: Mapping[str, Any]) -> "SchedulerTaskSnapshot":
@@ -76,6 +79,10 @@ class SchedulerTaskSnapshot:
             weekly_days=tuple(str(item) for item in payload.get("weekly_days", ())),
             weekly_start=str(payload.get("weekly_start", "")),
             logon_users=tuple(str(item) for item in payload.get("logon_users", ())),
+            user_sid=str(payload.get("user_sid", "")),
+            logon_user_sids=tuple(
+                str(item) for item in payload.get("logon_user_sids", ())
+            ),
         )
 
 
@@ -145,7 +152,10 @@ def validate_scheduler_startup(
     if _has_flag(task.arguments, "-InspectStatus"):
         reasons.append("ACTION_INSPECTION_MODE_FORBIDDEN")
 
-    if task.user_id.casefold() != expected.owner_user.casefold():
+    if (
+        not task.user_sid
+        or task.user_sid.casefold() != expected.owner_sid.casefold()
+    ):
         reasons.append("PRINCIPAL_USER_MISMATCH")
     if task.logon_type.casefold() != "interactive":
         reasons.append("INTERACTIVE_TOKEN_REQUIRED")
@@ -161,8 +171,8 @@ def validate_scheduler_startup(
         item.casefold() for item in WEEKDAYS
     } or task.weekly_start != "09:35":
         reasons.append("WEEKLY_TRIGGER_INVALID")
-    if expected.owner_user.casefold() not in {
-        item.casefold() for item in task.logon_users
+    if expected.owner_sid.casefold() not in {
+        item.casefold() for item in task.logon_user_sids
     }:
         reasons.append("LOGON_TRIGGER_MISSING")
 
@@ -291,6 +301,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--approved-head", required=True)
     parser.add_argument("--expected-repo-root", required=True)
     parser.add_argument("--expected-owner", required=True)
+    parser.add_argument("--expected-owner-sid", required=True)
     parser.add_argument("--task-name", default="CodexIBKRMarketDataGate")
     parser.add_argument("--task-snapshot-base64", required=True)
     parser.add_argument("--require-frozen", action="store_true")
@@ -309,6 +320,7 @@ def main(argv: list[str] | None = None) -> int:
                 repo_root=args.expected_repo_root,
                 approved_head=args.approved_head,
                 owner_user=args.expected_owner,
+                owner_sid=args.expected_owner_sid,
                 require_frozen=args.require_frozen,
             ),
         )

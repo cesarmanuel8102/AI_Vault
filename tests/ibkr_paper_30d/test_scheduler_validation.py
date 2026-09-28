@@ -17,6 +17,7 @@ from ibkr_paper_30d.scheduler_validation import (
 HEAD = "a" * 40
 ROOT = r"C:\AI_VAULT_IBKR"
 USER = r"CXASUS_TUF_F16\cesar"
+USER_SID = "S-1-5-21-214160970-1890373857-4055601883-1001"
 REPO = Path(__file__).resolve().parents[2]
 
 
@@ -26,6 +27,7 @@ def expectation(**updates) -> SchedulerExpectation:
         repo_root=ROOT,
         approved_head=HEAD,
         owner_user=USER,
+        owner_sid=USER_SID,
         require_frozen=True,
     )
     return replace(subject, **updates)
@@ -61,6 +63,8 @@ def task(**updates) -> SchedulerTaskSnapshot:
         weekly_days=("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"),
         weekly_start="09:35",
         logon_users=(USER,),
+        user_sid=USER_SID,
+        logon_user_sids=(USER_SID,),
     )
     return replace(subject, **updates)
 
@@ -95,14 +99,14 @@ def test_complete_frozen_scheduler_and_runtime_validation_passes():
         ({"enabled": True}, "SCHEDULER_TASK_NOT_FROZEN"),
         ({"execute": "cmd.exe"}, "ACTION_EXECUTABLE_MISMATCH"),
         ({"arguments": ("-Scheduled",)}, "ACTION_SCRIPT_MISMATCH"),
-        ({"user_id": r"OTHER\owner"}, "PRINCIPAL_USER_MISMATCH"),
+        ({"user_sid": "S-1-5-21-999"}, "PRINCIPAL_USER_MISMATCH"),
         ({"logon_type": "ServiceAccount"}, "INTERACTIVE_TOKEN_REQUIRED"),
         ({"run_level": "Limited"}, "HIGHEST_RUNLEVEL_REQUIRED"),
         ({"multiple_instances": "Parallel"}, "MULTIPLE_INSTANCES_NOT_IGNORE_NEW"),
         ({"working_directory": r"C:\Windows"}, "WORKING_DIRECTORY_MISMATCH"),
         ({"restart_count": 0}, "RETRY_POLICY_INSUFFICIENT"),
         ({"weekly_days": ("Friday",)}, "WEEKLY_TRIGGER_INVALID"),
-        ({"logon_users": ()}, "LOGON_TRIGGER_MISSING"),
+        ({"logon_user_sids": ()}, "LOGON_TRIGGER_MISSING"),
     ],
 )
 def test_scheduler_configuration_defects_fail_closed(task_updates, reason):
@@ -138,6 +142,30 @@ def test_activation_validation_requires_enabled_task_instead_of_frozen_task():
     )
     assert report["status"] == "PASS"
     assert report["scheduler_frozen"] is False
+
+
+def test_scheduler_accepts_windows_normalized_local_account_name_with_same_sid():
+    report = validate_scheduler_startup(
+        task(user_id="cesar", logon_users=("cesar",)), runtime(), expectation()
+    )
+
+    assert report["status"] == "PASS"
+    assert report["reason_codes"] == []
+
+
+@pytest.mark.parametrize(
+    "task_updates",
+    [
+        {"user_sid": ""},
+        {"logon_user_sids": ()},
+    ],
+)
+def test_scheduler_fails_closed_when_required_identity_sid_is_unavailable(task_updates):
+    report = validate_scheduler_startup(
+        task(**task_updates), runtime(), expectation()
+    )
+
+    assert report["status"] == "BLOCK"
 
 
 def test_approved_head_and_repo_arguments_are_exact_not_prefix_matches():
