@@ -17,6 +17,7 @@ from ibkr_paper_30d.autonomous_research import (
 )
 from ibkr_paper_30d.autonomy_toolbox import AutonomyToolbox, quantconnect_available
 from ibkr_paper_30d.autonomy_workspace import AutonomyWorkspace, WorkspaceViolation
+from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.research_sandbox import WSLResearchSandbox
 
 
@@ -391,9 +392,15 @@ def test_workspace_registry_is_append_only_and_hashed(workspace):
     registry = workspace.paths.registry_path.read_text(encoding="utf-8")
     lines = [line for line in registry.splitlines() if line.strip()]
     assert len(lines) == 2
-    for line in lines:
+    previous = None
+    for sequence, line in enumerate(lines, start=1):
         record = json.loads(line)
-        assert record["schema"] == "AUTONOMY_WORKSPACE_EVENT_V1"
+        assert record["schema"] == "AUTONOMY_WORKSPACE_EVENT_V2"
+        assert record["sequence"] == sequence
+        assert record["previous_record_sha256"] == previous
+        unsigned = {key: value for key, value in record.items() if key != "record_sha256"}
+        assert record["record_sha256"] == sha256_json(unsigned)
+        previous = record["record_sha256"]
         assert record["event"]["artifact"]["sha256"]
 
 
@@ -402,3 +409,106 @@ def test_workspace_summary_shape(workspace):
     summary = workspace.summary()
     assert summary["artifact_count"] == 1
     assert summary["recent_artifacts"][0]["path"] == "memory/x.md"
+
+
+def test_workspace_rejects_artifact_modified_outside_registry(workspace):
+    workspace.write_artifact("memory/a.md", "original", cycle_id="c1")
+    (workspace.paths.memory / "a.md").write_text("tampered", encoding="utf-8")
+
+    with pytest.raises(WorkspaceViolation, match="content hash mismatch"):
+        workspace.read_artifact("memory/a.md")
+    with pytest.raises(WorkspaceViolation, match="content hash mismatch"):
+        workspace.list_artifacts()
+
+
+@pytest.mark.parametrize(
+    "tail",
+    (
+        b'{"schema":"AUTONOMY_WORKSPACE_EVENT_V2"',
+        b"not-json\n",
+        b"[]\n",
+    ),
+)
+def test_workspace_rejects_malformed_or_truncated_registry_tail(tmp_path, tail):
+    workspace = AutonomyWorkspace(tmp_path / "workspace")
+    workspace.paths.registry_path.write_bytes(tail)
+
+    with pytest.raises(WorkspaceViolation, match="registry"):
+        workspace.list_artifacts()
+
+
+def test_workspace_rejects_duplicate_active_create_operations(workspace):
+    artifact = workspace.write_artifact("memory/a.md", "a", cycle_id="c1")
+    workspace._append_registry(
+        {
+            "event_type": "ARTIFACT_WRITTEN",
+            "operation": "CREATE",
+            "artifact": artifact,
+        }
+    )
+
+    with pytest.raises(WorkspaceViolation, match="duplicate active artifact"):
+        workspace.list_artifacts()
+
+
+def test_workspace_migrates_v1_history_with_a_byte_hash_anchor(tmp_path):
+    workspace = AutonomyWorkspace(tmp_path / "workspace")
+    content = b"legacy"
+    (workspace.paths.memory / "legacy.md").write_bytes(content)
+    legacy = {
+        "schema": "AUTONOMY_WORKSPACE_EVENT_V1",
+        "event_id": "ws-legacy",
+        "created_at_utc": "2026-09-01T00:00:00Z",
+        "event": {
+            "event_type": "ARTIFACT_CREATED",
+            "artifact": {
+                "schema": "AUTONOMY_WORKSPACE_ARTIFACT_V1",
+                "artifact_id": "art-legacy",
+                "path": "memory/legacy.md",
+                "sha256": __import__("hashlib").sha256(content).hexdigest(),
+                "size_bytes": len(content),
+                "created_by_cycle": "legacy",
+                "created_at_utc": "2026-09-01T00:00:00Z",
+            },
+        },
+    }
+    legacy_bytes = canonical_bytes(legacy) + b"\n"
+    workspace.paths.registry_path.write_bytes(legacy_bytes)
+
+    workspace.write_artifact("memory/new.md", "new", cycle_id="c2")
+
+    records = [json.loads(line) for line in workspace.paths.registry_path.read_text(encoding="utf-8").splitlines()]
+    assert records[0] == legacy
+    assert records[1]["event"]["event_type"] == "V1_MIGRATION_ANCHOR"
+    assert records[1]["event"]["legacy_registry_sha256"] == __import__("hashlib").sha256(legacy_bytes).hexdigest()
+    assert records[1]["event"]["legacy_record_count"] == 1
+    assert [item["path"] for item in workspace.list_artifacts()] == [
+        "memory/legacy.md",
+        "memory/new.md",
+    ]
+
+
+def test_workspace_update_and_delete_leave_one_truthful_projection(workspace):
+    workspace.write_artifact("research/result.json", "one", cycle_id="c1")
+    updated = workspace.write_artifact("research/result.json", "two", cycle_id="c2")
+
+    assert workspace.list_artifacts() == [updated]
+    workspace.delete_artifact("research/result.json", cycle_id="c3")
+    assert workspace.list_artifacts() == []
+    with pytest.raises(WorkspaceViolation, match="not active"):
+        workspace.read_artifact("research/result.json")
+
+
+def test_workspace_summary_enforces_a_bounded_artifact_window(workspace):
+    for index in range(5):
+        workspace.write_artifact(f"memory/{index}.md", str(index))
+
+    summary = workspace.summary(max_artifacts=2)
+
+    assert summary["artifact_count"] == 5
+    assert [item["path"] for item in summary["recent_artifacts"]] == [
+        "memory/3.md",
+        "memory/4.md",
+    ]
+    with pytest.raises(WorkspaceViolation, match="summary bound"):
+        workspace.summary(max_artifacts=1000)
