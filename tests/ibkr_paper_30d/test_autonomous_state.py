@@ -230,6 +230,9 @@ def test_state_builder_refreshes_equity_and_keeps_discovery_unconstrained(tmp_pa
         assert value.broker_account_snapshot["experiment_buying_power"] == "599.00"
         assert value.broker_account_snapshot["global_broker_balances_redacted"] is True
         assert value.experiment_clock["remaining_days"] > 28
+        assert value.experiment_clock["epoch_state"] == "PRE_EPOCH_HISTORY"
+        assert value.experiment_clock["epoch_id"] is None
+        assert value.experiment_clock["epoch_activation_required"] is True
         assert len(value.open_orders_snapshot) == 1
         open_order = value.open_orders_snapshot[0]
         assert open_order["permId"] == 9001

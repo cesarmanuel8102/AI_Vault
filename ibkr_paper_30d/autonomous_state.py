@@ -8,6 +8,7 @@ from typing import Any
 from .autonomous_research import ResearchRequest, ResearchTool
 from .canonical import sha256_json
 from .experiment_control import ExperimentClockStore, KillSwitchStore
+from .experiment_epoch import ExperimentEpochStore
 from .experiment_ledger import AutonomousExperimentLedger
 from .ibkr_research_tools import IBKRResearchToolbox
 from .open_order_management import (
@@ -61,6 +62,7 @@ class AutonomousStateBuilder:
             duration_days=duration_days,
             initial_allocation=allocation,
         )
+        self.epoch_store = ExperimentEpochStore(db)
         self.kill_switch_store = KillSwitchStore(db)
         if (
             kill_switch_state is not None
@@ -338,7 +340,31 @@ class AutonomousStateBuilder:
         return list(reversed(items))
 
     def _clock(self, now: datetime) -> dict[str, Any]:
-        return self.experiment_clock.snapshot(now)
+        snapshot = self.experiment_clock.snapshot(now)
+        epoch = self.epoch_store.projection(now)
+        snapshot.update(
+            {
+                "epoch_state": epoch["state"],
+                "epoch_id": epoch["epoch_id"],
+                "epoch_activation_required": epoch["activation_required"],
+                "historical_cycle_count": epoch["historical_cycle_count"],
+                "historical_ledger_event_count": epoch[
+                    "historical_ledger_event_count"
+                ],
+                "previous_history_classification": epoch[
+                    "previous_history_classification"
+                ],
+            }
+        )
+        if epoch["state"] == "ACTIVE":
+            snapshot.update(
+                {
+                    key: value
+                    for key, value in epoch.items()
+                    if key not in {"state", "activation_required"}
+                }
+            )
+        return snapshot
 
     @staticmethod
     def _broker_now(account: dict[str, Any]) -> datetime:

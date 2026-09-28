@@ -41,6 +41,7 @@ from .owner_authorization import (
 )
 from .persistence import Database
 from .prerequisite_tools import validate_launch_attempt_binding
+from .repositories import EventRepository
 from .runtime_integrity import RuntimeAuditorGate, RuntimeMarketDataGate
 
 
@@ -549,10 +550,6 @@ def _consume_launch_attempt(
             if prior.get("launch_attempt_id") == config.launch_attempt_id:
                 raise LaunchError("LAUNCH_ATTEMPT_REUSED")
 
-        predecessor = db.execute(
-            "SELECT event_sha256 FROM state_events ORDER BY sequence DESC LIMIT 1"
-        ).fetchone()
-        previous_sha = str(predecessor[0]) if predecessor is not None else None
         payload = {
             "schema": "DAY1_LAUNCH_ATTEMPT_ACCEPTED_V1",
             "launch_attempt_id": config.launch_attempt_id,
@@ -564,24 +561,7 @@ def _consume_launch_attempt(
             "market_validation_sha256": preflight.market_validation_sha256,
             "created_at_utc": preflight.actual_start_utc,
         }
-        event_sha = sha256_json(
-            {"previous_event_sha256": previous_sha, "payload": payload}
-        )
-        db.execute(
-            "INSERT INTO state_events("
-            "sequence,event_id,event_type,payload_json,payload_sha256,"
-            "previous_event_sha256,event_sha256,created_at_utc"
-            ") VALUES((SELECT COALESCE(MAX(sequence),0)+1 FROM state_events),?,?,?,?,?,?,?)",
-            (
-                str(uuid4()),
-                "DAY1_LAUNCH_ATTEMPT_ACCEPTED",
-                canonical_bytes(payload).decode("utf-8"),
-                sha256_json(payload),
-                previous_sha,
-                event_sha,
-                preflight.actual_start_utc.isoformat().replace("+00:00", "Z"),
-            ),
-        )
+        EventRepository(db).append("DAY1_LAUNCH_ATTEMPT_ACCEPTED", payload)
 
 
 def _restore_environment(name: str, previous: str | None) -> None:

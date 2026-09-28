@@ -50,6 +50,7 @@ from ibkr_paper_30d.owner_authorization import (
     create_owner_authorization,
 )
 from ibkr_paper_30d.persistence import Database
+from ibkr_paper_30d.repositories import EventRepository
 from ibkr_paper_30d.prerequisite_tools import bind_launch_attempt
 from ibkr_paper_30d.trader_invocation import TraderDecision
 
@@ -1243,8 +1244,10 @@ def test_complete_fake_launch_persists_running_without_broker_write(
         ).fetchone()
         assert row is not None
         running = json.loads(str(row[0]))
+        chain = EventRepository(db).verify_chain()
     assert running["decision"] == "NO_TRADE"
     assert running["launch_attempt_id"] == ctx.config.launch_attempt_id
+    assert chain.valid is True
     assert ctx.executor_tripwire.calls == []
     assert ctx.ib_tripwire.calls == []
 

@@ -103,6 +103,8 @@ def test_service_wires_the_os_enforced_research_sandbox_by_default(tmp_path, mon
         subject = make_service(db, clock)
 
     assert isinstance(subject.workspace.sandbox, WSLResearchSandbox)
+    assert subject.epoch_state["state"] == "PRE_EPOCH_HISTORY"
+    assert subject.epoch_state["activation_required"] is True
 
 
 def test_no_positions_scans_every_five_minutes(tmp_path, monkeypatch):

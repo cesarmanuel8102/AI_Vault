@@ -20,11 +20,12 @@ from .autonomy_toolbox import AutonomyToolbox
 from .autonomy_workspace import AutonomyWorkspace
 from .canonical import canonical_bytes, sha256_json
 from .experiment_control import ExperimentClockStore, KillSwitchStore, OwnerAuthorizationStore
+from .experiment_epoch import ExperimentEpochStore
 from .experiment_ledger import AutonomousExperimentLedger
 from .ibkr_research_tools import IBKRResearchToolbox
 from .market_data import DecisionClass
 from .persistence import Database
-from .repositories import utc_now
+from .repositories import EventRepository, utc_now
 from .research_sandbox import WSLResearchSandbox
 from .runtime_integrity import RuntimeAuditorGate, RuntimeMarketDataGate
 from .trader_invocation import TraderDecision
@@ -69,34 +70,13 @@ def _append_alert(db: Database, event_type: str, payload: dict[str, Any]) -> Non
 
 
 def _append_state_event(db: Database, event_type: str, payload: dict[str, Any]) -> None:
-    row = db.execute(
-        "SELECT event_sha256 FROM state_events ORDER BY sequence DESC LIMIT 1"
-    ).fetchone()
-    previous = str(row[0]) if row is not None else None
     body = {
         "schema": "AUTONOMOUS_SERVICE_STATE_EVENT_V1",
         "event_type": event_type,
         "created_at_utc": utc_now(),
         **payload,
     }
-    event_sha = sha256_json(
-        {"previous_event_sha256": previous, "payload": body}
-    )
-    db.execute(
-        "INSERT INTO state_events("
-        "sequence,event_id,event_type,payload_json,payload_sha256,"
-        "previous_event_sha256,event_sha256,created_at_utc"
-        ") VALUES((SELECT COALESCE(MAX(sequence),0)+1 FROM state_events),?,?,?,?,?,?,?)",
-        (
-            str(new_uuid7()),
-            event_type,
-            canonical_bytes(body).decode("utf-8"),
-            sha256_json(body),
-            previous,
-            event_sha,
-            utc_now(),
-        ),
-    )
+    EventRepository(db).append(event_type, body)
 
 
 class AutonomousExperimentService:
@@ -148,6 +128,8 @@ class AutonomousExperimentService:
             duration_days=duration_days,
             initial_allocation=allocation,
         )
+        self.epoch_store = ExperimentEpochStore(db)
+        self.epoch_state = self.epoch_store.projection(datetime.now(timezone.utc))
         self.experiment_start_utc = self.clock.start_utc
         self.scan_interval_seconds = scan_interval_seconds
         self.position_interval_seconds = position_interval_seconds
