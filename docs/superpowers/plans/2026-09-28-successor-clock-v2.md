@@ -58,8 +58,9 @@ activation.
   transactional transition, dynamic service clock, and pre-start failure event.
 - Modify `ibkr_paper_30d/epoch_manifest.py`: dynamic epoch, definition, and
   clock bindings.
-- Modify `ibkr_paper_30d/autonomy_bootstrap.py` as needed to preserve the same
-  successor identity in first-process context.
+- Modify `ibkr_paper_30d/autonomy_bootstrap.py`: require and propagate the
+  successor epoch ID, definition SHA-256, and clock-event SHA-256 in the
+  first-process context.
 - Modify `ibkr_paper_30d/autonomous_service.py`: accept/use the explicitly
   resolved epoch clock without changing the narrow broker-time capability.
 - Regenerate `IMMUTABLE_EXECUTION_KERNEL_MANIFEST.json` after authority edits.
