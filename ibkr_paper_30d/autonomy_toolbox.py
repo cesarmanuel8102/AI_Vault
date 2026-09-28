@@ -18,13 +18,20 @@ from __future__ import annotations
 
 import shutil
 import subprocess
-from typing import Any
+import os
+import re
+from pathlib import Path
+from typing import Any, Callable, Protocol
 
 from .autonomous_research import ResearchRequest, ResearchResult, ResearchTool
 from .autonomy_workspace import AutonomyWorkspace
+from .redaction import redact_text
 
 
 QUANTCONNECT_TIMEOUT_SECONDS = 120.0
+MAX_OUTPUT = 32 * 1024
+_PROJECT_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
+_AUTO_EXECUTABLE = object()
 
 
 def quantconnect_available() -> bool:
@@ -54,12 +61,180 @@ def _quantconnect_status() -> dict[str, Any]:
     }
 
 
+class QuantConnectBackend(Protocol):
+    def execute(
+        self,
+        *,
+        operation: str,
+        project_path: Path,
+        timeout_seconds: float,
+    ) -> dict[str, Any]: ...
+
+
+def _bounded_redacted(value: Any) -> str:
+    return redact_text(str(value or ""))[:MAX_OUTPUT]
+
+
+class QuantConnectMediator:
+    """Typed, optional QuantConnect research boundary.
+
+    The default mediator can inspect runtime availability. Model-authored
+    projects execute only when a separately reviewed secure backend is
+    injected; the Owner-context Lean CLI is never used as that backend.
+    """
+
+    def __init__(
+        self,
+        *,
+        workspace_root: str | Path,
+        executable: str | None | object = _AUTO_EXECUTABLE,
+        runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+        backend: QuantConnectBackend | None = None,
+    ) -> None:
+        self.workspace_root = Path(workspace_root).resolve()
+        self.executable = (
+            shutil.which("lean") if executable is _AUTO_EXECUTABLE else executable
+        )
+        self.runner = runner
+        self.backend = backend
+
+    def execute(self, arguments: dict[str, Any] | None) -> dict[str, Any]:
+        payload = dict(arguments or {})
+        operation = str(payload.get("operation") or "STATUS").upper()
+        allowed_fields = {
+            "STATUS": {"operation"},
+            "LIST_LOCAL_PROJECTS": {"operation"},
+            "RUN_LOCAL_BACKTEST": {"operation", "project", "timeout_seconds"},
+        }
+        if operation not in allowed_fields or set(payload) - allowed_fields[operation]:
+            return self._unauthorized(operation)
+        if operation == "STATUS":
+            return self._status()
+        if operation == "LIST_LOCAL_PROJECTS":
+            root = self.workspace_root / "experiments" / "quantconnect"
+            projects = (
+                sorted(item.name for item in root.iterdir() if item.is_dir() and not item.is_symlink())
+                if root.is_dir()
+                else []
+            )
+            return {
+                "status": "RUNTIME_AVAILABLE" if self.executable else "OPTIONAL_UNAVAILABLE",
+                "operation": operation,
+                "required": False,
+                "projects": projects[:100],
+            }
+        return self._run_local_backtest(payload)
+
+    def _status(self) -> dict[str, Any]:
+        if not self.executable:
+            return {
+                "status": "OPTIONAL_UNAVAILABLE",
+                "operation": "STATUS",
+                "required": False,
+                "reason": "LEAN_CLI_UNAVAILABLE",
+            }
+        environment = {"SystemRoot": os.environ["SystemRoot"]} if "SystemRoot" in os.environ else {}
+        try:
+            completed = self.runner(
+                [self.executable, "--version"],
+                capture_output=True,
+                text=True,
+                timeout=10.0,
+                check=False,
+                shell=False,
+                env=environment,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return {
+                "status": "FAILED",
+                "operation": "STATUS",
+                "required": False,
+                "reason": type(exc).__name__,
+            }
+        if completed.returncode != 0:
+            return {
+                "status": "OPTIONAL_UNAVAILABLE",
+                "operation": "STATUS",
+                "required": False,
+                "reason": "LEAN_CLEAN_ENVIRONMENT_PROBE_FAILED",
+                "stderr": _bounded_redacted(completed.stderr),
+            }
+        return {
+            "status": "RUNTIME_AVAILABLE",
+            "operation": "STATUS",
+            "required": False,
+            "version": _bounded_redacted(completed.stdout),
+            "secure_backtest_backend": self.backend is not None,
+        }
+
+    def _run_local_backtest(self, payload: dict[str, Any]) -> dict[str, Any]:
+        project_name = payload.get("project")
+        if not isinstance(project_name, str) or not _PROJECT_NAME.fullmatch(project_name):
+            return self._unauthorized("RUN_LOCAL_BACKTEST")
+        project_root = (self.workspace_root / "experiments" / "quantconnect").resolve()
+        project = (project_root / project_name).resolve()
+        if project_root not in project.parents or not project.is_dir() or project.is_symlink():
+            return self._unauthorized("RUN_LOCAL_BACKTEST")
+        try:
+            timeout = float(payload.get("timeout_seconds", QUANTCONNECT_TIMEOUT_SECONDS))
+        except (TypeError, ValueError):
+            return self._unauthorized("RUN_LOCAL_BACKTEST")
+        if not 1.0 <= timeout <= 600.0:
+            return self._unauthorized("RUN_LOCAL_BACKTEST")
+        if self.backend is None:
+            return {
+                "status": "OPTIONAL_UNAVAILABLE",
+                "operation": "RUN_LOCAL_BACKTEST",
+                "required": False,
+                "reason": "SECURE_BACKTEST_BACKEND_UNAVAILABLE",
+            }
+        try:
+            completed = self.backend.execute(
+                operation="RUN_LOCAL_BACKTEST",
+                project_path=project,
+                timeout_seconds=timeout,
+            )
+        except Exception as exc:
+            return {
+                "status": "FAILED",
+                "operation": "RUN_LOCAL_BACKTEST",
+                "required": False,
+                "reason": _bounded_redacted(type(exc).__name__),
+            }
+        return {
+            "status": "RUNTIME_AVAILABLE" if completed.get("returncode") == 0 else "FAILED",
+            "operation": "RUN_LOCAL_BACKTEST",
+            "required": False,
+            "returncode": int(completed.get("returncode", 1)),
+            "stdout": _bounded_redacted(completed.get("stdout")),
+            "stderr": _bounded_redacted(completed.get("stderr")),
+        }
+
+    @staticmethod
+    def _unauthorized(operation: str) -> dict[str, Any]:
+        return {
+            "status": "UNAUTHORIZED_OPERATION",
+            "operation": operation[:80],
+            "required": False,
+            "reason": "OPERATION_OR_ARGUMENTS_NOT_ALLOWED",
+        }
+
+
 class AutonomyToolbox:
     """Capability extension over the IBKR research toolbox."""
 
-    def __init__(self, base_toolbox: Any, workspace: AutonomyWorkspace | None) -> None:
+    def __init__(
+        self,
+        base_toolbox: Any,
+        workspace: AutonomyWorkspace | None,
+        *,
+        quantconnect: QuantConnectMediator | None = None,
+    ) -> None:
         self.base = base_toolbox
         self.workspace = workspace
+        self.quantconnect = quantconnect or QuantConnectMediator(
+            workspace_root=workspace.paths.root if workspace is not None else Path.cwd()
+        )
 
     def workspace_summary(self) -> dict[str, Any] | None:
         """Persistent-workspace context for the prompt (capability, not duty)."""
@@ -91,8 +266,9 @@ class AutonomyToolbox:
                 {
                     "tool": ResearchTool.QUANTCONNECT.value,
                     "purpose": (
-                        "Status of the optional QuantConnect research laboratory. "
-                        "Optional: you decide whether a research question warrants it."
+                        "Typed access to the optional QuantConnect research laboratory: "
+                        "STATUS, LIST_LOCAL_PROJECTS, or RUN_LOCAL_BACKTEST through an "
+                        "approved secure backend. Raw commands and LIVE are unavailable."
                     ),
                 },
             ]
@@ -105,12 +281,15 @@ class AutonomyToolbox:
         if request.tool == ResearchTool.RUN_RESEARCH_SCRIPT:
             return self._run_script(request)
         if request.tool == ResearchTool.QUANTCONNECT:
+            data = self.quantconnect.execute(dict(request.arguments or {}))
+            data.setdefault("available", data.get("status") == "RUNTIME_AVAILABLE")
+            success = data.get("status") in {"RUNTIME_AVAILABLE", "OPTIONAL_UNAVAILABLE"}
             return ResearchResult(
                 request_id=request.request_id,
                 tool=request.tool,
-                success=True,
-                data=_quantconnect_status(),
-                error=None,
+                success=success,
+                data=data,
+                error=None if success else str(data.get("reason") or "quantconnect_failed"),
             )
         return self.base.execute(request, bundle)
 
@@ -189,40 +368,10 @@ class AutonomyToolbox:
 def run_quantconnect_command(
     arguments: list[str], *, timeout_seconds: float = QUANTCONNECT_TIMEOUT_SECONDS
 ) -> dict[str, Any]:
-    """Execute a read-only QuantConnect CLI command.
+    """Compatibility tombstone for the removed raw-command boundary."""
 
-    Whitelisted subcommands only: the lean CLI must never be able to
-    touch IBKR state, and live-trading subcommands are excluded.
-    """
-
-    allowed_first = {"config", "list", "report", "data", "backtest", "research", "object-store", "logs", "cloud"}
-    if not arguments:
-        return {"success": False, "error": "no command provided"}
-    head = str(arguments[0]).lower()
-    if head not in allowed_first:
-        return {
-            "success": False,
-            "error": f"quantconnect command not allowed: {head}",
-        }
-    lean = shutil.which("lean")
-    if lean is None:
-        return {"success": False, "error": "lean CLI not available"}
-    try:
-        completed = subprocess.run(
-            [lean, *arguments],
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-            check=False,
-        )
-    except subprocess.TimeoutExpired:
-        return {"success": False, "error": "quantconnect command timed out"}
     return {
-        "success": completed.returncode == 0,
-        "returncode": completed.returncode,
-        "stdout": (completed.stdout or "")[: MAX_OUTPUT],
-        "stderr": (completed.stderr or "")[: MAX_OUTPUT],
+        "success": False,
+        "status": "UNAUTHORIZED_OPERATION",
+        "error": "raw QuantConnect commands are not allowed; use typed operations",
     }
-
-
-MAX_OUTPUT = 32 * 1024
