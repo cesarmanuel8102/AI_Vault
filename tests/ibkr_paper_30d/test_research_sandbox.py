@@ -16,7 +16,6 @@ from ibkr_paper_30d.research_sandbox import (
     WSLResearchSandbox,
 )
 
-
 REPO = Path(__file__).resolve().parents[2]
 
 
@@ -42,7 +41,9 @@ class RecordingRunner:
         self.returncode = returncode
         self.calls: list[tuple[list[str], dict[str, Any]]] = []
 
-    def __call__(self, command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[bytes]:
+    def __call__(
+        self, command: list[str], **kwargs: Any
+    ) -> subprocess.CompletedProcess[bytes]:
         self.calls.append((command, kwargs))
         return subprocess.CompletedProcess(
             command,
@@ -74,7 +75,9 @@ def _workspace(tmp_path: Path) -> Path:
     return root
 
 
-def test_host_broker_builds_a_fixed_wsl_command_and_minimal_environment(tmp_path: Path) -> None:
+def test_host_broker_builds_a_fixed_wsl_command_and_minimal_environment(
+    tmp_path: Path,
+) -> None:
     runner = RecordingRunner(_worker_payload())
     sandbox = WSLResearchSandbox(repo_root=REPO, runner=runner)
     root = _workspace(tmp_path)
@@ -92,7 +95,14 @@ def test_host_broker_builds_a_fixed_wsl_command_and_minimal_environment(tmp_path
     assert receipt["controls"]["seccomp"] is True
     command, kwargs = runner.calls[0]
     assert command[:8] == [
-        "wsl.exe", "-d", "Ubuntu", "-u", "root", "--exec", "/bin/bash", command[7]
+        "wsl.exe",
+        "-d",
+        "Ubuntu",
+        "-u",
+        "root",
+        "--exec",
+        "/bin/bash",
+        command[7],
     ]
     assert receipt["controls"]["user_namespace"] is False
     assert receipt["controls"]["execution_uid"] == 65534
@@ -103,12 +113,20 @@ def test_host_broker_builds_a_fixed_wsl_command_and_minimal_environment(tmp_path
 
 @pytest.mark.parametrize(
     "script_relative",
-    ("../escape.py", "/tools/probe.py", "tools/../../escape.py", "C:/probe.py", "tools\\probe.py"),
+    (
+        "../escape.py",
+        "/tools/probe.py",
+        "tools/../../escape.py",
+        "C:/probe.py",
+        "tools\\probe.py",
+    ),
 )
 def test_host_broker_rejects_noncanonical_script_paths(
     tmp_path: Path, script_relative: str
 ) -> None:
-    sandbox = WSLResearchSandbox(repo_root=REPO, runner=RecordingRunner(_worker_payload()))
+    sandbox = WSLResearchSandbox(
+        repo_root=REPO, runner=RecordingRunner(_worker_payload())
+    )
     with pytest.raises(WorkspaceViolation):
         sandbox.run(
             workspace_root=_workspace(tmp_path),
@@ -119,7 +137,9 @@ def test_host_broker_rejects_noncanonical_script_paths(
 
 
 def test_host_broker_rejects_unbounded_arguments(tmp_path: Path) -> None:
-    sandbox = WSLResearchSandbox(repo_root=REPO, runner=RecordingRunner(_worker_payload()))
+    sandbox = WSLResearchSandbox(
+        repo_root=REPO, runner=RecordingRunner(_worker_payload())
+    )
     root = _workspace(tmp_path)
 
     with pytest.raises(WorkspaceViolation, match="too many"):
@@ -191,8 +211,7 @@ def test_real_worker_denies_host_files_network_processes_and_symlink_escape(
 ) -> None:
     root = _workspace(tmp_path)
     (root / "tools" / "probe.py").write_text(
-        textwrap.dedent(
-            """
+        textwrap.dedent("""
             import json
             import os
             import socket
@@ -229,8 +248,7 @@ def test_real_worker_denies_host_files_network_processes_and_symlink_escape(
             artifact = Path("/workspace/experiments/generated.json")
             artifact.write_text(json.dumps({"sandboxed": True}), encoding="utf-8")
             print(json.dumps(result, sort_keys=True))
-            """
-        ),
+            """),
         encoding="utf-8",
     )
 
@@ -250,8 +268,117 @@ def test_real_worker_denies_host_files_network_processes_and_symlink_escape(
     assert probe["process"].startswith("DENIED:")
     assert probe["symlink_escape"] == "DENIED"
     assert set(probe["visible_root"]) <= {
-        "bin", "lib", "lib64", "proc", "sbin", "scratch", "usr", "worker", "workspace"
+        "bin",
+        "lib",
+        "lib64",
+        "proc",
+        "sbin",
+        "scratch",
+        "usr",
+        "worker",
+        "workspace",
     }
     generated = {item["path"]: item for item in receipt["generated_artifacts"]}
     assert generated["experiments/generated.json"]["operation"] == "CREATED"
     assert len(generated["experiments/generated.json"]["sha256"]) == 64
+
+
+@pytest.mark.skipif(not _wsl_available(), reason="WSL2 Ubuntu unavailable")
+def test_real_worker_denies_full_adversarial_escape_matrix(tmp_path: Path) -> None:
+    root = _workspace(tmp_path)
+    (root / "tools" / "probe.py").write_text(
+        textwrap.dedent("""
+            import importlib
+            import json
+            import os
+            import socket
+            import subprocess
+            from pathlib import Path
+
+            def process_attempt(command):
+                try:
+                    subprocess.run(command, check=False, capture_output=True)
+                    return "ALLOWED"
+                except OSError as exc:
+                    return f"DENIED:{exc.errno}"
+
+            def socket_attempt(address):
+                try:
+                    with socket.create_connection(address, timeout=0.25):
+                        return "ALLOWED"
+                except OSError as exc:
+                    return f"DENIED:{exc.errno}"
+
+            filesystem = {}
+            for candidate in (
+                "/mnt/c/AI_VAULT_IBKR",
+                "/mnt/c/Users/cesar/.lean",
+                "/mnt/c/Users/cesar/.codex",
+                "/mnt/c/Windows/System32/config",
+                "/home",
+                "/workspace/../../mnt/c/AI_VAULT_IBKR",
+            ):
+                filesystem[candidate] = Path(candidate).exists()
+
+            processes = {
+                name: process_attempt(command)
+                for name, command in {
+                    "cmd": ["cmd.exe", "/c", "ver"],
+                    "powershell": ["powershell.exe", "-NoProfile"],
+                    "git": ["/usr/bin/git", "--version"],
+                    "codex": ["codex", "--version"],
+                    "lean": ["lean", "--version"],
+                    "absolute": ["/usr/bin/id"],
+                    "registry_discovery": ["reg.exe", "query", "HKCU\\Software"],
+                }.items()
+            }
+            network = {
+                "paper_4002": socket_attempt(("127.0.0.1", 4002)),
+                "live_4001": socket_attempt(("127.0.0.1", 4001)),
+                "localhost_other": socket_attempt(("127.0.0.1", 80)),
+                "external_tcp": socket_attempt(("1.1.1.1", 443)),
+            }
+            try:
+                socket.getaddrinfo("example.com", 443)
+                network["dns"] = "ALLOWED"
+            except OSError as exc:
+                network["dns"] = f"DENIED:{exc.errno}"
+            try:
+                importlib.import_module("ibkr_paper_30d.broker")
+                broker_import = "ALLOWED"
+            except (ImportError, OSError):
+                broker_import = "DENIED"
+            sensitive_env = sorted(
+                key for key in os.environ
+                if any(marker in key.upper() for marker in
+                       ("IBKR", "TOKEN", "SECRET", "PASSWORD", "CODEX", "LEAN"))
+            )
+            print(json.dumps({
+                "filesystem": filesystem,
+                "processes": processes,
+                "network": network,
+                "sensitive_env": sensitive_env,
+                "broker_import": broker_import,
+                "uid": os.getuid(),
+                "root_entries": sorted(item.name for item in Path("/").iterdir()),
+            }, sort_keys=True))
+            """),
+        encoding="utf-8",
+    )
+
+    receipt = WSLResearchSandbox(repo_root=REPO).run(
+        workspace_root=root,
+        script_relative="tools/probe.py",
+        arguments=(),
+        timeout_seconds=20,
+    )
+
+    assert receipt["status"] == "COMPLETED", receipt
+    probe = json.loads(receipt["stdout"])
+    assert not any(probe["filesystem"].values())
+    assert all(value.startswith("DENIED:") for value in probe["processes"].values())
+    assert all(value.startswith("DENIED:") for value in probe["network"].values())
+    assert probe["sensitive_env"] == []
+    assert probe["broker_import"] == "DENIED"
+    assert probe["uid"] == 65534
+    assert "mnt" not in probe["root_entries"]
