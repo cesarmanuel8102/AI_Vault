@@ -236,6 +236,10 @@ class SuccessorClockStore:
         approved_git_head: str,
         owner_authorization_event_id: str,
         owner_authorization_receipt_sha256: str,
+        launch_attempt_id: str | None = None,
+        account_identity_sha256: str | None = None,
+        broker_evidence_sha256: str | None = None,
+        broker_evidence_collected_at_utc: str | None = None,
     ) -> ExperimentClock:
         verify_successor_schema_v2(self.db)
         if duration_days != 30 or initial_allocation <= 0:
@@ -265,6 +269,11 @@ class SuccessorClockStore:
                 == owner_authorization_receipt_sha256
                 and payload.get("predecessor_clock_event_sha256")
                 == predecessor_clock_event_sha256
+                and payload.get("launch_attempt_id") == launch_attempt_id
+                and payload.get("account_identity_sha256") == account_identity_sha256
+                and payload.get("broker_evidence_sha256") == broker_evidence_sha256
+                and payload.get("broker_evidence_collected_at_utc")
+                == broker_evidence_collected_at_utc
                 and _parse_utc(str(payload.get("start_utc"))) == start
             ):
                 return _clock_from_v2_payload(payload, str(existing[1]))
@@ -284,6 +293,10 @@ class SuccessorClockStore:
             "approved_git_head": approved_git_head,
             "owner_authorization_event_id": owner_authorization_event_id,
             "owner_authorization_receipt_sha256": (owner_authorization_receipt_sha256),
+            "launch_attempt_id": launch_attempt_id,
+            "account_identity_sha256": account_identity_sha256,
+            "broker_evidence_sha256": broker_evidence_sha256,
+            "broker_evidence_collected_at_utc": broker_evidence_collected_at_utc,
             "start_authority": "BROKER_SERVER_TIME",
             "created_at_utc": utc_now(),
         }

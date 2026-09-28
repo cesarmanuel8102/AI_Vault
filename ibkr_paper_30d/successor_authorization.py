@@ -201,6 +201,32 @@ def validate_successor_authorization(
     return payload
 
 
+def validate_successor_authorization_record(
+    *,
+    db: Database,
+    epoch_id: str,
+    definition_sha256: str,
+    expected_actor_sid: str,
+    receipt: dict[str, Any],
+) -> dict[str, Any]:
+    """Validate current database authority against an already loaded receipt."""
+
+    definition = _definition(db, epoch_id)
+    if definition.get("definition_sha256") != definition_sha256:
+        raise SuccessorAuthorizationError("SUCCESSOR_AUTHORIZATION_DEFINITION_MISMATCH")
+    row = _latest_row(db, epoch_id)
+    if row is None:
+        raise SuccessorAuthorizationError("SUCCESSOR_AUTHORIZATION_MISSING")
+    payload = _validate_authorized_payload(
+        row=row,
+        definition=definition,
+        expected_actor_sid=expected_actor_sid,
+    )
+    if receipt != payload:
+        raise SuccessorAuthorizationError("SUCCESSOR_AUTHORIZATION_RECEIPT_MISMATCH")
+    return payload
+
+
 def revoke_successor_authorization(
     *,
     db_path: Path,

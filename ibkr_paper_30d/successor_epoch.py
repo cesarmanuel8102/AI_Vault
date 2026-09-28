@@ -5,14 +5,16 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from typing import Any
+from typing import Any, Callable
 
 from .canonical import sha256_json
 from .experiment_epoch import EpochDefinition, EpochError
 from .persistence import Database
 from .repositories import EventRepository
 from .successor_clock import SuccessorClockError, clock_for_epoch
+from .successor_clock import BrokerTimeObservation, SuccessorClockStore
 from .successor_schema import verify_successor_schema_v2
 
 SUCCESSOR_DEFINITION_SCHEMA = "AUTONOMY_EXPERIMENT_SUCCESSOR_DEFINITION_V2"
@@ -40,6 +42,28 @@ class SuccessorDefinition:
     approved_git_head: str
     definition_sha256: str
     status: str = "PROPOSED"
+
+
+@dataclass(frozen=True)
+class BrokerTransitionEvidence:
+    account_identity_sha256: str
+    collected_at_utc: datetime
+    observation: BrokerTimeObservation
+    positions_count: int
+    open_orders_count: int
+    broker_write_count: int
+
+
+@dataclass(frozen=True)
+class SuccessorTransitionResult:
+    epoch_id: str
+    definition_sha256: str
+    clock_event_sha256: str
+    supersession_event_sha256: str
+    activation_event_sha256: str
+    broker_evidence_sha256: str
+    transition_sha256: str
+    idempotent: bool
 
 
 @dataclass(frozen=True)
@@ -530,3 +554,427 @@ class SuccessorEpochStore:
         ):
             raise SuccessorEpochError("SUCCESSOR_DEFINITION_MISSING")
         return dict(record.payload)
+
+    def validate_transition_eligibility(
+        self, epoch_id: str, definition_sha256: str
+    ) -> dict[str, Any]:
+        definition = self.definition(epoch_id)
+        if definition.get("definition_sha256") != definition_sha256:
+            raise SuccessorEpochError("SUCCESSOR_DEFINITION_HASH_MISMATCH")
+        current = current_epoch_definition(self.db)
+        if current is None or current.epoch_id != definition.get(
+            "predecessor_epoch_id"
+        ):
+            raise SuccessorEpochError("SUCCESSOR_PREDECESSOR_NOT_CURRENT")
+        records = _state_records(self.db)
+        if any(
+            record.event_type == "EPOCH_STARTED"
+            and record.payload.get("epoch_id") == current.epoch_id
+            for record in records
+        ):
+            raise SuccessorEpochError("SUCCESSOR_NOT_ALLOWED_AFTER_EPOCH_STARTED")
+        cycle_count = int(
+            self.db.execute("SELECT COUNT(*) FROM trader_input_bundles").fetchone()[0]
+        )
+        ledger_count = int(
+            self.db.execute("SELECT COUNT(*) FROM autonomous_ledger_events").fetchone()[
+                0
+            ]
+        )
+        order_count = int(
+            self.db.execute(
+                "SELECT COUNT(*) FROM experiment_order_registry"
+            ).fetchone()[0]
+        )
+        if order_count != int(definition["baseline_order_registry_count"]):
+            raise SuccessorEpochError("SUCCESSOR_BROKER_WRITES_PRESENT")
+        if cycle_count != int(
+            definition["baseline_cycle_count"]
+        ) or ledger_count != int(definition["baseline_ledger_event_count"]):
+            raise SuccessorEpochError("SUCCESSOR_RUNTIME_ACTIVITY_PRESENT")
+        if _latest_positions_present(self.db):
+            raise SuccessorEpochError("SUCCESSOR_OPEN_POSITION_PRESENT")
+        if _open_orders_present(self.db):
+            raise SuccessorEpochError("SUCCESSOR_OPEN_ORDER_PRESENT")
+        return definition
+
+
+def _parse_transition_time(value: datetime | str) -> datetime:
+    try:
+        parsed = (
+            value
+            if isinstance(value, datetime)
+            else datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        )
+    except (TypeError, ValueError) as exc:
+        raise SuccessorEpochError("BROKER_EVIDENCE_TIME_INVALID") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise SuccessorEpochError("BROKER_EVIDENCE_TIME_INVALID")
+    return parsed.astimezone(timezone.utc)
+
+
+def _format_transition_time(value: datetime | str) -> str:
+    return _parse_transition_time(value).isoformat().replace("+00:00", "Z")
+
+
+def _canonical_broker_evidence(
+    evidence: BrokerTransitionEvidence,
+    *,
+    launch_attempt_id: str,
+    target_epoch_id: str,
+    target_definition_sha256: str,
+) -> tuple[dict[str, Any], str]:
+    if not launch_attempt_id.strip():
+        raise SuccessorEpochError("LAUNCH_ATTEMPT_ID_INVALID")
+    if not _SHA256.fullmatch(evidence.account_identity_sha256):
+        raise SuccessorEpochError("BROKER_ACCOUNT_IDENTITY_HASH_INVALID")
+    if (
+        min(
+            evidence.positions_count,
+            evidence.open_orders_count,
+            evidence.broker_write_count,
+        )
+        < 0
+    ):
+        raise SuccessorEpochError("BROKER_EVIDENCE_INVALID")
+    payload = {
+        "schema": "SUCCESSOR_TRANSITION_BROKER_EVIDENCE_V1",
+        "launch_attempt_id": launch_attempt_id,
+        "target_successor_epoch_id": target_epoch_id,
+        "target_successor_definition_sha256": target_definition_sha256,
+        "account_identity_sha256": evidence.account_identity_sha256,
+        "collected_at_utc": _format_transition_time(evidence.collected_at_utc),
+        "server_time_utc": _format_transition_time(
+            evidence.observation.server_time_utc
+        ),
+        "observed_at_utc": _format_transition_time(
+            evidence.observation.observed_at_utc
+        ),
+        "authenticated": evidence.observation.authenticated,
+        "paper_session": evidence.observation.paper_session,
+        "positions_count": evidence.positions_count,
+        "open_orders_count": evidence.open_orders_count,
+        "broker_write_count": evidence.broker_write_count,
+    }
+    if payload["collected_at_utc"] != payload["observed_at_utc"]:
+        raise SuccessorEpochError("BROKER_EVIDENCE_TIME_INVALID")
+    return payload, sha256_json(payload)
+
+
+def _verify_broker_evidence_freshness(
+    payload: dict[str, Any], now_utc: datetime, *, max_age_seconds: float = 30.0
+) -> None:
+    age = (
+        _parse_transition_time(now_utc)
+        - _parse_transition_time(str(payload["collected_at_utc"]))
+    ).total_seconds()
+    if age < -5.0:
+        raise SuccessorEpochError("BROKER_EVIDENCE_FUTURE_SKEW")
+    if age > max_age_seconds:
+        raise SuccessorEpochError("BROKER_EVIDENCE_STALE")
+
+
+def _transition_hash(clock_sha: str, supersession_sha: str, activation_sha: str) -> str:
+    return sha256_json(
+        {
+            "clock_event_sha256": clock_sha,
+            "supersession_event_sha256": supersession_sha,
+            "activation_event_sha256": activation_sha,
+        }
+    )
+
+
+def _existing_transition(
+    db: Database,
+    *,
+    epoch_id: str,
+    definition_sha256: str,
+    launch_attempt_id: str,
+    owner_receipt: dict[str, Any],
+    broker_evidence_sha256: str,
+) -> SuccessorTransitionResult | None:
+    clock_row = db.execute(
+        "SELECT payload_json,event_sha256 FROM experiment_epoch_clock_events_v2 "
+        "WHERE experiment_id='ibkr-paper-30d' AND epoch_id=? AND event_type='START'",
+        (epoch_id,),
+    ).fetchone()
+    supersessions: list[_StateRecord] = []
+    activations: list[_StateRecord] = []
+    for record in _state_records(db):
+        if (
+            record.event_type == "EXPERIMENT_EPOCH_SUPERSEDED"
+            and record.payload.get("successor_epoch_id") == epoch_id
+        ):
+            supersessions.append(record)
+        if (
+            record.event_type == "EXPERIMENT_EPOCH_ACTIVATED"
+            and record.payload.get("schema") == SUCCESSOR_ACTIVATION_SCHEMA
+            and record.payload.get("epoch_id") == epoch_id
+        ):
+            activations.append(record)
+    if not (clock_row or supersessions or activations):
+        return None
+    if clock_row is None or len(supersessions) != 1 or len(activations) != 1:
+        raise SuccessorEpochError("SUCCESSOR_TRANSITION_PARTIAL")
+    try:
+        clock_payload = json.loads(str(clock_row[0]))
+    except json.JSONDecodeError as exc:
+        raise SuccessorEpochError("SUCCESSOR_TRANSITION_INVALID") from exc
+    supersession = supersessions[0]
+    activation = activations[0]
+    definition = SuccessorEpochStore(db).definition(epoch_id)
+    current = current_epoch_definition(db)
+    receipt_sha = owner_receipt.get("receipt_sha256")
+    if (
+        current is None
+        or current.epoch_id != epoch_id
+        or definition.get("definition_sha256") != definition_sha256
+        or clock_payload.get("definition_sha256") != definition_sha256
+        or clock_payload.get("approved_git_head") != definition.get("approved_git_head")
+        or clock_payload.get("launch_attempt_id") != launch_attempt_id
+        or clock_payload.get("broker_evidence_sha256") != broker_evidence_sha256
+        or clock_payload.get("owner_authorization_event_id")
+        != owner_receipt.get("authorization_event_id")
+        or clock_payload.get("owner_authorization_receipt_sha256") != receipt_sha
+        or supersession.payload.get("predecessor_epoch_id")
+        != definition.get("predecessor_epoch_id")
+        or supersession.payload.get("predecessor_definition_sha256")
+        != definition.get("predecessor_definition_sha256")
+        or supersession.payload.get("successor_definition_sha256") != definition_sha256
+        or supersession.payload.get("successor_clock_event_sha256") != str(clock_row[1])
+        or supersession.payload.get("owner_authorization_event_id")
+        != owner_receipt.get("authorization_event_id")
+        or supersession.payload.get("owner_authorization_receipt_sha256") != receipt_sha
+        or activation.payload.get("supersession_event_sha256")
+        != supersession.event_sha256
+        or activation.payload.get("clock_event_sha256") != str(clock_row[1])
+        or activation.payload.get("definition_sha256") != definition_sha256
+    ):
+        raise SuccessorEpochError("SUCCESSOR_TRANSITION_CONFLICT")
+    clock_sha = str(clock_row[1])
+    return SuccessorTransitionResult(
+        epoch_id=epoch_id,
+        definition_sha256=definition_sha256,
+        clock_event_sha256=clock_sha,
+        supersession_event_sha256=supersession.event_sha256,
+        activation_event_sha256=activation.event_sha256,
+        broker_evidence_sha256=broker_evidence_sha256,
+        transition_sha256=_transition_hash(
+            clock_sha, supersession.event_sha256, activation.event_sha256
+        ),
+        idempotent=True,
+    )
+
+
+def commit_successor_transition(
+    *,
+    db: Database,
+    launch_attempt_id: str,
+    target_successor_epoch_id: str,
+    target_successor_definition_sha256: str,
+    expected_account_identity_sha256: str,
+    expected_owner_sid: str,
+    owner_authorization_receipt: dict[str, Any],
+    execution_lock_verifier: Callable[[], bool],
+    broker_evidence_collector: Callable[[], BrokerTransitionEvidence],
+    now_utc: Callable[[], datetime],
+    after_evidence_collected: Callable[[BrokerTransitionEvidence], None] | None = None,
+) -> SuccessorTransitionResult:
+    """Collect broker evidence outside SQLite, then commit one atomic edge."""
+
+    if db.connection.in_transaction:
+        raise SuccessorEpochError("BROKER_EVIDENCE_COLLECTION_TRANSACTION_ACTIVE")
+    if execution_lock_verifier() is not True:
+        raise SuccessorEpochError("EXECUTION_LOCK_NOT_VERIFIED")
+    evidence = broker_evidence_collector()
+    if db.connection.in_transaction:
+        raise SuccessorEpochError("BROKER_NETWORK_IO_INSIDE_WRITE_TRANSACTION")
+    evidence_payload, evidence_sha = _canonical_broker_evidence(
+        evidence,
+        launch_attempt_id=launch_attempt_id,
+        target_epoch_id=target_successor_epoch_id,
+        target_definition_sha256=target_successor_definition_sha256,
+    )
+    if evidence.account_identity_sha256 != expected_account_identity_sha256:
+        raise SuccessorEpochError("BROKER_ACCOUNT_IDENTITY_MISMATCH")
+    if evidence.positions_count:
+        raise SuccessorEpochError("SUCCESSOR_OPEN_POSITION_PRESENT")
+    if evidence.open_orders_count:
+        raise SuccessorEpochError("SUCCESSOR_OPEN_ORDER_PRESENT")
+    if evidence.broker_write_count:
+        raise SuccessorEpochError("SUCCESSOR_BROKER_WRITES_PRESENT")
+    _verify_broker_evidence_freshness(evidence_payload, now_utc())
+    if after_evidence_collected is not None:
+        after_evidence_collected(evidence)
+
+    from .successor_authorization import (
+        SuccessorAuthorizationError,
+        validate_successor_authorization_record,
+    )
+
+    try:
+        with db.transaction():
+            verify_successor_schema_v2(db)
+            if execution_lock_verifier() is not True:
+                raise SuccessorEpochError("EXECUTION_LOCK_NOT_VERIFIED")
+            rebuilt_payload, rebuilt_sha = _canonical_broker_evidence(
+                evidence,
+                launch_attempt_id=launch_attempt_id,
+                target_epoch_id=target_successor_epoch_id,
+                target_definition_sha256=target_successor_definition_sha256,
+            )
+            if rebuilt_payload != evidence_payload or rebuilt_sha != evidence_sha:
+                raise SuccessorEpochError("BROKER_EVIDENCE_HASH_MISMATCH")
+            _verify_broker_evidence_freshness(evidence_payload, now_utc())
+            existing = _existing_transition(
+                db,
+                epoch_id=target_successor_epoch_id,
+                definition_sha256=target_successor_definition_sha256,
+                launch_attempt_id=launch_attempt_id,
+                owner_receipt=owner_authorization_receipt,
+                broker_evidence_sha256=evidence_sha,
+            )
+            if existing is not None:
+                validate_successor_authorization_record(
+                    db=db,
+                    epoch_id=target_successor_epoch_id,
+                    definition_sha256=target_successor_definition_sha256,
+                    expected_actor_sid=expected_owner_sid,
+                    receipt=owner_authorization_receipt,
+                )
+                return existing
+            definition = SuccessorEpochStore(db).validate_transition_eligibility(
+                target_successor_epoch_id,
+                target_successor_definition_sha256,
+            )
+            authorization = validate_successor_authorization_record(
+                db=db,
+                epoch_id=target_successor_epoch_id,
+                definition_sha256=target_successor_definition_sha256,
+                expected_actor_sid=expected_owner_sid,
+                receipt=owner_authorization_receipt,
+            )
+            clock = SuccessorClockStore(db).start(
+                epoch_id=target_successor_epoch_id,
+                definition_sha256=target_successor_definition_sha256,
+                predecessor_epoch_id=str(definition["predecessor_epoch_id"]),
+                predecessor_clock_event_sha256=str(
+                    definition["predecessor_clock_event_sha256"]
+                ),
+                observation=evidence.observation,
+                duration_days=int(definition["duration_days"]),
+                initial_allocation=Decimal(str(definition["initial_allocation"])),
+                approved_git_head=str(definition["approved_git_head"]),
+                owner_authorization_event_id=str(
+                    authorization["authorization_event_id"]
+                ),
+                owner_authorization_receipt_sha256=str(authorization["receipt_sha256"]),
+                launch_attempt_id=launch_attempt_id,
+                account_identity_sha256=expected_account_identity_sha256,
+                broker_evidence_sha256=evidence_sha,
+                broker_evidence_collected_at_utc=str(
+                    evidence_payload["collected_at_utc"]
+                ),
+            )
+            supersession_payload = {
+                "schema": SUCCESSOR_SUPERSESSION_SCHEMA,
+                "predecessor_epoch_id": definition["predecessor_epoch_id"],
+                "predecessor_definition_sha256": definition[
+                    "predecessor_definition_sha256"
+                ],
+                "predecessor_activation_event_sha256": definition[
+                    "predecessor_activation_event_sha256"
+                ],
+                "predecessor_activation_receipt_sha256": definition[
+                    "predecessor_activation_receipt_sha256"
+                ],
+                "predecessor_clock_event_sha256": definition[
+                    "predecessor_clock_event_sha256"
+                ],
+                "successor_epoch_id": target_successor_epoch_id,
+                "successor_definition_sha256": target_successor_definition_sha256,
+                "successor_clock_event_sha256": clock.event_sha256,
+                "reason": definition["supersession_reason"],
+                "approved_git_head": definition["approved_git_head"],
+                "owner_authorization_event_id": authorization["authorization_event_id"],
+                "owner_authorization_receipt_sha256": authorization["receipt_sha256"],
+                "launch_attempt_id": launch_attempt_id,
+                "broker_evidence_sha256": evidence_sha,
+            }
+            supersession_id = EventRepository(db).append(
+                "EXPERIMENT_EPOCH_SUPERSEDED", supersession_payload
+            )
+            supersession_sha = str(
+                db.execute(
+                    "SELECT event_sha256 FROM state_events WHERE event_id=?",
+                    (supersession_id,),
+                ).fetchone()[0]
+            )
+            activation_receipt_sha = sha256_json(
+                {
+                    "definition_sha256": target_successor_definition_sha256,
+                    "clock_event_sha256": clock.event_sha256,
+                    "supersession_event_sha256": supersession_sha,
+                    "owner_authorization_receipt_sha256": authorization[
+                        "receipt_sha256"
+                    ],
+                }
+            )
+            activation_payload = {
+                "schema": SUCCESSOR_ACTIVATION_SCHEMA,
+                "epoch_id": target_successor_epoch_id,
+                "status": "ACTIVE",
+                "definition_sha256": target_successor_definition_sha256,
+                "clock_event_sha256": clock.event_sha256,
+                "predecessor_epoch_id": definition["predecessor_epoch_id"],
+                "supersession_event_sha256": supersession_sha,
+                "approved_git_head": definition["approved_git_head"],
+                "owner_authorization_event_id": authorization["authorization_event_id"],
+                "owner_authorization_receipt_sha256": authorization["receipt_sha256"],
+                "activation_receipt_sha256": activation_receipt_sha,
+                "launch_attempt_id": launch_attempt_id,
+                "broker_evidence_sha256": evidence_sha,
+                "activated_at_utc": _format_transition_time(now_utc()),
+            }
+            activation_id = EventRepository(db).append(
+                "EXPERIMENT_EPOCH_ACTIVATED", activation_payload
+            )
+            activation_sha = str(
+                db.execute(
+                    "SELECT event_sha256 FROM state_events WHERE event_id=?",
+                    (activation_id,),
+                ).fetchone()[0]
+            )
+            verified_current = current_epoch_definition(db)
+            if (
+                verified_current is None
+                or verified_current.epoch_id != target_successor_epoch_id
+                or verified_current.definition_sha256
+                != target_successor_definition_sha256
+            ):
+                raise SuccessorEpochError("SUCCESSOR_TRANSITION_VERIFICATION_FAILED")
+            if execution_lock_verifier() is not True:
+                raise SuccessorEpochError("EXECUTION_LOCK_NOT_VERIFIED")
+            _verify_broker_evidence_freshness(evidence_payload, now_utc())
+            rebuilt_payload, rebuilt_sha = _canonical_broker_evidence(
+                evidence,
+                launch_attempt_id=launch_attempt_id,
+                target_epoch_id=target_successor_epoch_id,
+                target_definition_sha256=target_successor_definition_sha256,
+            )
+            if rebuilt_payload != evidence_payload or rebuilt_sha != evidence_sha:
+                raise SuccessorEpochError("BROKER_EVIDENCE_HASH_MISMATCH")
+            return SuccessorTransitionResult(
+                epoch_id=target_successor_epoch_id,
+                definition_sha256=target_successor_definition_sha256,
+                clock_event_sha256=clock.event_sha256,
+                supersession_event_sha256=supersession_sha,
+                activation_event_sha256=activation_sha,
+                broker_evidence_sha256=evidence_sha,
+                transition_sha256=_transition_hash(
+                    clock.event_sha256, supersession_sha, activation_sha
+                ),
+                idempotent=False,
+            )
+    except (SuccessorAuthorizationError, SuccessorClockError) as exc:
+        raise SuccessorEpochError(str(exc)) from exc
