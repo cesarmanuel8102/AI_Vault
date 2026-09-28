@@ -3,7 +3,8 @@
 param(
     [string]$RepoRoot = "C:\AI_VAULT_IBKR",
     [string]$PythonExe = "python",
-    [switch]$Scheduled
+    [switch]$Scheduled,
+    [switch]$InspectStatus
 )
 
 Set-StrictMode -Version Latest
@@ -47,6 +48,41 @@ function Invoke-Day1ForegroundService {
     $Day1ExitCode = $LASTEXITCODE
     if ($Day1ExitCode -ne 0) {
         throw "DAY1_FOREGROUND_SERVICE_FAILED:$Day1ExitCode"
+    }
+}
+
+function Resolve-MarketGateMode {
+    param([bool]$IsScheduled, [bool]$IsInspectStatus)
+    if ($IsScheduled -eq $IsInspectStatus) {
+        throw "EXACTLY_ONE_MARKET_GATE_MODE_REQUIRED"
+    }
+    if ($IsScheduled) { return "COLLECT_FRESH" }
+    return "INSPECT_EXISTING"
+}
+
+function Get-ExistingMarketGateStatus {
+    if (-not (Test-Path -LiteralPath $ValidationPath -PathType Leaf)) {
+        return [ordered]@{
+            status = "MISSING"
+            market_data_gate = "BLOCK"
+            reusable_for_scheduled_launch = $false
+        }
+    }
+    try {
+        $Existing = Get-Content -LiteralPath $ValidationPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        return [ordered]@{
+            status = "INVALID"
+            market_data_gate = "BLOCK"
+            reusable_for_scheduled_launch = $false
+        }
+    }
+    $HasGate = $null -ne $Existing.PSObject.Properties["market_data_gate"]
+    return [ordered]@{
+        status = "INSPECTED"
+        market_data_gate = $(if ($HasGate -and $Existing.market_data_gate -eq "PASS") { "PASS" } else { "BLOCK" })
+        reusable_for_scheduled_launch = $false
     }
 }
 
@@ -135,6 +171,13 @@ $ResolvedRepoRoot = Resolve-ApprovedRepoRoot -RepoRoot $RepoRoot
 if (-not (Test-Path -LiteralPath $ResolvedRepoRoot -PathType Container)) {
     throw "REPO_ROOT_NOT_FOUND:$ResolvedRepoRoot"
 }
+$GateMode = Resolve-MarketGateMode `
+    -IsScheduled $Scheduled.IsPresent `
+    -IsInspectStatus $InspectStatus.IsPresent
+if ($GateMode -eq "INSPECT_EXISTING") {
+    Get-ExistingMarketGateStatus | ConvertTo-Json -Depth 4
+    exit 0
+}
 if (-not (Test-Path -LiteralPath $PythonExe -PathType Leaf) -and $null -eq (Get-Command $PythonExe -ErrorAction SilentlyContinue)) {
     throw "PYTHON_EXECUTABLE_NOT_FOUND:$PythonExe"
 }
@@ -144,23 +187,8 @@ if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 4002 -InformationLeve
     throw "IBKR_PAPER_GATEWAY_4002_NOT_LISTENING"
 }
 
-$ExistingValidation = $null
-if (Test-Path -LiteralPath $ValidationPath) {
-    try {
-        $ExistingValidation = Get-Content -LiteralPath $ValidationPath -Raw | ConvertFrom-Json
-    }
-    catch { }
-}
-if ($null -ne $ExistingValidation -and $ExistingValidation.market_data_gate -eq "PASS") {
-    if ($Scheduled) {
-        Invoke-Day1ForegroundService
-        exit 0
-    }
-    Write-Output '{"status":"ALREADY_PASS","market_data_gate":"PASS"}'
-    exit 0
-}
-
 Assert-RegularCollectionStart
+Archive-CollectionEvidence -Reason "scheduled-refresh"
 Initialize-CleanEvidence
 
 $ReadOnly = Invoke-PythonJson -Arguments @(
@@ -219,15 +247,5 @@ $Ready = Invoke-PythonJson -Arguments @(
     "--report-root", $ReportRoot
 )
 
-if ($Scheduled) {
-    Invoke-Day1ForegroundService
-    exit 0
-}
-
-[ordered]@{
-    status = "PASS"
-    market_data_gate = $Validation.market_data_gate
-    policy = $PolicyPath
-    readiness = $Ready
-    trading_armed = $false
-} | ConvertTo-Json -Depth 8
+Invoke-Day1ForegroundService
+exit 0

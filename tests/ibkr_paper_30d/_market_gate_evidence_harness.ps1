@@ -7,9 +7,10 @@
 param(
     [Parameter(Mandatory = $true)][string]$ScriptPath,
     [Parameter(Mandatory = $true)][string]$ReportRoot,
-    [Parameter(Mandatory = $true)][ValidateSet("Initialize-CleanEvidence", "Archive-CollectionEvidence", "Invoke-PythonJson")][string]$Function,
-    [Parameter(Mandatory = $true)][ValidateSet("0", "1", "many")][string]$ExistingCount,
-    [Parameter()][ValidateSet("zero", "one", "many")][string]$PythonJsonMode = "one"
+    [Parameter(Mandatory = $true)][ValidateSet("Initialize-CleanEvidence", "Archive-CollectionEvidence", "Invoke-PythonJson", "Resolve-MarketGateMode")][string]$Function,
+    [Parameter(Mandatory = $true)][ValidateSet("0", "1", "many", "friday-pass")][string]$ExistingCount,
+    [Parameter()][ValidateSet("zero", "one", "many")][string]$PythonJsonMode = "one",
+    [Parameter()][ValidateSet("scheduled", "inspect", "none", "both")][string]$GateMode = "scheduled"
 )
 
 Set-StrictMode -Version Latest
@@ -67,6 +68,12 @@ switch ($ExistingCount) {
             }
         }
     }
+    "friday-pass" {
+        [ordered]@{
+            market_data_gate = "PASS"
+            validated_at_utc = "2026-09-25T19:00:00Z"
+        } | ConvertTo-Json -Compress | Set-Content -LiteralPath $ValidationPath -Encoding UTF8
+    }
     "0" { }
 }
 
@@ -100,6 +107,20 @@ try {
     elseif ($Function -eq "Archive-CollectionEvidence") {
         Archive-CollectionEvidence -Reason "regression-test"
         Emit-FileOperationResult
+    }
+    elseif ($Function -eq "Resolve-MarketGateMode") {
+        $Scheduled = $GateMode -in @("scheduled", "both")
+        $InspectStatus = $GateMode -in @("inspect", "both")
+        $Mode = Resolve-MarketGateMode -IsScheduled $Scheduled -IsInspectStatus $InspectStatus
+        $Existing = Get-Content -LiteralPath $ValidationPath -Raw | ConvertFrom-Json
+        Emit -Payload @{
+            status                            = "OK"
+            function                          = $Function
+            mode                              = $Mode
+            existing_market_data_gate         = $Existing.market_data_gate
+            existing_validated_at_utc         = $Existing.validated_at_utc
+            existing_pass_reusable_for_launch = $false
+        } -Code 0
     }
     else {
         $PythonExe = "powershell.exe"
