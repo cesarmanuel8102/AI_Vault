@@ -352,13 +352,13 @@ def resolve_owned_open_trade(
         for _, payload in anchors
     ):
         raise OpenOrderOwnershipError("ORDER_REGISTRY_V2_OWNERSHIP_REQUIRED")
-    legacy_source_hashes = [
+    source_anchor_hashes = [
         str(row[7] or "")
         for row, payload in anchors
-        if payload.get("schema") == "EXPERIMENT_ORDER_REGISTRY_V2"
+        if payload.get("lifecycle_event") != "BROKER_IDENTITY_BOUND"
     ]
     if any(
-        payload.get("source_anchor_sha256") != legacy_source_hashes
+        payload.get("source_anchor_sha256") != source_anchor_hashes
         for _, payload in anchors
         if payload.get("lifecycle_event") == "BROKER_IDENTITY_BOUND"
     ):
@@ -458,7 +458,11 @@ def resolve_owned_open_trade(
         raise OpenOrderOwnershipError("OPEN_ORDER_STATE_CHANGED")
     if snapshot["status"].upper() not in ACTIONABLE_ORDER_STATUSES:
         raise OpenOrderOwnershipError("OPEN_ORDER_NOT_ACTIONABLE")
-    if is_bag and not v3_contracts:
+    has_positive_v3_contract = any(
+        isinstance(contract, dict) and int(contract.get("conId") or 0) > 0
+        for contract in v3_contracts
+    )
+    if is_bag and not has_positive_v3_contract:
         broker_bound_perm_ids = {
             int(row[1] or 0)
             for row, payload in anchors
@@ -471,7 +475,11 @@ def resolve_owned_open_trade(
             db,
             action=action,
             snapshot=snapshot,
-            source_hashes=[str(row[7] or "") for row, _ in anchors],
+            source_hashes=[
+                str(row[7] or "")
+                for row, payload in anchors
+                if payload.get("lifecycle_event") != "BROKER_IDENTITY_BOUND"
+            ],
             execution_client_id=execution_client_id,
         )
     return candidate, snapshot

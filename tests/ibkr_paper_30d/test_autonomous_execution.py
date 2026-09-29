@@ -694,7 +694,7 @@ class _DelayedResolvedBagIB(_ResolvedBagIB):
 
     def placeOrder(self, contract, order):
         local_order = SimpleNamespace(**order.__dict__)
-        local_order.permId = 0
+        local_order.permId = 1401602217
         local_order.clientId = EXECUTION_CLIENT_ID
         server_order = SimpleNamespace(**order.__dict__)
         server_order.permId = 1401602217
@@ -758,7 +758,7 @@ class _ResolvedBagToolbox:
         self.ib = _ResolvedBagIB(self.resolved_contract)
 
     def _connect(self, *, client_id=None):
-        assert client_id == EXECUTION_CLIENT_ID
+        assert client_id in {None, EXECUTION_CLIENT_ID}
         return self.ib
 
     def _proposal_contract(self, ib, proposal):

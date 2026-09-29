@@ -172,10 +172,26 @@ class AutonomousPaperExecutor:
         submitted_contract: Any,
         order_ref: str,
     ) -> Any:
-        if int(getattr(trade.order, "permId", 0) or 0) > 0:
+        trade_identity = canonical_contract_identity(trade.contract)
+        needs_resolved_bag_identity = (
+            trade_identity["secType"] == "BAG" and trade_identity["conId"] <= 0
+        )
+        if (
+            int(getattr(trade.order, "permId", 0) or 0) > 0
+            and not needs_resolved_bag_identity
+        ):
             return trade
-        request_open_orders = getattr(ib, "reqAllOpenOrders", None)
+        reader = ib
+        try:
+            auxiliary = self.toolbox._connect()
+            if auxiliary is not None:
+                reader = auxiliary
+        except Exception:
+            auxiliary = None
+        request_open_orders = getattr(reader, "reqAllOpenOrders", None)
         if not callable(request_open_orders):
+            if reader is not ib:
+                reader.disconnect()
             return trade
 
         submitted_order = trade.order
@@ -183,50 +199,59 @@ class AutonomousPaperExecutor:
         submitted_quantity = Decimal(
             str(getattr(submitted_order, "totalQuantity", 0) or 0)
         )
-        for attempt in range(20):
-            try:
+        try:
+            for attempt in range(20):
                 candidates = list(request_open_orders())
-            except Exception:
-                break
-            exact = []
-            for candidate in candidates:
-                snapshot = canonical_open_order(candidate)
-                contract_identity = snapshot["contract"]
-                if submitted_identity["secType"] == "BAG":
-                    contract_matches = (
-                        contract_identity["secType"] == "BAG"
-                        and contract_identity["symbol"] == submitted_identity["symbol"]
-                        and contract_identity["currency"]
-                        == submitted_identity["currency"]
-                        and contract_identity["comboLegs"]
-                        == submitted_identity["comboLegs"]
-                        and contract_identity["conId"] > 0
-                    )
-                else:
-                    contract_matches = (
-                        contract_identity["conId"] == submitted_identity["conId"]
-                        and contract_identity["conId"] > 0
-                    )
-                if (
-                    snapshot["orderRef"] == order_ref
-                    and snapshot["orderId"]
-                    == int(getattr(submitted_order, "orderId", 0) or 0)
-                    and snapshot["clientId"] == self.execution_client_id
-                    and snapshot["account"]
-                    == str(getattr(submitted_order, "account", "") or "")
-                    and snapshot["action"]
-                    == str(getattr(submitted_order, "action", "") or "").upper()
-                    and Decimal(snapshot["totalQuantity"]) == submitted_quantity
-                    and snapshot["permId"] > 0
-                    and contract_matches
-                ):
-                    exact.append(candidate)
-            if len(exact) == 1:
-                return exact[0]
-            if len(exact) > 1:
-                break
-            if attempt < 19:
-                ib.sleep(0.5)
+                exact = []
+                for candidate in candidates:
+                    snapshot = canonical_open_order(candidate)
+                    contract_identity = snapshot["contract"]
+                    if submitted_identity["secType"] == "BAG":
+                        contract_matches = (
+                            contract_identity["secType"] == "BAG"
+                            and contract_identity["symbol"]
+                            == submitted_identity["symbol"]
+                            and contract_identity["currency"]
+                            == submitted_identity["currency"]
+                            and contract_identity["comboLegs"]
+                            == submitted_identity["comboLegs"]
+                            and contract_identity["conId"] > 0
+                        )
+                    else:
+                        contract_matches = (
+                            contract_identity["conId"]
+                            == submitted_identity["conId"]
+                            and contract_identity["conId"] > 0
+                        )
+                    if (
+                        snapshot["orderRef"] == order_ref
+                        and snapshot["orderId"]
+                        == int(getattr(submitted_order, "orderId", 0) or 0)
+                        and snapshot["clientId"] == self.execution_client_id
+                        and snapshot["account"]
+                        == str(getattr(submitted_order, "account", "") or "")
+                        and snapshot["action"]
+                        == str(getattr(submitted_order, "action", "") or "").upper()
+                        and Decimal(snapshot["totalQuantity"])
+                        == submitted_quantity
+                        and snapshot["permId"] > 0
+                        and contract_matches
+                    ):
+                        exact.append(candidate)
+                if len(exact) == 1:
+                    return exact[0]
+                if len(exact) > 1:
+                    break
+                if attempt < 19:
+                    reader.sleep(0.5)
+        except Exception:
+            pass
+        finally:
+            if reader is not ib:
+                try:
+                    reader.disconnect()
+                except Exception:  # nosec B110
+                    pass
         return trade
 
     @staticmethod
@@ -284,6 +309,13 @@ class AutonomousPaperExecutor:
                 sha256_json(payload),
                 utc_now(),
             ),
+        )
+
+    @staticmethod
+    def _broker_bound_identity_available(trade: Any) -> bool:
+        identity = canonical_contract_identity(trade.contract)
+        return int(getattr(trade.order, "permId", 0) or 0) > 0 and (
+            identity["secType"] != "BAG" or identity["conId"] > 0
         )
 
     def _register_lifecycle_event(
@@ -1138,7 +1170,8 @@ class AutonomousPaperExecutor:
                 submitted_contract=contract,
                 order_ref=order_ref,
             )
-            if int(getattr(trade.order, "permId", 0) or 0) > 0:
+            broker_identity_available = self._broker_bound_identity_available(trade)
+            if broker_identity_available:
                 self._register_order(
                     order=trade.order,
                     contract=trade.contract,
@@ -1160,6 +1193,14 @@ class AutonomousPaperExecutor:
                 "paper_only": True,
             }
             failed = str(status).upper() in {"INACTIVE", "CANCELLED", "API CANCELLED"}
+            if not failed and not broker_identity_available:
+                return PaperExecutionResult(
+                    success=False,
+                    status="UNCERTAIN",
+                    reason_codes=("BROKER_IDENTITY_UNRESOLVED",),
+                    order=payload,
+                    broker_validation=validation.broker_evidence,
+                )
             return PaperExecutionResult(
                 success=not failed,
                 status=str(status),
@@ -1402,7 +1443,8 @@ class AutonomousPaperExecutor:
                 submitted_contract=position.contract,
                 order_ref=order_ref,
             )
-            if int(getattr(trade.order, "permId", 0) or 0) > 0:
+            broker_identity_available = self._broker_bound_identity_available(trade)
+            if broker_identity_available:
                 self._register_order(
                     order=trade.order,
                     contract=trade.contract,
@@ -1425,6 +1467,14 @@ class AutonomousPaperExecutor:
                 "position_management": decision.value,
             }
             failed = str(status).upper() in {"INACTIVE", "CANCELLED", "API CANCELLED"}
+            if not failed and not broker_identity_available:
+                return PaperExecutionResult(
+                    success=False,
+                    status="UNCERTAIN",
+                    reason_codes=("BROKER_IDENTITY_UNRESOLVED",),
+                    order=payload,
+                    broker_validation=final_validation.broker_evidence,
+                )
             return PaperExecutionResult(
                 success=not failed,
                 status=str(status),

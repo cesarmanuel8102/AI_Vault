@@ -207,13 +207,13 @@ class AutonomousStateBuilder:
 
         if not anchors:
             return False
-        legacy_source_hashes = [
+        source_anchor_hashes = [
             str(row[7] or "")
             for row, payload in reversed(anchors)
-            if payload.get("schema") == "EXPERIMENT_ORDER_REGISTRY_V2"
+            if payload.get("lifecycle_event") != "BROKER_IDENTITY_BOUND"
         ]
         if any(
-            payload.get("source_anchor_sha256") != legacy_source_hashes
+            payload.get("source_anchor_sha256") != source_anchor_hashes
             for _, payload in anchors
             if payload.get("lifecycle_event") == "BROKER_IDENTITY_BOUND"
         ):

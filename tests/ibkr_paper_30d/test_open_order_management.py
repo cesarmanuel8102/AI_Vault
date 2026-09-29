@@ -347,6 +347,49 @@ def test_v3_pre_send_and_broker_bound_bag_resolve_without_reconciliation(tmp_pat
     assert row_count == 2
 
 
+def test_v3_zero_parent_broker_bound_appends_positive_identity(tmp_path):
+    live = bag_trade()
+    zero = deepcopy(live)
+    zero.contract.conId = 0
+    zero.contract.localSymbol = ""
+    zero_snapshot = canonical_open_order(zero)
+    pre_send = deepcopy(zero)
+    pre_send.order.permId = 0
+    pre_send_snapshot = canonical_open_order(pre_send)
+    with Database.open(tmp_path / "v3-zero-bound-bag.sqlite3") as db:
+        register_issuance(
+            db,
+            pre_send,
+            registry_id="v3-zero-pre-send",
+            schema="EXPERIMENT_ORDER_REGISTRY_V3",
+            payload_updates={"contract": pre_send_snapshot["contract"]},
+        )
+        register_issuance(
+            db,
+            zero,
+            registry_id="v3-zero-broker-bound",
+            schema="EXPERIMENT_ORDER_REGISTRY_V3",
+            lifecycle_event="BROKER_BOUND",
+            payload_updates={"contract": zero_snapshot["contract"]},
+        )
+
+        resolve_owned_open_trade(
+            db,
+            [live],
+            open_order_action_from_trade(live),
+            execution_client_id=EXECUTION_CLIENT_ID,
+        )
+        rows = db.execute(
+            "SELECT contract_id,payload_json FROM experiment_order_registry "
+            "ORDER BY sequence"
+        ).fetchall()
+
+    assert [row[0] for row in rows] == [0, 0, 28812380]
+    binding = __import__("json").loads(rows[-1][1])
+    assert binding["lifecycle_event"] == "BROKER_IDENTITY_BOUND"
+    assert binding["contract"]["conId"] == 28812380
+
+
 @pytest.mark.parametrize(
     ("field", "replacement", "reason"),
     [
