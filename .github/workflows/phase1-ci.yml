@@ -3,6 +3,7 @@ name: phase1-ci
 on:
   push:
     branches:
+      - fix/successor-scheduler-resume-v1
       - codex/own-capital-sustainable-return
       - codex/ibkr-autonomous-research-v1
       - codex/ibkr-paper-auditor-gate-v2
