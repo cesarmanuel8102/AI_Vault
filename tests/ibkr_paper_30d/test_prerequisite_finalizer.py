@@ -657,3 +657,31 @@ def test_clean_environment_probe_child_boots_windows_powershell():
         assert "MARKER=leak" not in result.stdout
     finally:
         probe_script.unlink(missing_ok=True)
+
+def test_day1_runner_auto_propagates_successor_resume_binding():
+    text = DAY1_RUNNER.read_text(encoding="utf-8")
+
+    assert '"owner_successor_authorization_v2.json"' in text
+    assert '"OWNER_SUCCESSOR_AUTHORIZATION_V2"' in text
+    assert '"-TargetSuccessorEpochId", $TargetSuccessorEpochId' in text
+    assert '"-TargetSuccessorDefinitionSha256", $TargetSuccessorDefinitionSha256' in text
+    assert '"--target-successor-epoch-id", $TargetSuccessorEpochId' in text
+    assert '"--target-successor-definition-sha256", $TargetSuccessorDefinitionSha256' in text
+
+    detect = text.index('"owner_successor_authorization_v2.json"')
+    finalizer = text.index("& $PowerShellExe @FinalizerArguments")
+    launch = text.index("& $PythonExe @PythonArguments")
+    assert detect < finalizer < launch
+
+
+def test_finalizer_builds_v2_attempt_binding_for_successor_resume():
+    text = FINALIZER.read_text(encoding="utf-8")
+
+    assert "[string]$TargetSuccessorEpochId" in text
+    assert "[string]$TargetSuccessorDefinitionSha256" in text
+    assert '"SUCCESSOR_TARGET_REQUIRED"' in text
+    assert '"launch_attempt_binding_v2.json"' in text
+    assert '"--target-successor-epoch-id", $TargetSuccessorEpochId' in text
+    assert '"--target-successor-definition-sha256", $TargetSuccessorDefinitionSha256' in text
+    assert '"SUCCESSOR_LAUNCH_ATTEMPT_BINDING_MISMATCH"' in text
+

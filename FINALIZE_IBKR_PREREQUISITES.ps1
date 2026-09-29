@@ -9,7 +9,9 @@ param(
     [string]$ApprovedHead = "",
     [switch]$SkipTaskRegistration,
     [string]$OwnerAuthorization = "",
-    [string]$LaunchAttemptId = ""
+    [string]$LaunchAttemptId = "",
+    [string]$TargetSuccessorEpochId = "",
+    [string]$TargetSuccessorDefinitionSha256 = ""
 )
 
 Set-StrictMode -Version Latest
@@ -51,7 +53,22 @@ $MarketValidation = Join-Path $CanonicalReportRoot "market_data_validation.json"
 $AutonomousDatabase = Join-Path $ResolvedRepoRoot "state\ibkr_paper_30d\autonomous.sqlite3"
 $OwnerAuthorizationReceipt = Join-Path $CanonicalReportRoot "owner_authorization_v1.json"
 $SuccessorOwnerAuthorizationReceipt = Join-Path $CanonicalReportRoot "owner_successor_authorization_v2.json"
-$LaunchAttemptBinding = Join-Path $CanonicalReportRoot "launch_attempt_binding_v1.json"
+$SuccessorTargetSupplied = -not [string]::IsNullOrWhiteSpace($TargetSuccessorEpochId)
+$SuccessorDefinitionSupplied = -not [string]::IsNullOrWhiteSpace($TargetSuccessorDefinitionSha256)
+if ($SuccessorTargetSupplied -ne $SuccessorDefinitionSupplied) {
+    throw "SUCCESSOR_TARGET_BINDING_INCOMPLETE"
+}
+$SuccessorResumeRequested = $SuccessorTargetSupplied -and $SuccessorDefinitionSupplied
+if ($SuccessorResumeRequested) {
+    if (
+        $TargetSuccessorEpochId -notmatch '^[A-Za-z0-9_.-]+$' -or
+        $TargetSuccessorDefinitionSha256 -notmatch '^[0-9a-fA-F]{64}$'
+    ) {
+        throw "SUCCESSOR_TARGET_BINDING_INVALID"
+    }
+    $TargetSuccessorDefinitionSha256 = $TargetSuccessorDefinitionSha256.ToLowerInvariant()
+}
+$LaunchAttemptBinding = Join-Path $CanonicalReportRoot $(if ($SuccessorResumeRequested) { "launch_attempt_binding_v2.json" } else { "launch_attempt_binding_v1.json" })
 $MarketTaskName = "CodexIBKRMarketDataGate"
 $ProbeFirewallRuleName = "CodexAuditorV2-Probe-PowerShell-Broker-Block"
 $CanonicalAcceptance = Join-Path $ResolvedRepoRoot "AUDITOR_MONTH1_PAPER_RESIDUAL_RISK_ACCEPTANCE_V1.json"
@@ -287,6 +304,12 @@ $SuccessorAuthorizationExists = (
     (Test-Path -LiteralPath $AutonomousDatabase -PathType Leaf) -and
     (Test-Path -LiteralPath $SuccessorOwnerAuthorizationReceipt -PathType Leaf)
 )
+if ($Stage -eq "Receipts" -and $SuccessorAuthorizationExists -and -not $SuccessorResumeRequested) {
+    throw "SUCCESSOR_TARGET_REQUIRED"
+}
+if ($Stage -eq "Receipts" -and $SuccessorResumeRequested -and -not $SuccessorAuthorizationExists) {
+    throw "SUCCESSOR_AUTHORIZATION_MISSING"
+}
 if ($Stage -eq "Receipts") {
     if ($OwnerAuthorization) {
         throw "OWNER_AUTHORIZATION_CREATE_FORBIDDEN_IN_RECEIPTS_STAGE"
@@ -302,20 +325,21 @@ if ($Stage -eq "Receipts") {
         if (-not [Guid]::TryParseExact($LaunchAttemptId, "D", [ref]$ParsedAttempt)) {
             throw "LAUNCH_ATTEMPT_ID_INVALID"
         }
-        if ($SuccessorAuthorizationExists) {
+        if ($SuccessorResumeRequested) {
             $SuccessorReceipt = Get-Content -LiteralPath $SuccessorOwnerAuthorizationReceipt -Raw | ConvertFrom-Json
             if (
-                [string]$SuccessorReceipt.epoch_id -eq "" -or
-                [string]$SuccessorReceipt.definition_sha256 -notmatch '^[0-9a-f]{64}$'
+                [string]$SuccessorReceipt.schema -ne "OWNER_SUCCESSOR_AUTHORIZATION_V2" -or
+                [string]$SuccessorReceipt.epoch_id -ne $TargetSuccessorEpochId -or
+                [string]$SuccessorReceipt.definition_sha256 -ne $TargetSuccessorDefinitionSha256
             ) {
-                throw "SUCCESSOR_AUTHORIZATION_RECEIPT_INVALID"
+                throw "SUCCESSOR_AUTHORIZATION_RECEIPT_TARGET_MISMATCH"
             }
             $OwnerAuthorizationState = Invoke-PythonJson -Arguments @(
                 "-m", "ibkr_paper_30d.prerequisite_tools", "validate-successor-authorization",
                 "--db", $AutonomousDatabase,
                 "--receipt", $SuccessorOwnerAuthorizationReceipt,
-                "--epoch-id", ([string]$SuccessorReceipt.epoch_id),
-                "--definition-sha256", ([string]$SuccessorReceipt.definition_sha256),
+                "--epoch-id", $TargetSuccessorEpochId,
+                "--definition-sha256", $TargetSuccessorDefinitionSha256,
                 "--actor-sid", $CurrentOwnerSid
             )
         }
@@ -662,15 +686,30 @@ if ($AuditorEvaluation.canonical_gate -ne "PASS" -or $AuditorEvaluation.compatib
 
 $AttemptBinding = $null
 if ($LaunchAttemptId) {
-    $AttemptBinding = Invoke-PythonJson -Arguments @(
+    $BindLaunchAttemptArguments = @(
         "-m", "ibkr_paper_30d.prerequisite_tools", "bind-launch-attempt",
         "--launch-attempt-id", $LaunchAttemptId,
         "--readonly-receipt", $ReadOnlyReport,
         "--auditor-receipt", $CanonicalAuditorReceipt,
         "--destination", $LaunchAttemptBinding
     )
+    if ($SuccessorResumeRequested) {
+        $BindLaunchAttemptArguments += @(
+            "--target-successor-epoch-id", $TargetSuccessorEpochId,
+            "--target-successor-definition-sha256", $TargetSuccessorDefinitionSha256
+        )
+    }
+    $AttemptBinding = Invoke-PythonJson -Arguments $BindLaunchAttemptArguments
     if ([string]$AttemptBinding.launch_attempt_id -ne $LaunchAttemptId) {
         throw "LAUNCH_ATTEMPT_BINDING_MISMATCH"
+    }
+    if (
+        $SuccessorResumeRequested -and (
+            [string]$AttemptBinding.target_successor_epoch_id -ne $TargetSuccessorEpochId -or
+            [string]$AttemptBinding.target_successor_definition_sha256 -ne $TargetSuccessorDefinitionSha256
+        )
+    ) {
+        throw "SUCCESSOR_LAUNCH_ATTEMPT_BINDING_MISMATCH"
     }
 }
 

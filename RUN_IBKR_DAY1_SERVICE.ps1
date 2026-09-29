@@ -27,6 +27,31 @@ if (-not $ValidateOnly -and $CurrentHead -ne $ApprovedHead) {
     throw "APPROVED_HEAD_MISMATCH:EXPECTED=$ApprovedHead:ACTUAL=$CurrentHead"
 }
 $Finalizer = Join-Path $ResolvedRepoRoot "FINALIZE_IBKR_PREREQUISITES.ps1"
+$ReportsRoot = Join-Path $ResolvedRepoRoot "state\ibkr_paper_30d\reports"
+$SuccessorAuthorizationReceipt = Join-Path $ReportsRoot "owner_successor_authorization_v2.json"
+$TargetSuccessorEpochId = ""
+$TargetSuccessorDefinitionSha256 = ""
+if (Test-Path -LiteralPath $SuccessorAuthorizationReceipt -PathType Leaf) {
+    try {
+        $SuccessorAuthorization = Get-Content -LiteralPath $SuccessorAuthorizationReceipt -Raw | ConvertFrom-Json
+    }
+    catch {
+        throw "SUCCESSOR_AUTHORIZATION_RECEIPT_INVALID"
+    }
+    if ([string]$SuccessorAuthorization.schema -ne "OWNER_SUCCESSOR_AUTHORIZATION_V2") {
+        throw "SUCCESSOR_AUTHORIZATION_RECEIPT_INVALID"
+    }
+    $TargetSuccessorEpochId = [string]$SuccessorAuthorization.epoch_id
+    $TargetSuccessorDefinitionSha256 = [string]$SuccessorAuthorization.definition_sha256
+    if (
+        [string]::IsNullOrWhiteSpace($TargetSuccessorEpochId) -or
+        $TargetSuccessorEpochId -notmatch '^[A-Za-z0-9_.-]+$' -or
+        $TargetSuccessorDefinitionSha256 -notmatch '^[0-9a-fA-F]{64}$'
+    ) {
+        throw "SUCCESSOR_AUTHORIZATION_RECEIPT_INVALID"
+    }
+    $TargetSuccessorDefinitionSha256 = $TargetSuccessorDefinitionSha256.ToLowerInvariant()
+}
 $LaunchAttemptId = [guid]::NewGuid().ToString("D")
 $FinalizerArguments = @(
     "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $Finalizer,
@@ -42,6 +67,16 @@ $PythonArguments = @(
     "--repo-root", $ResolvedRepoRoot,
     "--launch-attempt-id", $LaunchAttemptId
 )
+if ($TargetSuccessorEpochId) {
+    $FinalizerArguments += @(
+        "-TargetSuccessorEpochId", $TargetSuccessorEpochId,
+        "-TargetSuccessorDefinitionSha256", $TargetSuccessorDefinitionSha256
+    )
+    $PythonArguments += @(
+        "--target-successor-epoch-id", $TargetSuccessorEpochId,
+        "--target-successor-definition-sha256", $TargetSuccessorDefinitionSha256
+    )
+}
 
 if ($ValidateOnly) {
     $TaskSnapshot = [ordered]@{
