@@ -221,11 +221,19 @@ def _registry_payload(raw: Any) -> dict[str, Any]:
 def _contract_identity_matches(
     expected: dict[str, Any], actual: dict[str, Any], *, allow_zero_parent: bool
 ) -> bool:
-    normalized = dict(expected)
-    if allow_zero_parent and int(normalized.get("conId") or 0) == 0:
-        normalized["conId"] = int(actual.get("conId") or 0)
-        normalized["localSymbol"] = actual.get("localSymbol", "")
-    return normalized == actual
+    if allow_zero_parent and int(expected.get("conId") or 0) == 0:
+        stable_parent_fields = {
+            "symbol",
+            "secType",
+            "exchange",
+            "currency",
+            "expiry",
+            "strike",
+            "multiplier",
+            "comboLegs",
+        }
+        return all(expected.get(key) == actual.get(key) for key in stable_parent_fields)
+    return expected == actual
 
 
 def _append_broker_identity_binding(
