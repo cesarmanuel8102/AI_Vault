@@ -79,6 +79,11 @@ jobs:
           python tests/unit/test_phase1_import_baseline.py
           python tests/unit/test_phase1_security_defaults.py
 
+      - name: Diagnose kernel manifest
+        shell: pwsh
+        run: |
+          python -c "import json, pathlib; from ibkr_paper_30d.kernel_manifest import build_kernel_manifest; p=pathlib.Path('.'); s=json.loads((p/'IMMUTABLE_EXECUTION_KERNEL_MANIFEST.json').read_text()); c=build_kernel_manifest(p); print('STORED_ROOT='+str(s.get('kernel_manifest_sha256'))); print('CURRENT_ROOT='+str(c.get('kernel_manifest_sha256'))); sd={x['path']:x for x in s['kernel_files']}; cd={x['path']:x for x in c['kernel_files']}; [print('DIFF', k, sd.get(k), cd.get(k)) for k in sorted(set(sd)|set(cd)) if sd.get(k)!=cd.get(k)]"
+
       - name: Full IBKR autonomous and regression suite
         shell: pwsh
         run: |
