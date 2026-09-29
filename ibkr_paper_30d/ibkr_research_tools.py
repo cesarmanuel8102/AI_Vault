@@ -941,6 +941,7 @@ class IBKRResearchToolbox:
                     "permId": int(getattr(execution, "permId", 0) or 0),
                     "orderId": int(getattr(execution, "orderId", 0) or 0),
                     "clientId": int(getattr(execution, "clientId", 0) or 0),
+                    "account": str(getattr(execution, "acctNumber", "") or ""),
                     "execution_time": str(getattr(execution, "time", "") or ""),
                     "cumQty": str(getattr(execution, "cumQty", "") or ""),
                     "avgPrice": str(getattr(execution, "avgPrice", "") or ""),

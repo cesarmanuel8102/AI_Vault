@@ -62,6 +62,39 @@ def trade(*, limit_price=10):
     )
 
 
+def bag_trade(*, contract_id=28812380):
+    value = trade(limit_price="0.90")
+    value.contract = SimpleNamespace(
+        conId=contract_id,
+        symbol="IOVA",
+        localSymbol="IOVA",
+        secType="BAG",
+        exchange="SMART",
+        currency="USD",
+        lastTradeDateOrContractMonth="",
+        strike=0,
+        right="",
+        multiplier="",
+        comboLegs=[
+            SimpleNamespace(
+                conId=913925915, ratio=1, action="BUY", exchange="SMART"
+            ),
+            SimpleNamespace(
+                conId=926221865, ratio=1, action="SELL", exchange="SMART"
+            ),
+        ],
+    )
+    value.order.orderRef = "codex-ibkr-paper-30d-a-f8da732bc64a"
+    value.order.orderId = 13
+    value.order.permId = 1401602203
+    value.order.totalQuantity = 1
+    value.order.lmtPrice = 0.9
+    value.orderStatus.status = "PreSubmitted"
+    value.orderStatus.filled = 0
+    value.orderStatus.remaining = 1
+    return value
+
+
 def open_order_action_from_trade(value):
     snapshot = canonical_open_order(value)
     return AutonomousOpenOrderAction(
@@ -87,6 +120,7 @@ def register_issuance(
     payload_sha256=None,
     payload_updates=None,
     payload_removals=(),
+    lifecycle_event="ISSUED_PRE_SEND",
 ):
     snapshot = canonical_open_order(value)
     stored_ibkr_order_id = (
@@ -94,7 +128,7 @@ def register_issuance(
     )
     payload = {
         "schema": schema,
-        "lifecycle_event": "ISSUED_PRE_SEND",
+        "lifecycle_event": lifecycle_event,
         "order_ref": snapshot["orderRef"],
         "client_order_id": snapshot["orderId"],
         "perm_id": snapshot["permId"],
@@ -129,6 +163,25 @@ def register_issuance(
     )
 
 
+def register_legacy_zero_bag_anchors(db, live):
+    pre_send = deepcopy(live)
+    pre_send.contract.conId = 0
+    pre_send.order.permId = 0
+    register_issuance(
+        db,
+        pre_send,
+        registry_id="bag-pre-send",
+    )
+    broker_bound = deepcopy(live)
+    broker_bound.contract.conId = 0
+    register_issuance(
+        db,
+        broker_bound,
+        registry_id="bag-broker-bound",
+        lifecycle_event="BROKER_BOUND",
+    )
+
+
 def test_canonical_order_contains_complete_identity_and_hash():
     value = canonical_open_order(trade())
 
@@ -138,6 +191,214 @@ def test_canonical_order_contains_complete_identity_and_hash():
     assert value["clientId"] == EXECUTION_CLIENT_ID
     assert value["contract"]["conId"] == 756733
     assert len(value["state_sha256"]) == 64
+
+
+def test_canonical_bag_order_hash_binds_exact_combo_legs():
+    original = bag_trade()
+    changed = deepcopy(original)
+    changed.contract.comboLegs[1].conId = 999999999
+
+    snapshot = canonical_open_order(original)
+
+    assert snapshot["contract"]["secType"] == "BAG"
+    assert snapshot["contract"]["comboLegs"] == [
+        {"conId": 913925915, "ratio": 1, "action": "BUY", "exchange": "SMART"},
+        {"conId": 926221865, "ratio": 1, "action": "SELL", "exchange": "SMART"},
+    ]
+    assert canonical_open_order(changed)["state_sha256"] != snapshot["state_sha256"]
+
+
+def test_legacy_zero_conid_bag_appends_exact_broker_identity_binding(tmp_path):
+    live = bag_trade()
+    action = open_order_action_from_trade(live)
+    with Database.open(tmp_path / "legacy-bag.sqlite3") as db:
+        register_legacy_zero_bag_anchors(db, live)
+
+        resolved, snapshot = resolve_owned_open_trade(
+            db, [live], action, execution_client_id=EXECUTION_CLIENT_ID
+        )
+        rows = db.execute(
+            "SELECT contract_id,payload_json FROM experiment_order_registry "
+            "WHERE order_ref=? ORDER BY sequence",
+            (action.order_ref,),
+        ).fetchall()
+
+    assert resolved is live
+    assert snapshot["contract"]["conId"] == 28812380
+    assert [row[0] for row in rows] == [0, 0, 28812380]
+    binding = __import__("json").loads(rows[-1][1])
+    assert binding["lifecycle_event"] == "BROKER_IDENTITY_BOUND"
+    assert binding["contract"]["comboLegs"][0]["conId"] == 913925915
+    assert binding["contract"]["comboLegs"][1]["action"] == "SELL"
+
+
+def test_legacy_bag_requires_positive_broker_bound_perm_anchor(tmp_path):
+    live = bag_trade()
+    pre_send = deepcopy(live)
+    pre_send.contract.conId = 0
+    pre_send.order.permId = 0
+    with Database.open(tmp_path / "legacy-bag-without-bound.sqlite3") as db:
+        register_issuance(db, pre_send, registry_id="bag-pre-send-only")
+
+        with pytest.raises(
+            OpenOrderOwnershipError,
+            match="ORDER_REGISTRY_BROKER_BOUND_REQUIRED",
+        ):
+            resolve_owned_open_trade(
+                db,
+                [live],
+                open_order_action_from_trade(live),
+                execution_client_id=EXECUTION_CLIENT_ID,
+            )
+
+        assert db.execute(
+            "SELECT COUNT(*) FROM experiment_order_registry"
+        ).fetchone()[0] == 1
+
+
+def test_legacy_bag_binding_rejects_forged_source_hash_list(tmp_path):
+    live = bag_trade()
+    action = open_order_action_from_trade(live)
+    with Database.open(tmp_path / "legacy-bag-forged-source.sqlite3") as db:
+        register_legacy_zero_bag_anchors(db, live)
+        snapshot = canonical_open_order(live)
+        payload = {
+            "schema": "EXPERIMENT_ORDER_REGISTRY_V3",
+            "lifecycle_event": "BROKER_IDENTITY_BOUND",
+            "order_ref": action.order_ref,
+            "client_order_id": action.order_id,
+            "perm_id": action.perm_id,
+            "ibkr_order_id": action.order_id,
+            "contract_id": action.contract_id,
+            "action": snapshot["action"],
+            "quantity": snapshot["totalQuantity"],
+            "execution_client_id": action.client_id,
+            "account": snapshot["account"],
+            "contract": snapshot["contract"],
+            "source_anchor_sha256": ["0" * 64],
+        }
+        db.execute(
+            "INSERT INTO experiment_order_registry("
+            "registry_id,order_ref,client_order_id,perm_id,ibkr_order_id,"
+            "contract_id,action,quantity,payload_json,payload_sha256,created_at_utc"
+            ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                "forged-binding",
+                action.order_ref,
+                action.order_id,
+                action.perm_id,
+                action.order_id,
+                action.contract_id,
+                snapshot["action"],
+                snapshot["totalQuantity"],
+                canonical_bytes(payload).decode("utf-8"),
+                sha256_json(payload),
+                "2026-09-29T18:00:00Z",
+            ),
+        )
+
+        with pytest.raises(
+            OpenOrderOwnershipError,
+            match="ORDER_REGISTRY_BINDING_SOURCE_MISMATCH",
+        ):
+            resolve_owned_open_trade(
+                db, [live], action, execution_client_id=EXECUTION_CLIENT_ID
+            )
+
+
+def test_v3_pre_send_and_broker_bound_bag_resolve_without_reconciliation(tmp_path):
+    live = bag_trade()
+    pre_send = deepcopy(live)
+    pre_send.contract.conId = 0
+    pre_send.contract.localSymbol = ""
+    pre_send.order.permId = 0
+    live_snapshot = canonical_open_order(live)
+    pre_send_snapshot = canonical_open_order(pre_send)
+
+    with Database.open(tmp_path / "v3-bag.sqlite3") as db:
+        register_issuance(
+            db,
+            pre_send,
+            registry_id="v3-pre-send",
+            schema="EXPERIMENT_ORDER_REGISTRY_V3",
+            payload_updates={"contract": pre_send_snapshot["contract"]},
+        )
+        register_issuance(
+            db,
+            live,
+            registry_id="v3-broker-bound",
+            schema="EXPERIMENT_ORDER_REGISTRY_V3",
+            lifecycle_event="BROKER_BOUND",
+            payload_updates={"contract": live_snapshot["contract"]},
+        )
+
+        selected, snapshot = resolve_owned_open_trade(
+            db,
+            [live],
+            open_order_action_from_trade(live),
+            execution_client_id=EXECUTION_CLIENT_ID,
+        )
+        row_count = db.execute(
+            "SELECT COUNT(*) FROM experiment_order_registry"
+        ).fetchone()[0]
+
+    assert selected is live
+    assert snapshot["contract"] == live_snapshot["contract"]
+    assert row_count == 2
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement", "reason"),
+    [
+        ("orderRef", "codex-ibkr-paper-30d-a-other", "OPEN_ORDER_REF_MISMATCH"),
+        ("orderId", 14, "OPEN_ORDER_ID_MISMATCH"),
+        ("permId", 1401602204, "OPEN_ORDER_PERM_ID_MISMATCH"),
+        ("clientId", 19762, "OPEN_ORDER_CLIENT_ID_MISMATCH"),
+        ("account", "DU7654321", "OPEN_ORDER_ACCOUNT_MISMATCH"),
+    ],
+)
+def test_legacy_zero_conid_bag_transition_keeps_strong_anchors(
+    tmp_path, field, replacement, reason
+):
+    anchor = bag_trade()
+    action = open_order_action_from_trade(anchor)
+    changed = deepcopy(anchor)
+    setattr(changed.order, field, replacement)
+    with Database.open(tmp_path / f"legacy-bag-{field}.sqlite3") as db:
+        register_legacy_zero_bag_anchors(db, anchor)
+        with pytest.raises(OpenOrderOwnershipError, match=reason):
+            resolve_owned_open_trade(
+                db, [changed], action, execution_client_id=EXECUTION_CLIENT_ID
+            )
+
+
+def test_legacy_zero_conid_bag_blocks_unrelated_combo_legs(tmp_path):
+    anchor = bag_trade()
+    unrelated = deepcopy(anchor)
+    unrelated.contract.comboLegs[1].conId = 999999999
+    unrelated_snapshot = canonical_open_order(unrelated)
+    unrelated_action = open_order_action_from_trade(anchor).model_copy(
+        update={"observed_state_sha256": unrelated_snapshot["state_sha256"]}
+    )
+    with Database.open(tmp_path / "legacy-bag-unrelated.sqlite3") as db:
+        register_legacy_zero_bag_anchors(db, anchor)
+
+        resolve_owned_open_trade(
+            db,
+            [anchor],
+            open_order_action_from_trade(anchor),
+            execution_client_id=EXECUTION_CLIENT_ID,
+        )
+
+        with pytest.raises(
+            OpenOrderOwnershipError, match="OPEN_ORDER_CONTRACT_IDENTITY_MISMATCH"
+        ):
+            resolve_owned_open_trade(
+                db,
+                [unrelated],
+                unrelated_action,
+                execution_client_id=EXECUTION_CLIENT_ID,
+            )
 
 
 def test_decimal_representation_does_not_change_state_hash():

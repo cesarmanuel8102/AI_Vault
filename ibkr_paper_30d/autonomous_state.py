@@ -160,17 +160,22 @@ class AutonomousStateBuilder:
                 payload = json.loads(row[6] or "{}")
             except (TypeError, ValueError):
                 continue
-            if not isinstance(payload, dict) or payload.get("schema") != (
-                "EXPERIMENT_ORDER_REGISTRY_V2"
-            ):
+            if not isinstance(payload, dict) or payload.get("schema") not in {
+                "EXPERIMENT_ORDER_REGISTRY_V2",
+                "EXPERIMENT_ORDER_REGISTRY_V3",
+            }:
                 continue
             if payload.get("lifecycle_event") not in {
                 "ISSUED_PRE_SEND",
                 "BROKER_BOUND",
+                "BROKER_IDENTITY_BOUND",
             }:
                 continue
+            required_keys = set(V2_OWNERSHIP_ANCHOR_KEYS)
+            if payload.get("schema") == "EXPERIMENT_ORDER_REGISTRY_V3":
+                required_keys.add("contract")
             if (
-                not V2_OWNERSHIP_ANCHOR_KEYS.issubset(payload)
+                not required_keys.issubset(payload)
                 or sha256_json(payload) != str(row[7] or "")
             ):
                 return False
@@ -188,6 +193,11 @@ class AutonomousStateBuilder:
                     == str(row[4] or "").upper()
                     and Decimal(str(payload.get("quantity") or 0))
                     == Decimal(str(row[5] or 0))
+                    and (
+                        payload.get("schema") != "EXPERIMENT_ORDER_REGISTRY_V3"
+                        or int((payload.get("contract") or {}).get("conId") or 0)
+                        == int(payload.get("contract_id") or 0)
+                    )
                 )
             except (TypeError, ValueError):
                 return False
@@ -197,11 +207,20 @@ class AutonomousStateBuilder:
 
         if not anchors:
             return False
+        legacy_source_hashes = [
+            str(row[7] or "")
+            for row, payload in reversed(anchors)
+            if payload.get("schema") == "EXPERIMENT_ORDER_REGISTRY_V2"
+        ]
+        if any(
+            payload.get("source_anchor_sha256") != legacy_source_hashes
+            for _, payload in anchors
+            if payload.get("lifecycle_event") == "BROKER_IDENTITY_BOUND"
+        ):
+            return False
         if any(
             int(row[0] or 0) != order_id
             or int(row[2] or 0) != order_id
-            or int(row[3] or 0) != contract_id
-            or str(row[4] or "").upper() != side
             or int(payload.get("execution_client_id") or 0)
             != EXECUTION_CLIENT_ID
             or not str(payload.get("account") or "")
@@ -225,15 +244,73 @@ class AutonomousStateBuilder:
             )
         except (TypeError, ValueError):
             return False
+        if (
+            len(issued_quantities) != 1
+            or not all(value.is_finite() and value > 0 for value in issued_quantities)
+            or not fill_quantity.is_finite()
+            or fill_quantity <= 0
+            or not cumulative_quantity.is_finite()
+            or cumulative_quantity < fill_quantity
+        ):
+            return False
+
+        v3_contracts = [
+            payload.get("contract")
+            for _, payload in anchors
+            if payload.get("schema") == "EXPERIMENT_ORDER_REGISTRY_V3"
+        ]
+        bag_contracts = [
+            contract
+            for contract in v3_contracts
+            if isinstance(contract, dict)
+            and str(contract.get("secType") or "").upper() == "BAG"
+        ]
+        if bag_contracts:
+            if len(bag_contracts) != len(v3_contracts):
+                return False
+            positive_parent_ids = {
+                int(contract.get("conId") or 0)
+                for contract in bag_contracts
+                if int(contract.get("conId") or 0) > 0
+            }
+            if len(positive_parent_ids) != 1:
+                return False
+            canonical_legs = bag_contracts[-1].get("comboLegs")
+            if not isinstance(canonical_legs, list) or not canonical_legs:
+                return False
+            if any(contract.get("comboLegs") != canonical_legs for contract in bag_contracts):
+                return False
+            expected_accounts = {
+                str(payload.get("account") or "") for _, payload in anchors
+            }
+            if expected_accounts != {str(fill.get("account") or "")}:
+                return False
+            matching_legs = [
+                leg
+                for leg in canonical_legs
+                if int(leg.get("conId") or 0) == contract_id
+                and str(leg.get("action") or "").upper() == side
+            ]
+            if len(matching_legs) != 1:
+                return False
+            try:
+                ratio = Decimal(str(matching_legs[0].get("ratio") or 0))
+            except (TypeError, ValueError):
+                return False
+            maximum_leg_quantity = next(iter(issued_quantities)) * ratio
+            return (
+                ratio.is_finite()
+                and ratio > 0
+                and fill_quantity <= maximum_leg_quantity
+                and cumulative_quantity <= maximum_leg_quantity
+            )
+
+        issued_quantity = next(iter(issued_quantities))
         return (
-            len(issued_quantities) == 1
-            and all(value.is_finite() and value > 0 for value in issued_quantities)
-            and fill_quantity.is_finite()
-            and fill_quantity > 0
-            and cumulative_quantity.is_finite()
-            and cumulative_quantity >= fill_quantity
-            and fill_quantity <= next(iter(issued_quantities))
-            and cumulative_quantity <= next(iter(issued_quantities))
+            all(int(row[3] or 0) == contract_id for row, _ in anchors)
+            and all(str(row[4] or "").upper() == side for row, _ in anchors)
+            and fill_quantity <= issued_quantity
+            and cumulative_quantity <= issued_quantity
         )
 
     def _sync_executions(self) -> list[str]:

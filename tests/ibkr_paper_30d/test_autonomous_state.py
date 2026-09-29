@@ -197,6 +197,75 @@ def builder(
     )
 
 
+def register_bag_binding(db):
+    payload = {
+        "schema": "EXPERIMENT_ORDER_REGISTRY_V3",
+        "lifecycle_event": "BROKER_BOUND",
+        "order_ref": "codex-ibkr-paper-30d-a-bag-cycle",
+        "client_order_id": 13,
+        "perm_id": 1401602203,
+        "ibkr_order_id": 13,
+        "contract_id": 28812380,
+        "action": "BUY",
+        "quantity": "1",
+        "execution_client_id": 19761,
+        "account": "DU1234567",
+        "contract": {
+            "conId": 28812380,
+            "symbol": "IOVA",
+            "secType": "BAG",
+            "exchange": "SMART",
+            "currency": "USD",
+            "comboLegs": [
+                {"conId": 913925915, "ratio": 1, "action": "BUY", "exchange": "SMART"},
+                {"conId": 926221865, "ratio": 1, "action": "SELL", "exchange": "SMART"},
+            ],
+        },
+    }
+    db.execute(
+        "INSERT INTO experiment_order_registry("
+        "registry_id,order_ref,client_order_id,perm_id,ibkr_order_id,"
+        "contract_id,action,quantity,payload_json,payload_sha256,created_at_utc"
+        ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            "bag-binding",
+            payload["order_ref"],
+            13,
+            1401602203,
+            13,
+            28812380,
+            "BUY",
+            "1",
+            canonical_bytes(payload).decode("utf-8"),
+            sha256_json(payload),
+            "2026-09-29T17:55:57Z",
+        ),
+    )
+
+
+def bag_fill(*, con_id, side, account="DU1234567", quantity="1", cum_qty="1"):
+    return {
+        "execution_id_hash": f"exec-{con_id}-{side}",
+        "orderRef": "codex-ibkr-paper-30d-a-bag-cycle",
+        "orderId": 13,
+        "permId": 1401602203,
+        "clientId": 19761,
+        "account": account,
+        "execution_time": "2026-09-29T18:00:00Z",
+        "cumQty": cum_qty,
+        "side": side,
+        "quantity": quantity,
+        "price": "0.50",
+        "commission": "0",
+        "contract": {
+            "conId": con_id,
+            "symbol": "IOVA",
+            "secType": "OPT",
+            "multiplier": "100",
+        },
+    }
+
+
 def test_state_builder_cannot_override_default_kill_switch(tmp_path):
     with Database.open(tmp_path / "state.sqlite3") as db:
         with pytest.raises(
@@ -324,3 +393,49 @@ def test_state_builder_rejects_fill_quantity_exceeding_issuance(
         assert "UNREGISTERED_EXPERIMENT_FILL:44" in (
             value.reconciliation_receipt["reason_codes"]
         )
+
+
+@pytest.mark.parametrize(
+    ("con_id", "side"),
+    [(913925915, "BUY"), (926221865, "SELL")],
+)
+def test_state_builder_accepts_only_authorized_bag_leg_side(tmp_path, con_id, side):
+    with Database.open(tmp_path / f"bag-{con_id}.sqlite3") as db:
+        subject = builder(db, FakeToolbox())
+        register_bag_binding(db)
+
+        assert subject._registered_fill(bag_fill(con_id=con_id, side=side)) is True
+
+
+@pytest.mark.parametrize(
+    "updates",
+    [
+        {"con_id": 999999999, "side": "BUY"},
+        {"con_id": 913925915, "side": "SELL"},
+        {"con_id": 926221865, "side": "BUY"},
+        {"con_id": 913925915, "side": "BUY", "account": "DU7654321"},
+        {"con_id": 913925915, "side": "BUY", "quantity": "2", "cum_qty": "2"},
+        {"con_id": 913925915, "side": "BUY", "quantity": "1", "cum_qty": "2"},
+    ],
+)
+def test_state_builder_blocks_unowned_or_oversized_bag_leg_fill(tmp_path, updates):
+    with Database.open(tmp_path / "bag-invalid.sqlite3") as db:
+        subject = builder(db, FakeToolbox())
+        register_bag_binding(db)
+
+        assert subject._registered_fill(bag_fill(**updates)) is False
+
+
+def test_authorized_bag_leg_fill_remains_deduplicated_in_ledger(tmp_path):
+    with Database.open(tmp_path / "bag-dedupe.sqlite3") as db:
+        subject = builder(db, FakeToolbox())
+        register_bag_binding(db)
+        fill = bag_fill(con_id=913925915, side="BUY")
+
+        assert subject._registered_fill(fill) is True
+        first = subject.ledger.record_fill(fill)
+        second = subject.ledger.record_fill(fill)
+
+        assert not first.startswith("duplicate:")
+        assert second.startswith("duplicate:")
+        assert subject.ledger.project().event_count == 1

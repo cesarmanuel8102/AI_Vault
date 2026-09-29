@@ -89,6 +89,43 @@ def proposal():
     )
 
 
+def bag_proposal():
+    return proposal().model_copy(
+        update={
+            "symbol": "IOVA",
+            "sec_type": "BAG",
+            "order_type": "LMT",
+            "limit_price": Decimal("0.90"),
+            "capital_required": Decimal("93.80"),
+            "maximum_loss": Decimal("93.80"),
+            "legs": [
+                {
+                    "symbol": "IOVA",
+                    "sec_type": "OPT",
+                    "expiry": "20261016",
+                    "strike": Decimal("15"),
+                    "right": "C",
+                    "action": "BUY",
+                    "ratio": 1,
+                    "exchange": "SMART",
+                    "currency": "USD",
+                },
+                {
+                    "symbol": "IOVA",
+                    "sec_type": "OPT",
+                    "expiry": "20261016",
+                    "strike": Decimal("18"),
+                    "right": "C",
+                    "action": "SELL",
+                    "ratio": 1,
+                    "exchange": "SMART",
+                    "currency": "USD",
+                },
+            ],
+        }
+    )
+
+
 def lifecycle_trade(*, total=2, filled=0, limit_price=10):
     return SimpleNamespace(
         contract=SimpleNamespace(
@@ -135,6 +172,30 @@ def lifecycle_trade(*, total=2, filled=0, limit_price=10):
         ),
         fills=[],
     )
+
+
+def bag_lifecycle_trade(*, total=2, filled=0, limit_price="0.90"):
+    value = lifecycle_trade(total=total, filled=filled, limit_price=limit_price)
+    value.contract = SimpleNamespace(
+        conId=28812380,
+        symbol="IOVA",
+        localSymbol="IOVA",
+        secType="BAG",
+        exchange="SMART",
+        currency="USD",
+        lastTradeDateOrContractMonth="",
+        strike=0,
+        right="",
+        multiplier="",
+        comboLegs=[
+            SimpleNamespace(conId=913925915, ratio=1, action="BUY", exchange="SMART"),
+            SimpleNamespace(conId=926221865, ratio=1, action="SELL", exchange="SMART"),
+        ],
+    )
+    value.order.orderRef = "codex-ibkr-paper-30d-a-f8da732bc64a"
+    value.order.orderId = 13
+    value.order.permId = 1401602203
+    return value
 
 
 def open_order_action_from_trade(value):
@@ -184,6 +245,46 @@ def register_issuance(db, value):
             "2026-09-23T12:00:00Z",
         ),
     )
+
+
+def register_legacy_bag_anchors(db, value):
+    snapshot = canonical_open_order(value)
+    for registry_id, lifecycle_event, perm_id in (
+        ("legacy-bag-pre-send", "ISSUED_PRE_SEND", 0),
+        ("legacy-bag-broker-bound", "BROKER_BOUND", snapshot["permId"]),
+    ):
+        payload = {
+            "schema": "EXPERIMENT_ORDER_REGISTRY_V2",
+            "lifecycle_event": lifecycle_event,
+            "order_ref": snapshot["orderRef"],
+            "client_order_id": snapshot["orderId"],
+            "perm_id": perm_id,
+            "ibkr_order_id": snapshot["orderId"],
+            "contract_id": 0,
+            "action": snapshot["action"],
+            "quantity": snapshot["totalQuantity"],
+            "execution_client_id": snapshot["clientId"],
+            "account": snapshot["account"],
+        }
+        db.execute(
+            "INSERT INTO experiment_order_registry("
+            "registry_id,order_ref,client_order_id,perm_id,ibkr_order_id,"
+            "contract_id,action,quantity,payload_json,payload_sha256,created_at_utc"
+            ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                registry_id,
+                snapshot["orderRef"],
+                snapshot["orderId"],
+                perm_id,
+                snapshot["orderId"],
+                0,
+                snapshot["action"],
+                snapshot["totalQuantity"],
+                canonical_bytes(payload).decode("utf-8"),
+                sha256_json(payload),
+                "2026-09-29T17:55:57Z",
+            ),
+        )
 
 
 class FakeLifecycleIB:
@@ -547,6 +648,112 @@ class _PassUntilOperatorControlToolbox:
         )
 
 
+class _ResolvedBagIB:
+    def __init__(self, resolved_contract):
+        self.resolved_contract = resolved_contract
+        self.client = SimpleNamespace(getReqId=lambda: 13)
+
+    def managedAccounts(self):
+        return ["DU1234567"]
+
+    def placeOrder(self, contract, order):
+        order.permId = 1401602203
+        order.clientId = EXECUTION_CLIENT_ID
+        return SimpleNamespace(
+            contract=self.resolved_contract,
+            order=order,
+            orderStatus=SimpleNamespace(
+                status="PreSubmitted", filled=0, remaining=1, avgFillPrice=0
+            ),
+            fills=[],
+        )
+
+    def sleep(self, seconds):
+        return True
+
+    def disconnect(self):
+        return None
+
+
+class _ResolvedBagToolbox:
+    def __init__(self):
+        self.pre_send_contract = SimpleNamespace(
+            conId=0,
+            symbol="IOVA",
+            localSymbol="",
+            secType="BAG",
+            exchange="SMART",
+            currency="USD",
+            lastTradeDateOrContractMonth="",
+            strike=0,
+            right="",
+            multiplier="",
+            comboLegs=[
+                SimpleNamespace(
+                    conId=913925915, ratio=1, action="BUY", exchange="SMART"
+                ),
+                SimpleNamespace(
+                    conId=926221865, ratio=1, action="SELL", exchange="SMART"
+                ),
+            ],
+        )
+        self.resolved_contract = SimpleNamespace(
+            **{
+                **self.pre_send_contract.__dict__,
+                "conId": 28812380,
+                "localSymbol": "IOVA",
+            }
+        )
+        self.ib = _ResolvedBagIB(self.resolved_contract)
+
+    def _connect(self, *, client_id=None):
+        assert client_id == EXECUTION_CLIENT_ID
+        return self.ib
+
+    def _proposal_contract(self, ib, proposal):
+        return self.pre_send_contract
+
+    def live_contract_quote_evidence(self, ib, contract):
+        return {"success": True, "market_data_type": 1}
+
+    def validate_proposal(self, proposal, bundle, *, ib=None):
+        return ProposalValidation(
+            passed=True,
+            reason_codes=(),
+            broker_evidence={"what_if": {"success": True}},
+        )
+
+
+def test_bag_broker_bound_uses_resolved_trade_contract_and_persists_legs(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _ResolvedBagToolbox()
+    with Database.open(tmp_path / "resolved-bag.sqlite3") as db:
+        executor = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        )
+
+        result = executor.execute(bag_proposal(), bundle())
+        rows = db.execute(
+            "SELECT contract_id,payload_json FROM experiment_order_registry "
+            "ORDER BY sequence"
+        ).fetchall()
+
+    assert result.success is True
+    assert [row[0] for row in rows] == [0, 28812380]
+    payloads = [json.loads(row[1]) for row in rows]
+    assert payloads[0]["contract"]["comboLegs"] == [
+        {"conId": 913925915, "ratio": 1, "action": "BUY", "exchange": "SMART"},
+        {"conId": 926221865, "ratio": 1, "action": "SELL", "exchange": "SMART"},
+    ]
+    assert payloads[1]["lifecycle_event"] == "BROKER_BOUND"
+    assert payloads[1]["contract"]["conId"] == 28812380
+
+
 def test_immediate_operator_control_blocks_place_order(tmp_path):
     from ibkr_paper_30d.persistence import Database
 
@@ -669,6 +876,7 @@ def test_immediate_fill_payload_inherits_issued_order_identity():
             orderId=77,
             permId=88,
             clientId=99,
+            account="DU1234567",
         ),
         fills=[
             SimpleNamespace(
@@ -712,6 +920,7 @@ def test_immediate_fill_payload_inherits_issued_order_identity():
     assert fill["orderId"] == 77
     assert fill["permId"] == 88
     assert fill["clientId"] == 99
+    assert fill["account"] == "DU1234567"
     assert fill["execution_id_hash"] is None
 
 
@@ -814,6 +1023,44 @@ def test_cancel_calls_only_selected_owned_order_and_persists_attempt_and_result(
         "CANCEL_RESULT",
     ]
     assert result.order["post_action_reconciliation"]["target_actionable"] is False
+
+
+def test_cancel_exact_legacy_bag_reconciles_identity_without_global_cancel(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    with Database.open(tmp_path / "cancel-legacy-bag.sqlite3") as db:
+        target = bag_lifecycle_trade()
+        action = open_order_action_from_trade(target)
+        register_legacy_bag_anchors(db, target)
+        broker = FakeLifecycleIB(target)
+        executor = AutonomousPaperExecutor(
+            LifecycleToolbox(broker),
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        )
+        value = bundle().model_copy(
+            update={"open_orders_snapshot": [canonical_open_order(target)]}
+        )
+
+        result = executor.execute_open_order_action(
+            action, value, TraderDecision.CANCEL_ORDER
+        )
+        events = lifecycle_events(db, action.order_ref)
+
+    assert result.success is True
+    assert broker.cancelled_order_ids == [13]
+    assert broker.global_cancel_calls == 0
+    assert [item["lifecycle_event"] for item in events] == [
+        "ISSUED_PRE_SEND",
+        "BROKER_BOUND",
+        "BROKER_IDENTITY_BOUND",
+        "CANCEL_ATTEMPT",
+        "CANCEL_RESULT",
+    ]
+    assert events[2]["contract"]["conId"] == 28812380
+    assert len(events[2]["contract"]["comboLegs"]) == 2
 
 
 def test_cancel_post_write_disconnect_persists_attempt_and_blocks_replay(tmp_path):
@@ -1176,6 +1423,63 @@ def test_modify_preserves_identity_and_submits_same_order_id(tmp_path):
     assert contract.conId == action.contract_id
     assert [item["lifecycle_event"] for item in events] == [
         "ISSUED_PRE_SEND",
+        "MODIFY_ATTEMPT",
+        "MODIFY_RESULT",
+    ]
+
+
+def test_modify_exact_legacy_bag_reconciles_and_preserves_combo_identity(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    with Database.open(tmp_path / "modify-legacy-bag.sqlite3") as db:
+        target = bag_lifecycle_trade()
+        action = open_order_action_from_trade(target).model_copy(
+            update={
+                "new_total_quantity": Decimal("1"),
+                "new_limit_price": Decimal("0.85"),
+                "reason": "Reduce and reprice the exact BAG order.",
+            }
+        )
+        register_legacy_bag_anchors(db, target)
+        broker = FakeModifyIB(target)
+        toolbox = IBKRResearchToolbox()
+        toolbox._connect = lambda *, client_id=None: broker
+        toolbox.live_contract_quote_evidence = lambda ib, contract: {
+            "success": True,
+            "bid": 0.80,
+            "ask": 0.85,
+            "market_data_type": 1,
+        }
+        executor = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        )
+        value = bundle().model_copy(
+            update={"open_orders_snapshot": [canonical_open_order(target)]}
+        )
+
+        result = executor.execute_open_order_action(
+            action, value, TraderDecision.MODIFY_ORDER
+        )
+        events = lifecycle_events(db, action.order_ref)
+
+    assert result.success is True
+    assert len(broker.place_calls) == 1
+    contract, submitted = broker.place_calls[0]
+    assert contract.conId == 28812380
+    assert [(leg.conId, leg.action) for leg in contract.comboLegs] == [
+        (913925915, "BUY"),
+        (926221865, "SELL"),
+    ]
+    assert submitted.orderId == 13
+    assert submitted.permId == 1401602203
+    assert [item["lifecycle_event"] for item in events] == [
+        "ISSUED_PRE_SEND",
+        "BROKER_BOUND",
+        "BROKER_IDENTITY_BOUND",
         "MODIFY_ATTEMPT",
         "MODIFY_RESULT",
     ]

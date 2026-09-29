@@ -19,6 +19,7 @@ from .open_order_management import (
     CANCELLED_ORDER_STATUSES,
     EXECUTION_CLIENT_ID,
     OpenOrderOwnershipError,
+    canonical_contract_identity,
     canonical_open_order,
     lifecycle_attempt_exists,
     preserved_open_order_sha256,
@@ -113,6 +114,11 @@ class AutonomousPaperExecutor:
                     or getattr(trade_order, "clientId", 0)
                     or 0
                 ),
+                "account": str(
+                    getattr(execution, "acctNumber", "")
+                    or getattr(trade_order, "account", "")
+                    or ""
+                ),
                 "execution_time": str(getattr(execution, "time", "") or ""),
                 "cumQty": str(getattr(execution, "cumQty", "") or ""),
                 "avgPrice": str(getattr(execution, "avgPrice", "") or ""),
@@ -181,7 +187,7 @@ class AutonomousPaperExecutor:
         if not account:
             raise RuntimeError("order account identity required")
         payload = {
-            "schema": "EXPERIMENT_ORDER_REGISTRY_V2",
+            "schema": "EXPERIMENT_ORDER_REGISTRY_V3",
             "order_ref": order_ref,
             "client_order_id": int(getattr(order, "orderId", 0) or 0),
             "perm_id": int(getattr(order, "permId", 0) or 0),
@@ -191,6 +197,7 @@ class AutonomousPaperExecutor:
             "quantity": str(quantity),
             "execution_client_id": self.execution_client_id,
             "account": account,
+            "contract": canonical_contract_identity(contract),
             "lifecycle_event": lifecycle_event,
             "created_at_utc": utc_now(),
         }
@@ -1063,7 +1070,7 @@ class AutonomousPaperExecutor:
             if int(getattr(trade.order, "permId", 0) or 0) > 0:
                 self._register_order(
                     order=trade.order,
-                    contract=contract,
+                    contract=trade.contract,
                     order_ref=order_ref,
                     action=proposal.action.upper(),
                     quantity=proposal.quantity,
@@ -1321,7 +1328,7 @@ class AutonomousPaperExecutor:
             if int(getattr(trade.order, "permId", 0) or 0) > 0:
                 self._register_order(
                     order=trade.order,
-                    contract=position.contract,
+                    contract=trade.contract,
                     order_ref=order_ref,
                     action=action.action.upper(),
                     quantity=action.quantity,
