@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from contextlib import contextmanager
+from copy import deepcopy
 from decimal import Decimal
 from types import SimpleNamespace
 
@@ -675,6 +676,56 @@ class _ResolvedBagIB:
         return None
 
 
+class _DelayedResolvedBagIB(_ResolvedBagIB):
+    def __init__(
+        self,
+        pre_send_contract,
+        resolved_contract,
+        *,
+        server_order_updates=None,
+        unrelated_leg=False,
+    ):
+        super().__init__(resolved_contract)
+        self.pre_send_contract = pre_send_contract
+        self.server_order_updates = server_order_updates or {}
+        self.unrelated_leg = unrelated_leg
+        self.server_trade = None
+        self.readback_calls = 0
+
+    def placeOrder(self, contract, order):
+        local_order = SimpleNamespace(**order.__dict__)
+        local_order.permId = 0
+        local_order.clientId = EXECUTION_CLIENT_ID
+        server_order = SimpleNamespace(**order.__dict__)
+        server_order.permId = 1401602217
+        server_order.clientId = EXECUTION_CLIENT_ID
+        for field, value in self.server_order_updates.items():
+            setattr(server_order, field, value)
+        server_contract = deepcopy(self.resolved_contract)
+        if self.unrelated_leg:
+            server_contract.comboLegs[1].conId = 999999999
+        self.server_trade = SimpleNamespace(
+            contract=server_contract,
+            order=server_order,
+            orderStatus=SimpleNamespace(
+                status="PendingSubmit", filled=0, remaining=1, avgFillPrice=0
+            ),
+            fills=[],
+        )
+        return SimpleNamespace(
+            contract=self.pre_send_contract,
+            order=local_order,
+            orderStatus=SimpleNamespace(
+                status="Cancelled", filled=0, remaining=1, avgFillPrice=0
+            ),
+            fills=[],
+        )
+
+    def reqAllOpenOrders(self):
+        self.readback_calls += 1
+        return [self.server_trade]
+
+
 class _ResolvedBagToolbox:
     def __init__(self):
         self.pre_send_contract = SimpleNamespace(
@@ -752,6 +803,87 @@ def test_bag_broker_bound_uses_resolved_trade_contract_and_persists_legs(tmp_pat
     ]
     assert payloads[1]["lifecycle_event"] == "BROKER_BOUND"
     assert payloads[1]["contract"]["conId"] == 28812380
+
+
+def test_bag_post_send_reconciles_delayed_broker_identity_before_result(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _ResolvedBagToolbox()
+    toolbox.ib = _DelayedResolvedBagIB(
+        toolbox.pre_send_contract, toolbox.resolved_contract
+    )
+    with Database.open(tmp_path / "delayed-resolved-bag.sqlite3") as db:
+        executor = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        )
+
+        result = executor.execute(bag_proposal(), bundle())
+        rows = db.execute(
+            "SELECT contract_id,perm_id,payload_json "
+            "FROM experiment_order_registry ORDER BY sequence"
+        ).fetchall()
+
+    assert result.success is True
+    assert result.status == "PendingSubmit"
+    assert toolbox.ib.readback_calls >= 1
+    assert [(row[0], row[1]) for row in rows] == [
+        (0, 0),
+        (28812380, 1401602217),
+    ]
+    broker_bound = json.loads(rows[1][2])
+    assert broker_bound["lifecycle_event"] == "BROKER_BOUND"
+    assert broker_bound["contract"]["comboLegs"] == [
+        {"conId": 913925915, "ratio": 1, "action": "BUY", "exchange": "SMART"},
+        {"conId": 926221865, "ratio": 1, "action": "SELL", "exchange": "SMART"},
+    ]
+
+
+@pytest.mark.parametrize(
+    "server_order_updates,unrelated_leg",
+    [
+        ({"orderRef": "codex-ibkr-paper-30d-a-other"}, False),
+        ({"orderId": 99}, False),
+        ({"clientId": 7}, False),
+        ({"account": "DU7654321"}, False),
+        ({"action": "SELL"}, False),
+        ({"totalQuantity": 2}, False),
+        ({}, True),
+    ],
+)
+def test_post_send_readback_cannot_borrow_unrelated_bag_identity(
+    tmp_path, server_order_updates, unrelated_leg
+):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _ResolvedBagToolbox()
+    toolbox.ib = _DelayedResolvedBagIB(
+        toolbox.pre_send_contract,
+        toolbox.resolved_contract,
+        server_order_updates=server_order_updates,
+        unrelated_leg=unrelated_leg,
+    )
+    with Database.open(tmp_path / "unrelated-readback.sqlite3") as db:
+        executor = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        )
+
+        result = executor.execute(bag_proposal(), bundle())
+        rows = db.execute(
+            "SELECT contract_id,perm_id FROM experiment_order_registry "
+            "ORDER BY sequence"
+        ).fetchall()
+
+    assert result.success is False
+    assert result.status == "Cancelled"
+    assert [(row[0], row[1]) for row in rows] == [(0, 0)]
 
 
 def test_immediate_operator_control_blocks_place_order(tmp_path):
