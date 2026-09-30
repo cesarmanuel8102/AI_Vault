@@ -23,6 +23,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Preserve Git blob line endings
+        shell: pwsh
+        run: |
+          git config core.autocrlf false
+          git config core.eol lf
+          git checkout-index -a -f
+
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
