@@ -430,7 +430,19 @@ class AutonomousExperimentService:
                 )
             raise
         outcome = result.get("outcome") or {}
-        if "status" not in result:
+        execution = result.get("execution")
+        if isinstance(execution, dict) and execution.get("success") is False:
+            execution_status = str(execution.get("status") or "BLOCKED").upper()
+            result["status"] = (
+                "EXECUTION_UNCERTAIN"
+                if execution_status == "UNCERTAIN"
+                else "EXECUTION_BLOCKED"
+            )
+            result["gate"] = "EXECUTION"
+            result["reason_codes"] = [
+                str(code) for code in execution.get("reason_codes", []) or []
+            ]
+        elif "status" not in result:
             result["status"] = (
                 "PASS"
                 if outcome.get("validation") == "PASS"
@@ -541,14 +553,24 @@ class AutonomousExperimentService:
         request = result.get("request") or {}
         decision_cycle_id = str(request.get("decision_cycle_id") or "")
         gate = str(result.get("gate") or "")
-        gate_evidence = (
-            result.get("auditor")
-            if gate == "AUDITOR"
-            else result.get("auditor_gate")
-        ) or {}
+        if gate == "AUDITOR":
+            gate_evidence = result.get("auditor") or {}
+        elif gate == "EXECUTION":
+            gate_evidence = result.get("execution") or {}
+        else:
+            gate_evidence = result.get("auditor_gate") or {}
         gate_status = str(
             gate_evidence.get("gate_status")
-            or ("BLOCK" if status == "STATE_GATE_BLOCK" else "PASS")
+            or (
+                "BLOCK"
+                if status
+                in {
+                    "STATE_GATE_BLOCK",
+                    "EXECUTION_BLOCKED",
+                    "EXECUTION_UNCERTAIN",
+                }
+                else "PASS"
+            )
         )
         reason_codes = sorted(
             {

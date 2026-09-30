@@ -540,6 +540,50 @@ def test_provider_failure_is_observed_without_claiming_policy_attribution(
         assert '"provider_policy_attribution":"UNDETERMINED"' in row[0]
 
 
+def test_execution_block_is_not_reported_as_pass(tmp_path, monkeypatch):
+    with Database.open(tmp_path / "execution-block.sqlite3") as db:
+        subject = AutonomousExperimentService(
+            db,
+            experiment_start_utc=datetime.now(timezone.utc),
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=StubExecutor(),
+            runtime_market_gate=PassGate(),
+            runtime_auditor_gate=PassGate(),
+        )
+        monkeypatch.setattr(subject, "_builder", lambda: _ReadyBuilder())
+        monkeypatch.setattr(
+            service_module,
+            "run_autonomous_cycle",
+            lambda *args, **kwargs: {
+                "outcome": {
+                    "validation": "PASS",
+                    "decision": "MODIFY_ORDER",
+                },
+                "execution": {
+                    "success": False,
+                    "status": "BLOCKED",
+                    "reason_codes": ["OPEN_ORDER_CONTRACT_IDENTITY_MISMATCH"],
+                    "order": {},
+                },
+            },
+        )
+
+        result = subject._run_cycle_with_lifecycle("SCHEDULED_SCAN")
+        completed = latest_state_event(db, "AUTONOMOUS_CYCLE_COMPLETED")
+
+    assert result["status"] == "EXECUTION_BLOCKED"
+    assert result["gate"] == "EXECUTION"
+    assert result["reason_codes"] == ["OPEN_ORDER_CONTRACT_IDENTITY_MISMATCH"]
+    assert completed["status"] == "EXECUTION_BLOCKED"
+    assert completed["gate"] == "EXECUTION"
+    assert completed["gate_status"] == "BLOCK"
+    assert completed["reason_codes"] == [
+        "OPEN_ORDER_CONTRACT_IDENTITY_MISMATCH"
+    ]
+
+
 def state_event_types(db):
     return [
         str(row[0])

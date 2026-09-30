@@ -130,11 +130,16 @@ def canonical_contract_identity(contract: Any) -> dict[str, Any]:
         }
         for leg in list(getattr(contract, "comboLegs", None) or [])
     ]
+    symbol = str(getattr(contract, "symbol", "") or "")
+    sec_type = str(getattr(contract, "secType", "") or "").upper()
+    local_symbol = str(getattr(contract, "localSymbol", "") or "")
+    if sec_type == "BAG":
+        local_symbol = symbol
     return {
         "conId": int(getattr(contract, "conId", 0) or 0),
-        "symbol": str(getattr(contract, "symbol", "") or ""),
-        "localSymbol": str(getattr(contract, "localSymbol", "") or ""),
-        "secType": str(getattr(contract, "secType", "") or "").upper(),
+        "symbol": symbol,
+        "localSymbol": local_symbol,
+        "secType": sec_type,
         "exchange": str(getattr(contract, "exchange", "") or ""),
         "currency": str(getattr(contract, "currency", "") or ""),
         "expiry": str(getattr(contract, "lastTradeDateOrContractMonth", "") or ""),
@@ -221,8 +226,13 @@ def _registry_payload(raw: Any) -> dict[str, Any]:
 def _contract_identity_matches(
     expected: dict[str, Any], actual: dict[str, Any], *, allow_zero_parent: bool
 ) -> bool:
-    if allow_zero_parent and int(expected.get("conId") or 0) == 0:
+    is_bag = (
+        str(expected.get("secType") or "").upper() == "BAG"
+        and str(actual.get("secType") or "").upper() == "BAG"
+    )
+    if is_bag:
         stable_parent_fields = {
+            "conId",
             "symbol",
             "secType",
             "exchange",
@@ -232,6 +242,8 @@ def _contract_identity_matches(
             "multiplier",
             "comboLegs",
         }
+        if allow_zero_parent and int(expected.get("conId") or 0) == 0:
+            stable_parent_fields.remove("conId")
         return all(expected.get(key) == actual.get(key) for key in stable_parent_fields)
     return expected == actual
 

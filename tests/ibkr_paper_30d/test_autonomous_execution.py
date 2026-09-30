@@ -23,6 +23,7 @@ from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.ibkr_research_tools import IBKRResearchToolbox
 from ibkr_paper_30d.open_order_management import (
     EXECUTION_CLIENT_ID,
+    _contract_identity_matches,
     canonical_open_order,
 )
 from ibkr_paper_30d.trader_invocation import TraderDecision, TraderInputBundle
@@ -1615,6 +1616,37 @@ def test_modify_exact_legacy_bag_reconciles_and_preserves_combo_identity(tmp_pat
         "MODIFY_ATTEMPT",
         "MODIFY_RESULT",
     ]
+
+
+def test_bag_identity_tolerates_local_symbol_presentation_drift_only():
+    expected = canonical_open_order(bag_lifecycle_trade())["contract"]
+    numeric_local_symbol = bag_lifecycle_trade()
+    numeric_local_symbol.contract.localSymbol = str(
+        numeric_local_symbol.contract.conId
+    )
+    normalized = canonical_open_order(numeric_local_symbol)["contract"]
+
+    assert normalized == expected
+    assert normalized["localSymbol"] == "IOVA"
+
+    actual = deepcopy(expected)
+    actual["localSymbol"] = str(actual["conId"])
+
+    assert _contract_identity_matches(
+        expected, actual, allow_zero_parent=False
+    ) is True
+
+    wrong_parent = deepcopy(actual)
+    wrong_parent["conId"] += 1
+    assert _contract_identity_matches(
+        expected, wrong_parent, allow_zero_parent=False
+    ) is False
+
+    wrong_leg = deepcopy(actual)
+    wrong_leg["comboLegs"][0]["conId"] += 1
+    assert _contract_identity_matches(
+        expected, wrong_leg, allow_zero_parent=False
+    ) is False
 
 
 def test_modify_confirmation_rejects_changed_preserved_semantics(tmp_path):
