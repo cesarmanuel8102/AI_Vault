@@ -65,6 +65,11 @@ jobs:
           [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'SYNC_LOCAL_CODEX_IBKR.ps1'), [ref]$tokens, [ref]$parseErrors) | Out-Null
           if ($parseErrors.Count) { $parseErrors | ForEach-Object { Write-Error $_ }; exit 1 }
 
+      - name: Diagnostic kernel manifest
+        shell: pwsh
+        run: |
+          python -c "import json; from pathlib import Path; from ibkr_paper_30d.kernel_manifest import build_kernel_manifest; m=build_kernel_manifest(Path('.')); stored=json.loads(Path('IMMUTABLE_EXECUTION_KERNEL_MANIFEST.json').read_text(encoding='utf-8')); print('DERIVED_KERNEL_SHA='+m['kernel_manifest_sha256']); print('STORED_KERNEL_SHA='+stored['kernel_manifest_sha256']); print('DERIVED_DAY1='+json.dumps(next(x for x in m['kernel_files'] if x['path']=='ibkr_paper_30d/day1_launch.py'), sort_keys=True)); print('STORED_DAY1='+json.dumps(next(x for x in stored['kernel_files'] if x['path']=='ibkr_paper_30d/day1_launch.py'), sort_keys=True)); diffs=[(a,b) for a,b in zip(m['kernel_files'],stored['kernel_files']) if a!=b]; print('DIFF_COUNT='+str(len(diffs))); [print('DIFF='+json.dumps({'derived':a,'stored':b},sort_keys=True)) for a,b in diffs[:10]]"
+
       - name: Phase 0 security tests
         shell: pwsh
         run: |
