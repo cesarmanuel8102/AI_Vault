@@ -81,6 +81,7 @@ from .successor_epoch import (
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _REASON_CODE_RE = re.compile(r"^[A-Z0-9_.:-]{1,100}$")
 _MARKET_ERROR_CODE_RE = re.compile(r"^[A-Za-z]+:[A-Z0-9_]{1,100}$")
+_MODEL_TURN_TIMEOUT_SECONDS = 600
 _QUERY_KEYS = frozenset(
     {
         "account_summary",
@@ -1033,7 +1034,7 @@ def _write_epoch_manifest(
         experiment_id=str(
             bundle.experiment_clock.get("epoch_id") or "PRE_EPOCH_HISTORY"
         ),
-        timeout_seconds=180,
+        timeout_seconds=_MODEL_TURN_TIMEOUT_SECONDS,
         trigger="DAY1_LAUNCH",
     )
     prompt = provider._prompt_payload(
@@ -1384,6 +1385,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                         position_interval_seconds=60.0,
                         model=config.model,
                         reasoning_effort=config.reasoning_effort,
+                        timeout_seconds=_MODEL_TURN_TIMEOUT_SECONDS,
                         execute_paper=True,
                         runtime_market_gate=market_gate,
                         runtime_auditor_gate=auditor_gate,

@@ -1678,6 +1678,7 @@ def test_launch_writes_epoch_observational_manifest(tmp_path: Path) -> None:
         ).hexdigest(),
     }
     service_kwargs = ctx.service_factory.call_args.kwargs
+    assert service_kwargs["timeout_seconds"] == 600
     assert (
         service_kwargs["toolbox"].manifest()
         == manifest["effective_payload"]["tool_manifest"]
