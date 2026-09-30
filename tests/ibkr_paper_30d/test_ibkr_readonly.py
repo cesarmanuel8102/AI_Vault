@@ -14,6 +14,7 @@ from ibkr_paper_30d.cli import (
     build_capability_matrix,
     build_implementation_status,
     inspect_readonly,
+    main,
 )
 from ibkr_paper_30d.auditor_gate_v2 import (
     AuditorGateV2Evaluation,
@@ -187,6 +188,23 @@ def test_unavailable_gateway_writes_block_report_without_starting(monkeypatch, t
     assert report["status"] == "BLOCK"
     assert report["reason_codes"] == ["GATEWAY_UNAVAILABLE"]
     assert output.exists()
+
+
+def test_inspect_cli_preserves_canonical_receipt_by_default(
+    monkeypatch, tmp_path
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("IBKR_PAPER_ACCOUNT_SHA256", expected_identity_hash(ACCOUNT))
+    monkeypatch.setattr("ibkr_paper_30d.cli._port_is_open", lambda host, port: False)
+    canonical = Path("state/ibkr_paper_30d/reports/read_only_real_paper_reconciliation.json")
+    canonical.parent.mkdir(parents=True)
+    canonical.write_bytes(b"canonical-launch-trust-anchor")
+    before = hashlib.sha256(canonical.read_bytes()).hexdigest()
+
+    assert main(["inspect-ibkr-readonly"]) == 0
+
+    after = hashlib.sha256(canonical.read_bytes()).hexdigest()
+    assert after == before
 
 
 def test_capability_matrix_and_status_never_enable_trading() -> None:

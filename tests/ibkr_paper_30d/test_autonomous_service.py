@@ -559,6 +559,72 @@ def latest_state_event(db, event_type):
     return json.loads(str(row[0]))
 
 
+def test_gate_block_completion_is_observable_and_alert_is_transition_deduplicated(
+    tmp_path,
+):
+    clock = Clock()
+    block_a = {
+        "status": "STATE_GATE_BLOCK",
+        "gate": "AUDITOR",
+        "auditor": {
+            "gate_status": "BLOCK",
+            "reason_codes": ["PAPER_IDENTITY_RECEIPT_MISMATCH"],
+        },
+    }
+    block_b = {
+        "status": "STATE_GATE_BLOCK",
+        "gate": "AUDITOR",
+        "auditor": {
+            "gate_status": "BLOCK",
+            "reason_codes": ["PAPER_ENVIRONMENT_MISMATCH"],
+        },
+    }
+    passed = {
+        "status": "PASS",
+        "outcome": {"decision": "NO_TRADE"},
+        "auditor_gate": {"gate_status": "PASS", "reason_codes": []},
+    }
+    with Database.open(tmp_path / "gate-observability.sqlite3") as db:
+        service = make_service(
+            db,
+            clock,
+            stop_after=10,
+            results=[block_a, block_a, block_b, passed, block_b],
+        )
+
+        for _ in range(5):
+            service._run_cycle_with_lifecycle("SCHEDULED_SCAN")
+
+        completions = [
+            json.loads(str(row[0]))
+            for row in db.execute(
+                "SELECT payload_json FROM state_events "
+                "WHERE event_type='AUTONOMOUS_CYCLE_COMPLETED' ORDER BY sequence"
+            ).fetchall()
+        ]
+        alerts = [
+            json.loads(str(row[0]))
+            for row in db.execute(
+                "SELECT payload_json FROM alerts "
+                "WHERE event_type='RECOVERY_GATE_FAILURE' ORDER BY created_at_utc"
+            ).fetchall()
+        ]
+
+    assert completions[0]["gate"] == "AUDITOR"
+    assert completions[0]["gate_status"] == "BLOCK"
+    assert completions[0]["reason_codes"] == [
+        "PAPER_IDENTITY_RECEIPT_MISMATCH"
+    ]
+    assert completions[3]["gate_status"] == "PASS"
+    assert completions[3]["reason_codes"] == []
+    assert len(alerts) == 3
+    assert [item["reason_codes"] for item in alerts] == [
+        ["PAPER_IDENTITY_RECEIPT_MISMATCH"],
+        ["PAPER_ENVIRONMENT_MISMATCH"],
+        ["PAPER_ENVIRONMENT_MISMATCH"],
+    ]
+
+
 def test_run_forever_records_first_operational_cycle_lifecycle(tmp_path, monkeypatch):
     FakeLedger.positions = ()
     monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)

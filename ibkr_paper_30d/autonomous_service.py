@@ -195,6 +195,9 @@ class AutonomousExperimentService:
         self.broker_now = broker_now or self._read_broker_time
         self.launch_attempt_id = launch_attempt_id
         self._running_event_emitted = False
+        self._last_recovery_gate_failure_fingerprint: (
+            tuple[str, tuple[str, ...]] | None
+        ) = None
         self._service_started_at_utc: datetime | None = None
         expected_hash = getattr(self.toolbox, "expected_account_hash", None)
         self.runtime_market_gate = runtime_market_gate or (
@@ -537,6 +540,26 @@ class AutonomousExperimentService:
         decision = str(outcome.get("decision") or "UNKNOWN")
         request = result.get("request") or {}
         decision_cycle_id = str(request.get("decision_cycle_id") or "")
+        gate = str(result.get("gate") or "")
+        gate_evidence = (
+            result.get("auditor")
+            if gate == "AUDITOR"
+            else result.get("auditor_gate")
+        ) or {}
+        gate_status = str(
+            gate_evidence.get("gate_status")
+            or ("BLOCK" if status == "STATE_GATE_BLOCK" else "PASS")
+        )
+        reason_codes = sorted(
+            {
+                str(code)
+                for code in (
+                    result.get("reason_codes")
+                    or gate_evidence.get("reason_codes")
+                    or []
+                )
+            }
+        )
         _append_state_event(
             self.db,
             "AUTONOMOUS_CYCLE_COMPLETED",
@@ -545,8 +568,27 @@ class AutonomousExperimentService:
                 "status": status,
                 "decision": decision,
                 "decision_cycle_id": decision_cycle_id,
+                "gate": gate,
+                "gate_status": gate_status,
+                "reason_codes": reason_codes,
             },
         )
+        if status == "STATE_GATE_BLOCK":
+            fingerprint = (gate, tuple(reason_codes))
+            if fingerprint != self._last_recovery_gate_failure_fingerprint:
+                _append_alert(
+                    self.db,
+                    "RECOVERY_GATE_FAILURE",
+                    {
+                        "trigger": trigger,
+                        "gate": gate,
+                        "gate_status": gate_status,
+                        "reason_codes": reason_codes,
+                    },
+                )
+                self._last_recovery_gate_failure_fingerprint = fingerprint
+        else:
+            self._last_recovery_gate_failure_fingerprint = None
         if (
             not self._running_event_emitted
             and status == "PASS"

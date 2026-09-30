@@ -181,6 +181,7 @@ def test_finalizer_owns_explicit_authorization_and_fresh_attempt_binding():
     auditor_index = text.index("$AuditorEvaluation = Invoke-PythonJson")
     binding_index = text.index('"bind-launch-attempt"')
     assert authorization_index < readonly_index < auditor_index < binding_index
+    assert '"--write-canonical-receipt"' in text
 
 
 def test_finalizer_receipts_validates_successor_authorization_when_present():
@@ -691,4 +692,3 @@ def test_finalizer_builds_v2_attempt_binding_for_successor_resume():
     assert '"--target-successor-epoch-id", $TargetSuccessorEpochId' in text
     assert '"--target-successor-definition-sha256", $TargetSuccessorDefinitionSha256' in text
     assert '"SUCCESSOR_LAUNCH_ATTEMPT_BINDING_MISMATCH"' in text
-

@@ -399,7 +399,8 @@ if ($Stage -eq "Receipts") {
     }
     $ReadOnly = Invoke-PythonJson -Arguments @(
         "-m", "ibkr_paper_30d.cli", "inspect-ibkr-readonly",
-        "--host", "127.0.0.1", "--port", "4002"
+        "--host", "127.0.0.1", "--port", "4002",
+        "--write-canonical-receipt"
     )
 }
 else {

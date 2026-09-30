@@ -102,7 +102,7 @@ def inspect_readonly(
     host: str,
     port: int,
     expected_account_hash: str | None,
-    output_path: str | Path = READONLY_REPORT,
+    output_path: str | Path | None = None,
 ) -> dict[str, object]:
     reasons: list[str] = []
     if port != 4002:
@@ -124,7 +124,8 @@ def inspect_readonly(
             "raw_account_identity_persisted": False,
             "real_order_writes_attempted": 0,
         }
-        _atomic_json(Path(output_path), report)
+        if output_path is not None:
+            _atomic_json(Path(output_path), report)
         return report
 
     gateway_mode, gateway_config_consistent = _gateway_mode()
@@ -259,7 +260,8 @@ def inspect_readonly(
         "raw_account_identity_persisted": False,
         "real_order_writes_attempted": 0,
     }
-    _atomic_json(Path(output_path), report)
+    if output_path is not None:
+        _atomic_json(Path(output_path), report)
     return report
 
 
@@ -1047,6 +1049,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     inspect_parser = commands.add_parser("inspect-ibkr-readonly")
     inspect_parser.add_argument("--host", default="127.0.0.1")
     inspect_parser.add_argument("--port", type=int, default=4002)
+    inspect_parser.add_argument(
+        "--write-canonical-receipt",
+        action="store_true",
+        help="write the launch trust-anchor receipt; finalizer use only",
+    )
     alert_parser = commands.add_parser("simulate-alerts")
     alert_parser.add_argument("--events", nargs="+", required=True)
     commands.add_parser("write-capability-matrix")
@@ -1083,6 +1090,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             host=args.host,
             port=args.port,
             expected_account_hash=os.environ.get("IBKR_PAPER_ACCOUNT_SHA256"),
+            output_path=(READONLY_REPORT if args.write_canonical_receipt else None),
         )
     elif args.command == "simulate-alerts":
         report = simulate_alerts(args.events)
