@@ -23,12 +23,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Preserve Git blob line endings
+      - name: Restore immutable kernel bytes from Git blobs
         shell: pwsh
         run: |
-          git config core.autocrlf false
-          git config core.eol lf
-          git checkout-index -a -f
+          $manifest = Get-Content -LiteralPath "IMMUTABLE_EXECUTION_KERNEL_MANIFEST.json" -Raw | ConvertFrom-Json
+          foreach ($entry in $manifest.kernel_files) {
+            $path = [string]$entry.path
+            cmd.exe /d /c "git show HEAD:$path > $path"
+            if ($LASTEXITCODE -ne 0) { throw "GIT_BLOB_RESTORE_FAILED:$path" }
+          }
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
