@@ -85,7 +85,17 @@ function Assert-Administrator {
 
 function Get-Sha256Lower {
     param([string]$LiteralPath)
-    return (Get-FileHash -LiteralPath $LiteralPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $ResolvedPath = [IO.Path]::GetFullPath($LiteralPath)
+    $Stream = [IO.File]::OpenRead($ResolvedPath)
+    $Hasher = [Security.Cryptography.SHA256]::Create()
+    try {
+        $Digest = $Hasher.ComputeHash($Stream)
+        return ([BitConverter]::ToString($Digest)).Replace("-", "").ToLowerInvariant()
+    }
+    finally {
+        $Hasher.Dispose()
+        $Stream.Dispose()
+    }
 }
 
 function Invoke-PythonJson {

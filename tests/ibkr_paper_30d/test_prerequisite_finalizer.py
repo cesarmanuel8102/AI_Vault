@@ -157,6 +157,13 @@ def test_python_json_wrapper_captures_native_stderr_before_failing():
     assert "PYTHON_COMMAND_FAILED:" in block
 
 
+def test_finalizer_sha256_helper_avoids_get_file_hash_dependency() -> None:
+    text = FINALIZER.read_text(encoding="utf-8")
+    assert "Get-FileHash" not in text
+    assert "[Security.Cryptography.SHA256]::Create()" in text
+    assert "[IO.File]::OpenRead($ResolvedPath)" in text
+
+
 def test_finalizer_owns_explicit_authorization_and_fresh_attempt_binding():
     text = FINALIZER.read_text(encoding="utf-8")
 
