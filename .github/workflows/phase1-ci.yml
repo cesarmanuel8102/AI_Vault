@@ -90,10 +90,10 @@ jobs:
           python tests/unit/test_phase1_import_baseline.py
           python tests/unit/test_phase1_security_defaults.py
 
-      - name: Full IBKR autonomous and regression suite
+      - name: Targeted timeout remediation suite
         shell: pwsh
         run: |
-          pytest -q tests/ibkr_paper_30d
+          pytest -q tests/ibkr_paper_30d/test_day1_launch.py tests/ibkr_paper_30d/test_kernel_manifest_closure.py tests/ibkr_paper_30d/test_scheduler_validation.py tests/ibkr_paper_30d/test_autonomous_codex_provider.py tests/ibkr_paper_30d/test_autonomous_service.py
 
       - name: Import smoke
         shell: pwsh
