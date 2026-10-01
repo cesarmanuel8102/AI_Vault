@@ -73,6 +73,19 @@ APPEND_ONLY_TABLES = (
     "market_data_gate_results",
 )
 
+CONTINUITY_CANONICAL_TABLES = frozenset({
+    "continuity_plan_events",
+    "provider_invocation_events",
+    "continuity_watchdog_events",
+    "continuity_evaluation_events",
+    "continuity_execution_events",
+    "continuity_report_events",
+    "continuity_review_events",
+    "continuity_reflection_events",
+})
+
+CONTINUITY_APPEND_ONLY_TABLES = tuple(sorted(CONTINUITY_CANONICAL_TABLES))
+
 
 def configure_connection(conn: sqlite3.Connection) -> None:
     conn.execute("PRAGMA journal_mode=WAL")

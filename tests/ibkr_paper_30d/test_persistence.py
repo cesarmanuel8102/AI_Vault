@@ -111,6 +111,21 @@ def test_v1_database_open_does_not_implicitly_create_successor_v2_tables(
     assert "experiment_epoch_authorization_events_v2" not in tables
 
 
+def test_database_open_does_not_implicitly_install_continuity_schema_v3(
+    db_path,
+) -> None:
+    with Database.open(db_path) as db:
+        tables = {
+            str(row[0])
+            for row in db.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        }
+
+    assert "continuity_plan_events" not in tables
+    assert "continuity_execution_events" not in tables
+
+
 def test_tampered_hash_chain_is_detected(db_path) -> None:
     with Database.open(db_path) as db:
         EventRepository(db).append("X", {"n": 1})
