@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-01
 
-**Status:** Proposed for Owner review
+**Status:** Approved for isolated implementation; not approved for deployment
 
 **Track:** Autonomous IBKR PAPER experiment
 
@@ -72,6 +72,12 @@ continuity authority.
 The runtime observes approved data sources, evaluates a Codex-authored plan,
 and executes an exact preauthorized action. It cannot add conditions, select
 values, infer intent, optimize a plan, or choose among unspecified outcomes.
+
+All broker writes are serialized through one authoritative broker-writer
+worker that owns the experiment execution `clientId`. The model path and the
+watchdog submit hash-bound commands to that worker; neither path opens a
+second write-capable session. This preserves IBKR order ownership while
+keeping write execution independent of a blocked model-provider call.
 
 ### Factual Observer
 
@@ -154,6 +160,11 @@ There is no implicit behavior after `plan_valid_until`. The plan must state an
 executable terminal disposition, such as an exact cancellation or an explicit
 retain-until-order-TIF decision. If Codex has not expressed complete intent for
 expiry, the order is not eligible for transmission.
+
+An order TIF may extend beyond `plan_valid_until` only when the terminal
+disposition explicitly authorizes retaining the order until that exact TIF.
+No TIF or terminal disposition may extend beyond the experiment/epoch
+authority bound.
 
 `expiry_authority_mode` has no host default. `WHEN_CONTINUITY_ACTIVE` requires
 the plan's `authority_activation_condition` to be true before the terminal
@@ -285,10 +296,19 @@ No expired plan can be revived or silently extended.
 
 The evaluator runs in a dedicated watchdog execution context outside the
 blocking Codex provider call. The watchdog owns a separate SQLite connection,
-separate PAPER broker session/client, and independent heartbeat. It must remain
-able to collect facts and execute authorized continuity actions while the
-service thread is blocked in `codex exec`. No SQLite connection, broker client,
-or mutable toolbox session is shared across those threads or processes.
+separate read-only PAPER broker session/client, and independent heartbeat. It
+must remain able to collect facts and submit an exact authorized command while
+the service thread is blocked in `codex exec`. No SQLite connection, read-only
+broker client, or mutable toolbox session is shared across those threads or
+processes.
+
+The watchdog never cancels or modifies an order through its read-only client.
+IBKR API orders remain associated with the `clientId` that submitted them;
+`reqAllOpenOrders()` supplies visibility but does not transfer write authority.
+One authoritative broker-writer worker owns the execution client connection
+and command queue. Model decisions and watchdog evaluations compete by
+submitting fully specified commands to that same worker, which performs the
+final authority re-read and broker write using the owning `clientId`.
 
 The watchdog observes every actionable experiment order with an active plan,
 but continuity authority is eligible only when that plan's
@@ -306,7 +326,7 @@ exclusive authority.
 
 For each evaluation it:
 
-1. acquires or verifies the single execution-authority lock;
+1. verifies the process execution lock and authoritative broker-writer health;
 2. loads the one active hash-valid plan for the order;
 3. obtains fresh authenticated PAPER broker evidence;
 4. canonicalizes all required facts into one evaluation snapshot;
@@ -318,18 +338,19 @@ For each evaluation it:
    condition matches;
 10. routes unavailable facts only through the plan's explicit unavailable-data
    branch;
-11. binds the selected action to the plan hash and evaluation evidence hash.
+11. binds the selected action to the plan hash and evaluation evidence hash;
+12. submits that exact command to the single authoritative broker writer.
 
 The evaluator cannot infer a missing branch. A structurally complete plan must
 cover any evidence-unavailable state that can affect an authorized action.
 
-The evaluator re-reads the activation condition, model-invocation state, last
-accepted decision, plan authority, order state, kill switch, experiment clock,
-and relevant evidence immediately before a broker write. A state change
+The broker writer re-reads the activation condition, model-invocation state,
+last accepted decision, plan authority, order state, kill switch, experiment
+clock, and relevant evidence immediately before a broker write. A state change
 invalidates the selected action and forces reconciliation; it is never treated
-as permission to improvise. The execution lock prevents simultaneous writes,
-while this final activation re-read determines which authority is semantically
-eligible at that instant.
+as permission to improvise. Its single owning session and serialized command
+queue prevent simultaneous writes, while this final activation re-read
+determines which authority is semantically eligible at that instant.
 
 Watchdog startup, heartbeat, failure, and shutdown are persisted. A failed or
 stale watchdog freezes new-exposure authority and emits the applicable runtime
@@ -375,6 +396,13 @@ are unavailable facts routed only through Codex's explicit unavailable-data
 branch.
 
 ## 4. Continuity Executor
+
+The continuity executor runs inside the authoritative broker-writer worker.
+The writer maintains or exclusively reconnects the same execution `clientId`
+that originated experiment API orders. A second connection may observe with a
+different client ID, but it may not use `reqAllOpenOrders()` visibility as
+cancel/modify authority. Duplicate use of the writer client ID is a hard
+capability failure, not a fallback to another client.
 
 ### RETAIN
 
@@ -449,8 +477,9 @@ If a fill occurs between evaluation and execution:
    reconciliation.
 
 If the model recovers while a contingency is being evaluated, both paths
-compete for the same execution lock. The winner must re-read the latest plan,
-order state, and lifecycle sequence. A recovered model cannot supersede a plan
+submit to the same authoritative broker-writer queue. The writer processes one
+command at a time and must re-read the latest plan, order state, provider state,
+and lifecycle sequence. A recovered model cannot supersede a plan
 retroactively, and a stale evaluator cannot execute after supersession.
 
 ## 5. Observation and Learning Ledger
@@ -509,16 +538,18 @@ but not new exposure until a later review disposition closes the requirement.
 Fresh broker reconciliation remains mandatory before the acknowledgement can
 release new-exposure authority.
 
-The pending acknowledgement blocks only `NEW_EXPOSURE`. It does not block
-`RECONCILIATION`, `OBSERVATION`, `CANCEL_ORDER`, `REDUCE_POSITION`,
-`CLOSE_POSITION`, or actions already authorized by the active pre-outage
-continuity plan. A fresh post-recovery `MODIFY_ORDER` remains blocked unless it
-strictly reduces total quantity and maximum liability without extending TIF;
-all other modifications require the continuity review first.
+The pending acknowledgement blocks expansion of economic or temporal
+authority. It does not block `RECONCILIATION`, `OBSERVATION`, `CANCEL_ORDER`,
+`REDUCE_POSITION`, `CLOSE_POSITION`, actions already authorized by the active
+pre-outage continuity plan, or a fresh Codex action that neither creates nor
+increases maximum experiment liability and does not extend temporal authority.
+It blocks new exposure, increased maximum liability, and extended temporal
+authority until the continuity review is complete.
 
-This classification is structural. It permits Codex to protect or reduce
-existing exposure before methodological reflection while preventing a new or
-larger economic commitment from bypassing the outstanding report.
+This classification is purely mechanical. It expresses no host preference for
+reduction or closure; it only prevents an outstanding report from being used
+to expand pre-existing economic or temporal authority before Codex considers
+the report.
 
 ### Model-Authored Learning
 
@@ -648,9 +679,11 @@ receive no direct broker-write method.
 
 - Evaluate priority deterministically from a single canonical evidence set.
 - Block a fake provider call indefinitely while the independent watchdog
-  continues evaluating and executes one exact preauthorized action.
-- Prove the watchdog uses its own database connection and broker client and
-  remains live while the service thread is blocked.
+  continues evaluating and the authoritative broker writer executes one exact
+  preauthorized action.
+- Prove the watchdog uses its own database connection and read-only broker
+  client, the writer alone owns the execution client ID, and both remain live
+  while the service thread is blocked.
 - Exercise broker time, order state, partial fills, prices, volume, session,
   provider availability, decision age, positions, and experiment equity.
 - Exercise every canonical provider state, conflicting terminal events, and
@@ -682,8 +715,9 @@ receive no direct broker-write method.
 - New exposure remains blocked until Codex persists a review acknowledgement
   bound to the exact recovery report.
 - While review is pending, permit reconciliation, observation, cancellation,
-  reduction, closing, and pre-outage continuity actions; reject proposals,
-  exposure increases, TIF extensions, and non-defensive fresh modifications.
+  reduction, closing, pre-outage continuity actions, and fresh Codex actions
+  that do not create/increase maximum liability or extend temporal authority;
+  reject every economic or temporal authority expansion.
 - Exercise all four review dispositions and prove `MORE_RESEARCH_REQUIRED`
   permits research but not new exposure.
 - A reflection cannot become executable without a later attested decision.
@@ -703,6 +737,12 @@ receive no direct broker-write method.
 This design does not authorize production installation, broker writes, or a
 change to the currently scheduled experiment process.
 
+Implementation occurs only in `C:\AI_VAULT_IBKR_CONTINUITY_DEV` on branch
+`codex/agent-continuity-authority`. The operational checkout
+`C:\AI_VAULT_IBKR`, its HEAD, runtime files, manifests, scheduler arguments,
+and `ApprovedHead` are outside the implementation workspace and may not be
+changed by this phase.
+
 Deployment must occur only from an audited implementation HEAD while no
 experiment order is active. Existing active orders without a continuity plan
 cannot be assigned retroactive model intent. They require a fresh successful
@@ -717,7 +757,17 @@ Activation evidence must prove:
 - successful synthetic outage, partial-fill, race, and recovery-report tests;
 - proof that the independent watchdog remains operational during a blocked
   provider invocation;
-- scheduler remains disabled until Owner-authorized operational activation.
+- proof that every order write uses the one owning execution client ID and the
+  watchdog's independent client is read-only;
+- scheduler configuration and operational state remain unchanged until a
+  separate Owner-authorized deployment decision.
+
+IBKR's documented same-client ownership semantics are treated as a hard
+capability invariant. A later PAPER capability exercise that invokes
+`placeOrder`, including an untransmitted order, requires separate Owner
+authorization and must occur before operational deployment. This implementation
+phase supplies the disabled harness and deterministic fake-broker proof but
+does not perform that broker mutation.
 
 ## Non-Goals
 
@@ -757,7 +807,10 @@ The design is correctly implemented only when:
     thread is blocked.
 12. Plan expiry follows Codex's explicit expiry authority mode, with no host
     default.
-13. An unacknowledged recovery report blocks only new or increased exposure,
-    not reconciliation or defensive action.
+13. An unacknowledged recovery report blocks only increased economic or
+    temporal authority, not reconciliation or mechanically nonexpanding action.
 14. Provider state and elapsed-time authority are durable, canonical, and
     reconstructable across restart from authenticated broker-time evidence.
+15. One authoritative broker writer owns the execution client ID; model and
+    watchdog paths can only submit exact commands to it, and the watchdog's
+    independent broker session is read-only.
