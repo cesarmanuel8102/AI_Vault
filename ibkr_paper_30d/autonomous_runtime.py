@@ -225,6 +225,8 @@ def run_autonomous_cycle(
     provider: Any | None = None,
     toolbox: Any | None = None,
     executor: Any | None = None,
+    provider_lifecycle: Any | None = None,
+    broker_time_reader: Any | None = None,
 ) -> dict[str, Any]:
     if execute_paper and database is None:
         raise ValueError("paper execution requires persistent experiment database")
@@ -262,10 +264,43 @@ def run_autonomous_cycle(
         context = workspace_summary()
         if context is not None:
             provider.workspace_context = context
-    outcome = AutonomousResearchLoop(provider, toolbox).run(request, bundle)
+    lifecycle_token = None
+    if provider_lifecycle is not None:
+        if not callable(broker_time_reader):
+            raise ValueError("provider lifecycle requires broker_time_reader")
+        lifecycle_token = provider_lifecycle.begin(request, broker_time_reader())
+    try:
+        outcome = AutonomousResearchLoop(provider, toolbox).run(request, bundle)
+    except TimeoutError:
+        if lifecycle_token is not None:
+            provider_lifecycle.fail(
+                lifecycle_token, "PROVIDER_TIMEOUT", broker_time_reader()
+            )
+        raise
+    except Exception:
+        if lifecycle_token is not None:
+            provider_lifecycle.fail(
+                lifecycle_token, "PROVIDER_PROCESS_ERROR", broker_time_reader()
+            )
+        raise
 
     if database is not None:
         persist_outcome(database, bundle, request, outcome)
+        if lifecycle_token is not None:
+            durable_result = database.execute(
+                "SELECT payload_sha256 FROM trader_results WHERE invocation_id=?",
+                (request.invocation_id,),
+            ).fetchone()
+            if durable_result is None:
+                raise RuntimeError("TRADER_RESULT_NOT_DURABLE")
+            provider_lifecycle.complete(
+                lifecycle_token,
+                "COMPLETED_ACCEPTED"
+                if outcome.accepted
+                else "COMPLETED_UNACCEPTED",
+                broker_time_reader(),
+                result_sha256=str(durable_result[0]),
+            )
 
     execution = None
     post_execution_subledger = None

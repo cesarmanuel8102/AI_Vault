@@ -35,6 +35,38 @@ class NoTradeProvider:
         )
 
 
+class TimeoutProvider:
+    def next_turn(self, request, bundle, history, toolbox_manifest):
+        raise TimeoutError("provider deadline")
+
+
+class ErrorProvider:
+    def next_turn(self, request, bundle, history, toolbox_manifest):
+        raise RuntimeError("provider process exited")
+
+
+class RecordingLifecycle:
+    def __init__(self, db):
+        self.db = db
+        self.events = []
+
+    def begin(self, request, broker_time):
+        self.events.append(("IN_FLIGHT", request.invocation_id))
+        return request.invocation_id
+
+    def fail(self, token, failure_code, broker_time):
+        self.events.append((failure_code, token))
+
+    def complete(self, token, state, broker_time, result_sha256=None):
+        durable = self.db.execute(
+            "SELECT accepted,payload_sha256 FROM trader_results WHERE invocation_id=?",
+            (token,),
+        ).fetchone()
+        assert durable is not None
+        assert durable[1] == result_sha256
+        self.events.append((state, token))
+
+
 class PassiveToolbox:
     def manifest(self):
         return []
@@ -163,6 +195,52 @@ def test_runtime_persists_canonical_bundle_invocation_result_and_research(tmp_pa
         ).fetchone()[0]
         assert '"proposal.expected_value":"MODEL_INFERENCE"' in final_payload
         assert '"broker_validation":"BROKER_OR_DETERMINISTIC_EVIDENCE"' in final_payload
+
+
+def test_runtime_records_lifecycle_around_provider_and_durable_result(tmp_path):
+    with Database.open(tmp_path / "autonomous.sqlite3") as db:
+        lifecycle = RecordingLifecycle(db)
+        result = run_autonomous_cycle(
+            bundle(), database=db, provider=NoTradeProvider(), toolbox=PassiveToolbox(),
+            provider_lifecycle=lifecycle, broker_time_reader=lambda: "paper-time",
+        )
+
+    invocation_id = result["request"]["invocation_id"]
+    assert lifecycle.events == [
+        ("IN_FLIGHT", invocation_id),
+        ("COMPLETED_ACCEPTED", invocation_id),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("provider", "expected", "error_type"),
+    [
+        (TimeoutProvider(), "PROVIDER_TIMEOUT", TimeoutError),
+        (ErrorProvider(), "PROVIDER_PROCESS_ERROR", RuntimeError),
+    ],
+)
+def test_runtime_records_provider_failures(tmp_path, provider, expected, error_type):
+    with Database.open(tmp_path / f"{expected}.sqlite3") as db:
+        lifecycle = RecordingLifecycle(db)
+        with pytest.raises(error_type):
+            run_autonomous_cycle(
+                bundle(), database=db, provider=provider, toolbox=PassiveToolbox(),
+                provider_lifecycle=lifecycle, broker_time_reader=lambda: "paper-time",
+            )
+    assert lifecycle.events[0][0] == "IN_FLIGHT"
+    assert lifecycle.events[1][0] == expected
+
+
+def test_runtime_records_unaccepted_only_after_rejected_result_is_durable(tmp_path):
+    with Database.open(tmp_path / "autonomous.sqlite3") as db:
+        lifecycle = RecordingLifecycle(db)
+        result = run_autonomous_cycle(
+            bundle().model_copy(update={"kill_switch_state": "KILL_SWITCH_TRIGGERED"}),
+            database=db, provider=NoTradeProvider(), toolbox=PassiveToolbox(),
+            provider_lifecycle=lifecycle, broker_time_reader=lambda: "paper-time",
+        )
+    assert result["outcome"]["accepted"] is False
+    assert lifecycle.events[-1][0] == "COMPLETED_UNACCEPTED"
 
 
 def test_autonomous_trader_boundary_accepts_frozen_bundle_mapping():
