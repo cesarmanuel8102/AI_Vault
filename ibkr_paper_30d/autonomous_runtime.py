@@ -137,6 +137,14 @@ def persist_outcome(
         "rounds": outcome.rounds,
         "transcript_sha256": outcome.transcript_sha256,
         "broker_validation": outcome.broker_validation,
+        "continuity_plan": (
+            None
+            if outcome.continuity_plan is None
+            else outcome.continuity_plan.model_dump(mode="json")
+        ),
+        "continuity_reviews": [
+            review.model_dump(mode="json") for review in outcome.continuity_reviews
+        ],
         "epistemic_status": {
             "proposal.probability_profit": "MODEL_INFERENCE",
             "proposal.probability_loss": "MODEL_INFERENCE",
@@ -227,6 +235,7 @@ def run_autonomous_cycle(
     executor: Any | None = None,
     provider_lifecycle: Any | None = None,
     broker_time_reader: Any | None = None,
+    continuity_store: Any | None = None,
 ) -> dict[str, Any]:
     if execute_paper and database is None:
         raise ValueError("paper execution requires persistent experiment database")
@@ -286,13 +295,13 @@ def run_autonomous_cycle(
 
     if database is not None:
         persist_outcome(database, bundle, request, outcome)
+        durable_result = database.execute(
+            "SELECT payload_sha256 FROM trader_results WHERE invocation_id=?",
+            (request.invocation_id,),
+        ).fetchone()
+        if durable_result is None:
+            raise RuntimeError("TRADER_RESULT_NOT_DURABLE")
         if lifecycle_token is not None:
-            durable_result = database.execute(
-                "SELECT payload_sha256 FROM trader_results WHERE invocation_id=?",
-                (request.invocation_id,),
-            ).fetchone()
-            if durable_result is None:
-                raise RuntimeError("TRADER_RESULT_NOT_DURABLE")
             provider_lifecycle.complete(
                 lifecycle_token,
                 "COMPLETED_ACCEPTED"
@@ -300,6 +309,34 @@ def run_autonomous_cycle(
                 else "COMPLETED_UNACCEPTED",
                 broker_time_reader(),
                 result_sha256=str(durable_result[0]),
+            )
+        if (
+            continuity_store is not None
+            and outcome.accepted
+            and outcome.continuity_plan is not None
+        ):
+            intent = outcome.proposal or outcome.open_order_action
+            continuity_store.append_plan_event(
+                "VALIDATED",
+                outcome.continuity_plan,
+                event_id=(
+                    f"continuity-validated:{request.invocation_id}:"
+                    f"{outcome.continuity_plan.plan_id}"
+                ),
+                bindings={
+                    "invocation_id": request.invocation_id,
+                    "input_bundle_sha256": bundle.sha256,
+                    "result_sha256": str(durable_result[0]),
+                    "intent_sha256": None if intent is None else sha256_json(intent),
+                    "epoch_id": outcome.continuity_plan.epoch_id,
+                    "clock_event_sha256": outcome.continuity_plan.clock_event_sha256,
+                    "owner_authorization_sha256": (
+                        outcome.continuity_plan.owner_authorization_sha256
+                    ),
+                    "model_attestation_sha256": (
+                        outcome.continuity_plan.model_attestation_sha256
+                    ),
+                },
             )
 
     execution = None

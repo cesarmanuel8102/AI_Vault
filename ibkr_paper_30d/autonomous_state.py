@@ -7,6 +7,7 @@ from typing import Any
 
 from .autonomous_research import ResearchRequest, ResearchTool
 from .canonical import sha256_json
+from .continuity_store import ContinuityStore
 from .experiment_control import ExperimentClock, ExperimentClockStore, KillSwitchStore
 from .experiment_epoch import ExperimentEpochStore
 from .experiment_ledger import AutonomousExperimentLedger
@@ -126,6 +127,10 @@ class AutonomousStateBuilder:
             execution_realism_version="PAPER_V1",
             benchmark_state={},
             experiment_clock={"expired": True, "remaining_seconds": 0},
+            continuity_context={
+                "status": "NOT_INSTALLED",
+                "authority_contract_required": False,
+            },
         )
 
     def _registered_fill(self, fill: dict[str, Any]) -> bool:
@@ -457,6 +462,71 @@ class AutonomousStateBuilder:
             )
         return snapshot
 
+    def _continuity_context(self, clock: dict[str, Any]) -> dict[str, Any]:
+        installed = self.db.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' "
+            "AND name='continuity_plan_events'"
+        ).fetchone()
+        if installed is None:
+            return {
+                "status": "NOT_INSTALLED",
+                "authority_contract_required": False,
+                "active_plans": [],
+                "provider_states": [],
+                "pending_factual_reports": [],
+                "prior_reflections": [],
+            }
+        store = ContinuityStore(self.db)
+        order_refs = [
+            str(row[0])
+            for row in self.db.execute(
+                "SELECT DISTINCT order_ref FROM continuity_plan_events"
+            ).fetchall()
+        ]
+        active_plans = []
+        for order_ref in order_refs:
+            plan = store.active_plan(order_ref)
+            if plan is not None:
+                active_plans.append(
+                    {
+                        "plan": plan.model_dump(mode="json"),
+                        "plan_sha256": plan.sha256,
+                    }
+                )
+        provider_states = [
+            store.provider_projection(str(row[0]))
+            for row in self.db.execute(
+                "SELECT DISTINCT invocation_id FROM provider_invocation_events"
+            ).fetchall()
+        ]
+        reflections = []
+        for reflection_id, payload_json in self.db.execute(
+            "SELECT reflection_id,payload_json FROM continuity_reflection_events "
+            "ORDER BY sequence"
+        ).fetchall():
+            reflections.append(
+                {
+                    "reflection_id": str(reflection_id),
+                    "content": json.loads(str(payload_json)),
+                    "trust": "UNTRUSTED_MODEL_REFLECTION",
+                }
+            )
+        return {
+            "status": "AVAILABLE",
+            "authority_contract_required": True,
+            "epoch_id": clock.get("epoch_id"),
+            "definition_sha256": clock.get("definition_sha256"),
+            "clock_event_sha256": clock.get("event_sha256"),
+            "owner_authorization_sha256": (
+                clock.get("owner_authorization_sha256")
+                or clock.get("owner_authorization_receipt_sha256")
+            ),
+            "active_plans": active_plans,
+            "provider_states": provider_states,
+            "pending_factual_reports": store.pending_reports(),
+            "prior_reflections": reflections,
+        }
+
     @staticmethod
     def _broker_now(account: dict[str, Any]) -> datetime:
         raw = account.get("server_time_utc")
@@ -581,4 +651,5 @@ class AutonomousStateBuilder:
             execution_realism_version="IBKR_PAPER_WHATIF_AND_PAPER_EXECUTION_V1",
             benchmark_state=benchmark_state or {},
             experiment_clock=clock,
+            continuity_context=self._continuity_context(clock),
         )

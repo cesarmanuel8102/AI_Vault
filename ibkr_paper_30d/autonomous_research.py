@@ -15,6 +15,11 @@ from typing import Any, Protocol
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from .canonical import canonical_bytes, sha256_json
+from .continuity_models import (
+    CodexOrderContinuityPlan,
+    ContinuityReview,
+    OrderBindingType,
+)
 from .research_telemetry import (
     ResearchTelemetryAccumulator,
     build_telemetry_summary_from_history,
@@ -186,6 +191,8 @@ class AutonomousTurn(BaseModel, frozen=True):
     confidence: Decimal = Field(ge=0, le=1)
     reasoning_summary: str
     reason_codes: list[str] = Field(default_factory=list)
+    continuity_plan: CodexOrderContinuityPlan | None = None
+    continuity_reviews: list[ContinuityReview] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def mode_consistency(self) -> "AutonomousTurn":
@@ -204,6 +211,11 @@ class AutonomousTurn(BaseModel, frozen=True):
                 raise ValueError("FINAL mode cannot contain research requests")
             if self.decision is None:
                 raise ValueError("FINAL mode requires decision")
+            if (
+                self.decision == TraderDecision.CANCEL_ORDER
+                and self.continuity_plan is not None
+            ):
+                raise ValueError("CANCEL_ORDER cannot create continuity authority")
             if self.decision == TraderDecision.PROPOSE_TRADE:
                 if (
                     self.proposal is None
@@ -522,7 +534,11 @@ class CodexAutonomousCLIProvider:
                     "optional, not required.\n"
                     "The immutable environmental constraints listed in this mandate are properties of the "
                     "environment, not strategy suggestions. You may not improve the measured objective by modifying, "
-                    "bypassing, disabling, or redefining them."
+                    "bypassing, disabling, or redefining them.\n"
+                    "When continuity authority is required by the frozen bundle, you author its activation, expiry "
+                    "mode, finite evidence conditions, exact executable actions, unavailable-evidence behavior, and "
+                    "terminal disposition. The host validates and executes only what you state; it does not complete "
+                    "missing economic intent."
                 ),
             },
             "request": request.model_dump(mode="json"),
@@ -533,8 +549,13 @@ class CodexAutonomousCLIProvider:
                 "research_request_arguments": (
                     "Encode each research_requests[].arguments value as a JSON "
                     "object string. The host decodes and validates it before use."
-                )
+                ),
+                "continuity_instruction": (
+                    "When required, author activation, expiry, finite conditions, "
+                    "exact actions, unavailable-evidence behavior, and terminal disposition."
+                ),
             },
+            "continuity_authority": bundle.continuity_context,
         }
         if workspace_context:
             payload["workspace_context"] = workspace_context
@@ -637,6 +658,8 @@ class AutonomousResearchOutcome(BaseModel, frozen=True):
     transcript: list[dict[str, Any]]
     transcript_sha256: str
     broker_validation: dict[str, Any] = Field(default_factory=dict)
+    continuity_plan: CodexOrderContinuityPlan | None = None
+    continuity_reviews: tuple[ContinuityReview, ...] = ()
 
 
 class AutonomousResearchLoop:
@@ -713,6 +736,14 @@ class AutonomousResearchLoop:
                     })
                 continue
 
+            continuity_error = self._validate_continuity_turn(
+                turn, request=request, bundle=bundle
+            )
+            if continuity_error is not None:
+                return self._blocked(
+                    history, telemetry, round_index, continuity_error
+                )
+
             decision = turn.decision or TraderDecision.NO_TRADE
             if decision in {TraderDecision.CANCEL_ORDER, TraderDecision.MODIFY_ORDER}:
                 action = turn.open_order_action
@@ -752,6 +783,8 @@ class AutonomousResearchLoop:
                     validation="PASS",
                     reason_codes=tuple(turn.reason_codes),
                     broker_validation=validation.broker_evidence,
+                    continuity_plan=turn.continuity_plan,
+                    continuity_reviews=tuple(turn.continuity_reviews),
                 )
 
             if decision in {TraderDecision.REDUCE_POSITION, TraderDecision.CLOSE_POSITION}:
@@ -790,6 +823,8 @@ class AutonomousResearchLoop:
                     validation="PASS",
                     reason_codes=tuple(turn.reason_codes),
                     broker_validation=validation.broker_evidence,
+                    continuity_plan=turn.continuity_plan,
+                    continuity_reviews=tuple(turn.continuity_reviews),
                 )
 
             if decision != TraderDecision.PROPOSE_TRADE:
@@ -803,6 +838,8 @@ class AutonomousResearchLoop:
                     accepted=True,
                     validation="PASS",
                     reason_codes=tuple(turn.reason_codes),
+                    continuity_plan=turn.continuity_plan,
+                    continuity_reviews=tuple(turn.continuity_reviews),
                 )
 
             proposal = turn.proposal
@@ -844,9 +881,101 @@ class AutonomousResearchLoop:
                 validation="PASS",
                 reason_codes=tuple(turn.reason_codes),
                 broker_validation=validation.broker_evidence,
+                continuity_plan=turn.continuity_plan,
+                continuity_reviews=tuple(turn.continuity_reviews),
             )
 
         return self._blocked(history, telemetry, self.max_rounds, "RESEARCH_ROUND_LIMIT_REACHED")
+
+    @staticmethod
+    def _validate_continuity_turn(
+        turn: AutonomousTurn,
+        *,
+        request: InvocationRequest,
+        bundle: TraderInputBundle,
+    ) -> str | None:
+        plan = turn.continuity_plan
+        required = bool(
+            bundle.continuity_context.get("authority_contract_required", False)
+        )
+        decision = turn.decision or TraderDecision.NO_TRADE
+        if decision == TraderDecision.CANCEL_ORDER and plan is not None:
+            return "CONTINUITY_PLAN_FORBIDDEN_FOR_CANCEL"
+        if required and decision in {
+            TraderDecision.PROPOSE_TRADE,
+            TraderDecision.MODIFY_ORDER,
+        } and plan is None:
+            return "CONTINUITY_PLAN_REQUIRED"
+        if plan is None:
+            return None
+        if decision not in {
+            TraderDecision.PROPOSE_TRADE,
+            TraderDecision.MODIFY_ORDER,
+            TraderDecision.NO_TRADE,
+        }:
+            return "CONTINUITY_PLAN_DECISION_MISMATCH"
+        if (
+            plan.decision_cycle_id != request.decision_cycle_id
+            or plan.invocation_id != request.invocation_id
+            or plan.input_bundle_sha256 != bundle.sha256
+            or plan.created_by_model != request.actual_model
+        ):
+            return "CONTINUITY_PLAN_PROVENANCE_MISMATCH"
+        if plan.model_attestation_sha256 != sha256_json(
+            {"actual_model": request.actual_model}
+        ):
+            return "CONTINUITY_PLAN_MODEL_ATTESTATION_MISMATCH"
+        context = bundle.continuity_context
+        for field in (
+            "epoch_id",
+            "definition_sha256",
+            "clock_event_sha256",
+            "owner_authorization_sha256",
+        ):
+            expected = context.get(field)
+            if expected is not None and getattr(plan, field) != expected:
+                return "CONTINUITY_PLAN_AUTHORITY_BINDING_MISMATCH"
+        if decision == TraderDecision.PROPOSE_TRADE:
+            if turn.proposal is None:
+                return "CONTINUITY_PLAN_PROPOSAL_MISSING"
+            proposal_hash = sha256_json(turn.proposal)
+            if (
+                plan.order_binding.binding_type != OrderBindingType.NEW_PROPOSAL
+                or plan.order_binding.proposal_sha256 != proposal_hash
+                or plan.order_binding.original_intent_sha256 != proposal_hash
+            ):
+                return "CONTINUITY_PLAN_PROPOSAL_MISMATCH"
+            return None
+        if plan.order_binding.binding_type != OrderBindingType.EXISTING_ORDER:
+            return "CONTINUITY_PLAN_ORDER_BINDING_MISMATCH"
+        action = turn.open_order_action
+        if decision == TraderDecision.MODIFY_ORDER:
+            if action is None or (
+                plan.order_binding.order_ref != action.order_ref
+                or plan.order_binding.ibkr_order_id != action.order_id
+                or plan.order_binding.perm_id != action.perm_id
+                or plan.order_binding.execution_client_id != action.client_id
+                or plan.order_binding.contract_identity_sha256
+                != sha256_json({"conId": action.contract_id})
+            ):
+                return "CONTINUITY_PLAN_ORDER_BINDING_MISMATCH"
+            if plan.order_binding.original_intent_sha256 != sha256_json(action):
+                return "CONTINUITY_PLAN_ACTION_MISMATCH"
+            return None
+        matches = [
+            item
+            for item in bundle.open_orders_snapshot
+            if str(item.get("orderRef") or "") == plan.order_binding.order_ref
+            and int(item.get("orderId") or 0)
+            == int(plan.order_binding.ibkr_order_id or 0)
+            and int(item.get("permId") or 0)
+            == int(plan.order_binding.perm_id or 0)
+            and int(item.get("clientId") or -1)
+            == plan.order_binding.execution_client_id
+        ]
+        if len(matches) != 1:
+            return "CONTINUITY_PLAN_ORDER_BINDING_MISMATCH"
+        return None
 
     def _blocked(
         self,
@@ -881,6 +1010,8 @@ class AutonomousResearchLoop:
         reason_codes: tuple[str, ...],
         broker_validation: dict[str, Any] | None = None,
         open_order_action: AutonomousOpenOrderAction | None = None,
+        continuity_plan: CodexOrderContinuityPlan | None = None,
+        continuity_reviews: tuple[ContinuityReview, ...] = (),
     ) -> AutonomousResearchOutcome:
         history.append({
             "round": rounds,
@@ -900,5 +1031,7 @@ class AutonomousResearchLoop:
             transcript=history,
             transcript_sha256=transcript_hash,
             broker_validation=broker_validation or {},
+            continuity_plan=continuity_plan,
+            continuity_reviews=continuity_reviews,
         )
 

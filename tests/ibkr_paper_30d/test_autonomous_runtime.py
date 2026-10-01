@@ -243,6 +243,58 @@ def test_runtime_records_unaccepted_only_after_rejected_result_is_durable(tmp_pa
     assert lifecycle.events[-1][0] == "COMPLETED_UNACCEPTED"
 
 
+def test_runtime_persists_validated_plan_only_after_accepted_result(
+    tmp_path, monkeypatch, continuity_plan_factory
+):
+    from ibkr_paper_30d.autonomous_research import AutonomousResearchOutcome
+
+    plan = continuity_plan_factory(
+        plan_id="plan-runtime-1",
+        clock_event_sha256="a" * 64,
+        owner_authorization_sha256="b" * 64,
+        model_attestation_sha256="c" * 64,
+    )
+    outcome = AutonomousResearchOutcome(
+        accepted=True,
+        validation="PASS",
+        decision=TraderDecision.NO_TRADE,
+        proposal=None,
+        position_action=None,
+        open_order_action=None,
+        reason_codes=("PLAN_ONLY",),
+        rounds=1,
+        transcript=[],
+        transcript_sha256="d" * 64,
+        continuity_plan=plan,
+    )
+
+    class RecordingStore:
+        def __init__(self, db):
+            self.db = db
+            self.calls = []
+
+        def append_plan_event(self, event_type, value, **kwargs):
+            row = self.db.execute(
+                "SELECT accepted,payload_sha256 FROM trader_results"
+            ).fetchone()
+            assert row is not None and row[0] == 1
+            assert kwargs["bindings"]["result_sha256"] == row[1]
+            self.calls.append((event_type, value, kwargs))
+
+    monkeypatch.setattr(
+        "ibkr_paper_30d.autonomous_runtime.AutonomousResearchLoop.run",
+        lambda self, request, value: outcome,
+    )
+    with Database.open(tmp_path / "autonomous.sqlite3") as db:
+        store = RecordingStore(db)
+        run_autonomous_cycle(
+            bundle(), database=db, provider=NoTradeProvider(), toolbox=PassiveToolbox(),
+            continuity_store=store,
+        )
+    assert store.calls[0][0] == "VALIDATED"
+    assert store.calls[0][2]["bindings"]["input_bundle_sha256"]
+
+
 def test_autonomous_trader_boundary_accepts_frozen_bundle_mapping():
     boundary = AutonomousTraderBoundary(
         provider=NoTradeProvider(),

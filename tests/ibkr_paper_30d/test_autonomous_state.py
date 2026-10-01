@@ -310,6 +310,23 @@ def test_state_builder_refreshes_equity_and_keeps_discovery_unconstrained(tmp_pa
         assert len(open_order["state_sha256"]) == 64
 
 
+def test_state_builder_exposes_v3_continuity_context_without_strategy_guidance(tmp_path):
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+    from ibkr_paper_30d.successor_schema import install_successor_schema_v2
+
+    with Database.open(tmp_path / "state.sqlite3") as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        value = builder(db, FakeToolbox()).build(trigger="SCHEDULED_SCAN")
+
+    assert value.continuity_context["status"] == "AVAILABLE"
+    assert value.continuity_context["authority_contract_required"] is True
+    assert value.continuity_context["active_plans"] == []
+    assert value.continuity_context["provider_states"] == []
+    assert value.continuity_context["pending_factual_reports"] == []
+    assert value.continuity_context["prior_reflections"] == []
+
+
 def test_state_builder_blocks_when_tracked_position_does_not_match_broker(tmp_path):
     with Database.open(tmp_path / "state.sqlite3") as db:
         subject = builder(db, FakeToolbox(broker_quantity="2"))

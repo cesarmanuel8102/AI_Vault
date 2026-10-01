@@ -49,6 +49,7 @@ class TraderInputBundle(BaseModel, frozen=True):
     execution_realism_version: str
     benchmark_state: dict[str, Any]
     experiment_clock: dict[str, Any] = Field(default_factory=dict)
+    continuity_context: dict[str, Any] = Field(default_factory=dict)
 
     @property
     def sha256(self) -> str:

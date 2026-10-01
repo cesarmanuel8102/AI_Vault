@@ -5,6 +5,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
+from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.autonomous_research import (
     AutonomousOpenOrderAction,
     CodexAutonomousCLIProvider,
@@ -161,6 +162,110 @@ def open_order_action(**updates):
     }
     values.update(updates)
     return AutonomousOpenOrderAction(**values)
+
+
+def test_v3_context_requires_plan_for_proposal_and_modification():
+    value = bundle().model_copy(
+        update={"continuity_context": {"authority_contract_required": True}}
+    )
+    propose = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        decision=TraderDecision.PROPOSE_TRADE,
+        proposal=proposal(),
+        confidence="0.8",
+        reasoning_summary="Candidate selected.",
+        reason_codes=["EDGE_FOUND"],
+    )
+    proposed = AutonomousResearchLoop(
+        SequenceProvider([propose]), FakeToolbox()
+    ).run(request(value), value)
+    assert proposed.accepted is False
+    assert proposed.reason_codes == ("CONTINUITY_PLAN_REQUIRED",)
+
+    modified = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        decision=TraderDecision.MODIFY_ORDER,
+        open_order_action=open_order_action(new_limit_price="4.25"),
+        confidence="0.8",
+        reasoning_summary="Modify exact resting order.",
+        reason_codes=["ORDER_REVIEWED"],
+    )
+    outcome = AutonomousResearchLoop(
+        SequenceProvider([modified]), FakeToolbox()
+    ).run(request(value), value)
+    assert outcome.accepted is False
+    assert outcome.reason_codes == ("CONTINUITY_PLAN_REQUIRED",)
+
+
+def test_cancel_turn_forbids_continuity_plan_even_before_execution(
+    continuity_plan_factory,
+):
+    plan = continuity_plan_factory()
+    with pytest.raises(ValidationError, match="cannot create continuity"):
+        AutonomousTurn(
+            mode=AutonomousTurnMode.FINAL,
+            decision=TraderDecision.CANCEL_ORDER,
+            open_order_action=open_order_action(),
+            continuity_plan=plan,
+            confidence="0.8",
+            reasoning_summary="Cancel exact order.",
+            reason_codes=["ORDER_REVIEWED"],
+        )
+
+
+def test_no_trade_plan_requires_exact_owned_order_and_provenance(
+    continuity_plan_factory,
+):
+    open_order = {
+        "orderRef": "order-78",
+        "orderId": 78,
+        "permId": 225256222,
+        "clientId": 17,
+        "contract": {"conId": 756733},
+    }
+    value = bundle().model_copy(
+        update={
+            "open_orders_snapshot": [open_order],
+            "continuity_context": {"authority_contract_required": True},
+        }
+    )
+    invocation = request(value)
+    plan = continuity_plan_factory(
+        decision_cycle_id=invocation.decision_cycle_id,
+        invocation_id=invocation.invocation_id,
+        input_bundle_sha256=value.sha256,
+        created_by_model=invocation.actual_model,
+        model_attestation_sha256=sha256_json(
+            {"actual_model": invocation.actual_model}
+        ),
+    )
+    turn = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        decision=TraderDecision.NO_TRADE,
+        continuity_plan=plan,
+        confidence="0.8",
+        reasoning_summary="Create exact continuity authority for the owned order.",
+        reason_codes=["ORDER_CONTINUITY_AUTHORED"],
+    )
+    outcome = AutonomousResearchLoop(
+        SequenceProvider([turn]), FakeToolbox()
+    ).run(invocation, value)
+    assert outcome.accepted is True
+    assert outcome.continuity_plan == plan
+
+    mismatched = plan.model_copy(
+        update={
+            "order_binding": plan.order_binding.model_copy(
+                update={"perm_id": 999999}
+            )
+        }
+    )
+    bad_turn = turn.model_copy(update={"continuity_plan": mismatched})
+    blocked = AutonomousResearchLoop(
+        SequenceProvider([bad_turn]), FakeToolbox()
+    ).run(invocation, value)
+    assert blocked.accepted is False
+    assert blocked.reason_codes == ("CONTINUITY_PLAN_ORDER_BINDING_MISMATCH",)
 
 
 def test_cancel_order_requires_target_and_forbids_modification_fields():

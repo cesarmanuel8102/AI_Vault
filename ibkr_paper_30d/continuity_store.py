@@ -112,10 +112,15 @@ class ContinuityStore:
         *,
         event_id: str | None = None,
         expected_previous_event_sha256: str | None | object = _UNSET,
+        bindings: Mapping[str, Any] | None = None,
     ) -> str:
         order_ref = plan.order_binding.order_ref
         event_id = event_id or str(new_uuid7())
-        payload = {"plan": plan.model_dump(mode="json"), "plan_sha256": plan.sha256}
+        payload = {
+            "plan": plan.model_dump(mode="json"),
+            "plan_sha256": plan.sha256,
+            "bindings": dict(bindings or {}),
+        }
         with self.db.transaction():
             existing = self.db.execute(
                 "SELECT payload_json,event_sha256 FROM continuity_plan_events "
@@ -138,7 +143,7 @@ class ContinuityStore:
             elif event_type == "TERMINAL":
                 if active is None or active.sha256 != plan.sha256:
                     raise ContinuityStoreError("TERMINAL_PLAN_MISMATCH")
-            elif event_type != "DRAFTED":
+            elif event_type not in {"DRAFTED", "VALIDATED"}:
                 raise ContinuityStoreError("PLAN_EVENT_TYPE_INVALID")
             return self._append(
                 table="continuity_plan_events",
@@ -164,7 +169,7 @@ class ContinuityStore:
                 raise ContinuityStoreError("PAYLOAD_INVALID") from exc
             if payload.get("plan_sha256") != plan.sha256:
                 raise ContinuityStoreError("HASH_MISMATCH")
-            if event_type == "DRAFTED":
+            if event_type in {"DRAFTED", "VALIDATED"}:
                 continue
             if event_type == "ACTIVATED":
                 if active is not None or plan.predecessor_plan_sha256 is not None:
@@ -194,7 +199,7 @@ class ContinuityStore:
                 raise ContinuityStoreError("PAYLOAD_INVALID") from exc
             if payload.get("plan_sha256") != plan.sha256:
                 raise ContinuityStoreError("HASH_MISMATCH")
-            if event_type == "DRAFTED":
+            if event_type in {"DRAFTED", "VALIDATED"}:
                 continue
             if event_type == "ACTIVATED":
                 if active is not None or plan.predecessor_plan_sha256 is not None:

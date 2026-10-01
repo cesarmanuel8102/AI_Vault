@@ -91,6 +91,35 @@ def test_strict_schema_encodes_dynamic_research_arguments_as_json_string() -> No
     assert "JSON object" in arguments["description"]
 
 
+def test_strict_schema_and_prompt_expose_neutral_continuity_authority() -> None:
+    schema = CodexAutonomousCLIProvider.strict_output_schema()
+    assert "continuity_plan" in schema["properties"]
+    assert "continuity_reviews" in schema["properties"]
+
+    value = bundle().model_copy(
+        update={
+            "continuity_context": {
+                "authority_contract_required": True,
+                "active_plans": [{"plan_id": "plan-1"}],
+                "provider_states": [{"state": "TIMEOUT_CONFIRMED"}],
+                "pending_factual_reports": [{"report_id": "report-1"}],
+                "prior_reflections": [
+                    {"reflection_id": "reflection-1", "trust": "UNTRUSTED_MODEL_REFLECTION"}
+                ],
+            }
+        }
+    )
+    payload = CodexAutonomousCLIProvider._prompt_payload(
+        request(value), value, [], []
+    )
+    assert payload["continuity_authority"] == value.continuity_context
+    instruction = payload["output_contract"]["continuity_instruction"].lower()
+    assert all(
+        token not in instruction
+        for token in ("timeout", "cancel", "retain", "price", "symbol", "strategy", "adversarial")
+    )
+
+
 def test_autonomous_codex_decodes_strict_research_arguments() -> None:
     value = bundle()
 
