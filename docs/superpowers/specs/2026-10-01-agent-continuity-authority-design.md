@@ -50,12 +50,13 @@ The missing capability is agency continuity, not an UTHR-specific exit rule.
    sandbox and are not strategic recommendations.
 7. Continuity history is immutable evidence. Lessons and policies remain
    revisable model-authored hypotheses.
-8. The adversarial reviewer may challenge reasoning but has no broker
-   authority, veto, or substitute-trader role.
+8. Continuity authority becomes eligible only under an activation condition
+   authored by Codex; an execution lock alone does not decide semantic
+   authority between an in-flight model invocation and a continuity plan.
 
 ## Authority Model
 
-The system has four distinct roles.
+The system has three distinct roles.
 
 ### Codex Actor
 
@@ -77,13 +78,6 @@ values, infer intent, optimize a plan, or choose among unspecified outcomes.
 The observer records expectations, evaluated conditions, broker evidence,
 actions, results, and subsequent market/order state. It does not label a
 policy good or bad.
-
-### Adversarial Reviewer
-
-The reviewer identifies contradictions, unsupported assumptions, missing
-evidence, or poor calibration. Its output is advisory evidence presented to
-Codex. It cannot activate, expire, supersede, block, cancel, modify, or submit
-an order.
 
 ## Immutable Order Identity
 
@@ -149,6 +143,7 @@ the following sections.
 
 - `valid_from_utc`;
 - `plan_valid_until`;
+- `authority_activation_condition` authored by Codex;
 - session and epoch bounds chosen by Codex;
 - a Codex-authored terminal disposition for plan expiry;
 - whether each contingency is one-shot or part of a finite ordered sequence.
@@ -183,7 +178,10 @@ facts. Initial approved facts may include:
 
 - authenticated broker time;
 - market-session state;
-- provider availability and failure observations;
+- provider state and failure observations;
+- whether a model invocation is in flight;
+- model invocation start time and declared deadline;
+- last accepted Codex decision time;
 - elapsed time since the last accepted Codex decision;
 - order status, filled quantity, remaining quantity, and total quantity;
 - bid, ask, last, and a precisely defined mark;
@@ -232,9 +230,28 @@ plan is executable, not whether it is economically wise.
 ### Activated
 
 For a new order, plan activation and the pre-send registry anchor bind to the
-same accepted decision and order intent. After broker acknowledgement, a
-chained activation event adds the authoritative broker identity. An order is
-not considered continuity-protected until this binding is complete.
+same accepted decision and order intent before `placeOrder`. The order enters
+`CONTINUITY_BIND_PENDING` immediately before the broker write. After broker
+acknowledgement, a chained activation event adds the authoritative broker
+identity and transitions the plan to `ACTIVE`.
+
+`CONTINUITY_BIND_PENDING` preserves the complete pre-send order intent, plan
+hash, order ref, client order ID, contract identity, execution client ID, and
+attempt identity. It exists specifically for a process failure after IBKR may
+have accepted the order but before `BROKER_BOUND` was persisted.
+
+After restart, the runtime must reconcile a pending binding through
+`reqAllOpenOrders`, executions, and positions. It may complete the broker
+binding without a new model decision only when the pre-send anchor plus exact
+order ref, client order ID, account, contract or BAG identity, direction, and
+execution client identify one unambiguous broker order. This operation
+reconstructs previously granted authority; it does not create new intent.
+
+If the broker order is absent, filled, cancelled, rejected, duplicated, or
+ambiguous, the runtime records the observed state and follows the matching
+plan branch only after identity and lifecycle reconciliation. Ambiguity freezes
+additional writes and requires the existing critical reconciliation path. It
+does not cause an automatic cancellation.
 
 For an existing order, activation requires fresh reconciliation and exact
 ownership proof before the prior plan can be superseded.
@@ -257,9 +274,19 @@ No expired plan can be revived or silently extended.
 
 ## 3. Deterministic Evaluator
 
-The evaluator runs whenever an actionable experiment order has an active
-continuity plan. It remains independent of whether a model invocation is
-currently succeeding.
+The evaluator observes every actionable experiment order with an active plan,
+but continuity authority is eligible only when that plan's
+`authority_activation_condition` evaluates true. Codex may activate continuity
+on provider unavailability, elapsed time without an accepted decision, an
+in-flight invocation exceeding a duration chosen by Codex, or another finite
+combination of approved deterministic facts. The host supplies the facts and
+does not choose the condition or its values.
+
+When the activation condition is false, the evaluator may persist a no-write
+observation but cannot select or execute a contingency. This distinguishes a
+temporarily unavailable Codex from one that is still actively reasoning, while
+allowing Codex to decide whether a long-running invocation should retain
+exclusive authority.
 
 For each evaluation it:
 
@@ -268,20 +295,25 @@ For each evaluation it:
 3. obtains fresh authenticated PAPER broker evidence;
 4. canonicalizes all required facts into one evaluation snapshot;
 5. verifies each fact's source and freshness;
-6. evaluates contingencies by declared priority;
-7. selects at most one exact action;
-8. emits a no-write evaluation result when no condition matches;
-9. routes unavailable facts only through the plan's explicit unavailable-data
+6. evaluates the model-authored authority activation condition;
+7. evaluates contingencies by declared priority only when authority is active;
+8. selects at most one exact action;
+9. emits a no-write evaluation result when authority is inactive or no
+   condition matches;
+10. routes unavailable facts only through the plan's explicit unavailable-data
    branch;
-10. binds the selected action to the plan hash and evaluation evidence hash.
+11. binds the selected action to the plan hash and evaluation evidence hash.
 
 The evaluator cannot infer a missing branch. A structurally complete plan must
 cover any evidence-unavailable state that can affect an authorized action.
 
-The evaluator re-reads plan authority, order state, kill switch, experiment
-clock, and relevant evidence immediately before a broker write. A state change
+The evaluator re-reads the activation condition, model-invocation state, last
+accepted decision, plan authority, order state, kill switch, experiment clock,
+and relevant evidence immediately before a broker write. A state change
 invalidates the selected action and forces reconciliation; it is never treated
-as permission to improvise.
+as permission to improvise. The execution lock prevents simultaneous writes,
+while this final activation re-read determines which authority is semantically
+eligible at that instant.
 
 ## 4. Continuity Executor
 
@@ -329,9 +361,8 @@ A TIF change is allowed only when the exact transition and associated broker
 timestamp were preauthorized and the broker capability has been proven for
 the same-order path. A broker implementation that requires cancel-and-replace
 cannot be represented as `MODIFY_EXISTING_ORDER`; it requires a future Codex
-decision unless Codex separately authored an explicit finite two-action plan
-whose replacement order is fully specified and independently authorized. Such
-cancel-and-replace authority is outside V1 of this design.
+decision while Codex is available. Cancel-and-replace authority is outside V1
+of this design.
 
 ### Uncertain Outcomes
 
@@ -399,6 +430,26 @@ create new exposure. The report includes:
 The report contains no strategic conclusion. Codex may conclude that the plan
 worked, failed, was inconclusive, or should be revised.
 
+### Continuity Review Acknowledgement
+
+Receiving a report is not evidence that Codex considered it. Before creating
+new exposure after an outage, an attested Codex invocation must persist a
+`CONTINUITY_REVIEW_V1` record bound to the report ID and hash. It contains one
+of these model-selected dispositions:
+
+- `ACK_NO_METHOD_CHANGE`
+- `REFLECTION_RECORDED`
+- `POLICY_SUPERSEDED`
+- `MORE_RESEARCH_REQUIRED`
+
+The acknowledgement records the deciding invocation and any reflection or
+superseding policy hashes. It does not require Codex to claim that learning
+occurred. `MORE_RESEARCH_REQUIRED` permits continued research and observation
+but not new exposure until a later review disposition closes the requirement.
+
+Fresh broker reconciliation remains mandatory before the acknowledgement can
+release new-exposure authority.
+
 ### Model-Authored Learning
 
 Codex may persist a reflection, hypothesis, or reusable continuity-policy
@@ -409,28 +460,6 @@ No observed outcome automatically mutates future plans. Codex may preserve,
 revise, supersede, or reject its earlier lesson. This makes methodological
 change measurable without turning historical text into hidden execution
 authority.
-
-## 6. Adversarial Review
-
-The adversarial reviewer receives the plan, rationale, evidence, continuity
-report, and later outcome. It may ask questions such as:
-
-- Does the plan claim active reassessment is necessary while allowing
-  indefinite unattended execution?
-- Does a preauthorized reprice rely on evidence unavailable during an outage?
-- Did the stated expected outcome match the observed fill and market path?
-- Has Codex preserved a policy despite repeated contrary evidence?
-
-Its output is persisted with provenance and labelled advisory. It cannot:
-
-- invoke broker tools;
-- acquire the execution lock;
-- activate or supersede a plan;
-- block or approve a trade;
-- change a condition or action;
-- act as a backup trader during provider unavailability.
-
-Codex receives the critique and decides what, if anything, to change.
 
 ## External Safety and Integrity Invariants
 
@@ -466,7 +495,10 @@ executable inside the sandbox. They do not decide whether it is a good trade.
   evidence, order state, and transition hashes match exactly.
 - Broker write with uncertain result: freeze further writes and reconcile.
 - Provider recovery: deliver the continuity report and reconcile before new
-  exposure.
+  exposure; require a hash-bound continuity review acknowledgement.
+- Pending broker binding on restart: reconcile the pre-send identity against
+  all open orders, executions, and positions before completing, terminating,
+  or freezing the binding.
 - Runtime restart: rebuild active plans solely from hash-valid append-only
   records and fresh broker state; process memory is never authority.
 
@@ -475,11 +507,12 @@ executable inside the sandbox. They do not decide whether it is a good trade.
 The implementation should use dedicated append-only records or tables for:
 
 - continuity plans and lifecycle events;
+- provider and model-invocation lifecycle observations;
 - deterministic evaluations;
 - execution attempts and results;
 - recovery reports;
-- Codex reflections and policy supersession references;
-- adversarial observations.
+- continuity-review acknowledgements;
+- Codex reflections and policy supersession references.
 
 Executable plan payloads, evaluation evidence, and action results are
 canonical JSON with SHA-256 hashes and predecessor links where ordering
@@ -498,12 +531,11 @@ The model input gains:
 - active plan and lifecycle state;
 - continuity reports not yet acknowledged by a successful Codex process;
 - factual outage and execution observations;
-- prior model-authored reflections as untrusted continuity context;
-- advisory adversarial observations with provenance.
+- prior model-authored reflections as untrusted continuity context.
 
 The toolbox gains read-only plan/report inspection and model-authorized plan
-creation/supersession through the accepted-turn contract. Research tools and
-the adversarial reviewer receive no direct broker-write method.
+creation/supersession through the accepted-turn contract. Research tools
+receive no direct broker-write method.
 
 ## Testing Strategy
 
@@ -516,6 +548,11 @@ the adversarial reviewer receive no direct broker-write method.
   values, and unsupported evidence sources.
 - Prove no source constant imposes a universal continuity duration, price,
   cancel policy, or fallback.
+- Accept materially different model-authored activation conditions, including
+  provider failure, no accepted decision for a model-selected duration, and a
+  model-selected in-flight invocation threshold.
+- Prove an in-flight invocation prevents continuity execution unless the
+  active plan explicitly authorizes that case.
 
 ### Identity and Modification
 
@@ -541,19 +578,25 @@ the adversarial reviewer receive no direct broker-write method.
 - Partial fill before and during modification.
 - Plan superseded while an old evaluator is waiting.
 - Model recovery concurrent with contingency execution.
+- Model completion immediately before the evaluator's final activation check.
 - Broker disconnect before write, after write, and before confirmation.
+- Process death after `placeOrder` and before `BROKER_BOUND` persistence.
+- Pending-binding restart with one exact order, no order, a fill, and ambiguous
+  duplicate candidates.
 - Result-persistence failure after broker acknowledgement.
 - Duplicate evaluator and process restart.
 - Ambiguous all-order visibility and conflicting broker identities.
 
-### Learning and Critic Boundaries
+### Learning and Review Boundaries
 
 - Recovery report contains facts and arithmetic differences but no strategic
   conclusion.
+- New exposure remains blocked until Codex persists a review acknowledgement
+  bound to the exact recovery report.
+- Exercise all four review dispositions and prove `MORE_RESEARCH_REQUIRED`
+  permits research but not new exposure.
 - A reflection cannot become executable without a later attested decision.
 - A superseded policy remains reconstructable.
-- Adversarial output cannot reach the executor, execution lock, or plan
-  lifecycle authority.
 - Codex may preserve or reverse a prior policy without host-authored strategic
   preference.
 
@@ -590,7 +633,6 @@ Activation evidence must prove:
 - Making Codex incapable of economic error.
 - Automatically converting observed mistakes into permanent rules.
 - Using another model as a substitute trader during outages.
-- Giving the adversarial reviewer execution authority.
 - Interpreting arbitrary natural-language contingencies at runtime.
 - Supporting cancel-and-replace in V1.
 - Changing LIVE prohibition, capital boundaries, account identity, or other
@@ -610,7 +652,11 @@ The design is correctly implemented only when:
    have explicit model-authored or integrity-fail-closed outcomes.
 5. Every action is identity-bound, idempotent, reconciled, and auditable.
 6. Recovery supplies factual continuity evidence before new exposure.
-7. Codex can revise its own policy after observing outcomes, while the host
+7. Codex explicitly acknowledges the exact recovery report without being
+   required to change its method.
+8. Codex can revise its own policy after observing outcomes, while the host
    neither rewards nor mandates a particular strategy.
-8. The adversarial reviewer creates intellectual pressure without acquiring
-   broker authority.
+9. A crash between broker acceptance and local broker binding is recoverable
+   from pre-send authority without inventing new model intent.
+10. A model-authored activation condition, not a host timeout or the execution
+    lock alone, determines when continuity authority becomes eligible.
