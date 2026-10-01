@@ -144,6 +144,8 @@ the following sections.
 - `valid_from_utc`;
 - `plan_valid_until`;
 - `authority_activation_condition` authored by Codex;
+- `expiry_authority_mode`, explicitly selected by Codex as
+  `WHEN_CONTINUITY_ACTIVE` or `ALWAYS_AT_EXPIRY`;
 - session and epoch bounds chosen by Codex;
 - a Codex-authored terminal disposition for plan expiry;
 - whether each contingency is one-shot or part of a finite ordered sequence.
@@ -152,6 +154,12 @@ There is no implicit behavior after `plan_valid_until`. The plan must state an
 executable terminal disposition, such as an exact cancellation or an explicit
 retain-until-order-TIF decision. If Codex has not expressed complete intent for
 expiry, the order is not eligible for transmission.
+
+`expiry_authority_mode` has no host default. `WHEN_CONTINUITY_ACTIVE` requires
+the plan's `authority_activation_condition` to be true before the terminal
+disposition may execute. `ALWAYS_AT_EXPIRY` authorizes the terminal disposition
+at `plan_valid_until` even when Codex is available or an invocation is in
+flight. In both modes, the exact terminal disposition remains model-authored.
 
 ### Preconditions and Contingencies
 
@@ -265,8 +273,9 @@ reconciliation so that old and new authority cannot act concurrently.
 
 ### Expired or Terminal
 
-At `plan_valid_until`, the runtime executes the model-authored terminal
-disposition if its conditions and evidence are valid. The plan then becomes
+At `plan_valid_until`, the runtime evaluates `expiry_authority_mode`. It
+executes the model-authored terminal disposition only when that mode's explicit
+authority predicate and all action conditions are true. The plan then becomes
 terminal. Cancellation, full fill, broker rejection, experiment-clock expiry,
 or a superseding plan may also make it terminal.
 
@@ -274,7 +283,14 @@ No expired plan can be revived or silently extended.
 
 ## 3. Deterministic Evaluator
 
-The evaluator observes every actionable experiment order with an active plan,
+The evaluator runs in a dedicated watchdog execution context outside the
+blocking Codex provider call. The watchdog owns a separate SQLite connection,
+separate PAPER broker session/client, and independent heartbeat. It must remain
+able to collect facts and execute authorized continuity actions while the
+service thread is blocked in `codex exec`. No SQLite connection, broker client,
+or mutable toolbox session is shared across those threads or processes.
+
+The watchdog observes every actionable experiment order with an active plan,
 but continuity authority is eligible only when that plan's
 `authority_activation_condition` evaluates true. Codex may activate continuity
 on provider unavailability, elapsed time without an accepted decision, an
@@ -314,6 +330,49 @@ invalidates the selected action and forces reconciliation; it is never treated
 as permission to improvise. The execution lock prevents simultaneous writes,
 while this final activation re-read determines which authority is semantically
 eligible at that instant.
+
+Watchdog startup, heartbeat, failure, and shutdown are persisted. A failed or
+stale watchdog freezes new-exposure authority and emits the applicable runtime
+critical alert; it does not choose an order action. Service shutdown waits for
+the watchdog to stop within a bounded infrastructure timeout after any
+in-progress broker reconciliation reaches a known state. Failure to reach a
+known state records continuity uncertainty and alerts rather than waiting
+indefinitely.
+
+### Canonical Provider and Invocation State
+
+Provider state is reconstructed from append-only invocation lifecycle events,
+not inferred from missing model output. Each transition binds invocation ID,
+decision-cycle ID, launch attempt, PID, boot-session identity, broker timestamp,
+host-observed timestamp, and predecessor event hash.
+
+The canonical states are:
+
+- `IDLE`: no invocation is outstanding;
+- `IN_FLIGHT`: an invocation-start event exists without a terminal event;
+- `TIMEOUT_CONFIRMED`: the provider process exceeded its declared timeout and
+  termination was observed;
+- `PROCESS_ERROR`: the provider process terminated unsuccessfully;
+- `COMPLETED_UNACCEPTED`: provider output returned but did not produce an
+  accepted Codex decision;
+- `COMPLETED_ACCEPTED`: an accepted decision and its durable result were
+  persisted;
+- `ABANDONED`: restart recovery proves the process bound to an `IN_FLIGHT`
+  event is no longer the live execution-lock owner.
+
+An invocation becomes `COMPLETED_ACCEPTED` only after the accepted result is
+durable. Process exit by itself is never acceptance. Every terminal state
+names the exact start event it closes, and conflicting terminal events make
+provider state uncertain.
+
+Authority conditions use authenticated broker server time. Invocation-start
+events persist the broker timestamp used as the elapsed-time anchor. During the
+same process, monotonic time may detect scheduling progress but cannot replace
+broker time in an authority decision. After restart, elapsed time is rebuilt
+from the persisted broker-time anchor and fresh broker server time. If broker
+time or lifecycle provenance is unavailable, elapsed time and provider state
+are unavailable facts routed only through Codex's explicit unavailable-data
+branch.
 
 ## 4. Continuity Executor
 
@@ -450,6 +509,17 @@ but not new exposure until a later review disposition closes the requirement.
 Fresh broker reconciliation remains mandatory before the acknowledgement can
 release new-exposure authority.
 
+The pending acknowledgement blocks only `NEW_EXPOSURE`. It does not block
+`RECONCILIATION`, `OBSERVATION`, `CANCEL_ORDER`, `REDUCE_POSITION`,
+`CLOSE_POSITION`, or actions already authorized by the active pre-outage
+continuity plan. A fresh post-recovery `MODIFY_ORDER` remains blocked unless it
+strictly reduces total quantity and maximum liability without extending TIF;
+all other modifications require the continuity review first.
+
+This classification is structural. It permits Codex to protect or reduce
+existing exposure before methodological reflection while preventing a new or
+larger economic commitment from bypassing the outstanding report.
+
 ### Model-Authored Learning
 
 Codex may persist a reflection, hypothesis, or reusable continuity-policy
@@ -494,6 +564,8 @@ executable inside the sandbox. They do not decide whether it is a good trade.
 - Duplicate trigger: idempotent prior result only when plan, contingency,
   evidence, order state, and transition hashes match exactly.
 - Broker write with uncertain result: freeze further writes and reconcile.
+- Missing or stale watchdog heartbeat: block new exposure and alert; do not
+  synthesize a continuity action.
 - Provider recovery: deliver the continuity report and reconcile before new
   exposure; require a hash-bound continuity review acknowledgement.
 - Pending broker binding on restart: reconcile the pre-send identity against
@@ -508,6 +580,7 @@ The implementation should use dedicated append-only records or tables for:
 
 - continuity plans and lifecycle events;
 - provider and model-invocation lifecycle observations;
+- watchdog lifecycle and heartbeat observations;
 - deterministic evaluations;
 - execution attempts and results;
 - recovery reports;
@@ -533,6 +606,11 @@ The model input gains:
 - factual outage and execution observations;
 - prior model-authored reflections as untrusted continuity context.
 
+The runtime exposes canonical provider and invocation facts to the plan
+evaluator, including state, in-flight status, broker start time, declared
+deadline, and last accepted decision time. Those facts are observational until
+a Codex-authored activation or contingency condition references them.
+
 The toolbox gains read-only plan/report inspection and model-authorized plan
 creation/supersession through the accepted-turn contract. Research tools
 receive no direct broker-write method.
@@ -553,6 +631,8 @@ receive no direct broker-write method.
   model-selected in-flight invocation threshold.
 - Prove an in-flight invocation prevents continuity execution unless the
   active plan explicitly authorizes that case.
+- Require Codex to select `WHEN_CONTINUITY_ACTIVE` or `ALWAYS_AT_EXPIRY`; reject
+  a missing expiry mode and exercise both semantics.
 
 ### Identity and Modification
 
@@ -567,8 +647,16 @@ receive no direct broker-write method.
 ### Evaluation
 
 - Evaluate priority deterministically from a single canonical evidence set.
+- Block a fake provider call indefinitely while the independent watchdog
+  continues evaluating and executes one exact preauthorized action.
+- Prove the watchdog uses its own database connection and broker client and
+  remains live while the service thread is blocked.
 - Exercise broker time, order state, partial fills, prices, volume, session,
   provider availability, decision age, positions, and experiment equity.
+- Exercise every canonical provider state, conflicting terminal events, and
+  restart reconstruction from an abandoned in-flight invocation.
+- Prove authoritative elapsed time uses persisted and fresh broker timestamps,
+  while missing broker time reaches only the plan's unavailable-data branch.
 - Exercise every model-authored unavailable-data branch.
 - Prove qualitative narrative never affects an evaluator result.
 
@@ -593,6 +681,9 @@ receive no direct broker-write method.
   conclusion.
 - New exposure remains blocked until Codex persists a review acknowledgement
   bound to the exact recovery report.
+- While review is pending, permit reconciliation, observation, cancellation,
+  reduction, closing, and pre-outage continuity actions; reject proposals,
+  exposure increases, TIF extensions, and non-defensive fresh modifications.
 - Exercise all four review dispositions and prove `MORE_RESEARCH_REQUIRED`
   permits research but not new exposure.
 - A reflection cannot become executable without a later attested decision.
@@ -624,6 +715,8 @@ Activation evidence must prove:
 - zero legacy plan ambiguity;
 - no active order lacking a hash-bound plan;
 - successful synthetic outage, partial-fill, race, and recovery-report tests;
+- proof that the independent watchdog remains operational during a blocked
+  provider invocation;
 - scheduler remains disabled until Owner-authorized operational activation.
 
 ## Non-Goals
@@ -660,3 +753,11 @@ The design is correctly implemented only when:
    from pre-send authority without inventing new model intent.
 10. A model-authored activation condition, not a host timeout or the execution
     lock alone, determines when continuity authority becomes eligible.
+11. Continuity evaluation remains operational while the provider invocation
+    thread is blocked.
+12. Plan expiry follows Codex's explicit expiry authority mode, with no host
+    default.
+13. An unacknowledged recovery report blocks only new or increased exposure,
+    not reconciliation or defensive action.
+14. Provider state and elapsed-time authority are durable, canonical, and
+    reconstructable across restart from authenticated broker-time evidence.
