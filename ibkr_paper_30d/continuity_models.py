@@ -474,6 +474,10 @@ class CodexOrderContinuityPlan(BaseModel, frozen=True):
             self.contingencies
         ):
             raise ValueError("contingency_id values must be unique")
+        if len({item.priority for item in self.contingencies}) != len(
+            self.contingencies
+        ):
+            raise ValueError("contingency priorities must be unique")
         for item in self.contingencies:
             if item.valid_from_utc < self.valid_from_utc or (
                 item.valid_until_utc > self.plan_valid_until
@@ -541,6 +545,16 @@ class ContinuityEvaluation(BaseModel, frozen=True):
     selected_action: ContinuityExecutableAction | None = None
     execution_ordinal: int | None = Field(default=None, gt=0)
     reason_codes: tuple[str, ...] = ()
+
+    @property
+    def action_sha256(self) -> str | None:
+        if self.selected_action is None:
+            return None
+        return sha256_json(self.selected_action)
+
+    @property
+    def sha256(self) -> str:
+        return sha256_json(self)
 
 
 class ContinuityReview(BaseModel, frozen=True):
