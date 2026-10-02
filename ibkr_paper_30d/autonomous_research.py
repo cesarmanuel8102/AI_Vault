@@ -602,6 +602,21 @@ class CodexAutonomousCLIProvider:
                     normalize(value)
 
         normalize(schema)
+        state_actions = schema["$defs"]["ContinuityContingency"]["properties"][
+            "state_actions"
+        ]
+        action_schema = state_actions["additionalProperties"]
+        action_states = [
+            value
+            for value in schema["$defs"]["ContinuityOrderState"]["enum"]
+            if value != "EVIDENCE_UNAVAILABLE"
+        ]
+        state_actions.pop("propertyNames", None)
+        state_actions["properties"] = {
+            value: copy.deepcopy(action_schema) for value in action_states
+        }
+        state_actions["required"] = action_states
+        state_actions["additionalProperties"] = False
         arguments_schema = schema["$defs"]["ResearchRequest"]["properties"][
             "arguments"
         ]

@@ -14,6 +14,8 @@ SHA256_PATTERN = r"^[0-9a-f]{64}$"
 MAX_AST_DEPTH = 8
 MAX_AST_NODES = 64
 MAX_ACTION_VALUE = Decimal("1000000000")
+ContinuityScalar = str | int | float | bool
+ContinuityComparisonValue = ContinuityScalar | tuple[ContinuityScalar, ...]
 
 
 class ExpiryAuthorityMode(str, Enum):
@@ -202,7 +204,7 @@ class ContinuityCondition(BaseModel, frozen=True):
     operator: ConditionOperator
     fact: ContinuityFactName | None = None
     comparator: PredicateComparator | None = None
-    value: Any | None = None
+    value: ContinuityComparisonValue | None = None
     max_age_seconds: Decimal | None = Field(default=None, gt=0, le=86400)
     children: tuple["ContinuityCondition", ...] = ()
 

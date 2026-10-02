@@ -136,6 +136,45 @@ def test_strict_schema_and_prompt_expose_neutral_continuity_authority() -> None:
     )
 
 
+def test_strict_schema_has_no_untyped_anyof_branches() -> None:
+    schema = CodexAutonomousCLIProvider.strict_output_schema()
+    invalid_paths = []
+
+    def inspect(node, path=()):
+        if isinstance(node, dict):
+            for index, branch in enumerate(node.get("anyOf", [])):
+                if isinstance(branch, dict) and not ({"type", "$ref"} & set(branch)):
+                    invalid_paths.append(path + ("anyOf", index))
+            for key, value in node.items():
+                inspect(value, path + (key,))
+        elif isinstance(node, list):
+            for index, value in enumerate(node):
+                inspect(value, path + (index,))
+
+    inspect(schema)
+
+    assert invalid_paths == []
+
+
+def test_strict_schema_expands_continuity_state_actions_to_fixed_properties() -> None:
+    schema = CodexAutonomousCLIProvider.strict_output_schema()
+    state_actions = schema["$defs"]["ContinuityContingency"]["properties"][
+        "state_actions"
+    ]
+
+    assert "propertyNames" not in state_actions
+    assert state_actions["additionalProperties"] is False
+    assert set(state_actions["properties"]) == {
+        "UNFILLED",
+        "PARTIALLY_FILLED",
+        "FILLED",
+        "PENDING_CANCEL",
+        "CANCELLED",
+        "REJECTED",
+        "ABSENT",
+    }
+
+
 def test_autonomous_codex_decodes_strict_research_arguments() -> None:
     value = bundle()
 
