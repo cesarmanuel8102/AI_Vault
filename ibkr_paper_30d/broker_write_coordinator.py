@@ -14,6 +14,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .canonical import sha256_json
+from .coordinated_model_executor import ModelExecutionRequest
 from .continuity_liability import MaximumLiabilityRequirement
 from .continuity_models import ContinuityAuthorityClass, TimeInForce
 
@@ -123,7 +124,8 @@ class BrokerWriteCoordinator:
         self._counter = itertools.count()
         self._capability: _WriterCapability | None = None
         self._lock = threading.Lock()
-        self._execution_keys: set[str] = set()
+        self._execution_keys: dict[str, tuple[str, Future]] = {}
+        self._last_durable_sequence = 0
 
     def attach_writer(self) -> _WriterCapability:
         with self._lock:
@@ -144,17 +146,32 @@ class BrokerWriteCoordinator:
             broker_validation={},
         )
 
-    def submit(self, command: AuthorizedBrokerCommand) -> Future:
+    def submit(
+        self, command: AuthorizedBrokerCommand | ModelExecutionRequest
+    ) -> Future:
         future: Future = Future()
         with self._lock:
-            if command.execution_key in self._execution_keys:
+            existing = self._execution_keys.get(command.execution_key)
+            if existing is not None:
+                existing_sha256, existing_future = existing
+                if existing_sha256 == command.sha256:
+                    return existing_future
                 future.set_result(
                     self._result(
                         status="BLOCKED", reasons=("DUPLICATE_EXECUTION_KEY",)
                     )
                 )
                 return future
-            self._execution_keys.add(command.execution_key)
+            if command.durable_sequence <= self._last_durable_sequence:
+                future.set_result(
+                    self._result(
+                        status="BLOCKED",
+                        reasons=("DURABLE_SEQUENCE_NOT_MONOTONIC",),
+                    )
+                )
+                return future
+            self._last_durable_sequence = command.durable_sequence
+            self._execution_keys[command.execution_key] = (command.sha256, future)
         self._queue.put(
             (command.durable_sequence, next(self._counter), command, future)
         )

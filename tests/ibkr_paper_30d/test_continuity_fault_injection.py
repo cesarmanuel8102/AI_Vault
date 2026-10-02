@@ -345,7 +345,7 @@ def test_duplicate_evaluator_and_conflicting_identity_cannot_write_twice():
     first = coordinator.submit(command)
     second = coordinator.submit(command)
     assert first.done() is False
-    assert second.result().reason_codes == ("DUPLICATE_EXECUTION_KEY",)
+    assert second is first
 
 
 def test_db_lock_contention_blocks_before_broker_write():
