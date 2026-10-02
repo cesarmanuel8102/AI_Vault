@@ -7,6 +7,7 @@ from pathlib import PurePosixPath
 from typing import Any
 
 from .canonical import canonical_bytes, sha256_json
+from .continuity_store import ContinuityStore
 from .persistence import Database
 from .trader_invocation import TraderInputBundle
 
@@ -103,6 +104,46 @@ class AutonomyBootstrapBuilder:
                 break
         return list(reversed(accepted)), malformed
 
+    def _continuity_recovery(
+        self,
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        tables = {
+            str(row[0])
+            for row in self.db.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        }
+        if not {
+            "continuity_report_events",
+            "continuity_review_events",
+        } <= tables:
+            return [], []
+        pending = []
+        for report in ContinuityStore(self.db).pending_reports()[-8:]:
+            pending.append(
+                {
+                    "trust": "FACTUAL_HASH_BOUND",
+                    **report,
+                    "report_sha256": sha256_json(report),
+                }
+            )
+        reviews = []
+        rows = self.db.execute(
+            "SELECT payload_json,payload_sha256 FROM continuity_review_events "
+            "ORDER BY sequence DESC LIMIT 8"
+        ).fetchall()
+        for payload_json, payload_sha256 in reversed(rows):
+            try:
+                payload = json.loads(str(payload_json))
+            except (json.JSONDecodeError, TypeError):
+                continue
+            if not isinstance(payload, dict) or sha256_json(payload) != str(
+                payload_sha256
+            ):
+                continue
+            reviews.append({"trust": UNTRUSTED, **payload})
+        return pending, reviews
+
     @staticmethod
     def _workspace(toolbox: Any) -> list[dict[str, Any]]:
         workspace = getattr(toolbox, "workspace", None)
@@ -190,6 +231,12 @@ class AutonomyBootstrapBuilder:
             if continuity["recent_accepted_decisions"]:
                 continuity["recent_accepted_decisions"].pop(0)
                 continue
+            if continuity["reviews"]:
+                continuity["reviews"].pop(0)
+                continue
+            if continuity["pending_reports"]:
+                continuity["pending_reports"].pop(0)
+                continue
             raise ValueError("bootstrap fixed fields exceed byte limit")
         return payload
 
@@ -199,6 +246,7 @@ class AutonomyBootstrapBuilder:
         clock = dict(bundle.experiment_clock or {})
         decisions, malformed = self._decisions()
         artifacts = self._workspace(toolbox)
+        pending_reports, reviews = self._continuity_recovery()
         hypotheses = [
             dict(item) for item in artifacts if "hypoth" in item["path"].lower()
         ]
@@ -273,6 +321,8 @@ class AutonomyBootstrapBuilder:
                 "recent_workspace_artifacts": artifacts,
                 "hypotheses": hypotheses,
                 "unresolved_questions": questions,
+                "pending_reports": pending_reports,
+                "reviews": reviews,
                 "ignored_malformed_records": malformed,
             },
         }

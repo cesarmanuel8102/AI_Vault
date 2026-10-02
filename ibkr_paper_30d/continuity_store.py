@@ -294,11 +294,16 @@ class ContinuityStore:
             "SELECT report_id,payload_json,payload_sha256 FROM continuity_report_events "
             "ORDER BY sequence"
         ).fetchall()
-        reviewed = {
-            str(row[0]) for row in self.db.execute(
-                "SELECT report_id FROM continuity_review_events"
-            ).fetchall()
-        }
+        reviewed = set()
+        for report_id, payload_json in self.db.execute(
+            "SELECT report_id,payload_json FROM continuity_review_events"
+        ).fetchall():
+            try:
+                review = ContinuityReview.model_validate_json(str(payload_json))
+            except Exception as exc:
+                raise ContinuityStoreError("PAYLOAD_INVALID") from exc
+            if review.disposition != "MORE_RESEARCH_REQUIRED":
+                reviewed.add(str(report_id))
         result = []
         for report_id, payload_json, payload_sha in rows:
             payload = json.loads(str(payload_json))

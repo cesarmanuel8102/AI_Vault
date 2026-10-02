@@ -6,10 +6,11 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from .autonomous_execution import AutonomousPaperExecutor
+from .autonomous_execution import AutonomousPaperExecutor, PaperExecutionResult
 from .autonomous_research import AutonomousResearchLoop, CodexAutonomousCLIProvider
 from .autonomy_bootstrap import AutonomyBootstrapBuilder
 from .canonical import canonical_bytes, sha256_json
+from .continuity_reporting import ContinuityReviewGate
 from .decision_diagnostics import (
     build_risk_diagnostics,
     extract_regret_observations,
@@ -63,6 +64,59 @@ def build_request(
         invocation_trigger=trigger,
         timeout_seconds=timeout_seconds,
     )
+
+
+def _canonical_result_payload(
+    bundle: TraderInputBundle,
+    request: InvocationRequest,
+    outcome: Any,
+    *,
+    continuity_reviews: Any | None = None,
+) -> dict[str, Any]:
+    reviews = (
+        outcome.continuity_reviews
+        if continuity_reviews is None
+        else continuity_reviews
+    )
+    return {
+        "decision_cycle_id": bundle.decision_cycle_id,
+        "invocation_id": request.invocation_id,
+        "accepted": outcome.accepted,
+        "validation": outcome.validation,
+        "decision": outcome.decision.value,
+        "proposal": None if outcome.proposal is None else outcome.proposal.model_dump(mode="json"),
+        "position_action": None if outcome.position_action is None else outcome.position_action.model_dump(mode="json"),
+        "open_order_action": (
+            None
+            if outcome.open_order_action is None
+            else outcome.open_order_action.model_dump(mode="json")
+        ),
+        "reason_codes": list(outcome.reason_codes),
+        "rounds": outcome.rounds,
+        "transcript_sha256": outcome.transcript_sha256,
+        "broker_validation": outcome.broker_validation,
+        "continuity_plan": (
+            None
+            if outcome.continuity_plan is None
+            else outcome.continuity_plan.model_dump(mode="json")
+        ),
+        "continuity_reviews": [
+            review.model_dump(mode="json") for review in reviews
+        ],
+        "epistemic_status": {
+            "proposal.probability_profit": "MODEL_INFERENCE",
+            "proposal.probability_loss": "MODEL_INFERENCE",
+            "proposal.expected_gain": "MODEL_INFERENCE",
+            "proposal.expected_loss": "MODEL_INFERENCE",
+            "proposal.expected_value": "MODEL_INFERENCE",
+            "proposal.expected_reward_risk": "MODEL_INFERENCE",
+            "proposal.confidence": "MODEL_INFERENCE",
+            "proposal.capital_required": "MODEL_INFERENCE_ADVISORY",
+            "proposal.maximum_loss": "MODEL_INFERENCE_STRUCTURALLY_VERIFIED_WHEN_SUPPORTED",
+            "proposal.loss_is_bounded": "MODEL_INFERENCE_STRUCTURALLY_VERIFIED_WHEN_SUPPORTED",
+            "broker_validation": "BROKER_OR_DETERMINISTIC_EVIDENCE",
+        },
+    }
 
 
 def persist_outcome(
@@ -120,45 +174,7 @@ def persist_outcome(
                 utc_now(),
             ),
         )
-    final_payload = {
-        "decision_cycle_id": bundle.decision_cycle_id,
-        "invocation_id": request.invocation_id,
-        "accepted": outcome.accepted,
-        "validation": outcome.validation,
-        "decision": outcome.decision.value,
-        "proposal": None if outcome.proposal is None else outcome.proposal.model_dump(mode="json"),
-        "position_action": None if outcome.position_action is None else outcome.position_action.model_dump(mode="json"),
-        "open_order_action": (
-            None
-            if outcome.open_order_action is None
-            else outcome.open_order_action.model_dump(mode="json")
-        ),
-        "reason_codes": list(outcome.reason_codes),
-        "rounds": outcome.rounds,
-        "transcript_sha256": outcome.transcript_sha256,
-        "broker_validation": outcome.broker_validation,
-        "continuity_plan": (
-            None
-            if outcome.continuity_plan is None
-            else outcome.continuity_plan.model_dump(mode="json")
-        ),
-        "continuity_reviews": [
-            review.model_dump(mode="json") for review in outcome.continuity_reviews
-        ],
-        "epistemic_status": {
-            "proposal.probability_profit": "MODEL_INFERENCE",
-            "proposal.probability_loss": "MODEL_INFERENCE",
-            "proposal.expected_gain": "MODEL_INFERENCE",
-            "proposal.expected_loss": "MODEL_INFERENCE",
-            "proposal.expected_value": "MODEL_INFERENCE",
-            "proposal.expected_reward_risk": "MODEL_INFERENCE",
-            "proposal.confidence": "MODEL_INFERENCE",
-            "proposal.capital_required": "MODEL_INFERENCE_ADVISORY",
-            "proposal.maximum_loss": "MODEL_INFERENCE_STRUCTURALLY_VERIFIED_WHEN_SUPPORTED",
-            "proposal.loss_is_bounded": "MODEL_INFERENCE_STRUCTURALLY_VERIFIED_WHEN_SUPPORTED",
-            "broker_validation": "BROKER_OR_DETERMINISTIC_EVIDENCE",
-        },
-    }
+    final_payload = _canonical_result_payload(bundle, request, outcome)
     final_encoded = canonical_bytes(final_payload).decode("utf-8")
     final_hash = sha256_json(final_payload)
     db.execute(
@@ -236,12 +252,28 @@ def run_autonomous_cycle(
     provider_lifecycle: Any | None = None,
     broker_time_reader: Any | None = None,
     continuity_store: Any | None = None,
+    continuity_review_gate: Any | None = None,
 ) -> dict[str, Any]:
     if execute_paper and database is None:
         raise ValueError("paper execution requires persistent experiment database")
     if execute_paper and executor is None:
         raise ValueError(
             "paper execution requires an explicitly safety-bound executor"
+        )
+
+    if continuity_store is not None:
+        pending_context = [
+            {
+                **report,
+                "report_sha256": sha256_json(report),
+                "trust": "FACTUAL_HASH_BOUND",
+            }
+            for report in continuity_store.pending_reports()
+        ]
+        continuity_context = dict(bundle.continuity_context or {})
+        continuity_context["pending_reports"] = pending_context
+        bundle = bundle.model_copy(
+            update={"continuity_context": continuity_context}
         )
 
     request = build_request(
@@ -293,6 +325,26 @@ def run_autonomous_cycle(
             )
         raise
 
+    if outcome.continuity_reviews:
+        core_payload = _canonical_result_payload(
+            bundle, request, outcome, continuity_reviews=()
+        )
+        accepted_result_core_sha256 = sha256_json(core_payload)
+        outcome = outcome.model_copy(
+            update={
+                "continuity_reviews": tuple(
+                    review.model_copy(
+                        update={
+                            "invocation_id": request.invocation_id,
+                            "accepted_result_sha256": accepted_result_core_sha256,
+                        }
+                    )
+                    for review in outcome.continuity_reviews
+                )
+            }
+        )
+
+    continuity_authority = None
     if database is not None:
         persist_outcome(database, bundle, request, outcome)
         durable_result = database.execute(
@@ -338,10 +390,42 @@ def run_autonomous_cycle(
                     ),
                 },
             )
+        if continuity_store is not None:
+            review_gate = continuity_review_gate or ContinuityReviewGate(
+                continuity_store
+            )
+            accepted_plan_sha256 = (
+                outcome.continuity_plan.sha256
+                if outcome.continuity_plan is not None
+                else None
+            )
+            for review in outcome.continuity_reviews:
+                review_gate.persist_review(
+                    review, accepted_plan_sha256=accepted_plan_sha256
+                )
+            continuity_authority = review_gate.authorize(
+                outcome,
+                continuity_store.pending_reports(),
+                bundle.reconciliation_receipt,
+                bundle=bundle,
+            )
 
     execution = None
     post_execution_subledger = None
-    if execute_paper and outcome.accepted:
+    if (
+        execute_paper
+        and outcome.accepted
+        and continuity_authority is not None
+        and not continuity_authority.authorized
+    ):
+        execution = PaperExecutionResult(
+            success=False,
+            status="BLOCKED",
+            reason_codes=continuity_authority.reason_codes,
+            order={},
+            broker_validation={},
+        )
+    elif execute_paper and outcome.accepted:
         assert executor is not None
         if outcome.decision == TraderDecision.PROPOSE_TRADE and outcome.proposal is not None:
             execution = executor.execute(
@@ -453,6 +537,11 @@ def run_autonomous_cycle(
         "post_execution_subledger": post_execution_subledger,
         "execution": execution_payload,
         "interference": interference,
+        "continuity_authority": (
+            None
+            if continuity_authority is None
+            else continuity_authority.model_dump(mode="json")
+        ),
     }
 
 

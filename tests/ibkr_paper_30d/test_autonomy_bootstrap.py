@@ -14,7 +14,11 @@ from ibkr_paper_30d.autonomy_bootstrap import (
     AutonomyBootstrapBuilder,
 )
 from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
+from ibkr_paper_30d.continuity_models import ContinuityReview
+from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+from ibkr_paper_30d.continuity_store import ContinuityStore
 from ibkr_paper_30d.persistence import Database
+from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 from ibkr_paper_30d.trader_invocation import TraderDecision, TraderInputBundle
 from ibkr_paper_30d.types import new_uuid7
 
@@ -182,6 +186,40 @@ def test_empty_bootstrap_has_exact_authority_and_epoch_fields(tmp_path) -> None:
     assert first["continuity"]["recent_accepted_decisions"] == []
     assert first["continuity"]["recent_workspace_artifacts"] == []
     assert b"DU-SHOULD-NOT-LEAK" not in canonical_bytes(first)
+
+
+def test_bootstrap_includes_pending_reports_and_untrusted_model_reviews(tmp_path):
+    with Database.open(tmp_path / "continuity-bootstrap.sqlite3") as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        store = ContinuityStore(db)
+        report = {
+            "report_id": "report-1",
+            "outage_id": "outage-1",
+            "failure_codes": ["PROVIDER_TIMEOUT"],
+        }
+        report_hash = store.append_report("report-1", "outage-1", report)
+        store.append_review(
+            ContinuityReview(
+                review_id="review-1",
+                report_id="report-1",
+                report_sha256=report_hash,
+                invocation_id="invocation-2",
+                accepted_result_sha256="2" * 64,
+                disposition="MORE_RESEARCH_REQUIRED",
+                reflection=None,
+            )
+        )
+
+        value = AutonomyBootstrapBuilder(db).build(
+            bundle=_bundle(), toolbox=Toolbox(), execute_paper=False
+        )
+
+    assert value["continuity"]["pending_reports"] == [
+        {"trust": "FACTUAL_HASH_BOUND", **report, "report_sha256": report_hash}
+    ]
+    assert value["continuity"]["reviews"][0]["trust"] == "UNTRUSTED_MODEL_AUTHORED"
+    assert value["continuity"]["reviews"][0]["disposition"] == "MORE_RESEARCH_REQUIRED"
 
 
 def test_bootstrap_bounds_records_bytes_and_ignores_malformed_history(tmp_path) -> None:

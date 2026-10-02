@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import sqlite3
+from decimal import Decimal
 
 import pytest
 
 from ibkr_paper_30d.autonomous_execution import PaperExecutionResult
 from ibkr_paper_30d.autonomous_research import (
     AutonomousOpenOrderAction,
+    AutonomousTradeProposal,
     AutonomousTurn,
     AutonomousTurnMode,
     ProposalValidation,
@@ -17,6 +19,10 @@ from ibkr_paper_30d.autonomous_runtime import (
     run_autonomous_cycle,
 )
 from ibkr_paper_30d.persistence import Database
+from ibkr_paper_30d.continuity_models import ContinuityReview
+from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+from ibkr_paper_30d.continuity_store import ContinuityStore
+from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 from ibkr_paper_30d.trader_invocation import TraderDecision, TraderInputBundle
 
 
@@ -138,6 +144,98 @@ class RecordingExecutor:
         )
 
 
+def _install_continuity(db):
+    install_successor_schema_v2(db)
+    install_continuity_schema_v3(db)
+
+
+class ReportAwareProvider(NoTradeProvider):
+    def __init__(self):
+        self.received = None
+
+    def next_turn(self, request, bundle, history, toolbox_manifest):
+        self.received = bundle.continuity_context
+        return super().next_turn(request, bundle, history, toolbox_manifest)
+
+
+class ReviewProvider(NoTradeProvider):
+    def __init__(self, report_id, report_sha256):
+        self.report_id = report_id
+        self.report_sha256 = report_sha256
+
+    def next_turn(self, request, bundle, history, toolbox_manifest):
+        return AutonomousTurn(
+            mode=AutonomousTurnMode.FINAL,
+            research_requests=[],
+            decision=TraderDecision.NO_TRADE,
+            proposal=None,
+            confidence="0.8",
+            reasoning_summary="Reviewed the factual outage report.",
+            reason_codes=["CONTINUITY_REVIEWED"],
+            continuity_reviews=[
+                ContinuityReview(
+                    review_id="review-runtime-1",
+                    report_id=self.report_id,
+                    report_sha256=self.report_sha256,
+                    invocation_id="HOST_BINDS_INVOCATION",
+                    accepted_result_sha256="0" * 64,
+                    disposition="ACK_NO_METHOD_CHANGE",
+                )
+            ],
+        )
+
+
+class ProposalProvider(NoTradeProvider):
+    def next_turn(self, request, bundle, history, toolbox_manifest):
+        proposal = AutonomousTradeProposal(
+            thesis="Bounded PAPER setup.",
+            symbol="SPY",
+            sec_type="STK",
+            direction="LONG",
+            action="BUY",
+            quantity="1",
+            order_type="LMT",
+            limit_price="1.00",
+            capital_required="1.00",
+            maximum_loss="1.00",
+            loss_is_bounded=True,
+            probability_profit="0.6",
+            probability_loss="0.4",
+            expected_gain="0.20",
+            expected_loss="0.10",
+            expected_value="0.08",
+            expected_reward_risk="2",
+            expected_holding_period="intraday",
+            entry_condition="Current quote remains valid.",
+            invalidation_condition="Quoted state changes.",
+            exit_plan="Model-directed later cycle.",
+            alternatives_considered=["NO_TRADE"],
+            evidence_used=["PAPER quote"],
+            disconfirming_evidence=["Pending continuity report"],
+            confidence="0.6",
+        )
+        return AutonomousTurn(
+            mode=AutonomousTurnMode.FINAL,
+            research_requests=[],
+            decision=TraderDecision.PROPOSE_TRADE,
+            proposal=proposal,
+            confidence="0.6",
+            reasoning_summary="A proposal that must remain gated.",
+            reason_codes=["MODEL_SELECTED"],
+        )
+
+
+class TradeExecutorTripwire:
+    armed = True
+
+    def __init__(self):
+        self.calls = []
+
+    def execute(self, *args, **kwargs):
+        self.calls.append((args, kwargs))
+        raise AssertionError("new exposure reached broker executor")
+
+
 def bundle():
     return TraderInputBundle(
         decision_cycle_id="cycle-runtime-1",
@@ -212,6 +310,84 @@ def test_runtime_records_lifecycle_around_provider_and_durable_result(tmp_path):
     ]
 
 
+def test_runtime_delivers_pending_report_before_provider_can_expand_authority(tmp_path):
+    provider = ReportAwareProvider()
+    with Database.open(tmp_path / "continuity-context.sqlite3") as db:
+        _install_continuity(db)
+        store = ContinuityStore(db)
+        report = {
+            "report_id": "report-runtime-1",
+            "outage_id": "outage-runtime-1",
+            "failure_codes": ["PROVIDER_TIMEOUT"],
+        }
+        report_hash = store.append_report(
+            "report-runtime-1", "outage-runtime-1", report
+        )
+        run_autonomous_cycle(
+            bundle(),
+            database=db,
+            provider=provider,
+            toolbox=PassiveToolbox(),
+            continuity_store=store,
+        )
+
+    assert provider.received["pending_reports"] == [
+        {**report, "report_sha256": report_hash, "trust": "FACTUAL_HASH_BOUND"}
+    ]
+
+
+def test_runtime_host_binds_and_persists_review_before_releasing_gate(tmp_path):
+    with Database.open(tmp_path / "continuity-review.sqlite3") as db:
+        _install_continuity(db)
+        store = ContinuityStore(db)
+        report = {"report_id": "report-runtime-1", "outage_id": "outage-runtime-1"}
+        report_hash = store.append_report(
+            "report-runtime-1", "outage-runtime-1", report
+        )
+        result = run_autonomous_cycle(
+            bundle(),
+            database=db,
+            provider=ReviewProvider("report-runtime-1", report_hash),
+            toolbox=PassiveToolbox(),
+            continuity_store=store,
+        )
+        row = db.execute(
+            "SELECT invocation_id,payload_json FROM continuity_review_events"
+        ).fetchone()
+
+    assert row is not None
+    review = ContinuityReview.model_validate_json(str(row[1]))
+    assert row[0] == result["request"]["invocation_id"]
+    assert review.invocation_id == result["request"]["invocation_id"]
+    assert review.accepted_result_sha256 != "0" * 64
+    assert result["continuity_authority"]["authorized"] is True
+
+
+def test_runtime_blocks_new_exposure_while_report_is_pending(tmp_path):
+    executor = TradeExecutorTripwire()
+    with Database.open(tmp_path / "continuity-block.sqlite3") as db:
+        _install_continuity(db)
+        store = ContinuityStore(db)
+        store.append_report(
+            "report-runtime-1",
+            "outage-runtime-1",
+            {"report_id": "report-runtime-1", "outage_id": "outage-runtime-1"},
+        )
+        result = run_autonomous_cycle(
+            bundle(),
+            execute_paper=True,
+            database=db,
+            provider=ProposalProvider(),
+            toolbox=PassiveToolbox(),
+            executor=executor,
+            continuity_store=store,
+        )
+
+    assert executor.calls == []
+    assert result["execution"]["status"] == "BLOCKED"
+    assert result["execution"]["reason_codes"] == ["CONTINUITY_REVIEW_REQUIRED"]
+
+
 @pytest.mark.parametrize(
     ("provider", "expected", "error_type"),
     [
@@ -280,6 +456,9 @@ def test_runtime_persists_validated_plan_only_after_accepted_result(
             assert row is not None and row[0] == 1
             assert kwargs["bindings"]["result_sha256"] == row[1]
             self.calls.append((event_type, value, kwargs))
+
+        def pending_reports(self):
+            return []
 
     monkeypatch.setattr(
         "ibkr_paper_30d.autonomous_runtime.AutonomousResearchLoop.run",
