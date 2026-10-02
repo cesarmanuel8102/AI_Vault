@@ -4,6 +4,7 @@ import copy
 import os
 import sqlite3
 from dataclasses import dataclass
+from datetime import timezone
 from decimal import Decimal
 from typing import Any, Callable
 
@@ -549,6 +550,23 @@ class AutonomousPaperExecutor:
                 if action.new_limit_price is not None
                 else Decimal(refreshed_snapshot["limitPrice"])
             )
+            requested_tif = (
+                action.new_tif.value
+                if action.new_tif is not None
+                else str(refreshed_snapshot["tif"])
+            )
+            requested_good_till = (
+                action.new_good_till_date_utc.astimezone(timezone.utc).strftime(
+                    "%Y%m%d %H:%M:%S UTC"
+                )
+                if action.new_good_till_date_utc is not None
+                else str(
+                    (refreshed_snapshot.get("orderAttributes") or {}).get(
+                        "goodTillDate"
+                    )
+                    or ""
+                )
+            )
             expected_preserved_sha256 = preserved_open_order_sha256(
                 refreshed_snapshot
             )
@@ -556,6 +574,9 @@ class AutonomousPaperExecutor:
             modified.totalQuantity = float(requested_total)
             if action.new_limit_price is not None:
                 modified.lmtPrice = float(requested_limit)
+            if action.new_tif is not None:
+                modified.tif = requested_tif
+                modified.goodTillDate = requested_good_till
 
             try:
                 self._register_lifecycle_event(
@@ -638,6 +659,14 @@ class AutonomousPaperExecutor:
                     len(matching) == 1
                     and Decimal(matching[0]["totalQuantity"]) == requested_total
                     and Decimal(matching[0]["limitPrice"]) == requested_limit
+                    and matching[0]["tif"] == requested_tif
+                    and str(
+                        (matching[0].get("orderAttributes") or {}).get(
+                            "goodTillDate"
+                        )
+                        or ""
+                    )
+                    == requested_good_till
                     and matching[0]["status"].upper() in ACTIONABLE_ORDER_STATUSES
                     and preserved_state_matches
                 )
@@ -646,6 +675,8 @@ class AutonomousPaperExecutor:
                     "matching_order_count": len(matching),
                     "requested_total_quantity": str(requested_total),
                     "requested_limit_price": str(requested_limit),
+                    "requested_tif": requested_tif,
+                    "requested_good_till_date": requested_good_till,
                     "confirmed_state": confirmed_state,
                     "confirmed_state_sha256": (
                         confirmed_state.get("state_sha256")

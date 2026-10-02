@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
@@ -647,3 +648,31 @@ def test_blocked_position_management_falls_back_to_monitor():
     assert outcome.accepted is False
     assert outcome.decision == TraderDecision.MONITOR_POSITION
     assert outcome.reason_codes == ("POSITION_ACTION_BLOCKED",)
+
+
+def test_open_order_gtd_requires_aware_timestamp():
+    base = {
+        "order_ref": "codex-ibkr-paper-30d-a-order",
+        "order_id": 41,
+        "perm_id": 9001,
+        "client_id": 19761,
+        "contract_id": 756733,
+        "observed_state_sha256": "1" * 64,
+        "new_tif": "GTD",
+        "reason": "Use the exact model-selected expiry.",
+    }
+    with pytest.raises(ValidationError, match="requires new_good_till_date_utc"):
+        AutonomousOpenOrderAction.model_validate(base)
+    with pytest.raises(ValidationError, match="timezone-aware"):
+        AutonomousOpenOrderAction.model_validate(
+            {**base, "new_good_till_date_utc": datetime(2026, 10, 1, 19, 30)}
+        )
+    value = AutonomousOpenOrderAction.model_validate(
+        {
+            **base,
+            "new_good_till_date_utc": datetime(
+                2026, 10, 1, 19, 30, tzinfo=timezone.utc
+            ),
+        }
+    )
+    assert value.new_tif.value == "GTD"

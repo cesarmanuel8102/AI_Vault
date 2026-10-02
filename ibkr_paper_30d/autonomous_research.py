@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from pathlib import Path
@@ -19,6 +20,7 @@ from .continuity_models import (
     CodexOrderContinuityPlan,
     ContinuityReview,
     OrderBindingType,
+    TimeInForce,
 )
 from .research_telemetry import (
     ResearchTelemetryAccumulator,
@@ -133,7 +135,23 @@ class AutonomousOpenOrderAction(BaseModel, frozen=True):
     observed_state_sha256: str = Field(min_length=64, max_length=64)
     new_total_quantity: Decimal | None = Field(default=None, gt=0)
     new_limit_price: Decimal | None = Field(default=None, gt=0)
+    new_tif: TimeInForce | None = None
+    new_good_till_date_utc: datetime | None = None
     reason: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_time_in_force(self) -> "AutonomousOpenOrderAction":
+        if self.new_tif == TimeInForce.GTD:
+            if self.new_good_till_date_utc is None:
+                raise ValueError("GTD requires new_good_till_date_utc")
+        elif self.new_good_till_date_utc is not None:
+            raise ValueError("new_good_till_date_utc requires GTD")
+        if (
+            self.new_good_till_date_utc is not None
+            and self.new_good_till_date_utc.tzinfo is None
+        ):
+            raise ValueError("new_good_till_date_utc must be timezone-aware")
+        return self
 
 
 class AutonomousTradeProposal(BaseModel, frozen=True):
@@ -237,6 +255,8 @@ class AutonomousTurn(BaseModel, frozen=True):
                     or self.position_action is not None
                     or self.open_order_action.new_total_quantity is not None
                     or self.open_order_action.new_limit_price is not None
+                    or self.open_order_action.new_tif is not None
+                    or self.open_order_action.new_good_till_date_utc is not None
                 ):
                     raise ValueError("CANCEL_ORDER requires an unmodified open_order_action only")
             elif self.decision == TraderDecision.MODIFY_ORDER:
@@ -247,6 +267,7 @@ class AutonomousTurn(BaseModel, frozen=True):
                     or (
                         self.open_order_action.new_total_quantity is None
                         and self.open_order_action.new_limit_price is None
+                        and self.open_order_action.new_tif is None
                     )
                 ):
                     raise ValueError("MODIFY_ORDER requires an effective open_order_action only")

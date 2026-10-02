@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from contextlib import contextmanager
 from copy import deepcopy
+from datetime import datetime, timezone
 from decimal import Decimal
 from types import SimpleNamespace
 
@@ -21,6 +22,7 @@ from ibkr_paper_30d.autonomous_research import (
 from ibkr_paper_30d.autonomy_toolbox import AutonomyToolbox
 from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.continuity_binding import ContinuityBindingError
+from ibkr_paper_30d.continuity_models import TimeInForce
 from ibkr_paper_30d.ibkr_research_tools import IBKRResearchToolbox
 from ibkr_paper_30d.open_order_management import (
     EXECUTION_CLIENT_ID,
@@ -371,12 +373,14 @@ class ModificationValidationIB(FakeLifecycleIB):
         self.quote_contract_ids = []
         self.what_if_calls = 0
         self.what_if_state = what_if_state
+        self.last_what_if_order = None
 
     def reqAllOpenOrders(self):
         return self.openTrades()
 
     def whatIfOrder(self, contract, order):
         self.what_if_calls += 1
+        self.last_what_if_order = order
         if self.what_if_state is not None:
             return self.what_if_state
         return SimpleNamespace(
@@ -1443,6 +1447,47 @@ def test_modify_validation_requires_fresh_quote_and_what_if():
     assert fake_ib.quote_contract_ids == [action.contract_id]
     assert fake_ib.what_if_calls == 1
     assert result.broker_evidence["whatIf"] is True
+
+
+def test_modify_validation_binds_gtd_to_what_if_order():
+    toolbox, fake_ib, value, action = modification_validation_fixture()
+    action = action.model_copy(
+        update={
+            "new_tif": TimeInForce.GTD,
+            "new_good_till_date_utc": datetime(
+                2026, 10, 1, 19, 30, tzinfo=timezone.utc
+            ),
+        }
+    )
+
+    result = toolbox.validate_open_order_action(
+        action, value, TraderDecision.MODIFY_ORDER, ib=fake_ib
+    )
+
+    assert result.passed is True
+    assert fake_ib.last_what_if_order.tif == "GTD"
+    assert fake_ib.last_what_if_order.goodTillDate == "20261001 19:30:00 UTC"
+
+
+def test_modify_gtd_preserves_order_identity_and_confirms_timestamp(tmp_path):
+    with armed_modify_fixture(tmp_path) as fixture:
+        executor, _, fake_ib, action, value = fixture
+        action = action.model_copy(
+            update={
+                "new_tif": TimeInForce.GTD,
+                "new_good_till_date_utc": datetime(
+                    2026, 10, 1, 19, 30, tzinfo=timezone.utc
+                ),
+            }
+        )
+        result = executor.execute_open_order_action(
+            action, value, TraderDecision.MODIFY_ORDER
+        )
+
+    assert result.success is True
+    assert fake_ib.place_calls[0][1].orderId == action.order_id
+    assert fake_ib.place_calls[0][1].tif == "GTD"
+    assert fake_ib.place_calls[0][1].goodTillDate == "20261001 19:30:00 UTC"
 
 
 def test_modify_validation_rejects_pending_cancel_before_quote_or_what_if():

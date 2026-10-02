@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import os
 import random
+from datetime import timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -507,6 +508,18 @@ class IBKRResearchToolbox:
                 if action.new_limit_price is not None
                 else Decimal(snapshot["limitPrice"])
             )
+            requested_tif = (
+                action.new_tif.value
+                if action.new_tif is not None
+                else str(snapshot["tif"])
+            )
+            requested_good_till = (
+                action.new_good_till_date_utc.astimezone(timezone.utc).strftime(
+                    "%Y%m%d %H:%M:%S UTC"
+                )
+                if action.new_good_till_date_utc is not None
+                else str((snapshot.get("orderAttributes") or {}).get("goodTillDate") or "")
+            )
             if not requested_total.is_finite():
                 return ProposalValidation(
                     passed=False,
@@ -546,8 +559,12 @@ class IBKRResearchToolbox:
                     reason_codes=("OPEN_ORDER_LIMIT_PRICE_CHANGE_REQUIRES_LMT",),
                     broker_evidence={"old_state": snapshot},
                 )
-            if requested_total == current_total and requested_limit == Decimal(
-                snapshot["limitPrice"]
+            if (
+                requested_total == current_total
+                and requested_limit == Decimal(snapshot["limitPrice"])
+                and requested_tif == str(snapshot["tif"])
+                and requested_good_till
+                == str((snapshot.get("orderAttributes") or {}).get("goodTillDate") or "")
             ):
                 return ProposalValidation(
                     passed=False,
@@ -567,6 +584,9 @@ class IBKRResearchToolbox:
             what_if_order.totalQuantity = float(requested_total)
             if action.new_limit_price is not None:
                 what_if_order.lmtPrice = float(requested_limit)
+            if action.new_tif is not None:
+                what_if_order.tif = requested_tif
+                what_if_order.goodTillDate = requested_good_till
             what_if_order.whatIf = True
             what_if_order.transmit = True
             try:
@@ -584,6 +604,8 @@ class IBKRResearchToolbox:
                 "requested_change": {
                     "totalQuantity": str(requested_total),
                     "limitPrice": str(requested_limit),
+                    "tif": requested_tif,
+                    "goodTillDate": requested_good_till,
                 },
                 "quote": quote,
                 "whatIf": True,

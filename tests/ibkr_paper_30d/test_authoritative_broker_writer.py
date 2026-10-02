@@ -1,0 +1,376 @@
+from __future__ import annotations
+
+import inspect
+import json
+import subprocess
+import sys
+import threading
+from datetime import datetime, timezone
+from decimal import Decimal
+from types import SimpleNamespace
+
+import pytest
+
+from ibkr_paper_30d.authoritative_broker_writer import AuthoritativeBrokerWriter
+from ibkr_paper_30d.broker_write_coordinator import (
+    AuthorizedBrokerCommand,
+    BrokerCommandType,
+    BrokerWriteCoordinator,
+)
+from ibkr_paper_30d.canonical import sha256_json
+from ibkr_paper_30d.ibkr_readonly import expected_identity_hash
+from ibkr_paper_30d.open_order_management import canonical_open_order
+
+
+def _trade():
+    return SimpleNamespace(
+        contract=SimpleNamespace(
+            conId=756733, symbol="SPY", localSymbol="SPY", secType="STK",
+            exchange="SMART", currency="USD",
+            lastTradeDateOrContractMonth="", strike=0, right="", multiplier="1",
+        ),
+        order=SimpleNamespace(
+            orderRef="codex-ibkr-paper-30d-a-writer", orderId=41, permId=9001,
+            clientId=19761, account="DU123456", action="BUY", orderType="LMT",
+            totalQuantity=2, lmtPrice=10, auxPrice=0, tif="DAY",
+            goodTillDate="", outsideRth=False, parentId=0, ocaGroup="",
+            transmit=True, conditions=[], goodAfterTime="",
+            smartComboRoutingParams=[], algoStrategy="", algoParams=[],
+            orderMiscOptions=[],
+        ),
+        orderStatus=SimpleNamespace(
+            status="Submitted", filled=0, remaining=2, avgFillPrice=0,
+        ),
+        fills=[],
+    )
+
+
+def _command(sequence=1, command_type=BrokerCommandType.CANCEL, **changes):
+    snapshot = canonical_open_order(_trade())
+    payload = {
+        "command_id": f"command-{sequence}",
+        "durable_sequence": sequence,
+        "execution_key": f"execution-{sequence}",
+        "source": "WATCHDOG",
+        "command_type": command_type,
+        "evaluation_id": f"evaluation-{sequence}",
+        "evaluation_sha256": "1" * 64,
+        "plan_id": "plan-1",
+        "plan_sha256": "2" * 64,
+        "fact_snapshot_sha256": "3" * 64,
+        "order_ref": snapshot["orderRef"],
+        "order_id": snapshot["orderId"],
+        "perm_id": snapshot["permId"],
+        "execution_client_id": snapshot["clientId"],
+        "account_identity_sha256": expected_identity_hash(snapshot["account"]),
+        "contract_identity_sha256": sha256_json(snapshot["contract"]),
+        "observed_state_sha256": snapshot["state_sha256"],
+        "authority_class": "PREAUTHORIZED_CONTINUITY",
+        "new_total_quantity": None,
+        "new_limit_price": None,
+        "new_tif": None,
+        "new_good_till_date_utc": None,
+        "created_at_utc": datetime(2026, 10, 1, 14, tzinfo=timezone.utc),
+    }
+    payload.update(changes)
+    return AuthorizedBrokerCommand.model_validate(payload)
+
+
+class FakeGateway:
+    def __init__(self, client_id, *, disconnect_after_write=False):
+        self.client_id = client_id
+        self.trade = _trade()
+        self.cancel_calls = []
+        self.place_calls = []
+        self.disconnect_after_write = disconnect_after_write
+        self.disconnected = False
+        self.all_order_visibility = True
+
+    def reqAllOpenOrders(self):
+        return [self.trade]
+
+    def reqExecutions(self):
+        return []
+
+    def positions(self):
+        return []
+
+    def cancelOrder(self, order):
+        self.cancel_calls.append(order.orderId)
+        if self.disconnect_after_write:
+            raise ConnectionError("after cancel write")
+        self.trade.orderStatus.status = "PendingCancel"
+        return self.trade
+
+    def placeOrder(self, contract, order):
+        self.place_calls.append((contract.conId, order.orderId))
+        if self.disconnect_after_write:
+            raise ConnectionError("after modify write")
+        self.trade.order = order
+        return self.trade
+
+    def disconnect(self):
+        self.disconnected = True
+
+
+class GatewayFactory:
+    def __init__(self, **gateway_options):
+        self.gateway_options = gateway_options
+        self.connection_ids = []
+        self.gateway = None
+
+    def __call__(self, client_id):
+        if client_id in self.connection_ids:
+            raise RuntimeError("326 duplicate client id")
+        self.connection_ids.append(client_id)
+        self.gateway = FakeGateway(client_id, **self.gateway_options)
+        return self.gateway
+
+
+def _start_writer(
+    *,
+    validator=lambda command, evidence: (),
+    factory=None,
+    lock_verifier=lambda: True,
+    attempt_persister=None,
+    result_persister=None,
+):
+    coordinator = BrokerWriteCoordinator()
+    factory = factory or GatewayFactory()
+    writer = AuthoritativeBrokerWriter(
+        coordinator,
+        broker_factory=factory,
+        execution_client_id=19761,
+        execution_lock_verifier=lock_verifier,
+        authority_validator=validator,
+        attempt_persister=attempt_persister,
+        result_persister=result_persister,
+    )
+    writer.start()
+    assert writer.wait_until_ready(2)
+    return coordinator, writer, factory
+
+
+def test_model_and_watchdog_commands_share_one_writer_owned_client_id():
+    coordinator, writer, factory = _start_writer()
+    try:
+        retain = coordinator.submit(
+            _command(1, BrokerCommandType.RETAIN, source="MODEL")
+        ).result(2)
+        cancel = coordinator.submit(_command(2)).result(2)
+    finally:
+        writer.stop(2)
+
+    assert retain.success is True
+    assert cancel.success is True
+    assert factory.connection_ids == [19761]
+    assert factory.gateway.cancel_calls == [41]
+
+
+def test_queue_is_fifo_and_final_authority_is_reread_for_each_command():
+    observed = []
+
+    def validator(command, evidence):
+        observed.append(command.durable_sequence)
+        return () if command.durable_sequence == 1 else ("PLAN_STATE_CHANGED",)
+
+    coordinator, writer, factory = _start_writer(validator=validator)
+    try:
+        first = coordinator.submit(_command(1, BrokerCommandType.RETAIN))
+        second = coordinator.submit(_command(2, BrokerCommandType.CANCEL))
+        assert first.result(2).success is True
+        blocked = second.result(2)
+    finally:
+        writer.stop(2)
+
+    assert observed == [1, 2]
+    assert blocked.status == "BLOCKED"
+    assert blocked.reason_codes == ("PLAN_STATE_CHANGED",)
+    assert factory.gateway.cancel_calls == []
+
+
+def test_writer_continues_while_model_caller_is_blocked():
+    coordinator, writer, factory = _start_writer()
+    model_block = threading.Event()
+    model_finished = threading.Event()
+
+    def blocked_model():
+        model_block.wait(2)
+        model_finished.set()
+
+    thread = threading.Thread(target=blocked_model)
+    thread.start()
+    try:
+        result = coordinator.submit(_command(1)).result(2)
+        assert result.success is True
+        assert model_finished.is_set() is False
+    finally:
+        model_block.set()
+        thread.join(2)
+        writer.stop(2)
+
+    assert factory.gateway.cancel_calls == [41]
+
+
+def test_nonowner_or_stale_order_identity_blocks_without_write():
+    coordinator, writer, factory = _start_writer()
+    try:
+        nonowner = coordinator.submit(
+            _command(1, execution_client_id=88)
+        ).result(2)
+        stale = coordinator.submit(
+            _command(2, observed_state_sha256="0" * 64)
+        ).result(2)
+    finally:
+        writer.stop(2)
+
+    assert nonowner.reason_codes == ("NON_OWNER_EXECUTION_CLIENT",)
+    assert stale.reason_codes == ("OPEN_ORDER_STATE_CHANGED",)
+    assert factory.gateway.cancel_calls == []
+
+
+def test_modify_changes_only_preauthorized_mutable_fields():
+    coordinator, writer, factory = _start_writer()
+    try:
+        result = coordinator.submit(
+            _command(
+                1,
+                BrokerCommandType.MODIFY,
+                new_total_quantity=Decimal("1"),
+                new_limit_price=Decimal("9.50"),
+                new_tif="GTD",
+                new_good_till_date_utc=datetime(
+                    2026, 10, 1, 19, 30, tzinfo=timezone.utc
+                ),
+            )
+        ).result(2)
+    finally:
+        writer.stop(2)
+
+    assert result.success is True
+    modified = factory.gateway.trade.order
+    assert modified.orderId == 41
+    assert modified.permId == 9001
+    assert modified.totalQuantity == 1.0
+    assert modified.lmtPrice == 9.5
+    assert modified.tif == "GTD"
+    assert modified.goodTillDate.startswith("20261001 19:30:00")
+
+
+def test_disconnect_after_write_is_uncertain_and_freezes_order():
+    factory = GatewayFactory(disconnect_after_write=True)
+    coordinator, writer, factory = _start_writer(factory=factory)
+    try:
+        uncertain = coordinator.submit(_command(1)).result(2)
+        frozen = coordinator.submit(_command(2)).result(2)
+    finally:
+        writer.stop(2)
+
+    assert uncertain.status == "UNCERTAIN"
+    assert uncertain.reason_codes == ("CONTINUITY_ORDER_STATE_UNCERTAIN",)
+    assert frozen.status == "BLOCKED"
+    assert frozen.reason_codes == ("ORDER_WRITE_AUTHORITY_FROZEN",)
+
+
+def test_duplicate_execution_key_is_blocked():
+    coordinator, writer, _ = _start_writer()
+    try:
+        first = coordinator.submit(_command(1, BrokerCommandType.RETAIN)).result(2)
+        duplicate = coordinator.submit(
+            _command(2, BrokerCommandType.RETAIN, execution_key="execution-1")
+        ).result(2)
+    finally:
+        writer.stop(2)
+
+    assert first.success is True
+    assert duplicate.reason_codes == ("DUPLICATE_EXECUTION_KEY",)
+
+
+def test_missing_execution_lock_blocks_before_write():
+    coordinator, writer, factory = _start_writer(lock_verifier=lambda: False)
+    try:
+        result = coordinator.submit(_command(1)).result(2)
+    finally:
+        writer.stop(2)
+
+    assert result.reason_codes == ("EXECUTION_LOCK_REQUIRED",)
+    assert factory.gateway.cancel_calls == []
+
+
+def test_uncertain_all_order_visibility_blocks_before_write():
+    coordinator, writer, factory = _start_writer()
+    factory.gateway.all_order_visibility = False
+    try:
+        result = coordinator.submit(_command(1)).result(2)
+    finally:
+        writer.stop(2)
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes[0].startswith("BROKER_EVIDENCE_UNAVAILABLE")
+    assert factory.gateway.cancel_calls == []
+
+
+def test_partial_fill_prevents_modify_to_zero_remainder():
+    coordinator, writer, factory = _start_writer()
+    factory.gateway.trade.orderStatus.filled = 1
+    factory.gateway.trade.orderStatus.remaining = 1
+    snapshot = canonical_open_order(factory.gateway.trade)
+    try:
+        result = coordinator.submit(
+            _command(
+                1,
+                BrokerCommandType.MODIFY,
+                observed_state_sha256=snapshot["state_sha256"],
+                new_total_quantity=Decimal("1"),
+            )
+        ).result(2)
+    finally:
+        writer.stop(2)
+
+    assert result.reason_codes == ("ORDER_WOULD_HAVE_NO_REMAINING_QUANTITY",)
+    assert factory.gateway.place_calls == []
+
+
+def test_result_persistence_failure_after_ack_is_uncertain_and_not_retried():
+    def fail_result(command, result, evidence):
+        raise OSError("disk unavailable")
+
+    coordinator, writer, factory = _start_writer(result_persister=fail_result)
+    try:
+        uncertain = coordinator.submit(_command(1)).result(2)
+        frozen = coordinator.submit(_command(2)).result(2)
+    finally:
+        writer.stop(2)
+
+    assert uncertain.reason_codes == ("CONTINUITY_ORDER_STATE_UNCERTAIN",)
+    assert frozen.reason_codes == ("ORDER_WRITE_AUTHORITY_FROZEN",)
+    assert factory.gateway.cancel_calls == [41]
+
+
+def test_queue_claim_requires_private_writer_capability():
+    coordinator = BrokerWriteCoordinator()
+    with pytest.raises(PermissionError, match="WRITER_CAPABILITY_REQUIRED"):
+        coordinator.claim(object(), timeout=0)
+
+
+def test_writer_source_contains_no_global_cancel_path():
+    source = inspect.getsource(AuthoritativeBrokerWriter)
+    assert "reqGlobalCancel" not in source
+
+
+def test_capability_describe_is_connection_free():
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ibkr_paper_30d.broker_writer_capability",
+            "--describe",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(completed.stdout)
+    assert payload["connections_performed"] == 0
+    assert payload["writes_performed"] == 0
+    assert any("same-client" in item for item in payload["required_checks"])

@@ -237,11 +237,14 @@ def preserved_open_order_sha256(snapshot: dict[str, Any]) -> str:
             "remaining",
             "totalQuantity",
             "limitPrice",
+            "tif",
         }
     }
     order_attributes = dict(preserved.get("orderAttributes") or {})
     order_attributes.pop("totalQuantity", None)
     order_attributes.pop("lmtPrice", None)
+    order_attributes.pop("tif", None)
+    order_attributes.pop("goodTillDate", None)
     preserved["orderAttributes"] = order_attributes
     return sha256_json(preserved)
 
