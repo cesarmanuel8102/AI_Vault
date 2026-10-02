@@ -70,9 +70,37 @@ def _command(sequence=1, command_type=BrokerCommandType.CANCEL, **changes):
         "new_limit_price": None,
         "new_tif": None,
         "new_good_till_date_utc": None,
+        "epoch_id": "AUTONOMY_EPOCH_2",
+        "definition_sha256": "4" * 64,
+        "owner_authorization_sha256": "5" * 64,
         "created_at_utc": datetime(2026, 10, 1, 14, tzinfo=timezone.utc),
     }
     payload.update(changes)
+    payload["resolved_total_quantity"] = payload.get("new_total_quantity") or Decimal(
+        str(snapshot["totalQuantity"])
+    )
+    payload["resolved_limit_price"] = payload.get("new_limit_price") or Decimal(
+        str(snapshot["limitPrice"])
+    )
+    payload["proposed_order_sha256"] = sha256_json(
+        {
+            "order_ref": payload["order_ref"],
+            "command_type": str(payload["command_type"]),
+            "quantity": payload["resolved_total_quantity"],
+            "limit_price": payload["resolved_limit_price"],
+        }
+    )
+    payload["maximum_authorized_liability"] = Decimal("500")
+    payload["liability_requirement"] = {
+        "plan_id": payload["plan_id"],
+        "plan_sha256": payload["plan_sha256"],
+        "maximum_authorized_liability": payload["maximum_authorized_liability"],
+        "account_identity_sha256": payload["account_identity_sha256"],
+        "contract_identity_sha256": payload["contract_identity_sha256"],
+        "proposed_order_sha256": payload["proposed_order_sha256"],
+        "required_leg_identity_sha256": (payload["contract_identity_sha256"],),
+        "maximum_evidence_age_seconds": "30",
+    }
     return AuthorizedBrokerCommand.model_validate(payload)
 
 
