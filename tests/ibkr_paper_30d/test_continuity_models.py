@@ -251,6 +251,38 @@ def test_rejects_unbounded_action_values() -> None:
         CodexOrderContinuityPlan.model_validate(payload)
 
 
+def test_rejects_plan_bound_below_authoritative_original_liability() -> None:
+    payload = _valid_plan(maximum_authorized_liability="350")
+    payload["order_binding"]["original_maximum_liability"] = "353.82"  # type: ignore[index]
+
+    with pytest.raises(ValidationError, match="original maximum liability"):
+        CodexOrderContinuityPlan.model_validate(payload)
+
+
+def test_accepts_plan_bound_at_authoritative_original_liability() -> None:
+    payload = _valid_plan(maximum_authorized_liability="353.82")
+    payload["order_binding"]["original_maximum_liability"] = "353.82"  # type: ignore[index]
+
+    plan = CodexOrderContinuityPlan.model_validate(payload)
+
+    assert plan.maximum_authorized_liability == Decimal("353.82")
+
+
+def test_dynamic_modify_expression_does_not_invent_a_liability_formula() -> None:
+    payload = _valid_plan(maximum_authorized_liability="500")
+    payload["contingencies"][0]["state_actions"] = _state_actions(  # type: ignore[index]
+        _action(
+            "MODIFY_EXISTING_ORDER",
+            new_total_quantity={"operator": "FACT", "fact": "ORDER_REMAINING_QUANTITY"},
+            new_limit_price={"operator": "FACT", "fact": "ORDER_MARK"},
+        )
+    )
+
+    plan = CodexOrderContinuityPlan.model_validate(payload)
+
+    assert plan.maximum_authorized_liability == Decimal("500")
+
+
 def test_requires_agent_needs_exact_interim_disposition() -> None:
     payload = _valid_plan(terminal_disposition=_action("REQUIRES_AGENT"))
 

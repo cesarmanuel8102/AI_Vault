@@ -378,12 +378,18 @@ class ContinuityOrderBinding(BaseModel, frozen=True):
     original_order_state_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
     original_intent_sha256: str = Field(pattern=SHA256_PATTERN)
     proposal_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
+    original_maximum_liability: Decimal | None = Field(
+        default=None, ge=0, le=MAX_ACTION_VALUE
+    )
 
     @model_validator(mode="after")
     def validate_binding(self) -> "ContinuityOrderBinding":
         if not self.original_total_quantity.is_finite() or (
             self.original_limit_price is not None
             and not self.original_limit_price.is_finite()
+        ) or (
+            self.original_maximum_liability is not None
+            and not self.original_maximum_liability.is_finite()
         ):
             raise ValueError("order numeric values must be finite")
         if self.original_good_till_date_utc is not None:
@@ -463,6 +469,14 @@ class CodexOrderContinuityPlan(BaseModel, frozen=True):
             _require_aware(getattr(self, name), name)
         if not self.maximum_authorized_liability.is_finite():
             raise ValueError("maximum_authorized_liability must be finite")
+        if (
+            self.order_binding.original_maximum_liability is not None
+            and self.order_binding.original_maximum_liability
+            > self.maximum_authorized_liability
+        ):
+            raise ValueError(
+                "original maximum liability exceeds maximum_authorized_liability"
+            )
         if not (
             self.created_at_utc <= self.valid_from_utc < self.plan_valid_until
             <= self.epoch_authority_end_utc

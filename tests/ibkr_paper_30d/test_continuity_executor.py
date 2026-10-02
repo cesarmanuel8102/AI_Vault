@@ -108,6 +108,30 @@ def test_modify_resolves_only_model_authored_expressions(continuity_plan_factory
     assert command.new_good_till_date_utc == datetime(
         2026, 10, 1, 19, 30, tzinfo=timezone.utc
     )
+    assert command.maximum_authorized_liability == plan.maximum_authorized_liability
+    assert command.resolved_total_quantity == Decimal("0.75")
+    assert command.resolved_limit_price == Decimal("4.50")
+    assert command.liability_requirement.plan_sha256 == plan.sha256
+    assert command.liability_requirement.proposed_order_sha256 == command.proposed_order_sha256
+
+
+def test_command_cannot_omit_or_raise_model_authored_liability_bound(
+    continuity_plan_factory,
+):
+    plan = continuity_plan_factory()
+    command = _executor(plan).build_command(
+        _evaluation(plan, {"action_type": "CANCEL"})
+    )
+    payload = command.model_dump(mode="python")
+    payload.pop("maximum_authorized_liability")
+
+    with pytest.raises(Exception):
+        type(command).model_validate(payload)
+
+    raised = command.model_dump(mode="python")
+    raised["maximum_authorized_liability"] = Decimal("501")
+    with pytest.raises(Exception, match="liability bound"):
+        type(command).model_validate(raised)
 
 
 def test_liability_increase_requires_all_fresh_gates(continuity_plan_factory):

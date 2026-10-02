@@ -14,6 +14,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .canonical import sha256_json
+from .continuity_liability import MaximumLiabilityRequirement
 from .continuity_models import ContinuityAuthorityClass, TimeInForce
 
 
@@ -43,11 +44,19 @@ class AuthorizedBrokerCommand(BaseModel, frozen=True):
     account_identity_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     contract_identity_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     observed_state_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    epoch_id: str = Field(min_length=1)
+    definition_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    owner_authorization_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     authority_class: ContinuityAuthorityClass
     new_total_quantity: Decimal | None = Field(default=None, gt=0)
     new_limit_price: Decimal | None = Field(default=None, gt=0)
     new_tif: TimeInForce | None = None
     new_good_till_date_utc: datetime | None = None
+    resolved_total_quantity: Decimal = Field(gt=0)
+    resolved_limit_price: Decimal = Field(gt=0)
+    proposed_order_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    maximum_authorized_liability: Decimal = Field(ge=0)
+    liability_requirement: MaximumLiabilityRequirement
     created_at_utc: datetime
 
     @model_validator(mode="after")
@@ -75,6 +84,26 @@ class AuthorizedBrokerCommand(BaseModel, frozen=True):
             and self.new_good_till_date_utc.tzinfo is None
         ):
             raise ValueError("new_good_till_date_utc must be timezone-aware")
+        if not all(
+            value.is_finite()
+            for value in (
+                self.resolved_total_quantity,
+                self.resolved_limit_price,
+                self.maximum_authorized_liability,
+            )
+        ):
+            raise ValueError("resolved order and liability values must be finite")
+        requirement = self.liability_requirement
+        if requirement.plan_id != self.plan_id or requirement.plan_sha256 != self.plan_sha256:
+            raise ValueError("liability requirement plan mismatch")
+        if requirement.maximum_authorized_liability != self.maximum_authorized_liability:
+            raise ValueError("liability bound differs from model-authored plan")
+        if requirement.account_identity_sha256 != self.account_identity_sha256:
+            raise ValueError("liability requirement account mismatch")
+        if requirement.contract_identity_sha256 != self.contract_identity_sha256:
+            raise ValueError("liability requirement contract mismatch")
+        if requirement.proposed_order_sha256 != self.proposed_order_sha256:
+            raise ValueError("liability requirement order mismatch")
         return self
 
     @property

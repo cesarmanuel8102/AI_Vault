@@ -8,6 +8,8 @@ from typing import Any, Callable
 
 from .broker_write_coordinator import AuthorizedBrokerCommand, BrokerCommandType
 from .broker_write_coordinator import BrokerWriteCoordinator
+from .canonical import sha256_json
+from .continuity_liability import MaximumLiabilityRequirement
 from .continuity_models import (
     CodexOrderContinuityPlan,
     ContinuityActionType,
@@ -155,6 +157,8 @@ class ContinuityExecutor:
 
         current_total = Decimal(str(binding["current_total_quantity"]))
         current_limit = Decimal(str(binding["current_limit_price"]))
+        resolved_total = new_total if new_total is not None else current_total
+        resolved_limit = new_limit if new_limit is not None else current_limit
         increases_liability = (
             new_total is not None and new_total > current_total
         ) or (
@@ -194,6 +198,41 @@ class ContinuityExecutor:
             raise ContinuityCommandBuildError("|".join(reasons))
 
         now = datetime.now(timezone.utc)
+        command_type = self._command_type(action)
+        proposed_order_sha256 = sha256_json(
+            {
+                "order_ref": str(binding["order_ref"]),
+                "order_id": int(binding["order_id"]),
+                "perm_id": int(binding["perm_id"]),
+                "execution_client_id": int(binding["execution_client_id"]),
+                "contract_identity_sha256": str(
+                    binding["contract_identity_sha256"]
+                ),
+                "action": plan.order_binding.action,
+                "command_type": command_type.value,
+                "resolved_total_quantity": resolved_total,
+                "resolved_limit_price": resolved_limit,
+                "new_tif": action.new_tif,
+                "new_good_till_date_utc": action.new_good_till_date_utc,
+            }
+        )
+        leg_hashes = tuple(
+            str(value)
+            for value in binding.get(
+                "contract_leg_identity_sha256",
+                (str(binding["contract_identity_sha256"]),),
+            )
+        )
+        liability_requirement = MaximumLiabilityRequirement(
+            plan_id=plan.plan_id,
+            plan_sha256=plan.sha256,
+            maximum_authorized_liability=plan.maximum_authorized_liability,
+            account_identity_sha256=str(binding["account_identity_sha256"]),
+            contract_identity_sha256=str(binding["contract_identity_sha256"]),
+            proposed_order_sha256=proposed_order_sha256,
+            required_leg_identity_sha256=leg_hashes,
+            maximum_evidence_age_seconds=Decimal("30"),
+        )
         return AuthorizedBrokerCommand(
             command_id=f"continuity-command:{evaluation.evaluation_id}",
             durable_sequence=evaluation.execution_ordinal,
@@ -202,7 +241,7 @@ class ContinuityExecutor:
                 f"{evaluation.execution_ordinal}"
             ),
             source="WATCHDOG",
-            command_type=self._command_type(action),
+            command_type=command_type,
             evaluation_id=evaluation.evaluation_id,
             evaluation_sha256=evaluation.sha256,
             plan_id=plan.plan_id,
@@ -215,11 +254,19 @@ class ContinuityExecutor:
             account_identity_sha256=str(binding["account_identity_sha256"]),
             contract_identity_sha256=str(binding["contract_identity_sha256"]),
             observed_state_sha256=str(binding["observed_state_sha256"]),
+            epoch_id=plan.epoch_id,
+            definition_sha256=plan.definition_sha256,
+            owner_authorization_sha256=plan.owner_authorization_sha256,
             authority_class=authority_class,
             new_total_quantity=new_total,
             new_limit_price=new_limit,
             new_tif=action.new_tif,
             new_good_till_date_utc=action.new_good_till_date_utc,
+            resolved_total_quantity=resolved_total,
+            resolved_limit_price=resolved_limit,
+            proposed_order_sha256=proposed_order_sha256,
+            maximum_authorized_liability=plan.maximum_authorized_liability,
+            liability_requirement=liability_requirement,
             created_at_utc=now,
         )
 
