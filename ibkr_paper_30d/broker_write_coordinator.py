@@ -191,6 +191,20 @@ class BrokerWriteCoordinator:
             raise PermissionError("WRITER_CAPABILITY_REQUIRED")
         self._queue.task_done()
 
+    def fail_pending(self, capability: _WriterCapability, result: object) -> int:
+        if capability is not self._capability:
+            raise PermissionError("WRITER_CAPABILITY_REQUIRED")
+        count = 0
+        while True:
+            try:
+                _, _, _command, future = self._queue.get_nowait()
+            except queue.Empty:
+                return count
+            if not future.done():
+                future.set_result(result)
+            self._queue.task_done()
+            count += 1
+
     def detach_writer(self, capability: _WriterCapability) -> None:
         with self._lock:
             if capability is not self._capability:

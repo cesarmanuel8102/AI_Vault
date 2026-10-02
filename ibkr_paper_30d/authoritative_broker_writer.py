@@ -14,7 +14,12 @@ from .broker_write_coordinator import (
     BrokerWriteCoordinator,
 )
 from .canonical import sha256_json
+from .coordinated_model_executor import ModelExecutionRequest
 from .ibkr_readonly import expected_identity_hash
+from .model_execution_engine import (
+    ModelExecutionAuthorityContext,
+    ModelExecutionEngine,
+)
 from .open_order_management import ACTIONABLE_ORDER_STATUSES, canonical_open_order
 
 
@@ -32,9 +37,11 @@ class AuthoritativeBrokerWriter:
         attempt_persister: Callable[[AuthorizedBrokerCommand, dict[str, Any]], None]
         | None = None,
         result_persister: Callable[
-            [AuthorizedBrokerCommand, Any, dict[str, Any]], None
+            [AuthorizedBrokerCommand | ModelExecutionRequest, Any, dict[str, Any]], None
         ]
         | None = None,
+        model_execution_engine: ModelExecutionEngine | None = None,
+        production_validation_sha256: str | None = None,
     ) -> None:
         self.coordinator = coordinator
         self.broker_factory = broker_factory
@@ -45,12 +52,15 @@ class AuthoritativeBrokerWriter:
         self.result_persister = result_persister or (
             lambda command, result, evidence: None
         )
+        self.model_execution_engine = model_execution_engine
+        self.production_validation_sha256 = production_validation_sha256
         self._capability = None
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
         self._ready = threading.Event()
         self._startup_error: BaseException | None = None
         self._frozen_order_refs: set[str] = set()
+        self._model_write_authority_frozen = False
 
     @staticmethod
     def _result(
@@ -112,6 +122,8 @@ class AuthoritativeBrokerWriter:
                 try:
                     result = self._execute(command, broker)
                 except BaseException as exc:
+                    if isinstance(command, ModelExecutionRequest):
+                        self._model_write_authority_frozen = True
                     result = self._result(
                         success=False,
                         status="UNCERTAIN",
@@ -121,6 +133,12 @@ class AuthoritativeBrokerWriter:
                     future.set_result(result)
                 self.coordinator.task_done(self._capability)
         finally:
+            pending = self._result(
+                success=False,
+                status="UNCERTAIN",
+                reasons=("WRITER_STOPPED_WITH_PENDING_COMMAND",),
+            )
+            self.coordinator.fail_pending(self._capability, pending)
             if broker is not None:
                 try:
                     broker.disconnect()
@@ -141,7 +159,90 @@ class AuthoritativeBrokerWriter:
             "positions_count": len(positions),
         }
 
-    def _execute(self, command: AuthorizedBrokerCommand, broker: Any):
+    def _execute(
+        self,
+        command: AuthorizedBrokerCommand | ModelExecutionRequest,
+        broker: Any,
+    ):
+        if isinstance(command, ModelExecutionRequest):
+            return self._execute_model(command, broker)
+        if isinstance(command, AuthorizedBrokerCommand):
+            return self._execute_continuity(command, broker)
+        return self._result(
+            success=False,
+            status="BLOCKED",
+            reasons=("WRITER_REQUEST_TYPE_UNSUPPORTED",),
+        )
+
+    def _execute_model(self, request: ModelExecutionRequest, broker: Any):
+        if self._model_write_authority_frozen:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=("MODEL_WRITE_AUTHORITY_FROZEN",),
+            )
+        if self.model_execution_engine is None:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=("MODEL_EXECUTION_ENGINE_REQUIRED",),
+            )
+        if self.production_validation_sha256 is None:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=("PRODUCTION_VALIDATION_REQUIRED",),
+            )
+        if self.execution_lock_verifier() is not True:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=("EXECUTION_LOCK_REQUIRED",),
+            )
+        evidence = {
+            "request_sha256": request.sha256,
+            "writer_thread_id": threading.get_ident(),
+            "execution_client_id": self.execution_client_id,
+        }
+        reasons = tuple(self.authority_validator(request, evidence))
+        if reasons:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=reasons,
+                evidence=evidence,
+            )
+        try:
+            self.attempt_persister(request, evidence)
+        except Exception:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=("MODEL_ATTEMPT_PERSISTENCE_FAILED",),
+                evidence=evidence,
+            )
+        context = ModelExecutionAuthorityContext(
+            request_sha256=request.sha256,
+            writer_thread_id=threading.get_ident(),
+            execution_client_id=self.execution_client_id,
+            production_validation_sha256=self.production_validation_sha256,
+        )
+        result = self.model_execution_engine.execute(broker, request, context)
+        if result.status == "UNCERTAIN":
+            self._model_write_authority_frozen = True
+        try:
+            self.result_persister(request, result, evidence)
+        except Exception:
+            self._model_write_authority_frozen = True
+            return self._result(
+                success=False,
+                status="UNCERTAIN",
+                reasons=("MODEL_EXECUTION_RESULT_PERSISTENCE_FAILED",),
+                evidence=evidence,
+            )
+        return result
+
+    def _execute_continuity(self, command: AuthorizedBrokerCommand, broker: Any):
         if command.order_ref in self._frozen_order_refs:
             return self._result(
                 success=False,

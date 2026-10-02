@@ -18,8 +18,19 @@ from ibkr_paper_30d.broker_write_coordinator import (
     BrokerWriteCoordinator,
 )
 from ibkr_paper_30d.canonical import sha256_json
+from ibkr_paper_30d.coordinated_model_executor import (
+    ModelExecutionOperation,
+    ModelExecutionRequest,
+)
+from ibkr_paper_30d.autonomous_execution import PaperExecutionResult
+from ibkr_paper_30d.autonomous_research import (
+    AutonomousOpenOrderAction,
+    AutonomousPositionAction,
+    AutonomousTradeProposal,
+)
 from ibkr_paper_30d.ibkr_readonly import expected_identity_hash
 from ibkr_paper_30d.open_order_management import canonical_open_order
+from ibkr_paper_30d.trader_invocation import TraderDecision, TraderInputBundle
 
 
 def _trade():
@@ -162,6 +173,8 @@ def _start_writer(
     lock_verifier=lambda: True,
     attempt_persister=None,
     result_persister=None,
+    model_execution_engine=None,
+    production_validation_sha256="6" * 64,
 ):
     coordinator = BrokerWriteCoordinator()
     factory = factory or GatewayFactory()
@@ -173,10 +186,167 @@ def _start_writer(
         authority_validator=validator,
         attempt_persister=attempt_persister,
         result_persister=result_persister,
+        model_execution_engine=model_execution_engine,
+        production_validation_sha256=production_validation_sha256,
     )
     writer.start()
     assert writer.wait_until_ready(2)
     return coordinator, writer, factory
+
+
+def _model_request(sequence: int, operation: ModelExecutionOperation):
+    payload = {
+        ModelExecutionOperation.NEW_TRADE: AutonomousTradeProposal(
+            thesis="test", symbol="SPY", sec_type="STK", direction="LONG",
+            action="BUY", quantity="1", order_type="LMT", limit_price="1",
+            capital_required="1", maximum_loss="1", loss_is_bounded=True,
+            probability_profit="0.6", probability_loss="0.4",
+            expected_gain="1", expected_loss="1", expected_value="0.2",
+            expected_holding_period="one day", entry_condition="entry",
+            invalidation_condition="invalid", exit_plan="exit",
+            alternatives_considered=["cash"], evidence_used=["PAPER"],
+            disconfirming_evidence=["spread"], confidence="0.6",
+        ),
+        ModelExecutionOperation.OPEN_ORDER_ACTION: AutonomousOpenOrderAction(
+            order_ref="order-1", order_id=41, perm_id=9001, client_id=19761,
+            contract_id=756733, observed_state_sha256="7" * 64,
+            reason="cancel",
+        ),
+        ModelExecutionOperation.POSITION_ACTION: AutonomousPositionAction(
+            symbol="SPY", sec_type="STK", action="SELL", quantity="1",
+            order_type="LMT", limit_price="1", contract_id=756733,
+            reason="reduce",
+        ),
+    }[operation]
+    decision = {
+        ModelExecutionOperation.NEW_TRADE: TraderDecision.PROPOSE_TRADE,
+        ModelExecutionOperation.OPEN_ORDER_ACTION: TraderDecision.CANCEL_ORDER,
+        ModelExecutionOperation.POSITION_ACTION: TraderDecision.REDUCE_POSITION,
+    }[operation]
+    bundle = TraderInputBundle(
+        decision_cycle_id=f"cycle-{sequence}", utc_timestamp="2026-10-02T14:00:00Z",
+        market_session_state="OPEN", reconciliation_receipt={"status": "PASS"},
+        experiment_subledger_snapshot={}, broker_account_snapshot={},
+        positions_snapshot=[], open_orders_snapshot=[], risk_snapshot={},
+        kill_switch_state="KILL_SWITCH_CLEAR",
+        market_data_snapshot={"gate_status": "PASS"}, candidate_screen_results=[],
+        relevant_previous_immutable_decisions=[], process_policy_version="v1",
+        execution_realism_version="v1", benchmark_state={},
+    )
+    return ModelExecutionRequest(
+        request_id=f"model-request-{sequence}", durable_sequence=sequence,
+        execution_key=f"model-execution-{sequence}", source="MODEL",
+        operation=operation, launch_attempt_id="launch-1",
+        epoch_id="AUTONOMY_EPOCH_2", approved_head="a" * 40,
+        account_identity_sha256="b" * 64, invocation_id=f"invocation-{sequence}",
+        decision_cycle_id=bundle.decision_cycle_id, accepted_decision=decision,
+        accepted_result_sha256="c" * 64, payload=payload,
+        payload_sha256=sha256_json(payload), input_bundle=bundle,
+        input_bundle_sha256=bundle.sha256, created_at_utc=datetime(
+            2026, 10, 2, 14, tzinfo=timezone.utc
+        ),
+    )
+
+
+class RecordingModelEngine:
+    def __init__(self, *, block=None, raises=False):
+        self.calls = []
+        self.block = block
+        self.raises = raises
+
+    def execute(self, broker, request, authority_context):
+        self.calls.append((broker, request, authority_context, threading.get_ident()))
+        if self.block is not None:
+            self.block.wait(2)
+        if self.raises:
+            raise RuntimeError("model engine failed")
+        return PaperExecutionResult(
+            True, request.operation.value, (), {"request": request.request_id}, {}
+        )
+
+
+def test_all_model_operations_dispatch_on_one_writer_thread_and_broker():
+    engine = RecordingModelEngine()
+    coordinator, writer, factory = _start_writer(model_execution_engine=engine)
+    try:
+        results = [
+            coordinator.submit(_model_request(index, operation)).result(2)
+            for index, operation in enumerate(ModelExecutionOperation, start=1)
+        ]
+    finally:
+        writer.stop(2)
+
+    assert [result.status for result in results] == [item.value for item in ModelExecutionOperation]
+    assert len({id(call[0]) for call in engine.calls}) == 1
+    assert len({call[3] for call in engine.calls}) == 1
+    assert factory.connection_ids == [19761]
+    assert all(call[2].request_sha256 == call[1].sha256 for call in engine.calls)
+
+
+def test_model_request_without_engine_blocks_before_broker_write():
+    coordinator, writer, factory = _start_writer(model_execution_engine=None)
+    try:
+        result = coordinator.submit(
+            _model_request(1, ModelExecutionOperation.NEW_TRADE)
+        ).result(2)
+    finally:
+        writer.stop(2)
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("MODEL_EXECUTION_ENGINE_REQUIRED",)
+    assert factory.gateway.cancel_calls == []
+    assert factory.gateway.place_calls == []
+
+
+def test_second_writer_cannot_claim_shared_coordinator():
+    coordinator, writer, _ = _start_writer()
+    second = AuthoritativeBrokerWriter(
+        coordinator,
+        broker_factory=GatewayFactory(),
+        execution_client_id=19761,
+        execution_lock_verifier=lambda: True,
+        authority_validator=lambda command, evidence: (),
+    )
+    try:
+        with pytest.raises(RuntimeError, match="AUTHORITATIVE_WRITER_ALREADY_ATTACHED"):
+            second.start()
+    finally:
+        writer.stop(2)
+
+
+def test_writer_shutdown_marks_queued_model_request_uncertain():
+    release = threading.Event()
+    engine = RecordingModelEngine(block=release)
+    coordinator, writer, _ = _start_writer(model_execution_engine=engine)
+    first = coordinator.submit(_model_request(1, ModelExecutionOperation.NEW_TRADE))
+    second = coordinator.submit(_model_request(2, ModelExecutionOperation.POSITION_ACTION))
+    for _ in range(100):
+        if engine.calls:
+            break
+        threading.Event().wait(0.01)
+    writer._stop.set()
+    release.set()
+    assert writer.stop(2)
+
+    assert first.result(1).status == "NEW_TRADE"
+    assert second.result(1).status == "UNCERTAIN"
+    assert second.result().reason_codes == ("WRITER_STOPPED_WITH_PENDING_COMMAND",)
+
+
+def test_model_engine_failure_is_uncertain_and_not_retried():
+    engine = RecordingModelEngine(raises=True)
+    coordinator, writer, factory = _start_writer(model_execution_engine=engine)
+    try:
+        result = coordinator.submit(
+            _model_request(1, ModelExecutionOperation.NEW_TRADE)
+        ).result(2)
+    finally:
+        writer.stop(2)
+
+    assert result.status == "UNCERTAIN"
+    assert result.reason_codes == ("WRITER_INTERNAL_FAILURE:RuntimeError",)
+    assert len(engine.calls) == 1
+    assert factory.connection_ids == [19761]
 
 
 def test_model_and_watchdog_commands_share_one_writer_owned_client_id():

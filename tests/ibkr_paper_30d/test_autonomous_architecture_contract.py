@@ -232,3 +232,11 @@ def test_continuity_writer_performs_broker_io_outside_sqlite_transactions():
     assert ".cancelOrder(" in source
     assert ".transaction(" not in source
     assert "BEGIN IMMEDIATE" not in source
+    assert "reqGlobalCancel" not in source
+    assert "cancel-and-replace" not in source.lower()
+
+    engine = Path("ibkr_paper_30d/model_execution_engine.py").read_text(
+        encoding="utf-8"
+    )
+    assert "reqGlobalCancel" not in engine
+    assert "cancel-and-replace" not in engine.lower()
