@@ -41,8 +41,10 @@ $AtomicDestinationPaths = @(
 $PredecessorScriptHashes = @(
     "899d262124bbf24e0dbd4661b8df41f93aeb6993dacfe9a200264ad2e9ed6eb7",
     "ba6ab5e885c6da54141cfaef85a59ae7e9e6cb2102b23607ae91fdaadfbb057c",
-    "75bc653b002dbb41cc9087aa1ef113d3b320646d880f35f7af46231bbe3f47c1"
+    "75bc653b002dbb41cc9087aa1ef113d3b320646d880f35f7af46231bbe3f47c1",
+    "46a3c87965f73d6219434008d84110091093a74af5f2f28ddea7b11b4a308362"
 )
+$CurrentCompletePredecessorScriptHash = "46a3c87965f73d6219434008d84110091093a74af5f2f28ddea7b11b4a308362"
 $ExpectedLegacyProbeManifestHash = "eceb33b1846f33eff92e03d67fc03c03e271b3c69f98ab744565767f40c22102"
 $PredecessorRuntimeHashes = @{
     "CODEX_DECISION_AUDITOR_V1.ps1" = "660cec2f87052edf68ed84e001516e0be7694ed0794337ba4252545d41c71bf4"
@@ -157,6 +159,11 @@ foreach ($Path in $ProtectedPaths) {
     }
     $AclChanges += New-AclChange -Path $Path -Rights $Rights -Type "Deny" -Directory $IsDirectory
 }
+$AclChanges += New-AclChange `
+    -Path (Join-Path $ResolvedRepoRoot "ibkr_paper_30d\trader_invocation.py") `
+    -Rights "ReadData" `
+    -Type "Deny" `
+    -Directory $false
 $AuditorDenyLogonRights = @(
     "SeDenyBatchLogonRight",
     "SeDenyServiceLogonRight",
@@ -535,6 +542,12 @@ function Test-RecognizedLegacyChangeManifest {
         $Legacy.program_root -ne $ProgramRoot -or
         $Legacy.firewall_rule.name -ne $FirewallRuleName
     ) { return $false }
+    $PreviousCurrentManifest = (
+        [string]$Legacy.script_sha256 -eq $CurrentCompletePredecessorScriptHash -and
+        (Test-StringSetEqual -Left @($Legacy.paths) -Right $ApprovedPaths) -and
+        (Test-ProbeTargetMapEqual -Actual $Legacy.probe_targets -Expected $ProbeTargets)
+    )
+    if ($PreviousCurrentManifest) { return $true }
     $LegacyPathSetRecognized = (
         (Test-StringSetEqual -Left @($Legacy.paths) -Right $LegacyActiveApprovedPaths) -or
         (Test-StringSetEqual -Left @($Legacy.paths) -Right $LegacyApprovedPaths)

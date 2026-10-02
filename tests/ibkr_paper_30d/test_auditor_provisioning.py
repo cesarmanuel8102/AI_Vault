@@ -231,6 +231,17 @@ def test_acl_updates_are_additive_and_manifest_owned(script_text) -> None:
     assert "FileSystemAccessRule" in script_text
 
 
+def test_trader_context_target_denies_auditor_file_reads(review_manifest) -> None:
+    target = str(ROOT / "ibkr_paper_30d" / "trader_invocation.py")
+    rules = [
+        item
+        for item in review_manifest["acl_changes"]
+        if item["path"] == target and item["type"] == "Deny"
+    ]
+
+    assert any("ReadData" in item["rights"].split(",") for item in rules)
+
+
 def test_firewall_rule_is_sid_scoped_and_manifest_owned(script_text) -> None:
     assert "New-NetFirewallRule" in script_text
     assert "Set-NetFirewallRule" in script_text
@@ -286,6 +297,7 @@ def test_partial_apply_firewall_failure_has_recognized_recovery_contract(
         "899d262124bbf24e0dbd4661b8df41f93aeb6993dacfe9a200264ad2e9ed6eb7",
         "ba6ab5e885c6da54141cfaef85a59ae7e9e6cb2102b23607ae91fdaadfbb057c",
         "75bc653b002dbb41cc9087aa1ef113d3b320646d880f35f7af46231bbe3f47c1",
+        "46a3c87965f73d6219434008d84110091093a74af5f2f28ddea7b11b4a308362",
     }
     assert recovery["change_manifest_may_be_missing"] is True
     assert recovery["repair_probe_manifest"] is True
