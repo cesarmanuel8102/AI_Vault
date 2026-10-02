@@ -212,6 +212,18 @@ def test_day1_model_path_requires_writer_command_proxy_without_direct_fallback()
     assert "AutonomousPaperExecutor" not in source
 
 
+def test_writer_owned_model_engine_has_no_direct_connection_or_legacy_adapter():
+    source = Path("ibkr_paper_30d/model_execution_engine.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "AutonomousPaperExecutor" not in source
+    assert "_connect_execution" not in source
+    assert "ib_insync" not in source
+    assert ".connect(" not in source
+    assert ".disconnect(" not in source
+
+
 def test_continuity_writer_performs_broker_io_outside_sqlite_transactions():
     source = Path("ibkr_paper_30d/authoritative_broker_writer.py").read_text(
         encoding="utf-8"

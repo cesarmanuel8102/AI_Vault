@@ -78,6 +78,7 @@ NOW = datetime(2026, 9, 23, 20, 0, tzinfo=timezone.utc)
 
 class ExecutorTripwire:
     armed = True
+    is_coordinated_model_executor = True
 
     def __init__(self) -> None:
         self.calls: list[str] = []

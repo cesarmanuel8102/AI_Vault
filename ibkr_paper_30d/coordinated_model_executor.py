@@ -100,6 +100,8 @@ class ModelExecutionRequest(BaseModel, frozen=True):
 class CoordinatedModelExecutor:
     """Broker-free proxy that submits accepted model actions to one coordinator."""
 
+    is_coordinated_model_executor = True
+
     def __init__(
         self,
         *,

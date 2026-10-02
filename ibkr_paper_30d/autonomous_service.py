@@ -12,7 +12,6 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable
 
-from .autonomous_execution import AutonomousPaperExecutor
 from .autonomous_research import CodexAutonomousCLIProvider
 from .autonomous_runtime import run_autonomous_cycle
 from .autonomous_state import AutonomousStateBuilder
@@ -146,6 +145,19 @@ class AutonomousExperimentService:
             raise ValueError("autonomous experiment requires gpt-5.6-sol")
         if reasoning_effort.lower() != "max":
             raise ValueError("autonomous experiment requires max reasoning effort")
+        if execute_paper and (
+            executor is None
+            or not getattr(executor, "is_coordinated_model_executor", False)
+        ):
+            raise AutonomousServiceError(
+                "COORDINATED_MODEL_EXECUTOR_REQUIRED",
+                reason_codes=("COORDINATED_MODEL_EXECUTOR_REQUIRED",),
+            )
+        if execute_paper and not getattr(executor, "armed", False):
+            raise AutonomousServiceError(
+                "COORDINATED_MODEL_EXECUTOR_NOT_ARMED",
+                reason_codes=("COORDINATED_MODEL_EXECUTOR_NOT_ARMED",),
+            )
 
         self.db = db
         self.allocation = allocation
@@ -229,12 +241,7 @@ class AutonomousExperimentService:
         self.kill_switch = KillSwitchStore(db)
         self.owner_authorization = OwnerAuthorizationStore(db)
         self.provider = provider or CodexAutonomousCLIProvider()
-        self.executor = executor or AutonomousPaperExecutor(
-            self.toolbox,
-            database=db,
-            fresh_safety_check=self._fresh_execution_safety,
-            operator_control_check=self._fresh_operator_controls,
-        )
+        self.executor = executor
         self.sleep = sleep
         self.monotonic = monotonic
         self.stop_event = threading.Event()

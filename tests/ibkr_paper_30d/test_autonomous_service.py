@@ -486,6 +486,11 @@ class PassGate:
 
 class ArmedExecutor:
     armed = True
+    is_coordinated_model_executor = True
+
+
+class DirectShapedExecutor:
+    armed = True
 
 
 class ProductionBrokerToolbox:
@@ -531,6 +536,40 @@ def _authorized_production_topology(db, *, market_gate=None, auditor_gate=None):
         runtime_market_gate=market_gate or PassGate(),
         runtime_auditor_gate=auditor_gate or PassGate(),
     )
+
+
+@pytest.mark.parametrize("executor", [None, DirectShapedExecutor()])
+def test_paper_service_rejects_missing_or_noncoordinated_executor(
+    tmp_path, executor
+):
+    with Database.open(tmp_path / "executor-contract.sqlite3") as db:
+        with pytest.raises(
+            AutonomousServiceError, match="COORDINATED_MODEL_EXECUTOR_REQUIRED"
+        ):
+            AutonomousExperimentService(
+                db,
+                experiment_start_utc=datetime(
+                    2026, 9, 28, 13, 30, tzinfo=timezone.utc
+                ),
+                execute_paper=True,
+                toolbox=StubToolbox(),
+                provider=StubProvider(),
+                executor=executor,
+            )
+
+
+def test_observation_service_allows_no_executor(tmp_path):
+    with Database.open(tmp_path / "observation.sqlite3") as db:
+        service = AutonomousExperimentService(
+            db,
+            experiment_start_utc=datetime(2026, 9, 28, 13, 30, tzinfo=timezone.utc),
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=None,
+        )
+
+    assert service.executor is None
 
 
 def test_production_shaped_toolbox_supplies_authoritative_broker_time(tmp_path):

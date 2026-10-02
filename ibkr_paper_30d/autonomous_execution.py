@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import os
 import sqlite3
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import timezone
 from decimal import Decimal
@@ -53,7 +54,7 @@ class PaperExecutionResult:
     broker_validation: dict[str, Any]
 
 
-class AutonomousPaperExecutor:
+class WriterOwnedModelExecutionMechanics:
     """Paper-only executor for an already researched Codex proposal.
 
     No strategy-level percentage caps are enforced here. Immediately before
@@ -85,6 +86,7 @@ class AutonomousPaperExecutor:
         self.fresh_safety_check = fresh_safety_check
         self.operator_control_check = operator_control_check
         self.continuity_binding_service = continuity_binding_service
+        self._writer_owned_broker: Any | None = None
 
     @staticmethod
     def _fills_payload(
@@ -173,7 +175,69 @@ class AutonomousPaperExecutor:
             return (f"FRESH_OPERATOR_CONTROL_CHECK_FAILED:{type(exc).__name__}",)
 
     def _connect_execution(self):
-        return self.toolbox._connect(client_id=self.execution_client_id)
+        if self._writer_owned_broker is None:
+            raise AutonomousPaperExecutionNotArmed("WRITER_OWNED_BROKER_REQUIRED")
+        return self._writer_owned_broker
+
+    def _disconnect_execution(self, ib: Any) -> None:
+        if ib is not self._writer_owned_broker:
+            raise RuntimeError("WRITER_BROKER_IDENTITY_MISMATCH")
+
+    @contextmanager
+    def _using_writer_owned_broker(self, broker: Any):
+        if broker is None:
+            raise ValueError("writer-owned broker is required")
+        if self._writer_owned_broker is not None:
+            raise RuntimeError("WRITER_BROKER_ALREADY_BOUND")
+        self._writer_owned_broker = broker
+        try:
+            yield
+        finally:
+            self._writer_owned_broker = None
+
+    def execute_with_broker(
+        self,
+        broker: Any,
+        proposal: AutonomousTradeProposal,
+        bundle: TraderInputBundle,
+        *,
+        continuity_plan: CodexOrderContinuityPlan | None = None,
+        invocation_id: str | None = None,
+    ) -> PaperExecutionResult:
+        with self._using_writer_owned_broker(broker):
+            return self.execute(
+                proposal,
+                bundle,
+                continuity_plan=continuity_plan,
+                invocation_id=invocation_id,
+            )
+
+    def execute_open_order_action_with_broker(
+        self,
+        broker: Any,
+        action: AutonomousOpenOrderAction,
+        bundle: TraderInputBundle,
+        decision: TraderDecision,
+        *,
+        invocation_id: str | None = None,
+    ) -> PaperExecutionResult:
+        with self._using_writer_owned_broker(broker):
+            return self.execute_open_order_action(
+                action,
+                bundle,
+                decision,
+                invocation_id=invocation_id,
+            )
+
+    def execute_position_action_with_broker(
+        self,
+        broker: Any,
+        action: AutonomousPositionAction,
+        bundle: TraderInputBundle,
+        decision: TraderDecision,
+    ) -> PaperExecutionResult:
+        with self._using_writer_owned_broker(broker):
+            return self.execute_position_action(action, bundle, decision)
 
     def _reconcile_post_send_trade(
         self,
@@ -193,12 +257,14 @@ class AutonomousPaperExecutor:
         ):
             return trade
         reader = ib
-        try:
-            auxiliary = self.toolbox._connect()
-            if auxiliary is not None:
-                reader = auxiliary
-        except Exception:
-            auxiliary = None
+        auxiliary = None
+        if self._writer_owned_broker is None:
+            try:
+                auxiliary = self.toolbox._connect()
+                if auxiliary is not None:
+                    reader = auxiliary
+            except Exception:
+                auxiliary = None
         request_open_orders = getattr(reader, "reqAllOpenOrders", None)
         if not callable(request_open_orders):
             if reader is not ib:
@@ -720,7 +786,7 @@ class AutonomousPaperExecutor:
             )
         finally:
             try:
-                ib.disconnect()
+                self._disconnect_execution(ib)
             # Durable broker confirmation is authoritative; teardown is best effort.
             except Exception:  # nosec B110
                 pass
@@ -1005,7 +1071,7 @@ class AutonomousPaperExecutor:
             )
         finally:
             try:
-                ib.disconnect()
+                self._disconnect_execution(ib)
             # Durable broker confirmation is authoritative; teardown is best effort.
             except Exception:  # nosec B110
                 pass
@@ -1321,7 +1387,7 @@ class AutonomousPaperExecutor:
                 broker_validation=validation.broker_evidence,
             )
         finally:
-            ib.disconnect()
+            self._disconnect_execution(ib)
 
 
     def execute_position_action(
@@ -1595,4 +1661,19 @@ class AutonomousPaperExecutor:
                 broker_validation=final_validation.broker_evidence,
             )
         finally:
-            ib.disconnect()
+            self._disconnect_execution(ib)
+
+
+class AutonomousPaperExecutor(WriterOwnedModelExecutionMechanics):
+    """Explicit non-production adapter that owns a direct PAPER connection."""
+
+    def _connect_execution(self):
+        if self._writer_owned_broker is not None:
+            return super()._connect_execution()
+        return self.toolbox._connect(client_id=self.execution_client_id)
+
+    def _disconnect_execution(self, ib: Any) -> None:
+        if self._writer_owned_broker is not None:
+            super()._disconnect_execution(ib)
+            return
+        ib.disconnect()

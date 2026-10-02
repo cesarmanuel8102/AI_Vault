@@ -12,6 +12,7 @@ import pytest
 from ibkr_paper_30d.autonomous_execution import (
     AutonomousPaperExecutionNotArmed,
     AutonomousPaperExecutor,
+    WriterOwnedModelExecutionMechanics,
 )
 from ibkr_paper_30d.autonomous_research import (
     AutonomousOpenOrderAction,
@@ -615,6 +616,7 @@ def test_executor_retains_non_strategic_safety_gates(kwargs, reason):
 class _FakeIB:
     def __init__(self):
         self.place_calls = 0
+        self.disconnect_calls = 0
         self.client = SimpleNamespace(getReqId=lambda: 4242)
 
     def managedAccounts(self):
@@ -625,7 +627,7 @@ class _FakeIB:
         raise AssertionError("placeOrder must not be reached")
 
     def disconnect(self):
-        pass
+        self.disconnect_calls += 1
 
 
 class _PassUntilOperatorControlToolbox:
@@ -662,6 +664,29 @@ class _RejectingContinuityBindingService:
     def stage_new_order(self, *args, **kwargs):
         self.stage_calls += 1
         raise ContinuityBindingError("TEST_PERSISTENCE_FAILURE")
+
+
+def test_writer_owned_mechanics_uses_injected_broker_without_connect_or_disconnect(
+    tmp_path,
+):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _PassUntilOperatorControlToolbox()
+    with Database.open(tmp_path / "writer-owned-mechanics.sqlite3") as db:
+        mechanics = WriterOwnedModelExecutionMechanics(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: ("TEST_OPERATOR_BLOCK",),
+        )
+
+        result = mechanics.execute_with_broker(toolbox.ib, proposal(), bundle())
+
+    assert result.reason_codes == ("TEST_OPERATOR_BLOCK",)
+    assert toolbox.requested_client_ids == []
+    assert toolbox.validation_connections == [toolbox.ib]
+    assert toolbox.ib.disconnect_calls == 0
 
 
 class _ResolvedBagIB:
