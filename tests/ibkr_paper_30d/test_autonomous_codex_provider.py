@@ -499,3 +499,109 @@ def test_owner_exception_retries_transient_invalid_jsonl_before_accepting_turn()
     assert len(attempts) == 2
     assert delays == [1.0]
     assert provider.last_failure_code is None
+
+
+def test_semantically_invalid_turn_is_returned_to_codex_for_bounded_repair():
+    value = bundle()
+    prompts = []
+
+    def runner(command, **kwargs):
+        prompts.append(json.loads(kwargs["input"]))
+        output_path = command[command.index("--output-last-message") + 1]
+        decision = None if len(prompts) == 1 else "NO_TRADE"
+        Path(output_path).write_text(
+            json.dumps(
+                {
+                    "mode": "FINAL",
+                    "research_requests": [],
+                    "decision": decision,
+                    "proposal": None,
+                    "position_action": None,
+                    "open_order_action": None,
+                    "confidence": "0.75",
+                    "reasoning_summary": "No sufficiently attractive opportunity.",
+                    "reason_codes": ["NO_EDGE_FOUND"],
+                    "continuity_plan": None,
+                    "continuity_reviews": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        stdout = "\n".join(
+            [
+                json.dumps({"type": "thread.started", "thread_id": "t"}),
+                json.dumps({"type": "turn.completed"}),
+            ]
+        )
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    provider = CodexAutonomousCLIProvider(
+        runner=runner,
+        owner_model_attestation_exception_sha256="e" * 64,
+    )
+
+    turn = provider.next_turn(
+        request(value), value, [], [{"tool": "MARKET_SCANNER"}]
+    )
+
+    assert turn.decision.value == "NO_TRADE"
+    assert len(prompts) == 2
+    assert "semantic_repair" not in prompts[0]
+    repair = prompts[1]["semantic_repair"]
+    assert repair["attempt"] == 1
+    assert repair["maximum_attempts"] == 2
+    assert repair["invalid_output"]["decision"] is None
+    assert any(
+        "FINAL mode requires decision" in error["message"]
+        for error in repair["validation_errors"]
+    )
+    assert provider.last_failure_code is None
+
+
+def test_semantic_repair_attempts_are_bounded_and_leave_diagnostic():
+    value = bundle()
+    prompts = []
+
+    def runner(command, **kwargs):
+        prompts.append(json.loads(kwargs["input"]))
+        output_path = command[command.index("--output-last-message") + 1]
+        Path(output_path).write_text(
+            json.dumps(
+                {
+                    "mode": "FINAL",
+                    "research_requests": [],
+                    "decision": None,
+                    "proposal": None,
+                    "position_action": None,
+                    "open_order_action": None,
+                    "confidence": "0.75",
+                    "reasoning_summary": "Incomplete final decision.",
+                    "reason_codes": ["NO_EDGE_FOUND"],
+                    "continuity_plan": None,
+                    "continuity_reviews": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        stdout = "\n".join(
+            [
+                json.dumps({"type": "thread.started", "thread_id": "t"}),
+                json.dumps({"type": "turn.completed"}),
+            ]
+        )
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    provider = CodexAutonomousCLIProvider(
+        runner=runner,
+        owner_model_attestation_exception_sha256="e" * 64,
+    )
+
+    with pytest.raises(RuntimeError, match="AUTONOMOUS_CODEX_OUTPUT_INVALID"):
+        provider.next_turn(
+            request(value), value, [], [{"tool": "MARKET_SCANNER"}]
+        )
+
+    assert len(prompts) == 3
+    assert prompts[-1]["semantic_repair"]["attempt"] == 2
+    assert provider.last_failure_code == "OUTPUT_INVALID"
+    assert "FINAL mode requires decision" in provider.last_failure_detail

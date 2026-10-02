@@ -143,7 +143,12 @@ def test_health_uses_broker_time_and_recovers_on_next_heartbeat(tmp_path):
         assert watchdog.is_healthy(NOW + timedelta(seconds=4)) is True
         assert watchdog.is_healthy(NOW + timedelta(seconds=6)) is False
         current["now"] = NOW + timedelta(seconds=7)
-        time.sleep(0.03)
+        deadline = time.monotonic() + 2
+        while (
+            not watchdog.is_healthy(NOW + timedelta(seconds=8))
+            and time.monotonic() < deadline
+        ):
+            time.sleep(0.01)
         assert watchdog.is_healthy(NOW + timedelta(seconds=8)) is True
     finally:
         watchdog.stop(2)

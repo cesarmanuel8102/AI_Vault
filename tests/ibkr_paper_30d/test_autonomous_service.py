@@ -696,6 +696,7 @@ def test_default_runtime_auditor_uses_broker_time_authority(tmp_path):
 
 class FailingProvider:
     last_failure_code = "RETURN_CODE_1"
+    last_failure_detail = "schema path: semantic validation failed"
 
 
 class _ReadyBundle:
@@ -747,6 +748,10 @@ def test_provider_failure_is_observed_without_claiming_policy_attribution(
         ).fetchone()
         assert row is not None
         assert '"provider_failure_code":"RETURN_CODE_1"' in row[0]
+        assert (
+            '"provider_failure_detail":"schema path: semantic validation failed"'
+            in row[0]
+        )
         assert '"provider_policy_attribution":"UNDETERMINED"' in row[0]
 
 

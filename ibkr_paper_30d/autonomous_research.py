@@ -355,6 +355,7 @@ class CodexAutonomousCLIProvider:
             owner_model_attestation_exception_sha256
         )
         self.last_failure_code: str | None = None
+        self.last_failure_detail: str | None = None
         self.last_native_tool_events: list[dict[str, Any]] = []
         self.last_model_attestation_mode = "SERVER_REPORTED"
         self._first_process_bootstrap: dict[str, Any] | None = None
@@ -399,7 +400,7 @@ class CodexAutonomousCLIProvider:
                 "--output-schema", str(schema_path),
                 "--output-last-message", str(output_path), "-",
             ]
-            payload = self._prompt_payload(
+            base_payload = self._prompt_payload(
                 request,
                 bundle,
                 history,
@@ -407,74 +408,119 @@ class CodexAutonomousCLIProvider:
                 workspace_context=getattr(self, "workspace_context", None),
                 first_process_bootstrap=self._take_first_process_bootstrap(),
             )
-            completed = None
-            retry_delays = (1.0, 3.0)
-            for attempt in range(len(retry_delays) + 1):
-                try:
-                    completed = self.runner(
-                        command,
-                        input=canonical_bytes(payload).decode("utf-8"),
-                        text=True,
-                        capture_output=True,
-                        timeout=request.timeout_seconds,
-                        cwd=workdir,
-                        env=self._sanitized_environment(),
-                        check=False,
-                    )
-                except subprocess.TimeoutExpired as exc:
-                    self.last_failure_code = "TIMEOUT"
-                    raise TimeoutError("autonomous Codex provider timed out") from exc
-                if completed.returncode == 0:
+            repair_context: dict[str, Any] | None = None
+            maximum_repairs = 2
+            for semantic_attempt in range(maximum_repairs + 1):
+                payload = copy.deepcopy(base_payload)
+                if repair_context is not None:
+                    payload["semantic_repair"] = repair_context
+                completed = None
+                retry_delays = (1.0, 3.0)
+                for attempt in range(len(retry_delays) + 1):
                     try:
-                        if self.owner_model_attestation_exception_sha256 is None:
-                            self._assert_effective_model(
-                                completed.stdout, request.requested_model
-                            )
-                            self.last_model_attestation_mode = "SERVER_REPORTED"
-                        else:
-                            self._assert_effective_model_with_owner_exception(
-                                completed.stdout, request.requested_model
-                            )
-                            self.last_model_attestation_mode = (
-                                "OWNER_EXCEPTION_REQUEST_PIN"
-                            )
-                    except RuntimeError as exc:
-                        transient_jsonl = (
-                            self.owner_model_attestation_exception_sha256 is not None
-                            and str(exc).endswith(":invalid_jsonl")
+                        completed = self.runner(
+                            command,
+                            input=canonical_bytes(payload).decode("utf-8"),
+                            text=True,
+                            capture_output=True,
+                            timeout=request.timeout_seconds,
+                            cwd=workdir,
+                            env=self._sanitized_environment(),
+                            check=False,
                         )
-                        if not transient_jsonl:
-                            raise
-                        self.last_failure_code = "ATTESTATION_INVALID_JSONL"
-                        if attempt == len(retry_delays):
-                            raise
-                        self.retry_sleep(retry_delays[attempt])
-                        continue
-                    break
-                self.last_failure_code = f"RETURN_CODE_{completed.returncode}"
-                if completed.returncode != 1 or attempt == len(retry_delays):
-                    raise RuntimeError("AUTONOMOUS_CODEX_PROVIDER_FAILED")
-                self.retry_sleep(retry_delays[attempt])
-            assert completed is not None
-            self.last_native_tool_events = self._native_tool_events(completed.stdout)
-            try:
-                raw = json.loads(output_path.read_text(encoding="utf-8"))
-                for item in raw.get("research_requests", []):
-                    if isinstance(item, dict) and isinstance(
-                        item.get("arguments"), str
-                    ):
-                        decoded_arguments = json.loads(item["arguments"])
-                        if not isinstance(decoded_arguments, dict):
-                            raise ValueError(
-                                "research request arguments must decode to an object"
+                    except subprocess.TimeoutExpired as exc:
+                        self.last_failure_code = "TIMEOUT"
+                        raise TimeoutError("autonomous Codex provider timed out") from exc
+                    if completed.returncode == 0:
+                        try:
+                            if self.owner_model_attestation_exception_sha256 is None:
+                                self._assert_effective_model(
+                                    completed.stdout, request.requested_model
+                                )
+                                self.last_model_attestation_mode = "SERVER_REPORTED"
+                            else:
+                                self._assert_effective_model_with_owner_exception(
+                                    completed.stdout, request.requested_model
+                                )
+                                self.last_model_attestation_mode = (
+                                    "OWNER_EXCEPTION_REQUEST_PIN"
+                                )
+                        except RuntimeError as exc:
+                            transient_jsonl = (
+                                self.owner_model_attestation_exception_sha256 is not None
+                                and str(exc).endswith(":invalid_jsonl")
                             )
-                        item["arguments"] = decoded_arguments
-                turn = AutonomousTurn.model_validate(raw)
-            except (OSError, json.JSONDecodeError, ValidationError, ValueError) as exc:
-                self.last_failure_code = "OUTPUT_INVALID"
-                raise RuntimeError("AUTONOMOUS_CODEX_OUTPUT_INVALID") from exc
-            self.last_failure_code = None
-            return turn
+                            if not transient_jsonl:
+                                raise
+                            self.last_failure_code = "ATTESTATION_INVALID_JSONL"
+                            if attempt == len(retry_delays):
+                                raise
+                            self.retry_sleep(retry_delays[attempt])
+                            continue
+                        break
+                    self.last_failure_code = f"RETURN_CODE_{completed.returncode}"
+                    if completed.returncode != 1 or attempt == len(retry_delays):
+                        raise RuntimeError("AUTONOMOUS_CODEX_PROVIDER_FAILED")
+                    self.retry_sleep(retry_delays[attempt])
+                assert completed is not None
+                self.last_native_tool_events = self._native_tool_events(completed.stdout)
+                raw: Any = None
+                try:
+                    raw = json.loads(output_path.read_text(encoding="utf-8"))
+                    for item in raw.get("research_requests", []):
+                        if isinstance(item, dict) and isinstance(
+                            item.get("arguments"), str
+                        ):
+                            decoded_arguments = json.loads(item["arguments"])
+                            if not isinstance(decoded_arguments, dict):
+                                raise ValueError(
+                                    "research request arguments must decode to an object"
+                                )
+                            item["arguments"] = decoded_arguments
+                    turn = AutonomousTurn.model_validate(raw)
+                except (OSError, json.JSONDecodeError, ValidationError, ValueError) as exc:
+                    errors = self._semantic_validation_errors(exc)
+                    self.last_failure_code = "OUTPUT_INVALID"
+                    self.last_failure_detail = "; ".join(
+                        error["message"] for error in errors
+                    )[:2000]
+                    if semantic_attempt == maximum_repairs:
+                        raise RuntimeError("AUTONOMOUS_CODEX_OUTPUT_INVALID") from exc
+                    repair_context = {
+                        "attempt": semantic_attempt + 1,
+                        "maximum_attempts": maximum_repairs,
+                        "instruction": (
+                            "Correct only the structural or semantic validation errors below. "
+                            "Preserve your independent research and trading judgment. Return a "
+                            "complete replacement object that satisfies the output contract."
+                        ),
+                        "invalid_output": raw,
+                        "validation_errors": errors,
+                    }
+                    continue
+                self.last_failure_code = None
+                self.last_failure_detail = None
+                return turn
+            raise AssertionError("semantic repair loop exhausted unexpectedly")
+
+    @staticmethod
+    def _semantic_validation_errors(exc: Exception) -> list[dict[str, Any]]:
+        if isinstance(exc, ValidationError):
+            return [
+                {
+                    "location": [str(value) for value in error.get("loc", ())],
+                    "message": str(error.get("msg", "validation failed")),
+                    "type": str(error.get("type", "value_error")),
+                }
+                for error in exc.errors()
+            ]
+        return [
+            {
+                "location": [],
+                "message": str(exc) or type(exc).__name__,
+                "type": type(exc).__name__,
+            }
+        ]
 
     @staticmethod
     def _prompt_payload(

@@ -523,11 +523,19 @@ class AutonomousExperimentService:
         except Exception as exc:
             provider_failure_code = getattr(self.provider, "last_failure_code", None)
             if provider_failure_code:
+                provider_failure_detail = getattr(
+                    self.provider, "last_failure_detail", None
+                )
                 _append_alert(
                     self.db,
                     "AUTONOMOUS_PROVIDER_FAILURE_OBSERVATION",
                     {
                         "provider_failure_code": str(provider_failure_code),
+                        "provider_failure_detail": (
+                            str(provider_failure_detail)[:2000]
+                            if provider_failure_detail
+                            else None
+                        ),
                         "error_type": type(exc).__name__,
                         "provider_policy_attribution": "UNDETERMINED",
                         "provider_policy_visibility": "NOT_DIRECTLY_OBSERVABLE",
