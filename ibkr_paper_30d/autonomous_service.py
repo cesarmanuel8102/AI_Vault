@@ -38,6 +38,11 @@ from .provider_lifecycle import BrokerTimeEvidence
 from .repositories import EventRepository, utc_now
 from .research_sandbox import WSLResearchSandbox
 from .runtime_integrity import RuntimeAuditorGate, RuntimeMarketDataGate
+from .session_orchestration import (
+    OrchestrationAction,
+    SessionOrchestrationDecision,
+    decide_session_orchestration,
+)
 from .trader_invocation import TraderDecision
 from .types import new_uuid7
 
@@ -134,6 +139,7 @@ class AutonomousExperimentService:
         provider_account_identity_sha256: str | None = None,
         critical_alert_reporter: Callable[[str], None] | None = None,
         watchdog_shutdown_timeout_seconds: float = 5.0,
+        session_evidence_reader: Callable[[], dict[str, Any] | None] | None = None,
         sleep: Callable[[float], None] = time.sleep,
         monotonic: Callable[[], float] = time.monotonic,
     ) -> None:
@@ -219,6 +225,8 @@ class AutonomousExperimentService:
         self.provider_account_identity_sha256 = provider_account_identity_sha256
         self.critical_alert_reporter = critical_alert_reporter
         self.watchdog_shutdown_timeout_seconds = watchdog_shutdown_timeout_seconds
+        self.session_evidence_reader = session_evidence_reader
+        self._last_orchestration_action: OrchestrationAction | None = None
         self._watchdog_started = False
         self._watchdog_alert_active = False
         self._running_event_emitted = False
@@ -777,6 +785,45 @@ class AutonomousExperimentService:
         finally:
             self._stop_continuity_watchdog()
 
+    def _session_orchestration_decision(
+        self, has_open_positions: bool
+    ) -> SessionOrchestrationDecision | None:
+        """Decide trading-session orchestration from authoritative calendar evidence.
+
+        Returns None when no session evidence is wired, which preserves the
+        pre-existing cycle behaviour exactly.
+        """
+        if self.session_evidence_reader is None:
+            return None
+        try:
+            evidence = self.session_evidence_reader()
+        except Exception:
+            return None
+        if not isinstance(evidence, dict):
+            return None
+        try:
+            now_utc = self.broker_now()
+        except Exception:
+            return None
+        return decide_session_orchestration(
+            now_utc=now_utc,
+            liquid_hours=str(evidence.get("liquid_hours") or ""),
+            timezone_id=str(evidence.get("timezone_id") or ""),
+            has_open_positions=has_open_positions,
+            has_open_orders=bool(evidence.get("has_open_orders")),
+        )
+
+    def _enter_market_closed_idle(
+        self, decision: SessionOrchestrationDecision
+    ) -> None:
+        """Record the idle transition exactly once, not on every poll."""
+        if self._last_orchestration_action is OrchestrationAction.MARKET_CLOSED_IDLE:
+            return
+        _append_state_event(
+            self.db, "MARKET_CLOSED_IDLE", decision.as_event_payload()
+        )
+        self._last_orchestration_action = OrchestrationAction.MARKET_CLOSED_IDLE
+
     def _run_forever_loop(self) -> None:
         self._service_started_at_utc = datetime.now(timezone.utc)
         _append_state_event(
@@ -817,6 +864,23 @@ class AutonomousExperimentService:
 
                 now = self.monotonic()
                 has_positions = bool(projected.positions)
+                orchestration = self._session_orchestration_decision(has_positions)
+                if orchestration is not None and not orchestration.should_run_cycle:
+                    # Market is provably non-regular and no continuity
+                    # obligation survives. Idle instead of asking the
+                    # fail-closed market-data gate for an impossible quote.
+                    self._enter_market_closed_idle(orchestration)
+                    self.sleep(
+                        min(
+                            self.position_interval_seconds,
+                            self.scan_interval_seconds,
+                        )
+                    )
+                    continue
+                if orchestration is not None:
+                    self._last_orchestration_action = (
+                        OrchestrationAction.RUN_AUTONOMOUS_CYCLE
+                    )
                 trigger = None
                 if has_positions and now >= next_position:
                     trigger = "POSITION_EVENT"

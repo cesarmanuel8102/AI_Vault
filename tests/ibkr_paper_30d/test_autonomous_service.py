@@ -1140,3 +1140,151 @@ def test_model_substitution_fails_first_cycle_before_executor(tmp_path, monkeypa
         assert failure["error_type"] == "ValueError"
         assert "secret-model-value" not in json.dumps(failure)
         assert executor.calls == []
+
+
+# ---------------------------------------------------------------------------
+# Post-market orchestration (2026-10-02 remediation)
+# ---------------------------------------------------------------------------
+
+_REGULAR_DAY_LIQUID_HOURS = "20261002:0930-20261002:1600"
+_CLOSED_DAY_LIQUID_HOURS = "20261004:CLOSED"
+
+
+class _IdleStoppingClock(Clock):
+    """Stops the service after a bounded number of idle sleeps."""
+
+    def __init__(self, stop_after_sleeps=4):
+        super().__init__()
+        self.service = None
+        self.stop_after_sleeps = stop_after_sleeps
+
+    def sleep(self, seconds):
+        super().sleep(seconds)
+        if self.service is not None and len(self.sleeps) >= self.stop_after_sleeps:
+            self.service.stop()
+
+
+def _idle_events(db):
+    return [
+        row[0]
+        for row in db.execute(
+            "SELECT event_type FROM state_events WHERE event_type=?",
+            ("MARKET_CLOSED_IDLE",),
+        ).fetchall()
+    ]
+
+
+def _closed_session_service(db, clock, *, positions=(), open_orders=False):
+    service = RecordingService(
+        db,
+        experiment_start_utc=datetime.now(timezone.utc),
+        allocation=Decimal("500.00"),
+        scan_interval_seconds=300,
+        position_interval_seconds=60,
+        execute_paper=False,
+        toolbox=StubToolbox(),
+        provider=StubProvider(),
+        executor=StubExecutor(),
+        sleep=clock.sleep,
+        monotonic=clock.monotonic,
+        stop_after=2,
+        broker_now=lambda: datetime(2026, 10, 2, 21, 0, tzinfo=timezone.utc),
+        session_evidence_reader=lambda: {
+            "liquid_hours": _REGULAR_DAY_LIQUID_HOURS,
+            "timezone_id": "US/Eastern",
+            "has_open_orders": open_orders,
+        },
+    )
+    clock.service = service
+    return service
+
+
+def test_closed_session_flat_idles_without_running_trader_cycles(tmp_path, monkeypatch):
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = _IdleStoppingClock()
+    with Database.open(tmp_path / "idle.sqlite3") as db:
+        service = _closed_session_service(db, clock)
+        service.run_forever()
+        idle = _idle_events(db)
+
+    assert service.triggers == []
+    assert len(idle) == 1
+
+
+def test_closed_session_idle_does_not_create_repeated_records(tmp_path, monkeypatch):
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = _IdleStoppingClock(stop_after_sleeps=12)
+    with Database.open(tmp_path / "idle-storm.sqlite3") as db:
+        service = _closed_session_service(db, clock)
+        service.run_forever()
+        idle = _idle_events(db)
+        alerts = db.execute(
+            "SELECT COUNT(*) FROM alerts WHERE event_type LIKE '%MARKET_DATA%'"
+        ).fetchone()[0]
+
+    assert len(clock.sleeps) >= 12
+    assert len(idle) == 1
+    assert alerts == 0
+
+
+def test_closed_session_with_open_order_still_runs_continuity_cycle(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = _IdleStoppingClock()
+    with Database.open(tmp_path / "idle-order.sqlite3") as db:
+        service = _closed_session_service(db, clock, open_orders=True)
+        service.run_forever()
+
+    assert service.triggers != []
+
+
+def test_closed_session_with_open_position_still_runs_continuity_cycle(
+    tmp_path, monkeypatch
+):
+    class PositionLedger(FakeLedger):
+        positions = ("OPEN",)
+
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", PositionLedger)
+    clock = _IdleStoppingClock()
+    with Database.open(tmp_path / "idle-position.sqlite3") as db:
+        service = _closed_session_service(db, clock)
+        service.run_forever()
+
+    assert service.triggers != []
+
+
+def test_service_without_session_evidence_preserves_existing_behaviour(
+    tmp_path, monkeypatch
+):
+    """No calendar evidence must not change the baseline cycle behaviour."""
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    with Database.open(tmp_path / "no-evidence.sqlite3") as db:
+        service = make_service(db, clock)
+        service.run_forever()
+        idle = _idle_events(db)
+
+    assert service.triggers == [("SCHEDULED_SCAN", None), ("SCHEDULED_SCAN", None)]
+    assert idle == []
+
+
+def test_market_closed_idle_event_carries_no_gate_or_authority_fields(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = _IdleStoppingClock()
+    with Database.open(tmp_path / "idle-payload.sqlite3") as db:
+        service = _closed_session_service(db, clock)
+        service.run_forever()
+        payload = json.loads(
+            db.execute(
+                "SELECT payload_json FROM state_events WHERE event_type=?",
+                ("MARKET_CLOSED_IDLE",),
+            ).fetchone()[0]
+        )
+
+    assert payload["action"] == "MARKET_CLOSED_IDLE"
+    assert payload["market_session"] == "AFTER_HOURS"
+    for forbidden in ("gate_status", "receipt_sha256", "order_authority", "authorized"):
+        assert forbidden not in payload
