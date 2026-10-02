@@ -1270,6 +1270,11 @@ def test_launch_passes_only_writer_command_interface_to_model_service(
         coordinator=coordinator
     )
     assert captured["executor"] is model_executor
+    lifecycle = captured["provider_lifecycle"]
+    assert lifecycle.launch_attempt_id == ATTEMPT_ID
+    assert lifecycle.pid == 1234
+    assert lifecycle.boot_session_identity == "test-boot"
+    assert lifecycle.expected_account_identity_sha256 == ACCOUNT_HASH
 
 
 def test_launch_shares_external_critical_alert_reporter_with_runtime_components(

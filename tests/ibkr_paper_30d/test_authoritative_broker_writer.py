@@ -183,7 +183,7 @@ def test_queue_is_fifo_and_final_authority_is_reread_for_each_command():
     finally:
         writer.stop(2)
 
-    assert observed == [1, 2]
+    assert observed == [1, 1, 2]
     assert blocked.status == "BLOCKED"
     assert blocked.reason_codes == ("PLAN_STATE_CHANGED",)
     assert factory.gateway.cancel_calls == []

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Callable, Mapping
 
@@ -304,6 +304,27 @@ class ContinuityReviewGate:
                 return order
         return None
 
+    @staticmethod
+    def _parse_order_expiry(value: Any) -> datetime | None:
+        if value is None or str(value).strip() == "":
+            return None
+        if isinstance(value, datetime):
+            parsed = value
+        else:
+            raw = str(value).strip()
+            try:
+                parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            except ValueError:
+                try:
+                    parsed = datetime.strptime(
+                        raw, "%Y%m%d %H:%M:%S UTC"
+                    ).replace(tzinfo=timezone.utc)
+                except ValueError:
+                    return None
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            return None
+        return parsed.astimezone(timezone.utc)
+
     @classmethod
     def classify(
         cls, outcome: Any, bundle: Any | None = None
@@ -337,12 +358,18 @@ class ContinuityReviewGate:
                 return ContinuityAuthorityClass.EXTENDED_TEMPORAL_AUTHORITY
             if new_tif_value == "GTD":
                 new_good_till = _value(action, "new_good_till_date_utc")
-                current_good_till = str(
-                    (current.get("orderAttributes") or {}).get("goodTillDate") or ""
+                new_expiry = cls._parse_order_expiry(new_good_till)
+                current_expiry = cls._parse_order_expiry(
+                    (current.get("orderAttributes") or {}).get("goodTillDate")
                 )
-                if not current_good_till or (
-                    new_good_till is not None
-                    and str(new_good_till) > current_good_till
+                if current_tif == "GTC":
+                    pass
+                elif current_tif != "GTD":
+                    return ContinuityAuthorityClass.EXTENDED_TEMPORAL_AUTHORITY
+                elif (
+                    new_expiry is None
+                    or current_expiry is None
+                    or new_expiry > current_expiry
                 ):
                     return ContinuityAuthorityClass.EXTENDED_TEMPORAL_AUTHORITY
 

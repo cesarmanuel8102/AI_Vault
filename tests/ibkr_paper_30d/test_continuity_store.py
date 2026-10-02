@@ -212,6 +212,19 @@ def test_provider_projection_validates_chain(tmp_path) -> None:
         assert projection["payload"] == {"attempt": 1}
 
 
+def test_latest_provider_projection_tracks_newest_invocation(tmp_path) -> None:
+    with _open(tmp_path / "latest-provider.sqlite3") as db:
+        store = ContinuityStore(db)
+        store.append_provider_event("inv-old", "TIMEOUT_CONFIRMED", {"attempt": 1})
+        store.append_provider_event("inv-current", "IN_FLIGHT", {"attempt": 2})
+
+        projection = store.latest_provider_projection()
+
+        assert projection["invocation_id"] == "inv-current"
+        assert projection["state"] == "IN_FLIGHT"
+        assert projection["payload"] == {"attempt": 2}
+
+
 def test_concurrent_contenders_allow_exactly_one_active_transition(tmp_path) -> None:
     path = tmp_path / "state.sqlite3"
     with _open(path):

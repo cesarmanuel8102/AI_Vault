@@ -39,11 +39,11 @@ def _request(invocation_id: str = "invocation-1") -> InvocationRequest:
 
 
 def _time(value: datetime = NOW, environment: str = "PAPER") -> BrokerTimeEvidence:
-    return BrokerTimeEvidence(
+    return BrokerTimeEvidence.create_authenticated_paper(
         time_utc=value,
-        environment=environment,
+        observed_at_utc=value,
         account_identity_sha256="b" * 64,
-        evidence_sha256="c" * 64,
+        environment=environment,
     )
 
 
@@ -53,6 +53,7 @@ def _recorder(db: Database) -> ProviderLifecycleRecorder:
         launch_attempt_id="launch-1",
         pid=4242,
         boot_session_identity="boot-1",
+        expected_account_identity_sha256="b" * 64,
     )
 
 
@@ -147,17 +148,16 @@ def test_duplicate_terminal_replays_exactly_but_conflicting_terminal_blocks(tmp_
 
 
 @pytest.mark.parametrize(
-    "evidence",
-    [
-        None,
-        BrokerTimeEvidence(
-            time_utc=NOW.replace(tzinfo=None), environment="PAPER",
-            account_identity_sha256="b" * 64, evidence_sha256="c" * 64,
-        ),
-        _time(environment="LIVE"),
-    ],
+    "kind",
+    ["missing", "naive", "live"],
 )
-def test_rejects_missing_naive_or_non_paper_broker_time(tmp_path, evidence) -> None:
+def test_rejects_missing_naive_or_non_paper_broker_time(tmp_path, kind) -> None:
+    if kind == "missing":
+        evidence = None
+    else:
+        evidence = _time(environment="LIVE" if kind == "live" else "PAPER")
+        if kind == "naive":
+            evidence = evidence.model_copy(update={"time_utc": NOW.replace(tzinfo=None)})
     with _open(tmp_path / "state.sqlite3") as db:
         with pytest.raises(ProviderLifecycleError, match="BROKER_TIME"):
             _recorder(db).begin(_request(), evidence)
@@ -194,3 +194,27 @@ def test_uncertain_lock_owner_does_not_invent_abandonment(tmp_path) -> None:
             {"status": "UNCERTAIN"}, _time(NOW + timedelta(seconds=2))
         ) == ()
         assert ContinuityStore(db).provider_projection("invocation-1")["state"] == "IN_FLIGHT"
+
+
+def test_broker_time_evidence_is_authenticated_and_hash_bound() -> None:
+    evidence = _time()
+
+    assert evidence.authenticated is True
+    assert evidence.observed_at_utc == NOW
+    with pytest.raises(ValueError, match="BROKER_TIME_EVIDENCE_HASH_MISMATCH"):
+        BrokerTimeEvidence.model_validate(
+            {**evidence.model_dump(mode="python"), "evidence_sha256": "0" * 64}
+        )
+
+
+def test_provider_lifecycle_rejects_other_account_time(tmp_path) -> None:
+    with _open(tmp_path / "account.sqlite3") as db:
+        with pytest.raises(ProviderLifecycleError, match="BROKER_TIME_ACCOUNT_MISMATCH"):
+            _recorder(db).begin(
+                _request(),
+                BrokerTimeEvidence.create_authenticated_paper(
+                    time_utc=NOW,
+                    observed_at_utc=NOW,
+                    account_identity_sha256="d" * 64,
+                ),
+            )

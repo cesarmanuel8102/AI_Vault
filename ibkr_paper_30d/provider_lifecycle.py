@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from .canonical import sha256_json
 from .continuity_models import ProviderInvocationState
 from .continuity_store import ContinuityStore
 from .trader_invocation import InvocationRequest
@@ -21,9 +22,72 @@ class BrokerTimeEvidence(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
     time_utc: datetime
+    observed_at_utc: datetime
     environment: str
+    authenticated: bool
     account_identity_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     evidence_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @staticmethod
+    def _canonical_body(
+        *,
+        time_utc: datetime,
+        observed_at_utc: datetime,
+        environment: str,
+        authenticated: bool,
+        account_identity_sha256: str,
+    ) -> dict[str, Any]:
+        return {
+            "time_utc": time_utc.astimezone(timezone.utc).isoformat(),
+            "observed_at_utc": observed_at_utc.astimezone(timezone.utc).isoformat(),
+            "environment": environment,
+            "authenticated": authenticated,
+            "account_identity_sha256": account_identity_sha256,
+        }
+
+    @classmethod
+    def create_authenticated_paper(
+        cls,
+        *,
+        time_utc: datetime,
+        observed_at_utc: datetime,
+        account_identity_sha256: str,
+        environment: str = "PAPER",
+    ) -> "BrokerTimeEvidence":
+        if time_utc.tzinfo is None or time_utc.utcoffset() is None:
+            raise ValueError("BROKER_TIME_NAIVE")
+        if observed_at_utc.tzinfo is None or observed_at_utc.utcoffset() is None:
+            raise ValueError("BROKER_TIME_OBSERVATION_NAIVE")
+        body = cls._canonical_body(
+            time_utc=time_utc,
+            observed_at_utc=observed_at_utc,
+            environment=environment,
+            authenticated=True,
+            account_identity_sha256=account_identity_sha256,
+        )
+        return cls(**body, evidence_sha256=sha256_json(body))
+
+    @model_validator(mode="after")
+    def verify_evidence_hash(self) -> "BrokerTimeEvidence":
+        if self.time_utc.tzinfo is None or self.time_utc.utcoffset() is None:
+            raise ValueError("BROKER_TIME_NAIVE")
+        if (
+            self.observed_at_utc.tzinfo is None
+            or self.observed_at_utc.utcoffset() is None
+        ):
+            raise ValueError("BROKER_TIME_OBSERVATION_NAIVE")
+        expected = sha256_json(
+            self._canonical_body(
+                time_utc=self.time_utc,
+                observed_at_utc=self.observed_at_utc,
+                environment=self.environment,
+                authenticated=self.authenticated,
+                account_identity_sha256=self.account_identity_sha256,
+            )
+        )
+        if self.evidence_sha256 != expected:
+            raise ValueError("BROKER_TIME_EVIDENCE_HASH_MISMATCH")
+        return self
 
 
 @dataclass(frozen=True)
@@ -55,16 +119,22 @@ class ProviderLifecycleRecorder:
         launch_attempt_id: str,
         pid: int,
         boot_session_identity: str,
+        expected_account_identity_sha256: str,
     ) -> None:
-        if not launch_attempt_id or pid <= 0 or not boot_session_identity:
+        if (
+            not launch_attempt_id
+            or pid <= 0
+            or not boot_session_identity
+            or len(expected_account_identity_sha256) != 64
+        ):
             raise ValueError("launch attempt, positive PID, and boot session are required")
         self.store = store
         self.launch_attempt_id = launch_attempt_id
         self.pid = pid
         self.boot_session_identity = boot_session_identity
+        self.expected_account_identity_sha256 = expected_account_identity_sha256
 
-    @staticmethod
-    def _validated_time(evidence: BrokerTimeEvidence | None) -> datetime:
+    def _validated_time(self, evidence: BrokerTimeEvidence | None) -> datetime:
         if evidence is None:
             raise ProviderLifecycleError("BROKER_TIME_REQUIRED")
         value = evidence.time_utc
@@ -72,7 +142,17 @@ class ProviderLifecycleRecorder:
             raise ProviderLifecycleError("BROKER_TIME_NAIVE")
         if evidence.environment != "PAPER":
             raise ProviderLifecycleError("BROKER_TIME_NOT_PAPER")
-        return value
+        if evidence.authenticated is not True:
+            raise ProviderLifecycleError("BROKER_TIME_NOT_AUTHENTICATED")
+        if evidence.account_identity_sha256 != self.expected_account_identity_sha256:
+            raise ProviderLifecycleError("BROKER_TIME_ACCOUNT_MISMATCH")
+        try:
+            verified = BrokerTimeEvidence.model_validate(
+                evidence.model_dump(mode="python")
+            )
+        except ValueError as exc:
+            raise ProviderLifecycleError("BROKER_TIME_EVIDENCE_INVALID") from exc
+        return verified.time_utc
 
     def _latest_broker_time(self) -> datetime | None:
         rows = self.store.db.execute(
@@ -115,6 +195,8 @@ class ProviderLifecycleRecorder:
             "broker_time_utc": started.isoformat(),
             "declared_deadline_broker_utc": deadline.isoformat(),
             "broker_time_evidence_sha256": broker_time_utc.evidence_sha256,
+            "broker_time_observed_at_utc": broker_time_utc.observed_at_utc.isoformat(),
+            "broker_time_authenticated": broker_time_utc.authenticated,
             "account_identity_sha256": broker_time_utc.account_identity_sha256,
         }
         event_hash = self.store.append_provider_event(
@@ -159,6 +241,8 @@ class ProviderLifecycleRecorder:
             "boot_session_identity": token.boot_session_identity,
             "broker_time_utc": observed.isoformat(),
             "broker_time_evidence_sha256": broker_time_utc.evidence_sha256,
+            "broker_time_observed_at_utc": broker_time_utc.observed_at_utc.isoformat(),
+            "broker_time_authenticated": broker_time_utc.authenticated,
             "account_identity_sha256": broker_time_utc.account_identity_sha256,
             "failure_code": failure_code,
             "result_sha256": result_sha256,
@@ -262,7 +346,7 @@ class ProviderLifecycleRecorder:
             self._terminal(
                 token,
                 ProviderInvocationState.ABANDONED,
-                broker_time_utc.model_copy(update={"time_utc": observed}),
+                broker_time_utc,
                 failure_code="EXECUTION_LOCK_OWNER_REPLACED",
             )
             abandoned.append(invocation_id)

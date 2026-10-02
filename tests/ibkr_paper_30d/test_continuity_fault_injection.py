@@ -136,6 +136,7 @@ class FaultGateway:
         self.disconnect_after_write = False
         self.partial_fill_during_modify = False
         self.all_order_visibility = True
+        self.after_second_evidence_read = None
 
     def reqAllOpenOrders(self):
         self.read_calls += 1
@@ -143,6 +144,8 @@ class FaultGateway:
             raise ConnectionError("disconnect before evidence")
         if self.disconnect_before_confirmation and self.read_calls > 2:
             raise ConnectionError("disconnect before confirmation")
+        if self.read_calls == 2 and self.after_second_evidence_read is not None:
+            self.after_second_evidence_read()
         return [self.trade, *self.extra_trades]
 
     def reqExecutions(self):
@@ -262,6 +265,28 @@ def test_final_authority_reread_blocks_concurrent_state_changes(reason):
     assert gateway.cancel_calls == 0
 
 
+def test_db_authority_change_during_final_broker_refresh_blocks_write():
+    gateway = FaultGateway()
+    authority_current = True
+    validator_calls = []
+
+    def invalidate_authority():
+        nonlocal authority_current
+        authority_current = False
+
+    def validate(command, evidence):
+        validator_calls.append(authority_current)
+        return () if authority_current else ("PLAN_SUPERSEDED_DURING_FINAL_READ",)
+
+    gateway.after_second_evidence_read = invalidate_authority
+    result, _ = _run_writer(gateway, _command(gateway.trade), validator=validate)
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("PLAN_SUPERSEDED_DURING_FINAL_READ",)
+    assert validator_calls == [True, False]
+    assert gateway.cancel_calls == 0
+
+
 @pytest.mark.parametrize(
     ("fault", "expected"),
     [
@@ -376,6 +401,7 @@ def test_restart_marks_foreign_inflight_provider_invocation_abandoned(tmp_path):
             launch_attempt_id="launch-old",
             pid=111,
             boot_session_identity="boot-old",
+            expected_account_identity_sha256="b" * 64,
         )
         request = InvocationRequest(
             decision_cycle_id="cycle-restart",
@@ -391,11 +417,10 @@ def test_restart_marks_foreign_inflight_provider_invocation_abandoned(tmp_path):
             invocation_trigger="SCHEDULED_SCAN",
             timeout_seconds=180,
         )
-        time = BrokerTimeEvidence(
+        time = BrokerTimeEvidence.create_authenticated_paper(
             time_utc=NOW,
-            environment="PAPER",
+            observed_at_utc=NOW,
             account_identity_sha256="b" * 64,
-            evidence_sha256="c" * 64,
         )
         old.begin(request, time)
         restarted = ProviderLifecycleRecorder(
@@ -403,6 +428,7 @@ def test_restart_marks_foreign_inflight_provider_invocation_abandoned(tmp_path):
             launch_attempt_id="launch-new",
             pid=222,
             boot_session_identity="boot-new",
+            expected_account_identity_sha256="b" * 64,
         )
         recovered = restarted.recover_abandoned(
             {
@@ -410,7 +436,11 @@ def test_restart_marks_foreign_inflight_provider_invocation_abandoned(tmp_path):
                 "pid": 222,
                 "boot_session_identity": "boot-new",
             },
-            time.model_copy(update={"time_utc": NOW + timedelta(seconds=1)}),
+            BrokerTimeEvidence.create_authenticated_paper(
+                time_utc=NOW + timedelta(seconds=1),
+                observed_at_utc=NOW + timedelta(seconds=1),
+                account_identity_sha256="b" * 64,
+            ),
         )
         projection = store.provider_projection("invocation-restart")
 

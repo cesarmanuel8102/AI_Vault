@@ -183,6 +183,12 @@ class AuthoritativeBrokerWriter:
                 reasons=(f"BROKER_EVIDENCE_UNAVAILABLE:{type(exc).__name__}",),
             )
 
+        reasons = tuple(self.authority_validator(command, evidence))
+        if reasons:
+            return self._result(
+                success=False, status="BLOCKED", reasons=reasons, evidence=evidence
+            )
+
         matches = [
             (trade, snapshot)
             for trade, snapshot in zip(evidence["trades"], evidence["open_orders"])

@@ -35,6 +35,7 @@ from .experiment_ledger import AutonomousExperimentLedger
 from .ibkr_research_tools import IBKRResearchToolbox
 from .market_data import DecisionClass
 from .persistence import Database
+from .provider_lifecycle import BrokerTimeEvidence
 from .repositories import EventRepository, utc_now
 from .research_sandbox import WSLResearchSandbox
 from .runtime_integrity import RuntimeAuditorGate, RuntimeMarketDataGate
@@ -130,6 +131,8 @@ class AutonomousExperimentService:
         launch_attempt_id: str | None = None,
         continuity_watchdog: Any | None = None,
         continuity_store: Any | None = None,
+        provider_lifecycle: Any | None = None,
+        provider_account_identity_sha256: str | None = None,
         critical_alert_reporter: Callable[[str], None] | None = None,
         watchdog_shutdown_timeout_seconds: float = 5.0,
         sleep: Callable[[float], None] = time.sleep,
@@ -200,6 +203,8 @@ class AutonomousExperimentService:
         self.launch_attempt_id = launch_attempt_id
         self.continuity_watchdog = continuity_watchdog
         self.continuity_store = continuity_store
+        self.provider_lifecycle = provider_lifecycle
+        self.provider_account_identity_sha256 = provider_account_identity_sha256
         self.critical_alert_reporter = critical_alert_reporter
         self.watchdog_shutdown_timeout_seconds = watchdog_shutdown_timeout_seconds
         self._watchdog_started = False
@@ -429,6 +434,17 @@ class AutonomousExperimentService:
             runtime_market_gate=self.runtime_market_gate,
         )
 
+    def _provider_broker_time_evidence(self) -> BrokerTimeEvidence:
+        if not self.provider_account_identity_sha256:
+            raise AutonomousServiceError(
+                "PROVIDER_BROKER_TIME_ACCOUNT_IDENTITY_REQUIRED"
+            )
+        return BrokerTimeEvidence.create_authenticated_paper(
+            time_utc=self.broker_now(),
+            observed_at_utc=datetime.now(timezone.utc),
+            account_identity_sha256=self.provider_account_identity_sha256,
+        )
+
     def _run_cycle(
         self,
         trigger: str,
@@ -490,6 +506,12 @@ class AutonomousExperimentService:
                 toolbox=self.toolbox,
                 executor=self.executor,
                 continuity_store=self.continuity_store,
+                provider_lifecycle=self.provider_lifecycle,
+                broker_time_reader=(
+                    self._provider_broker_time_evidence
+                    if self.provider_lifecycle is not None
+                    else None
+                ),
             )
         except Exception as exc:
             provider_failure_code = getattr(self.provider, "last_failure_code", None)

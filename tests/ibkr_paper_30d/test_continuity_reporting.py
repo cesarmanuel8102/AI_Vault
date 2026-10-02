@@ -224,6 +224,33 @@ def test_modify_classification_uses_liability_and_time_not_strategy_labels():
     ) == ContinuityAuthorityClass.EXTENDED_TEMPORAL_AUTHORITY
 
 
+def test_gtd_extension_uses_parsed_instants_not_lexical_timestamp_order():
+    bundle = _bundle()
+    bundle["open_orders_snapshot"][0]["tif"] = "GTD"
+    bundle["open_orders_snapshot"][0]["orderAttributes"]["goodTillDate"] = (
+        "20261001 18:00:00 UTC"
+    )
+    outcome = _outcome(
+        "MODIFY_ORDER",
+        open_order_action={
+            "order_ref": "order-78",
+            "order_id": 78,
+            "perm_id": 225256222,
+            "client_id": 19761,
+            "new_total_quantity": Decimal("2"),
+            "new_limit_price": Decimal("5.00"),
+            "new_tif": "GTD",
+            "new_good_till_date_utc": datetime(
+                2026, 10, 1, 18, 30, tzinfo=timezone.utc
+            ),
+        },
+    )
+
+    assert ContinuityReviewGate.classify(
+        outcome, bundle
+    ) == ContinuityAuthorityClass.EXTENDED_TEMPORAL_AUTHORITY
+
+
 def test_pending_report_blocks_only_authority_expansion():
     gate = ContinuityReviewGate(None)
     pending = [{"report_id": "report-1", "sha256": H1}]

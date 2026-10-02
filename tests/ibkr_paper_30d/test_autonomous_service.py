@@ -755,6 +755,44 @@ def test_execution_block_is_not_reported_as_pass(tmp_path, monkeypatch):
     ]
 
 
+def test_service_passes_provider_lifecycle_and_bound_broker_time_to_runtime(
+    tmp_path, monkeypatch
+):
+    captured = {}
+    provider_lifecycle = object()
+    with Database.open(tmp_path / "provider-lifecycle.sqlite3") as db:
+        subject = AutonomousExperimentService(
+            db,
+            experiment_start_utc=datetime.now(timezone.utc),
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=StubExecutor(),
+            runtime_market_gate=PassGate(),
+            runtime_auditor_gate=PassGate(),
+            broker_now=lambda: datetime(2026, 10, 1, 14, tzinfo=timezone.utc),
+            provider_lifecycle=provider_lifecycle,
+            provider_account_identity_sha256="a" * 64,
+        )
+        monkeypatch.setattr(subject, "_builder", lambda: _ReadyBuilder())
+
+        def record(*args, **kwargs):
+            captured.update(kwargs)
+            return {
+                "status": "PASS",
+                "outcome": {"validation": "PASS", "decision": "NO_TRADE"},
+                "execution": None,
+            }
+
+        monkeypatch.setattr(service_module, "run_autonomous_cycle", record)
+        subject._run_cycle("SCHEDULED_SCAN")
+
+    evidence = captured["broker_time_reader"]()
+    assert captured["provider_lifecycle"] is provider_lifecycle
+    assert evidence.authenticated is True
+    assert evidence.account_identity_sha256 == "a" * 64
+
+
 def state_event_types(db):
     return [
         str(row[0])

@@ -24,6 +24,27 @@ class ContinuityCommandBuildError(RuntimeError):
     pass
 
 
+def _parse_order_expiry(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        raw = str(value or "").strip()
+        try:
+            parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            try:
+                parsed = datetime.strptime(raw, "%Y%m%d %H:%M:%S UTC").replace(
+                    tzinfo=timezone.utc
+                )
+            except ValueError as exc:
+                raise ContinuityCommandBuildError(
+                    "CURRENT_ORDER_EXPIRY_INVALID"
+                ) from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ContinuityCommandBuildError("CURRENT_ORDER_EXPIRY_INVALID")
+    return parsed.astimezone(timezone.utc)
+
+
 class ContinuityExecutor:
     def __init__(
         self,
@@ -144,14 +165,22 @@ class ContinuityExecutor:
         extends_time = False
         if action.new_tif is not None:
             current_tif = TimeInForce(str(binding["current_tif"]))
-            extends_time = (
-                action.new_tif == TimeInForce.GTC
-                and current_tif != TimeInForce.GTC
-            ) or (
-                action.new_tif == TimeInForce.GTD
-                and action.new_good_till_date_utc is not None
-                and action.new_good_till_date_utc > plan.session_end_utc
-            )
+            if action.new_tif == TimeInForce.GTC:
+                extends_time = current_tif != TimeInForce.GTC
+            elif action.new_tif == TimeInForce.GTD:
+                if action.new_good_till_date_utc is None:
+                    raise ContinuityCommandBuildError("NEW_ORDER_EXPIRY_REQUIRED")
+                if current_tif == TimeInForce.GTD:
+                    current_expiry = _parse_order_expiry(
+                        binding.get("current_good_till_date_utc")
+                    )
+                    extends_time = action.new_good_till_date_utc > current_expiry
+                elif current_tif == TimeInForce.GTC:
+                    extends_time = False
+                else:
+                    extends_time = (
+                        action.new_good_till_date_utc > plan.session_end_utc
+                    )
         if increases_liability:
             authority_class = ContinuityAuthorityClass.INCREASED_MAXIMUM_LIABILITY
         elif extends_time:

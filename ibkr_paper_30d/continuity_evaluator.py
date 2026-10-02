@@ -222,12 +222,26 @@ class ContinuityFactCollector:
     ) -> ContinuityFactSnapshot:
         if broker_time_utc is None or broker_time_utc.environment != "PAPER":
             raise ContinuityEvaluationError("AUTHENTICATED_PAPER_BROKER_TIME_REQUIRED")
+        if broker_time_utc.authenticated is not True:
+            raise ContinuityEvaluationError("AUTHENTICATED_PAPER_BROKER_TIME_REQUIRED")
+        try:
+            broker_time_utc = BrokerTimeEvidence.model_validate(
+                broker_time_utc.model_dump(mode="python")
+            )
+        except ValueError as exc:
+            raise ContinuityEvaluationError(
+                "AUTHENTICATED_PAPER_BROKER_TIME_REQUIRED"
+            ) from exc
         now = broker_time_utc.time_utc
         if now.tzinfo is None or now.utcoffset() is None:
             raise ContinuityEvaluationError("AUTHENTICATED_PAPER_BROKER_TIME_REQUIRED")
         if getattr(self.broker, "environment", None) != "PAPER":
             raise ContinuityEvaluationError("PAPER_BROKER_REQUIRED")
         if getattr(self.broker, "account_identity_sha256", None) != (
+            plan.order_binding.account_identity_sha256
+        ):
+            raise ContinuityEvaluationError("PAPER_ACCOUNT_IDENTITY_MISMATCH")
+        if broker_time_utc.account_identity_sha256 != (
             plan.order_binding.account_identity_sha256
         ):
             raise ContinuityEvaluationError("PAPER_ACCOUNT_IDENTITY_MISMATCH")
@@ -246,11 +260,12 @@ class ContinuityFactCollector:
                 max_age_seconds=item["max_age_seconds"],
             )
 
-        provider = self.store.provider_projection(plan.invocation_id)
+        provider = self.store.latest_provider_projection()
         provider_state = str(provider.get("state", "IDLE"))
+        provider_payload = provider.get("payload", {})
         if (
             provider_state == "IN_FLIGHT"
-            and provider.get("payload", {}).get("failure_code") is not None
+            and provider_payload.get("failure_code") is not None
         ):
             raise ContinuityEvaluationError("PROVIDER_STATE_CONFLICT")
         facts[ContinuityFactName.PROVIDER_STATE] = self._evidence(
@@ -260,6 +275,22 @@ class ContinuityFactCollector:
             collected_at_utc=now,
             max_age_seconds=30,
         )
+        for name, key in (
+            (ContinuityFactName.PROVIDER_FAILURE_CODE, "failure_code"),
+            (ContinuityFactName.MODEL_INVOCATION_START_UTC, "broker_time_utc"),
+            (
+                ContinuityFactName.MODEL_INVOCATION_DEADLINE_UTC,
+                "declared_deadline_broker_utc",
+            ),
+        ):
+            if provider_payload.get(key) is not None:
+                facts[name] = self._evidence(
+                    name,
+                    provider_payload[key],
+                    source="CONTINUITY_PROVIDER_EVENTS",
+                    collected_at_utc=now,
+                    max_age_seconds=30,
+                )
         facts[ContinuityFactName.MODEL_INVOCATION_IN_FLIGHT] = self._evidence(
             ContinuityFactName.MODEL_INVOCATION_IN_FLIGHT,
             provider_state == "IN_FLIGHT",

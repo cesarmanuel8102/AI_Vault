@@ -298,12 +298,12 @@ def test_narrative_and_expectations_do_not_change_selected_action() -> None:
 
 
 class FakeStore:
-    def provider_projection(self, invocation_id):
+    def latest_provider_projection(self):
         return {"state": "TIMEOUT_CONFIRMED", "payload": {"broker_time_utc": NOW.isoformat()}}
 
 
 class ConflictingStore:
-    def provider_projection(self, invocation_id):
+    def latest_provider_projection(self):
         return {"state": "IN_FLIGHT", "payload": {"failure_code": "PROVIDER_TIMEOUT"}}
 
 
@@ -332,9 +332,10 @@ class FakeClock:
 
 def test_collector_hashes_every_fact_and_requires_paper_time_and_all_order_visibility() -> None:
     collector = ContinuityFactCollector(FakeStore(), FakeBroker(), FakeLedger(), FakeClock())
-    evidence = BrokerTimeEvidence(
-        time_utc=NOW, environment="PAPER", account_identity_sha256=H1,
-        evidence_sha256=H2,
+    evidence = BrokerTimeEvidence.create_authenticated_paper(
+        time_utc=NOW,
+        observed_at_utc=NOW,
+        account_identity_sha256=H1,
     )
     snapshot = collector.collect(_plan(), broker_time_utc=evidence)
     assert snapshot.facts
@@ -357,6 +358,35 @@ def test_collector_hashes_every_fact_and_requires_paper_time_and_all_order_visib
         ContinuityFactCollector(
             ConflictingStore(), FakeBroker(), FakeLedger(), FakeClock()
         ).collect(_plan(), broker_time_utc=evidence)
+
+
+def test_collector_uses_latest_provider_invocation_not_plan_authoring_invocation() -> None:
+    class Store:
+        def provider_projection(self, invocation_id):
+            raise AssertionError("the authoring invocation is not current provider state")
+
+        def latest_provider_projection(self):
+            return {
+                "invocation_id": "invocation-current",
+                "state": "TIMEOUT_CONFIRMED",
+                "payload": {
+                    "broker_time_utc": NOW.isoformat(),
+                    "failure_code": "PROVIDER_TIMEOUT",
+                },
+            }
+
+    evidence = BrokerTimeEvidence.create_authenticated_paper(
+        time_utc=NOW,
+        observed_at_utc=NOW,
+        account_identity_sha256=H1,
+    )
+    snapshot = ContinuityFactCollector(
+        Store(), FakeBroker(), FakeLedger(), FakeClock()
+    ).collect(_plan(), broker_time_utc=evidence)
+    values = {item.fact.value: item.canonical_value for item in snapshot.facts}
+
+    assert values["PROVIDER_STATE"] == "TIMEOUT_CONFIRMED"
+    assert values["MODEL_INVOCATION_IN_FLIGHT"] is False
 
 
 def test_evaluator_source_contains_no_host_trading_policy_constants() -> None:

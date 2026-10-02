@@ -264,6 +264,15 @@ class ContinuityStore:
         _, body, event_hash = rows[-1]
         return {"invocation_id": invocation_id, **body, "event_sha256": event_hash}
 
+    def latest_provider_projection(self) -> dict[str, Any]:
+        row = self.db.execute(
+            "SELECT invocation_id FROM provider_invocation_events "
+            "ORDER BY sequence DESC LIMIT 1"
+        ).fetchone()
+        if row is None:
+            return {"invocation_id": None, "state": "IDLE", "payload": {}}
+        return self.provider_projection(str(row[0]))
+
     def append_watchdog_event(
         self, order_ref: str, event_type: str, payload: Mapping[str, Any]
     ) -> str:

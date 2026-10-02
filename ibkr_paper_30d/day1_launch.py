@@ -25,6 +25,7 @@ from .autonomy_workspace import AutonomyWorkspace
 from .canonical import canonical_bytes, sha256_json
 from .continuity_schema import verify_continuity_schema_v3
 from .continuity_store import ContinuityStore, ContinuityStoreError
+from .provider_lifecycle import ProviderLifecycleRecorder
 from .epoch_manifest import (
     EpochManifestInputs,
     build_epoch_manifest,
@@ -1444,6 +1445,13 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 )
             )
             continuity_store = dependencies.continuity_store_factory(db)
+            provider_lifecycle = ProviderLifecycleRecorder(
+                continuity_store,
+                launch_attempt_id=config.launch_attempt_id,
+                pid=owner.pid,
+                boot_session_identity=owner.boot_session_id,
+                expected_account_identity_sha256=preflight.expected_account_hash,
+            )
             writer = dependencies.authoritative_writer_factory(
                 coordinator=coordinator,
                 db_path=config.db_path,
@@ -1521,6 +1529,10 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                         executor=model_executor,
                         continuity_watchdog=watchdog,
                         continuity_store=continuity_store,
+                        provider_lifecycle=provider_lifecycle,
+                        provider_account_identity_sha256=(
+                            preflight.expected_account_hash
+                        ),
                         critical_alert_reporter=critical_alert_reporter,
                     )
                 except AutonomousServiceError as exc:

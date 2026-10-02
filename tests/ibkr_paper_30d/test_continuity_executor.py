@@ -46,14 +46,17 @@ def _binding(plan):
         "current_total_quantity": "1",
         "current_limit_price": "4.90",
         "current_tif": "DAY",
+        "current_good_till_date_utc": None,
         "current_maximum_liability": "353.82",
     }
 
 
-def _executor(plan, *, gates=lambda authority_class: ()): 
+def _executor(plan, *, gates=lambda authority_class: (), binding_updates=None):
+    binding = _binding(plan)
+    binding.update(binding_updates or {})
     return ContinuityExecutor(
         plan_reader=lambda plan_id: plan,
-        active_binding_reader=lambda plan_id: _binding(plan),
+        active_binding_reader=lambda plan_id: binding,
         fact_values_reader=lambda digest: {
             "ORDER_TOTAL_QUANTITY": "1",
             "ORDER_MARK": "4.50",
@@ -146,6 +149,31 @@ def test_gtd_cannot_exceed_epoch_authority(continuity_plan_factory):
 
     with pytest.raises(ContinuityCommandBuildError, match="EPOCH_AUTHORITY"):
         _executor(plan).build_command(_evaluation(plan, action))
+
+
+def test_gtd_extension_is_measured_against_current_order_expiry(
+    continuity_plan_factory,
+):
+    plan = continuity_plan_factory()
+    action = {
+        "action_type": "MODIFY_EXISTING_ORDER",
+        "new_tif": "GTD",
+        "new_good_till_date_utc": "2026-10-01T18:30:00Z",
+    }
+
+    with pytest.raises(ContinuityCommandBuildError, match="REVIEW_REQUIRED"):
+        _executor(
+            plan,
+            binding_updates={
+                "current_tif": "GTD",
+                "current_good_till_date_utc": "2026-10-01T18:00:00Z",
+            },
+            gates=lambda authority_class: (
+                ("REVIEW_REQUIRED",)
+                if authority_class.value == "EXTENDED_TEMPORAL_AUTHORITY"
+                else ()
+            ),
+        ).build_command(_evaluation(plan, action))
 
 
 def test_inactive_or_hash_mismatched_evaluation_cannot_build(
