@@ -9,6 +9,7 @@ import subprocess
 import time
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Callable
 
@@ -47,7 +48,9 @@ class IBKRPaperProbeBackend:
         self.account = ""
         self.contract = None
         self.trade = None
+        self._duplicate_errors: list[tuple[int, str]] = []
         self._observer_errors: list[tuple[int, str]] = []
+        self._broker_confirmed_modified_limit_price = ""
 
     def _connect(self, client: Any, client_id: int) -> None:
         client.connect(
@@ -104,13 +107,12 @@ class IBKRPaperProbeBackend:
 
     def duplicate_connection_rejected(self) -> bool:
         self.duplicate = self.ib_factory()
-        errors: list[tuple[int, str]] = []
-        self.duplicate.errorEvent += self._error_collector(errors)
+        self.duplicate.errorEvent += self._error_collector(self._duplicate_errors)
         try:
             self._connect(self.duplicate, int(self.config["writer_client_id"]))
         except Exception:
             pass
-        return any(code == 326 for code, _message in errors)
+        return any(code == 326 for code, _message in self._duplicate_errors)
 
     def place_probe_order(self) -> dict[str, Any]:
         self.contract = self.contract_factory(
@@ -151,6 +153,17 @@ class IBKRPaperProbeBackend:
             == float(self.config["modified_limit_price"]),
             "PROBE_MODIFICATION_UNCONFIRMED",
         )
+        matches = self._matching_trades(self.writer, identity)
+        if len(matches) != 1:
+            raise PaperProbeError("PROBE_MODIFICATION_BROKER_READ_FAILED")
+        try:
+            broker_limit = Decimal(str(matches[0].order.lmtPrice))
+            expected_limit = Decimal(str(self.config["modified_limit_price"]))
+        except (AttributeError, InvalidOperation) as exc:
+            raise PaperProbeError("PROBE_MODIFICATION_BROKER_READ_FAILED") from exc
+        if broker_limit != expected_limit:
+            raise PaperProbeError("PROBE_MODIFICATION_BROKER_READ_FAILED")
+        self._broker_confirmed_modified_limit_price = str(expected_limit)
         return {
             "order_id": int(self.trade.order.orderId),
             "perm_id": int(self.trade.order.permId),
@@ -167,7 +180,21 @@ class IBKRPaperProbeBackend:
         self.observer.cancelOrder(matches[0].order)
         self.observer.sleep(1.0)
         remains = len(self._matching_trades(self.writer, identity)) == 1
-        return remains and bool(self._observer_errors)
+        rejected = any(code == 10147 for code, _message in self._observer_errors)
+        return remains and rejected
+
+    def evidence(self) -> dict[str, Any]:
+        return {
+            "duplicate_connection_error_codes": sorted(
+                {code for code, _message in self._duplicate_errors if code == 326}
+            ),
+            "cross_client_cancel_error_codes": sorted(
+                {code for code, _message in self._observer_errors if code == 10147}
+            ),
+            "broker_confirmed_modified_limit_price": (
+                self._broker_confirmed_modified_limit_price
+            ),
+        }
 
     def cancel_probe_order(self, identity: dict[str, Any]) -> None:
         matches = self._matching_trades(self.writer, identity)
@@ -240,6 +267,7 @@ def run_paper_probe(
     write_calls = 0
     failure: str | None = None
     reconciliation: dict[str, Any] = {}
+    capability_evidence: dict[str, Any] = {}
     try:
         preflight = backend.preflight(receipt)
         if (
@@ -276,6 +304,15 @@ def run_paper_probe(
             or reconciliation.get("probe_order_terminal") is not True
         ):
             raise PaperProbeError("FINAL_RECONCILIATION_FAILED")
+        capability_evidence = dict(backend.evidence())
+        if capability_evidence != {
+            "duplicate_connection_error_codes": [326],
+            "cross_client_cancel_error_codes": [10147],
+            "broker_confirmed_modified_limit_price": str(
+                Decimal(str(receipt["modified_limit_price"]))
+            ),
+        }:
+            raise PaperProbeError("CAPABILITY_EVIDENCE_INCOMPLETE")
     except PaperProbeError as exc:
         failure = str(exc)
     except Exception:
@@ -304,6 +341,7 @@ def run_paper_probe(
         "writer_client_id": receipt["writer_client_id"],
         "observer_client_id": receipt["observer_client_id"],
         "order_identity": identity or {},
+        "capability_evidence": capability_evidence,
         "final_reconciliation": reconciliation,
         "real_broker_write_calls": write_calls,
         "global_cancel_calls": 0,

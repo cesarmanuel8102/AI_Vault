@@ -121,6 +121,13 @@ class FakeBackend:
     def disconnect_all(self):
         self._event("disconnect")
 
+    def evidence(self):
+        return {
+            "duplicate_connection_error_codes": [326],
+            "cross_client_cancel_error_codes": [10147],
+            "broker_confirmed_modified_limit_price": "0.02",
+        }
+
 
 def test_probe_consumes_receipt_and_executes_exact_ownership_sequence(tmp_path):
     receipt = tmp_path / "authorization.json"
@@ -153,6 +160,11 @@ def test_probe_consumes_receipt_and_executes_exact_ownership_sequence(tmp_path):
     ]
     assert json.loads(receipt.read_text())["consumed"] is True
     assert json.loads(report.read_text())["artifact_sha256"] == result["artifact_sha256"]
+    assert result["capability_evidence"] == {
+        "duplicate_connection_error_codes": [326],
+        "cross_client_cancel_error_codes": [10147],
+        "broker_confirmed_modified_limit_price": "0.02",
+    }
 
 
 @pytest.mark.parametrize(
@@ -292,6 +304,12 @@ class FakeIB:
 
     def reqAllOpenOrders(self):
         trade = self.shared.get("trade")
+        self.shared["read_events"].append(
+            (
+                self.role,
+                None if trade is None else float(trade.order.lmtPrice),
+            )
+        )
         if trade is None or trade.orderStatus.status == "Cancelled":
             return []
         return [trade]
@@ -325,7 +343,12 @@ class FakeIB:
 
 
 def test_real_backend_proves_same_client_ownership_without_global_cancel():
-    shared = {"connects": [], "place_calls": [], "cancel_calls": []}
+    shared = {
+        "connects": [],
+        "place_calls": [],
+        "cancel_calls": [],
+        "read_events": [],
+    }
     roles = iter(("writer", "duplicate", "observer"))
 
     def ib_factory():
@@ -381,3 +404,11 @@ def test_real_backend_proves_same_client_ownership_without_global_cancel():
     assert shared["place_calls"] == [("writer", 0.01), ("writer", 0.02)]
     assert shared["cancel_calls"] == ["observer", "writer"]
     assert all(item[-1] is False for item in shared["connects"])
+    modified_read = shared["read_events"].index(("writer", 0.02))
+    observer_read = shared["read_events"].index(("observer", 0.02))
+    assert modified_read < observer_read
+    assert backend.evidence() == {
+        "duplicate_connection_error_codes": [326],
+        "cross_client_cancel_error_codes": [10147],
+        "broker_confirmed_modified_limit_price": "0.02",
+    }
