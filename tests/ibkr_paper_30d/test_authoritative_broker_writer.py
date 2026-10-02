@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import inspect
 import json
 import subprocess
@@ -197,6 +198,31 @@ def _start_writer(
     writer.start()
     assert writer.wait_until_ready(2)
     return coordinator, writer, factory
+
+
+def test_writer_thread_owns_event_loop_for_real_broker_session():
+    observed = {}
+
+    def broker_factory(client_id):
+        observed["loop"] = asyncio.get_event_loop()
+        return FakeGateway(client_id)
+
+    coordinator = BrokerWriteCoordinator()
+    writer = AuthoritativeBrokerWriter(
+        coordinator,
+        broker_factory=broker_factory,
+        execution_client_id=19761,
+        execution_lock_verifier=lambda: True,
+        authority_validator=lambda command, evidence: (),
+    )
+
+    writer.start()
+    try:
+        assert writer.wait_until_ready(2)
+    finally:
+        assert writer.stop(2)
+
+    assert observed["loop"].is_closed() is True
 
 
 def _model_request(sequence: int, operation: ModelExecutionOperation):

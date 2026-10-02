@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import copy
 import threading
 from datetime import datetime, timezone
@@ -139,16 +140,18 @@ class AuthoritativeBrokerWriter:
         return self._thread is None or not self._thread.is_alive()
 
     def _run(self) -> None:
+        event_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(event_loop)
         broker = None
         assert self._capability is not None
         try:
-            broker = self.broker_factory(self.execution_client_id)
-        except BaseException as exc:
-            self._startup_error = exc
+            try:
+                broker = self.broker_factory(self.execution_client_id)
+            except BaseException as exc:
+                self._startup_error = exc
+                self._ready.set()
+                return
             self._ready.set()
-            return
-        self._ready.set()
-        try:
             while not self._stop.is_set():
                 claimed = self.coordinator.claim(self._capability, timeout=0.05)
                 if claimed is None:
@@ -185,6 +188,8 @@ class AuthoritativeBrokerWriter:
             except Exception:
                 pass
             self.coordinator.detach_writer(self._capability)
+            asyncio.set_event_loop(None)
+            event_loop.close()
 
     def _collect_evidence(self, broker: Any) -> dict[str, Any]:
         if getattr(broker, "all_order_visibility", True) is not True:

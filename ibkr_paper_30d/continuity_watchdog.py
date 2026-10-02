@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -122,6 +123,8 @@ class ContinuityWatchdog:
         store.append_watchdog_event(_WATCHDOG_STREAM, event_type, payload)
 
     def _run(self) -> None:
+        event_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(event_loop)
         db = None
         broker = None
         store = None
@@ -184,4 +187,6 @@ class ContinuityWatchdog:
                     db.close()
                 except Exception:
                     pass
+            asyncio.set_event_loop(None)
+            event_loop.close()
             self._ready.set()

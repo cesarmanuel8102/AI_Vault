@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import threading
 import time
@@ -29,6 +30,32 @@ class Broker:
 
     def disconnect(self):
         self.closed = True
+
+
+def test_watchdog_thread_owns_event_loop_for_real_broker_session(tmp_path):
+    path = tmp_path / "watchdog-event-loop.sqlite3"
+    _initialize(path)
+    observed = {}
+
+    def broker_factory():
+        observed["loop"] = asyncio.get_event_loop()
+        return Broker()
+
+    watchdog = ContinuityWatchdog(
+        db_factory=lambda: Database.open(path),
+        broker_factory=broker_factory,
+        poll_once=lambda db, broker, coordinator: None,
+        coordinator=object(),
+        broker_time_reader=lambda value: NOW,
+        poll_interval_seconds=0.01,
+        heartbeat_max_age_seconds=1,
+    )
+
+    watchdog.start()
+    result = watchdog.stop(2)
+
+    assert result.stopped is True
+    assert observed["loop"].is_closed() is True
 
 
 def test_watchdog_uses_own_thread_database_and_read_only_broker(tmp_path):
