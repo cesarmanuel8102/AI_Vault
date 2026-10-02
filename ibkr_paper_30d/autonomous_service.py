@@ -129,6 +129,8 @@ class AutonomousExperimentService:
         broker_now: Callable[[], datetime] | None = None,
         launch_attempt_id: str | None = None,
         continuity_watchdog: Any | None = None,
+        continuity_store: Any | None = None,
+        critical_alert_reporter: Callable[[str], None] | None = None,
         watchdog_shutdown_timeout_seconds: float = 5.0,
         sleep: Callable[[float], None] = time.sleep,
         monotonic: Callable[[], float] = time.monotonic,
@@ -197,6 +199,8 @@ class AutonomousExperimentService:
         self.broker_now = broker_now or self._read_broker_time
         self.launch_attempt_id = launch_attempt_id
         self.continuity_watchdog = continuity_watchdog
+        self.continuity_store = continuity_store
+        self.critical_alert_reporter = critical_alert_reporter
         self.watchdog_shutdown_timeout_seconds = watchdog_shutdown_timeout_seconds
         self._watchdog_started = False
         self._watchdog_alert_active = False
@@ -254,6 +258,8 @@ class AutonomousExperimentService:
                 "CONTINUITY_WATCHDOG_START_FAILURE",
                 {"error_type": type(exc).__name__},
             )
+            if self.critical_alert_reporter is not None:
+                self.critical_alert_reporter("CONTINUITY_WATCHDOG_FAILED")
             raise AutonomousServiceError(
                 "continuity watchdog failed to start",
                 reason_codes=("CONTINUITY_WATCHDOG_START_FAILURE",),
@@ -273,6 +279,10 @@ class AutonomousExperimentService:
                 "CONTINUITY_WATCHDOG_SHUTDOWN_TIMEOUT",
                 {"continuity_state": "UNCERTAIN"},
             )
+            if self.critical_alert_reporter is not None:
+                self.critical_alert_reporter(
+                    "CONTINUITY_WATCHDOG_SHUTDOWN_TIMEOUT"
+                )
 
     def _owner_authorization_is_current(self) -> bool:
         if self.clock.epoch_id is None:
@@ -365,6 +375,10 @@ class AutonomousExperimentService:
                         "CONTINUITY_WATCHDOG_HEALTH_FAILURE",
                         {"reason_codes": ["CONTINUITY_WATCHDOG_UNHEALTHY"]},
                     )
+                    if self.critical_alert_reporter is not None:
+                        self.critical_alert_reporter(
+                            "CONTINUITY_WATCHDOG_STALE"
+                        )
                     self._watchdog_alert_active = True
             elif self._watchdog_alert_active:
                 _append_alert(
@@ -475,6 +489,7 @@ class AutonomousExperimentService:
                 provider=self.provider,
                 toolbox=self.toolbox,
                 executor=self.executor,
+                continuity_store=self.continuity_store,
             )
         except Exception as exc:
             provider_failure_code = getattr(self.provider, "last_failure_code", None)

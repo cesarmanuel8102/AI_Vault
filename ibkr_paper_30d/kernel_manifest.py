@@ -35,6 +35,18 @@ PYTHON_ROOT_ROLES: dict[str, str] = {
     "ibkr_paper_30d/risk.py": "capital_risk_boundary",
     "ibkr_paper_30d/runtime_integrity.py": "runtime_auditor_market_gate",
     "ibkr_paper_30d/scheduler_validation.py": "scheduler_startup_gate",
+    "ibkr_paper_30d/continuity_schema.py": "continuity_schema_authority",
+    "ibkr_paper_30d/continuity_models.py": "continuity_contracts",
+    "ibkr_paper_30d/continuity_store.py": "continuity_event_authority",
+    "ibkr_paper_30d/provider_lifecycle.py": "provider_lifecycle_authority",
+    "ibkr_paper_30d/continuity_evaluator.py": "continuity_condition_evaluator",
+    "ibkr_paper_30d/continuity_binding.py": "continuity_order_binding",
+    "ibkr_paper_30d/broker_write_coordinator.py": "single_writer_command_queue",
+    "ibkr_paper_30d/authoritative_broker_writer.py": "authoritative_broker_writer",
+    "ibkr_paper_30d/broker_writer_capability.py": "writer_capability_boundary",
+    "ibkr_paper_30d/continuity_executor.py": "continuity_command_builder",
+    "ibkr_paper_30d/continuity_watchdog.py": "independent_continuity_watchdog",
+    "ibkr_paper_30d/continuity_reporting.py": "continuity_recovery_review_gate",
 }
 
 POWERSHELL_ROOT_ROLES: dict[str, str] = {

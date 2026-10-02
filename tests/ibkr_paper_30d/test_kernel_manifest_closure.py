@@ -110,6 +110,18 @@ def test_real_kernel_has_complete_roots_roles_and_valid_hashes() -> None:
         "ibkr_paper_30d/autonomy_bootstrap.py",
         "ibkr_paper_30d/experiment_epoch.py",
         "ibkr_paper_30d/kernel_manifest.py",
+        "ibkr_paper_30d/continuity_schema.py",
+        "ibkr_paper_30d/continuity_models.py",
+        "ibkr_paper_30d/continuity_store.py",
+        "ibkr_paper_30d/provider_lifecycle.py",
+        "ibkr_paper_30d/continuity_evaluator.py",
+        "ibkr_paper_30d/continuity_binding.py",
+        "ibkr_paper_30d/broker_write_coordinator.py",
+        "ibkr_paper_30d/authoritative_broker_writer.py",
+        "ibkr_paper_30d/broker_writer_capability.py",
+        "ibkr_paper_30d/continuity_executor.py",
+        "ibkr_paper_30d/continuity_watchdog.py",
+        "ibkr_paper_30d/continuity_reporting.py",
     } <= paths
     assert manifest["file_count"] == len(paths)
     assert all(len(item["sha256"]) == 64 for item in manifest["kernel_files"])

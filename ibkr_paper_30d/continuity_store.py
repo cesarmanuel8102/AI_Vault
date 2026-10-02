@@ -105,6 +105,31 @@ class ContinuityStore:
             previous = str(event_sha)
         return result
 
+    def verify_all_chains(self) -> dict[str, int]:
+        streams = {
+            "continuity_plan_events": "order_ref",
+            "provider_invocation_events": "invocation_id",
+            "continuity_watchdog_events": "order_ref",
+            "continuity_evaluation_events": "order_ref",
+            "continuity_execution_events": "order_ref",
+            "continuity_report_events": "outage_id",
+            "continuity_review_events": "report_id",
+            "continuity_reflection_events": "review_id",
+        }
+        counts: dict[str, int] = {}
+        for table, stream_column in streams.items():
+            stream_ids = [
+                str(row[0])
+                for row in self.db.execute(
+                    f"SELECT DISTINCT {stream_column} FROM {table}"
+                ).fetchall()
+            ]
+            counts[table] = sum(
+                len(self._verified_rows(table, stream_column, stream_id))
+                for stream_id in stream_ids
+            )
+        return counts
+
     def append_plan_event(
         self,
         event_type: str,

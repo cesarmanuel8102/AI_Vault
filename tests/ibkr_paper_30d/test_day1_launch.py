@@ -27,6 +27,8 @@ from ibkr_paper_30d.autonomous_service import (
     AutonomousServiceError,
 )
 from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
+from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+from ibkr_paper_30d.continuity_store import ContinuityStore
 from ibkr_paper_30d.day1_launch import (
     Day1LaunchConfig,
     LaunchDependencies,
@@ -61,6 +63,7 @@ from ibkr_paper_30d.successor_epoch import (
     SuccessorEpochStore,
 )
 from ibkr_paper_30d.successor_clock import BrokerTimeObservation
+from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 from ibkr_paper_30d.trader_invocation import TraderDecision
 from successor_test_support import (
     SUCCESSOR_START,
@@ -347,6 +350,9 @@ def passing_context(tmp_path: Path) -> LaunchTestContext:
         elevated=True,
         receipt_path=config.owner_authorization_path,
     )
+    with Database.open(config.db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
     _write_model_attestation_exception(config)
     bind_launch_attempt(
         config.launch_attempt_id,
@@ -384,6 +390,22 @@ def passing_context(tmp_path: Path) -> LaunchTestContext:
             "material_sha256": "a" * 64,
         },
     )
+    writer = Mock()
+    writer.wait_until_ready.return_value = True
+    dependencies.continuity_schema_verifier = lambda db: {"status": "PASS"}
+    dependencies.provider_abandonment_recoverer = (
+        lambda db, owner, config, preflight: {"status": "PASS", "recovered": []}
+    )
+    dependencies.pending_binding_reconciler = (
+        lambda db, config, preflight: {"status": "PASS", "reconciled": []}
+    )
+    dependencies.continuity_uncertainty_reader = lambda db: ()
+    dependencies.broker_write_coordinator_factory = Mock(return_value=object())
+    dependencies.model_executor_factory = Mock(return_value=object())
+    dependencies.critical_alert_reporter_factory = Mock(return_value=Mock())
+    dependencies.authoritative_writer_factory = Mock(return_value=writer)
+    dependencies.continuity_watchdog_factory = Mock(return_value=Mock())
+    dependencies.continuity_store_factory = ContinuityStore
     return LaunchTestContext(
         config=config,
         dependencies=dependencies,
@@ -1116,6 +1138,281 @@ def test_run_launch_arms_only_inside_foreground_service_and_restores_env(
     assert ctx.ib_tripwire.calls == []
 
 
+def test_continuity_recovery_gates_precede_writer_watchdog_and_codex(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    lock = install_fake_lock(ctx)
+    trace = []
+
+    class Writer:
+        def start(self):
+            trace.append("writer_start")
+
+        def wait_until_ready(self, timeout_seconds):
+            trace.append("writer_ready")
+            return True
+
+        def stop(self, timeout_seconds):
+            trace.append("writer_stop")
+            return True
+
+    class Watchdog:
+        def start(self):
+            trace.append("watchdog_start")
+
+        def stop(self, timeout_seconds):
+            trace.append("watchdog_stop")
+            return SimpleNamespace(stopped=True, timed_out=False)
+
+    watchdog = Watchdog()
+
+    class Service:
+        def run_forever(self):
+            watchdog.start()
+            trace.append("codex")
+            watchdog.stop(5)
+
+    original_provenance = ctx.dependencies.runtime_provenance_validator
+    ctx.dependencies.runtime_provenance_validator = lambda config: (
+        trace.append("runtime_integrity") or original_provenance(config)
+    )
+    ctx.dependencies.continuity_schema_verifier = lambda db: (
+        trace.append("schema_v3") or {"status": "PASS"}
+    )
+    ctx.dependencies.provider_abandonment_recoverer = (
+        lambda db, owner, config, preflight: trace.append("provider_recovery")
+        or {"status": "PASS"}
+    )
+    ctx.dependencies.pending_binding_reconciler = (
+        lambda db, config, preflight: trace.append("binding_recovery")
+        or {"status": "PASS"}
+    )
+    ctx.dependencies.continuity_uncertainty_reader = lambda db: (
+        trace.append("uncertainty_check") or ()
+    )
+    ctx.dependencies.broker_write_coordinator_factory = lambda: (
+        trace.append("coordinator") or object()
+    )
+    ctx.dependencies.authoritative_writer_factory = (
+        lambda *args, **kwargs: Writer()
+    )
+    ctx.dependencies.continuity_watchdog_factory = (
+        lambda *args, **kwargs: watchdog
+    )
+    ctx.dependencies.service_factory = lambda *args, **kwargs: Service()
+
+    status = run_day1_launch(ctx.config, ctx.dependencies)
+
+    assert status == "AUTONOMOUS_PAPER_EXPERIMENT_STOPPED"
+    assert trace == [
+        "runtime_integrity",
+        "schema_v3",
+        "provider_recovery",
+        "binding_recovery",
+        "uncertainty_check",
+        "coordinator",
+        "writer_start",
+        "writer_ready",
+        "watchdog_start",
+        "codex",
+        "watchdog_stop",
+        "writer_stop",
+    ]
+    assert lock.calls[-1] == "release"
+
+
+def test_writer_readiness_failure_stops_writer_before_releasing_lock(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    lock = install_fake_lock(ctx)
+    writer = Mock()
+    writer.wait_until_ready.return_value = False
+    writer.stop.return_value = True
+    ctx.dependencies.authoritative_writer_factory = Mock(return_value=writer)
+
+    with pytest.raises(LaunchError, match="CONTINUITY_WRITER_START_FAILURE"):
+        run_day1_launch(ctx.config, ctx.dependencies)
+
+    writer.stop.assert_called_once_with(5.0)
+    assert lock.calls[-1] == "release"
+    assert ctx.service_factory.mock_calls == []
+
+
+def test_launch_passes_only_writer_command_interface_to_model_service(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    install_fake_lock(ctx)
+    coordinator = object()
+    model_executor = object()
+    captured = {}
+    ctx.dependencies.broker_write_coordinator_factory = Mock(
+        return_value=coordinator
+    )
+    ctx.dependencies.model_executor_factory = Mock(return_value=model_executor)
+
+    class Service:
+        def run_forever(self):
+            return None
+
+    def service_factory(*args, **kwargs):
+        captured.update(kwargs)
+        return Service()
+
+    ctx.dependencies.service_factory = service_factory
+
+    assert run_day1_launch(ctx.config, ctx.dependencies) == (
+        "AUTONOMOUS_PAPER_EXPERIMENT_STOPPED"
+    )
+    ctx.dependencies.model_executor_factory.assert_called_once_with(
+        coordinator=coordinator
+    )
+    assert captured["executor"] is model_executor
+
+
+def test_launch_shares_external_critical_alert_reporter_with_runtime_components(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    install_fake_lock(ctx)
+    reporter = Mock()
+    captured = {}
+    ctx.dependencies.critical_alert_reporter_factory = Mock(
+        return_value=reporter
+    )
+
+    class Service:
+        def run_forever(self):
+            return None
+
+    def service_factory(*args, **kwargs):
+        captured.update(kwargs)
+        return Service()
+
+    ctx.dependencies.service_factory = service_factory
+
+    run_day1_launch(ctx.config, ctx.dependencies)
+
+    writer_kwargs = ctx.dependencies.authoritative_writer_factory.call_args.kwargs
+    watchdog_kwargs = ctx.dependencies.continuity_watchdog_factory.call_args.kwargs
+    assert writer_kwargs["uncertainty_reporter"] is reporter
+    assert watchdog_kwargs["uncertainty_reporter"] is reporter
+    assert captured["critical_alert_reporter"] is reporter
+
+
+@pytest.mark.parametrize(
+    ("gate", "expected"),
+    [
+        ("schema", "CONTINUITY_SCHEMA_V3_REQUIRED"),
+        ("provider", "CONTINUITY_PROVIDER_RECOVERY_BLOCK"),
+        ("binding", "CONTINUITY_PENDING_BINDING_AMBIGUOUS"),
+        ("uncertainty", "CONTINUITY_UNCERTAINTY_UNRESOLVED"),
+    ],
+)
+def test_continuity_recovery_failure_blocks_before_writer_or_service(
+    tmp_path: Path, gate: str, expected: str
+) -> None:
+    ctx = passing_context(tmp_path)
+    install_fake_lock(ctx)
+    if gate == "schema":
+        ctx.dependencies.continuity_schema_verifier = lambda db: (_ for _ in ()).throw(
+            RuntimeError("missing schema")
+        )
+    elif gate == "provider":
+        ctx.dependencies.provider_abandonment_recoverer = (
+            lambda *args: {"status": "BLOCK"}
+        )
+    elif gate == "binding":
+        ctx.dependencies.pending_binding_reconciler = (
+            lambda *args: {"status": "BLOCK", "reason_codes": ["ORDER_IDENTITY_AMBIGUOUS"]}
+        )
+    else:
+        ctx.dependencies.continuity_uncertainty_reader = (
+            lambda db: ("CONTINUITY_ORDER_STATE_UNCERTAIN",)
+        )
+
+    with pytest.raises(LaunchError, match=expected):
+        run_day1_launch(ctx.config, ctx.dependencies)
+
+    ctx.dependencies.authoritative_writer_factory.assert_not_called()
+    assert ctx.service_factory.mock_calls == []
+
+
+def test_corrupt_continuity_chain_blocks_before_writer_or_service(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    install_fake_lock(ctx)
+    payload = {"status": "CONFIRMED"}
+    with Database.open(ctx.config.db_path) as db:
+        db.execute(
+            "INSERT INTO continuity_execution_events("
+            "event_id,execution_id,evaluation_id,plan_id,order_ref,"
+            "execution_ordinal,event_type,payload_json,payload_sha256,"
+            "previous_event_sha256,event_sha256,created_at_utc) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                "event-corrupt",
+                "execution-corrupt",
+                "evaluation-corrupt",
+                "plan-corrupt",
+                "order-corrupt",
+                1,
+                "RESULT",
+                canonical_bytes(payload).decode("utf-8"),
+                "0" * 64,
+                None,
+                "1" * 64,
+                NOW.isoformat(),
+            ),
+        )
+    ctx.dependencies.continuity_uncertainty_reader = (
+        launch_module._default_continuity_uncertainty
+    )
+
+    with pytest.raises(LaunchError, match="CONTINUITY_AUTHORITY_CORRUPT"):
+        run_day1_launch(ctx.config, ctx.dependencies)
+
+    ctx.dependencies.authoritative_writer_factory.assert_not_called()
+    assert ctx.service_factory.mock_calls == []
+
+
+def test_corrupt_provider_chain_is_not_misclassified_as_recovery_block(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    install_fake_lock(ctx)
+    payload = {"state": "IN_FLIGHT", "payload": {}}
+    with Database.open(ctx.config.db_path) as db:
+        db.execute(
+            "INSERT INTO provider_invocation_events("
+            "event_id,invocation_id,event_type,payload_json,payload_sha256,"
+            "previous_event_sha256,event_sha256,created_at_utc) "
+            "VALUES(?,?,?,?,?,?,?,?)",
+            (
+                "provider-event-corrupt",
+                "provider-invocation-corrupt",
+                "IN_FLIGHT",
+                canonical_bytes(payload).decode("utf-8"),
+                "0" * 64,
+                None,
+                "1" * 64,
+                NOW.isoformat(),
+            ),
+        )
+    ctx.dependencies.provider_abandonment_recoverer = (
+        launch_module._default_provider_recovery
+    )
+
+    with pytest.raises(LaunchError, match="CONTINUITY_AUTHORITY_CORRUPT"):
+        run_day1_launch(ctx.config, ctx.dependencies)
+
+    ctx.dependencies.authoritative_writer_factory.assert_not_called()
+    assert ctx.service_factory.mock_calls == []
+
+
 def test_launcher_does_not_append_control_events_and_consumes_attempt_once(
     tmp_path: Path,
 ) -> None:
@@ -1584,7 +1881,6 @@ def test_complete_fake_launch_persists_running_without_broker_write(
         service = AutonomousExperimentService(
             db,
             **kwargs,
-            executor=ctx.executor_tripwire,
             broker_now=lambda: NOW,
             sleep=stop_after_first_wait,
             monotonic=lambda: 0.0,
@@ -1593,6 +1889,9 @@ def test_complete_fake_launch_persists_running_without_broker_write(
         return service
 
     ctx.dependencies.service_factory = real_service_factory
+    ctx.dependencies.model_executor_factory = Mock(
+        return_value=ctx.executor_tripwire
+    )
     ctx.dependencies.research_toolbox_factory = (
         lambda workspace, _preflight: launch_module.AutonomyToolbox(toolbox, workspace)
     )

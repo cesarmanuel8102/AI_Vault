@@ -120,6 +120,31 @@ def test_all_mandated_critical_events_are_accepted(repo) -> None:
     assert repo.persisted_count() == len(CRITICAL_EVENT_TYPES)
 
 
+@pytest.mark.parametrize(
+    "event_type",
+    [
+        "CONTINUITY_ORDER_STATE_UNCERTAIN",
+        "CONTINUITY_WATCHDOG_FAILED",
+        "CONTINUITY_WATCHDOG_STALE",
+        "CONTINUITY_ORDER_IDENTITY_AMBIGUOUS",
+        "CONTINUITY_AUTHORITY_CORRUPT",
+    ],
+)
+def test_continuity_failures_use_both_owner_channels_and_deduplicate(
+    repo, event_type
+) -> None:
+    service, authority, smtp, event_log, _ = build(repo)
+    first = service.raise_critical(event(event_type, f"continuity-{event_type}"))
+    second = service.raise_critical(event(event_type, f"continuity-{event_type}"))
+
+    assert first == second
+    assert authority.new_order_authority is False
+    assert len(event_log.records) == 1
+    assert smtp.attempt_count == 1
+    assert repo.latest_channel_state(first.alert_id, "WINDOWS_EVENT_LOG") == "CONFIRMED"
+    assert repo.latest_channel_state(first.alert_id, "SMTP") == "CONFIRMED"
+
+
 def test_noncritical_event_is_rejected_before_persistence(repo) -> None:
     service, _, smtp, _, _ = build(repo)
 

@@ -418,6 +418,7 @@ def test_run_once_watchdog_progresses_while_provider_cycle_is_blocked(tmp_path):
 
 def test_watchdog_health_blocks_only_new_exposure_and_alerts_transitions(tmp_path):
     watchdog = FakeContinuityWatchdog(healthy=False)
+    critical_alert_reporter = Mock()
     with Database.open(tmp_path / "watchdog-health.sqlite3") as db:
         service = AutonomousExperimentService(
             db,
@@ -431,6 +432,7 @@ def test_watchdog_health_blocks_only_new_exposure_and_alerts_transitions(tmp_pat
             runtime_auditor_gate=PassGate(),
             broker_now=lambda: datetime.now(timezone.utc),
             continuity_watchdog=watchdog,
+            critical_alert_reporter=critical_alert_reporter,
         )
         service._watchdog_started = True
 
@@ -452,6 +454,7 @@ def test_watchdog_health_blocks_only_new_exposure_and_alerts_transitions(tmp_pat
         "CONTINUITY_WATCHDOG_HEALTH_FAILURE",
         "CONTINUITY_WATCHDOG_HEALTH_RECOVERED",
     ]
+    critical_alert_reporter.assert_called_once_with("CONTINUITY_WATCHDOG_STALE")
 
 
 def test_run_once_stops_watchdog_when_cycle_raises(tmp_path):

@@ -23,6 +23,8 @@ from .autonomy_bootstrap import AutonomyBootstrapBuilder
 from .autonomy_toolbox import AutonomyToolbox
 from .autonomy_workspace import AutonomyWorkspace
 from .canonical import canonical_bytes, sha256_json
+from .continuity_schema import verify_continuity_schema_v3
+from .continuity_store import ContinuityStore, ContinuityStoreError
 from .epoch_manifest import (
     EpochManifestInputs,
     build_epoch_manifest,
@@ -143,6 +145,16 @@ class LaunchDependencies:
     successor_broker_evidence_collector: (
         Callable[[Day1LaunchConfig, "LaunchPreflight"], BrokerTransitionEvidence] | None
     ) = None
+    continuity_schema_verifier: Callable[[Database], dict[str, Any]] | None = None
+    provider_abandonment_recoverer: Callable[..., dict[str, Any]] | None = None
+    pending_binding_reconciler: Callable[..., dict[str, Any]] | None = None
+    continuity_uncertainty_reader: Callable[[Database], Sequence[str]] | None = None
+    broker_write_coordinator_factory: Callable[[], Any] | None = None
+    model_executor_factory: Callable[..., Any] | None = None
+    critical_alert_reporter_factory: Callable[..., Any] | None = None
+    authoritative_writer_factory: Callable[..., Any] | None = None
+    continuity_watchdog_factory: Callable[..., Any] | None = None
+    continuity_store_factory: Callable[[Database], Any] | None = None
 
 
 class LaunchError(RuntimeError):
@@ -625,7 +637,7 @@ def validate_launch_controls(db: Database, config: Day1LaunchConfig) -> LaunchCo
         "SELECT version FROM schema_versions ORDER BY version"
     ).fetchall()
     successor_mode = config.target_successor_epoch_id is not None
-    expected_schema_versions = [1, 2] if successor_mode else [1]
+    expected_schema_versions = [1, 2, 3]
     if [int(row[0]) for row in schema_rows] != expected_schema_versions:
         raise LaunchError("DATABASE_SCHEMA_INVALID")
     clock: ExperimentClock | None = None
@@ -1274,9 +1286,63 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
         transition: SuccessorTransitionResult | None = None
         prepared: PreparedEpochLaunch | None = None
         try:
+            verifier = dependencies.continuity_schema_verifier
+            if verifier is None:
+                raise LaunchError("CONTINUITY_SCHEMA_V3_REQUIRED")
+            try:
+                schema_result = verifier(db)
+            except Exception as exc:
+                raise LaunchError("CONTINUITY_SCHEMA_V3_REQUIRED") from exc
+            if not isinstance(schema_result, dict) or schema_result.get(
+                "status"
+            ) != "PASS":
+                raise LaunchError("CONTINUITY_SCHEMA_V3_REQUIRED")
+
             controls = validate_launch_controls(db, config)
             if controls.authorization_event_id != preflight.authorization_event_id:
                 raise LaunchError("OWNER_AUTHORIZATION_CHANGED_DURING_PREFLIGHT")
+            recover_provider = dependencies.provider_abandonment_recoverer
+            if recover_provider is None:
+                raise LaunchError("CONTINUITY_PROVIDER_RECOVERY_BLOCK")
+            try:
+                provider_recovery = recover_provider(
+                    db, owner, config, preflight
+                )
+            except ContinuityStoreError as exc:
+                raise LaunchError("CONTINUITY_AUTHORITY_CORRUPT") from exc
+            except Exception as exc:
+                raise LaunchError("CONTINUITY_PROVIDER_RECOVERY_BLOCK") from exc
+            if not isinstance(provider_recovery, dict) or provider_recovery.get(
+                "status"
+            ) != "PASS":
+                raise LaunchError("CONTINUITY_PROVIDER_RECOVERY_BLOCK")
+
+            reconcile_bindings = dependencies.pending_binding_reconciler
+            if reconcile_bindings is None:
+                raise LaunchError("CONTINUITY_PENDING_BINDING_AMBIGUOUS")
+            try:
+                binding_recovery = reconcile_bindings(db, config, preflight)
+            except ContinuityStoreError as exc:
+                raise LaunchError("CONTINUITY_AUTHORITY_CORRUPT") from exc
+            except Exception as exc:
+                raise LaunchError("CONTINUITY_PENDING_BINDING_AMBIGUOUS") from exc
+            if not isinstance(binding_recovery, dict) or binding_recovery.get(
+                "status"
+            ) != "PASS":
+                raise LaunchError("CONTINUITY_PENDING_BINDING_AMBIGUOUS")
+
+            read_uncertainty = dependencies.continuity_uncertainty_reader
+            if read_uncertainty is None:
+                raise LaunchError("CONTINUITY_UNCERTAINTY_UNRESOLVED")
+            try:
+                unresolved = tuple(read_uncertainty(db))
+            except Exception as exc:
+                raise LaunchError("CONTINUITY_AUTHORITY_CORRUPT") from exc
+            if unresolved:
+                raise LaunchError(
+                    "CONTINUITY_UNCERTAINTY_UNRESOLVED",
+                    details={"reason_codes": list(unresolved)},
+                )
             if config.target_successor_epoch_id is not None:
                 fresh_auditor = dependencies.auditor_gate_factory(config).evaluate()
                 if (
@@ -1351,7 +1417,63 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 prepared = _write_epoch_manifest(
                     db, config, preflight, controls, dependencies
                 )
-            with paper_arm_environment(preflight.expected_account_hash):
+            required_factories = (
+                dependencies.broker_write_coordinator_factory,
+                dependencies.model_executor_factory,
+                dependencies.critical_alert_reporter_factory,
+                dependencies.authoritative_writer_factory,
+                dependencies.continuity_watchdog_factory,
+                dependencies.continuity_store_factory,
+            )
+            if any(factory is None for factory in required_factories):
+                raise LaunchError("CONTINUITY_RUNTIME_FACTORY_UNAVAILABLE")
+            coordinator = dependencies.broker_write_coordinator_factory()
+            model_executor = dependencies.model_executor_factory(
+                coordinator=coordinator
+            )
+            critical_alert_reporter = (
+                dependencies.critical_alert_reporter_factory(
+                    db=db,
+                    config=config,
+                    preflight=preflight,
+                )
+            )
+            continuity_store = dependencies.continuity_store_factory(db)
+            writer = dependencies.authoritative_writer_factory(
+                coordinator=coordinator,
+                db=db,
+                config=config,
+                preflight=preflight,
+                execution_lock_verifier=lambda: _lock_receipt_is_current(
+                    db, receipt
+                ),
+                uncertainty_reporter=critical_alert_reporter,
+            )
+            watchdog = dependencies.continuity_watchdog_factory(
+                coordinator=coordinator,
+                db_path=config.db_path,
+                config=config,
+                preflight=preflight,
+                continuity_store=continuity_store,
+                uncertainty_reporter=critical_alert_reporter,
+            )
+            arm_context = None
+            writer_start_attempted = False
+            try:
+                writer_start_attempted = True
+                try:
+                    writer.start()
+                    wait_until_ready = getattr(writer, "wait_until_ready", None)
+                    if callable(wait_until_ready) and not wait_until_ready(5.0):
+                        raise LaunchError("CONTINUITY_WRITER_START_FAILURE")
+                except LaunchError:
+                    raise
+                except Exception as exc:
+                    raise LaunchError("CONTINUITY_WRITER_START_FAILURE") from exc
+                arm_context = paper_arm_environment(
+                    preflight.expected_account_hash
+                )
+                arm_context.__enter__()
                 auditor_gate = dependencies.auditor_gate_factory(config)
                 market_gate = dependencies.market_gate_factory(
                     config, preflight.expected_account_hash
@@ -1392,6 +1514,10 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                         launch_attempt_id=config.launch_attempt_id,
                         provider=prepared.provider,
                         toolbox=prepared.toolbox,
+                        executor=model_executor,
+                        continuity_watchdog=watchdog,
+                        continuity_store=continuity_store,
+                        critical_alert_reporter=critical_alert_reporter,
                     )
                 except AutonomousServiceError as exc:
                     reason_codes = [
@@ -1439,6 +1565,13 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                     heartbeat.stop()
                 if heartbeat.failure_code is not None:
                     raise LaunchError("EXECUTION_LOCK_OWNER_ACTION_REQUIRED")
+            finally:
+                if arm_context is not None:
+                    arm_context.__exit__(None, None, None)
+                if writer_start_attempted:
+                    stopped = writer.stop(5.0)
+                    if stopped is False:
+                        raise LaunchError("CONTINUITY_WRITER_SHUTDOWN_TIMEOUT")
             return "AUTONOMOUS_PAPER_EXPERIMENT_STOPPED"
         except Exception as exc:
             if transition is not None:
@@ -1545,6 +1678,67 @@ def _default_config(
     )
 
 
+def _default_provider_recovery(
+    db: Database,
+    owner: LockOwner,
+    config: Day1LaunchConfig,
+    preflight: LaunchPreflight,
+) -> dict[str, Any]:
+    unresolved = []
+    rows = db.execute(
+        "SELECT invocation_id FROM provider_invocation_events "
+        "GROUP BY invocation_id"
+    ).fetchall()
+    store = ContinuityStore(db)
+    for row in rows:
+        invocation_id = str(row[0])
+        if store.provider_projection(invocation_id)["state"] == "IN_FLIGHT":
+            unresolved.append(invocation_id)
+    return {
+        "status": "PASS" if not unresolved else "BLOCK",
+        "reason_codes": (
+            [] if not unresolved else ["PROVIDER_ABANDONMENT_RECOVERY_REQUIRED"]
+        ),
+        "unresolved_invocation_ids": unresolved,
+    }
+
+
+def _default_pending_binding_recovery(
+    db: Database, config: Day1LaunchConfig, preflight: LaunchPreflight
+) -> dict[str, Any]:
+    rows = db.execute(
+        "SELECT DISTINCT json_extract(payload_json,'$.plan_id') "
+        "FROM experiment_order_registry "
+        "WHERE json_extract(payload_json,'$.continuity_state')="
+        "'CONTINUITY_BIND_PENDING'"
+    ).fetchall()
+    pending = [str(row[0]) for row in rows if row[0]]
+    return {
+        "status": "PASS" if not pending else "BLOCK",
+        "reason_codes": (
+            [] if not pending else ["PENDING_BINDING_RECONCILIATION_REQUIRED"]
+        ),
+        "pending_plan_ids": pending,
+    }
+
+
+def _default_continuity_uncertainty(db: Database) -> tuple[str, ...]:
+    ContinuityStore(db).verify_all_chains()
+    rows = db.execute(
+        "SELECT payload_json FROM continuity_execution_events ORDER BY sequence"
+    ).fetchall()
+    reasons = []
+    for row in rows:
+        try:
+            payload = json.loads(str(row[0]))
+        except (TypeError, json.JSONDecodeError) as exc:
+            raise LaunchError("CONTINUITY_AUTHORITY_CORRUPT") from exc
+        status = str(payload.get("status") or "").upper()
+        if status == "UNCERTAIN":
+            reasons.append("CONTINUITY_ORDER_STATE_UNCERTAIN")
+    return tuple(dict.fromkeys(reasons))
+
+
 def _default_dependencies() -> LaunchDependencies:
     return LaunchDependencies(
         now_utc=lambda: datetime.now(timezone.utc),
@@ -1563,6 +1757,16 @@ def _default_dependencies() -> LaunchDependencies:
         current_sid=current_process_sid,
         runtime_provenance_validator=_verify_current_runtime_provenance,
         successor_broker_evidence_collector=_collect_successor_broker_evidence,
+        continuity_schema_verifier=verify_continuity_schema_v3,
+        provider_abandonment_recoverer=_default_provider_recovery,
+        pending_binding_reconciler=_default_pending_binding_recovery,
+        continuity_uncertainty_reader=_default_continuity_uncertainty,
+        broker_write_coordinator_factory=None,
+        model_executor_factory=None,
+        critical_alert_reporter_factory=None,
+        authoritative_writer_factory=None,
+        continuity_watchdog_factory=None,
+        continuity_store_factory=ContinuityStore,
     )
 
 
