@@ -154,9 +154,9 @@ class RecordingMechanics:
         return self._result("OPEN_ORDER_ACTION")
 
     def execute_position_action_with_broker(
-        self, broker, action, bundle, decision
+        self, broker, action, bundle, decision, **kwargs
     ):
-        self.calls.append(("position", broker, action, bundle, decision))
+        self.calls.append(("position", broker, action, bundle, decision, kwargs))
         return self._result("POSITION_ACTION")
 
 

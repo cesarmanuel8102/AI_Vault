@@ -18,7 +18,7 @@ from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 
 UTC = timezone.utc
 NOW = datetime(2026, 10, 1, 14, 0, tzinfo=UTC)
-H1, H2, H3 = "a" * 64, "b" * 64, "c" * 64
+H1, H2, H3, H4 = "a" * 64, "b" * 64, "c" * 64, "d" * 64
 
 
 def _actions(value: str = "RETAIN") -> dict[str, dict[str, str]]:
@@ -177,6 +177,42 @@ def test_one_shot_execution_is_unique(tmp_path) -> None:
             store.append_execution_event(
                 "execution-2", "evaluation-2", "plan-1", "order-78", 1, "EXECUTED", payload
             )
+
+
+def test_production_write_attempt_and_result_use_separate_immutable_transactions(
+    tmp_path,
+) -> None:
+    with _open(tmp_path / "state.sqlite3") as db:
+        store = ContinuityStore(db)
+        attempt_id = store.append_production_write_attempt(
+            request_id="command-1",
+            request_sha256=H1,
+            execution_key="execution-1",
+            authority_snapshot_sha256=H2,
+            broker_evidence_sha256=H3,
+            liability_evidence_sha256=None,
+        )
+        result_id = store.append_production_write_result(
+            request_id="command-1",
+            request_sha256=H1,
+            execution_key="execution-1",
+            result_sha256=H4,
+            status="CANCEL_CONFIRMED",
+            success=True,
+        )
+        rows = db.execute(
+            "SELECT event_id,event_type,payload_json FROM state_events "
+            "WHERE event_type IN ('BROKER_WRITE_ATTEMPT_V1','BROKER_WRITE_RESULT_V1') "
+            "ORDER BY sequence"
+        ).fetchall()
+
+    assert [str(row[0]) for row in rows] == [attempt_id, result_id]
+    assert [str(row[1]) for row in rows] == [
+        "BROKER_WRITE_ATTEMPT_V1",
+        "BROKER_WRITE_RESULT_V1",
+    ]
+    assert json.loads(str(rows[0][2]))["authority_snapshot_sha256"] == H2
+    assert json.loads(str(rows[1][2]))["result_sha256"] == H4
 
 
 def test_report_review_binding_and_pending_projection(tmp_path) -> None:

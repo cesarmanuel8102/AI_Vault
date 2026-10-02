@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import copy
 import threading
-from datetime import timezone
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Callable
 
@@ -15,12 +15,19 @@ from .broker_write_coordinator import (
 )
 from .canonical import sha256_json
 from .coordinated_model_executor import ModelExecutionRequest
+from .continuity_liability import MaximumLiabilityEvidence
 from .ibkr_readonly import expected_identity_hash
 from .model_execution_engine import (
     ModelExecutionAuthorityContext,
     ModelExecutionEngine,
 )
 from .open_order_management import ACTIONABLE_ORDER_STATUSES, canonical_open_order
+from .production_authority import (
+    ProductionAuthorityDecision,
+    ProductionAuthoritySnapshot,
+    ProductionAuthorityValidator,
+    ProductionBrokerEvidence,
+)
 
 
 class AuthoritativeBrokerWriter:
@@ -42,6 +49,18 @@ class AuthoritativeBrokerWriter:
         | None = None,
         model_execution_engine: ModelExecutionEngine | None = None,
         production_validation_sha256: str | None = None,
+        production_authority_validator: ProductionAuthorityValidator | None = None,
+        production_broker_evidence_collector: Callable[
+            [Any, AuthorizedBrokerCommand | ModelExecutionRequest, dict[str, Any]],
+            ProductionBrokerEvidence,
+        ]
+        | None = None,
+        liability_evidence_collector: Callable[
+            [Any, AuthorizedBrokerCommand, dict[str, Any]],
+            MaximumLiabilityEvidence,
+        ]
+        | None = None,
+        now_utc: Callable[[], datetime] | None = None,
     ) -> None:
         self.coordinator = coordinator
         self.broker_factory = broker_factory
@@ -54,6 +73,12 @@ class AuthoritativeBrokerWriter:
         )
         self.model_execution_engine = model_execution_engine
         self.production_validation_sha256 = production_validation_sha256
+        self.production_authority_validator = production_authority_validator
+        self.production_broker_evidence_collector = (
+            production_broker_evidence_collector
+        )
+        self.liability_evidence_collector = liability_evidence_collector
+        self.now_utc = now_utc or (lambda: datetime.now(timezone.utc))
         self._capability = None
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
@@ -174,6 +199,76 @@ class AuthoritativeBrokerWriter:
             reasons=("WRITER_REQUEST_TYPE_UNSUPPORTED",),
         )
 
+    def _production_authority_read(
+        self,
+        *,
+        request: AuthorizedBrokerCommand | ModelExecutionRequest,
+        broker: Any,
+        prior_authority_snapshot: ProductionAuthoritySnapshot | None = None,
+    ) -> tuple[
+        ProductionAuthorityDecision | None,
+        dict[str, Any],
+        tuple[str, ...],
+    ]:
+        """Collect broker evidence, then re-read DB authority, without a write tx."""
+
+        try:
+            evidence = self._collect_evidence(broker)
+        except Exception as exc:
+            return (
+                None,
+                {},
+                (f"BROKER_EVIDENCE_UNAVAILABLE:{type(exc).__name__}",),
+            )
+        if self.production_authority_validator is None:
+            return None, evidence, ()
+        if self.production_broker_evidence_collector is None:
+            return None, evidence, ("PRODUCTION_BROKER_EVIDENCE_COLLECTOR_REQUIRED",)
+        try:
+            broker_evidence = self.production_broker_evidence_collector(
+                broker, request, evidence
+            )
+            if not isinstance(broker_evidence, ProductionBrokerEvidence):
+                raise TypeError("ProductionBrokerEvidence required")
+            liability_evidence = None
+            if (
+                isinstance(request, AuthorizedBrokerCommand)
+                and request.command_type == BrokerCommandType.MODIFY
+            ):
+                if self.liability_evidence_collector is None:
+                    return None, evidence, ("LIABILITY_EVIDENCE_COLLECTOR_REQUIRED",)
+                liability_evidence = self.liability_evidence_collector(
+                    broker, request, evidence
+                )
+                if not isinstance(liability_evidence, MaximumLiabilityEvidence):
+                    raise TypeError("MaximumLiabilityEvidence required")
+            decision = self.production_authority_validator.validate_before_write(
+                request=request,
+                broker_evidence=broker_evidence,
+                liability_evidence=liability_evidence,
+                now_utc=self.now_utc(),
+                prior_authority_snapshot=prior_authority_snapshot,
+            )
+        except Exception as exc:
+            return (
+                None,
+                evidence,
+                (f"PRODUCTION_AUTHORITY_VALIDATION_FAILED:{type(exc).__name__}",),
+            )
+        enriched = {
+            **evidence,
+            "production_authority": {
+                "authority_snapshot_sha256": decision.authority_snapshot_sha256,
+                "broker_evidence_sha256": decision.broker_evidence_sha256,
+                "liability_evidence_sha256": (
+                    None
+                    if decision.liability_result is None
+                    else decision.liability_result.evidence_sha256
+                ),
+            },
+        }
+        return decision, enriched, decision.reason_codes
+
     def _execute_model(self, request: ModelExecutionRequest, broker: Any):
         if self._model_write_authority_frozen:
             return self._result(
@@ -199,7 +294,32 @@ class AuthoritativeBrokerWriter:
                 status="BLOCKED",
                 reasons=("EXECUTION_LOCK_REQUIRED",),
             )
+        decision, evidence, production_reasons = self._production_authority_read(
+            request=request,
+            broker=broker,
+        )
+        if production_reasons:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=production_reasons,
+                evidence=evidence,
+            )
+        if decision is not None:
+            decision, evidence, production_reasons = self._production_authority_read(
+                request=request,
+                broker=broker,
+                prior_authority_snapshot=decision.authority_snapshot,
+            )
+            if production_reasons:
+                return self._result(
+                    success=False,
+                    status="BLOCKED",
+                    reasons=production_reasons,
+                    evidence=evidence,
+                )
         evidence = {
+            **evidence,
             "request_sha256": request.sha256,
             "writer_thread_id": threading.get_ident(),
             "execution_client_id": self.execution_client_id,
@@ -261,13 +381,16 @@ class AuthoritativeBrokerWriter:
                 status="BLOCKED",
                 reasons=("EXECUTION_LOCK_REQUIRED",),
             )
-        try:
-            evidence = self._collect_evidence(broker)
-        except Exception as exc:
+        decision, evidence, production_reasons = self._production_authority_read(
+            request=command,
+            broker=broker,
+        )
+        if production_reasons:
             return self._result(
                 success=False,
                 status="BLOCKED",
-                reasons=(f"BROKER_EVIDENCE_UNAVAILABLE:{type(exc).__name__}",),
+                reasons=production_reasons,
+                evidence=evidence,
             )
         reasons = tuple(self.authority_validator(command, evidence))
         if reasons:
@@ -275,15 +398,20 @@ class AuthoritativeBrokerWriter:
                 success=False, status="BLOCKED", reasons=reasons, evidence=evidence
             )
 
-        try:
-            evidence = self._collect_evidence(broker)
-        except Exception as exc:
+        decision, evidence, production_reasons = self._production_authority_read(
+            request=command,
+            broker=broker,
+            prior_authority_snapshot=(
+                None if decision is None else decision.authority_snapshot
+            ),
+        )
+        if production_reasons:
             return self._result(
                 success=False,
                 status="BLOCKED",
-                reasons=(f"BROKER_EVIDENCE_UNAVAILABLE:{type(exc).__name__}",),
+                reasons=production_reasons,
+                evidence=evidence,
             )
-
         reasons = tuple(self.authority_validator(command, evidence))
         if reasons:
             return self._result(

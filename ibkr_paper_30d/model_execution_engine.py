@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import threading
-from typing import Any
+from typing import Any, Callable
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -46,6 +46,7 @@ class ModelExecutionEngine:
         broker: Any,
         request: ModelExecutionRequest,
         authority_context: ModelExecutionAuthorityContext,
+        final_write_authority_check: Callable[[], tuple[str, ...]] | None = None,
     ) -> PaperExecutionResult:
         if not isinstance(request, ModelExecutionRequest):
             raise TypeError("MODEL_EXECUTION_REQUEST_REQUIRED")
@@ -65,6 +66,7 @@ class ModelExecutionEngine:
                 request.input_bundle,
                 continuity_plan=request.continuity_plan,
                 invocation_id=request.invocation_id,
+                final_write_authority_check=final_write_authority_check,
             )
         if request.operation == ModelExecutionOperation.OPEN_ORDER_ACTION:
             return self.mechanics.execute_open_order_action_with_broker(
@@ -73,6 +75,7 @@ class ModelExecutionEngine:
                 request.input_bundle,
                 request.accepted_decision,
                 invocation_id=request.invocation_id,
+                final_write_authority_check=final_write_authority_check,
             )
         if request.operation == ModelExecutionOperation.POSITION_ACTION:
             return self.mechanics.execute_position_action_with_broker(
@@ -80,5 +83,6 @@ class ModelExecutionEngine:
                 request.payload,
                 request.input_bundle,
                 request.accepted_decision,
+                final_write_authority_check=final_write_authority_check,
             )
         return self._blocked("MODEL_EXECUTION_OPERATION_UNSUPPORTED")

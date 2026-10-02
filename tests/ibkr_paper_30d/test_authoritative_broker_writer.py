@@ -5,7 +5,7 @@ import json
 import subprocess
 import sys
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from types import SimpleNamespace
 
@@ -30,6 +30,11 @@ from ibkr_paper_30d.autonomous_research import (
 )
 from ibkr_paper_30d.ibkr_readonly import expected_identity_hash
 from ibkr_paper_30d.open_order_management import canonical_open_order
+from ibkr_paper_30d.production_authority import (
+    ProductionAuthoritySnapshot,
+    ProductionAuthorityValidator,
+    ProductionBrokerEvidence,
+)
 from ibkr_paper_30d.trader_invocation import TraderDecision, TraderInputBundle
 
 
@@ -254,8 +259,18 @@ class RecordingModelEngine:
         self.block = block
         self.raises = raises
 
-    def execute(self, broker, request, authority_context):
+    def execute(
+        self,
+        broker,
+        request,
+        authority_context,
+        final_write_authority_check=None,
+    ):
         self.calls.append((broker, request, authority_context, threading.get_ident()))
+        if final_write_authority_check is not None:
+            reasons = tuple(final_write_authority_check())
+            if reasons:
+                return PaperExecutionResult(False, "BLOCKED", reasons, {}, {})
         if self.block is not None:
             self.block.wait(2)
         if self.raises:
@@ -554,6 +569,228 @@ def test_queue_claim_requires_private_writer_capability():
 def test_writer_source_contains_no_global_cancel_path():
     source = inspect.getsource(AuthoritativeBrokerWriter)
     assert "reqGlobalCancel" not in source
+
+
+def _production_snapshot(command, **updates):
+    values = {
+        "snapshot_id": "authority-1",
+        "observed_at_utc": datetime(2026, 10, 2, 14, tzinfo=timezone.utc),
+        "lock_owned_by_process": True,
+        "approved_head": "a" * 40,
+        "runtime_provenance_valid": True,
+        "environment": "PAPER",
+        "account_identity_sha256": command.account_identity_sha256,
+        "owner_authorization_valid": True,
+        "epoch_id": command.epoch_id,
+        "clock_active": True,
+        "kill_switch_clear": True,
+        "auditor_gate_pass": True,
+        "market_data_gate_pass": True,
+        "continuity_schema_valid": True,
+        "authority_chains_valid": True,
+        "active_plan_sha256": command.plan_sha256,
+        "binding_plan_sha256": command.plan_sha256,
+        "provider_state_allows": True,
+        "accepted_result_sha256": "c" * 64,
+        "review_allows": True,
+        "execution_count": 0,
+        "maximum_execution_count": 1,
+        "used_execution_keys": (),
+        "order_state_sha256": command.observed_state_sha256,
+        "positions_sha256": "1" * 64,
+        "executions_sha256": "2" * 64,
+        "experiment_capital_boundary": "500",
+        "sqlite_write_transaction_active": False,
+    }
+    values.update(updates)
+    return ProductionAuthoritySnapshot.model_validate(values)
+
+
+def _production_broker_evidence(command):
+    now = datetime(2026, 10, 2, 14, tzinfo=timezone.utc)
+    return ProductionBrokerEvidence(
+        evidence_id="broker-evidence-1",
+        collected_at_utc=now,
+        broker_time_utc=now,
+        fresh_until_utc=now + timedelta(seconds=30),
+        account_identity_sha256=command.account_identity_sha256,
+        all_order_visibility=True,
+        open_orders_sha256="3" * 64,
+        positions_sha256="1" * 64,
+        executions_sha256="2" * 64,
+        target_order_state_sha256=getattr(
+            command, "observed_state_sha256", "f" * 64
+        ),
+        evidence_sha256="4" * 64,
+    )
+
+
+def test_production_writer_orders_external_evidence_db_reads_and_short_persistence():
+    events = []
+    command = _command(1)
+    validator = ProductionAuthorityValidator(
+        snapshot_reader=lambda request: (
+            events.append("db") or _production_snapshot(command)
+        ),
+        expected_approved_head="a" * 40,
+    )
+    factory = GatewayFactory()
+    coordinator = BrokerWriteCoordinator()
+    writer = AuthoritativeBrokerWriter(
+        coordinator,
+        broker_factory=factory,
+        execution_client_id=19761,
+        execution_lock_verifier=lambda: True,
+        authority_validator=lambda request, evidence: (),
+        production_authority_validator=validator,
+        production_broker_evidence_collector=lambda broker, request, raw: (
+            events.append("broker") or _production_broker_evidence(command)
+        ),
+        attempt_persister=lambda request, evidence: events.append("attempt"),
+        result_persister=lambda request, result, evidence: events.append("result"),
+        now_utc=lambda: datetime(2026, 10, 2, 14, tzinfo=timezone.utc),
+    )
+    writer.start()
+    assert writer.wait_until_ready(2)
+    original_cancel = factory.gateway.cancelOrder
+
+    def record_cancel(order):
+        events.append("write")
+        return original_cancel(order)
+
+    factory.gateway.cancelOrder = record_cancel
+    try:
+        result = coordinator.submit(command).result(2)
+    finally:
+        writer.stop(2)
+
+    assert result.success is True
+    assert events == ["broker", "db", "broker", "db", "attempt", "write", "result"]
+
+
+def test_production_writer_blocks_db_race_after_broker_collection_without_write():
+    command = _command(1)
+    snapshots = iter(
+        [
+            _production_snapshot(command, snapshot_id="first"),
+            _production_snapshot(
+                command,
+                snapshot_id="second",
+                experiment_capital_boundary="499",
+            ),
+        ]
+    )
+    validator = ProductionAuthorityValidator(
+        snapshot_reader=lambda request: next(snapshots),
+        expected_approved_head="a" * 40,
+    )
+    coordinator = BrokerWriteCoordinator()
+    factory = GatewayFactory()
+    writer = AuthoritativeBrokerWriter(
+        coordinator,
+        broker_factory=factory,
+        execution_client_id=19761,
+        execution_lock_verifier=lambda: True,
+        authority_validator=lambda request, evidence: (),
+        production_authority_validator=validator,
+        production_broker_evidence_collector=lambda broker, request, raw: (
+            _production_broker_evidence(command)
+        ),
+        now_utc=lambda: datetime(2026, 10, 2, 14, tzinfo=timezone.utc),
+    )
+    writer.start()
+    assert writer.wait_until_ready(2)
+    try:
+        result = coordinator.submit(command).result(2)
+    finally:
+        writer.stop(2)
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("AUTHORITY_STATE_CHANGED_DURING_VALIDATION",)
+    assert factory.gateway.cancel_calls == []
+
+
+def test_model_final_what_if_precedes_final_authority_read_and_attempt():
+    events = []
+    request = _model_request(1, ModelExecutionOperation.NEW_TRADE)
+
+    def snapshot_reader(candidate):
+        events.append("db")
+        return ProductionAuthoritySnapshot(
+            snapshot_id=f"authority-{events.count('db')}",
+            observed_at_utc=datetime(2026, 10, 2, 14, tzinfo=timezone.utc),
+            lock_owned_by_process=True,
+            approved_head=request.approved_head,
+            runtime_provenance_valid=True,
+            environment="PAPER",
+            account_identity_sha256=request.account_identity_sha256,
+            owner_authorization_valid=True,
+            epoch_id=request.epoch_id,
+            clock_active=True,
+            kill_switch_clear=True,
+            auditor_gate_pass=True,
+            market_data_gate_pass=True,
+            continuity_schema_valid=True,
+            authority_chains_valid=True,
+            active_plan_sha256=None,
+            binding_plan_sha256=None,
+            provider_state_allows=True,
+            accepted_result_sha256=request.accepted_result_sha256,
+            review_allows=True,
+            execution_count=0,
+            maximum_execution_count=1,
+            used_execution_keys=(),
+            order_state_sha256="f" * 64,
+            positions_sha256="1" * 64,
+            executions_sha256="2" * 64,
+            experiment_capital_boundary="500",
+            sqlite_write_transaction_active=False,
+        )
+
+    class FinalGateEngine:
+        def execute(
+            self,
+            broker,
+            candidate,
+            authority_context,
+            final_write_authority_check=None,
+        ):
+            events.append("what_if")
+            reasons = tuple(final_write_authority_check())
+            if reasons:
+                return PaperExecutionResult(False, "BLOCKED", reasons, {}, {})
+            events.append("write")
+            return PaperExecutionResult(True, "SUBMITTED", (), {}, {})
+
+    validator = ProductionAuthorityValidator(snapshot_reader=snapshot_reader)
+    coordinator, writer, _ = _start_writer(
+        model_execution_engine=FinalGateEngine(),
+        attempt_persister=lambda candidate, evidence: events.append("attempt"),
+        result_persister=lambda candidate, result, evidence: events.append("result"),
+    )
+    writer.production_authority_validator = validator
+    writer.production_broker_evidence_collector = (
+        lambda broker, candidate, raw: (
+            events.append("broker") or _production_broker_evidence(candidate)
+        )
+    )
+    writer.now_utc = lambda: datetime(2026, 10, 2, 14, tzinfo=timezone.utc)
+    try:
+        result = coordinator.submit(request).result(2)
+    finally:
+        writer.stop(2)
+
+    assert result.success is True
+    assert events == [
+        "broker",
+        "db",
+        "what_if",
+        "broker",
+        "db",
+        "attempt",
+        "write",
+        "result",
+    ]
 
 
 def test_capability_describe_is_connection_free():

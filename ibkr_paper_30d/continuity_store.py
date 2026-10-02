@@ -14,7 +14,7 @@ from .continuity_models import (
 )
 from .continuity_schema import verify_continuity_schema_v3
 from .persistence import Database
-from .repositories import utc_now
+from .repositories import EventRepository, utc_now
 from .types import new_uuid7
 
 
@@ -313,6 +313,76 @@ class ContinuityStore:
                 )
         except sqlite3.IntegrityError as exc:
             raise ContinuityStoreError("EXECUTION_ORDINAL_CONFLICT") from exc
+
+    @staticmethod
+    def _require_sha256(name: str, value: str | None, *, optional: bool = False) -> None:
+        if optional and value is None:
+            return
+        if value is None or len(value) != 64 or any(
+            character not in "0123456789abcdef" for character in value
+        ):
+            raise ContinuityStoreError(f"{name.upper()}_INVALID")
+
+    def append_production_write_attempt(
+        self,
+        *,
+        request_id: str,
+        request_sha256: str,
+        execution_key: str,
+        authority_snapshot_sha256: str,
+        broker_evidence_sha256: str,
+        liability_evidence_sha256: str | None,
+    ) -> str:
+        """Append the pre-send authority receipt in its own short transaction."""
+
+        for name, value in (
+            ("request_sha256", request_sha256),
+            ("authority_snapshot_sha256", authority_snapshot_sha256),
+            ("broker_evidence_sha256", broker_evidence_sha256),
+        ):
+            self._require_sha256(name, value)
+        self._require_sha256(
+            "liability_evidence_sha256",
+            liability_evidence_sha256,
+            optional=True,
+        )
+        payload = {
+            "schema": "BROKER_WRITE_ATTEMPT_V1",
+            "request_id": request_id,
+            "request_sha256": request_sha256,
+            "execution_key": execution_key,
+            "authority_snapshot_sha256": authority_snapshot_sha256,
+            "broker_evidence_sha256": broker_evidence_sha256,
+            "liability_evidence_sha256": liability_evidence_sha256,
+        }
+        with self.db.transaction():
+            return EventRepository(self.db).append("BROKER_WRITE_ATTEMPT_V1", payload)
+
+    def append_production_write_result(
+        self,
+        *,
+        request_id: str,
+        request_sha256: str,
+        execution_key: str,
+        result_sha256: str,
+        status: str,
+        success: bool,
+    ) -> str:
+        """Append the post-reconciliation receipt in a new short transaction."""
+
+        self._require_sha256("request_sha256", request_sha256)
+        self._require_sha256("result_sha256", result_sha256)
+        payload = {
+            "schema": "BROKER_WRITE_RESULT_V1",
+            "request_id": request_id,
+            "request_sha256": request_sha256,
+            "execution_key": execution_key,
+            "result_sha256": result_sha256,
+            "status": status,
+            "success": success,
+        }
+        with self.db.transaction():
+            return EventRepository(self.db).append("BROKER_WRITE_RESULT_V1", payload)
 
     def append_report(self, report_id: str, outage_id: str, payload: Mapping[str, Any]) -> str:
         with self.db.transaction():

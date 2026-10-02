@@ -87,6 +87,7 @@ class WriterOwnedModelExecutionMechanics:
         self.operator_control_check = operator_control_check
         self.continuity_binding_service = continuity_binding_service
         self._writer_owned_broker: Any | None = None
+        self._final_write_authority_check: Callable[[], tuple[str, ...]] | None = None
 
     @staticmethod
     def _fills_payload(
@@ -174,6 +175,14 @@ class WriterOwnedModelExecutionMechanics:
         except Exception as exc:
             return (f"FRESH_OPERATOR_CONTROL_CHECK_FAILED:{type(exc).__name__}",)
 
+    def _final_write_authority_reasons(self) -> tuple[str, ...]:
+        if self._final_write_authority_check is None:
+            return ()
+        try:
+            return tuple(self._final_write_authority_check())
+        except Exception as exc:
+            return (f"FINAL_WRITE_AUTHORITY_CHECK_FAILED:{type(exc).__name__}",)
+
     def _connect_execution(self):
         if self._writer_owned_broker is None:
             raise AutonomousPaperExecutionNotArmed("WRITER_OWNED_BROKER_REQUIRED")
@@ -184,15 +193,21 @@ class WriterOwnedModelExecutionMechanics:
             raise RuntimeError("WRITER_BROKER_IDENTITY_MISMATCH")
 
     @contextmanager
-    def _using_writer_owned_broker(self, broker: Any):
+    def _using_writer_owned_broker(
+        self,
+        broker: Any,
+        final_write_authority_check: Callable[[], tuple[str, ...]] | None,
+    ):
         if broker is None:
             raise ValueError("writer-owned broker is required")
         if self._writer_owned_broker is not None:
             raise RuntimeError("WRITER_BROKER_ALREADY_BOUND")
         self._writer_owned_broker = broker
+        self._final_write_authority_check = final_write_authority_check
         try:
             yield
         finally:
+            self._final_write_authority_check = None
             self._writer_owned_broker = None
 
     def execute_with_broker(
@@ -203,8 +218,9 @@ class WriterOwnedModelExecutionMechanics:
         *,
         continuity_plan: CodexOrderContinuityPlan | None = None,
         invocation_id: str | None = None,
+        final_write_authority_check: Callable[[], tuple[str, ...]] | None = None,
     ) -> PaperExecutionResult:
-        with self._using_writer_owned_broker(broker):
+        with self._using_writer_owned_broker(broker, final_write_authority_check):
             return self.execute(
                 proposal,
                 bundle,
@@ -220,8 +236,9 @@ class WriterOwnedModelExecutionMechanics:
         decision: TraderDecision,
         *,
         invocation_id: str | None = None,
+        final_write_authority_check: Callable[[], tuple[str, ...]] | None = None,
     ) -> PaperExecutionResult:
-        with self._using_writer_owned_broker(broker):
+        with self._using_writer_owned_broker(broker, final_write_authority_check):
             return self.execute_open_order_action(
                 action,
                 bundle,
@@ -235,8 +252,10 @@ class WriterOwnedModelExecutionMechanics:
         action: AutonomousPositionAction,
         bundle: TraderInputBundle,
         decision: TraderDecision,
+        *,
+        final_write_authority_check: Callable[[], tuple[str, ...]] | None = None,
     ) -> PaperExecutionResult:
-        with self._using_writer_owned_broker(broker):
+        with self._using_writer_owned_broker(broker, final_write_authority_check):
             return self.execute_position_action(action, bundle, decision)
 
     def _reconcile_post_send_trade(
@@ -644,6 +663,16 @@ class WriterOwnedModelExecutionMechanics:
                 modified.tif = requested_tif
                 modified.goodTillDate = requested_good_till
 
+            final_authority_reasons = self._final_write_authority_reasons()
+            if final_authority_reasons:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=final_authority_reasons,
+                    order={},
+                    broker_validation=validation.broker_evidence,
+                )
+
             try:
                 self._register_lifecycle_event(
                     lifecycle_event="MODIFY_ATTEMPT",
@@ -931,6 +960,15 @@ class WriterOwnedModelExecutionMechanics:
                     success=False,
                     status="BLOCKED",
                     reason_codes=operator_reasons,
+                    order={},
+                    broker_validation={},
+                )
+            final_authority_reasons = self._final_write_authority_reasons()
+            if final_authority_reasons:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=final_authority_reasons,
                     order={},
                     broker_validation={},
                 )
@@ -1317,6 +1355,18 @@ class WriterOwnedModelExecutionMechanics:
                             "trade_contract_market_data": live_quote,
                         },
                     )
+            final_authority_reasons = self._final_write_authority_reasons()
+            if final_authority_reasons:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=final_authority_reasons,
+                    order={},
+                    broker_validation={
+                        **validation.broker_evidence,
+                        "trade_contract_market_data": live_quote,
+                    },
+                )
             trade = ib.placeOrder(contract, order)
             ib.sleep(self.fill_wait_seconds)
             trade = self._reconcile_post_send_trade(
@@ -1607,6 +1657,18 @@ class WriterOwnedModelExecutionMechanics:
                     success=False,
                     status="BLOCKED",
                     reason_codes=operator_reasons,
+                    order={},
+                    broker_validation={
+                        **final_validation.broker_evidence,
+                        "trade_contract_market_data": live_quote,
+                    },
+                )
+            final_authority_reasons = self._final_write_authority_reasons()
+            if final_authority_reasons:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=final_authority_reasons,
                     order={},
                     broker_validation={
                         **final_validation.broker_evidence,
