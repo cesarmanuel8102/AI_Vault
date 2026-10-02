@@ -28,6 +28,7 @@ from ibkr_paper_30d.production_continuity_runtime import (
     build_ibkr_session_factory,
     validate_production_runtime_configuration,
     _verified_registry_binding,
+    _collect_continuity_liability_evidence,
     validate_production_composition,
 )
 
@@ -482,10 +483,132 @@ def test_validate_only_constructs_composition_without_broker_io(
     assert result["writer_sole_capability"] is True
     assert result["legacy_direct_executor_selected"] is False
     assert result["production_gates_callable"] is True
+    assert result["liability_evidence_collector_callable"] is True
     assert calls == [
         ("configured", WRITER_CLIENT_ID, False),
         ("configured", OBSERVER_CLIENT_ID, True),
     ]
+
+
+def test_production_liability_collector_proves_exact_vertical_maximum_loss() -> None:
+    account_hash = expected_identity_hash("DU123456")
+    combo_legs = [
+        SimpleNamespace(conId=550001, ratio=1, action="BUY", exchange="SMART"),
+        SimpleNamespace(conId=560001, ratio=1, action="SELL", exchange="SMART"),
+    ]
+    contract = SimpleNamespace(
+        conId=0,
+        symbol="UTHR",
+        localSymbol="UTHR",
+        secType="BAG",
+        exchange="SMART",
+        currency="USD",
+        lastTradeDateOrContractMonth="",
+        strike=0,
+        right="",
+        multiplier="100",
+        comboLegs=combo_legs,
+    )
+    order = SimpleNamespace(
+        orderRef="codex-order-78",
+        orderId=78,
+        permId=225256222,
+        clientId=WRITER_CLIENT_ID,
+        account="DU123456",
+        action="BUY",
+        orderType="LMT",
+        totalQuantity=1,
+        lmtPrice=Decimal("4.90"),
+        auxPrice=0,
+        tif="DAY",
+        outsideRth=False,
+        transmit=True,
+        whatIf=False,
+    )
+    trade = SimpleNamespace(
+        contract=contract,
+        order=order,
+        orderStatus=SimpleNamespace(status="PreSubmitted", filled=0, remaining=1),
+    )
+    canonical_contract = canonical_contract_identity(contract)
+    leg_hashes = tuple(
+        sha256_json(value) for value in canonical_contract["comboLegs"]
+    )
+    requirement = SimpleNamespace(
+        required_leg_identity_sha256=leg_hashes,
+        maximum_evidence_age_seconds=Decimal("30"),
+    )
+    command = SimpleNamespace(
+        order_ref=order.orderRef,
+        ibkr_order_id=order.orderId,
+        perm_id=order.permId,
+        execution_client_id=order.clientId,
+        account_identity_sha256=account_hash,
+        contract_identity_sha256=sha256_json(canonical_contract),
+        proposed_order_sha256="a" * 64,
+        liability_requirement=requirement,
+        resolved_total_quantity=Decimal("1"),
+        resolved_limit_price=Decimal("3.50"),
+        new_tif=None,
+        new_good_till_date_utc=None,
+        sha256="b" * 64,
+    )
+    option_contracts = {
+        550001: SimpleNamespace(
+            conId=550001,
+            symbol="UTHR",
+            secType="OPT",
+            currency="USD",
+            lastTradeDateOrContractMonth="20261016",
+            strike=550,
+            right="C",
+            multiplier="100",
+        ),
+        560001: SimpleNamespace(
+            conId=560001,
+            symbol="UTHR",
+            secType="OPT",
+            currency="USD",
+            lastTradeDateOrContractMonth="20261016",
+            strike=560,
+            right="C",
+            multiplier="100",
+        ),
+    }
+    what_if_orders = []
+
+    class Broker:
+        def reqAllOpenOrders(self):
+            return [trade]
+
+        def reqContractDetails(self, query):
+            return [SimpleNamespace(contract=option_contracts[query.conId])]
+
+        def whatIfOrder(self, exact_contract, proposed_order):
+            assert exact_contract is contract
+            what_if_orders.append(proposed_order)
+            return SimpleNamespace(
+                commission="1.00",
+                initMarginChange="0",
+                maintMarginChange="0",
+                warningText="",
+            )
+
+    evidence = _collect_continuity_liability_evidence(
+        Broker(), command, {}
+    )
+
+    assert evidence.bounded is True
+    assert evidence.maximum_loss == Decimal("350.00")
+    assert evidence.covered_leg_identity_sha256 == leg_hashes
+    assert evidence.account_identity_sha256 == account_hash
+    assert evidence.contract_identity_sha256 == command.contract_identity_sha256
+    assert evidence.proposed_order_sha256 == command.proposed_order_sha256
+    assert evidence.command_sha256 == command.sha256
+    assert len(what_if_orders) == 1
+    assert what_if_orders[0].whatIf is True
+    assert what_if_orders[0].transmit is True
+    assert Decimal(str(what_if_orders[0].lmtPrice)) == Decimal("3.50")
 
 
 def test_validate_only_reports_missing_alert_configuration_without_broker_io(

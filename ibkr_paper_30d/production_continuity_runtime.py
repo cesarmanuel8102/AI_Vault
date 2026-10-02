@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import sqlite3
@@ -802,6 +803,216 @@ def _production_persistence(db_path: Path) -> tuple[Callable[..., None], Callabl
     return persist_attempt, persist_result
 
 
+def _exact_continuity_maximum_loss(
+    broker: Any,
+    contract: Any,
+    order: Any,
+) -> tuple[bool, Decimal | None, tuple[str, ...], list[dict[str, Any]]]:
+    from ib_insync import Contract
+    from .open_order_management import canonical_contract_identity
+
+    identity = canonical_contract_identity(contract)
+    sec_type = str(identity["secType"]).upper()
+    action = str(getattr(order, "action", "") or "").upper()
+    quantity = Decimal(str(getattr(order, "totalQuantity", 0) or 0))
+    limit_price = Decimal(str(getattr(order, "lmtPrice", 0) or 0))
+    currency = str(identity["currency"] or "").upper()
+    if quantity <= 0 or limit_price <= 0 or len(currency) != 3:
+        return False, None, (), []
+
+    combo_legs = list(identity.get("comboLegs") or [])
+    if sec_type != "BAG":
+        covered = (sha256_json(identity),)
+        multiplier = Decimal(str(identity.get("multiplier") or "1"))
+        if action == "BUY" and sec_type in {"OPT", "STK"}:
+            return True, limit_price * multiplier * quantity, covered, [identity]
+        if action == "SELL" and sec_type == "OPT" and identity.get("right") == "P":
+            strike = Decimal(str(identity.get("strike") or "0"))
+            maximum_loss = max(strike - limit_price, Decimal("0"))
+            return True, maximum_loss * multiplier * quantity, covered, [identity]
+        return False, None, covered, [identity]
+
+    if not combo_legs:
+        return False, None, (), []
+    covered = tuple(sha256_json(leg) for leg in combo_legs)
+    resolved: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    for leg in combo_legs:
+        details = list(
+            broker.reqContractDetails(
+                Contract(
+                    conId=int(leg["conId"]),
+                    exchange=str(leg.get("exchange") or "SMART"),
+                )
+            )
+        )
+        matches = [
+            item
+            for item in details
+            if int(getattr(getattr(item, "contract", None), "conId", 0) or 0)
+            == int(leg["conId"])
+        ]
+        if len(matches) != 1:
+            return False, None, covered, []
+        resolved.append((leg, canonical_contract_identity(matches[0].contract)))
+
+    terms = [contract_identity for _leg, contract_identity in resolved]
+    if any(str(term["secType"]).upper() != "OPT" for term in terms):
+        return False, None, covered, terms
+    if len({str(term["symbol"]).upper() for term in terms}) != 1:
+        return False, None, covered, terms
+    if len({str(term["expiry"]) for term in terms}) != 1:
+        return False, None, covered, terms
+    if {str(term["currency"]).upper() for term in terms} != {currency}:
+        return False, None, covered, terms
+    multipliers = {Decimal(str(term.get("multiplier") or "1")) for term in terms}
+    if len(multipliers) != 1 or next(iter(multipliers)) <= 0:
+        return False, None, covered, terms
+    multiplier = next(iter(multipliers))
+
+    direction = Decimal("1") if action == "BUY" else Decimal("-1")
+    if action not in {"BUY", "SELL"}:
+        return False, None, covered, terms
+    signed_legs: list[tuple[Decimal, Decimal, str]] = []
+    net_upper_slope = Decimal("0")
+    strikes: set[Decimal] = set()
+    for leg, term in resolved:
+        right = str(term["right"]).upper()
+        if right not in {"C", "P"}:
+            return False, None, covered, terms
+        strike = Decimal(str(term["strike"]))
+        ratio = Decimal(str(leg["ratio"]))
+        leg_direction = (
+            Decimal("1")
+            if str(leg["action"]).upper() == "BUY"
+            else Decimal("-1")
+        )
+        signed_ratio = direction * leg_direction * ratio
+        signed_legs.append((signed_ratio, strike, right))
+        strikes.add(strike)
+        if right == "C":
+            net_upper_slope += signed_ratio
+    if net_upper_slope < 0:
+        return False, None, covered, terms
+
+    initial_cash = (
+        -limit_price * multiplier * quantity
+        if action == "BUY"
+        else limit_price * multiplier * quantity
+    )
+    minimum_pnl: Decimal | None = None
+    for underlying in sorted({Decimal("0"), *strikes}):
+        pnl = initial_cash
+        for signed_ratio, strike, right in signed_legs:
+            payoff = (
+                max(underlying - strike, Decimal("0"))
+                if right == "C"
+                else max(strike - underlying, Decimal("0"))
+            )
+            pnl += signed_ratio * payoff * multiplier * quantity
+        minimum_pnl = pnl if minimum_pnl is None else min(minimum_pnl, pnl)
+    maximum_loss = max(-(minimum_pnl or Decimal("0")), Decimal("0"))
+    return True, maximum_loss, covered, terms
+
+
+def _collect_continuity_liability_evidence(
+    broker: Any,
+    command: Any,
+    _broker_evidence: dict[str, Any],
+) -> Any:
+    from .continuity_liability import (
+        LiabilityEvidenceSource,
+        MaximumLiabilityEvidence,
+    )
+    from .open_order_management import canonical_contract_identity, canonical_open_order
+
+    matches = []
+    for trade in broker.reqAllOpenOrders():
+        snapshot = canonical_open_order(trade)
+        if (
+            snapshot["orderRef"] == command.order_ref
+            and snapshot["orderId"] == command.ibkr_order_id
+            and snapshot["permId"] == command.perm_id
+            and snapshot["clientId"] == command.execution_client_id
+            and expected_identity_hash(snapshot["account"])
+            == command.account_identity_sha256
+            and sha256_json(snapshot["contract"])
+            == command.contract_identity_sha256
+        ):
+            matches.append((trade, snapshot))
+    if len(matches) != 1:
+        raise ProductionRuntimeConfigurationError(
+            "LIABILITY_ORDER_IDENTITY_UNCERTAIN"
+        )
+    trade, snapshot = matches[0]
+    proposed_order = copy.deepcopy(trade.order)
+    proposed_order.totalQuantity = float(command.resolved_total_quantity)
+    proposed_order.lmtPrice = float(command.resolved_limit_price)
+    if command.new_tif is not None:
+        proposed_order.tif = str(command.new_tif.value)
+        proposed_order.goodTillDate = (
+            ""
+            if command.new_good_till_date_utc is None
+            else command.new_good_till_date_utc.astimezone(timezone.utc).strftime(
+                "%Y%m%d %H:%M:%S UTC"
+            )
+        )
+    proposed_order.whatIf = True
+    proposed_order.transmit = True
+    what_if_state = broker.whatIfOrder(trade.contract, proposed_order)
+    if what_if_state is None:
+        raise ProductionRuntimeConfigurationError("LIABILITY_WHAT_IF_UNAVAILABLE")
+
+    bounded, maximum_loss, covered_legs, resolved_terms = (
+        _exact_continuity_maximum_loss(broker, trade.contract, proposed_order)
+    )
+    collected = datetime.now(timezone.utc)
+    maximum_age = min(
+        Decimal("30"),
+        Decimal(str(command.liability_requirement.maximum_evidence_age_seconds)),
+    )
+    broker_evidence = {
+        "schema": "CONTINUITY_LIABILITY_BROKER_EVIDENCE_V1",
+        "command_sha256": command.sha256,
+        "proposed_order_sha256": command.proposed_order_sha256,
+        "current_order_state_sha256": snapshot["state_sha256"],
+        "contract": canonical_contract_identity(trade.contract),
+        "resolved_terms": resolved_terms,
+        "covered_leg_identity_sha256": list(covered_legs),
+        "bounded": bounded,
+        "maximum_loss": None if maximum_loss is None else str(maximum_loss),
+        "what_if": {
+            "commission": str(getattr(what_if_state, "commission", "") or ""),
+            "init_margin_change": str(
+                getattr(what_if_state, "initMarginChange", "") or ""
+            ),
+            "maint_margin_change": str(
+                getattr(what_if_state, "maintMarginChange", "") or ""
+            ),
+            "warning_text": str(getattr(what_if_state, "warningText", "") or ""),
+        },
+        "collected_at_utc": collected,
+    }
+    evidence_sha256 = sha256_json(broker_evidence)
+    currency = str(
+        canonical_contract_identity(trade.contract).get("currency") or ""
+    ).upper()
+    return MaximumLiabilityEvidence(
+        evidence_id=f"liability:{command.sha256}:{evidence_sha256}",
+        source=LiabilityEvidenceSource.PROVEN_EXACT_FORMULA,
+        collected_at_utc=collected,
+        fresh_until_utc=collected + timedelta(seconds=float(maximum_age)),
+        account_identity_sha256=command.account_identity_sha256,
+        contract_identity_sha256=command.contract_identity_sha256,
+        proposed_order_sha256=command.proposed_order_sha256,
+        command_sha256=command.sha256,
+        bounded=bounded,
+        maximum_loss=maximum_loss,
+        currency=currency,
+        covered_leg_identity_sha256=covered_legs,
+        broker_evidence_sha256=evidence_sha256,
+    )
+
+
 def create_authoritative_writer(
     *,
     coordinator: BrokerWriteCoordinator,
@@ -856,7 +1067,7 @@ def create_authoritative_writer(
         production_broker_evidence_collector=_broker_evidence_collector(
             Path(db_path)
         ),
-        liability_evidence_collector=None,
+        liability_evidence_collector=_collect_continuity_liability_evidence,
         resource_closer=lazy_engine.close,
         uncertainty_reporter=uncertainty_reporter,
     )
@@ -917,6 +1128,10 @@ def _verified_registry_binding(db: Any, plan: Any) -> dict[str, Any] | None:
     )
     if not all(checks):
         raise ProductionRuntimeConfigurationError("ORDER_REGISTRY_IDENTITY_MISMATCH")
+    combo_legs = list(contract.get("comboLegs") or [])
+    leg_hashes = tuple(sha256_json(leg) for leg in combo_legs) or (
+        sha256_json(contract),
+    )
     return {
         "plan_id": plan.plan_id,
         "plan_sha256": plan.sha256,
@@ -926,6 +1141,7 @@ def _verified_registry_binding(db: Any, plan: Any) -> dict[str, Any] | None:
         "execution_client_id": int(payload.get("execution_client_id") or -1),
         "account_identity_sha256": expected_identity_hash(account),
         "contract_identity_sha256": sha256_json(contract),
+        "contract_leg_identity_sha256": leg_hashes,
     }
 
 
@@ -1273,8 +1489,13 @@ def validate_production_composition(
                         )
                     ),
                     callable(reporter),
+                    callable(getattr(writer, "liability_evidence_collector", None)),
                 )
             )
+            if production_gates_callable is not True:
+                raise ProductionRuntimeConfigurationError(
+                    "PRODUCTION_COMPOSITION_GATE_INVALID"
+                )
             watchdog_shutdown = watchdog.stop(2.0)
             watchdog_stopped = bool(getattr(watchdog_shutdown, "stopped", False))
             writer_stopped = bool(writer.stop(2.0))
@@ -1300,6 +1521,9 @@ def validate_production_composition(
                 "writer_sole_capability": writer_sole_capability,
                 "legacy_direct_executor_selected": False,
                 "production_gates_callable": production_gates_callable,
+                "liability_evidence_collector_callable": callable(
+                    getattr(writer, "liability_evidence_collector", None)
+                ),
             }
     except ProductionRuntimeConfigurationError as exc:
         return _validation_block(str(exc))
