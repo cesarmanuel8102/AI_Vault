@@ -48,6 +48,37 @@ class OpenOrderOwnershipError(RuntimeError):
         self.reason_code = reason_code
 
 
+def append_order_registry_event(db: Database, payload: dict[str, Any]) -> str:
+    """Append one canonical registry event using the caller's transaction."""
+    required = {
+        "order_ref", "client_order_id", "perm_id", "ibkr_order_id",
+        "contract_id", "action", "quantity", "created_at_utc",
+    }
+    if not required <= payload.keys():
+        raise ValueError("order registry payload is incomplete")
+    registry_id = str(new_uuid7())
+    db.execute(
+        "INSERT INTO experiment_order_registry("
+        "registry_id,order_ref,client_order_id,perm_id,ibkr_order_id,"
+        "contract_id,action,quantity,payload_json,payload_sha256,created_at_utc"
+        ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            registry_id,
+            payload["order_ref"],
+            payload["client_order_id"],
+            payload["perm_id"],
+            payload["ibkr_order_id"],
+            payload["contract_id"],
+            payload["action"],
+            str(payload["quantity"]),
+            canonical_bytes(payload).decode("utf-8"),
+            sha256_json(payload),
+            payload["created_at_utc"],
+        ),
+    )
+    return registry_id
+
+
 def _decimal_text(value: Any) -> str:
     parsed = Decimal(str(value or 0))
     if not parsed.is_finite():

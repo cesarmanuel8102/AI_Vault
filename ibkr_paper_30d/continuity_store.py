@@ -143,7 +143,9 @@ class ContinuityStore:
             elif event_type == "TERMINAL":
                 if active is None or active.sha256 != plan.sha256:
                     raise ContinuityStoreError("TERMINAL_PLAN_MISMATCH")
-            elif event_type not in {"DRAFTED", "VALIDATED"}:
+            elif event_type not in {
+                "DRAFTED", "VALIDATED", "BIND_PENDING", "BIND_TERMINAL"
+            }:
                 raise ContinuityStoreError("PLAN_EVENT_TYPE_INVALID")
             return self._append(
                 table="continuity_plan_events",
@@ -169,7 +171,9 @@ class ContinuityStore:
                 raise ContinuityStoreError("PAYLOAD_INVALID") from exc
             if payload.get("plan_sha256") != plan.sha256:
                 raise ContinuityStoreError("HASH_MISMATCH")
-            if event_type in {"DRAFTED", "VALIDATED"}:
+            if event_type in {
+                "DRAFTED", "VALIDATED", "BIND_PENDING", "BIND_TERMINAL"
+            }:
                 continue
             if event_type == "ACTIVATED":
                 if active is not None or plan.predecessor_plan_sha256 is not None:
@@ -199,7 +203,9 @@ class ContinuityStore:
                 raise ContinuityStoreError("PAYLOAD_INVALID") from exc
             if payload.get("plan_sha256") != plan.sha256:
                 raise ContinuityStoreError("HASH_MISMATCH")
-            if event_type in {"DRAFTED", "VALIDATED"}:
+            if event_type in {
+                "DRAFTED", "VALIDATED", "BIND_PENDING", "BIND_TERMINAL"
+            }:
                 continue
             if event_type == "ACTIVATED":
                 if active is not None or plan.predecessor_plan_sha256 is not None:

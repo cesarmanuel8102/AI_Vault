@@ -344,7 +344,12 @@ def run_autonomous_cycle(
     if execute_paper and outcome.accepted:
         assert executor is not None
         if outcome.decision == TraderDecision.PROPOSE_TRADE and outcome.proposal is not None:
-            execution = executor.execute(outcome.proposal, bundle)
+            execution = executor.execute(
+                outcome.proposal,
+                bundle,
+                continuity_plan=outcome.continuity_plan,
+                invocation_id=request.invocation_id,
+            )
         elif outcome.decision in {TraderDecision.REDUCE_POSITION, TraderDecision.CLOSE_POSITION} and outcome.position_action is not None:
             execution = executor.execute_position_action(
                 outcome.position_action,

@@ -13,12 +13,20 @@ from .autonomous_research import (
     AutonomousTradeProposal,
 )
 from .canonical import canonical_bytes, sha256_json
+from .continuity_binding import (
+    ContinuityBindingError,
+    ContinuityBindingService,
+    PendingContinuityBinding,
+)
+from .continuity_models import CodexOrderContinuityPlan
 from .ibkr_research_tools import IBKRResearchToolbox
 from .open_order_management import (
     ACTIONABLE_ORDER_STATUSES,
     CANCELLED_ORDER_STATUSES,
     EXECUTION_CLIENT_ID,
+    EXPERIMENT_ORDER_PREFIX,
     OpenOrderOwnershipError,
+    append_order_registry_event,
     canonical_contract_identity,
     canonical_open_order,
     lifecycle_attempt_exists,
@@ -63,6 +71,7 @@ class AutonomousPaperExecutor:
         database: Database | None = None,
         fresh_safety_check: Callable[[str], tuple[str, ...]] | None = None,
         operator_control_check: Callable[[], tuple[str, ...]] | None = None,
+        continuity_binding_service: ContinuityBindingService | None = None,
     ) -> None:
         self.toolbox = toolbox
         self.armed = (
@@ -74,6 +83,7 @@ class AutonomousPaperExecutor:
         self.database = database
         self.fresh_safety_check = fresh_safety_check
         self.operator_control_check = operator_control_check
+        self.continuity_binding_service = continuity_binding_service
 
     @staticmethod
     def _fills_payload(
@@ -291,25 +301,7 @@ class AutonomousPaperExecutor:
             "lifecycle_event": lifecycle_event,
             "created_at_utc": utc_now(),
         }
-        self.database.execute(
-            "INSERT INTO experiment_order_registry("
-            "registry_id,order_ref,client_order_id,perm_id,ibkr_order_id,"
-            "contract_id,action,quantity,payload_json,payload_sha256,created_at_utc"
-            ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-            (
-                str(new_uuid7()),
-                order_ref,
-                payload["client_order_id"],
-                payload["perm_id"],
-                payload["ibkr_order_id"],
-                payload["contract_id"],
-                action,
-                str(quantity),
-                canonical_bytes(payload).decode("utf-8"),
-                sha256_json(payload),
-                utc_now(),
-            ),
-        )
+        append_order_registry_event(self.database, payload)
 
     @staticmethod
     def _broker_bound_identity_available(trade: Any) -> bool:
@@ -1043,6 +1035,9 @@ class AutonomousPaperExecutor:
         self,
         proposal: AutonomousTradeProposal,
         bundle: TraderInputBundle,
+        *,
+        continuity_plan: CodexOrderContinuityPlan | None = None,
+        invocation_id: str | None = None,
     ) -> PaperExecutionResult:
         if not self.armed:
             raise AutonomousPaperExecutionNotArmed(
@@ -1068,6 +1063,25 @@ class AutonomousPaperExecutor:
                 success=False,
                 status="BLOCKED",
                 reason_codes=("PERSISTENT_ORDER_REGISTRY_REQUIRED",),
+                order={},
+                broker_validation={},
+            )
+        continuity_required = bool(
+            bundle.continuity_context.get("authority_contract_required", False)
+        )
+        if continuity_required and continuity_plan is None:
+            return PaperExecutionResult(
+                success=False,
+                status="BLOCKED",
+                reason_codes=("CONTINUITY_PLAN_REQUIRED",),
+                order={},
+                broker_validation={},
+            )
+        if continuity_plan is not None and self.continuity_binding_service is None:
+            return PaperExecutionResult(
+                success=False,
+                status="BLOCKED",
+                reason_codes=("CONTINUITY_BINDING_SERVICE_REQUIRED",),
                 order={},
                 broker_validation={},
             )
@@ -1128,7 +1142,19 @@ class AutonomousPaperExecutor:
                     },
                 )
 
-            order_ref = f"codex-ibkr-paper-30d-a-{bundle.decision_cycle_id[-12:]}"
+            order_ref = (
+                continuity_plan.order_binding.order_ref
+                if continuity_plan is not None
+                else f"{EXPERIMENT_ORDER_PREFIX}-a-{bundle.decision_cycle_id[-12:]}"
+            )
+            if not order_ref.startswith(f"{EXPERIMENT_ORDER_PREFIX}-"):
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("CONTINUITY_ORDER_REF_NAMESPACE_MISMATCH",),
+                    order={},
+                    broker_validation=validation.broker_evidence,
+                )
             order = Order(
                 action=proposal.action.upper(),
                 orderType=proposal.order_type.upper(),
@@ -1142,14 +1168,16 @@ class AutonomousPaperExecutor:
                 order.lmtPrice = float(proposal.limit_price)
             if not int(getattr(order, "orderId", 0) or 0):
                 order.orderId = int(ib.client.getReqId())
-            self._register_order(
-                order=order,
-                contract=contract,
-                order_ref=order_ref,
-                action=proposal.action.upper(),
-                quantity=proposal.quantity,
-                lifecycle_event="ISSUED_PRE_SEND",
-            )
+            pending_binding: PendingContinuityBinding | None = None
+            if continuity_plan is None:
+                self._register_order(
+                    order=order,
+                    contract=contract,
+                    order_ref=order_ref,
+                    action=proposal.action.upper(),
+                    quantity=proposal.quantity,
+                    lifecycle_event="ISSUED_PRE_SEND",
+                )
             operator_reasons = self._operator_control_reasons()
             if operator_reasons:
                 return PaperExecutionResult(
@@ -1162,6 +1190,36 @@ class AutonomousPaperExecutor:
                         "trade_contract_market_data": live_quote,
                     },
                 )
+            if continuity_plan is not None:
+                assert self.continuity_binding_service is not None
+                try:
+                    identity = canonical_contract_identity(contract)
+                    pending_binding = self.continuity_binding_service.stage_new_order(
+                        continuity_plan,
+                        proposal_sha256=sha256_json(proposal),
+                        order_ref=order_ref,
+                        client_order_id=int(order.orderId),
+                        contract_identity=identity,
+                        account=str(order.account),
+                        action=proposal.action.upper(),
+                        quantity=str(proposal.quantity),
+                        order_type=proposal.order_type.upper(),
+                        routing=str(identity.get("exchange") or "").upper(),
+                        execution_client_id=self.execution_client_id,
+                        invocation_id=str(invocation_id or ""),
+                        attempt_id=str(new_uuid7()),
+                    )
+                except ContinuityBindingError as exc:
+                    return PaperExecutionResult(
+                        success=False,
+                        status="BLOCKED",
+                        reason_codes=(f"CONTINUITY_BINDING_FAILED:{exc}",),
+                        order={},
+                        broker_validation={
+                            **validation.broker_evidence,
+                            "trade_contract_market_data": live_quote,
+                        },
+                    )
             trade = ib.placeOrder(contract, order)
             ib.sleep(self.fill_wait_seconds)
             trade = self._reconcile_post_send_trade(
@@ -1172,14 +1230,37 @@ class AutonomousPaperExecutor:
             )
             broker_identity_available = self._broker_bound_identity_available(trade)
             if broker_identity_available:
-                self._register_order(
-                    order=trade.order,
-                    contract=trade.contract,
-                    order_ref=order_ref,
-                    action=proposal.action.upper(),
-                    quantity=proposal.quantity,
-                    lifecycle_event="BROKER_BOUND",
-                )
+                if pending_binding is not None:
+                    assert self.continuity_binding_service is not None
+                    try:
+                        self.continuity_binding_service.activate_broker_binding(
+                            pending_binding,
+                            canonical_open_order(trade),
+                            plan_sha256=continuity_plan.sha256,
+                        )
+                    except ContinuityBindingError as exc:
+                        return PaperExecutionResult(
+                            success=False,
+                            status="UNCERTAIN",
+                            reason_codes=(
+                                f"CONTINUITY_BROKER_BINDING_UNCERTAIN:{exc}",
+                            ),
+                            order={
+                                "orderId": getattr(trade.order, "orderId", None),
+                                "permId": getattr(trade.order, "permId", None),
+                                "orderRef": order_ref,
+                            },
+                            broker_validation=validation.broker_evidence,
+                        )
+                else:
+                    self._register_order(
+                        order=trade.order,
+                        contract=trade.contract,
+                        order_ref=order_ref,
+                        action=proposal.action.upper(),
+                        quantity=proposal.quantity,
+                        lifecycle_event="BROKER_BOUND",
+                    )
             status = getattr(trade.orderStatus, "status", "UNKNOWN") or "UNKNOWN"
             payload = {
                 "orderId": getattr(trade.order, "orderId", None),

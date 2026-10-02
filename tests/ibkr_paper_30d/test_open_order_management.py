@@ -10,11 +10,35 @@ from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.open_order_management import (
     EXECUTION_CLIENT_ID,
     OpenOrderOwnershipError,
+    append_order_registry_event,
     canonical_open_order,
     lifecycle_attempt_exists,
     resolve_owned_open_trade,
 )
 from ibkr_paper_30d.persistence import Database
+
+
+def test_registry_helper_participates_in_caller_transaction(tmp_path):
+    payload = {
+        "order_ref": "codex-ibkr-paper-30d-a-atomic",
+        "client_order_id": 41,
+        "perm_id": 0,
+        "ibkr_order_id": 41,
+        "contract_id": 756733,
+        "action": "BUY",
+        "quantity": "1",
+        "created_at_utc": "2026-10-01T14:00:00Z",
+    }
+    with Database.open(tmp_path / "atomic-registry.sqlite3") as db:
+        with pytest.raises(RuntimeError, match="rollback"):
+            with db.transaction():
+                append_order_registry_event(db, payload)
+                raise RuntimeError("rollback")
+        count = db.execute(
+            "SELECT COUNT(*) FROM experiment_order_registry"
+        ).fetchone()[0]
+
+    assert count == 0
 
 
 def trade(*, limit_price=10):

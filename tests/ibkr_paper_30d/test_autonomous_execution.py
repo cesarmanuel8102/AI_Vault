@@ -20,6 +20,7 @@ from ibkr_paper_30d.autonomous_research import (
 )
 from ibkr_paper_30d.autonomy_toolbox import AutonomyToolbox
 from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
+from ibkr_paper_30d.continuity_binding import ContinuityBindingError
 from ibkr_paper_30d.ibkr_research_tools import IBKRResearchToolbox
 from ibkr_paper_30d.open_order_management import (
     EXECUTION_CLIENT_ID,
@@ -650,6 +651,15 @@ class _PassUntilOperatorControlToolbox:
         )
 
 
+class _RejectingContinuityBindingService:
+    def __init__(self):
+        self.stage_calls = 0
+
+    def stage_new_order(self, *args, **kwargs):
+        self.stage_calls += 1
+        raise ContinuityBindingError("TEST_PERSISTENCE_FAILURE")
+
+
 class _ResolvedBagIB:
     def __init__(self, resolved_contract):
         self.resolved_contract = resolved_contract
@@ -906,6 +916,73 @@ def test_immediate_operator_control_blocks_place_order(tmp_path):
     assert "OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE" in result.reason_codes
     assert toolbox.ib.place_calls == 0
     assert toolbox.requested_client_ids == [19761]
+
+
+def test_continuity_stage_failure_blocks_place_order(
+    tmp_path, continuity_plan_factory
+):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _PassUntilOperatorControlToolbox()
+    binding_service = _RejectingContinuityBindingService()
+    value = bundle().model_copy(
+        update={"continuity_context": {"authority_contract_required": True}}
+    )
+    with Database.open(tmp_path / "continuity-stage.sqlite3") as db:
+        executor = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+            continuity_binding_service=binding_service,
+        )
+        plan = continuity_plan_factory(
+            invocation_id="inv-continuity-stage",
+            order_binding={
+                "binding_type": "NEW_PROPOSAL",
+                "order_ref": "codex-ibkr-paper-30d-a-model-plan",
+                "ibkr_order_id": None,
+                "perm_id": None,
+                "original_order_state_sha256": None,
+                "proposal_sha256": sha256_json(proposal()),
+                "original_intent_sha256": sha256_json(proposal()),
+            },
+        )
+        result = executor.execute(
+            proposal(),
+            value,
+            continuity_plan=plan,
+            invocation_id=plan.invocation_id,
+        )
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == (
+        "CONTINUITY_BINDING_FAILED:TEST_PERSISTENCE_FAILURE",
+    )
+    assert binding_service.stage_calls == 1
+    assert toolbox.ib.place_calls == 0
+
+
+def test_required_continuity_without_plan_fails_before_broker_connect(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _PassUntilOperatorControlToolbox()
+    value = bundle().model_copy(
+        update={"continuity_context": {"authority_contract_required": True}}
+    )
+    with Database.open(tmp_path / "continuity-required.sqlite3") as db:
+        result = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        ).execute(proposal(), value)
+
+    assert result.reason_codes == ("CONTINUITY_PLAN_REQUIRED",)
+    assert toolbox.requested_client_ids == []
+    assert toolbox.ib.place_calls == 0
 
 
 def test_wrapped_executor_reuses_connection_for_proposal_validation(tmp_path):

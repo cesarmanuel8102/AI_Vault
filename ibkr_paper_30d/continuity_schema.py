@@ -68,7 +68,7 @@ _DDL = (
         event_id TEXT NOT NULL UNIQUE,
         plan_id TEXT NOT NULL,
         order_ref TEXT NOT NULL,
-        event_type TEXT NOT NULL CHECK(event_type IN ('DRAFTED','VALIDATED','ACTIVATED','SUPERSEDED','TERMINAL')),
+        event_type TEXT NOT NULL CHECK(event_type IN ('DRAFTED','VALIDATED','BIND_PENDING','BIND_TERMINAL','ACTIVATED','SUPERSEDED','TERMINAL')),
         payload_json TEXT NOT NULL,
         payload_sha256 TEXT NOT NULL,
         previous_event_sha256 TEXT,
