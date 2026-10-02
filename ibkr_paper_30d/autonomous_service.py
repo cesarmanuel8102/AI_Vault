@@ -128,6 +128,8 @@ class AutonomousExperimentService:
         runtime_auditor_gate: RuntimeAuditorGate | None = None,
         broker_now: Callable[[], datetime] | None = None,
         launch_attempt_id: str | None = None,
+        continuity_watchdog: Any | None = None,
+        watchdog_shutdown_timeout_seconds: float = 5.0,
         sleep: Callable[[float], None] = time.sleep,
         monotonic: Callable[[], float] = time.monotonic,
     ) -> None:
@@ -194,6 +196,10 @@ class AutonomousExperimentService:
         )
         self.broker_now = broker_now or self._read_broker_time
         self.launch_attempt_id = launch_attempt_id
+        self.continuity_watchdog = continuity_watchdog
+        self.watchdog_shutdown_timeout_seconds = watchdog_shutdown_timeout_seconds
+        self._watchdog_started = False
+        self._watchdog_alert_active = False
         self._running_event_emitted = False
         self._last_recovery_gate_failure_fingerprint: (
             tuple[str, tuple[str, ...]] | None
@@ -235,6 +241,38 @@ class AutonomousExperimentService:
 
     def stop(self) -> None:
         self.stop_event.set()
+        self._stop_continuity_watchdog()
+
+    def _start_continuity_watchdog(self) -> None:
+        if self.continuity_watchdog is None or self._watchdog_started:
+            return
+        try:
+            self.continuity_watchdog.start()
+        except Exception as exc:
+            _append_alert(
+                self.db,
+                "CONTINUITY_WATCHDOG_START_FAILURE",
+                {"error_type": type(exc).__name__},
+            )
+            raise AutonomousServiceError(
+                "continuity watchdog failed to start",
+                reason_codes=("CONTINUITY_WATCHDOG_START_FAILURE",),
+            ) from exc
+        self._watchdog_started = True
+
+    def _stop_continuity_watchdog(self) -> None:
+        if self.continuity_watchdog is None or not self._watchdog_started:
+            return
+        result = self.continuity_watchdog.stop(
+            self.watchdog_shutdown_timeout_seconds
+        )
+        self._watchdog_started = False
+        if getattr(result, "timed_out", False):
+            _append_alert(
+                self.db,
+                "CONTINUITY_WATCHDOG_SHUTDOWN_TIMEOUT",
+                {"continuity_state": "UNCERTAIN"},
+            )
 
     def _owner_authorization_is_current(self) -> bool:
         if self.clock.epoch_id is None:
@@ -312,6 +350,29 @@ class AutonomousExperimentService:
             if market.get("gate_status") != "PASS":
                 reasons.append("MARKET_DATA_GATE_BLOCK_FRESH")
                 reasons.extend(str(x) for x in market.get("reason_codes", []) or [])
+        if (
+            scope == "NEW_TRADE"
+            and self._watchdog_started
+            and self.continuity_watchdog is not None
+            and broker_now is not None
+        ):
+            healthy = self.continuity_watchdog.is_healthy(broker_now)
+            if not healthy:
+                reasons.append("CONTINUITY_WATCHDOG_UNHEALTHY")
+                if not self._watchdog_alert_active:
+                    _append_alert(
+                        self.db,
+                        "CONTINUITY_WATCHDOG_HEALTH_FAILURE",
+                        {"reason_codes": ["CONTINUITY_WATCHDOG_UNHEALTHY"]},
+                    )
+                    self._watchdog_alert_active = True
+            elif self._watchdog_alert_active:
+                _append_alert(
+                    self.db,
+                    "CONTINUITY_WATCHDOG_HEALTH_RECOVERED",
+                    {"reason_codes": []},
+                )
+                self._watchdog_alert_active = False
         return tuple(dict.fromkeys(reasons))
 
     def _fresh_operator_controls(self) -> tuple[str, ...]:
@@ -642,18 +703,29 @@ class AutonomousExperimentService:
         return result
 
     def run_once(self, trigger: str = "SCHEDULED_SCAN") -> dict[str, Any]:
-        result = self._run_cycle_with_lifecycle(trigger)
-        self._handle_pause(result)
-        follow_up = self._observation_only_follow_up(result)
-        if follow_up is not None:
-            result["observation_only_follow_up"] = follow_up
-            if str(follow_up.get("status") or "") == "EXPERIMENT_EXPIRED":
-                self._terminal_event("CLOCK_EXPIRED")
-            else:
-                self._handle_pause(follow_up)
-        return result
+        self._start_continuity_watchdog()
+        try:
+            result = self._run_cycle_with_lifecycle(trigger)
+            self._handle_pause(result)
+            follow_up = self._observation_only_follow_up(result)
+            if follow_up is not None:
+                result["observation_only_follow_up"] = follow_up
+                if str(follow_up.get("status") or "") == "EXPERIMENT_EXPIRED":
+                    self._terminal_event("CLOCK_EXPIRED")
+                else:
+                    self._handle_pause(follow_up)
+            return result
+        finally:
+            self._stop_continuity_watchdog()
 
     def run_forever(self) -> None:
+        self._start_continuity_watchdog()
+        try:
+            self._run_forever_loop()
+        finally:
+            self._stop_continuity_watchdog()
+
+    def _run_forever_loop(self) -> None:
         self._service_started_at_utc = datetime.now(timezone.utc)
         _append_state_event(
             self.db,

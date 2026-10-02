@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -13,6 +14,8 @@ from ibkr_paper_30d.autonomous_service import (
     AutonomousServiceError,
 )
 from ibkr_paper_30d.autonomy_toolbox import AutonomyToolbox
+from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+from ibkr_paper_30d.continuity_watchdog import ContinuityWatchdog
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.experiment_control import (
     ExperimentClockStore,
@@ -21,6 +24,7 @@ from ibkr_paper_30d.experiment_control import (
 )
 from ibkr_paper_30d.research_sandbox import WSLResearchSandbox
 from ibkr_paper_30d.successor_clock import BrokerTimeObservation, clock_for_epoch
+from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 from ibkr_paper_30d.successor_epoch import (
     BrokerTransitionEvidence,
     commit_successor_transition,
@@ -306,6 +310,170 @@ def test_run_once_order_management_includes_observation_only_refresh(
         ("POSITION_EVENT", False),
     ]
     assert result["observation_only_follow_up"] == follow_up
+
+
+class FakeContinuityWatchdog:
+    def __init__(self, *, healthy=True):
+        self.healthy = healthy
+        self.started = threading.Event()
+        self.stops = []
+
+    def start(self):
+        self.started.set()
+
+    def stop(self, timeout_seconds):
+        self.stops.append(timeout_seconds)
+        return type("Shutdown", (), {"stopped": True, "timed_out": False})()
+
+    def is_healthy(self, broker_time_utc):
+        return self.healthy
+
+
+def test_run_once_watchdog_progresses_while_provider_cycle_is_blocked(tmp_path):
+    path = tmp_path / "blocked-provider.sqlite3"
+    with Database.open(path) as setup_db:
+        install_successor_schema_v2(setup_db)
+        install_continuity_schema_v3(setup_db)
+
+    provider_entered = threading.Event()
+    provider_release = threading.Event()
+    command_executed = threading.Event()
+    commands = []
+
+    class ReadOnlyBroker:
+        read_only = True
+        client_id = 19762
+
+        def disconnect(self):
+            pass
+
+    class WriterCommandInterface:
+        def submit(self, command):
+            commands.append(command)
+            command_executed.set()
+
+    def poll_once(db, broker, coordinator):
+        if not commands:
+            coordinator.submit(
+                {
+                    "command_type": "CANCEL",
+                    "order_ref": "order-78",
+                    "order_id": 78,
+                    "perm_id": 225256222,
+                }
+            )
+
+    watchdog = ContinuityWatchdog(
+        db_factory=lambda: Database.open(path),
+        broker_factory=ReadOnlyBroker,
+        poll_once=poll_once,
+        coordinator=WriterCommandInterface(),
+        broker_time_reader=lambda broker: datetime.now(timezone.utc),
+        poll_interval_seconds=0.01,
+        heartbeat_max_age_seconds=1,
+    )
+    with Database.open(path) as db:
+        service = RecordingService(
+            db,
+            experiment_start_utc=datetime.now(timezone.utc),
+            allocation=Decimal("500.00"),
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=StubExecutor(),
+            continuity_watchdog=watchdog,
+        )
+
+        def blocked_cycle(trigger, *, allow_execution=None):
+            provider_entered.set()
+            provider_release.wait(2)
+            return {"status": "PASS", "outcome": {"decision": "NO_TRADE"}}
+
+        service._run_cycle = blocked_cycle
+        observer_result = {}
+
+        def observe_parallel_progress():
+            observer_result["provider_entered"] = provider_entered.wait(2)
+            observer_result["command_executed"] = command_executed.wait(2)
+            provider_release.set()
+
+        observer = threading.Thread(target=observe_parallel_progress)
+        observer.start()
+        service.run_once()
+        observer.join(2)
+
+    assert observer_result == {
+        "provider_entered": True,
+        "command_executed": True,
+    }
+    assert commands == [
+        {
+            "command_type": "CANCEL",
+            "order_ref": "order-78",
+            "order_id": 78,
+            "perm_id": 225256222,
+        }
+    ]
+
+
+def test_watchdog_health_blocks_only_new_exposure_and_alerts_transitions(tmp_path):
+    watchdog = FakeContinuityWatchdog(healthy=False)
+    with Database.open(tmp_path / "watchdog-health.sqlite3") as db:
+        service = AutonomousExperimentService(
+            db,
+            experiment_start_utc=datetime.now(timezone.utc),
+            allocation=Decimal("500.00"),
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=StubExecutor(),
+            runtime_market_gate=PassGate(),
+            runtime_auditor_gate=PassGate(),
+            broker_now=lambda: datetime.now(timezone.utc),
+            continuity_watchdog=watchdog,
+        )
+        service._watchdog_started = True
+
+        first = service._fresh_execution_safety("NEW_TRADE")
+        second = service._fresh_execution_safety("NEW_TRADE")
+        management = service._fresh_execution_safety("POSITION_MANAGEMENT")
+        watchdog.healthy = True
+        recovered = service._fresh_execution_safety("NEW_TRADE")
+        alerts = db.execute(
+            "SELECT event_type FROM alerts WHERE event_type LIKE "
+            "'CONTINUITY_WATCHDOG_HEALTH_%' ORDER BY created_at_utc"
+        ).fetchall()
+
+    assert "CONTINUITY_WATCHDOG_UNHEALTHY" in first
+    assert "CONTINUITY_WATCHDOG_UNHEALTHY" in second
+    assert "CONTINUITY_WATCHDOG_UNHEALTHY" not in management
+    assert "CONTINUITY_WATCHDOG_UNHEALTHY" not in recovered
+    assert [row[0] for row in alerts] == [
+        "CONTINUITY_WATCHDOG_HEALTH_FAILURE",
+        "CONTINUITY_WATCHDOG_HEALTH_RECOVERED",
+    ]
+
+
+def test_run_once_stops_watchdog_when_cycle_raises(tmp_path):
+    watchdog = FakeContinuityWatchdog()
+    with Database.open(tmp_path / "watchdog-finally.sqlite3") as db:
+        service = AutonomousExperimentService(
+            db,
+            experiment_start_utc=datetime.now(timezone.utc),
+            allocation=Decimal("500.00"),
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=StubExecutor(),
+            continuity_watchdog=watchdog,
+        )
+        service._run_cycle = Mock(side_effect=RuntimeError("provider blocked"))
+
+        with pytest.raises(RuntimeError, match="provider blocked"):
+            service.run_once()
+
+    assert watchdog.started.is_set()
+    assert watchdog.stops == [5.0]
 
 
 class PassGate:
