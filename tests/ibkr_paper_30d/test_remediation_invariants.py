@@ -105,15 +105,15 @@ def test_sandbox_receipt_never_carries_broker_write_authority(tmp_path: Path) ->
         assert forbidden not in serialized
 
 
-def test_continuity_launch_cannot_install_or_implicitly_enable_runtime() -> None:
+def test_continuity_launch_cannot_install_schema_and_uses_explicit_factories() -> None:
     source = Path("ibkr_paper_30d/day1_launch.py").read_text(encoding="utf-8")
     assert "install_continuity_schema_v3" not in source
     for factory in (
-        "broker_write_coordinator_factory=None",
-        "model_executor_factory=None",
-        "critical_alert_reporter_factory=None",
-        "authoritative_writer_factory=None",
-        "continuity_watchdog_factory=None",
+        "broker_write_coordinator_factory=create_broker_write_coordinator",
+        "model_executor_factory=create_model_executor",
+        "critical_alert_reporter_factory=create_critical_alert_reporter",
+        "authoritative_writer_factory=create_authoritative_writer",
+        "continuity_watchdog_factory=create_continuity_watchdog",
     ):
         assert factory in source
 

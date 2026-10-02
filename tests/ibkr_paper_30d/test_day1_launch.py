@@ -1267,9 +1267,13 @@ def test_launch_passes_only_writer_command_interface_to_model_service(
     assert run_day1_launch(ctx.config, ctx.dependencies) == (
         "AUTONOMOUS_PAPER_EXPERIMENT_STOPPED"
     )
-    ctx.dependencies.model_executor_factory.assert_called_once_with(
-        coordinator=coordinator
-    )
+    ctx.dependencies.model_executor_factory.assert_called_once()
+    executor_args = ctx.dependencies.model_executor_factory.call_args.kwargs
+    assert executor_args["coordinator"] is coordinator
+    assert executor_args["db_path"] == ctx.config.db_path
+    assert executor_args["config"] == ctx.config
+    assert executor_args["preflight"].expected_account_hash == ACCOUNT_HASH
+    assert len(executor_args["production_validation_sha256"]) == 64
     assert captured["executor"] is model_executor
     lifecycle = captured["provider_lifecycle"]
     assert lifecycle.launch_attempt_id == ATTEMPT_ID

@@ -208,7 +208,7 @@ def test_day1_model_path_requires_writer_command_proxy_without_direct_fallback()
     source = Path("ibkr_paper_30d/day1_launch.py").read_text(encoding="utf-8")
     assert "model_executor = dependencies.model_executor_factory(" in source
     assert "executor=model_executor" in source
-    assert "model_executor_factory=None" in source
+    assert "model_executor_factory=create_model_executor" in source
     assert "AutonomousPaperExecutor" not in source
 
 

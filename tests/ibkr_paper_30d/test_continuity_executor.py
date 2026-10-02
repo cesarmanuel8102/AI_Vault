@@ -51,7 +51,13 @@ def _binding(plan):
     }
 
 
-def _executor(plan, *, gates=lambda authority_class: (), binding_updates=None):
+def _executor(
+    plan,
+    *,
+    gates=lambda authority_class: (),
+    binding_updates=None,
+    durable_sequence_allocator=None,
+):
     binding = _binding(plan)
     binding.update(binding_updates or {})
     return ContinuityExecutor(
@@ -62,6 +68,7 @@ def _executor(plan, *, gates=lambda authority_class: (), binding_updates=None):
             "ORDER_MARK": "4.50",
         },
         fresh_gate_checker=gates,
+        durable_sequence_allocator=durable_sequence_allocator,
     )
 
 
@@ -215,3 +222,20 @@ def test_inactive_or_hash_mismatched_evaluation_cannot_build(
         _executor(plan).build_command(inactive)
     with pytest.raises(ContinuityCommandBuildError, match="PLAN_HASH_MISMATCH"):
         _executor(plan).build_command(wrong_hash)
+
+
+def test_command_uses_shared_durable_sequence_allocator(continuity_plan_factory):
+    plan = continuity_plan_factory()
+    allocated = iter((41, 42))
+    executor = _executor(
+        plan,
+        durable_sequence_allocator=lambda: next(allocated),
+    )
+
+    first = executor.build_command(_evaluation(plan, {"action_type": "CANCEL"}))
+    second = executor.build_command(
+        _evaluation(plan, {"action_type": "CANCEL"}, ordinal=2)
+    )
+
+    assert first.durable_sequence == 41
+    assert second.durable_sequence == 42

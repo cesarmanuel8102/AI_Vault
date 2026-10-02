@@ -246,6 +246,20 @@ class ContinuityStore:
                 active = None
         return active
 
+    def active_plans(self) -> tuple[CodexOrderContinuityPlan, ...]:
+        order_refs = tuple(
+            str(row[0])
+            for row in self.db.execute(
+                "SELECT DISTINCT order_ref FROM continuity_plan_events "
+                "ORDER BY order_ref"
+            ).fetchall()
+        )
+        return tuple(
+            plan
+            for order_ref in order_refs
+            if (plan := self.active_plan(order_ref)) is not None
+        )
+
     def append_provider_event(
         self, invocation_id: str, state: str, payload: Mapping[str, Any], *, event_id: str | None = None
     ) -> str:

@@ -61,6 +61,8 @@ class AuthoritativeBrokerWriter:
         ]
         | None = None,
         now_utc: Callable[[], datetime] | None = None,
+        resource_closer: Callable[[], None] | None = None,
+        uncertainty_reporter: Callable[[str], None] | None = None,
     ) -> None:
         self.coordinator = coordinator
         self.broker_factory = broker_factory
@@ -79,6 +81,8 @@ class AuthoritativeBrokerWriter:
         )
         self.liability_evidence_collector = liability_evidence_collector
         self.now_utc = now_utc or (lambda: datetime.now(timezone.utc))
+        self.resource_closer = resource_closer or (lambda: None)
+        self.uncertainty_reporter = uncertainty_reporter or (lambda code: None)
         self._capability = None
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
@@ -86,6 +90,12 @@ class AuthoritativeBrokerWriter:
         self._startup_error: BaseException | None = None
         self._frozen_order_refs: set[str] = set()
         self._model_write_authority_frozen = False
+
+    def _report_uncertainty(self, reason_code: str) -> None:
+        try:
+            self.uncertainty_reporter(reason_code)
+        except Exception:
+            pass
 
     @staticmethod
     def _result(
@@ -149,6 +159,7 @@ class AuthoritativeBrokerWriter:
                 except BaseException as exc:
                     if isinstance(command, ModelExecutionRequest):
                         self._model_write_authority_frozen = True
+                    self._report_uncertainty("BROKER_STATE_UNCERTAIN")
                     result = self._result(
                         success=False,
                         status="UNCERTAIN",
@@ -169,6 +180,10 @@ class AuthoritativeBrokerWriter:
                     broker.disconnect()
                 except Exception:  # nosec B110
                     pass
+            try:
+                self.resource_closer()
+            except Exception:
+                pass
             self.coordinator.detach_writer(self._capability)
 
     def _collect_evidence(self, broker: Any) -> dict[str, Any]:
@@ -180,6 +195,8 @@ class AuthoritativeBrokerWriter:
         return {
             "trades": trades,
             "open_orders": [canonical_open_order(item) for item in trades],
+            "executions": executions,
+            "positions": positions,
             "executions_count": len(executions),
             "positions_count": len(positions),
         }
@@ -391,10 +408,12 @@ class AuthoritativeBrokerWriter:
             )
         if result.status == "UNCERTAIN":
             self._model_write_authority_frozen = True
+            self._report_uncertainty("MODEL_EXECUTION_RESULT_UNCERTAIN")
         try:
             self.result_persister(request, result, evidence)
         except Exception:
             self._model_write_authority_frozen = True
+            self._report_uncertainty("MODEL_EXECUTION_RESULT_UNCERTAIN")
             return self._result(
                 success=False,
                 status="UNCERTAIN",
@@ -615,6 +634,7 @@ class AuthoritativeBrokerWriter:
                 )
             except Exception:
                 self._frozen_order_refs.add(command.order_ref)
+                self._report_uncertainty("CONTINUITY_ORDER_STATE_UNCERTAIN")
                 return self._result(
                     success=False,
                     status="UNCERTAIN",
@@ -626,6 +646,7 @@ class AuthoritativeBrokerWriter:
             self.result_persister(command, result, evidence)
         except Exception:
             self._frozen_order_refs.add(command.order_ref)
+            self._report_uncertainty("CONTINUITY_ORDER_STATE_UNCERTAIN")
             return self._result(
                 success=False,
                 status="UNCERTAIN",

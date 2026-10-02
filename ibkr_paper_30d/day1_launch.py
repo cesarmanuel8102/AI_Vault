@@ -1435,7 +1435,13 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 raise LaunchError("CONTINUITY_RUNTIME_FACTORY_UNAVAILABLE")
             coordinator = dependencies.broker_write_coordinator_factory()
             model_executor = dependencies.model_executor_factory(
-                coordinator=coordinator
+                coordinator=coordinator,
+                db_path=config.db_path,
+                config=config,
+                preflight=preflight,
+                production_validation_sha256=prepared.manifest[
+                    "epoch_manifest_sha256"
+                ],
             )
             critical_alert_reporter = (
                 dependencies.critical_alert_reporter_factory(
@@ -1461,6 +1467,10 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                     config.db_path, receipt
                 ),
                 uncertainty_reporter=critical_alert_reporter,
+                toolbox=prepared.toolbox,
+                production_validation_sha256=prepared.manifest[
+                    "epoch_manifest_sha256"
+                ],
             )
             watchdog = dependencies.continuity_watchdog_factory(
                 coordinator=coordinator,
@@ -1756,6 +1766,15 @@ def _default_continuity_uncertainty(db: Database) -> tuple[str, ...]:
 
 
 def _default_dependencies() -> LaunchDependencies:
+    from .production_continuity_runtime import (
+        create_authoritative_writer,
+        create_broker_write_coordinator,
+        create_continuity_store,
+        create_continuity_watchdog,
+        create_critical_alert_reporter,
+        create_model_executor,
+    )
+
     return LaunchDependencies(
         now_utc=lambda: datetime.now(timezone.utc),
         auditor_gate_factory=lambda config: RuntimeAuditorGate(
@@ -1777,12 +1796,12 @@ def _default_dependencies() -> LaunchDependencies:
         provider_abandonment_recoverer=_default_provider_recovery,
         pending_binding_reconciler=_default_pending_binding_recovery,
         continuity_uncertainty_reader=_default_continuity_uncertainty,
-        broker_write_coordinator_factory=None,
-        model_executor_factory=None,
-        critical_alert_reporter_factory=None,
-        authoritative_writer_factory=None,
-        continuity_watchdog_factory=None,
-        continuity_store_factory=ContinuityStore,
+        broker_write_coordinator_factory=create_broker_write_coordinator,
+        model_executor_factory=create_model_executor,
+        critical_alert_reporter_factory=create_critical_alert_reporter,
+        authoritative_writer_factory=create_authoritative_writer,
+        continuity_watchdog_factory=create_continuity_watchdog,
+        continuity_store_factory=create_continuity_store,
     )
 
 

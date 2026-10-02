@@ -55,11 +55,13 @@ class ContinuityExecutor:
         active_binding_reader: Callable[[str], dict[str, Any]],
         fact_values_reader: Callable[[str], dict[str, Any]],
         fresh_gate_checker: Callable[[ContinuityAuthorityClass], tuple[str, ...]],
+        durable_sequence_allocator: Callable[[], int] | None = None,
     ) -> None:
         self.plan_reader = plan_reader
         self.active_binding_reader = active_binding_reader
         self.fact_values_reader = fact_values_reader
         self.fresh_gate_checker = fresh_gate_checker
+        self.durable_sequence_allocator = durable_sequence_allocator
 
     def _value(
         self, expression: ContinuityValueExpression, facts: dict[str, Any]
@@ -233,9 +235,14 @@ class ContinuityExecutor:
             required_leg_identity_sha256=leg_hashes,
             maximum_evidence_age_seconds=Decimal("30"),
         )
+        durable_sequence = (
+            evaluation.execution_ordinal
+            if self.durable_sequence_allocator is None
+            else self.durable_sequence_allocator()
+        )
         return AuthorizedBrokerCommand(
             command_id=f"continuity-command:{evaluation.evaluation_id}",
-            durable_sequence=evaluation.execution_ordinal,
+            durable_sequence=durable_sequence,
             execution_key=(
                 f"{plan.sha256}:{evaluation.evaluation_id}:"
                 f"{evaluation.execution_ordinal}"
