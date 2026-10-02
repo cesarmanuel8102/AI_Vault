@@ -12,6 +12,19 @@ AUTONOMOUS_MODULES = [
     Path("ibkr_paper_30d/decision_diagnostics.py"),
 ]
 
+CONTINUITY_AUTHORITY_MODULES = [
+    Path("ibkr_paper_30d/continuity_models.py"),
+    Path("ibkr_paper_30d/continuity_store.py"),
+    Path("ibkr_paper_30d/provider_lifecycle.py"),
+    Path("ibkr_paper_30d/continuity_evaluator.py"),
+    Path("ibkr_paper_30d/continuity_binding.py"),
+    Path("ibkr_paper_30d/broker_write_coordinator.py"),
+    Path("ibkr_paper_30d/authoritative_broker_writer.py"),
+    Path("ibkr_paper_30d/continuity_executor.py"),
+    Path("ibkr_paper_30d/continuity_watchdog.py"),
+    Path("ibkr_paper_30d/continuity_reporting.py"),
+]
+
 
 def combined_source():
     return "\n".join(path.read_text(encoding="utf-8") for path in AUTONOMOUS_MODULES)
@@ -141,3 +154,69 @@ def test_open_order_management_retains_paper_arm_and_live_route_guards():
     assert "host not in PAPER_HOSTS or port != PAPER_PORT" in toolbox
     assert "7497" not in executor
     assert "7496" not in executor
+
+
+def test_continuity_authority_has_no_adversarial_or_host_strategy_role():
+    source = "\n".join(
+        path.read_text(encoding="utf-8") for path in CONTINUITY_AUTHORITY_MODULES
+    )
+    lowered = source.lower()
+    assert "adversarial_agent" not in lowered
+    assert "adversarial-agent" not in lowered
+    assert "defensive_modify" not in lowered
+    assert "cancel_and_replace" not in lowered
+    assert "reqglobalcancel" not in lowered
+    for forbidden in (
+        "host_profit_threshold",
+        "host_loss_threshold",
+        "default_cancel_after",
+        "default_modify_after",
+    ):
+        assert forbidden not in lowered
+
+
+def test_continuity_watchdog_and_research_paths_are_read_only():
+    watchdog = Path("ibkr_paper_30d/continuity_watchdog.py").read_text(
+        encoding="utf-8"
+    )
+    research = Path("ibkr_paper_30d/ibkr_research_tools.py").read_text(
+        encoding="utf-8"
+    )
+    for source in (watchdog, research):
+        assert ".placeOrder(" not in source
+        assert ".cancelOrder(" not in source
+        assert "reqGlobalCancel" not in source
+
+
+def test_launch_does_not_share_live_db_or_toolbox_with_writer_and_watchdog():
+    source = Path("ibkr_paper_30d/day1_launch.py").read_text(encoding="utf-8")
+    writer_call = source.split(
+        "writer = dependencies.authoritative_writer_factory(", 1
+    )[1].split(")\n", 1)[0]
+    watchdog_call = source.split(
+        "watchdog = dependencies.continuity_watchdog_factory(", 1
+    )[1].split(")\n", 1)[0]
+
+    assert "db=db" not in writer_call
+    assert "continuity_store=continuity_store" not in watchdog_call
+    assert "toolbox=" not in watchdog_call
+    assert "db_path=config.db_path" in writer_call
+    assert "db_path=config.db_path" in watchdog_call
+
+
+def test_day1_model_path_requires_writer_command_proxy_without_direct_fallback():
+    source = Path("ibkr_paper_30d/day1_launch.py").read_text(encoding="utf-8")
+    assert "model_executor = dependencies.model_executor_factory(" in source
+    assert "executor=model_executor" in source
+    assert "model_executor_factory=None" in source
+    assert "AutonomousPaperExecutor" not in source
+
+
+def test_continuity_writer_performs_broker_io_outside_sqlite_transactions():
+    source = Path("ibkr_paper_30d/authoritative_broker_writer.py").read_text(
+        encoding="utf-8"
+    )
+    assert ".placeOrder(" in source
+    assert ".cancelOrder(" in source
+    assert ".transaction(" not in source
+    assert "BEGIN IMMEDIATE" not in source

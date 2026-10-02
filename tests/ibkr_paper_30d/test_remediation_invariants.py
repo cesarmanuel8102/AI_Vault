@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 
 from ibkr_paper_30d.autonomy_workspace import AutonomyWorkspace, WorkspaceViolation
+from ibkr_paper_30d.broker_writer_capability import describe
 
 
 class RecordingSandbox:
@@ -102,3 +103,23 @@ def test_sandbox_receipt_never_carries_broker_write_authority(tmp_path: Path) ->
         "authorize",
     ):
         assert forbidden not in serialized
+
+
+def test_continuity_launch_cannot_install_or_implicitly_enable_runtime() -> None:
+    source = Path("ibkr_paper_30d/day1_launch.py").read_text(encoding="utf-8")
+    assert "install_continuity_schema_v3" not in source
+    for factory in (
+        "broker_write_coordinator_factory=None",
+        "model_executor_factory=None",
+        "critical_alert_reporter_factory=None",
+        "authoritative_writer_factory=None",
+        "continuity_watchdog_factory=None",
+    ):
+        assert factory in source
+
+
+def test_broker_writer_capability_harness_is_connection_free_by_default() -> None:
+    receipt = describe()
+    assert receipt["default_mode"] == "DESCRIBE_ONLY"
+    assert receipt["connections_performed"] == 0
+    assert receipt["writes_performed"] == 0

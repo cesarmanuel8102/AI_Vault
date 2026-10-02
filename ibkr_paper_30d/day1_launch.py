@@ -1172,6 +1172,11 @@ def _lock_receipt_is_current(db: Database, receipt: Any) -> bool:
     )
 
 
+def _fresh_lock_receipt_is_current(db_path: Path, receipt: Any) -> bool:
+    with Database.open(db_path) as db:
+        return _lock_receipt_is_current(db, receipt)
+
+
 def _collect_successor_broker_evidence(
     config: Day1LaunchConfig, preflight: LaunchPreflight
 ) -> BrokerTransitionEvidence:
@@ -1433,7 +1438,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
             )
             critical_alert_reporter = (
                 dependencies.critical_alert_reporter_factory(
-                    db=db,
+                    db_path=config.db_path,
                     config=config,
                     preflight=preflight,
                 )
@@ -1441,11 +1446,11 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
             continuity_store = dependencies.continuity_store_factory(db)
             writer = dependencies.authoritative_writer_factory(
                 coordinator=coordinator,
-                db=db,
+                db_path=config.db_path,
                 config=config,
                 preflight=preflight,
-                execution_lock_verifier=lambda: _lock_receipt_is_current(
-                    db, receipt
+                execution_lock_verifier=lambda: _fresh_lock_receipt_is_current(
+                    config.db_path, receipt
                 ),
                 uncertainty_reporter=critical_alert_reporter,
             )
@@ -1454,7 +1459,6 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 db_path=config.db_path,
                 config=config,
                 preflight=preflight,
-                continuity_store=continuity_store,
                 uncertainty_reporter=critical_alert_reporter,
             )
             arm_context = None

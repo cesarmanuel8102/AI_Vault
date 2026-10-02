@@ -174,6 +174,15 @@ class AuthoritativeBrokerWriter:
                 success=False, status="BLOCKED", reasons=reasons, evidence=evidence
             )
 
+        try:
+            evidence = self._collect_evidence(broker)
+        except Exception as exc:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=(f"BROKER_EVIDENCE_UNAVAILABLE:{type(exc).__name__}",),
+            )
+
         matches = [
             (trade, snapshot)
             for trade, snapshot in zip(evidence["trades"], evidence["open_orders"])
