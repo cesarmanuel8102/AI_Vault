@@ -305,19 +305,6 @@ class AuthoritativeBrokerWriter:
                 reasons=production_reasons,
                 evidence=evidence,
             )
-        if decision is not None:
-            decision, evidence, production_reasons = self._production_authority_read(
-                request=request,
-                broker=broker,
-                prior_authority_snapshot=decision.authority_snapshot,
-            )
-            if production_reasons:
-                return self._result(
-                    success=False,
-                    status="BLOCKED",
-                    reasons=production_reasons,
-                    evidence=evidence,
-                )
         evidence = {
             **evidence,
             "request_sha256": request.sha256,
@@ -332,22 +319,76 @@ class AuthoritativeBrokerWriter:
                 reasons=reasons,
                 evidence=evidence,
             )
-        try:
-            self.attempt_persister(request, evidence)
-        except Exception:
-            return self._result(
-                success=False,
-                status="BLOCKED",
-                reasons=("MODEL_ATTEMPT_PERSISTENCE_FAILED",),
-                evidence=evidence,
+        final_gate_invoked = False
+
+        def final_write_authority_check() -> tuple[str, ...]:
+            nonlocal decision, evidence, final_gate_invoked
+            final_gate_invoked = True
+            final_decision, final_evidence, final_reasons = (
+                self._production_authority_read(
+                    request=request,
+                    broker=broker,
+                    prior_authority_snapshot=(
+                        None if decision is None else decision.authority_snapshot
+                    ),
+                )
             )
+            decision = final_decision
+            evidence = {
+                **final_evidence,
+                "request_sha256": request.sha256,
+                "writer_thread_id": threading.get_ident(),
+                "execution_client_id": self.execution_client_id,
+            }
+            if final_reasons:
+                return final_reasons
+            legacy_reasons = tuple(self.authority_validator(request, evidence))
+            if legacy_reasons:
+                return legacy_reasons
+            try:
+                self.attempt_persister(request, evidence)
+            except Exception:
+                return ("MODEL_ATTEMPT_PERSISTENCE_FAILED",)
+            return ()
+
+        if self.production_authority_validator is None:
+            try:
+                self.attempt_persister(request, evidence)
+            except Exception:
+                return self._result(
+                    success=False,
+                    status="BLOCKED",
+                    reasons=("MODEL_ATTEMPT_PERSISTENCE_FAILED",),
+                    evidence=evidence,
+                )
         context = ModelExecutionAuthorityContext(
             request_sha256=request.sha256,
             writer_thread_id=threading.get_ident(),
             execution_client_id=self.execution_client_id,
             production_validation_sha256=self.production_validation_sha256,
         )
-        result = self.model_execution_engine.execute(broker, request, context)
+        result = self.model_execution_engine.execute(
+            broker,
+            request,
+            context,
+            final_write_authority_check=(
+                final_write_authority_check
+                if self.production_authority_validator is not None
+                else None
+            ),
+        )
+        if (
+            self.production_authority_validator is not None
+            and result.success
+            and not final_gate_invoked
+        ):
+            self._model_write_authority_frozen = True
+            return self._result(
+                success=False,
+                status="UNCERTAIN",
+                reasons=("MODEL_FINAL_WRITE_AUTHORITY_NOT_INVOKED",),
+                evidence=evidence,
+            )
         if result.status == "UNCERTAIN":
             self._model_write_authority_frozen = True
         try:
