@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sqlite3
 import subprocess
+import tempfile
 import threading
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable
@@ -154,7 +157,7 @@ def create_model_executor(
     db_path: Path,
     config: Any,
     preflight: Any,
-    production_validation_sha256: str,
+    production_validation_sha256: str | None,
 ) -> Any:
     from .coordinated_model_executor import CoordinatedModelExecutor
 
@@ -808,7 +811,8 @@ def create_authoritative_writer(
     execution_lock_verifier: Callable[[], bool],
     uncertainty_reporter: Callable[[str], None],
     toolbox: Any,
-    production_validation_sha256: str,
+    production_validation_sha256: str | None,
+    validation_broker_factory: Callable[[], Any] | None = None,
 ) -> Any:
     from .authoritative_broker_writer import AuthoritativeBrokerWriter
     from .production_authority import ProductionAuthorityValidator
@@ -833,9 +837,10 @@ def create_authoritative_writer(
         snapshot_reader=snapshot_reader,
         expected_approved_head=_current_head(Path(config.repo_root)),
     )
+    effective_session_factory = validation_broker_factory or session_factory
     return AuthoritativeBrokerWriter(
         coordinator,
-        broker_factory=lambda client_id: session_factory()
+        broker_factory=lambda client_id: effective_session_factory()
         if client_id == WRITER_CLIENT_ID
         else (_ for _ in ()).throw(
             ProductionRuntimeConfigurationError("WRITER_CLIENT_ID_MISMATCH")
@@ -1061,6 +1066,7 @@ def create_continuity_watchdog(
     config: Any,
     preflight: Any,
     uncertainty_reporter: Callable[[str], None],
+    validation_broker_factory: Callable[[], Any] | None = None,
 ) -> Any:
     from .continuity_watchdog import ContinuityWatchdog
     from .persistence import Database
@@ -1074,9 +1080,11 @@ def create_continuity_watchdog(
         read_only=True,
     )
 
+    effective_session_factory = validation_broker_factory or raw_factory
+
     def broker_factory() -> ReadOnlyContinuityBroker:
         return ReadOnlyContinuityBroker(
-            raw_factory(),
+            effective_session_factory(),
             account_identity_sha256=str(preflight.expected_account_hash),
         )
 
@@ -1094,3 +1102,223 @@ def create_continuity_watchdog(
         heartbeat_max_age_seconds=20.0,
         uncertainty_reporter=uncertainty_reporter,
     )
+
+
+class _ValidationBroker:
+    """Socket-free PAPER boundary used only by composition validation."""
+
+    all_order_visibility = True
+    environment = "PAPER"
+
+    def __init__(self, *, client_id: int, read_only: bool) -> None:
+        self.client_id = client_id
+        self.read_only = read_only
+        self.disconnected = False
+
+    def reqCurrentTime(self) -> datetime:
+        return datetime.now(timezone.utc)
+
+    def reqAllOpenOrders(self) -> list[Any]:
+        return []
+
+    def reqExecutions(self) -> list[Any]:
+        return []
+
+    def positions(self) -> list[Any]:
+        return []
+
+    def disconnect(self) -> None:
+        self.disconnected = True
+
+
+def _validation_block(reason_code: str) -> dict[str, Any]:
+    return {
+        "status": "BLOCK",
+        "reason_codes": [reason_code],
+        "broker_connections": 0,
+        "broker_writes": 0,
+    }
+
+
+def _verify_installed_continuity_schema(db_path: Path) -> None:
+    from .continuity_schema import verify_continuity_schema_v3
+    from .persistence import Database
+
+    target = Path(db_path).resolve()
+    if not target.is_file():
+        raise ProductionRuntimeConfigurationError("CONTINUITY_SCHEMA_V3_INVALID")
+    connection = sqlite3.connect(f"file:{target.as_posix()}?mode=ro", uri=True)
+    try:
+        verify_continuity_schema_v3(Database(connection))
+    except Exception as exc:
+        reason = str(exc)
+        if reason != "CONTINUITY_SCHEMA_V3_INVALID":
+            reason = "CONTINUITY_SCHEMA_V3_INVALID"
+        raise ProductionRuntimeConfigurationError(reason) from exc
+    finally:
+        connection.close()
+
+
+def validate_production_composition(
+    *,
+    config: Any,
+    preflight: Any,
+    toolbox: Any,
+    production_validation_sha256: str,
+) -> dict[str, Any]:
+    """Exercise the production graph with socket-free, write-free boundaries."""
+
+    writer = None
+    watchdog = None
+    writer_started = False
+    watchdog_started = False
+    writer_stopped = False
+    watchdog_stopped = False
+    stage = "CONFIGURATION"
+    try:
+        validate_production_runtime_configuration(config)
+        if (
+            not isinstance(production_validation_sha256, str)
+            or len(production_validation_sha256) != 64
+            or any(
+                character not in "0123456789abcdef"
+                for character in production_validation_sha256
+            )
+        ):
+            return _validation_block("PRODUCTION_VALIDATION_SHA256_INVALID")
+        _verify_installed_continuity_schema(Path(config.db_path))
+
+        with tempfile.TemporaryDirectory(prefix="ibkr-continuity-v3-validate-") as root:
+            from .continuity_schema import install_continuity_schema_v3
+            from .persistence import Database
+            from .successor_schema import install_successor_schema_v2
+
+            validation_db_path = Path(root) / "validation.sqlite3"
+            with Database.open(validation_db_path) as db:
+                install_successor_schema_v2(db)
+                install_continuity_schema_v3(db)
+            validation_config = SimpleNamespace(
+                **{
+                    **vars(config),
+                    "db_path": validation_db_path,
+                }
+            )
+            coordinator = create_broker_write_coordinator()
+            model_executor = create_model_executor(
+                coordinator=coordinator,
+                db_path=validation_db_path,
+                config=validation_config,
+                preflight=preflight,
+                production_validation_sha256=None,
+            )
+            if (
+                getattr(model_executor, "is_coordinated_model_executor", False)
+                is not True
+                or getattr(model_executor, "armed", True) is not False
+            ):
+                raise ProductionRuntimeConfigurationError(
+                    "PRODUCTION_COMPOSITION_MODEL_EXECUTOR_INVALID"
+                )
+            reporter = create_critical_alert_reporter(
+                db_path=validation_db_path,
+                config=validation_config,
+                preflight=preflight,
+            )
+            writer = create_authoritative_writer(
+                coordinator=coordinator,
+                db_path=validation_db_path,
+                config=validation_config,
+                preflight=preflight,
+                execution_lock_verifier=lambda: False,
+                uncertainty_reporter=reporter,
+                toolbox=toolbox,
+                production_validation_sha256=None,
+                validation_broker_factory=lambda: _ValidationBroker(
+                    client_id=WRITER_CLIENT_ID, read_only=False
+                ),
+            )
+            watchdog = create_continuity_watchdog(
+                coordinator=coordinator,
+                db_path=validation_db_path,
+                config=validation_config,
+                preflight=preflight,
+                uncertainty_reporter=reporter,
+                validation_broker_factory=lambda: _ValidationBroker(
+                    client_id=OBSERVER_CLIENT_ID, read_only=True
+                ),
+            )
+
+            stage = "START"
+            writer.start()
+            writer_started = True
+            if writer.wait_until_ready(2.0) is not True:
+                raise RuntimeError("AUTHORITATIVE_WRITER_NOT_READY")
+            writer_sole_capability = False
+            if getattr(writer, "coordinator", None) is coordinator:
+                try:
+                    coordinator.attach_writer()
+                except RuntimeError as exc:
+                    writer_sole_capability = str(exc) == "AUTHORITATIVE_WRITER_ALREADY_ATTACHED"
+            watchdog.start(2.0)
+            watchdog_started = True
+
+            production_gates_callable = all(
+                (
+                    callable(getattr(writer, "execution_lock_verifier", None)),
+                    callable(
+                        getattr(
+                            getattr(writer, "production_authority_validator", None),
+                            "validate_before_write",
+                            None,
+                        )
+                    ),
+                    callable(reporter),
+                )
+            )
+            watchdog_shutdown = watchdog.stop(2.0)
+            watchdog_stopped = bool(getattr(watchdog_shutdown, "stopped", False))
+            writer_stopped = bool(writer.stop(2.0))
+            if not watchdog_stopped or not writer_stopped:
+                raise RuntimeError("PRODUCTION_COMPOSITION_SHUTDOWN_INCOMPLETE")
+
+            return {
+                "status": "PASS",
+                "reason_codes": [],
+                "broker_connections": 0,
+                "broker_writes": 0,
+                "model_executor_coordinated": bool(
+                    getattr(model_executor, "is_coordinated_model_executor", False)
+                ),
+                "model_executor_armed": bool(getattr(model_executor, "armed", True)),
+                "writer_client_id": int(writer.execution_client_id),
+                "observer_client_id": OBSERVER_CLIENT_ID,
+                "observer_read_only": True,
+                "writer_started": writer_started,
+                "writer_stopped": writer_stopped,
+                "watchdog_started": watchdog_started,
+                "watchdog_stopped": watchdog_stopped,
+                "writer_sole_capability": writer_sole_capability,
+                "legacy_direct_executor_selected": False,
+                "production_gates_callable": production_gates_callable,
+            }
+    except ProductionRuntimeConfigurationError as exc:
+        return _validation_block(str(exc))
+    except Exception as exc:
+        prefix = (
+            "PRODUCTION_COMPOSITION_START_FAILED"
+            if stage == "START"
+            else "PRODUCTION_COMPOSITION_CONSTRUCTION_FAILED"
+        )
+        return _validation_block(f"{prefix}:{type(exc).__name__}")
+    finally:
+        if watchdog is not None and not watchdog_stopped:
+            try:
+                stopped = watchdog.stop(2.0)
+                watchdog_stopped = bool(getattr(stopped, "stopped", False))
+            except Exception:
+                pass
+        if writer is not None and not writer_stopped:
+            try:
+                writer_stopped = bool(writer.stop(2.0))
+            except Exception:
+                pass

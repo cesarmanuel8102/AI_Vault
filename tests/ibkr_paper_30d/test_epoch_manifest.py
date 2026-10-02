@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -95,6 +96,7 @@ def test_epoch_manifest_is_correct_and_hashable():
     assert manifest["observational_only"] is True
     assert manifest["manifest_state"] == "CREATED"
     assert manifest["service_started"] is False
+    assert manifest["model_turn_timeout_seconds"] == 600
     assert manifest["effective_payload"] == {
         "mandate": mandate,
         "first_process_bootstrap": bootstrap,
@@ -112,6 +114,10 @@ def test_epoch_manifest_is_correct_and_hashable():
     assert len(digest) == 64
     again = epoch_manifest_hash(json.loads(json.dumps(manifest)))
     assert again == digest
+    changed = build_epoch_manifest(
+        replace(inputs, model_turn_timeout_seconds=321)
+    )
+    assert changed["epoch_manifest_sha256"] != manifest["epoch_manifest_sha256"]
 
 
 def test_epoch_manifest_does_not_influence_strategy():

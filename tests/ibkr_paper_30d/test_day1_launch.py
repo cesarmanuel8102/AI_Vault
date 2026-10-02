@@ -2020,6 +2020,50 @@ def test_launch_writes_epoch_observational_manifest(tmp_path: Path) -> None:
         assert forbidden not in lowered, forbidden
 
 
+@pytest.mark.parametrize(
+    "value",
+    (None, True, 0, -1, 29, 601, float("inf"), float("nan")),
+)
+def test_launch_config_rejects_invalid_model_turn_timeout(
+    tmp_path: Path, value
+) -> None:
+    ctx = passing_context(tmp_path)
+
+    with pytest.raises(ValueError, match="MODEL_TURN_TIMEOUT_INVALID"):
+        replace(ctx.config, model_turn_timeout_seconds=value)
+
+
+def test_launch_uses_authority_bound_model_turn_timeout(tmp_path: Path) -> None:
+    ctx = passing_context(tmp_path)
+    install_fake_lock(ctx)
+    ctx.config = replace(ctx.config, model_turn_timeout_seconds=321)
+    captured = {}
+
+    class Service:
+        def run_forever(self):
+            return None
+
+    def service_factory(*args, **kwargs):
+        captured.update(kwargs)
+        return Service()
+
+    ctx.dependencies.service_factory = service_factory
+
+    assert run_day1_launch(ctx.config, ctx.dependencies) == (
+        "AUTONOMOUS_PAPER_EXPERIMENT_STOPPED"
+    )
+    assert captured["timeout_seconds"] == 321
+    manifest_path = (
+        tmp_path
+        / "state"
+        / "ibkr_paper_30d"
+        / "reports"
+        / "autonomy_epoch_manifest.json"
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["model_turn_timeout_seconds"] == 321
+
+
 def test_service_construction_failure_never_emits_epoch_started(tmp_path: Path) -> None:
     ctx = passing_context(tmp_path)
     install_fake_lock(ctx)

@@ -45,6 +45,16 @@ class EpochManifestInputs:
     quantconnect_capability: str
     self_tooling_enabled: bool
     persistent_workspace_enabled: bool
+    model_turn_timeout_seconds: int = 600
+
+    def __post_init__(self) -> None:
+        value = self.model_turn_timeout_seconds
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, int)
+            or not 30 <= value <= 600
+        ):
+            raise ValueError("MODEL_TURN_TIMEOUT_INVALID")
 
 
 def build_epoch_manifest(inputs: EpochManifestInputs) -> dict[str, Any]:
@@ -64,6 +74,7 @@ def build_epoch_manifest(inputs: EpochManifestInputs) -> dict[str, Any]:
         "git_commit_sha": inputs.git_commit_sha,
         "model": inputs.model,
         "reasoning_effort": inputs.reasoning_effort,
+        "model_turn_timeout_seconds": inputs.model_turn_timeout_seconds,
         "effective_payload": effective_payload,
         "effective_payload_sha256": sha256_json(effective_payload),
         "mandate_sha256": sha256_json(inputs.mandate_payload),

@@ -28,6 +28,7 @@ from ibkr_paper_30d.production_continuity_runtime import (
     build_ibkr_session_factory,
     validate_production_runtime_configuration,
     _verified_registry_binding,
+    validate_production_composition,
 )
 
 
@@ -420,3 +421,282 @@ def test_superseded_plan_reuses_only_exact_verified_broker_anchor(
 
     assert binding is not None
     assert binding["plan_sha256"] == successor.sha256
+
+
+def test_validate_only_constructs_composition_without_broker_io(
+    tmp_path, monkeypatch
+) -> None:
+    smtp = tmp_path / "Secrets" / "email_alerts.env"
+    smtp.parent.mkdir(parents=True)
+    smtp.write_text("synthetic", encoding="utf-8")
+    config = SimpleNamespace(
+        repo_root=tmp_path,
+        db_path=tmp_path / "runtime.sqlite3",
+        launch_attempt_id="validate-only",
+        target_successor_epoch_id="AUTONOMY_EPOCH_2",
+        initial_allocation=Decimal("500"),
+        paper_host="127.0.0.1",
+        paper_port=4002,
+    )
+    preflight = SimpleNamespace(expected_account_hash="a" * 64)
+    calls = []
+
+    with Database.open(config.db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._current_head",
+        lambda _root: "c" * 40,
+    )
+
+    def session_factory(**kwargs):
+        calls.append(("configured", kwargs["client_id"], kwargs["read_only"]))
+
+        def forbidden_connect():
+            raise AssertionError("validate_only must not connect")
+
+        return forbidden_connect
+
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime.build_ibkr_session_factory",
+        session_factory,
+    )
+
+    result = validate_production_composition(
+        config=config,
+        preflight=preflight,
+        toolbox=object(),
+        production_validation_sha256="b" * 64,
+    )
+
+    assert result["status"] == "PASS"
+    assert result["broker_connections"] == 0
+    assert result["broker_writes"] == 0
+    assert result["model_executor_coordinated"] is True
+    assert result["model_executor_armed"] is False
+    assert result["writer_started"] is True
+    assert result["writer_stopped"] is True
+    assert result["watchdog_started"] is True
+    assert result["watchdog_stopped"] is True
+    assert result["writer_sole_capability"] is True
+    assert result["legacy_direct_executor_selected"] is False
+    assert result["production_gates_callable"] is True
+    assert calls == [
+        ("configured", WRITER_CLIENT_ID, False),
+        ("configured", OBSERVER_CLIENT_ID, True),
+    ]
+
+
+def test_validate_only_reports_missing_alert_configuration_without_broker_io(
+    tmp_path,
+) -> None:
+    config = SimpleNamespace(
+        repo_root=tmp_path,
+        db_path=tmp_path / "runtime.sqlite3",
+        launch_attempt_id="validate-only",
+        target_successor_epoch_id="AUTONOMY_EPOCH_2",
+        initial_allocation=Decimal("500"),
+        paper_host="127.0.0.1",
+        paper_port=4002,
+    )
+
+    result = validate_production_composition(
+        config=config,
+        preflight=SimpleNamespace(expected_account_hash="a" * 64),
+        toolbox=object(),
+        production_validation_sha256="b" * 64,
+    )
+
+    assert result == {
+        "status": "BLOCK",
+        "reason_codes": ["EXTERNAL_ALERT_CONFIGURATION_MISSING"],
+        "broker_connections": 0,
+        "broker_writes": 0,
+    }
+
+
+def test_validate_only_rejects_invalid_validation_authority_hash(tmp_path) -> None:
+    smtp = tmp_path / "Secrets" / "email_alerts.env"
+    smtp.parent.mkdir(parents=True)
+    smtp.write_text("synthetic", encoding="utf-8")
+    config = SimpleNamespace(
+        repo_root=tmp_path,
+        db_path=tmp_path / "runtime.sqlite3",
+        launch_attempt_id="validate-only",
+        target_successor_epoch_id="AUTONOMY_EPOCH_2",
+        initial_allocation=Decimal("500"),
+        paper_host="127.0.0.1",
+        paper_port=4002,
+    )
+    with Database.open(config.db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+
+    result = validate_production_composition(
+        config=config,
+        preflight=SimpleNamespace(expected_account_hash="a" * 64),
+        toolbox=object(),
+        production_validation_sha256="invalid",
+    )
+
+    assert result == {
+        "status": "BLOCK",
+        "reason_codes": ["PRODUCTION_VALIDATION_SHA256_INVALID"],
+        "broker_connections": 0,
+        "broker_writes": 0,
+    }
+
+
+def test_validate_only_blocks_an_armed_or_uncoordinated_model_executor(
+    tmp_path, monkeypatch
+) -> None:
+    smtp = tmp_path / "Secrets" / "email_alerts.env"
+    smtp.parent.mkdir(parents=True)
+    smtp.write_text("synthetic", encoding="utf-8")
+    config = SimpleNamespace(
+        repo_root=tmp_path,
+        db_path=tmp_path / "runtime.sqlite3",
+        launch_attempt_id="validate-only",
+        target_successor_epoch_id="AUTONOMY_EPOCH_2",
+        initial_allocation=Decimal("500"),
+        paper_host="127.0.0.1",
+        paper_port=4002,
+    )
+    with Database.open(config.db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._current_head",
+        lambda _root: "c" * 40,
+    )
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime.create_model_executor",
+        lambda **_kwargs: SimpleNamespace(
+            armed=True,
+            is_coordinated_model_executor=False,
+        ),
+    )
+
+    result = validate_production_composition(
+        config=config,
+        preflight=SimpleNamespace(expected_account_hash="a" * 64),
+        toolbox=object(),
+        production_validation_sha256="b" * 64,
+    )
+
+    assert result == {
+        "status": "BLOCK",
+        "reason_codes": ["PRODUCTION_COMPOSITION_MODEL_EXECUTOR_INVALID"],
+        "broker_connections": 0,
+        "broker_writes": 0,
+    }
+
+
+def test_validate_only_reports_missing_schema_without_broker_io(tmp_path) -> None:
+    smtp = tmp_path / "Secrets" / "email_alerts.env"
+    smtp.parent.mkdir(parents=True)
+    smtp.write_text("synthetic", encoding="utf-8")
+    config = SimpleNamespace(
+        repo_root=tmp_path,
+        db_path=tmp_path / "runtime.sqlite3",
+        launch_attempt_id="validate-only",
+        target_successor_epoch_id="AUTONOMY_EPOCH_2",
+        initial_allocation=Decimal("500"),
+        paper_host="127.0.0.1",
+        paper_port=4002,
+    )
+    with Database.open(config.db_path):
+        pass
+
+    result = validate_production_composition(
+        config=config,
+        preflight=SimpleNamespace(expected_account_hash="a" * 64),
+        toolbox=object(),
+        production_validation_sha256="b" * 64,
+    )
+
+    assert result == {
+        "status": "BLOCK",
+        "reason_codes": ["CONTINUITY_SCHEMA_V3_INVALID"],
+        "broker_connections": 0,
+        "broker_writes": 0,
+    }
+
+
+def test_validate_only_shuts_down_partial_startup_and_reports_exact_stage(
+    tmp_path, monkeypatch
+) -> None:
+    smtp = tmp_path / "Secrets" / "email_alerts.env"
+    smtp.parent.mkdir(parents=True)
+    smtp.write_text("synthetic", encoding="utf-8")
+    config = SimpleNamespace(
+        repo_root=tmp_path,
+        db_path=tmp_path / "runtime.sqlite3",
+        launch_attempt_id="validate-only",
+        target_successor_epoch_id="AUTONOMY_EPOCH_2",
+        initial_allocation=Decimal("500"),
+        paper_host="127.0.0.1",
+        paper_port=4002,
+    )
+    with Database.open(config.db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._current_head",
+        lambda _root: "c" * 40,
+    )
+    trace = []
+
+    class Writer:
+        execution_client_id = WRITER_CLIENT_ID
+        production_authority_validator = SimpleNamespace(validate_before_write=lambda: None)
+        execution_lock_verifier = lambda self: False
+
+        def start(self):
+            trace.append("writer_start")
+
+        def wait_until_ready(self, _timeout):
+            return True
+
+        def stop(self, _timeout):
+            trace.append("writer_stop")
+            return True
+
+    class Watchdog:
+        def start(self, _timeout):
+            trace.append("watchdog_start")
+            raise RuntimeError("synthetic watchdog failure")
+
+        def stop(self, _timeout):
+            trace.append("watchdog_stop")
+            return SimpleNamespace(stopped=True, timed_out=False)
+
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime.create_authoritative_writer",
+        lambda **_kwargs: Writer(),
+    )
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime.create_continuity_watchdog",
+        lambda **_kwargs: Watchdog(),
+    )
+
+    result = validate_production_composition(
+        config=config,
+        preflight=SimpleNamespace(expected_account_hash="a" * 64),
+        toolbox=object(),
+        production_validation_sha256="b" * 64,
+    )
+
+    assert result["status"] == "BLOCK"
+    assert result["reason_codes"] == [
+        "PRODUCTION_COMPOSITION_START_FAILED:RuntimeError"
+    ]
+    assert result["broker_connections"] == 0
+    assert result["broker_writes"] == 0
+    assert trace == [
+        "writer_start",
+        "watchdog_start",
+        "watchdog_stop",
+        "writer_stop",
+    ]

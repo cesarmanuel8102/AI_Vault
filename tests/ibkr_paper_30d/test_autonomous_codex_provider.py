@@ -10,6 +10,7 @@ from ibkr_paper_30d.autonomous_research import (
     CodexAutonomousCLIProvider,
     _resolve_codex_executable,
 )
+from ibkr_paper_30d.autonomous_runtime import build_request
 from ibkr_paper_30d.trader_invocation import InvocationRequest, TraderInputBundle
 
 
@@ -50,6 +51,21 @@ def request(value: TraderInputBundle) -> InvocationRequest:
         invocation_trigger="SCHEDULED_SCAN",
         timeout_seconds=60,
     )
+
+
+def test_build_request_preserves_exact_authority_visible_provider_timeout() -> None:
+    value = bundle()
+
+    built = build_request(
+        value,
+        model="gpt-5.6-sol",
+        reasoning_effort="max",
+        experiment_id="paper-30d",
+        timeout_seconds=321,
+        trigger="SCHEDULED_SCAN",
+    )
+
+    assert built.timeout_seconds == 321
 
 
 def test_codex_executable_resolves_from_desktop_install_when_path_is_missing(
