@@ -1206,6 +1206,38 @@ class IBKRResearchToolbox:
             if broker is not None:
                 broker.disconnect()
 
+    @staticmethod
+    def _combo_leg_contract_spec(leg: dict[str, Any]) -> dict[str, Any]:
+        """Return the canonical contract identity carried by a combo leg.
+
+        A leg may express its contract either flat on the leg itself or as the
+        repository's canonical nested contract object -- the same shape
+        ``_serialize_contract`` emits to the model. Both are accepted so a model
+        can return authoritative broker-resolved identity unchanged.
+        """
+        nested = leg.get("contract")
+        return nested if isinstance(nested, dict) else leg
+
+    @classmethod
+    def _combo_leg_contract_id(cls, leg: dict[str, Any]) -> int | None:
+        """Return the positive integer conId for a combo leg, else None."""
+        spec = cls._combo_leg_contract_spec(leg)
+        raw = next(
+            (
+                spec.get(key)
+                for key in ("conId", "con_id", "contract_id")
+                if spec.get(key) not in (None, "", 0, "0")
+            ),
+            None,
+        )
+        if isinstance(raw, bool):
+            return None
+        try:
+            value = int(raw)
+        except (TypeError, ValueError):
+            return None
+        return value if value > 0 else None
+
     @classmethod
     def _validate_flat_feasibility_args(
         cls, args: dict[str, Any]
@@ -1234,28 +1266,18 @@ class IBKRResearchToolbox:
         if sec_type == "BAG":
             if not isinstance(legs, list) or len(legs) < 2:
                 return invalid("BROKER_FEASIBILITY_COMBO_LEGS_REQUIRED")
+            seen_leg_identities: set[int] = set()
             for leg in legs:
                 if not isinstance(leg, dict):
                     return invalid("BROKER_FEASIBILITY_COMBO_LEG_INVALID")
-                contract_id = next(
-                    (
-                        leg.get(key)
-                        for key in ("conId", "con_id", "contract_id")
-                        if leg.get(key) not in (None, "", 0, "0")
-                    ),
-                    None,
-                )
-                try:
-                    valid_contract_id = (
-                        not isinstance(contract_id, bool)
-                        and int(contract_id) > 0
-                    )
-                except (TypeError, ValueError):
-                    valid_contract_id = False
-                if not valid_contract_id:
+                contract_id = cls._combo_leg_contract_id(leg)
+                if contract_id is None:
                     return invalid(
                         "BROKER_FEASIBILITY_COMBO_LEG_CONTRACT_REQUIRED"
                     )
+                if contract_id in seen_leg_identities:
+                    return invalid("BROKER_FEASIBILITY_COMBO_LEG_DUPLICATE")
+                seen_leg_identities.add(contract_id)
                 if str(leg.get("action") or "").upper() not in {
                     "BUY",
                     "SELL",
@@ -1332,14 +1354,21 @@ class IBKRResearchToolbox:
 
         combo_legs = []
         for leg in args.get("legs") or []:
-            contract_id = int(
-                leg.get("contract_id") or leg.get("con_id") or leg.get("conId")
+            spec = self._combo_leg_contract_spec(leg)
+            contract_id = self._combo_leg_contract_id(leg)
+            if contract_id is None:
+                raise LookupError("IBKR combo leg contract identity missing")
+            leg_exchange = str(
+                leg.get("exchange") or spec.get("exchange") or "SMART"
             )
             leg_contract = Contract(
                 conId=contract_id,
-                exchange=str(leg.get("exchange") or "SMART"),
+                exchange=leg_exchange,
                 currency=str(
-                    leg.get("currency") or args.get("currency") or "USD"
+                    leg.get("currency")
+                    or spec.get("currency")
+                    or args.get("currency")
+                    or "USD"
                 ),
             )
             qualified = broker.qualifyContracts(leg_contract)
@@ -1353,7 +1382,7 @@ class IBKRResearchToolbox:
                     conId=contract_id,
                     ratio=int(leg.get("ratio") or 1),
                     action=str(leg.get("action") or "").upper(),
-                    exchange=str(leg.get("exchange") or "SMART"),
+                    exchange=leg_exchange,
                 )
             )
         return Contract(

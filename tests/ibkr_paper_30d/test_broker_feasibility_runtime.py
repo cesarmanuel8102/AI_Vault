@@ -198,6 +198,194 @@ def test_flat_combo_request_builds_qualified_bag_for_authoritative_what_if(
     assert broker.disconnected is True
 
 
+class _ComboBroker(WhatIfOnlyBroker):
+    def qualifyContracts(self, contract):
+        self.qualified_contracts.append(contract)
+        contract.localSymbol = f"IOVA-{contract.conId}"
+        contract.secType = "OPT"
+        contract.exchange = "SMART"
+        contract.currency = "USD"
+        return [contract]
+
+
+# Canonical repository contract identity emitted to the model by
+# IBKRResearchToolbox._serialize_contract(). Reproduces the exact leg shape
+# the autonomous model supplied on 2026-10-02 after resolving real IBKR
+# option contracts (request_id=retry_whatif_iova_oct16_15_18_with_contracts).
+_CANONICAL_NESTED_LEGS = [
+    {
+        "action": "BUY",
+        "ratio": 1,
+        "contract": {
+            "conId": 913925915,
+            "symbol": "IOVA",
+            "localSymbol": "IOVA  261016C00015000",
+            "secType": "OPT",
+            "exchange": "SMART",
+            "currency": "USD",
+            "expiry": "20261016",
+            "strike": 15.0,
+            "right": "C",
+            "multiplier": "100",
+        },
+    },
+    {
+        "action": "SELL",
+        "ratio": 1,
+        "contract": {
+            "conId": 926221865,
+            "symbol": "IOVA",
+            "localSymbol": "IOVA  261016C00018000",
+            "secType": "OPT",
+            "exchange": "SMART",
+            "currency": "USD",
+            "expiry": "20261016",
+            "strike": 18.0,
+            "right": "C",
+            "multiplier": "100",
+        },
+    },
+]
+
+# Snake_case normalization the model attempted next
+# (request_id=retry_whatif_iova_with_normalized_contracts).
+_NORMALIZED_NESTED_LEGS = [
+    {
+        "action": "BUY",
+        "ratio": 1,
+        "contract": {
+            "contract_id": 913925915,
+            "symbol": "IOVA",
+            "local_symbol": "IOVA  261016C00015000",
+            "sec_type": "OPT",
+            "exchange": "SMART",
+            "currency": "USD",
+            "expiry": "20261016",
+            "strike": "15",
+            "right": "C",
+            "multiplier": "100",
+        },
+    },
+    {
+        "action": "SELL",
+        "ratio": 1,
+        "contract": {
+            "contract_id": 926221865,
+            "symbol": "IOVA",
+            "local_symbol": "IOVA  261016C00018000",
+            "sec_type": "OPT",
+            "exchange": "SMART",
+            "currency": "USD",
+            "expiry": "20261016",
+            "strike": "18",
+            "right": "C",
+            "multiplier": "100",
+        },
+    },
+]
+
+
+def _combo_request(legs, request_id="feasibility-iova-call-spread"):
+    return ResearchRequest(
+        request_id=request_id,
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "action": "BUY",
+            "currency": "USD",
+            "exchange": "SMART",
+            "legs": legs,
+            "limit_price": "0.90",
+            "order_type": "LMT",
+            "quantity": "1",
+            "sec_type": "BAG",
+            "symbol": "IOVA",
+        },
+        purpose="authoritative paper combo what-if",
+    )
+
+
+@pytest.mark.parametrize(
+    ("legs", "label"),
+    (
+        (_CANONICAL_NESTED_LEGS, "camel_case_serialize_contract"),
+        (_NORMALIZED_NESTED_LEGS, "snake_case_normalized"),
+    ),
+)
+def test_canonical_nested_leg_contract_reaches_authoritative_what_if(
+    monkeypatch, legs, label
+):
+    """A combo leg carrying the repository's canonical nested contract identity
+    must reach IBKR what-if instead of failing local request validation."""
+    broker = _ComboBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+
+    result = toolbox.execute(_combo_request(legs, f"feasibility-{label}"), _bundle())
+
+    assert result.error is None
+    assert result.success is True
+    assert [contract.conId for contract in broker.qualified_contracts] == [
+        913925915,
+        926221865,
+    ]
+    assert len(broker.what_if_calls) == 1
+    contract, order = broker.what_if_calls[0]
+    assert contract.symbol == "IOVA"
+    assert contract.secType == "BAG"
+    assert [leg.conId for leg in contract.comboLegs] == [913925915, 926221865]
+    assert [leg.action for leg in contract.comboLegs] == ["BUY", "SELL"]
+    assert [leg.ratio for leg in contract.comboLegs] == [1, 1]
+    assert order.whatIf is True
+    assert order.transmit is True
+    assert broker.disconnected is True
+
+
+def test_nested_leg_contract_without_identity_fails_closed_before_broker_call(
+    monkeypatch,
+):
+    """A nested contract lacking authoritative identity must still fail closed."""
+    broker = _ComboBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    legs = [
+        {
+            "action": "BUY",
+            "ratio": 1,
+            "contract": {"symbol": "IOVA", "secType": "OPT", "strike": 15.0},
+        },
+        {
+            "action": "SELL",
+            "ratio": 1,
+            "contract": {"conId": 926221865, "symbol": "IOVA"},
+        },
+    ]
+
+    result = toolbox.execute(_combo_request(legs, "feasibility-nested-no-id"), _bundle())
+
+    assert result.success is False
+    assert result.data["error_code"] == "BROKER_FEASIBILITY_COMBO_LEG_CONTRACT_REQUIRED"
+    assert result.data["stage"] == "REQUEST_VALIDATION"
+    assert broker.what_if_calls == []
+
+
+def test_duplicate_combo_leg_identity_is_rejected_before_broker_call(monkeypatch):
+    """Ambiguous combo legs sharing one contract identity must be rejected."""
+    broker = _ComboBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    legs = [
+        {"action": "BUY", "ratio": 1, "contract": {"conId": 913925915}},
+        {"action": "SELL", "ratio": 1, "contract": {"conId": 913925915}},
+    ]
+
+    result = toolbox.execute(_combo_request(legs, "feasibility-dupe-leg"), _bundle())
+
+    assert result.success is False
+    assert result.data["error_code"] == "BROKER_FEASIBILITY_COMBO_LEG_DUPLICATE"
+    assert result.data["stage"] == "REQUEST_VALIDATION"
+    assert broker.what_if_calls == []
+
+
 @pytest.mark.parametrize(
     ("legs", "error_code"),
     (
