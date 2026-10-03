@@ -854,6 +854,7 @@ def test_research_what_if_incomplete_evidence_is_not_reported_as_success(
     if error_code == "BROKER_ECONOMICS_SENTINEL_DETECTED":
         assert result.error == "BROKER_WHATIF_DBL_MAX_SENTINEL"
         assert result.data["error_code"] == "BROKER_ECONOMICS_SENTINEL_DETECTED"
+        assert result.data["what_if_status"] == "BROKER_ECONOMICS_NOT_COMPUTED"
         assert result.data["broker_whatif_reached"] is True
         assert result.data["broker_economics_computed"] is False
         assert result.data["stage"] == "WHAT_IF_NORMALIZATION"
@@ -1057,7 +1058,7 @@ def test_exact_ibkr_sentinel_rejects_economics(monkeypatch, sentinel_value, fiel
     result = toolbox.execute(request, _bundle())
 
     assert result.success is False
-    assert result.data["what_if_status"] == "BROKER_ECONOMICS_COMPUTED"
+    assert result.data["what_if_status"] == "BROKER_ECONOMICS_NOT_COMPUTED"
     assert result.data["broker_whatif_reached"] is True
     assert result.data["broker_economics_computed"] is False
     assert result.data["error_code"] == "BROKER_ECONOMICS_SENTINEL_DETECTED"
@@ -1154,10 +1155,19 @@ def test_what_if_dbl_max_sentinel_rejects_economics(monkeypatch):
     result = toolbox.execute(request, _bundle())
 
     assert result.success is False
-    assert result.data["what_if_status"] == "BROKER_ECONOMICS_COMPUTED"
+    assert result.data["what_if_status"] == "BROKER_ECONOMICS_NOT_COMPUTED"
     assert result.data["broker_whatif_reached"] is True
     assert result.data["broker_economics_computed"] is False
     assert result.data["error_code"] == "BROKER_ECONOMICS_SENTINEL_DETECTED"
     assert result.data["commission"] is None
     assert result.data["minCommission"] is None
     assert result.data["maxCommission"] == 1.0
+
+
+def test_exactly_one_what_if_evidence_definition_exists():
+    """Dead/shadowed definitions in broker-safety code are unacceptable."""
+    import inspect
+
+    source = inspect.getsource(IBKRResearchToolbox)
+    count = source.count("def _what_if_evidence(")
+    assert count == 1, f"expected exactly one _what_if_evidence, found {count}"

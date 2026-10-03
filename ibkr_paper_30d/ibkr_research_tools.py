@@ -1570,57 +1570,6 @@ class IBKRResearchToolbox:
             raise RuntimeError("BROKER_FEASIBILITY_WHAT_IF_TRANSMIT_REQUIRED")
         return broker.whatIfOrder(contract, order)
 
-    def _what_if_evidence(
-        self,
-        broker: Any,
-        contract: Any,
-        *,
-        action: str,
-        order_type: str,
-        quantity: Decimal,
-        limit_price: Decimal | None,
-        time_in_force: str = "",
-    ) -> dict[str, Any]:
-        from ib_insync import Order
-
-        order = Order(
-            action=action,
-            orderType=order_type,
-            totalQuantity=float(quantity),
-            tif=time_in_force,
-            transmit=True,
-            whatIf=True,
-        )
-        if limit_price is not None:
-            order.lmtPrice = float(limit_price)
-        state = self._request_what_if(broker, contract, order)
-        if state is None:
-            return {
-                "success": False,
-                "error": "WHAT_IF_RETURNED_NONE",
-                "contract": self._serialize_contract(contract),
-                "whatIf": True,
-                "paper_only": True,
-                "what_if_status": "BROKER_WHATIF_NO_RESPONSE",
-                "broker_economics_computed": False,
-            }
-        broker_economics = {
-            key: getattr(state, key, None)
-            for key in (
-                "commission",
-                "minCommission",
-                "maxCommission",
-                "initMarginBefore",
-                "initMarginChange",
-                "initMarginAfter",
-                "maintMarginBefore",
-                "maintMarginChange",
-                "maintMarginAfter",
-                "equityWithLoanBefore",
-                "equityWithLoanChange",
-                "equityWithLoanAfter",
-            )
-        }
     @staticmethod
     def _is_unusable_broker_economic_value(value: Any) -> bool:
         """Detect IBKR 'not computed' sentinel and other non-finite indicators.
@@ -1738,7 +1687,7 @@ class IBKRResearchToolbox:
                 "contract": self._serialize_contract(contract),
                 "whatIf": True,
                 "paper_only": True,
-                "what_if_status": "BROKER_ECONOMICS_COMPUTED",
+                "what_if_status": "BROKER_ECONOMICS_NOT_COMPUTED",
                 "broker_whatif_reached": True,
                 "broker_economics_computed": False,
                 "stage": "WHAT_IF_NORMALIZATION",
