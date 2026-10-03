@@ -144,6 +144,8 @@ class IBKRResearchToolbox:
             "paper_only",
             "current_position",
             "requested_quantity",
+            "what_if_status",
+            "broker_economics_computed",
         }
     )
 
@@ -1051,6 +1053,61 @@ class IBKRResearchToolbox:
         finally:
             ib.disconnect()
 
+    def session_evidence(self) -> dict[str, Any] | None:
+        """Authoritative IBKR session + open-order evidence for orchestration.
+
+        Read-only: reuses _connect (single-DU PAPER + identity hash). Returns
+        None whenever the calendar is not authoritatively resolvable so the
+        caller can never fabricate CLOSED and always falls back to baseline
+        fail-closed behaviour.
+        """
+        from ib_insync import Contract
+
+        from .open_order_management import EXPERIMENT_ORDER_PREFIX
+
+        _SESSION_EVIDENCE_PROBES = ("SPY", "QQQ", "IEF")
+        try:
+            ib = self._connect()
+        except Exception:
+            return None
+        try:
+            liquid_hours = ""
+            timezone_id = ""
+            for symbol in sorted(_SESSION_EVIDENCE_PROBES):
+                probe = Contract(
+                    symbol=symbol, secType="STK", exchange="SMART", currency="USD"
+                )
+                details = ib.reqContractDetails(probe)
+                for item in details or []:
+                    lh = str(getattr(item, "liquidHours", "") or "")
+                    tz = str(getattr(item, "timeZoneId", "") or "")
+                    if lh and tz:
+                        liquid_hours = liquid_hours or lh
+                        timezone_id = timezone_id or tz
+                        break
+                if liquid_hours and timezone_id:
+                    break
+            if not liquid_hours or not timezone_id:
+                return None
+            has_open_orders = any(
+                str(getattr(trade.order, "orderRef", "") or "").startswith(
+                    f"{EXPERIMENT_ORDER_PREFIX}-"
+                )
+                for trade in ib.reqAllOpenOrders()
+            )
+            return {
+                "liquid_hours": liquid_hours,
+                "timezone_id": timezone_id,
+                "has_open_orders": bool(has_open_orders),
+            }
+        except Exception:
+            return None
+        finally:
+            try:
+                ib.disconnect()
+            except Exception:
+                pass
+
     def _option_chain(self, args: dict[str, Any]) -> dict[str, Any]:
         ib = self._connect()
         try:
@@ -1238,6 +1295,68 @@ class IBKRResearchToolbox:
             return None
         return value if value > 0 else None
 
+    @staticmethod
+    def _combo_leg_has_identity_conflict(leg: dict[str, Any]) -> bool:
+        """Detect contradictory identity: any two positive conIds that differ.
+
+        A leg may express identity flat on the leg itself (conId, con_id,
+        contract_id) or nested inside ``leg['contract']``. A conflict exists when
+        more than one positive conId is present across all sources and they are
+        not equal. This prevents an adversarial payload from smuggling two
+        identities simultaneously, even inside the same nested contract dict.
+        """
+        sources = [leg]
+        nested = leg.get("contract")
+        if isinstance(nested, dict):
+            sources.append(nested)
+        ids: set[int] = set()
+        for mapping in sources:
+            for key in ("conId", "con_id", "contract_id"):
+                raw = mapping.get(key)
+                if raw not in (None, "", 0, "0"):
+                    try:
+                        val = int(raw)
+                        if val > 0:
+                            ids.add(val)
+                    except (TypeError, ValueError):
+                        continue
+        return len(ids) > 1
+
+    @staticmethod
+    def _combo_legs_vertical_structural_error(
+        legs: list[dict[str, Any]],
+    ) -> str | None:
+        """Validate declared VERTICAL intent against structural consistency.
+
+        Returns None if legs are structurally consistent with a standard
+        vertical spread, else an error-code string.
+
+        A vertical spread must have exactly two legs, same symbol, same
+        expiry, same right, different strikes, opposite BUY/SELL actions.
+        """
+        if len(legs) != 2:
+            return "BROKER_FEASIBILITY_VERTICAL_STRUCTURAL_INCONSISTENT"
+        specs = [
+            IBKRResearchToolbox._combo_leg_contract_spec(l) for l in legs
+        ]
+        fields = {
+            key: [str(s.get(key) or "").strip() for s in specs]
+            for key in ("symbol", "secType", "right", "expiry")
+        }
+        for key in ("symbol", "secType", "right", "expiry"):
+            if not fields[key][0] or any(v != fields[key][0] for v in fields[key]):
+                return "BROKER_FEASIBILITY_VERTICAL_STRUCTURAL_INCONSISTENT"
+        actions = [str(l.get("action") or "").upper() for l in legs]
+        if sorted(actions) != ["BUY", "SELL"]:
+            return "BROKER_FEASIBILITY_VERTICAL_STRUCTURAL_INCONSISTENT"
+        try:
+            strikes = [float(s.get("strike") or 0) for s in specs]
+        except (TypeError, ValueError):
+            return "BROKER_FEASIBILITY_VERTICAL_STRUCTURAL_INCONSISTENT"
+        if strikes[0] == strikes[1] or any(s <= 0 for s in strikes):
+            return "BROKER_FEASIBILITY_VERTICAL_STRUCTURAL_INCONSISTENT"
+        return None
+
     @classmethod
     def _validate_flat_feasibility_args(
         cls, args: dict[str, Any]
@@ -1275,6 +1394,10 @@ class IBKRResearchToolbox:
                     return invalid(
                         "BROKER_FEASIBILITY_COMBO_LEG_CONTRACT_REQUIRED"
                     )
+                if cls._combo_leg_has_identity_conflict(leg):
+                    return invalid(
+                        "BROKER_FEASIBILITY_COMBO_LEG_IDENTITY_CONFLICT"
+                    )
                 if contract_id in seen_leg_identities:
                     return invalid("BROKER_FEASIBILITY_COMBO_LEG_DUPLICATE")
                 seen_leg_identities.add(contract_id)
@@ -1292,6 +1415,10 @@ class IBKRResearchToolbox:
                     return invalid(
                         "BROKER_FEASIBILITY_COMBO_LEG_RATIO_INVALID"
                     )
+            if str(args.get("structure") or "").upper() == "VERTICAL":
+                vert_err = cls._combo_legs_vertical_structural_error(legs)
+                if vert_err is not None:
+                    return invalid(vert_err)
         elif legs:
             return invalid("BROKER_FEASIBILITY_COMBO_SEC_TYPE_REQUIRED")
         if str(args.get("action") or "").upper() not in {"BUY", "SELL"}:
@@ -1434,25 +1561,53 @@ class IBKRResearchToolbox:
                 "contract": self._serialize_contract(contract),
                 "whatIf": True,
                 "paper_only": True,
+                "what_if_status": "BROKER_WHATIF_NO_RESPONSE",
+                "broker_economics_computed": False,
+            }
+        broker_economics = {
+            key: getattr(state, key, None)
+            for key in (
+                "commission",
+                "minCommission",
+                "maxCommission",
+                "initMarginBefore",
+                "initMarginChange",
+                "initMarginAfter",
+                "maintMarginBefore",
+                "maintMarginChange",
+                "maintMarginAfter",
+                "equityWithLoanBefore",
+                "equityWithLoanChange",
+                "equityWithLoanAfter",
+            )
+        }
+        sentinel = float("inf")
+        has_dbl_max = any(
+            isinstance(v, (int, float)) and v == sentinel
+            for v in broker_economics.values()
+        )
+        if has_dbl_max:
+            return {
+                "success": False,
+                "error": "BROKER_WHATIF_DBL_MAX_SENTINEL",
+                "error_type": "ValueError",
+                "error_code": "BROKER_ECONOMICS_SENTINEL_DETECTED",
+                "contract": self._serialize_contract(contract),
+                "whatIf": True,
+                "paper_only": True,
+                "what_if_status": "BROKER_ECONOMICS_COMPUTED",
+                "broker_economics_computed": False,
+                **{k: (None if v == sentinel else v) for k, v in broker_economics.items()},
             }
         return {
             "success": True,
             "contract": self._serialize_contract(contract),
-            "commission": getattr(state, "commission", None),
-            "minCommission": getattr(state, "minCommission", None),
-            "maxCommission": getattr(state, "maxCommission", None),
-            "initMarginBefore": getattr(state, "initMarginBefore", None),
-            "initMarginChange": getattr(state, "initMarginChange", None),
-            "initMarginAfter": getattr(state, "initMarginAfter", None),
-            "maintMarginBefore": getattr(state, "maintMarginBefore", None),
-            "maintMarginChange": getattr(state, "maintMarginChange", None),
-            "maintMarginAfter": getattr(state, "maintMarginAfter", None),
-            "equityWithLoanBefore": getattr(state, "equityWithLoanBefore", None),
-            "equityWithLoanChange": getattr(state, "equityWithLoanChange", None),
-            "equityWithLoanAfter": getattr(state, "equityWithLoanAfter", None),
+            **broker_economics,
             "warningText": getattr(state, "warningText", None),
             "whatIf": True,
             "paper_only": True,
+            "what_if_status": "BROKER_ECONOMICS_COMPUTED",
+            "broker_economics_computed": True,
         }
 
     def _proposal_contract(self, ib: Any, proposal: AutonomousTradeProposal):

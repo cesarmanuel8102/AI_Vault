@@ -386,6 +386,256 @@ def test_duplicate_combo_leg_identity_is_rejected_before_broker_call(monkeypatch
     assert broker.what_if_calls == []
 
 
+# ---------------------------------------------------------------------------
+# Adversarial contradictory-identity cases (second-audit hardening)
+# ---------------------------------------------------------------------------
+
+
+class _ConflictComboBroker(WhatIfOnlyBroker):
+    """Any broker call would prove the validator leaked an ambiguous identity."""
+
+    def qualifyContracts(self, contract):  # pragma: no cover - must never run
+        raise AssertionError("validator must reject before broker contact")
+
+    def whatIfOrder(self, contract, order):  # pragma: no cover - must never run
+        raise AssertionError("validator must reject before what-if")
+
+
+@pytest.mark.parametrize(
+    ("legs", "error_code"),
+    (
+        (
+            [
+                {
+                    "conId": 111,  # flat identity
+                    "contract": {"conId": 222},  # conflicting nested identity
+                    "action": "BUY",
+                    "ratio": 1,
+                },
+                {
+                    "contract": {"conId": 926221865},
+                    "action": "SELL",
+                    "ratio": 1,
+                },
+            ],
+            "BROKER_FEASIBILITY_COMBO_LEG_IDENTITY_CONFLICT",
+        ),
+        (
+            [
+                {
+                    "con_id": 111,
+                    "contract": {"contract_id": 222},
+                    "action": "BUY",
+                    "ratio": 1,
+                },
+                {
+                    "contract": {"conId": 926221865},
+                    "action": "SELL",
+                    "ratio": 1,
+                },
+            ],
+            "BROKER_FEASIBILITY_COMBO_LEG_IDENTITY_CONFLICT",
+        ),
+        (
+            [
+                {
+                    "contract_id": 111,
+                    "contract": {"conId": 222},
+                    "action": "BUY",
+                    "ratio": 1,
+                },
+                {
+                    "contract": {"conId": 926221865},
+                    "action": "SELL",
+                    "ratio": 1,
+                },
+            ],
+            "BROKER_FEASIBILITY_COMBO_LEG_IDENTITY_CONFLICT",
+        ),
+        (
+            [
+                {
+                    "contract": {"conId": 913925915, "contract_id": 926221865},
+                    "action": "BUY",
+                    "ratio": 1,
+                },
+                {
+                    "contract": {"conId": 926221865},
+                    "action": "SELL",
+                    "ratio": 1,
+                },
+            ],
+            "BROKER_FEASIBILITY_COMBO_LEG_IDENTITY_CONFLICT",
+        ),
+    ),
+)
+def test_contradictory_combo_leg_identity_fails_closed(monkeypatch, legs, error_code):
+    broker = _ConflictComboBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+
+    result = toolbox.execute(_combo_request(legs, "feasibility-conflict"), _bundle())
+
+    assert result.success is False
+    assert result.data["error_code"] == error_code
+    assert result.data["stage"] == "REQUEST_VALIDATION"
+
+
+# ---------------------------------------------------------------------------
+# Vertical structural semantics (declared intent)
+# ---------------------------------------------------------------------------
+
+
+def _vertical_leg(action, con_id, *, strike, right="C", expiry="20261016"):
+    return {
+        "action": action,
+        "ratio": 1,
+        "contract": {
+            "conId": con_id,
+            "symbol": "IOVA",
+            "secType": "OPT",
+            "exchange": "SMART",
+            "currency": "USD",
+            "expiry": expiry,
+            "strike": strike,
+            "right": right,
+            "multiplier": "100",
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    ("legs", "error_code"),
+    (
+        (
+            [  # same strike — not a vertical
+                _vertical_leg("BUY", 913925915, strike=15.0),
+                _vertical_leg("SELL", 926221865, strike=15.0),
+            ],
+            "BROKER_FEASIBILITY_VERTICAL_STRUCTURAL_INCONSISTENT",
+        ),
+        (
+            [  # mismatched expiries
+                _vertical_leg("BUY", 913925915, strike=15.0, expiry="20261016"),
+                _vertical_leg("SELL", 926221865, strike=18.0, expiry="20261120"),
+            ],
+            "BROKER_FEASIBILITY_VERTICAL_STRUCTURAL_INCONSISTENT",
+        ),
+        (
+            [  # mismatched right
+                _vertical_leg("BUY", 913925915, strike=15.0, right="C"),
+                _vertical_leg("SELL", 926221865, strike=18.0, right="P"),
+            ],
+            "BROKER_FEASIBILITY_VERTICAL_STRUCTURAL_INCONSISTENT",
+        ),
+        (
+            [  # same-side actions — not a vertical spread
+                _vertical_leg("BUY", 913925915, strike=15.0),
+                _vertical_leg("BUY", 926221865, strike=18.0),
+            ],
+            "BROKER_FEASIBILITY_VERTICAL_STRUCTURAL_INCONSISTENT",
+        ),
+    ),
+)
+def test_declared_vertical_rejects_structural_inconsistency(monkeypatch, legs, error_code):
+    broker = _ComboBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id="feasibility-vertical-bad",
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "action": "BUY",
+            "currency": "USD",
+            "exchange": "SMART",
+            "legs": legs,
+            "limit_price": "0.90",
+            "order_type": "LMT",
+            "quantity": "1",
+            "sec_type": "BAG",
+            "symbol": "IOVA",
+            "structure": "VERTICAL",  # declared intent triggers structural rule
+        },
+        purpose="reject malformed declared vertical",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.success is False
+    assert result.data["error_code"] == error_code
+    assert result.data["stage"] == "REQUEST_VALIDATION"
+    assert broker.what_if_calls == []
+
+
+def test_declared_vertical_accepts_consistent_structure(monkeypatch):
+    broker = _ComboBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id="feasibility-vertical-ok",
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "action": "BUY",
+            "currency": "USD",
+            "exchange": "SMART",
+            "legs": [
+                _vertical_leg("BUY", 913925915, strike=15.0),
+                _vertical_leg("SELL", 926221865, strike=18.0),
+            ],
+            "limit_price": "0.90",
+            "order_type": "LMT",
+            "quantity": "1",
+            "sec_type": "BAG",
+            "symbol": "IOVA",
+            "structure": "VERTICAL",
+        },
+        purpose="authoritative paper vertical what-if",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.error is None
+    assert result.success is True
+    assert len(broker.what_if_calls) == 1
+
+
+def test_generic_bag_without_vertical_declaration_remains_valid(monkeypatch):
+    """A generic multi-leg combo that does not declare 'VERTICAL' must not be
+    subject to vertical structural rules."""
+    broker = _ComboBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id="feasibility-generic-bag",
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "action": "BUY",
+            "currency": "USD",
+            "exchange": "SMART",
+            "legs": [
+                _vertical_leg("BUY", 913925915, strike=15.0, right="C"),
+                _vertical_leg("BUY", 926221865, strike=18.0, right="P"),
+            ],
+            "limit_price": "0.90",
+            "order_type": "LMT",
+            "quantity": "1",
+            "sec_type": "BAG",
+            "symbol": "IOVA",
+            # no structure declaration
+        },
+        purpose="generic combo without vertical declaration stays valid",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    # Generic BAG: opposite sides / mixed right would not be a vertical, but
+    # we did not declare one, so no vertical structural rule applies. The leg
+    # identities are real and resolvable, so the request must reach what-if.
+    assert result.error is None
+    assert result.success is True
+    assert len(broker.what_if_calls) == 1
+
+
 @pytest.mark.parametrize(
     ("legs", "error_code"),
     (
@@ -707,3 +957,85 @@ def test_what_if_timeout_is_sanitized_and_fails_closed(monkeypatch):
     assert result.data["error_code"] == "BROKER_FEASIBILITY_BROKER_OPERATION_FAILED"
     assert result.data["stage"] == "BROKER_WHAT_IF"
     assert "account-sensitive" not in str(result.model_dump(mode="json"))
+
+
+# ---------------------------------------------------------------------------
+# What-if evidence semantics (second-audit hardening)
+# ---------------------------------------------------------------------------
+
+
+def test_what_if_none_returns_broker_whatif_reached_not_computed(monkeypatch):
+    broker = WhatIfOnlyBroker()
+    broker.whatIfOrder = lambda _c, _o: None
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id="feasibility-whatif-none",
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "action": "BUY",
+            "conId": 911011733,
+            "order_type": "LMT",
+            "limit_price": 6.32,
+            "quantity": 40,
+            "sec_type": "STK",
+            "symbol": "GENI",
+        },
+        purpose="what-if returned None",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.success is False
+    assert result.data["what_if_status"] == "BROKER_WHATIF_NO_RESPONSE"
+    assert result.data["broker_economics_computed"] is False
+    assert "error_code" not in result.data
+
+
+def test_what_if_dbl_max_sentinel_rejects_economics(monkeypatch):
+    class SentinelBroker(WhatIfOnlyBroker):
+        def whatIfOrder(self, contract, order):
+            state = SimpleNamespace(
+                commission=float("inf"),
+                minCommission=float("inf"),
+                maxCommission=1.0,
+                initMarginBefore=float("inf"),
+                initMarginChange=0.0,
+                initMarginAfter=0.0,
+                maintMarginBefore=0.0,
+                maintMarginChange=0.0,
+                maintMarginAfter=0.0,
+                equityWithLoanBefore=0.0,
+                equityWithLoanChange=0.0,
+                equityWithLoanAfter=0.0,
+                warningText="",
+            )
+            return state
+
+    broker = SentinelBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id="feasibility-dblmax",
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "action": "BUY",
+            "conId": 911011733,
+            "order_type": "LMT",
+            "limit_price": 6.32,
+            "quantity": 40,
+            "sec_type": "STK",
+            "symbol": "GENI",
+        },
+        purpose="detect IBKR DBL_MAX sentinel",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.success is False
+    assert result.data["what_if_status"] == "BROKER_ECONOMICS_COMPUTED"
+    assert result.data["broker_economics_computed"] is False
+    assert result.data["error_code"] == "BROKER_ECONOMICS_SENTINEL_DETECTED"
+    assert result.data["commission"] is None
+    assert result.data["minCommission"] is None
+    assert result.data["maxCommission"] == 1.0

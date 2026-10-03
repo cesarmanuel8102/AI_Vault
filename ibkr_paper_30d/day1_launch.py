@@ -917,6 +917,7 @@ class PreparedEpochLaunch:
     manifest: dict[str, Any]
     provider: CodexAutonomousCLIProvider
     toolbox: AutonomyToolbox
+    session_evidence_reader: Callable[[], dict[str, Any] | None] | None = None
 
 
 def _launch_bootstrap_bundle(
@@ -1131,7 +1132,27 @@ def _write_epoch_manifest(
                 "created_at_utc": preflight.actual_start_utc,
             },
         )
-    return PreparedEpochLaunch(manifest=manifest, provider=provider, toolbox=toolbox)
+    return PreparedEpochLaunch(
+        manifest=manifest,
+        provider=provider,
+        toolbox=toolbox,
+        session_evidence_reader=_session_evidence_reader(toolbox),
+    )
+
+
+def _session_evidence_reader(
+    toolbox: AutonomyToolbox,
+) -> Callable[[], dict[str, Any] | None] | None:
+    """Bind the production session-evidence reader to the prepared toolbox.
+
+    Reuses the existing read-only IBKR path inside the same service process;
+    does not create a second IBKR client identity for orchestration. Returns
+    None whenever the toolbox cannot supply evidence, which leaves the service
+    on its prior fail-closed market-data behaviour (never fabricated CLOSED).
+    """
+    base = getattr(toolbox, "base", None)
+    getter = getattr(base, "session_evidence", None)
+    return getter if callable(getter) else None
 
 
 def _current_git_commit(repo_root: Path) -> str:
@@ -1554,6 +1575,9 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                             preflight.expected_account_hash
                         ),
                         critical_alert_reporter=critical_alert_reporter,
+                        session_evidence_reader=(
+                            prepared.session_evidence_reader
+                        ),
                     )
                 except AutonomousServiceError as exc:
                     reason_codes = [
