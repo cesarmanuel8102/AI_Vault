@@ -1288,3 +1288,89 @@ def test_market_closed_idle_event_carries_no_gate_or_authority_fields(
     assert payload["market_session"] == "AFTER_HOURS"
     for forbidden in ("gate_status", "receipt_sha256", "order_authority", "authorized"):
         assert forbidden not in payload
+
+
+def test_orchestration_uses_broker_time_from_evidence_not_second_connection(
+    tmp_path, monkeypatch
+):
+    """When session evidence carries broker_time_utc, the orchestration
+    decision must reuse it and must NOT open a second broker connection."""
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = _IdleStoppingClock()
+
+    broker_now_calls = []
+
+    def capture_broker_now():
+        broker_now_calls.append("called")
+        return datetime(2026, 10, 2, 21, 0, tzinfo=timezone.utc)
+
+    with Database.open(tmp_path / "single-conn.sqlite3") as db:
+        service = RecordingService(
+            db,
+            experiment_start_utc=datetime.now(timezone.utc),
+            allocation=Decimal("500.00"),
+            scan_interval_seconds=300,
+            position_interval_seconds=60,
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=StubExecutor(),
+            sleep=clock.sleep,
+            monotonic=clock.monotonic,
+            stop_after=2,
+            broker_now=capture_broker_now,
+            session_evidence_reader=lambda: {
+                "broker_time_utc": "2026-10-02T21:00:00Z",
+                "liquid_hours": _REGULAR_DAY_LIQUID_HOURS,
+                "timezone_id": "US/Eastern",
+                "has_open_orders": False,
+            },
+        )
+        clock.service = service
+        service.run_forever()
+        idle = _idle_events(db)
+
+    assert len(idle) == 1
+    assert len(broker_now_calls) == 0, "broker_now must not be called when evidence has broker_time_utc"
+
+
+def test_orchestration_falls_back_to_broker_now_when_evidence_lacks_time(
+    tmp_path, monkeypatch
+):
+    """Legacy evidence without broker_time_utc must safely fall back."""
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = _IdleStoppingClock()
+
+    broker_now_calls = []
+
+    def capture_broker_now():
+        broker_now_calls.append("called")
+        return datetime(2026, 10, 2, 21, 0, tzinfo=timezone.utc)
+
+    with Database.open(tmp_path / "fallback.sqlite3") as db:
+        service = RecordingService(
+            db,
+            experiment_start_utc=datetime.now(timezone.utc),
+            allocation=Decimal("500.00"),
+            scan_interval_seconds=300,
+            position_interval_seconds=60,
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=StubExecutor(),
+            sleep=clock.sleep,
+            monotonic=clock.monotonic,
+            stop_after=2,
+            broker_now=capture_broker_now,
+            session_evidence_reader=lambda: {
+                "liquid_hours": _REGULAR_DAY_LIQUID_HOURS,
+                "timezone_id": "US/Eastern",
+                "has_open_orders": False,
+            },
+        )
+        clock.service = service
+        service.run_forever()
+        idle = _idle_events(db)
+
+    assert len(idle) == 1
+    assert len(broker_now_calls) >= 1

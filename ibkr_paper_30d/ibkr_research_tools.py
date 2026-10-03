@@ -1068,9 +1068,16 @@ class IBKRResearchToolbox:
 
         The caller (orchestration/policy layer) supplies ``reference_symbols``
         so that this function never hard-codes a reference set.
+
+        All required references must resolve, share the same timezone, and
+        yield the same MarketSession classification at the single authoritative
+        broker time.  A single missing or disagreeing reference produces None.
         """
+        from datetime import timezone as tz
+
         from ib_insync import Contract
 
+        from .market_observation import MarketSession, classify_session
         from .open_order_management import EXPERIMENT_ORDER_PREFIX
 
         try:
@@ -1078,24 +1085,48 @@ class IBKRResearchToolbox:
         except Exception:
             return None
         try:
-            liquid_hours = ""
-            timezone_id = ""
+            broker_time = ib.reqCurrentTime()
+            if broker_time is None or not hasattr(broker_time, "astimezone"):
+                return None
+            broker_time_utc = broker_time.astimezone(tz.utc)
+
+            references: list[dict[str, Any]] = []
             for symbol in sorted(reference_symbols):
                 probe = Contract(
                     symbol=symbol, secType="STK", exchange="SMART", currency="USD"
                 )
                 details = ib.reqContractDetails(probe)
+                liquid_hours = ""
+                time_zone_id = ""
                 for item in details or []:
                     lh = str(getattr(item, "liquidHours", "") or "")
-                    tz = str(getattr(item, "timeZoneId", "") or "")
-                    if lh and tz:
-                        liquid_hours = liquid_hours or lh
-                        timezone_id = timezone_id or tz
+                    tzid = str(getattr(item, "timeZoneId", "") or "")
+                    if lh and tzid:
+                        liquid_hours = lh
+                        time_zone_id = tzid
                         break
-                if liquid_hours and timezone_id:
-                    break
-            if not liquid_hours or not timezone_id:
+                if not liquid_hours or not time_zone_id:
+                    return None
+                session = classify_session(broker_time_utc, liquid_hours, time_zone_id)
+                if session is MarketSession.UNKNOWN:
+                    return None
+                references.append(
+                    {
+                        "symbol": symbol,
+                        "liquid_hours": liquid_hours,
+                        "timezone_id": time_zone_id,
+                        "session": session.value,
+                    }
+                )
+
+            if len(references) != len(reference_symbols):
                 return None
+
+            sessions = {r["session"] for r in references}
+            timezones = {r["timezone_id"] for r in references}
+            if len(sessions) != 1 or len(timezones) != 1:
+                return None
+
             has_open_orders = any(
                 str(getattr(trade.order, "orderRef", "") or "").startswith(
                     f"{EXPERIMENT_ORDER_PREFIX}-"
@@ -1103,8 +1134,10 @@ class IBKRResearchToolbox:
                 for trade in ib.reqAllOpenOrders()
             )
             return {
-                "liquid_hours": liquid_hours,
-                "timezone_id": timezone_id,
+                "broker_time_utc": broker_time_utc.isoformat().replace("+00:00", "Z"),
+                "liquid_hours": references[0]["liquid_hours"],
+                "timezone_id": references[0]["timezone_id"],
+                "session": references[0]["session"],
                 "has_open_orders": bool(has_open_orders),
             }
         except Exception:

@@ -100,27 +100,40 @@ class FakeSessionIBKR:
         liquid_hours="20261005:0930-20261005:1600",
         timezone_id="US/Eastern",
         open_order_refs=(),
+        now_utc=None,
+        per_symbol=None,
     ):
+        """per_symbol: dict[str, {"liquidHours": ..., "timeZoneId": ...}]
+        overriding the global defaults for specific symbols."""
         from ibkr_paper_30d.market_policy import MarketPolicyFreezer
 
         self._liquid_hours = liquid_hours
         self._timezone_id = timezone_id
         self._open_order_refs = list(open_order_refs)
+        self._per_symbol = per_symbol or {}
+        self._now_utc = now_utc or datetime(2026, 10, 5, 14, 0, 0, tzinfo=timezone.utc)
         self._symbols = sorted(MarketPolicyFreezer.REQUIRED_SYMBOLS)
-        # per-symbol conIds
         self._conIds = {sym: 1000 + i for i, sym in enumerate(self._symbols)}
         self.disconnected = False
+
+    def reqCurrentTime(self):
+        return self._now_utc
 
     def reqContractDetails(self, contract):
         sym = str(getattr(contract, "symbol", ""))
         if sym not in self._conIds:
             return []
+        override = self._per_symbol.get(sym, {})
+        lh = override.get("liquidHours", self._liquid_hours)
+        tz = override.get("timeZoneId", self._timezone_id)
+        if not lh or not tz:
+            return []
         return [
             _FakeDetails(
                 sym,
                 self._conIds[sym],
-                self._liquid_hours,
-                self._timezone_id,
+                lh,
+                tz,
             )
         ]
 
@@ -326,3 +339,124 @@ def test_production_session_evidence_reader_is_broker_backed(tmp_path):
     assert evidence["liquid_hours"] == "20261005:0930-20261005:1600"
     assert evidence["timezone_id"] == "US/Eastern"
     assert isinstance(evidence["has_open_orders"], bool)
+
+
+# ---------------------------------------------------------------------------
+# Consensus / ALL-reference-requirement tests (second-audit hardening)
+# ---------------------------------------------------------------------------
+
+
+CONSENSUS_SYMBOLS = ("SPY", "QQQ", "IEF")
+
+
+def test_all_references_regular_consensus_is_usable():
+    """When all references agree on REGULAR at the same broker time,
+    evidence is usable."""
+    toolbox, broker = _toolbox_with(
+        FakeSessionIBKR(
+            liquid_hours="20261005:0930-20261005:1600",
+            timezone_id="US/Eastern",
+        )
+    )
+    evidence = toolbox.session_evidence(reference_symbols=CONSENSUS_SYMBOLS)
+    assert evidence is not None
+    assert evidence["session"] == "REGULAR"
+    assert evidence["broker_time_utc"] is not None
+    assert broker.disconnected is True
+
+
+def test_all_references_after_hours_consensus_is_usable():
+    """When all references agree on AFTER_HOURS, evidence is usable."""
+    toolbox, broker = _toolbox_with(
+        FakeSessionIBKR(
+            liquid_hours="20261005:0930-20261005:1600",
+            timezone_id="US/Eastern",
+            now_utc=datetime(2026, 10, 5, 21, 0, 0, tzinfo=timezone.utc),
+        )
+    )
+    evidence = toolbox.session_evidence(reference_symbols=CONSENSUS_SYMBOLS)
+    assert evidence is not None
+    assert evidence["session"] == "AFTER_HOURS"
+
+
+def test_one_reference_missing_returns_none():
+    """If one required reference cannot be resolved, fail-closed to None."""
+    toolbox, broker = _toolbox_with(
+        FakeSessionIBKR(
+            per_symbol={
+                "SPY": {"liquidHours": "20261005:0930-20261005:1600", "timeZoneId": "US/Eastern"},
+                "QQQ": {"liquidHours": "", "timeZoneId": ""},
+            }
+        )
+    )
+    evidence = toolbox.session_evidence(reference_symbols=CONSENSUS_SYMBOLS)
+    assert evidence is None
+
+
+def test_references_disagree_session_returns_none():
+    """One REGULAR and one AFTER_HOURS must fail-closed to None."""
+    toolbox, broker = _toolbox_with(
+        FakeSessionIBKR(
+            per_symbol={
+                "SPY": {"liquidHours": "20261005:0930-20261005:1600", "timeZoneId": "US/Eastern"},
+                "QQQ": {"liquidHours": "20261005:0930-20261005:1600", "timeZoneId": "US/Eastern"},
+                "IEF": {"liquidHours": "20261005:0930-20261005:1600", "timeZoneId": "US/Pacific"},
+            }
+        )
+    )
+    # IEF in US/Pacific at same UTC is AFTER_HOURS while SPY/QQQ are REGULAR
+    evidence = toolbox.session_evidence(reference_symbols=CONSENSUS_SYMBOLS)
+    assert evidence is None
+
+
+def test_timezone_mismatch_returns_none():
+    """References with incompatible timezones must fail-closed to None."""
+    toolbox, broker = _toolbox_with(
+        FakeSessionIBKR(
+            per_symbol={
+                "SPY": {"liquidHours": "20261005:0930-20261005:1600", "timeZoneId": "US/Eastern"},
+                "QQQ": {"liquidHours": "20261005:0930-20261005:1600", "timeZoneId": "US/Eastern"},
+                "IEF": {"liquidHours": "20261005:0930-20261005:1600", "timeZoneId": "US/Central"},
+            }
+        )
+    )
+    evidence = toolbox.session_evidence(reference_symbols=CONSENSUS_SYMBOLS)
+    assert evidence is None
+
+
+def test_malformed_liquid_hours_returns_none():
+    toolbox, broker = _toolbox_with(
+        FakeSessionIBKR(
+            per_symbol={
+                "SPY": {"liquidHours": "NOT_A_DATE:0930-1600", "timeZoneId": "US/Eastern"},
+            }
+        )
+    )
+    evidence = toolbox.session_evidence(reference_symbols=CONSENSUS_SYMBOLS)
+    assert evidence is None
+
+
+def test_broker_time_included_in_evidence():
+    toolbox, broker = _toolbox_with(FakeSessionIBKR())
+    evidence = toolbox.session_evidence(reference_symbols=CONSENSUS_SYMBOLS)
+    assert evidence is not None
+    assert "broker_time_utc" in evidence
+    assert evidence["broker_time_utc"].endswith("Z")
+
+
+def test_unrelated_manual_order_does_not_set_has_open_orders():
+    toolbox, broker = _toolbox_with(
+        FakeSessionIBKR(open_order_refs=["manual-123"])
+    )
+    evidence = toolbox.session_evidence(reference_symbols=CONSENSUS_SYMBOLS)
+    assert evidence is not None
+    assert evidence["has_open_orders"] is False
+
+
+def test_experiment_order_sets_has_open_orders():
+    toolbox, broker = _toolbox_with(
+        FakeSessionIBKR(open_order_refs=["codex-ibkr-paper-30d-x-001"])
+    )
+    evidence = toolbox.session_evidence(reference_symbols=CONSENSUS_SYMBOLS)
+    assert evidence is not None
+    assert evidence["has_open_orders"] is True

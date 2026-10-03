@@ -793,6 +793,8 @@ class AutonomousExperimentService:
         Returns None when no session evidence is wired, which preserves the
         pre-existing cycle behaviour exactly.
         """
+        from datetime import datetime, timezone
+
         if self.session_evidence_reader is None:
             return None
         try:
@@ -801,10 +803,16 @@ class AutonomousExperimentService:
             return None
         if not isinstance(evidence, dict):
             return None
+        broker_time_raw = evidence.get("broker_time_utc")
         try:
-            now_utc = self.broker_now()
+            if isinstance(broker_time_raw, str):
+                now_utc = datetime.fromisoformat(
+                    broker_time_raw.replace("Z", "+00:00")
+                ).astimezone(timezone.utc)
+            else:
+                now_utc = self.broker_now()
         except Exception:
-            return None
+            now_utc = self.broker_now()
         return decide_session_orchestration(
             now_utc=now_utc,
             liquid_hours=str(evidence.get("liquid_hours") or ""),
