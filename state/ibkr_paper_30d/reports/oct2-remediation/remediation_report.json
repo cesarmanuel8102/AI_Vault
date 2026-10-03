@@ -1,19 +1,19 @@
 {
   "schema": "IBKR_OCT2_REMEDIATION_REPORT_V1",
-  "generated_at_utc": "2026-10-03T16:26:56Z",
+  "generated_at_utc": "2026-10-03T13:29:27Z",
   "builder": "primary-builder",
   "status": "READY_FOR_FINAL_ADVERSARIAL_AUDIT",
   "git": {
     "baseline_branch": "codex/ibkr-paper-operational-approved",
     "baseline_sha": "e5812193692f9599b9d0f9e8507869ba5d100840",
     "remediation_branch": "codex/ibkr-oct2-pending-remediation-v1",
-    "report_parent_sha": "85a0a9863b1ed6b364193ecb669d08c19ad031d9",
+    "report_parent_sha": "4e4fd693918391144bc68e87fc3800ab7d38ae51",
+    "branch_tip_observed_before_report_commit": "a85fd10b6b44c1f2cf18e05830ae488a03ebea87",
+    "remote_tip_observed_before_report_commit": "4e4fd693918391144bc68e87fc3800ab7d38ae51",
+    "remote_tip_observed_at_utc": "2026-10-03T13:29:27Z",
+    "observation_method": "git ls-remote origin refs/heads/codex/ibkr-oct2-pending-remediation-v1",
     "remote": "https://github.com/cesarmanuel8102/AI_Vault.git",
     "remote_baseline_sha": "e5812193692f9599b9d0f9e8507869ba5d100840",
-    "branch_tip_observed_before_report_commit": "TO_BE_OBSERVED_AFTER_COMMIT",
-    "remote_tip_observed_before_report_commit": "TO_BE_OBSERVED_AFTER_PUSH",
-    "remote_tip_observed_at_utc": "2026-10-03T16:26:56Z",
-    "observation_method": "git ls-remote origin refs/heads/codex/ibkr-oct2-pending-remediation-v1",
     "baseline_existed_remotely_before_this_work": false,
     "force_push_used": false,
     "baseline_history_rewritten": false,
@@ -44,12 +44,16 @@
         "subject": "docs(report): update remediation_report for second audit"
       },
       {
-        "sha": "178251f...",
+        "sha": "178251f8d3431d235ed28c6e1550e6b4354a0719",
         "subject": "fix(dblmax,session-evidence): exact IBKR sentinel detection, remove hard-coded symbols"
       },
       {
-        "sha": "...",
-        "subject": "fix(session-evidence): consensus broker_time_utc, single-connection orchestration"
+        "sha": "4e4fd693918391144bc68e87fc3800ab7d38ae51",
+        "subject": "fix(session-evidence): consensus, broker_time_utc, single-connection orchestration"
+      },
+      {
+        "sha": "a85fd10b6b44c1f2cf18e05830ae488a03ebea87",
+        "subject": "fix(what-if): remove duplicate definition, fix sentinel evidence semantics"
       }
     ],
     "files_changed": [
@@ -68,7 +72,7 @@
     {
       "id": "D1",
       "description": "Combo BROKER_FEASIBILITY rejected nested canonical contract dicts (conId inside contract object) because validation only looked for flat keys.",
-      "fix": "Added _combo_leg_contract_spec and _combo_leg_contract_id helpers that accept both flat and nested contract shapes. Added BROKER_FEASIBILITY_COMBO_LEG_DUPLICATE rejection."
+      "fix": "Added _combo_leg_contract_spec and _combo_leg_contract_id helpers that accept both flat and nested contract shapes. Added BROKER_FEASIBILITY_COMBO_LEG_DUPLICATE rejection and BROKER_FEASIBILITY_COMBO_LEG_IDENTITY_CONFLICT for contradictory flat+nested IDs."
     },
     {
       "id": "D2",
@@ -78,11 +82,11 @@
     {
       "id": "D3",
       "description": "DBL_MAX sentinel detection only checked float('inf'), missing exact IBKR sentinel 1.7976931348623157E308.",
-      "fix": "Added _is_unusable_broker_economic_value() helper detecting exact DBL_MAX string/float, inf, -inf, nan, and Decimal equivalents. Added broker_whatif_reached / broker_economics_computed fields."
+      "fix": "Added _is_unusable_broker_economic_value() helper detecting exact DBL_MAX string/float, inf, -inf, nan, and Decimal equivalents. Added broker_whatif_reached / broker_economics_computed fields with coherent what_if_status semantics (BROKER_WHATIF_NO_RESPONSE / BROKER_ECONOMICS_NOT_COMPUTED / BROKER_ECONOMICS_COMPUTED)."
     },
     {
       "id": "D4",
-      "description": "Hard-coded reference symbols (_SESSION_EVIDENCE_PROBES = ('SPY','QQQ','IEF')) in research layer.",
+      "description": "Hard-coded reference symbols in research layer.",
       "fix": "session_evidence now receives reference_symbols from caller. day1_launch passes MarketPolicyFreezer.REQUIRED_SYMBOLS. Regression test proves no duplication in research tools source."
     },
     {
@@ -94,13 +98,18 @@
       "id": "D6",
       "description": "Orchestration opened separate broker connection for broker_now after session_evidence already connected.",
       "fix": "session_evidence now returns broker_time_utc. _session_orchestration_decision reuses it when present, avoiding second connection. Fallback to broker_now for legacy evidence."
+    },
+    {
+      "id": "D7",
+      "description": "Two duplicate _what_if_evidence definitions existed in ibkr_research_tools.py, with the first one dead/shadowed.",
+      "fix": "Removed the dead first definition. Exactly one _what_if_evidence remains. Added regression test proving count == 1."
     }
   ],
   "risks_remaining": [
     {
       "id": "R1",
       "severity": "HIGH",
-      "risk": "The baseline e581219 service process is no longer running (no PID observed at report generation). The remediation branch is not deployed to production runtime; it exists only as code and tests. Owner action is required to restart from the remediation branch before any live trading session."
+      "risk": "The remediation branch is not deployed to production runtime; it exists only as code and tests. Owner action is required to restart from the remediation branch before any live trading session."
     },
     {
       "id": "R2",
@@ -138,33 +147,43 @@
     "profitability_threshold_added": false,
     "trading_universe_defined": false
   },
-  "second_audit_completion": {
-    "date_utc": "2026-10-03T16:26:56Z",
+  "final_audit_completion": {
+    "date_utc": "2026-10-03T13:29:27Z",
     "tests": {
-      "collected": 1627,
-      "passed": 1620,
+      "collected": 1628,
+      "passed": 1621,
       "failed": 0,
       "skipped": 7
     },
+    "kernel_verification": {
+      "verified": true,
+      "file_count": 71,
+      "expected_sha256": "51e1547f24a6bc9937c687d54a37c1e7173bc4175c2a901e0ef9cda093a199a9"
+    },
+    "runtime_provenance_verification": {
+      "gate_status": "PASS",
+      "file_count": 81,
+      "approved_commit": "a85fd10b6b44c1f2cf18e05830ae488a03ebea87"
+    },
     "changes": [
-      "Exact IBKR sentinel detection (_is_unusable_broker_economic_value) with DBL_MAX 1.7976931348623157E308",
-      "Evidence semantics: broker_whatif_reached, broker_economics_computed, BROKER_ECONOMICS_SENTINEL_DETECTED",
-      "session_evidence consensus: ALL references required, same timezone, same MarketSession classification",
-      "session_evidence broker_time_utc included, orchestration reuses single connection",
-      "No hard-coded reference symbols in research layer; caller supplies reference_symbols",
-      "Kernel manifest regenerated and verified (71 files)"
+      "Remove duplicate _what_if_evidence definition (exactly one remains)",
+      "Fix contradictory sentinel evidence semantics: BROKER_ECONOMICS_NOT_COMPUTED",
+      "Coherent what-if states: NO_RESPONSE, NOT_COMPUTED, COMPUTED",
+      "Exact IBKR sentinel detection (_is_unusable_broker_economic_value)",
+      "session_evidence consensus with broker_time_utc and single-connection orchestration",
+      "No hard-coded reference symbols in research layer",
+      "Kernel manifest verified and runtime provenance verified independently"
     ]
   },
   "current_runtime_readonly_observation": {
-    "observation_timestamp_utc": "2026-10-03T16:26:56Z",
+    "observation_timestamp_utc": "2026-10-03T13:29:27Z",
     "db_path": "state/ibkr_paper_30d/autonomous.sqlite3",
     "db_exists": false,
-    "positions": 0,
-    "orders": 0,
-    "executions": 0,
-    "baseline_process_running": false,
-    "baseline_pid": null,
-    "note": "No local runtime database or process observed at report generation. This is expected for a development branch that has not been deployed."
+    "positions": "not_observed",
+    "orders": "not_observed",
+    "executions": "not_observed",
+    "local_python_processes": "no local matching process observed at 2026-10-03T13:29:27Z",
+    "note": "No local runtime database or process observed at report generation. This is expected for a development branch that has not been deployed. Broker state was not inferred from DB absence."
   },
   "artifacts": [
     "state/ibkr_paper_30d/reports/oct2-remediation/combo_broker_whatif_evidence.json",
