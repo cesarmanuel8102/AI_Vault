@@ -3,7 +3,6 @@
   "generated_at_utc": "2026-10-02T23:58:00Z",
   "builder": "primary-builder",
   "status": "READY_FOR_ADVERSARIAL_AUDIT",
-
   "git": {
     "baseline_branch": "codex/ibkr-paper-operational-approved",
     "baseline_sha": "e5812193692f9599b9d0f9e8507869ba5d100840",
@@ -28,6 +27,10 @@
       {
         "sha": "58ca0691483940d55d4b25b993bc980680d520f4",
         "subject": "feat(ibkr): idle outside regular session instead of re-blocking"
+      },
+      {
+        "sha": "376744efb7febdda9a5674b246f632c0ce983c73",
+        "subject": "docs(ibkr): record Oct 2 remediation evidence and audit report"
       }
     ],
     "files_changed": [
@@ -41,9 +44,11 @@
     ],
     "powershell_files_changed": 0,
     "git_status_tracked_modifications": "clean",
-    "git_diff_check": "clean (exit 0, no whitespace errors)"
+    "git_diff_check": "clean (exit 0, no whitespace errors)",
+    "final_code_sha": "58ca0691483940d55d4b25b993bc980680d520f4",
+    "evidence_commit_sha": "376744efb7febdda9a5674b246f632c0ce983c73",
+    "final_sha_note": "final_sha is the last functional code commit. The branch tip additionally carries evidence/doc commits; verify the authoritative tip with: git ls-remote origin refs/heads/codex/ibkr-oct2-pending-remediation-v1"
   },
-
   "prior_branch_forensics": {
     "claim_under_test": "602d975 and 1bffeb7 are NOT incorporated in e581219",
     "verdict": "CLAIM_REFUTED_BY_EVIDENCE",
@@ -73,7 +78,6 @@
       "The useful content of both branches was verified to already exist in e581219, so importing them would have been a regression, not an integration."
     ]
   },
-
   "defect_1_combo_broker_feasibility": {
     "observed_symptom": "BROKER_FEASIBILITY combo requests failed with BROKER_FEASIBILITY_ARGUMENTS_INVALID / BROKER_FEASIBILITY_COMBO_LEG_CONTRACT_REQUIRED at stage REQUEST_VALIDATION, before any IBKR transmission.",
     "forensic_source": "state/ibkr_paper_30d/autonomous.sqlite3 autonomous_research_events",
@@ -99,7 +103,6 @@
       "BROKER_FEASIBILITY_WHAT_IF_REQUIRED"
     ]
   },
-
   "defect_2_post_market_orchestration": {
     "observed_symptom": "After the 2026-10-02 regular close the service kept waking on its scan cadence and running new-trade research cycles; each cycle requested a realtime quote that no longer existed and the market-data gate failed closed.",
     "empirical_evidence": {
@@ -108,7 +111,9 @@
         "AUTONOMOUS_CYCLE_COMPLETED": 48,
         "last_cycle_at_utc": "2026-10-02T23:56:00.742273Z"
       },
-      "recovery_gate_failure_reason_codes": ["MARKET_DATA_GATE_BLOCK"],
+      "recovery_gate_failure_reason_codes": [
+        "MARKET_DATA_GATE_BLOCK"
+      ],
       "direct_post_close_probe": "INITIAL_REALTIME_QUOTE_TIMEOUT",
       "note": "Alert-level deduplication already existed (_last_recovery_gate_failure_fingerprint), so only 2 RECOVERY_GATE_FAILURE alerts were emitted. The unbounded component was the CYCLE loop and its state_events, not the alert table."
     },
@@ -127,7 +132,6 @@
     "authority_safety": "The idle decision grants no authority, produces no receipt, and its event payload is asserted to contain none of gate_status / receipt_sha256 / order_authority / market_data_gate / authorized / passed.",
     "backward_compatibility": "session_evidence_reader defaults to None. With no calendar evidence wired the service behaves exactly as baseline e581219, proven by test_service_without_session_evidence_preserves_existing_behaviour."
   },
-
   "testing": {
     "commands": [
       "python -m pytest tests/ibkr_paper_30d/test_broker_feasibility_runtime.py -q",
@@ -158,15 +162,21 @@
     },
     "test_delta": "+23 tests added (4 combo, 13 session orchestration, 6 service integration). 1563 + 23 = 1586 collected; 1579 passed + 7 pre-existing environment skips.",
     "failed_tests": [],
-    "intermediate_failure_explained": "A full-suite run taken before the kernel manifest was regenerated produced 20 failures, all caused by kernel_manifest refusing an untracked authority file (ibkr_paper_30d/session_orchestration.py). This was the provenance control working as designed. Resolved canonically by git-tracking the module and regenerating the manifest via python -m ibkr_paper_30d.kernel_manifest. No gate was relaxed."
+    "intermediate_failure_explained": "A full-suite run taken before the kernel manifest was regenerated produced 20 failures, all caused by kernel_manifest refusing an untracked authority file (ibkr_paper_30d/session_orchestration.py). This was the provenance control working as designed. Resolved canonically by git-tracking the module and regenerating the manifest via python -m ibkr_paper_30d.kernel_manifest. No gate was relaxed.",
+    "final_full_suite_reverified_at_tip": {
+      "passed": 1579,
+      "failed": 0,
+      "skipped": 7,
+      "collected": 1586
+    }
   },
-
   "integrity_checks": {
     "kernel_manifest": {
       "mechanism": "python -m ibkr_paper_30d.kernel_manifest --repo-root . --output IMMUTABLE_EXECUTION_KERNEL_MANIFEST.json",
       "verify_kernel_manifest_verified": true,
       "file_count": 71,
-      "kernel_manifest_sha256": "140091f7547061ffcbe6b2fe99c44fb2cd732f0c3eea146f2df4929cbb258570"
+      "kernel_manifest_sha256": "140091f7547061ffcbe6b2fe99c44fb2cd732f0c3eea146f2df4929cbb258570",
+      "reverified_at_tip": true
     },
     "runtime_provenance": {
       "gate_status": "PASS",
@@ -181,7 +191,6 @@
     },
     "git_diff_check": "clean"
   },
-
   "paper_validation": {
     "host": "127.0.0.1",
     "port": 4002,
@@ -211,8 +220,22 @@
       "contracts_resolved_dynamically_from_paper": true,
       "expiry": "20261120",
       "leg_identities": [
-        {"action": "BUY", "ratio": 1, "conId": 882135148, "localSymbol": "SPY   261120C00770000", "strike": 770.0, "right": "C"},
-        {"action": "SELL", "ratio": 1, "conId": 927880746, "localSymbol": "SPY   261120C00771000", "strike": 771.0, "right": "C"}
+        {
+          "action": "BUY",
+          "ratio": 1,
+          "conId": 882135148,
+          "localSymbol": "SPY   261120C00770000",
+          "strike": 770.0,
+          "right": "C"
+        },
+        {
+          "action": "SELL",
+          "ratio": 1,
+          "conId": 927880746,
+          "localSymbol": "SPY   261120C00771000",
+          "strike": 771.0,
+          "right": "C"
+        }
       ],
       "leg_shape_used": "CANONICAL_NESTED_CONTRACT (the exact shape that failed on 2026-10-02)",
       "whatIf_flag": true,
@@ -222,10 +245,23 @@
       "what_if_calls_transmitted_to_ibkr": 1,
       "real_order_writes_attempted": 0,
       "transmitted_bag_contract": {
-        "symbol": "SPY", "secType": "BAG", "exchange": "SMART", "currency": "USD",
+        "symbol": "SPY",
+        "secType": "BAG",
+        "exchange": "SMART",
+        "currency": "USD",
         "comboLegs": [
-          {"conId": 882135148, "ratio": 1, "action": "BUY", "exchange": "SMART"},
-          {"conId": 927880746, "ratio": 1, "action": "SELL", "exchange": "SMART"}
+          {
+            "conId": 882135148,
+            "ratio": 1,
+            "action": "BUY",
+            "exchange": "SMART"
+          },
+          {
+            "conId": 927880746,
+            "ratio": 1,
+            "action": "SELL",
+            "exchange": "SMART"
+          }
         ]
       },
       "broker_response_authoritative_marker": "IBKR returned a real regulatory warningText for the non-marketable limit, which cannot be produced by local validation.",
@@ -249,7 +285,6 @@
     "real_order_writes_attempted_total": 0,
     "harness_guarantee": "The validation harness replaced ib.placeOrder with a hard raise, so a real order write was structurally impossible during validation. whatIfOrder was wrapped only to count calls and assert whatIf=True; the real IBKR call was still performed."
   },
-
   "october_2_behaviour_preserved": {
     "verification_method": "full tests/ibkr_paper_30d suite green (1579 passed, 0 failed) plus unchanged source for every listed subsystem",
     "untouched_source_files": [
@@ -289,7 +324,6 @@
     ],
     "provider_self_repair_unchanged": true
   },
-
   "production_state_unchanged_by_this_work": {
     "scheduler_task": "CodexIBKRMarketDataGate",
     "scheduler_state": "Ready",
@@ -305,7 +339,6 @@
     "new_experiment_started_by_builder": false,
     "production_MARKET_CLOSED_IDLE_events": 0
   },
-
   "unresolved_risks": [
     {
       "id": "R1",
@@ -338,7 +371,6 @@
       "risk": "The orchestration decision treats PREMARKET as a non-trading session. If the experiment is ever intended to act premarket, that policy must be revisited by the Owner; it was chosen because the market-data gate already requires MarketSession.REGULAR."
     }
   ],
-
   "explicitly_not_proven": [
     "Combo margin and commission computation by IBKR for a BAG order (market closed at validation; DBL_MAX sentinels returned).",
     "End-to-end production behaviour of MARKET_CLOSED_IDLE, because session_evidence_reader is not yet wired by any production launch path (R5). The behaviour is proven only by unit and service-level tests.",
@@ -346,7 +378,6 @@
     "Any claim about the model's trading quality, strategy, or profitability. No strategy, symbol, threshold, or universe was introduced by this work.",
     "That the still-running baseline process (PID 48224) is free of other latent defects; it was observed read-only and not interfered with."
   ],
-
   "safety_invariants_upheld": {
     "paper_only_port_4002": true,
     "live_port_4001_never_used": true,
@@ -361,7 +392,6 @@
     "profitability_threshold_added": false,
     "trading_universe_defined": false
   },
-
   "artifacts": [
     "state/ibkr_paper_30d/reports/oct2-remediation/combo_broker_whatif_evidence.json",
     "state/ibkr_paper_30d/reports/oct2-remediation/baseline_control_whatif_evidence.json",

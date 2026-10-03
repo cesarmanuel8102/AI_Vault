@@ -13,11 +13,17 @@
 | Baseline branch | `codex/ibkr-paper-operational-approved` |
 | Baseline SHA | `e5812193692f9599b9d0f9e8507869ba5d100840` |
 | Remediation branch | `codex/ibkr-oct2-pending-remediation-v1` |
-| Final SHA | `58ca0691483940d55d4b25b993bc980680d520f4` |
+| Final code SHA | `58ca0691483940d55d4b25b993bc980680d520f4` |
+| Evidence commit | `376744efb7febdda9a5674b246f632c0ce983c73` |
 | Remote baseline SHA | `e5812193692f9599b9d0f9e8507869ba5d100840` ✅ equal |
-| Remote remediation SHA | `58ca0691483940d55d4b25b993bc980680d520f4` ✅ equal |
 | Force push used | **No** |
 | Baseline history rewritten | **No** |
+
+> **SHA bookkeeping:** "Final code SHA" is the last *functional* commit. The branch tip additionally
+> carries evidence/doc commits. Verify the authoritative tip with
+> `git ls-remote origin refs/heads/codex/ibkr-oct2-pending-remediation-v1`.
+> Full suite and kernel verification were re-run at the tip: **1579 passed / 0 failed / 7 skipped**,
+> kernel `verified=True` (71 files).
 
 The baseline did **not** exist remotely before this work (`git ls-remote` returned no ref and
 no object for `e581219`). It was preserved first, by a plain non-destructive push that created
