@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import os
 import random
+import sys
 from datetime import timezone
 from decimal import Decimal
 from pathlib import Path
@@ -145,6 +146,7 @@ class IBKRResearchToolbox:
             "current_position",
             "requested_quantity",
             "what_if_status",
+            "broker_whatif_reached",
             "broker_economics_computed",
         }
     )
@@ -1053,19 +1055,24 @@ class IBKRResearchToolbox:
         finally:
             ib.disconnect()
 
-    def session_evidence(self) -> dict[str, Any] | None:
+    def session_evidence(
+        self,
+        reference_symbols: tuple[str, ...],
+    ) -> dict[str, Any] | None:
         """Authoritative IBKR session + open-order evidence for orchestration.
 
         Read-only: reuses _connect (single-DU PAPER + identity hash). Returns
         None whenever the calendar is not authoritatively resolvable so the
         caller can never fabricate CLOSED and always falls back to baseline
         fail-closed behaviour.
+
+        The caller (orchestration/policy layer) supplies ``reference_symbols``
+        so that this function never hard-codes a reference set.
         """
         from ib_insync import Contract
 
         from .open_order_management import EXPERIMENT_ORDER_PREFIX
 
-        _SESSION_EVIDENCE_PROBES = ("SPY", "QQQ", "IEF")
         try:
             ib = self._connect()
         except Exception:
@@ -1073,7 +1080,7 @@ class IBKRResearchToolbox:
         try:
             liquid_hours = ""
             timezone_id = ""
-            for symbol in sorted(_SESSION_EVIDENCE_PROBES):
+            for symbol in sorted(reference_symbols):
                 probe = Contract(
                     symbol=symbol, secType="STK", exchange="SMART", currency="USD"
                 )
@@ -1581,12 +1588,115 @@ class IBKRResearchToolbox:
                 "equityWithLoanAfter",
             )
         }
-        sentinel = float("inf")
-        has_dbl_max = any(
-            isinstance(v, (int, float)) and v == sentinel
-            for v in broker_economics.values()
+    @staticmethod
+    def _is_unusable_broker_economic_value(value: Any) -> bool:
+        """Detect IBKR 'not computed' sentinel and other non-finite indicators.
+
+        IBKR returns ``1.7976931348623157E308`` (DBL_MAX) when a what-if
+        economic value was not meaningfully computed. It may also return
+        ``inf``, ``-inf``, ``nan``, or their string equivalents.
+
+        Valid usable values include zero, ordinary finite numbers, and
+        Decimal representations thereof.
+        """
+        if value is None:
+            return False
+
+        # String forms observed from IBKR and common sentinels.
+        if isinstance(value, str):
+            normalized = value.strip().upper()
+            if normalized in {
+                "1.7976931348623157E308",
+                "1.7976931348623157E+308",
+                "INF",
+                "INFINITY",
+                "-INF",
+                "-INFINITY",
+                "NAN",
+            }:
+                return True
+            try:
+                decimal_val = Decimal(normalized)
+            except Exception:
+                return True
+            return str(decimal_val).upper() == "1.7976931348623157E+308"
+
+        if isinstance(value, (int, float)):
+            if isinstance(value, float):
+                if value != value:  # NaN
+                    return True
+                if value == float("inf") or value == float("-inf"):
+                    return True
+            try:
+                if float(value) == sys.float_info.max:
+                    return True
+                decimal_val = Decimal(str(value))
+                return str(decimal_val).upper() == "1.7976931348623157E+308"
+            except Exception:
+                return True
+
+        if isinstance(value, Decimal):
+            return str(value).upper() == "1.7976931348623157E+308"
+
+        return True  # unknown type is unusable
+
+    def _what_if_evidence(
+        self,
+        broker: Any,
+        contract: Any,
+        *,
+        action: str,
+        order_type: str,
+        quantity: Decimal,
+        limit_price: Decimal | None,
+        time_in_force: str = "",
+    ) -> dict[str, Any]:
+        from ib_insync import Order
+
+        order = Order(
+            action=action,
+            orderType=order_type,
+            totalQuantity=float(quantity),
+            tif=time_in_force,
+            transmit=True,
+            whatIf=True,
         )
-        if has_dbl_max:
+        if limit_price is not None:
+            order.lmtPrice = float(limit_price)
+        state = self._request_what_if(broker, contract, order)
+        if state is None:
+            return {
+                "success": False,
+                "error": "WHAT_IF_RETURNED_NONE",
+                "contract": self._serialize_contract(contract),
+                "whatIf": True,
+                "paper_only": True,
+                "what_if_status": "BROKER_WHATIF_NO_RESPONSE",
+                "broker_whatif_reached": False,
+                "broker_economics_computed": False,
+                "stage": "WHAT_IF_NORMALIZATION",
+            }
+        broker_economics = {
+            key: getattr(state, key, None)
+            for key in (
+                "commission",
+                "minCommission",
+                "maxCommission",
+                "initMarginBefore",
+                "initMarginChange",
+                "initMarginAfter",
+                "maintMarginBefore",
+                "maintMarginChange",
+                "maintMarginAfter",
+                "equityWithLoanBefore",
+                "equityWithLoanChange",
+                "equityWithLoanAfter",
+            )
+        }
+        unusable_fields = {
+            k for k, v in broker_economics.items() if self._is_unusable_broker_economic_value(v)
+        }
+        if unusable_fields:
             return {
                 "success": False,
                 "error": "BROKER_WHATIF_DBL_MAX_SENTINEL",
@@ -1596,8 +1706,10 @@ class IBKRResearchToolbox:
                 "whatIf": True,
                 "paper_only": True,
                 "what_if_status": "BROKER_ECONOMICS_COMPUTED",
+                "broker_whatif_reached": True,
                 "broker_economics_computed": False,
-                **{k: (None if v == sentinel else v) for k, v in broker_economics.items()},
+                "stage": "WHAT_IF_NORMALIZATION",
+                **{k: (None if k in unusable_fields else v) for k, v in broker_economics.items()},
             }
         return {
             "success": True,
@@ -1607,6 +1719,7 @@ class IBKRResearchToolbox:
             "whatIf": True,
             "paper_only": True,
             "what_if_status": "BROKER_ECONOMICS_COMPUTED",
+            "broker_whatif_reached": True,
             "broker_economics_computed": True,
         }
 

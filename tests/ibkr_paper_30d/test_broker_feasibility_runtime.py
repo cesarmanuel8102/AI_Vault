@@ -824,7 +824,7 @@ def test_proposal_validation_what_if_uses_required_transmit_flag(monkeypatch):
         ),
         (
             {"initMarginChange": "NaN", "maintMarginChange": "NaN"},
-            "BROKER_MARGIN_EVIDENCE_MISSING",
+            "BROKER_ECONOMICS_SENTINEL_DETECTED",
         ),
     ),
 )
@@ -851,11 +851,18 @@ def test_research_what_if_incomplete_evidence_is_not_reported_as_success(
     result = toolbox.execute(request, _bundle())
 
     assert result.success is False
-    assert result.error == "BROKER_FEASIBILITY_EVIDENCE_INCOMPLETE"
-    assert result.data["error_code"] == error_code
-    assert result.data["stage"] == "WHAT_IF_NORMALIZATION"
-    for key, expected in state_updates.items():
-        assert result.data[key] == expected
+    if error_code == "BROKER_ECONOMICS_SENTINEL_DETECTED":
+        assert result.error == "BROKER_WHATIF_DBL_MAX_SENTINEL"
+        assert result.data["error_code"] == "BROKER_ECONOMICS_SENTINEL_DETECTED"
+        assert result.data["broker_whatif_reached"] is True
+        assert result.data["broker_economics_computed"] is False
+        assert result.data["stage"] == "WHAT_IF_NORMALIZATION"
+    else:
+        assert result.error == "BROKER_FEASIBILITY_EVIDENCE_INCOMPLETE"
+        assert result.data["error_code"] == error_code
+        assert result.data["stage"] == "WHAT_IF_NORMALIZATION"
+        for key, expected in state_updates.items():
+            assert result.data[key] == expected
 
 
 def test_research_what_if_accepts_explicit_zero_margin_and_commission(monkeypatch):
@@ -988,8 +995,122 @@ def test_what_if_none_returns_broker_whatif_reached_not_computed(monkeypatch):
 
     assert result.success is False
     assert result.data["what_if_status"] == "BROKER_WHATIF_NO_RESPONSE"
+    assert result.data["broker_whatif_reached"] is False
     assert result.data["broker_economics_computed"] is False
     assert "error_code" not in result.data
+
+
+@pytest.mark.parametrize(
+    ("sentinel_value", "field"),
+    (
+        (float("inf"), "commission"),
+        (float("-inf"), "commission"),
+        (float("nan"), "commission"),
+        (1.7976931348623157e308, "commission"),
+        ("1.7976931348623157E308", "commission"),
+        ("1.7976931348623157E+308", "commission"),
+        ("INF", "commission"),
+        ("NAN", "commission"),
+    ),
+)
+def test_exact_ibkr_sentinel_rejects_economics(monkeypatch, sentinel_value, field):
+    """The exact IBKR DBL_MAX sentinel and its string form must be detected."""
+
+    class SentinelBroker(WhatIfOnlyBroker):
+        def whatIfOrder(self, contract, order):
+            base = {
+                "commission": 0.0,
+                "minCommission": 0.0,
+                "maxCommission": 0.0,
+                "initMarginBefore": 0.0,
+                "initMarginChange": 0.0,
+                "initMarginAfter": 0.0,
+                "maintMarginBefore": 0.0,
+                "maintMarginChange": 0.0,
+                "maintMarginAfter": 0.0,
+                "equityWithLoanBefore": 0.0,
+                "equityWithLoanChange": 0.0,
+                "equityWithLoanAfter": 0.0,
+                "warningText": "",
+            }
+            base[field] = sentinel_value
+            return SimpleNamespace(**base)
+
+    broker = SentinelBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id=f"feasibility-sentinel-{field}",
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "action": "BUY",
+            "conId": 911011733,
+            "order_type": "LMT",
+            "limit_price": 6.32,
+            "quantity": 40,
+            "sec_type": "STK",
+            "symbol": "GENI",
+        },
+        purpose="exact IBKR sentinel detection",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.success is False
+    assert result.data["what_if_status"] == "BROKER_ECONOMICS_COMPUTED"
+    assert result.data["broker_whatif_reached"] is True
+    assert result.data["broker_economics_computed"] is False
+    assert result.data["error_code"] == "BROKER_ECONOMICS_SENTINEL_DETECTED"
+    assert result.data[field] is None
+
+
+def test_zero_and_ordinary_economics_are_valid(monkeypatch):
+    """Zero commissions/margins and ordinary finite values must not be
+    confused with the IBKR sentinel."""
+
+    class CleanBroker(WhatIfOnlyBroker):
+        def whatIfOrder(self, contract, order):
+            return SimpleNamespace(
+                commission=0.0,
+                minCommission=0.0,
+                maxCommission=0.0,
+                initMarginBefore=0.0,
+                initMarginChange=252.80,
+                initMarginAfter=252.80,
+                maintMarginBefore=0.0,
+                maintMarginChange=252.80,
+                maintMarginAfter=252.80,
+                equityWithLoanBefore=500.0,
+                equityWithLoanChange=-252.80,
+                equityWithLoanAfter=247.20,
+                warningText="",
+            )
+
+    broker = CleanBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id="feasibility-clean",
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "action": "BUY",
+            "conId": 911011733,
+            "order_type": "LMT",
+            "limit_price": 6.32,
+            "quantity": 40,
+            "sec_type": "STK",
+            "symbol": "GENI",
+        },
+        purpose="ordinary economics must be accepted",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.success is True
+    assert result.data["broker_whatif_reached"] is True
+    assert result.data["broker_economics_computed"] is True
+    assert result.data["commission"] == 0.0
+    assert result.data["initMarginChange"] == 252.80
 
 
 def test_what_if_dbl_max_sentinel_rejects_economics(monkeypatch):
@@ -1034,6 +1155,7 @@ def test_what_if_dbl_max_sentinel_rejects_economics(monkeypatch):
 
     assert result.success is False
     assert result.data["what_if_status"] == "BROKER_ECONOMICS_COMPUTED"
+    assert result.data["broker_whatif_reached"] is True
     assert result.data["broker_economics_computed"] is False
     assert result.data["error_code"] == "BROKER_ECONOMICS_SENTINEL_DETECTED"
     assert result.data["commission"] is None

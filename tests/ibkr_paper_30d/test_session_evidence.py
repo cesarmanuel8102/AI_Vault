@@ -150,7 +150,7 @@ def test_session_evidence_returns_liquid_hours_timezone_and_no_open_orders():
         )
     )
 
-    evidence = toolbox.session_evidence()
+    evidence = toolbox.session_evidence(reference_symbols=("SPY", "QQQ", "IEF"))
 
     assert evidence is not None
     assert evidence["liquid_hours"] == "20261005:0930-20261005:1600"
@@ -163,7 +163,7 @@ def test_session_evidence_detects_experiment_open_order():
         FakeSessionIBKR(open_order_refs=["codex-ibkr-paper-30d-a-abc1"])
     )
 
-    evidence = toolbox.session_evidence()
+    evidence = toolbox.session_evidence(reference_symbols=("SPY", "QQQ", "IEF"))
 
     assert evidence is not None
     assert evidence["has_open_orders"] is True
@@ -174,7 +174,7 @@ def test_session_evidence_ignores_non_experiment_orders():
         FakeSessionIBKR(open_order_refs=["manual-order-ref"])
     )
 
-    evidence = toolbox.session_evidence()
+    evidence = toolbox.session_evidence(reference_symbols=("SPY", "QQQ", "IEF"))
 
     assert evidence is not None
     assert evidence["has_open_orders"] is False
@@ -189,7 +189,7 @@ def test_session_evidence_returns_none_when_calendar_unavailable():
     # simulate resolution failure on every reference symbol
     broker.reqContractDetails = lambda contract: []
 
-    evidence = toolbox.session_evidence()
+    evidence = toolbox.session_evidence(reference_symbols=("SPY", "QQQ", "IEF"))
 
     assert evidence is None
 
@@ -202,7 +202,66 @@ def test_session_evidence_returns_none_on_broker_failure():
 
     toolbox._connect = boom
 
-    assert toolbox.session_evidence() is None
+    assert toolbox.session_evidence(reference_symbols=("SPY", "QQQ", "IEF")) is None
+
+
+# ---------------------------------------------------------------------------
+# Regression: no hard-coded reference duplication in research layer
+# ---------------------------------------------------------------------------
+
+
+def test_research_tools_contain_no_hard_coded_session_reference_set():
+    """The autonomous research layer must never duplicate the calibration
+    reference symbols; they must come from the orchestration/policy caller."""
+    import inspect
+
+    source = inspect.getsource(IBKRResearchToolbox.session_evidence)
+    assert "SPY" not in source
+    assert "QQQ" not in source
+    assert "IEF" not in source
+    assert "_SESSION_EVIDENCE_PROBES" not in source
+
+
+def test_mandate_still_has_no_predefined_symbol_universe():
+    """No matter how session evidence resolves reference symbols, the
+    autonomous mandate must remain without a predefined trading universe."""
+    from ibkr_paper_30d.autonomous_research import CodexAutonomousCLIProvider
+    from ibkr_paper_30d.trader_invocation import InvocationRequest, TraderInputBundle
+
+    req = InvocationRequest(
+        decision_cycle_id="c1",
+        invocation_id="i1",
+        utc_timestamp="2026-10-03T00:00:00Z",
+        requested_model="m1",
+        actual_model="m1",
+        model_configuration={},
+        reasoning_effort="medium",
+        input_bundle_sha256="a" * 64,
+        risk_policy_version="R1",
+        experiment_id="e1",
+        invocation_trigger="TEST",
+        timeout_seconds=60,
+    )
+    bundle = TraderInputBundle(
+        decision_cycle_id="c1",
+        utc_timestamp="2026-10-03T00:00:00Z",
+        market_session_state="REGULAR",
+        reconciliation_receipt={"status": "PASS"},
+        experiment_subledger_snapshot={"equity": "500.00"},
+        broker_account_snapshot={"buying_power": "500.00"},
+        positions_snapshot=[],
+        open_orders_snapshot=[],
+        risk_snapshot={"policy": "R1"},
+        kill_switch_state="CLEAR",
+        market_data_snapshot={"gate_status": "PASS"},
+        candidate_screen_results=[],
+        relevant_previous_immutable_decisions=[],
+        process_policy_version="V1",
+        execution_realism_version="PAPER_V1",
+        benchmark_state={},
+    )
+    payload = CodexAutonomousCLIProvider._prompt_payload(req, bundle, [], [])
+    assert payload["mandate"]["predefined_symbol_universe"] is False
 
 
 # ---------------------------------------------------------------------------

@@ -1149,10 +1149,18 @@ def _session_evidence_reader(
     does not create a second IBKR client identity for orchestration. Returns
     None whenever the toolbox cannot supply evidence, which leaves the service
     on its prior fail-closed market-data behaviour (never fabricated CLOSED).
+
+    The canonical reference symbols come from the market-policy authority so
+    the research layer never hard-codes them.
     """
+    from .market_policy import MarketPolicyFreezer
+
     base = getattr(toolbox, "base", None)
     getter = getattr(base, "session_evidence", None)
-    return getter if callable(getter) else None
+    if not callable(getter):
+        return None
+    symbols = tuple(sorted(MarketPolicyFreezer.REQUIRED_SYMBOLS))
+    return lambda: getter(reference_symbols=symbols)
 
 
 def _current_git_commit(repo_root: Path) -> str:
