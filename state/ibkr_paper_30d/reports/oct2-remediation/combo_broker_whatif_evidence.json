@@ -1,0 +1,92 @@
+{
+  "schema": "COMBO_BROKER_WHATIF_VALIDATION_V1",
+  "captured_at_utc": "2026-10-02T23:55:39.316818+00:00",
+  "host": "127.0.0.1",
+  "port": 4002,
+  "live_port_referenced": false,
+  "paper_account_identity_sha256": "cd82698d836ef78fd1a0c70b90ccebf690e43076ec2aa0aae4067c03faa4f5b0",
+  "diagnostic_symbol": "SPY",
+  "underlying_spot": 769.75,
+  "expiry": "20261120",
+  "request_id": "remediation-paper-whatif-combo-vertical",
+  "whatIf_flag": true,
+  "leg_identities": [
+    {
+      "action": "BUY",
+      "ratio": 1,
+      "conId": 882135148,
+      "localSymbol": "SPY   261120C00770000",
+      "secType": "OPT",
+      "strike": 770.0,
+      "right": "C"
+    },
+    {
+      "action": "SELL",
+      "ratio": 1,
+      "conId": 927880746,
+      "localSymbol": "SPY   261120C00771000",
+      "secType": "OPT",
+      "strike": 771.0,
+      "right": "C"
+    }
+  ],
+  "leg_shape": "CANONICAL_NESTED_CONTRACT (2026-10-02 failing shape)",
+  "LOCAL_VALIDATION_PASS": true,
+  "BROKER_WHATIF_PASS": true,
+  "what_if_calls_transmitted_to_ibkr": 1,
+  "real_order_writes_attempted": 0,
+  "tool_success": true,
+  "tool_error": null,
+  "broker_response": {
+    "contract": {
+      "conId": 0,
+      "symbol": "SPY",
+      "localSymbol": "",
+      "secType": "BAG",
+      "exchange": "SMART",
+      "primaryExchange": "",
+      "currency": "USD",
+      "expiry": "",
+      "strike": 0.0,
+      "right": "",
+      "multiplier": ""
+    },
+    "commission": 0.0,
+    "minCommission": 1.7976931348623157e+308,
+    "maxCommission": 1.7976931348623157e+308,
+    "initMarginChange": "1.7976931348623157E308",
+    "maintMarginChange": "1.7976931348623157E308",
+    "equityWithLoanChange": "1.7976931348623157E308",
+    "warningText": "If your order is not immediately executable, our systems may, depending on market conditions, reject your order if its limit price is more than the allowed amount away from the reference price at that time. If this happens, you will not receive a fill. This is a control designed to ensure that we comply with our regulatory obligations to avoid submitting disruptive orders to the marketplace.",
+    "whatIf": true,
+    "paper_only": true
+  },
+  "transmitted_bag_contract": {
+    "symbol": "SPY",
+    "secType": "BAG",
+    "exchange": "SMART",
+    "currency": "USD",
+    "comboLegs": [
+      {
+        "conId": 882135148,
+        "ratio": 1,
+        "action": "BUY",
+        "exchange": "SMART"
+      },
+      {
+        "conId": 927880746,
+        "ratio": 1,
+        "action": "SELL",
+        "exchange": "SMART"
+      }
+    ]
+  },
+  "transmitted_order": {
+    "action": "BUY",
+    "orderType": "LMT",
+    "totalQuantity": 1.0,
+    "lmtPrice": 0.01,
+    "whatIf": true,
+    "transmit": true
+  }
+}

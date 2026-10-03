@@ -1,0 +1,48 @@
+{
+  "schema": "COMBO_BROKER_WHATIF_VALIDATION_V1",
+  "captured_at_utc": "2026-10-02T23:55:42.054727+00:00",
+  "host": "127.0.0.1",
+  "port": 4002,
+  "live_port_referenced": false,
+  "paper_account_identity_sha256": "cd82698d836ef78fd1a0c70b90ccebf690e43076ec2aa0aae4067c03faa4f5b0",
+  "diagnostic_symbol": "SPY",
+  "underlying_spot": 769.75,
+  "expiry": "20261120",
+  "request_id": "baseline-control-whatif-combo-vertical",
+  "whatIf_flag": true,
+  "leg_identities": [
+    {
+      "action": "BUY",
+      "ratio": 1,
+      "conId": 882135148,
+      "localSymbol": "SPY   261120C00770000",
+      "secType": "OPT",
+      "strike": 770.0,
+      "right": "C"
+    },
+    {
+      "action": "SELL",
+      "ratio": 1,
+      "conId": 927880746,
+      "localSymbol": "SPY   261120C00771000",
+      "secType": "OPT",
+      "strike": 771.0,
+      "right": "C"
+    }
+  ],
+  "leg_shape": "CANONICAL_NESTED_CONTRACT (2026-10-02 failing shape)",
+  "LOCAL_VALIDATION_PASS": false,
+  "BROKER_WHATIF_PASS": false,
+  "what_if_calls_transmitted_to_ibkr": 0,
+  "real_order_writes_attempted": 0,
+  "tool_success": false,
+  "tool_error": "BROKER_FEASIBILITY_ARGUMENTS_INVALID",
+  "broker_response": {
+    "error": "BROKER_FEASIBILITY_ARGUMENTS_INVALID",
+    "error_type": "ValueError",
+    "error_code": "BROKER_FEASIBILITY_COMBO_LEG_CONTRACT_REQUIRED",
+    "stage": "REQUEST_VALIDATION",
+    "whatIf": true,
+    "paper_only": true
+  }
+}

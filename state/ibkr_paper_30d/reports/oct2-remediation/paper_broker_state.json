@@ -1,0 +1,46 @@
+{
+  "host": "127.0.0.1",
+  "port": 4002,
+  "live_port_used": false,
+  "connected": true,
+  "authenticated": true,
+  "heartbeat_ok": true,
+  "managed_accounts": [
+    "DUM891854"
+  ],
+  "paper_namespace_DU": true,
+  "account_identity_sha256": "cd82698d836ef78fd1a0c70b90ccebf690e43076ec2aa0aae4067c03faa4f5b0",
+  "position_count": 0,
+  "open_order_count": 0,
+  "execution_count": 0,
+  "positions": [],
+  "open_orders": [],
+  "server_time_utc": "2026-10-02T23:55:39Z",
+  "outbound_message_ids": [
+    6,
+    7,
+    16,
+    17,
+    49,
+    59,
+    61,
+    62,
+    63,
+    64,
+    71
+  ],
+  "errors": [
+    {
+      "code": 2104,
+      "message": "Market data farm connection is OK:usfarm"
+    },
+    {
+      "code": 2106,
+      "message": "HMDS data farm connection is OK:ushmds"
+    },
+    {
+      "code": 2158,
+      "message": "Sec-def data farm connection is OK:secdefil"
+    }
+  ]
+}
