@@ -1,16 +1,17 @@
 {
   "schema": "IBKR_OCT2_REMEDIATION_REPORT_V1",
-  "generated_at_utc": "2026-10-03T13:29:27Z",
+  "generated_at_utc": "2026-10-03T19:29:17Z",
   "builder": "primary-builder",
   "status": "READY_FOR_FINAL_ADVERSARIAL_AUDIT",
   "git": {
     "baseline_branch": "codex/ibkr-paper-operational-approved",
     "baseline_sha": "e5812193692f9599b9d0f9e8507869ba5d100840",
     "remediation_branch": "codex/ibkr-oct2-pending-remediation-v1",
-    "report_parent_sha": "4e4fd693918391144bc68e87fc3800ab7d38ae51",
-    "branch_tip_observed_before_report_commit": "a85fd10b6b44c1f2cf18e05830ae488a03ebea87",
-    "remote_tip_observed_before_report_commit": "4e4fd693918391144bc68e87fc3800ab7d38ae51",
-    "remote_tip_observed_at_utc": "2026-10-03T13:29:27Z",
+    "final_functional_sha": "a85fd10b6b44c1f2cf18e05830ae488a03ebea87",
+    "report_parent_sha": "5484340406bd775f928191d91e0ee9e66a22dac2",
+    "branch_tip_observed_before_report_commit": "5484340406bd775f928191d91e0ee9e66a22dac2",
+    "remote_tip_observed_before_report_commit": "5484340406bd775f928191d91e0ee9e66a22dac2",
+    "remote_tip_observed_at_utc": "2026-10-03T19:29:17Z",
     "observation_method": "git ls-remote origin refs/heads/codex/ibkr-oct2-pending-remediation-v1",
     "remote": "https://github.com/cesarmanuel8102/AI_Vault.git",
     "remote_baseline_sha": "e5812193692f9599b9d0f9e8507869ba5d100840",
@@ -176,13 +177,13 @@
     ]
   },
   "current_runtime_readonly_observation": {
-    "observation_timestamp_utc": "2026-10-03T13:29:27Z",
+    "observation_timestamp_utc": "2026-10-03T19:29:17Z",
     "db_path": "state/ibkr_paper_30d/autonomous.sqlite3",
     "db_exists": false,
     "positions": "not_observed",
     "orders": "not_observed",
     "executions": "not_observed",
-    "local_python_processes": "no local matching process observed at 2026-10-03T13:29:27Z",
+    "local_python_processes": "no local matching process observed at 2026-10-03T19:29:17Z",
     "note": "No local runtime database or process observed at report generation. This is expected for a development branch that has not been deployed. Broker state was not inferred from DB absence."
   },
   "artifacts": [
