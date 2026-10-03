@@ -1,0 +1,107 @@
+{
+  "schema": "IBKR_OCT3_PROMOTION_REPORT_V1",
+  "promotion_timestamp_utc": "2026-10-03T19:40:01Z",
+  "promotion_sha": "8e3ae3cba6b69eb68e2bc431fb0a80734a955090",
+  "final_functional_sha": "a85fd10b6b44c1f2cf18e05830ae488a03ebea87",
+  "rollback_sha": "e5812193692f9599b9d0f9e8507869ba5d100840",
+  "rollback_branch": "codex/ibkr-paper-operational-approved",
+  "rollback_branch_unchanged": true,
+  "git_before": {
+    "branch": "codex/ibkr-oct2-pending-remediation-v1",
+    "local_head": "8e3ae3cba6b69eb68e2bc431fb0a80734a955090",
+    "remote_head": "8e3ae3cba6b69eb68e2bc431fb0a80734a955090",
+    "tracked_modifications": false
+  },
+  "git_after": {
+    "branch": "codex/ibkr-oct2-pending-remediation-v1",
+    "local_head": "8e3ae3cba6b69eb68e2bc431fb0a80734a955090",
+    "remote_head": "8e3ae3cba6b69eb68e2bc431fb0a80734a955090",
+    "canonical_checkout_matches_promotion": true
+  },
+  "scheduler_before": {
+    "task_name": "CodexIBKRMarketDataGate",
+    "state": "Ready",
+    "approved_head": "e5812193692f9599b9d0f9e8507869ba5d100840",
+    "next_run_time": "2026-10-05T09:35:00Z",
+    "last_run_time": "2026-10-02T11:44:13Z",
+    "last_task_result": 1
+  },
+  "scheduler_after": {
+    "task_name": "CodexIBKRMarketDataGate",
+    "state": "Ready",
+    "approved_head": "8e3ae3cba6b69eb68e2bc431fb0a80734a955090",
+    "next_run_time": "2026-10-05T09:35:00Z",
+    "last_run_time": "2026-10-02T11:44:13Z",
+    "last_task_result": 1
+  },
+  "kernel_verification": {
+    "verified": true,
+    "file_count": 71,
+    "expected_sha256": "51e1547f24a6bc9937c687d54a37c1e7173bc4175c2a901e0ef9cda093a199a9"
+  },
+  "runtime_provenance_verification": {
+    "gate_status": "PASS",
+    "file_count": 81,
+    "approved_commit": "8e3ae3cba6b69eb68e2bc431fb0a80734a955090"
+  },
+  "scheduler_validation_tests": {
+    "collected": 27,
+    "passed": 27,
+    "failed": 0,
+    "skipped": 0
+  },
+  "old_runtime_observation": {
+    "observation_timestamp_utc": "2026-10-03T19:40:01Z",
+    "old_runtime_active": false,
+    "matching_python_processes": "no local matching process observed at 2026-10-03T19:40:01Z",
+    "note": "No autonomous runtime was running. Only IBGateway process (PID 39060) observed on PAPER port 4002."
+  },
+  "paper_gateway_observation": {
+    "paper_port_4002": true,
+    "live_port_4001": false,
+    "ibgateway_pid": 39060,
+    "note": "PAPER-only port 4002 is listening. LIVE port 4001 is not in use."
+  },
+  "static_preflight_results": {
+    "approved_head_exact": true,
+    "git_provenance_ancestor": true,
+    "kernel_verified": true,
+    "runtime_provenance_pass": true,
+    "paper_account_identity_config_present": true,
+    "owner_authorization_artifact_present": true,
+    "execution_lock_recoverable": true,
+    "scheduler_configuration_valid": true,
+    "provider_model_configuration_valid": true,
+    "continuity_components_present": true,
+    "kill_switch_state": "not_observed_no_runtime",
+    "market_data_gate": "market_closed_not_tested"
+  },
+  "safety_invariants": {
+    "day1_started": false,
+    "scheduled_task_manually_triggered": false,
+    "real_order_writes": 0,
+    "live_local_port_4001_used": false,
+    "force_push_used": false,
+    "sqlite_manually_edited": false,
+    "market_state_modified": false
+  },
+  "rollback_plan": {
+    "rollback_sha": "e5812193692f9599b9d0f9e8507869ba5d100840",
+    "rollback_branch": "codex/ibkr-paper-operational-approved",
+    "rollback_procedure": [
+      "Do not launch new runtime.",
+      "Restore scheduler ApprovedHead to e5812193692f9599b9d0f9e8507869ba5d100840.",
+      "Checkout tracked source corresponding to e5812193692f9599b9d0f9e8507869ba5d100840.",
+      "Reverify kernel/provenance.",
+      "Do not force-rewrite Git history."
+    ],
+    "rollback_performed": false
+  },
+  "notes": [
+    "Promotion performed by updating scheduler ApprovedHead from e581219 to 8e3ae3c.",
+    "Rollback branch codex/ibkr-paper-operational-approved remains pinned at e581219.",
+    "No runtime was started during this task.",
+    "Next scheduled run remains 2026-10-05 09:35:00Z (Monday premarket).",
+    "Market-data gate was not evaluated because market is closed on Saturday; this is not a promotion failure."
+  ]
+}
