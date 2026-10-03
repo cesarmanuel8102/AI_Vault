@@ -107,7 +107,7 @@
     "Promotion performed by updating scheduler ApprovedHead from e581219 to 8e3ae3c.",
     "Rollback branch codex/ibkr-paper-operational-approved remains pinned at e581219.",
     "No runtime was started during this task.",
-    "Next scheduled run remains 2026-10-05 09:35:00Z (Monday premarket).",
+    "Next scheduled run is 2026-10-05 09:35:00 America/New_York (2026-10-05T13:35:00Z).",
     "Market-data gate was not evaluated because market is closed on Saturday; this is not a promotion failure."
   ]
 }
