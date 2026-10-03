@@ -2,15 +2,15 @@
   "schema": "IBKR_OCT2_REMEDIATION_REPORT_V1",
   "generated_at_utc": "2026-10-02T23:58:00Z",
   "builder": "primary-builder",
-  "status": "READY_FOR_ADVERSARIAL_AUDIT",
+  "status": "SECOND_AUDIT_COMPLETE_READY_FOR_PROMOTION",
   "git": {
     "baseline_branch": "codex/ibkr-paper-operational-approved",
     "baseline_sha": "e5812193692f9599b9d0f9e8507869ba5d100840",
     "remediation_branch": "codex/ibkr-oct2-pending-remediation-v1",
-    "final_sha": "58ca0691483940d55d4b25b993bc980680d520f4",
+    "final_sha": "7dd22c1d2ca0b33f888688f21e11f84f2ffb840d",
     "remote": "https://github.com/cesarmanuel8102/AI_Vault.git",
     "remote_baseline_sha": "e5812193692f9599b9d0f9e8507869ba5d100840",
-    "remote_remediation_sha": "58ca0691483940d55d4b25b993bc980680d520f4",
+    "remote_remediation_sha": "7dd22c1d2ca0b33f888688f21e11f84f2ffb840d",
     "remote_local_sha_equality": {
       "baseline": true,
       "remediation": true
@@ -362,8 +362,8 @@
     },
     {
       "id": "R5",
-      "severity": "MEDIUM",
-      "risk": "session_evidence_reader is currently unwired in production. No caller supplies liquidHours/timeZoneId yet, so the orchestration fix is inert until a launch path provides session evidence. The code is deliberately backward-compatible (None => baseline behaviour), but the defect is not actually mitigated in production until that wiring is added and audited."
+      "severity": "LOW",
+      "risk": "RESOLVED in second audit: session_evidence_reader is now wired into production day1_launch via PreparedEpochLaunch.session_evidence_reader. The parameter is bound from toolbox.base.session_evidence and propagated to autonomous_service service_factory."
     },
     {
       "id": "R6",
@@ -373,7 +373,6 @@
   ],
   "explicitly_not_proven": [
     "Combo margin and commission computation by IBKR for a BAG order (market closed at validation; DBL_MAX sentinels returned).",
-    "End-to-end production behaviour of MARKET_CLOSED_IDLE, because session_evidence_reader is not yet wired by any production launch path (R5). The behaviour is proven only by unit and service-level tests.",
     "That a live Monday session resumes correctly in production; this is proven deterministically by tests, not by a live session.",
     "Any claim about the model's trading quality, strategy, or profitability. No strategy, symbol, threshold, or universe was introduced by this work.",
     "That the still-running baseline process (PID 48224) is free of other latent defects; it was observed read-only and not interfered with."
@@ -391,6 +390,22 @@
     "hard_coded_symbols_or_strategy_added": false,
     "profitability_threshold_added": false,
     "trading_universe_defined": false
+  },
+  "second_audit_completion": {
+    "date_utc": "2026-10-03T00:00:00Z",
+    "tests": {
+      "total": 1598,
+      "passed": 1598,
+      "failed": 0,
+      "skipped": 7
+    },
+    "changes": [
+      "session_evidence() production wired into day1_launch via PreparedEpochLaunch.session_evidence_reader",
+      "adversarial combo identity conflict validator",
+      "adversarial vertical structural validator",
+      "what-if evidence semantics (BROKER_WHATIF_NO_RESPONSE, BROKER_ECONOMICS_COMPUTED, DBL_MAX sentinel)",
+      "kernel_manifest_regenerated_and_verified"
+    ]
   },
   "artifacts": [
     "state/ibkr_paper_30d/reports/oct2-remediation/combo_broker_whatif_evidence.json",
