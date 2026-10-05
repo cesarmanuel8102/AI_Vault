@@ -929,6 +929,75 @@ def test_research_what_if_accepts_explicit_zero_margin_and_commission(monkeypatc
     assert result.data["commission"] == "0"
 
 
+@pytest.mark.parametrize(
+    "state_updates",
+    (
+        {
+            # Observed for XP, VEEA, ALEC, and PCVX stock what-if responses.
+            "commission": 1.000036,
+            "minCommission": 1.7976931348623157e308,
+            "maxCommission": 1.7976931348623157e308,
+            "initMarginBefore": 1.7976931348623157e308,
+            "initMarginChange": "134.71",
+            "initMarginAfter": 1.7976931348623157e308,
+            "maintMarginBefore": 1.7976931348623157e308,
+            "maintMarginChange": "122.47",
+            "maintMarginAfter": 1.7976931348623157e308,
+            "equityWithLoanBefore": 1.7976931348623157e308,
+            "equityWithLoanChange": "-0.95",
+            "equityWithLoanAfter": 1.7976931348623157e308,
+        },
+        {
+            # Observed for BEAT, PDSB, NVAX, and option-combo what-if responses.
+            "commission": 1.7976931348623157e308,
+            "minCommission": 2.1515,
+            "maxCommission": 2.5015,
+            "initMarginBefore": 1.7976931348623157e308,
+            "initMarginChange": "351.86",
+            "initMarginAfter": 1.7976931348623157e308,
+            "maintMarginBefore": 1.7976931348623157e308,
+            "maintMarginChange": "320.19",
+            "maintMarginAfter": 1.7976931348623157e308,
+            "equityWithLoanBefore": 1.7976931348623157e308,
+            "equityWithLoanChange": "1.31",
+            "equityWithLoanAfter": 1.7976931348623157e308,
+        },
+    ),
+)
+def test_research_what_if_accepts_observed_ibkr_optional_sentinels(
+    monkeypatch, state_updates
+):
+    broker = WhatIfOnlyBroker(state=_order_state(**state_updates))
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id="feasibility-observed-optional-sentinels",
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "action": "BUY",
+            "con_id": 482880561,
+            "quantity": 40,
+            "order_type": "LMT",
+            "limit_price": 6.32,
+            "time_in_force": "DAY",
+        },
+        purpose="accept authoritative economics when only optional fields are sentinel",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.success is True
+    assert result.data["what_if_status"] == "BROKER_ECONOMICS_COMPUTED"
+    assert result.data["broker_whatif_reached"] is True
+    assert result.data["broker_economics_computed"] is True
+    assert result.data["initMarginChange"] == state_updates["initMarginChange"]
+    assert result.data["maintMarginChange"] == state_updates["maintMarginChange"]
+    assert "initMarginBefore" not in result.data
+    assert "initMarginAfter" not in result.data
+    assert "equityWithLoanBefore" not in result.data
+    assert "equityWithLoanAfter" not in result.data
+
+
 def test_qualified_contract_mismatch_blocks_before_what_if(monkeypatch):
     class WrongContractBroker(WhatIfOnlyBroker):
         def qualifyContracts(self, contract):
@@ -1044,8 +1113,10 @@ def test_what_if_none_returns_broker_whatif_reached_not_computed(monkeypatch):
         ("NAN", "commission"),
     ),
 )
-def test_exact_ibkr_sentinel_rejects_economics(monkeypatch, sentinel_value, field):
-    """The exact IBKR DBL_MAX sentinel and its string form must be detected."""
+def test_exact_ibkr_sentinel_is_sanitized_when_alternate_commission_exists(
+    monkeypatch, sentinel_value, field
+):
+    """A sentinel commission is optional when a finite range is authoritative."""
 
     class SentinelBroker(WhatIfOnlyBroker):
         def whatIfOrder(self, contract, order):
@@ -1087,12 +1158,13 @@ def test_exact_ibkr_sentinel_rejects_economics(monkeypatch, sentinel_value, fiel
 
     result = toolbox.execute(request, _bundle())
 
-    assert result.success is False
-    assert result.data["what_if_status"] == "BROKER_ECONOMICS_NOT_COMPUTED"
+    assert result.success is True
+    assert result.data["what_if_status"] == "BROKER_ECONOMICS_COMPUTED"
     assert result.data["broker_whatif_reached"] is True
-    assert result.data["broker_economics_computed"] is False
-    assert result.data["error_code"] == "BROKER_ECONOMICS_SENTINEL_DETECTED"
+    assert result.data["broker_economics_computed"] is True
     assert result.data[field] is None
+    assert result.data["minCommission"] == 0.0
+    assert result.data["maxCommission"] == 0.0
 
 
 def test_zero_and_ordinary_economics_are_valid(monkeypatch):
@@ -1150,7 +1222,7 @@ def test_what_if_dbl_max_sentinel_rejects_economics(monkeypatch):
             state = SimpleNamespace(
                 commission=float("inf"),
                 minCommission=float("inf"),
-                maxCommission=1.0,
+                maxCommission=float("inf"),
                 initMarginBefore=float("inf"),
                 initMarginChange=0.0,
                 initMarginAfter=0.0,
@@ -1191,7 +1263,7 @@ def test_what_if_dbl_max_sentinel_rejects_economics(monkeypatch):
     assert result.data["error_code"] == "BROKER_ECONOMICS_SENTINEL_DETECTED"
     assert result.data["commission"] is None
     assert result.data["minCommission"] is None
-    assert result.data["maxCommission"] == 1.0
+    assert result.data["maxCommission"] is None
 
 
 def test_exactly_one_what_if_evidence_definition_exists():

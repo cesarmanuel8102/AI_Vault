@@ -1748,7 +1748,20 @@ class IBKRResearchToolbox:
         unusable_fields = {
             k for k, v in broker_economics.items() if self._is_unusable_broker_economic_value(v)
         }
-        if unusable_fields:
+        sanitized_economics = {
+            key: (None if key in unusable_fields else value)
+            for key, value in broker_economics.items()
+        }
+        required_sentinel_fields = unusable_fields.intersection(
+            {"initMarginChange", "maintMarginChange"}
+        )
+        commission_fields = {"commission", "minCommission", "maxCommission"}
+        usable_commission = any(
+            sanitized_economics[key] is not None for key in commission_fields
+        )
+        if not usable_commission:
+            required_sentinel_fields.update(unusable_fields.intersection(commission_fields))
+        if required_sentinel_fields:
             return {
                 "success": False,
                 "error": "BROKER_WHATIF_DBL_MAX_SENTINEL",
@@ -1761,12 +1774,12 @@ class IBKRResearchToolbox:
                 "broker_whatif_reached": True,
                 "broker_economics_computed": False,
                 "stage": "WHAT_IF_NORMALIZATION",
-                **{k: (None if k in unusable_fields else v) for k, v in broker_economics.items()},
+                **sanitized_economics,
             }
         return {
             "success": True,
             "contract": self._serialize_contract(contract),
-            **broker_economics,
+            **sanitized_economics,
             "warningText": getattr(state, "warningText", None),
             "whatIf": True,
             "paper_only": True,
