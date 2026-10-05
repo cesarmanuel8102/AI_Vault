@@ -498,6 +498,33 @@ class CodexAutonomousCLIProvider:
                         "validation_errors": errors,
                     }
                     continue
+                continuity_error = AutonomousResearchLoop._validate_continuity_turn(
+                    turn,
+                    request=request,
+                    bundle=bundle,
+                )
+                if continuity_error is not None and semantic_attempt < maximum_repairs:
+                    self.last_failure_code = "CONTINUITY_OUTPUT_INVALID"
+                    self.last_failure_detail = continuity_error
+                    repair_context = {
+                        "attempt": semantic_attempt + 1,
+                        "maximum_attempts": maximum_repairs,
+                        "instruction": (
+                            "Correct only the continuity contract error below. Preserve your "
+                            "independent research, proposal, and trading judgment. Copy all "
+                            "host provenance bindings exactly from continuity_contract and "
+                            "return a complete replacement object."
+                        ),
+                        "invalid_output": raw,
+                        "validation_errors": [
+                            {
+                                "location": ["continuity_plan"],
+                                "message": continuity_error,
+                                "type": "continuity_contract",
+                            }
+                        ],
+                    }
+                    continue
                 self.last_failure_code = None
                 self.last_failure_detail = None
                 return turn
@@ -531,6 +558,22 @@ class CodexAutonomousCLIProvider:
         workspace_context: dict[str, Any] | None = None,
         first_process_bootstrap: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        context = bundle.continuity_context
+        host_provenance_bindings = {
+            "created_by_model": request.actual_model,
+            "model_attestation_sha256": sha256_json(
+                {"actual_model": request.actual_model}
+            ),
+            "decision_cycle_id": request.decision_cycle_id,
+            "invocation_id": request.invocation_id,
+            "input_bundle_sha256": bundle.sha256,
+            "epoch_id": context.get("epoch_id"),
+            "definition_sha256": context.get("definition_sha256"),
+            "clock_event_sha256": context.get("clock_event_sha256"),
+            "owner_authorization_sha256": context.get(
+                "owner_authorization_sha256"
+            ),
+        }
         payload: dict[str, Any] = {
             "schema": "CODEX_AUTONOMOUS_RESEARCH_TURN_V1",
             "mandate": {
@@ -618,11 +661,23 @@ class CodexAutonomousCLIProvider:
                     "object string. The host decodes and validates it before use."
                 ),
                 "continuity_instruction": (
-                    "When required, author activation, expiry, finite conditions, "
-                    "exact actions, unavailable-evidence behavior, and terminal disposition."
+                    "When continuity authority is required, every final PROPOSE_TRADE or "
+                    "MODIFY_ORDER must include a complete continuity_plan. Author its "
+                    "activation, expiry, finite conditions, exact actions, unavailable-evidence "
+                    "behavior, and terminal disposition. Copy host_provenance_bindings exactly; "
+                    "do not calculate, infer, or invent those values. The host independently "
+                    "verifies every binding."
                 ),
             },
             "continuity_authority": bundle.continuity_context,
+            "continuity_contract": {
+                "authority_contract_required": bool(
+                    context.get("authority_contract_required", False)
+                ),
+                "plan_required_for": ["PROPOSE_TRADE", "MODIFY_ORDER"],
+                "host_provenance_bindings": host_provenance_bindings,
+                "host_verifies_bindings": True,
+            },
         }
         if workspace_context:
             payload["workspace_context"] = workspace_context

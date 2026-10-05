@@ -6,7 +6,9 @@ from pathlib import Path
 
 import pytest
 
+from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.autonomous_research import (
+    AutonomousTradeProposal,
     CodexAutonomousCLIProvider,
     _resolve_codex_executable,
 )
@@ -133,6 +135,244 @@ def test_strict_schema_and_prompt_expose_neutral_continuity_authority() -> None:
     assert all(
         token not in instruction
         for token in ("timeout", "cancel", "retain", "price", "symbol", "strategy", "adversarial")
+    )
+
+
+def test_prompt_exposes_host_derived_continuity_provenance_bindings() -> None:
+    value = bundle().model_copy(
+        update={
+            "continuity_context": {
+                "authority_contract_required": True,
+                "epoch_id": "AUTONOMY_EPOCH_2",
+                "definition_sha256": "a" * 64,
+                "clock_event_sha256": "b" * 64,
+                "owner_authorization_sha256": "c" * 64,
+            }
+        }
+    )
+    invocation = request(value)
+
+    payload = CodexAutonomousCLIProvider._prompt_payload(
+        invocation, value, [], []
+    )
+
+    bindings = payload["continuity_contract"]["host_provenance_bindings"]
+    assert bindings == {
+        "created_by_model": invocation.actual_model,
+        "model_attestation_sha256": sha256_json(
+            {"actual_model": invocation.actual_model}
+        ),
+        "decision_cycle_id": invocation.decision_cycle_id,
+        "invocation_id": invocation.invocation_id,
+        "input_bundle_sha256": value.sha256,
+        "epoch_id": "AUTONOMY_EPOCH_2",
+        "definition_sha256": "a" * 64,
+        "clock_event_sha256": "b" * 64,
+        "owner_authorization_sha256": "c" * 64,
+    }
+    assert payload["continuity_contract"]["plan_required_for"] == [
+        "PROPOSE_TRADE",
+        "MODIFY_ORDER",
+    ]
+    assert payload["continuity_contract"]["host_verifies_bindings"] is True
+    assert "copy" in payload["output_contract"]["continuity_instruction"].lower()
+    assert "do not calculate" in payload["output_contract"]["continuity_instruction"].lower()
+
+
+def test_provider_repairs_wrong_host_attestation_before_returning_turn(
+    continuity_plan_factory,
+) -> None:
+    open_order = {
+        "orderRef": "order-78",
+        "orderId": 78,
+        "permId": 225256222,
+        "clientId": 17,
+        "contract": {"conId": 756733},
+    }
+    value = bundle().model_copy(
+        update={
+            "open_orders_snapshot": [open_order],
+            "continuity_context": {
+                "authority_contract_required": True,
+                "epoch_id": "AUTONOMY_EPOCH_2",
+                "definition_sha256": "c" * 64,
+                "clock_event_sha256": "d" * 64,
+                "owner_authorization_sha256": "e" * 64,
+            },
+        }
+    )
+    invocation = request(value)
+    correct_attestation = sha256_json({"actual_model": invocation.actual_model})
+    wrong_plan = continuity_plan_factory(
+        decision_cycle_id=invocation.decision_cycle_id,
+        invocation_id=invocation.invocation_id,
+        input_bundle_sha256=value.sha256,
+        created_by_model=invocation.actual_model,
+        model_attestation_sha256="f" * 64,
+    )
+    correct_plan = wrong_plan.model_copy(
+        update={"model_attestation_sha256": correct_attestation}
+    )
+    prompts = []
+
+    def runner(command, **kwargs):
+        prompts.append(json.loads(kwargs["input"]))
+        output_path = command[command.index("--output-last-message") + 1]
+        selected_plan = wrong_plan if len(prompts) == 1 else correct_plan
+        Path(output_path).write_text(
+            json.dumps(
+                {
+                    "mode": "FINAL",
+                    "research_requests": [],
+                    "decision": "NO_TRADE",
+                    "proposal": None,
+                    "position_action": None,
+                    "open_order_action": None,
+                    "confidence": "0.75",
+                    "reasoning_summary": "Preserve the exact owned order authority.",
+                    "reason_codes": ["ORDER_CONTINUITY_AUTHORED"],
+                    "continuity_plan": selected_plan.model_dump(mode="json"),
+                    "continuity_reviews": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        stdout = "\n".join(
+            [
+                json.dumps({"type": "thread.started", "thread_id": "t"}),
+                json.dumps({"type": "turn.completed"}),
+            ]
+        )
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    provider = CodexAutonomousCLIProvider(
+        runner=runner,
+        owner_model_attestation_exception_sha256="e" * 64,
+    )
+
+    turn = provider.next_turn(invocation, value, [], [])
+
+    assert turn.continuity_plan == correct_plan
+    assert len(prompts) == 2
+    repair = prompts[1]["semantic_repair"]
+    assert any(
+        error["message"] == "CONTINUITY_PLAN_MODEL_ATTESTATION_MISMATCH"
+        for error in repair["validation_errors"]
+    )
+    assert (
+        prompts[1]["continuity_contract"]["host_provenance_bindings"]
+        ["model_attestation_sha256"]
+        == correct_attestation
+    )
+
+
+def test_provider_repairs_missing_required_plan_without_changing_proposal(
+    continuity_plan_factory,
+) -> None:
+    value = bundle().model_copy(
+        update={
+            "continuity_context": {
+                "authority_contract_required": True,
+                "epoch_id": "AUTONOMY_EPOCH_2",
+                "definition_sha256": "c" * 64,
+                "clock_event_sha256": "d" * 64,
+                "owner_authorization_sha256": "e" * 64,
+            }
+        }
+    )
+    invocation = request(value)
+    proposal = AutonomousTradeProposal(
+        thesis="Autonomously discovered asymmetric opportunity",
+        catalyst="Fresh catalyst",
+        symbol="PCVX",
+        sec_type="STK",
+        direction="LONG",
+        action="BUY",
+        quantity="4",
+        order_type="MKT",
+        capital_required="295.60",
+        maximum_loss="295.60",
+        loss_is_bounded=True,
+        probability_profit="0.55",
+        probability_loss="0.45",
+        expected_gain="60.00",
+        expected_loss="40.00",
+        expected_value="15.00",
+        expected_reward_risk="1.50",
+        expected_holding_period="1-5 days",
+        entry_condition="Thesis remains intact",
+        invalidation_condition="Catalyst invalidates",
+        exit_plan="Exit when the thesis changes",
+        why_now="Current evidence supports entry",
+        alternatives_considered=["cash"],
+        evidence_used=["quote", "news"],
+        disconfirming_evidence=["event risk"],
+        confidence="0.72",
+    )
+    proposal_sha = sha256_json(proposal)
+    plan = continuity_plan_factory(
+        decision_cycle_id=invocation.decision_cycle_id,
+        invocation_id=invocation.invocation_id,
+        input_bundle_sha256=value.sha256,
+        created_by_model=invocation.actual_model,
+        model_attestation_sha256=sha256_json(
+            {"actual_model": invocation.actual_model}
+        ),
+        order_binding={
+            "binding_type": "NEW_PROPOSAL",
+            "ibkr_order_id": None,
+            "perm_id": None,
+            "original_order_state_sha256": None,
+            "proposal_sha256": proposal_sha,
+            "original_intent_sha256": proposal_sha,
+        },
+    )
+    prompts = []
+
+    def runner(command, **kwargs):
+        prompts.append(json.loads(kwargs["input"]))
+        output_path = command[command.index("--output-last-message") + 1]
+        Path(output_path).write_text(
+            json.dumps(
+                {
+                    "mode": "FINAL",
+                    "research_requests": [],
+                    "decision": "PROPOSE_TRADE",
+                    "proposal": proposal.model_dump(mode="json"),
+                    "position_action": None,
+                    "open_order_action": None,
+                    "confidence": "0.72",
+                    "reasoning_summary": "The proposal remains preferred.",
+                    "reason_codes": ["EDGE_FOUND"],
+                    "continuity_plan": (
+                        None if len(prompts) == 1 else plan.model_dump(mode="json")
+                    ),
+                    "continuity_reviews": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        stdout = "\n".join(
+            [
+                json.dumps({"type": "thread.started", "thread_id": "t"}),
+                json.dumps({"type": "turn.completed"}),
+            ]
+        )
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    provider = CodexAutonomousCLIProvider(
+        runner=runner,
+        owner_model_attestation_exception_sha256="e" * 64,
+    )
+
+    turn = provider.next_turn(invocation, value, [], [])
+
+    assert turn.proposal == proposal
+    assert turn.continuity_plan == plan
+    assert len(prompts) == 2
+    assert any(
+        error["message"] == "CONTINUITY_PLAN_REQUIRED"
+        for error in prompts[1]["semantic_repair"]["validation_errors"]
     )
 
 
