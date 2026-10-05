@@ -41,6 +41,7 @@ def _sha256(path: Path) -> str:
 
 
 class RuntimeMarketDataGate:
+    _MAX_TRANSIENT_ATTEMPTS = 8
     _TRANSIENT_TIMESTAMP_REASONS = frozenset(
         {"CLOCK_SKEW_UNCERTAIN", "STALE_QUOTE", "TIMESTAMP_MISMATCH"}
     )
@@ -80,7 +81,7 @@ class RuntimeMarketDataGate:
             }
 
         result: dict[str, Any] = {}
-        for _ in range(3):
+        for _ in range(self._MAX_TRANSIENT_ATTEMPTS):
             result = self._evaluate_once(policy, decision_class)
             if result.get("gate_status") == "PASS":
                 return result

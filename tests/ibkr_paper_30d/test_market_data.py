@@ -482,6 +482,63 @@ def test_runtime_gate_retries_only_transient_timestamp_blocks(
     assert evaluate_once.call_count == 2
 
 
+def test_runtime_gate_survives_bounded_burst_of_transient_timestamp_blocks(
+    monkeypatch, policy
+) -> None:
+    monkeypatch.setattr(
+        "ibkr_paper_30d.runtime_integrity.load_verified_policy",
+        lambda path: policy,
+    )
+    gate = RuntimeMarketDataGate(
+        policy_path=__import__("pathlib").Path("unused.json"),
+        expected_account_hash="a" * 64,
+        source_factory=lambda: object(),
+        now_utc=lambda: NOW,
+    )
+    transient = {
+        "gate_status": "BLOCK",
+        "reason_codes": [
+            "STALE_QUOTE",
+            "TIMESTAMP_MISMATCH",
+            "CLOCK_SKEW_UNCERTAIN",
+        ],
+    }
+    passed = {"gate_status": "PASS", "reason_codes": []}
+    evaluate_once = Mock(side_effect=[transient] * 5 + [passed])
+    monkeypatch.setattr(gate, "_evaluate_once", evaluate_once)
+
+    result = gate.evaluate(DecisionClass.NEW_TRADE)
+
+    assert result == passed
+    assert evaluate_once.call_count == 6
+
+
+def test_runtime_gate_fails_closed_after_bounded_transient_attempts(
+    monkeypatch, policy
+) -> None:
+    monkeypatch.setattr(
+        "ibkr_paper_30d.runtime_integrity.load_verified_policy",
+        lambda path: policy,
+    )
+    gate = RuntimeMarketDataGate(
+        policy_path=__import__("pathlib").Path("unused.json"),
+        expected_account_hash="a" * 64,
+        source_factory=lambda: object(),
+        now_utc=lambda: NOW,
+    )
+    transient = {
+        "gate_status": "BLOCK",
+        "reason_codes": ["STALE_QUOTE"],
+    }
+    evaluate_once = Mock(return_value=transient)
+    monkeypatch.setattr(gate, "_evaluate_once", evaluate_once)
+
+    result = gate.evaluate(DecisionClass.NEW_TRADE)
+
+    assert result == transient
+    assert evaluate_once.call_count == 8
+
+
 def test_runtime_gate_does_not_retry_non_timestamp_blocks(
     monkeypatch, policy
 ) -> None:
