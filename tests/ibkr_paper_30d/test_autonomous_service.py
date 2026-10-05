@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -13,6 +14,7 @@ from ibkr_paper_30d.autonomous_service import (
     AutonomousExperimentService,
     AutonomousServiceError,
 )
+from ibkr_paper_30d.autonomous_state import AutonomousStateBuildError
 from ibkr_paper_30d.autonomy_toolbox import AutonomyToolbox
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
 from ibkr_paper_30d.continuity_watchdog import ContinuityWatchdog
@@ -736,11 +738,18 @@ def test_provider_failure_is_observed_without_claiming_policy_attribution(
         monkeypatch.setattr(subject, "_builder", lambda: _ReadyBuilder())
 
         def fail_cycle(*args, **kwargs):
+            subject.provider.last_failure_code = "RETURN_CODE_1"
+            subject.provider.last_failure_detail = (
+                "schema path: semantic validation failed"
+            )
             raise RuntimeError("AUTONOMOUS_CODEX_PROVIDER_FAILED")
 
         monkeypatch.setattr(service_module, "run_autonomous_cycle", fail_cycle)
 
-        with pytest.raises(RuntimeError, match="AUTONOMOUS_CODEX_PROVIDER_FAILED"):
+        with pytest.raises(
+            service_module.RecoverableProviderInvocationError,
+            match="AUTONOMOUS_CODEX_PROVIDER_FAILED",
+        ):
             subject._run_cycle("SCHEDULED_SCAN")
 
         row = db.execute(
@@ -753,6 +762,39 @@ def test_provider_failure_is_observed_without_claiming_policy_attribution(
             in row[0]
         )
         assert '"provider_policy_attribution":"UNDETERMINED"' in row[0]
+
+
+def test_fresh_provider_code_cannot_reclassify_structural_persistence_error(
+    tmp_path, monkeypatch
+):
+    with Database.open(tmp_path / "provider-then-database-error.sqlite3") as db:
+        subject = AutonomousExperimentService(
+            db,
+            experiment_start_utc=datetime.now(timezone.utc),
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=FailingProvider(),
+            executor=StubExecutor(),
+            runtime_market_gate=PassGate(),
+            runtime_auditor_gate=PassGate(),
+        )
+        monkeypatch.setattr(subject, "_builder", lambda: _ReadyBuilder())
+
+        def fail_after_provider_signal(*args, **kwargs):
+            subject.provider.last_failure_code = "RETURN_CODE_1"
+            raise sqlite3.DatabaseError("structural persistence failure")
+
+        monkeypatch.setattr(
+            service_module,
+            "run_autonomous_cycle",
+            fail_after_provider_signal,
+        )
+
+        with pytest.raises(
+            sqlite3.DatabaseError,
+            match="structural persistence failure",
+        ):
+            subject._run_cycle("SCHEDULED_SCAN")
 
 
 def test_execution_block_is_not_reported_as_pass(tmp_path, monkeypatch):
@@ -1072,7 +1114,9 @@ def test_provider_failure_is_retried_without_terminating_service(tmp_path, monke
         def cycle(_trigger, *, allow_execution=None):
             calls.append(allow_execution)
             if len(calls) == 1:
-                raise RuntimeError("AUTONOMOUS_CODEX_PROVIDER_FAILED")
+                raise service_module.RecoverableProviderInvocationError(
+                    "AUTONOMOUS_CODEX_PROVIDER_FAILED"
+                )
             service.stop()
             return {
                 "status": "PASS",
@@ -1088,6 +1132,118 @@ def test_provider_failure_is_retried_without_terminating_service(tmp_path, monke
         assert calls == [None, None]
         assert clock.sleeps == [60.0]
         assert "AUTONOMOUS_PAPER_EXPERIMENT_RUNNING" in state_event_types(db)
+
+
+def test_transient_broker_state_failure_is_retried_without_terminating_service(
+    tmp_path, monkeypatch
+):
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    with Database.open(tmp_path / "broker-state-retry.sqlite3") as db:
+        service = make_service(db, clock, stop_after=2)
+        calls = []
+
+        def cycle(_trigger, *, allow_execution=None):
+            calls.append(allow_execution)
+            if len(calls) == 1:
+                raise service_module.TransientBrokerStateBuildError(
+                    "POSITIONS_FAILED:TimeoutError:tool_failed"
+                )
+            service.stop()
+            return {
+                "status": "PASS",
+                "outcome": {"decision": "NO_TRADE"},
+                "request": {"decision_cycle_id": "cycle-broker-recovered"},
+                "execution": None,
+            }
+
+        service._run_cycle = cycle
+
+        service.run_forever()
+
+        alerts = [
+            json.loads(str(row[0]))
+            for row in db.execute(
+                "SELECT payload_json FROM alerts "
+                "WHERE event_type='RECOVERABLE_RUNTIME_ERROR'"
+            ).fetchall()
+        ]
+        event_types = state_event_types(db)
+
+    assert calls == [None, None]
+    assert clock.sleeps == [60.0]
+    assert alerts[-1]["error_type"] == "TransientBrokerStateBuildError"
+    assert "AUTONOMOUS_PAPER_EXPERIMENT_RUNNING" in event_types
+
+
+def test_non_transient_state_build_failure_still_terminates_service(
+    tmp_path, monkeypatch
+):
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    with Database.open(tmp_path / "broker-state-fatal.sqlite3") as db:
+        service = make_service(db, clock, stop_after=2)
+        service._run_cycle = Mock(
+            side_effect=AutonomousStateBuildError("SUCCESSOR_CLOCK_BINDING_MISMATCH")
+        )
+
+        with pytest.raises(
+            AutonomousStateBuildError,
+            match="SUCCESSOR_CLOCK_BINDING_MISMATCH",
+        ):
+            service.run_forever()
+
+
+def test_stale_provider_failure_code_cannot_make_structural_error_recoverable(
+    tmp_path, monkeypatch
+):
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    with Database.open(tmp_path / "stale-provider-code.sqlite3") as db:
+        service = make_service(db, clock, stop_after=2)
+        service.provider = FailingProvider()
+        service._run_cycle = Mock(
+            side_effect=AutonomousStateBuildError(
+                "SUCCESSOR_CLOCK_BINDING_MISMATCH"
+            )
+        )
+        service.sleep = Mock(side_effect=AssertionError("unexpected retry"))
+
+        with pytest.raises(
+            AutonomousStateBuildError,
+            match="SUCCESSOR_CLOCK_BINDING_MISMATCH",
+        ):
+            service.run_forever()
+
+    service.sleep.assert_not_called()
+
+
+def test_transient_failure_does_not_hide_alert_persistence_error(
+    tmp_path, monkeypatch
+):
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    with Database.open(tmp_path / "alert-persistence.sqlite3") as db:
+        service = make_service(db, clock, stop_after=2)
+        service._run_cycle = Mock(
+            side_effect=service_module.TransientBrokerStateBuildError(
+                "POSITIONS_FAILED:TimeoutError:tool_failed"
+            )
+        )
+
+        def fail_alert(*_args, **_kwargs):
+            raise sqlite3.DatabaseError("alert write failed")
+
+        monkeypatch.setattr(service_module, "_append_alert", fail_alert)
+
+        with pytest.raises(sqlite3.DatabaseError, match="alert write failed"):
+            service.run_forever()
+
+    assert clock.sleeps == []
 
 
 def test_model_substitution_fails_first_cycle_before_executor(tmp_path, monkeypatch):

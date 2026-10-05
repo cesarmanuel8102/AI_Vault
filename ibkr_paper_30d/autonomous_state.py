@@ -30,6 +30,10 @@ class AutonomousStateBuildError(RuntimeError):
     pass
 
 
+class TransientBrokerStateBuildError(AutonomousStateBuildError):
+    pass
+
+
 class AutonomousStateBuilder:
     """Build a fresh decision bundle from isolated experiment state + IBKR.
 
@@ -100,7 +104,19 @@ class AutonomousStateBuilder:
         )
         result = self.toolbox.execute(request, self._minimal_placeholder_bundle())
         if not result.success:
-            raise AutonomousStateBuildError(f"{tool.value}_FAILED:{result.error}")
+            message = f"{tool.value}_FAILED:{result.error}"
+            error_type = str(result.error or "").partition(":")[0]
+            if error_type in {
+                "TimeoutError",
+                "ConnectionError",
+                "ConnectionAbortedError",
+                "ConnectionRefusedError",
+                "ConnectionResetError",
+                "BrokenPipeError",
+                "OSError",
+            }:
+                raise TransientBrokerStateBuildError(message)
+            raise AutonomousStateBuildError(message)
         return result.data
 
     def _minimal_placeholder_bundle(self) -> TraderInputBundle:

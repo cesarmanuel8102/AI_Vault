@@ -751,6 +751,36 @@ def test_flat_runtime_request_missing_contract_fails_closed_without_broker_call(
     assert broker.what_if_calls == []
 
 
+def test_flat_runtime_request_accepts_canonical_nested_contract(monkeypatch):
+    broker = WhatIfOnlyBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id="feasibility-nested-contract",
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "action": "BUY",
+            "contract": {
+                "conId": 482880561,
+                "symbol": "GENI",
+                "secType": "STK",
+                "exchange": "SMART",
+                "currency": "USD",
+            },
+            "quantity": 40,
+            "order_type": "LMT",
+            "limit_price": 6.32,
+        },
+        purpose="accept canonical broker-resolved identity",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.success is True
+    assert broker.qualified_contracts[0].conId == 482880561
+    assert len(broker.what_if_calls) == 1
+
+
 def test_proposal_validation_what_if_uses_required_transmit_flag(monkeypatch):
     broker = WhatIfOnlyBroker()
     toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)

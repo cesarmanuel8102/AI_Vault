@@ -14,7 +14,10 @@ from typing import Any, Callable
 
 from .autonomous_research import CodexAutonomousCLIProvider
 from .autonomous_runtime import run_autonomous_cycle
-from .autonomous_state import AutonomousStateBuilder
+from .autonomous_state import (
+    AutonomousStateBuilder,
+    TransientBrokerStateBuildError,
+)
 from .autonomy_toolbox import AutonomyToolbox
 from .autonomy_workspace import AutonomyWorkspace
 from .canonical import canonical_bytes, sha256_json
@@ -56,6 +59,32 @@ class AutonomousServiceError(RuntimeError):
     ) -> None:
         super().__init__(message)
         self.reason_codes = reason_codes
+
+
+class RecoverableProviderInvocationError(RuntimeError):
+    pass
+
+
+def _is_recoverable_provider_failure(
+    exc: Exception,
+    failure_code: str | None,
+) -> bool:
+    code = str(failure_code or "")
+    if code == "TIMEOUT":
+        return isinstance(exc, TimeoutError)
+    if code.startswith("RETURN_CODE_"):
+        return (
+            isinstance(exc, RuntimeError)
+            and str(exc) == "AUTONOMOUS_CODEX_PROVIDER_FAILED"
+        )
+    if code == "OUTPUT_INVALID":
+        return (
+            isinstance(exc, RuntimeError)
+            and str(exc) == "AUTONOMOUS_CODEX_OUTPUT_INVALID"
+        )
+    if code == "ATTESTATION_INVALID_JSONL":
+        return isinstance(exc, RuntimeError) and str(exc).endswith(":invalid_jsonl")
+    return False
 
 
 OPERATIONAL_DECISIONS = frozenset(
@@ -507,6 +536,8 @@ class AutonomousExperimentService:
         execution_allowed = (
             self.execute_paper if allow_execution is None else bool(allow_execution)
         )
+        self.provider.last_failure_code = None
+        self.provider.last_failure_detail = None
         try:
             result = run_autonomous_cycle(
                 bundle,
@@ -530,7 +561,7 @@ class AutonomousExperimentService:
             )
         except Exception as exc:
             provider_failure_code = getattr(self.provider, "last_failure_code", None)
-            if provider_failure_code:
+            if _is_recoverable_provider_failure(exc, provider_failure_code):
                 provider_failure_detail = getattr(
                     self.provider, "last_failure_detail", None
                 )
@@ -549,6 +580,7 @@ class AutonomousExperimentService:
                         "provider_policy_visibility": "NOT_DIRECTLY_OBSERVABLE",
                     },
                 )
+                raise RecoverableProviderInvocationError(str(exc)) from exc
             raise
         outcome = result.get("outcome") or {}
         execution = result.get("execution")
@@ -953,27 +985,49 @@ class AutonomousExperimentService:
                     },
                 )
                 raise
+            except TransientBrokerStateBuildError as exc:
+                _append_alert(
+                    self.db,
+                    "RECOVERABLE_RUNTIME_ERROR",
+                    {
+                        "error_type": type(exc).__name__,
+                        "message": str(exc)[:500],
+                    },
+                )
+                retry_delay = min(
+                    self.position_interval_seconds,
+                    self.scan_interval_seconds,
+                )
+                self.sleep(retry_delay)
+                next_scan = self.monotonic()
+                next_position = self.monotonic()
+                continue
+            except RecoverableProviderInvocationError as exc:
+                _append_alert(
+                    self.db,
+                    "RECOVERABLE_RUNTIME_ERROR",
+                    {
+                        "error_type": type(exc).__name__,
+                        "message": str(exc)[:500],
+                    },
+                )
+                retry_delay = min(
+                    self.position_interval_seconds,
+                    self.scan_interval_seconds,
+                )
+                self.sleep(retry_delay)
+                next_scan = self.monotonic()
+                next_position = self.monotonic()
+                continue
             except Exception as exc:
-                try:
-                    _append_alert(
-                        self.db,
-                        "RECOVERABLE_RUNTIME_ERROR",
-                        {
-                            "error_type": type(exc).__name__,
-                            "message": str(exc)[:500],
-                        },
-                    )
-                except Exception:
-                    pass
-                if getattr(self.provider, "last_failure_code", None):
-                    retry_delay = min(
-                        self.position_interval_seconds,
-                        self.scan_interval_seconds,
-                    )
-                    self.sleep(retry_delay)
-                    next_scan = self.monotonic()
-                    next_position = self.monotonic()
-                    continue
+                _append_alert(
+                    self.db,
+                    "RECOVERABLE_RUNTIME_ERROR",
+                    {
+                        "error_type": type(exc).__name__,
+                        "message": str(exc)[:500],
+                    },
+                )
                 raise
 
 

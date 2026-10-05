@@ -5,6 +5,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 import pytest
+import ibkr_paper_30d.autonomous_state as state_module
 
 from ibkr_paper_30d.autonomous_research import ResearchResult, ResearchTool
 from ibkr_paper_30d.autonomous_state import (
@@ -58,6 +59,67 @@ class FakeMarketGate:
             "snapshot_id": "fake",
             "snapshot_sha256": "a" * 64,
         }
+
+
+def test_state_builder_classifies_transient_broker_read_failure():
+    class TimeoutToolbox:
+        def execute(self, request, bundle):
+            return ResearchResult(
+                request_id=request.request_id,
+                tool=request.tool,
+                success=False,
+                data={},
+                error="TimeoutError:tool_failed",
+            )
+
+    subject = object.__new__(AutonomousStateBuilder)
+    subject.toolbox = TimeoutToolbox()
+
+    with pytest.raises(
+        state_module.TransientBrokerStateBuildError,
+        match="POSITIONS_FAILED:TimeoutError:tool_failed",
+    ):
+        subject._tool(ResearchTool.POSITIONS)
+
+
+def test_state_builder_classifies_connection_subclass_as_transient():
+    class ConnectionFailureToolbox:
+        def execute(self, request, bundle):
+            return ResearchResult(
+                request_id=request.request_id,
+                tool=request.tool,
+                success=False,
+                data={},
+                error="ConnectionRefusedError:tool_failed",
+            )
+
+    subject = object.__new__(AutonomousStateBuilder)
+    subject.toolbox = ConnectionFailureToolbox()
+
+    with pytest.raises(state_module.TransientBrokerStateBuildError):
+        subject._tool(ResearchTool.POSITIONS)
+
+
+def test_state_builder_keeps_identity_failure_non_transient():
+    class IdentityFailureToolbox:
+        def execute(self, request, bundle):
+            return ResearchResult(
+                request_id=request.request_id,
+                tool=request.tool,
+                success=False,
+                data={},
+                error="PermissionError:tool_failed",
+            )
+
+    subject = object.__new__(AutonomousStateBuilder)
+    subject.toolbox = IdentityFailureToolbox()
+
+    with pytest.raises(AutonomousStateBuildError) as exc_info:
+        subject._tool(ResearchTool.POSITIONS)
+
+    assert not isinstance(
+        exc_info.value, state_module.TransientBrokerStateBuildError
+    )
 
 
 class FakeToolbox:

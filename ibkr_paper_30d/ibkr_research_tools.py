@@ -109,12 +109,22 @@ class IBKRResearchToolbox:
                 error=None if success else str(data.get("error") or "tool_failed"),
             )
         except Exception as exc:
+            if isinstance(exc, TimeoutError):
+                error_type = "TimeoutError"
+            elif isinstance(exc, ConnectionError):
+                error_type = "ConnectionError"
+            elif isinstance(exc, PermissionError):
+                error_type = "PermissionError"
+            elif isinstance(exc, OSError):
+                error_type = "OSError"
+            else:
+                error_type = type(exc).__name__
             return ResearchResult(
                 request_id=request.request_id,
                 tool=request.tool,
                 success=False,
                 data={},
-                error=f"{type(exc).__name__}:tool_failed",
+                error=f"{error_type}:tool_failed",
             )
 
     WARNING_BLOCK_TOKENS = (
@@ -859,10 +869,53 @@ class IBKRResearchToolbox:
             "multiplier": str(getattr(contract, "multiplier", "")),
         }
 
-    @staticmethod
-    def _contract_from_spec(spec: dict[str, Any]):
+    _CONTRACT_ARGUMENT_ALIASES = (
+        ("symbol",),
+        ("sec_type", "secType"),
+        ("exchange",),
+        ("currency",),
+        ("primary_exchange", "primaryExchange"),
+        ("expiry", "lastTradeDateOrContractMonth"),
+        ("strike",),
+        ("right",),
+        ("multiplier",),
+        ("conId", "con_id", "contract_id"),
+    )
+
+    @classmethod
+    def _normalized_contract_spec(cls, spec: dict[str, Any]) -> dict[str, Any]:
+        nested = spec.get("contract")
+        if nested is None:
+            return dict(spec)
+        if not isinstance(nested, dict):
+            raise ValueError("CONTRACT_ARGUMENT_OBJECT_REQUIRED")
+
+        outer = {key: value for key, value in spec.items() if key != "contract"}
+        for aliases in cls._CONTRACT_ARGUMENT_ALIASES:
+            values = [
+                mapping[key]
+                for mapping in (outer, nested)
+                for key in aliases
+                if key in mapping and mapping[key] not in (None, "")
+            ]
+            normalized_values = {
+                str(value).strip().upper() for value in values
+            }
+            if len(normalized_values) > 1:
+                raise ValueError("CONTRACT_ARGUMENT_IDENTITY_CONFLICT")
+        nested_contract = {
+            key: nested[key]
+            for aliases in cls._CONTRACT_ARGUMENT_ALIASES
+            for key in aliases
+            if key in nested
+        }
+        return {**outer, **nested_contract}
+
+    @classmethod
+    def _contract_from_spec(cls, spec: dict[str, Any]):
         from ib_insync import Contract
 
+        spec = cls._normalized_contract_spec(spec)
         sec_type = str(spec.get("sec_type") or spec.get("secType") or "STK").upper()
         contract = Contract(
             symbol=str(spec.get("symbol", "")).upper(),
@@ -870,10 +923,12 @@ class IBKRResearchToolbox:
             exchange=str(spec.get("exchange") or "SMART"),
             currency=str(spec.get("currency") or "USD"),
         )
-        if spec.get("primary_exchange"):
-            contract.primaryExchange = str(spec["primary_exchange"])
-        if spec.get("expiry"):
-            contract.lastTradeDateOrContractMonth = str(spec["expiry"])
+        primary_exchange = spec.get("primary_exchange") or spec.get("primaryExchange")
+        if primary_exchange:
+            contract.primaryExchange = str(primary_exchange)
+        expiry = spec.get("expiry") or spec.get("lastTradeDateOrContractMonth")
+        if expiry:
+            contract.lastTradeDateOrContractMonth = str(expiry)
         if spec.get("strike") is not None:
             contract.strike = float(spec["strike"])
         if spec.get("right"):
@@ -1258,6 +1313,21 @@ class IBKRResearchToolbox:
             proposal = AutonomousTradeProposal.model_validate(args["proposal"])
             return self._model_research_feasibility(
                 self._broker_feasibility(proposal)
+            )
+
+        try:
+            args = self._normalized_contract_spec(args)
+        except ValueError as exc:
+            return self._model_research_feasibility(
+                {
+                    "success": False,
+                    "error": "BROKER_FEASIBILITY_ARGUMENTS_INVALID",
+                    "error_type": type(exc).__name__,
+                    "error_code": str(exc),
+                    "stage": "REQUEST_VALIDATION",
+                    "whatIf": True,
+                    "paper_only": True,
+                }
             )
 
         validation_error = self._validate_flat_feasibility_args(args)
