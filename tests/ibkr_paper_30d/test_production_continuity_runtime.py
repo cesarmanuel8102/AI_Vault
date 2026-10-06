@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from datetime import datetime, timezone
 from decimal import Decimal
 from concurrent.futures import Future
+import hashlib
 
 import pytest
 
@@ -25,6 +26,7 @@ from ibkr_paper_30d.production_continuity_runtime import (
     ReadOnlyContinuityBroker,
     ProductionContinuityPoller,
     ProductionCriticalAlertReporter,
+    _ProductionSnapshotReader,
     build_ibkr_session_factory,
     validate_production_runtime_configuration,
     _verified_registry_binding,
@@ -33,9 +35,58 @@ from ibkr_paper_30d.production_continuity_runtime import (
     validate_production_composition,
 )
 from ibkr_paper_30d.production_authority import ProductionBrokerEvidence
+from production_epoch_v1_fixture import build_production_epoch_v1_fixture
 
 
 NOW = datetime(2026, 10, 1, 14, tzinfo=timezone.utc)
+
+
+def test_production_snapshot_accepts_anchored_legacy_epoch_history(tmp_path) -> None:
+    path = tmp_path / "production.sqlite3"
+    build_production_epoch_v1_fixture(path)
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+    receipt = tmp_path / "auditor.json"
+    policy = tmp_path / "market-policy.json"
+    validation = tmp_path / "market-validation.json"
+    for artifact in (receipt, policy, validation):
+        artifact.write_text("{}", encoding="utf-8")
+    artifact_sha256 = hashlib.sha256(b"{}").hexdigest()
+    account_hash = expected_identity_hash("DU123456")
+    broker = SimpleNamespace(
+        reqCurrentTime=lambda: NOW,
+        managedAccounts=lambda: ["DU123456"],
+        all_order_visibility=True,
+    )
+    _broker_evidence_collector(path)(
+        broker,
+        SimpleNamespace(),
+        {"open_orders": [], "positions": [], "executions": []},
+    )
+    config = SimpleNamespace(
+        target_successor_epoch_id=None,
+        initial_allocation=Decimal("500"),
+        repo_root=Path(__file__).parents[2],
+        auditor_receipt_path=receipt,
+        market_policy_path=policy,
+        market_validation_path=validation,
+    )
+    preflight = SimpleNamespace(
+        expected_account_hash=account_hash,
+        auditor_receipt_sha256=artifact_sha256,
+        market_policy_sha256=artifact_sha256,
+        market_validation_sha256=artifact_sha256,
+    )
+
+    snapshot = _ProductionSnapshotReader(
+        db_path=path,
+        config=config,
+        preflight=preflight,
+        execution_lock_verifier=lambda: True,
+    )(SimpleNamespace(accepted_result_sha256="a" * 64))
+
+    assert snapshot.authority_chains_valid is True
 
 
 class FakeIB:

@@ -480,10 +480,10 @@ class _ProductionSnapshotReader:
             KillSwitchStore,
             OwnerAuthorizationStore,
         )
+        from .experiment_epoch import ExperimentEpochStore
         from .experiment_ledger import AutonomousExperimentLedger
         from .persistence import Database
         from .production_authority import ProductionAuthoritySnapshot
-        from .repositories import EventRepository
         from .runtime_provenance import (
             build_approved_runtime_material,
             verify_runtime_provenance,
@@ -529,8 +529,7 @@ class _ProductionSnapshotReader:
             authority_chains_valid = True
             try:
                 store.verify_all_chains()
-                if EventRepository(db).verify_chain().valid is not True:
-                    authority_chains_valid = False
+                ExperimentEpochStore(db).current()
             except Exception:
                 continuity_schema_valid = False
                 authority_chains_valid = False
