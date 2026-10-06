@@ -1,0 +1,49 @@
+name: chatgpt-day1-writer-timeout-ci
+
+on:
+  push:
+    branches:
+      - chatgpt/day1-writer-timeout-fix
+
+jobs:
+  day1-writer-timeout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pytest-asyncio "pydantic>=2,<3" pydantic-settings sqlalchemy defusedxml tomli ibapi ib-insync
+
+      - name: Compile changed authority modules
+        run: |
+          python -m py_compile ibkr_paper_30d/authoritative_broker_writer.py
+          python -m py_compile ibkr_paper_30d/production_continuity_runtime.py
+
+      - name: Verify immutable kernel manifest
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from ibkr_paper_30d.kernel_manifest import verify_kernel_manifest
+          root = Path('.').resolve()
+          manifest = json.loads((root / 'IMMUTABLE_EXECUTION_KERNEL_MANIFEST.json').read_text(encoding='utf-8'))
+          result = verify_kernel_manifest(root, manifest)
+          print(result)
+          assert result['verified'] is True
+          PY
+
+      - name: Run focused writer and production runtime tests
+        run: |
+          pytest -q tests/ibkr_paper_30d/test_authoritative_broker_writer.py tests/ibkr_paper_30d/test_production_continuity_runtime.py
+
+      - name: Run full IBKR autonomous regression suite
+        run: |
+          pytest -q tests/ibkr_paper_30d
