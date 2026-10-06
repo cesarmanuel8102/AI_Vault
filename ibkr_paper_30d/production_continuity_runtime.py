@@ -23,6 +23,8 @@ from .ibkr_readonly import expected_identity_hash
 
 WRITER_CLIENT_ID = 19761
 OBSERVER_CLIENT_ID = 19762
+FINAL_AUTHORITY_CLIENT_ID = 19763
+BROKER_REQUEST_TIMEOUT_SECONDS = 15.0
 DEFAULT_SMTP_CONFIG = Path("Secrets/email_alerts.env")
 
 
@@ -48,11 +50,24 @@ def build_ibkr_session_factory(
     client_id: int,
     read_only: bool,
     ib_factory: Callable[[], Any] | None = None,
+    evidence_execution_client_id: int | None = None,
 ) -> Callable[[], Any]:
-    if client_id not in {WRITER_CLIENT_ID, OBSERVER_CLIENT_ID}:
+    client_modes = {
+        WRITER_CLIENT_ID: False,
+        OBSERVER_CLIENT_ID: True,
+        FINAL_AUTHORITY_CLIENT_ID: True,
+    }
+    if client_id not in client_modes:
         raise ProductionRuntimeConfigurationError("IBKR_CLIENT_ID_NOT_AUTHORIZED")
-    if read_only is not (client_id == OBSERVER_CLIENT_ID):
+    if read_only is not client_modes[client_id]:
         raise ProductionRuntimeConfigurationError("IBKR_CLIENT_MODE_MISMATCH")
+    if (
+        evidence_execution_client_id is not None
+        and client_id != FINAL_AUTHORITY_CLIENT_ID
+    ):
+        raise ProductionRuntimeConfigurationError(
+            "EVIDENCE_EXECUTION_FILTER_CLIENT_INVALID"
+        )
     if len(expected_account_hash) != 64:
         raise ProductionRuntimeConfigurationError("PAPER_ACCOUNT_HASH_INVALID")
 
@@ -78,9 +93,12 @@ def build_ibkr_session_factory(
                 raise PermissionError("SINGLE_PAPER_ACCOUNT_REQUIRED")
             if expected_identity_hash(accounts[0]) != expected_account_hash:
                 raise PermissionError("PAPER_ACCOUNT_IDENTITY_MISMATCH")
+            if hasattr(broker, "RequestTimeout"):
+                broker.RequestTimeout = BROKER_REQUEST_TIMEOUT_SECONDS
             broker.client_id = client_id
             broker.read_only = read_only
             broker.all_order_visibility = True
+            broker.evidence_execution_client_id = evidence_execution_client_id
             return broker
         except BaseException:
             try:
@@ -1035,6 +1053,16 @@ def create_authoritative_writer(
         client_id=WRITER_CLIENT_ID,
         read_only=False,
     )
+    def authority_session_factory() -> Any:
+        return build_ibkr_session_factory(
+            host=str(config.paper_host),
+            port=int(config.paper_port),
+            expected_account_hash=str(preflight.expected_account_hash),
+            client_id=FINAL_AUTHORITY_CLIENT_ID,
+            read_only=True,
+            evidence_execution_client_id=WRITER_CLIENT_ID,
+        )()
+
     lazy_engine = _LazyProductionModelEngine(db_path=Path(db_path), toolbox=toolbox)
     snapshot_reader = _ProductionSnapshotReader(
         db_path=Path(db_path),
@@ -1065,6 +1093,9 @@ def create_authoritative_writer(
         production_authority_validator=validator,
         production_broker_evidence_collector=_broker_evidence_collector(
             Path(db_path)
+        ),
+        authority_broker_factory=(
+            validation_broker_factory or authority_session_factory
         ),
         liability_evidence_collector=_collect_continuity_liability_evidence,
         resource_closer=lazy_engine.close,
