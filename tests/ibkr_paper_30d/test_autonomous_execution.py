@@ -666,6 +666,20 @@ class _RejectingContinuityBindingService:
         raise ContinuityBindingError("TEST_PERSISTENCE_FAILURE")
 
 
+class _RecordingContinuityBindingService:
+    def __init__(self):
+        self.pending = SimpleNamespace(plan_id="plan-pending")
+        self.stage_calls = 0
+        self.terminal_calls = []
+
+    def stage_new_order(self, *args, **kwargs):
+        self.stage_calls += 1
+        return self.pending
+
+    def terminate_pending_before_send(self, pending, *, reason_code):
+        self.terminal_calls.append((pending, reason_code))
+
+
 def test_writer_owned_mechanics_uses_injected_broker_without_connect_or_disconnect(
     tmp_path,
 ):
@@ -990,6 +1004,57 @@ def test_continuity_stage_failure_blocks_place_order(
         "CONTINUITY_BINDING_FAILED:TEST_PERSISTENCE_FAILURE",
     )
     assert binding_service.stage_calls == 1
+    assert toolbox.ib.place_calls == 0
+
+
+def test_final_authority_block_terminalizes_staged_binding_before_send(
+    tmp_path, continuity_plan_factory
+):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _PassUntilOperatorControlToolbox()
+    binding_service = _RecordingContinuityBindingService()
+    value = bundle().model_copy(
+        update={"continuity_context": {"authority_contract_required": True}}
+    )
+    plan = continuity_plan_factory(
+        invocation_id="inv-final-authority-block",
+        order_binding={
+            "binding_type": "NEW_PROPOSAL",
+            "order_ref": "codex-ibkr-paper-30d-a-final-block",
+            "ibkr_order_id": None,
+            "perm_id": None,
+            "original_order_state_sha256": None,
+            "proposal_sha256": sha256_json(proposal()),
+            "original_intent_sha256": sha256_json(proposal()),
+        },
+    )
+    with Database.open(tmp_path / "final-authority-block.sqlite3") as db:
+        mechanics = WriterOwnedModelExecutionMechanics(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+            continuity_binding_service=binding_service,
+        )
+        result = mechanics.execute_with_broker(
+            toolbox.ib,
+            proposal(),
+            value,
+            continuity_plan=plan,
+            invocation_id=plan.invocation_id,
+            final_write_authority_check=lambda: (
+                "BROKER_EVIDENCE_OPEN_ORDERS_TIMEOUT",
+            ),
+        )
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("BROKER_EVIDENCE_OPEN_ORDERS_TIMEOUT",)
+    assert binding_service.stage_calls == 1
+    assert binding_service.terminal_calls == [
+        (binding_service.pending, "BROKER_EVIDENCE_OPEN_ORDERS_TIMEOUT")
+    ]
     assert toolbox.ib.place_calls == 0
 
 

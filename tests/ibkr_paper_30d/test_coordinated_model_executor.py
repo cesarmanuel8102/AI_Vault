@@ -306,3 +306,53 @@ def test_blocked_model_wait_does_not_prevent_claiming_next_command() -> None:
     assert claimed_first.execution_key == "model-execution-1"
     assert claimed_second.execution_key == "model-execution-2"
     assert thread.is_alive() is False
+
+
+def test_proxy_timeout_marks_request_expired_before_write() -> None:
+    class NeverCompletes:
+        def __init__(self):
+            self.keys = []
+
+        def submit(self, request):
+            return Future()
+
+        def expire_before_write(self, execution_key):
+            self.keys.append(execution_key)
+            return True
+
+    coordinator = NeverCompletes()
+    result = _executor(coordinator, timeout=0.01).execute(_proposal(), _bundle())
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("MODEL_EXECUTION_WRITER_TIMEOUT_PRE_WRITE",)
+    assert len(coordinator.keys) == 1
+
+
+def test_proxy_timeout_after_write_boundary_is_uncertain() -> None:
+    class WriteAlreadyStarted:
+        def submit(self, request):
+            return Future()
+
+        def expire_before_write(self, execution_key):
+            return False
+
+    result = _executor(WriteAlreadyStarted(), timeout=0.01).execute(
+        _proposal(), _bundle()
+    )
+
+    assert result.status == "UNCERTAIN"
+    assert result.reason_codes == (
+        "MODEL_EXECUTION_WRITER_TIMEOUT_AFTER_WRITE_START",
+    )
+
+
+def test_coordinator_expiry_and_write_boundary_are_atomic() -> None:
+    before = BrokerWriteCoordinator()
+    assert before.expire_before_write("execution-1") is True
+    assert before.begin_write("execution-1") is False
+    assert before.is_execution_expired("execution-1") is True
+
+    after = BrokerWriteCoordinator()
+    assert after.begin_write("execution-2") is True
+    assert after.expire_before_write("execution-2") is False
+    assert after.is_execution_expired("execution-2") is False

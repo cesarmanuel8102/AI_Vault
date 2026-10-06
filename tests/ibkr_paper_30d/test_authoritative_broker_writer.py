@@ -158,6 +158,17 @@ class FakeGateway:
         self.disconnected = True
 
 
+class TimeoutAwareGateway(FakeGateway):
+    def __init__(self, client_id):
+        super().__init__(client_id)
+        self.RequestTimeout = None
+
+
+class OpenOrdersTimeoutGateway(FakeGateway):
+    def reqAllOpenOrders(self):
+        raise TimeoutError("simulated stalled IBKR request")
+
+
 class GatewayFactory:
     def __init__(self, **gateway_options):
         self.gateway_options = gateway_options
@@ -223,6 +234,53 @@ def test_writer_thread_owns_event_loop_for_real_broker_session():
         assert writer.stop(2)
 
     assert observed["loop"].is_closed() is True
+
+
+def test_writer_applies_bounded_timeout_to_broker_session():
+    factory = GatewayFactory()
+    factory.gateway_options = {}
+
+    def broker_factory(client_id):
+        gateway = TimeoutAwareGateway(client_id)
+        factory.gateway = gateway
+        return gateway
+
+    coordinator = BrokerWriteCoordinator()
+    writer = AuthoritativeBrokerWriter(
+        coordinator,
+        broker_factory=broker_factory,
+        execution_client_id=19761,
+        execution_lock_verifier=lambda: True,
+        authority_validator=lambda command, evidence: (),
+        broker_request_timeout_seconds=15,
+    )
+
+    writer.start()
+    try:
+        assert writer.wait_until_ready(2)
+        assert factory.gateway.RequestTimeout == 15.0
+    finally:
+        assert writer.stop(2)
+
+
+def test_open_orders_timeout_has_deterministic_reason_code():
+    coordinator = BrokerWriteCoordinator()
+    writer = AuthoritativeBrokerWriter(
+        coordinator,
+        broker_factory=lambda client_id: OpenOrdersTimeoutGateway(client_id),
+        execution_client_id=19761,
+        execution_lock_verifier=lambda: True,
+        authority_validator=lambda command, evidence: (),
+    )
+
+    decision, evidence, reasons = writer._production_authority_read(
+        request=_model_request(1, ModelExecutionOperation.NEW_TRADE),
+        broker=OpenOrdersTimeoutGateway(19761),
+    )
+
+    assert decision is None
+    assert evidence == {}
+    assert reasons == ("BROKER_EVIDENCE_OPEN_ORDERS_TIMEOUT",)
 
 
 def _model_request(sequence: int, operation: ModelExecutionOperation):
@@ -817,6 +875,88 @@ def test_model_final_what_if_precedes_final_authority_read_and_attempt():
         "write",
         "result",
     ]
+    assert coordinator.expire_before_write(request.execution_key) is False
+
+
+def test_request_expiring_during_final_broker_read_never_crosses_write_boundary():
+    events = []
+    request = _model_request(1, ModelExecutionOperation.NEW_TRADE)
+
+    def snapshot_reader(candidate):
+        return ProductionAuthoritySnapshot(
+            snapshot_id="authority-race",
+            observed_at_utc=datetime(2026, 10, 2, 14, tzinfo=timezone.utc),
+            lock_owned_by_process=True,
+            approved_head=request.approved_head,
+            runtime_provenance_valid=True,
+            environment="PAPER",
+            account_identity_sha256=request.account_identity_sha256,
+            owner_authorization_valid=True,
+            epoch_id=request.epoch_id,
+            clock_active=True,
+            kill_switch_clear=True,
+            auditor_gate_pass=True,
+            market_data_gate_pass=True,
+            continuity_schema_valid=True,
+            authority_chains_valid=True,
+            active_plan_sha256=None,
+            binding_plan_sha256=None,
+            provider_state_allows=True,
+            accepted_result_sha256=request.accepted_result_sha256,
+            review_allows=True,
+            execution_count=0,
+            maximum_execution_count=1,
+            used_execution_keys=(),
+            order_state_sha256="f" * 64,
+            positions_sha256="1" * 64,
+            executions_sha256="2" * 64,
+            experiment_capital_boundary="500",
+            sqlite_write_transaction_active=False,
+        )
+
+    class FinalGateEngine:
+        def execute(
+            self,
+            broker,
+            candidate,
+            authority_context,
+            final_write_authority_check=None,
+        ):
+            events.append("what_if")
+            reasons = tuple(final_write_authority_check())
+            if reasons:
+                return PaperExecutionResult(False, "BLOCKED", reasons, {}, {})
+            events.append("write")
+            return PaperExecutionResult(True, "SUBMITTED", (), {}, {})
+
+    validator = ProductionAuthorityValidator(snapshot_reader=snapshot_reader)
+    coordinator, writer, _ = _start_writer(
+        model_execution_engine=FinalGateEngine(),
+        attempt_persister=lambda candidate, evidence: events.append("attempt"),
+    )
+    calls = 0
+
+    def collect(broker, candidate, raw):
+        nonlocal calls
+        calls += 1
+        events.append(f"broker-{calls}")
+        if calls == 2:
+            assert coordinator.expire_before_write(request.execution_key) is True
+        return _production_broker_evidence(candidate)
+
+    writer.production_authority_validator = validator
+    writer.production_broker_evidence_collector = collect
+    writer.now_utc = lambda: datetime(2026, 10, 2, 14, tzinfo=timezone.utc)
+    try:
+        result = coordinator.submit(request).result(2)
+    finally:
+        writer.stop(2)
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("MODEL_EXECUTION_REQUEST_EXPIRED",)
+    assert "attempt" not in events
+    assert "write" not in events
+    assert coordinator.begin_write(request.execution_key) is False
 
 
 def test_capability_describe_is_connection_free():

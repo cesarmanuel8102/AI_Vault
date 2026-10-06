@@ -102,6 +102,36 @@ def test_stage_persists_registry_and_pending_plan_atomically(tmp_path, continuit
     assert plan.sha256 in plan_event[1]
 
 
+def test_pre_send_abort_terminalizes_pending_binding_append_only(
+    tmp_path, continuity_plan_factory
+) -> None:
+    plan = _new_plan(continuity_plan_factory)
+    with _open(tmp_path / "pre-send-abort.sqlite3") as db:
+        service = ContinuityBindingService(db, ContinuityStore(db))
+        pending = _stage(service, plan)
+
+        service.terminate_pending_before_send(
+            pending,
+            reason_code="BROKER_EVIDENCE_OPEN_ORDERS_TIMEOUT",
+        )
+
+        registry = db.execute(
+            "SELECT payload_json FROM experiment_order_registry ORDER BY sequence"
+        ).fetchall()
+        events = db.execute(
+            "SELECT event_type FROM continuity_plan_events ORDER BY sequence"
+        ).fetchall()
+        with pytest.raises(ContinuityBindingError, match="PENDING_BINDING_NOT_FOUND"):
+            service.pending_binding(plan.plan_id)
+
+    assert len(registry) == 2
+    assert '"continuity_state":"CONTINUITY_BIND_PENDING"' in registry[0][0]
+    assert '"continuity_state":"BIND_TERMINAL"' in registry[1][0]
+    assert '"status":"PRE_SEND_ABORTED"' in registry[1][0]
+    assert '"broker_write_attempted":false' in registry[1][0]
+    assert events == [("BIND_PENDING",), ("BIND_TERMINAL",)]
+
+
 def test_stage_failure_rolls_back_and_send_callback_is_never_called(
     tmp_path, continuity_plan_factory, monkeypatch
 ) -> None:

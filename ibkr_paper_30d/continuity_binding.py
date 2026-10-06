@@ -337,11 +337,73 @@ class ContinuityBindingService:
             active_event_sha256=active_hash,
         )
 
+    def terminate_pending_before_send(
+        self,
+        pending: PendingContinuityBinding,
+        *,
+        reason_code: str,
+    ) -> None:
+        """Close a staged binding when placeOrder was provably never invoked."""
+        plan = self._load_plan(pending.plan_id)
+        evidence = {
+            "broker_write_attempted": False,
+            "reason_code": str(reason_code),
+        }
+        payload = {
+            "schema": "EXPERIMENT_ORDER_REGISTRY_V3",
+            "lifecycle_event": "CONTINUITY_BIND_TERMINAL",
+            "continuity_state": "BIND_TERMINAL",
+            "plan_id": pending.plan_id,
+            "plan_sha256": pending.plan_sha256,
+            "attempt_id": pending.attempt_id,
+            "order_ref": pending.order_ref,
+            "client_order_id": pending.client_order_id,
+            "perm_id": 0,
+            "ibkr_order_id": pending.client_order_id,
+            "contract_id": int(pending.contract_identity.get("conId") or 0),
+            "action": pending.action,
+            "quantity": pending.quantity,
+            "execution_client_id": pending.execution_client_id,
+            "account": pending.account,
+            "contract": pending.contract_identity,
+            "order_type": pending.order_type,
+            "routing": pending.routing,
+            "status": "PRE_SEND_ABORTED",
+            "recovery_evidence": evidence,
+            "created_at_utc": utc_now(),
+        }
+        event_id = (
+            f"continuity-bind-terminal:{pending.plan_id}:"
+            f"{pending.attempt_id}:PRE_SEND_ABORTED"
+        )
+        with self.db.transaction():
+            append_order_registry_event(self.db, payload)
+            self.store._append(
+                table="continuity_plan_events",
+                event_id=event_id,
+                stream_column="order_ref",
+                stream_id=pending.order_ref,
+                event_type="BIND_TERMINAL",
+                payload=self._plan_payload(
+                    plan,
+                    {
+                        "pending_event_sha256": pending.pending_event_sha256,
+                        "attempt_id": pending.attempt_id,
+                        "status": "PRE_SEND_ABORTED",
+                        "evidence_sha256": sha256_json(evidence),
+                    },
+                ),
+                identity_columns={
+                    "plan_id": pending.plan_id,
+                    "order_ref": pending.order_ref,
+                },
+                expected_previous_event_sha256=pending.pending_event_sha256,
+            )
+
     def pending_binding(self, plan_id: str) -> PendingContinuityBinding:
         row = self.db.execute(
             "SELECT payload_json,payload_sha256 FROM experiment_order_registry "
             "WHERE json_extract(payload_json,'$.plan_id')=? "
-            "AND json_extract(payload_json,'$.continuity_state')='CONTINUITY_BIND_PENDING' "
             "ORDER BY sequence DESC LIMIT 1",
             (plan_id,),
         ).fetchone()
@@ -350,6 +412,8 @@ class ContinuityBindingService:
         payload = json.loads(str(row[0]))
         if sha256_json(payload) != str(row[1]):
             raise ContinuityBindingError("REGISTRY_HASH_MISMATCH")
+        if payload.get("continuity_state") != "CONTINUITY_BIND_PENDING":
+            raise ContinuityBindingError("PENDING_BINDING_NOT_FOUND")
         verified = self.store._verified_rows(
             "continuity_plan_events", "order_ref", str(payload["order_ref"])
         )

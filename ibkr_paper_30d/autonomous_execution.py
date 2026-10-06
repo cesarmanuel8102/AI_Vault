@@ -1357,6 +1357,19 @@ class WriterOwnedModelExecutionMechanics:
                     )
             final_authority_reasons = self._final_write_authority_reasons()
             if final_authority_reasons:
+                if pending_binding is not None:
+                    assert self.continuity_binding_service is not None
+                    try:
+                        self.continuity_binding_service.terminate_pending_before_send(
+                            pending_binding,
+                            reason_code=final_authority_reasons[0],
+                        )
+                    except Exception as exc:
+                        final_authority_reasons = (
+                            *final_authority_reasons,
+                            "CONTINUITY_PRE_SEND_TERMINALIZATION_FAILED:"
+                            f"{type(exc).__name__}",
+                        )
                 return PaperExecutionResult(
                     success=False,
                     status="BLOCKED",

@@ -126,6 +126,8 @@ class BrokerWriteCoordinator:
         self._lock = threading.Lock()
         self._execution_keys: dict[str, tuple[str, Future]] = {}
         self._last_durable_sequence = 0
+        self._expired_execution_keys: set[str] = set()
+        self._write_started_execution_keys: set[str] = set()
 
     def attach_writer(self) -> _WriterCapability:
         with self._lock:
@@ -185,6 +187,26 @@ class BrokerWriteCoordinator:
         except queue.Empty:
             return None
         return command, future
+
+    def expire_before_write(self, execution_key: str) -> bool:
+        """Expire a request atomically only while no broker write may start."""
+        with self._lock:
+            if execution_key in self._write_started_execution_keys:
+                return False
+            self._expired_execution_keys.add(execution_key)
+            return True
+
+    def is_execution_expired(self, execution_key: str) -> bool:
+        with self._lock:
+            return execution_key in self._expired_execution_keys
+
+    def begin_write(self, execution_key: str) -> bool:
+        """Cross the pre-write boundary unless the caller already expired it."""
+        with self._lock:
+            if execution_key in self._expired_execution_keys:
+                return False
+            self._write_started_execution_keys.add(execution_key)
+            return True
 
     def task_done(self, capability: _WriterCapability) -> None:
         if capability is not self._capability:

@@ -51,6 +51,7 @@ from ibkr_paper_30d.market_data import DecisionClass
 from ibkr_paper_30d.market_observation_collector import (
     MARKET_OBSERVATION_COLLECTOR_VERSION,
 )
+from ibkr_paper_30d.open_order_management import append_order_registry_event
 from ibkr_paper_30d.owner_authorization import (
     OWNER_PHRASE,
     create_owner_authorization,
@@ -74,6 +75,78 @@ OWNER_SID = "S-1-5-21-test-owner"
 ACCOUNT_HASH = "a" * 64
 ATTEMPT_ID = "11111111-1111-4111-8111-111111111111"
 NOW = datetime(2026, 9, 23, 20, 0, tzinfo=timezone.utc)
+
+
+def _registry_state_payload(plan_id: str, continuity_state: str, sequence: int):
+    return {
+        "schema": "EXPERIMENT_ORDER_REGISTRY_V3",
+        "lifecycle_event": (
+            "ISSUED_PRE_SEND"
+            if continuity_state == "CONTINUITY_BIND_PENDING"
+            else "CONTINUITY_BIND_TERMINAL"
+        ),
+        "continuity_state": continuity_state,
+        "plan_id": plan_id,
+        "order_ref": f"order-{plan_id}",
+        "client_order_id": sequence,
+        "perm_id": 0,
+        "ibkr_order_id": sequence,
+        "contract_id": 1,
+        "action": "BUY",
+        "quantity": "1",
+        "created_at_utc": f"2026-10-06T20:00:{sequence:02d}Z",
+    }
+
+
+def test_pending_recovery_uses_latest_registry_state_per_plan(tmp_path) -> None:
+    with Database.open(tmp_path / "latest-state.sqlite3") as db:
+        append_order_registry_event(
+            db, _registry_state_payload("closed-plan", "CONTINUITY_BIND_PENDING", 1)
+        )
+        append_order_registry_event(
+            db, _registry_state_payload("closed-plan", "BIND_TERMINAL", 2)
+        )
+        result = launch_module._default_pending_binding_recovery(db, None, None)
+
+    assert result == {
+        "status": "PASS",
+        "reason_codes": [],
+        "pending_plan_ids": [],
+    }
+
+
+def test_pending_recovery_rejects_corrupt_latest_registry_state(tmp_path) -> None:
+    with Database.open(tmp_path / "corrupt-latest-state.sqlite3") as db:
+        append_order_registry_event(
+            db, _registry_state_payload("hidden-plan", "CONTINUITY_BIND_PENDING", 1)
+        )
+        terminal = _registry_state_payload("hidden-plan", "BIND_TERMINAL", 2)
+        db.execute(
+            "INSERT INTO experiment_order_registry("
+            "registry_id,order_ref,client_order_id,perm_id,ibkr_order_id,"
+            "contract_id,action,quantity,payload_json,payload_sha256,created_at_utc"
+            ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                "corrupt-terminal-registry-id",
+                terminal["order_ref"],
+                terminal["client_order_id"],
+                terminal["perm_id"],
+                terminal["ibkr_order_id"],
+                terminal["contract_id"],
+                terminal["action"],
+                terminal["quantity"],
+                canonical_bytes(terminal).decode("utf-8"),
+                "0" * 64,
+                terminal["created_at_utc"],
+            ),
+        )
+        result = launch_module._default_pending_binding_recovery(db, None, None)
+
+    assert result == {
+        "status": "BLOCK",
+        "reason_codes": ["PENDING_BINDING_REGISTRY_CORRUPT"],
+        "pending_plan_ids": [],
+    }
 
 
 class ExecutorTripwire:

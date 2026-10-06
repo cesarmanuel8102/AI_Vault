@@ -31,6 +31,12 @@ from .production_authority import (
 )
 
 
+class BrokerEvidenceTimeout(TimeoutError):
+    def __init__(self, reason_code: str) -> None:
+        self.reason_code = reason_code
+        super().__init__(reason_code)
+
+
 class AuthoritativeBrokerWriter:
     def __init__(
         self,
@@ -64,6 +70,7 @@ class AuthoritativeBrokerWriter:
         now_utc: Callable[[], datetime] | None = None,
         resource_closer: Callable[[], None] | None = None,
         uncertainty_reporter: Callable[[str], None] | None = None,
+        broker_request_timeout_seconds: float = 15.0,
     ) -> None:
         self.coordinator = coordinator
         self.broker_factory = broker_factory
@@ -84,6 +91,9 @@ class AuthoritativeBrokerWriter:
         self.now_utc = now_utc or (lambda: datetime.now(timezone.utc))
         self.resource_closer = resource_closer or (lambda: None)
         self.uncertainty_reporter = uncertainty_reporter or (lambda code: None)
+        if broker_request_timeout_seconds <= 0 or broker_request_timeout_seconds > 60:
+            raise ValueError("broker_request_timeout_seconds must be in (0, 60]")
+        self.broker_request_timeout_seconds = float(broker_request_timeout_seconds)
         self._capability = None
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
@@ -147,6 +157,8 @@ class AuthoritativeBrokerWriter:
         try:
             try:
                 broker = self.broker_factory(self.execution_client_id)
+                if hasattr(broker, "RequestTimeout"):
+                    broker.RequestTimeout = self.broker_request_timeout_seconds
             except BaseException as exc:
                 self._startup_error = exc
                 self._ready.set()
@@ -191,12 +203,21 @@ class AuthoritativeBrokerWriter:
             asyncio.set_event_loop(None)
             event_loop.close()
 
+    @staticmethod
+    def _broker_list_read(stage: str, call: Callable[[], Any]) -> list[Any]:
+        try:
+            return list(call())
+        except TimeoutError as exc:
+            raise BrokerEvidenceTimeout(
+                f"BROKER_EVIDENCE_{stage}_TIMEOUT"
+            ) from exc
+
     def _collect_evidence(self, broker: Any) -> dict[str, Any]:
         if getattr(broker, "all_order_visibility", True) is not True:
             raise PermissionError("ALL_ORDER_VISIBILITY_UNCERTAIN")
-        trades = list(broker.reqAllOpenOrders())
-        executions = list(broker.reqExecutions())
-        positions = list(broker.positions())
+        trades = self._broker_list_read("OPEN_ORDERS", broker.reqAllOpenOrders)
+        executions = self._broker_list_read("EXECUTIONS", broker.reqExecutions)
+        positions = self._broker_list_read("POSITIONS", broker.positions)
         return {
             "trades": trades,
             "open_orders": [canonical_open_order(item) for item in trades],
@@ -236,6 +257,8 @@ class AuthoritativeBrokerWriter:
 
         try:
             evidence = self._collect_evidence(broker)
+        except BrokerEvidenceTimeout as exc:
+            return None, {}, (exc.reason_code,)
         except Exception as exc:
             return (
                 None,
@@ -346,6 +369,8 @@ class AuthoritativeBrokerWriter:
         def final_write_authority_check() -> tuple[str, ...]:
             nonlocal decision, evidence, final_gate_invoked
             final_gate_invoked = True
+            if self.coordinator.is_execution_expired(request.execution_key):
+                return ("MODEL_EXECUTION_REQUEST_EXPIRED",)
             final_decision, final_evidence, final_reasons = (
                 self._production_authority_read(
                     request=request,
@@ -355,6 +380,8 @@ class AuthoritativeBrokerWriter:
                     ),
                 )
             )
+            if self.coordinator.is_execution_expired(request.execution_key):
+                return ("MODEL_EXECUTION_REQUEST_EXPIRED",)
             decision = final_decision
             evidence = {
                 **final_evidence,
@@ -367,10 +394,14 @@ class AuthoritativeBrokerWriter:
             legacy_reasons = tuple(self.authority_validator(request, evidence))
             if legacy_reasons:
                 return legacy_reasons
+            if self.coordinator.is_execution_expired(request.execution_key):
+                return ("MODEL_EXECUTION_REQUEST_EXPIRED",)
             try:
                 self.attempt_persister(request, evidence)
             except Exception:
                 return ("MODEL_ATTEMPT_PERSISTENCE_FAILED",)
+            if not self.coordinator.begin_write(request.execution_key):
+                return ("MODEL_EXECUTION_REQUEST_EXPIRED",)
             return ()
 
         if self.production_authority_validator is None:

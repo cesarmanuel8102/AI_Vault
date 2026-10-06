@@ -1775,12 +1775,29 @@ def _default_pending_binding_recovery(
     db: Database, config: Day1LaunchConfig, preflight: LaunchPreflight
 ) -> dict[str, Any]:
     rows = db.execute(
-        "SELECT DISTINCT json_extract(payload_json,'$.plan_id') "
-        "FROM experiment_order_registry "
-        "WHERE json_extract(payload_json,'$.continuity_state')="
-        "'CONTINUITY_BIND_PENDING'"
+        "SELECT payload_json,payload_sha256 "
+        "FROM experiment_order_registry ORDER BY sequence"
     ).fetchall()
-    pending = [str(row[0]) for row in rows if row[0]]
+    latest_by_plan: dict[str, dict[str, Any]] = {}
+    try:
+        for payload_json, payload_sha256 in rows:
+            payload = json.loads(str(payload_json))
+            if sha256_json(payload) != str(payload_sha256):
+                raise ValueError("registry hash mismatch")
+            plan_id = str(payload.get("plan_id") or "")
+            if plan_id:
+                latest_by_plan[plan_id] = payload
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return {
+            "status": "BLOCK",
+            "reason_codes": ["PENDING_BINDING_REGISTRY_CORRUPT"],
+            "pending_plan_ids": [],
+        }
+    pending = [
+        plan_id
+        for plan_id, payload in latest_by_plan.items()
+        if payload.get("continuity_state") == "CONTINUITY_BIND_PENDING"
+    ]
     return {
         "status": "PASS" if not pending else "BLOCK",
         "reason_codes": (
