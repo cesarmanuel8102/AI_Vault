@@ -29,8 +29,10 @@ from ibkr_paper_30d.production_continuity_runtime import (
     validate_production_runtime_configuration,
     _verified_registry_binding,
     _collect_continuity_liability_evidence,
+    _broker_evidence_collector,
     validate_production_composition,
 )
+from ibkr_paper_30d.production_authority import ProductionBrokerEvidence
 
 
 NOW = datetime(2026, 10, 1, 14, tzinfo=timezone.utc)
@@ -52,6 +54,35 @@ class FakeIB:
 
     def disconnect(self):
         self.disconnected = True
+
+
+def test_broker_evidence_collector_returns_typed_evidence_and_persists_schema(
+    tmp_path,
+) -> None:
+    path = tmp_path / "authority.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+
+    broker = SimpleNamespace(
+        reqCurrentTime=lambda: NOW,
+        managedAccounts=lambda: ["DU123456"],
+        all_order_visibility=True,
+    )
+    evidence = _broker_evidence_collector(path)(
+        broker,
+        SimpleNamespace(),
+        {"open_orders": [], "positions": [], "executions": []},
+    )
+
+    assert isinstance(evidence, ProductionBrokerEvidence)
+    assert evidence.account_identity_sha256 == expected_identity_hash("DU123456")
+    with Database.open(path) as db:
+        payload = db.execute(
+            "SELECT payload_json FROM state_events "
+            "WHERE event_type='BROKER_AUTHORITY_OBSERVATION_V1'"
+        ).fetchone()[0]
+    assert '"schema":"BROKER_AUTHORITY_OBSERVATION_V1"' in payload
 
 
 def test_default_day1_dependencies_have_concrete_continuity_factories() -> None:

@@ -695,7 +695,6 @@ def _broker_evidence_collector(db_path: Path) -> Callable[..., Any]:
                 raise RuntimeError("TARGET_ORDER_IDENTITY_UNCERTAIN")
             target_hash = str(matching[0]["state_sha256"])
         body = {
-            "schema": "BROKER_AUTHORITY_OBSERVATION_V1",
             "evidence_id": f"broker-{sha256_json([collected, open_hash])[:24]}",
             "collected_at_utc": collected,
             "broker_time_utc": broker_time,
@@ -708,8 +707,9 @@ def _broker_evidence_collector(db_path: Path) -> Callable[..., Any]:
             "executions_sha256": executions_hash,
             "target_order_state_sha256": target_hash,
         }
-        evidence_sha256 = sha256_json(body)
-        payload = {**body, "evidence_sha256": evidence_sha256}
+        persisted_body = {"schema": "BROKER_AUTHORITY_OBSERVATION_V1", **body}
+        evidence_sha256 = sha256_json(persisted_body)
+        payload = {**persisted_body, "evidence_sha256": evidence_sha256}
         with Database.open(db_path) as db, db.transaction():
             EventRepository(db).append("BROKER_AUTHORITY_OBSERVATION_V1", payload)
         return ProductionBrokerEvidence(
