@@ -241,6 +241,22 @@ class AutonomousTurn(BaseModel, frozen=True):
                     or self.open_order_action is not None
                 ):
                     raise ValueError("PROPOSE_TRADE requires proposal only")
+                if (
+                    self.continuity_plan is not None
+                    and self.continuity_plan.order_binding.binding_type
+                    == OrderBindingType.NEW_PROPOSAL
+                ):
+                    proposal_sha256 = sha256_json(self.proposal)
+                    binding = self.continuity_plan.order_binding
+                    if (
+                        binding.proposal_sha256 != proposal_sha256
+                        or binding.original_intent_sha256 != proposal_sha256
+                    ):
+                        raise ValueError(
+                            "NEW_PROPOSAL proposal_sha256 and "
+                            "original_intent_sha256 must equal canonical proposal "
+                            f"SHA-256 {proposal_sha256}"
+                        )
             elif self.decision in {TraderDecision.REDUCE_POSITION, TraderDecision.CLOSE_POSITION}:
                 if (
                     self.position_action is None
@@ -666,7 +682,10 @@ class CodexAutonomousCLIProvider:
                     "activation, expiry, finite conditions, exact actions, unavailable-evidence "
                     "behavior, and terminal disposition. Copy host_provenance_bindings exactly; "
                     "do not calculate, infer, or invent those values. The host independently "
-                    "verifies every binding."
+                    "verifies every binding. For a NEW_PROPOSAL, set order_binding."
+                    "proposal_sha256 and order_binding.original_intent_sha256 to the "
+                    "same canonical sha256_json of the complete proposal; do not hash "
+                    "an order subset or use different values."
                 ),
             },
             "continuity_authority": bundle.continuity_context,

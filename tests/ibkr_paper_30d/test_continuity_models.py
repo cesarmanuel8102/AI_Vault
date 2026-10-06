@@ -313,6 +313,22 @@ def test_new_order_binding_requires_proposal_hash() -> None:
         ContinuityOrderBinding.model_validate(new_order)
 
 
+def test_new_order_binding_requires_one_identical_intent_hash() -> None:
+    existing = _valid_plan()["order_binding"]
+    new_order = {
+        **existing,
+        "binding_type": "NEW_PROPOSAL",
+        "proposal_sha256": HASH_B,
+        "original_intent_sha256": HASH_C,
+        "ibkr_order_id": None,
+        "perm_id": None,
+        "original_order_state_sha256": None,
+    }
+
+    with pytest.raises(ValidationError, match="must equal proposal_sha256"):
+        ContinuityOrderBinding.model_validate(new_order)
+
+
 @pytest.mark.parametrize(
     ("tif", "good_till"),
     [("GTD", None), ("DAY", NOW + timedelta(hours=1))],

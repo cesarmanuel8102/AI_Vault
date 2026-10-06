@@ -177,6 +177,9 @@ def test_prompt_exposes_host_derived_continuity_provenance_bindings() -> None:
     assert payload["continuity_contract"]["host_verifies_bindings"] is True
     assert "copy" in payload["output_contract"]["continuity_instruction"].lower()
     assert "do not calculate" in payload["output_contract"]["continuity_instruction"].lower()
+    assert "proposal_sha256" in payload["output_contract"]["continuity_instruction"]
+    assert "original_intent_sha256" in payload["output_contract"]["continuity_instruction"]
+    assert "same canonical sha256" in payload["output_contract"]["continuity_instruction"].lower()
 
 
 def test_provider_repairs_wrong_host_attestation_before_returning_turn(
@@ -374,6 +377,126 @@ def test_provider_repairs_missing_required_plan_without_changing_proposal(
         error["message"] == "CONTINUITY_PLAN_REQUIRED"
         for error in prompts[1]["semantic_repair"]["validation_errors"]
     )
+
+
+def test_provider_repairs_equal_but_wrong_new_proposal_hashes(
+    continuity_plan_factory,
+) -> None:
+    value = bundle().model_copy(
+        update={
+            "continuity_context": {
+                "authority_contract_required": True,
+                "epoch_id": "AUTONOMY_EPOCH_2",
+                "definition_sha256": "c" * 64,
+                "clock_event_sha256": "d" * 64,
+                "owner_authorization_sha256": "e" * 64,
+            }
+        }
+    )
+    invocation = request(value)
+    proposal = AutonomousTradeProposal(
+        thesis="Autonomously discovered asymmetric opportunity",
+        catalyst="Fresh catalyst",
+        symbol="PCVX",
+        sec_type="STK",
+        direction="LONG",
+        action="BUY",
+        quantity="4",
+        order_type="MKT",
+        capital_required="295.60",
+        maximum_loss="295.60",
+        loss_is_bounded=True,
+        probability_profit="0.55",
+        probability_loss="0.45",
+        expected_gain="60.00",
+        expected_loss="40.00",
+        expected_value="15.00",
+        expected_reward_risk="1.50",
+        expected_holding_period="1-5 days",
+        entry_condition="Thesis remains intact",
+        invalidation_condition="Catalyst invalidates",
+        exit_plan="Exit when the thesis changes",
+        why_now="Current evidence supports entry",
+        alternatives_considered=["cash"],
+        evidence_used=["quote", "news"],
+        disconfirming_evidence=["event risk"],
+        confidence="0.72",
+    )
+    proposal_sha = sha256_json(proposal)
+    correct_plan = continuity_plan_factory(
+        decision_cycle_id=invocation.decision_cycle_id,
+        invocation_id=invocation.invocation_id,
+        input_bundle_sha256=value.sha256,
+        created_by_model=invocation.actual_model,
+        model_attestation_sha256=sha256_json(
+            {"actual_model": invocation.actual_model}
+        ),
+        order_binding={
+            "binding_type": "NEW_PROPOSAL",
+            "ibkr_order_id": None,
+            "perm_id": None,
+            "original_order_state_sha256": None,
+            "proposal_sha256": proposal_sha,
+            "original_intent_sha256": proposal_sha,
+        },
+    )
+    wrong_plan = correct_plan.model_copy(
+        update={
+            "order_binding": correct_plan.order_binding.model_copy(
+                update={
+                    "proposal_sha256": "f" * 64,
+                    "original_intent_sha256": "f" * 64,
+                }
+            )
+        }
+    )
+    prompts = []
+
+    def runner(command, **kwargs):
+        prompts.append(json.loads(kwargs["input"]))
+        output_path = command[command.index("--output-last-message") + 1]
+        selected_plan = wrong_plan if len(prompts) == 1 else correct_plan
+        Path(output_path).write_text(
+            json.dumps(
+                {
+                    "mode": "FINAL",
+                    "research_requests": [],
+                    "decision": "PROPOSE_TRADE",
+                    "proposal": proposal.model_dump(mode="json"),
+                    "position_action": None,
+                    "open_order_action": None,
+                    "confidence": "0.72",
+                    "reasoning_summary": "The proposal remains preferred.",
+                    "reason_codes": ["EDGE_FOUND"],
+                    "continuity_plan": selected_plan.model_dump(mode="json"),
+                    "continuity_reviews": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        stdout = "\n".join(
+            [
+                json.dumps({"type": "thread.started", "thread_id": "t"}),
+                json.dumps({"type": "turn.completed"}),
+            ]
+        )
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    provider = CodexAutonomousCLIProvider(
+        runner=runner,
+        owner_model_attestation_exception_sha256="e" * 64,
+    )
+
+    turn = provider.next_turn(invocation, value, [], [])
+
+    assert turn.proposal == proposal
+    assert turn.continuity_plan == correct_plan
+    assert len(prompts) == 2
+    messages = [
+        error["message"]
+        for error in prompts[1]["semantic_repair"]["validation_errors"]
+    ]
+    assert any(proposal_sha in message for message in messages)
 
 
 def test_strict_schema_has_no_untyped_anyof_branches() -> None:

@@ -405,6 +405,10 @@ class ContinuityOrderBinding(BaseModel, frozen=True):
         if self.binding_type == OrderBindingType.NEW_PROPOSAL:
             if self.proposal_sha256 is None:
                 raise ValueError("NEW_PROPOSAL requires proposal_sha256")
+            if self.original_intent_sha256 != self.proposal_sha256:
+                raise ValueError(
+                    "NEW_PROPOSAL original_intent_sha256 must equal proposal_sha256"
+                )
             if any(value is not None for value in (self.ibkr_order_id, self.perm_id)):
                 raise ValueError("NEW_PROPOSAL cannot claim broker-bound identifiers")
         else:
