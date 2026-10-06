@@ -21,6 +21,8 @@ from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 from ibkr_paper_30d.experiment_control import KillSwitchStore
 from ibkr_paper_30d.production_continuity_runtime import (
     OBSERVER_CLIENT_ID,
+    FINAL_AUTHORITY_CLIENT_ID,
+    BROKER_REQUEST_TIMEOUT_SECONDS,
     WRITER_CLIENT_ID,
     ProductionRuntimeConfigurationError,
     ReadOnlyContinuityBroker,
@@ -93,6 +95,7 @@ class FakeIB:
     def __init__(self) -> None:
         self.connect_calls = []
         self.disconnected = False
+        self.RequestTimeout = 0
 
     def connect(self, host, port, **kwargs):
         self.connect_calls.append((host, port, kwargs))
@@ -149,7 +152,11 @@ def test_default_day1_dependencies_have_concrete_continuity_factories() -> None:
 
 @pytest.mark.parametrize(
     ("client_id", "read_only"),
-    [(WRITER_CLIENT_ID, False), (OBSERVER_CLIENT_ID, True)],
+    [
+        (WRITER_CLIENT_ID, False),
+        (OBSERVER_CLIENT_ID, True),
+        (FINAL_AUTHORITY_CLIENT_ID, True),
+    ],
 )
 def test_ibkr_session_factory_binds_exact_client_and_readonly_mode(
     client_id, read_only
@@ -169,6 +176,7 @@ def test_ibkr_session_factory_binds_exact_client_and_readonly_mode(
     assert broker.client_id == client_id
     assert broker.read_only is read_only
     assert broker.all_order_visibility is True
+    assert broker.RequestTimeout == BROKER_REQUEST_TIMEOUT_SECONDS
     assert created[0].connect_calls == [
         (
             "127.0.0.1",
@@ -176,6 +184,26 @@ def test_ibkr_session_factory_binds_exact_client_and_readonly_mode(
             {"clientId": client_id, "timeout": 20.0, "readonly": read_only},
         )
     ]
+
+
+def test_final_authority_session_binds_writer_execution_filter() -> None:
+    created = []
+    factory = build_ibkr_session_factory(
+        host="127.0.0.1",
+        port=4002,
+        expected_account_hash=expected_identity_hash("DU123456"),
+        client_id=FINAL_AUTHORITY_CLIENT_ID,
+        read_only=True,
+        evidence_execution_client_id=WRITER_CLIENT_ID,
+        ib_factory=lambda: created.append(FakeIB()) or created[-1],
+    )
+
+    broker = factory()
+
+    assert broker.client_id == FINAL_AUTHORITY_CLIENT_ID
+    assert broker.read_only is True
+    assert broker.evidence_execution_client_id == WRITER_CLIENT_ID
+    assert broker.RequestTimeout == BROKER_REQUEST_TIMEOUT_SECONDS
 
 
 def test_missing_external_alert_configuration_fails_with_exact_reason(tmp_path) -> None:
