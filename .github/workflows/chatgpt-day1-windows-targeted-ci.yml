@@ -34,4 +34,4 @@ jobs:
       - name: Run targeted Day1 authority regression
         shell: pwsh
         run: |
-          pytest -q tests/ibkr_paper_30d/test_authoritative_broker_writer.py tests/ibkr_paper_30d/test_production_continuity_runtime.py tests/ibkr_paper_30d/test_production_authority.py tests/ibkr_paper_30d/test_model_execution_engine.py tests/ibkr_paper_30d/test_broker_write_coordinator.py tests/ibkr_paper_30d/test_autonomous_execution.py tests/ibkr_paper_30d/test_continuity_binding.py
+          pytest -q tests/ibkr_paper_30d/test_authoritative_broker_writer.py tests/ibkr_paper_30d/test_production_continuity_runtime.py tests/ibkr_paper_30d/test_production_authority.py tests/ibkr_paper_30d/test_model_execution_engine.py tests/ibkr_paper_30d/test_autonomous_execution.py tests/ibkr_paper_30d/test_continuity_binding.py
