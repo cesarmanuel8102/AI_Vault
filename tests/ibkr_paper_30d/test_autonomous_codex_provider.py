@@ -175,10 +175,17 @@ def test_prompt_exposes_host_derived_continuity_provenance_bindings() -> None:
         "MODIFY_ORDER",
     ]
     assert payload["continuity_contract"]["host_verifies_bindings"] is True
+    assert payload["continuity_contract"]["host_new_proposal_bindings"] == {
+        "order_ref": (
+            "codex-ibkr-paper-30d-a-"
+            f"{invocation.decision_cycle_id[-12:]}"
+        ),
+    }
     assert "copy" in payload["output_contract"]["continuity_instruction"].lower()
     assert "do not calculate" in payload["output_contract"]["continuity_instruction"].lower()
     assert "proposal_sha256" in payload["output_contract"]["continuity_instruction"]
     assert "original_intent_sha256" in payload["output_contract"]["continuity_instruction"]
+    assert "continuity_host_bindings" in payload["output_contract"]["continuity_instruction"]
     assert "same canonical sha256" in payload["output_contract"]["continuity_instruction"].lower()
 
 

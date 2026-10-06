@@ -22,6 +22,7 @@ from .continuity_models import (
     OrderBindingType,
     TimeInForce,
 )
+from .open_order_management import EXPERIMENT_ORDER_PREFIX
 from .research_telemetry import (
     ResearchTelemetryAccumulator,
     build_telemetry_summary_from_history,
@@ -590,6 +591,12 @@ class CodexAutonomousCLIProvider:
                 "owner_authorization_sha256"
             ),
         }
+        host_new_proposal_bindings = {
+            "order_ref": (
+                f"{EXPERIMENT_ORDER_PREFIX}-a-"
+                f"{request.decision_cycle_id[-12:]}"
+            ),
+        }
         payload: dict[str, Any] = {
             "schema": "CODEX_AUTONOMOUS_RESEARCH_TURN_V1",
             "mandate": {
@@ -685,7 +692,11 @@ class CodexAutonomousCLIProvider:
                     "verifies every binding. For a NEW_PROPOSAL, set order_binding."
                     "proposal_sha256 and order_binding.original_intent_sha256 to the "
                     "same canonical sha256_json of the complete proposal; do not hash "
-                    "an order subset or use different values."
+                    "an order subset or use different values. For a NEW_PROPOSAL, copy "
+                    "host_new_proposal_bindings exactly and copy account_identity_sha256, "
+                    "contract_identity_sha256, and execution_client_id exactly from the "
+                    "continuity_host_bindings returned by the successful BROKER_FEASIBILITY "
+                    "for that exact proposal; do not infer or invent infrastructure identity."
                 ),
             },
             "continuity_authority": bundle.continuity_context,
@@ -695,6 +706,7 @@ class CodexAutonomousCLIProvider:
                 ),
                 "plan_required_for": ["PROPOSE_TRADE", "MODIFY_ORDER"],
                 "host_provenance_bindings": host_provenance_bindings,
+                "host_new_proposal_bindings": host_new_proposal_bindings,
                 "host_verifies_bindings": True,
             },
         }
@@ -1026,6 +1038,24 @@ class AutonomousResearchLoop:
                     reason_codes=validation.reason_codes,
                     broker_validation=validation.broker_evidence,
                 )
+            continuity_binding_error = self._validate_new_proposal_host_bindings(
+                turn.continuity_plan,
+                request=request,
+                broker_evidence=validation.broker_evidence,
+            )
+            if continuity_binding_error is not None:
+                return self._finish(
+                    telemetry=telemetry,
+                    history=history,
+                    rounds=round_index,
+                    decision=TraderDecision.NO_TRADE,
+                    proposal=None,
+                    position_action=None,
+                    accepted=False,
+                    validation="BLOCK",
+                    reason_codes=(continuity_binding_error,),
+                    broker_validation=validation.broker_evidence,
+                )
             return self._finish(
                     telemetry=telemetry,
                     history=history,
@@ -1042,6 +1072,41 @@ class AutonomousResearchLoop:
             )
 
         return self._blocked(history, telemetry, self.max_rounds, "RESEARCH_ROUND_LIMIT_REACHED")
+
+    @staticmethod
+    def _validate_new_proposal_host_bindings(
+        plan: CodexOrderContinuityPlan | None,
+        *,
+        request: InvocationRequest,
+        broker_evidence: dict[str, Any],
+    ) -> str | None:
+        if plan is None:
+            return None
+        what_if = broker_evidence.get("what_if")
+        host = (
+            what_if.get("continuity_host_bindings")
+            if isinstance(what_if, dict)
+            else None
+        )
+        if not isinstance(host, dict):
+            return "CONTINUITY_PLAN_HOST_BINDING_EVIDENCE_MISSING"
+        binding = plan.order_binding
+        expected_order_ref = (
+            f"{EXPERIMENT_ORDER_PREFIX}-a-{request.decision_cycle_id[-12:]}"
+        )
+        if any(
+            (
+                binding.order_ref != expected_order_ref,
+                binding.account_identity_sha256
+                != host.get("account_identity_sha256"),
+                binding.contract_identity_sha256
+                != host.get("contract_identity_sha256"),
+                binding.execution_client_id
+                != host.get("execution_client_id"),
+            )
+        ):
+            return "CONTINUITY_PLAN_HOST_BINDING_MISMATCH"
+        return None
 
     @staticmethod
     def _validate_continuity_turn(

@@ -18,11 +18,14 @@ from .autonomous_research import (
     ResearchResult,
     ResearchTool,
 )
+from .canonical import sha256_json
 from .ibkr_readonly import expected_identity_hash
 from .ibkr_readonly_session import ExpectedPaperIdentityStore
 from .open_order_management import (
     ACTIONABLE_ORDER_STATUSES,
+    EXECUTION_CLIENT_ID,
     MODIFIABLE_ORDER_STATUSES,
+    canonical_contract_identity,
     canonical_open_order,
 )
 from .risk import CapitalBoundaryInputs, CapitalBoundaryRiskEngine, RiskResult
@@ -158,6 +161,7 @@ class IBKRResearchToolbox:
             "what_if_status",
             "broker_whatif_reached",
             "broker_economics_computed",
+            "continuity_host_bindings",
         }
     )
 
@@ -1776,7 +1780,7 @@ class IBKRResearchToolbox:
                 "stage": "WHAT_IF_NORMALIZATION",
                 **sanitized_economics,
             }
-        return {
+        result = {
             "success": True,
             "contract": self._serialize_contract(contract),
             **sanitized_economics,
@@ -1787,6 +1791,15 @@ class IBKRResearchToolbox:
             "broker_whatif_reached": True,
             "broker_economics_computed": True,
         }
+        if self.expected_account_hash is not None:
+            result["continuity_host_bindings"] = {
+                "account_identity_sha256": self.expected_account_hash,
+                "contract_identity_sha256": sha256_json(
+                    canonical_contract_identity(contract)
+                ),
+                "execution_client_id": EXECUTION_CLIENT_ID,
+            }
+        return result
 
     def _proposal_contract(self, ib: Any, proposal: AutonomousTradeProposal):
         from ib_insync import ComboLeg, Contract

@@ -198,6 +198,125 @@ def test_v3_context_requires_plan_for_proposal_and_modification():
     assert outcome.reason_codes == ("CONTINUITY_PLAN_REQUIRED",)
 
 
+class HostBindingToolbox(FakeToolbox):
+    def __init__(self, bindings):
+        super().__init__()
+        self.bindings = bindings
+
+    def validate_proposal(self, proposal, bundle):
+        return ProposalValidation(
+            passed=True,
+            reason_codes=(),
+            broker_evidence={
+                "what_if": {
+                    "success": True,
+                    "continuity_host_bindings": self.bindings,
+                }
+            },
+        )
+
+
+def _new_proposal_continuity_turn(value, continuity_plan_factory, **binding_updates):
+    invocation = request(value)
+    selected = proposal()
+    proposal_sha256 = sha256_json(selected)
+    binding = {
+        "binding_type": "NEW_PROPOSAL",
+        "account_identity_sha256": "a" * 64,
+        "order_ref": "codex-ibkr-paper-30d-a-autonomous-1",
+        "client_order_id": "client-cycle-autonomous-1",
+        "ibkr_order_id": None,
+        "perm_id": None,
+        "execution_client_id": 19761,
+        "contract_identity_sha256": "c" * 64,
+        "action": "BUY",
+        "order_type": "LMT",
+        "original_total_quantity": "1",
+        "original_limit_price": "4.50",
+        "original_tif": "DAY",
+        "original_good_till_date_utc": None,
+        "original_order_state_sha256": None,
+        "original_intent_sha256": proposal_sha256,
+        "proposal_sha256": proposal_sha256,
+    }
+    binding.update(binding_updates)
+    plan = continuity_plan_factory(
+        decision_cycle_id=invocation.decision_cycle_id,
+        invocation_id=invocation.invocation_id,
+        input_bundle_sha256=value.sha256,
+        created_by_model=invocation.actual_model,
+        model_attestation_sha256=sha256_json(
+            {"actual_model": invocation.actual_model}
+        ),
+        order_binding=binding,
+    )
+    turn = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        decision=TraderDecision.PROPOSE_TRADE,
+        proposal=selected,
+        continuity_plan=plan,
+        confidence="0.8",
+        reasoning_summary="Submit the selected proposal with exact host bindings.",
+        reason_codes=["EDGE_FOUND"],
+    )
+    return invocation, turn
+
+
+@pytest.mark.parametrize(
+    ("binding_updates", "broker_updates"),
+    [
+        ({"order_ref": "cycle-model-invented"}, {}),
+        ({"execution_client_id": 0}, {}),
+        ({"account_identity_sha256": "b" * 64}, {}),
+        ({"contract_identity_sha256": "d" * 64}, {}),
+        ({}, {"contract_identity_sha256": "d" * 64}),
+    ],
+)
+def test_new_proposal_requires_exact_host_infrastructure_bindings(
+    continuity_plan_factory, binding_updates, broker_updates
+):
+    value = bundle().model_copy(
+        update={"continuity_context": {"authority_contract_required": True}}
+    )
+    invocation, turn = _new_proposal_continuity_turn(
+        value, continuity_plan_factory, **binding_updates
+    )
+    expected = {
+        "account_identity_sha256": "a" * 64,
+        "contract_identity_sha256": "c" * 64,
+        "execution_client_id": 19761,
+    }
+    expected.update(broker_updates)
+
+    outcome = AutonomousResearchLoop(
+        SequenceProvider([turn]), HostBindingToolbox(expected)
+    ).run(invocation, value)
+
+    assert outcome.accepted is False
+    assert outcome.reason_codes == ("CONTINUITY_PLAN_HOST_BINDING_MISMATCH",)
+
+
+def test_new_proposal_with_exact_host_infrastructure_bindings_is_accepted(
+    continuity_plan_factory,
+):
+    value = bundle().model_copy(
+        update={"continuity_context": {"authority_contract_required": True}}
+    )
+    invocation, turn = _new_proposal_continuity_turn(value, continuity_plan_factory)
+    expected = {
+        "account_identity_sha256": "a" * 64,
+        "contract_identity_sha256": "c" * 64,
+        "execution_client_id": 19761,
+    }
+
+    outcome = AutonomousResearchLoop(
+        SequenceProvider([turn]), HostBindingToolbox(expected)
+    ).run(invocation, value)
+
+    assert outcome.accepted is True
+    assert outcome.continuity_plan == turn.continuity_plan
+
+
 def test_cancel_turn_forbids_continuity_plan_even_before_execution(
     continuity_plan_factory,
 ):

@@ -5,12 +5,17 @@ from types import SimpleNamespace
 
 import pytest
 
+from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.autonomous_research import (
     AutonomousTradeProposal,
     ResearchRequest,
     ResearchTool,
 )
 from ibkr_paper_30d.ibkr_research_tools import IBKRResearchToolbox
+from ibkr_paper_30d.open_order_management import (
+    EXECUTION_CLIENT_ID,
+    canonical_contract_identity,
+)
 from ibkr_paper_30d.trader_invocation import TraderInputBundle
 
 
@@ -127,6 +132,13 @@ def test_flat_runtime_request_reaches_authoritative_what_if(
     assert order.tif == "DAY"
     assert order.whatIf is True
     assert order.transmit is True
+    assert result.data["continuity_host_bindings"] == {
+        "account_identity_sha256": "a" * 64,
+        "contract_identity_sha256": sha256_json(
+            canonical_contract_identity(contract)
+        ),
+        "execution_client_id": EXECUTION_CLIENT_ID,
+    }
     assert broker.disconnected is True
 
 
