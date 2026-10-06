@@ -789,15 +789,26 @@ def test_model_final_what_if_precedes_final_authority_read_and_attempt():
             return PaperExecutionResult(True, "SUBMITTED", (), {}, {})
 
     validator = ProductionAuthorityValidator(snapshot_reader=snapshot_reader)
-    coordinator, writer, _ = _start_writer(
+    coordinator, writer, writer_factory = _start_writer(
         model_execution_engine=FinalGateEngine(),
         attempt_persister=lambda candidate, evidence: events.append("attempt"),
         result_persister=lambda candidate, result, evidence: events.append("result"),
     )
+    authority_brokers = []
+
+    def authority_broker_factory():
+        broker = FakeGateway(19763)
+        authority_brokers.append(broker)
+        return broker
+
+    evidence_broker_ids = []
     writer.production_authority_validator = validator
+    writer.authority_broker_factory = authority_broker_factory
     writer.production_broker_evidence_collector = (
         lambda broker, candidate, raw: (
-            events.append("broker") or _production_broker_evidence(candidate)
+            evidence_broker_ids.append(id(broker))
+            or events.append("broker")
+            or _production_broker_evidence(candidate)
         )
     )
     writer.now_utc = lambda: datetime(2026, 10, 2, 14, tzinfo=timezone.utc)
@@ -807,6 +818,10 @@ def test_model_final_what_if_precedes_final_authority_read_and_attempt():
         writer.stop(2)
 
     assert result.success is True
+    assert len(authority_brokers) == 2
+    assert all(broker.disconnected for broker in authority_brokers)
+    assert evidence_broker_ids == [id(broker) for broker in authority_brokers]
+    assert all(id(broker) != id(writer_factory.gateway) for broker in authority_brokers)
     assert events == [
         "broker",
         "db",
