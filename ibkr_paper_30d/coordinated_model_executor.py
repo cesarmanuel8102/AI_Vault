@@ -150,6 +150,16 @@ class CoordinatedModelExecutor:
             broker_validation={},
         )
 
+    @staticmethod
+    def _uncertain(reason: str) -> PaperExecutionResult:
+        return PaperExecutionResult(
+            success=False,
+            status="UNCERTAIN",
+            reason_codes=(reason,),
+            order={},
+            broker_validation={},
+        )
+
     def _request(
         self,
         *,
@@ -200,7 +210,14 @@ class CoordinatedModelExecutor:
         try:
             result = future.result(timeout=self._result_timeout_seconds)
         except FutureTimeoutError:
-            return self._blocked("MODEL_EXECUTION_WRITER_TIMEOUT")
+            expire = getattr(self._coordinator, "expire_before_write", None)
+            if not callable(expire):
+                return self._blocked("MODEL_EXECUTION_WRITER_TIMEOUT")
+            if expire(request.execution_key):
+                return self._blocked("MODEL_EXECUTION_WRITER_TIMEOUT_PRE_WRITE")
+            return self._uncertain(
+                "MODEL_EXECUTION_WRITER_TIMEOUT_AFTER_WRITE_START"
+            )
         except Exception as exc:
             return self._blocked(f"MODEL_EXECUTION_WRITER_FAILED:{type(exc).__name__}")
         if not isinstance(result, PaperExecutionResult):
