@@ -22,6 +22,10 @@ from .market_data import DecisionClass
 from .repositories import utc_now
 from .runtime_integrity import RuntimeMarketDataGate
 from .successor_clock import clock_for_epoch
+from .successor_epoch import (
+    SuccessorEpochError,
+    current_epoch_authority_bindings,
+)
 from .trader_invocation import TraderInputBundle
 from .types import new_uuid7
 
@@ -492,6 +496,25 @@ class AutonomousStateBuilder:
                 "pending_factual_reports": [],
                 "prior_reflections": [],
             }
+        authority = None
+        if clock.get("epoch_state") == "ACTIVE":
+            try:
+                authority = current_epoch_authority_bindings(self.db)
+            except SuccessorEpochError as exc:
+                raise AutonomousStateBuildError(
+                    "CONTINUITY_AUTHORITY_INVALID"
+                ) from exc
+            if authority is None or any(
+                clock.get(key) != authority[key]
+                for key in (
+                    "epoch_id",
+                    "definition_sha256",
+                    "clock_event_sha256",
+                )
+            ):
+                raise AutonomousStateBuildError(
+                    "CONTINUITY_AUTHORITY_BINDING_MISMATCH"
+                )
         store = ContinuityStore(self.db)
         order_refs = [
             str(row[0])
@@ -532,9 +555,15 @@ class AutonomousStateBuilder:
             "authority_contract_required": True,
             "epoch_id": clock.get("epoch_id"),
             "definition_sha256": clock.get("definition_sha256"),
-            "clock_event_sha256": clock.get("event_sha256"),
+            "clock_event_sha256": (
+                authority["clock_event_sha256"]
+                if authority is not None
+                else clock.get("clock_event_sha256")
+            ),
             "owner_authorization_sha256": (
-                clock.get("owner_authorization_sha256")
+                authority["owner_authorization_receipt_sha256"]
+                if authority is not None
+                else clock.get("owner_authorization_sha256")
                 or clock.get("owner_authorization_receipt_sha256")
             ),
             "active_plans": active_plans,

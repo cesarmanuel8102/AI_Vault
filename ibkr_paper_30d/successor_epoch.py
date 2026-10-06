@@ -483,6 +483,77 @@ def current_epoch_definition(db: Database) -> EpochDefinition | None:
     )
 
 
+def current_epoch_authority_bindings(db: Database) -> dict[str, str] | None:
+    """Project authority hashes only after validating the complete epoch graph."""
+
+    current = current_epoch_definition(db)
+    if current is None:
+        return None
+    records = _state_records(db)
+    definitions = _definition_records(records)
+    activations = _activation_records(records)
+    definition_record = definitions.get(current.epoch_id)
+    activation_record = activations.get(current.epoch_id)
+    if definition_record is None or activation_record is None:
+        raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
+
+    definition = definition_record.payload
+    activation = activation_record.payload
+    try:
+        clock = clock_for_epoch(db, current.epoch_id)
+    except SuccessorClockError as exc:
+        raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID") from exc
+
+    if definition.get("schema") == SUCCESSOR_DEFINITION_SCHEMA:
+        authorization = _validated_authorization_payload(
+            db,
+            epoch_id=current.epoch_id,
+            definition_sha256=current.definition_sha256,
+        )
+        owner_receipt_sha256 = authorization.get("receipt_sha256")
+        clock_payload = _v2_clock_payload(db, current.epoch_id)
+        expected = {
+            "definition_sha256": current.definition_sha256,
+            "clock_event_sha256": clock.event_sha256,
+            "owner_authorization_receipt_sha256": owner_receipt_sha256,
+        }
+        if (
+            activation.get("definition_sha256") != expected["definition_sha256"]
+            or activation.get("clock_event_sha256")
+            != expected["clock_event_sha256"]
+            or activation.get("owner_authorization_receipt_sha256")
+            != expected["owner_authorization_receipt_sha256"]
+            or clock_payload.get("definition_sha256")
+            != expected["definition_sha256"]
+            or clock_payload.get("owner_authorization_receipt_sha256")
+            != expected["owner_authorization_receipt_sha256"]
+        ):
+            raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
+    else:
+        owner_receipt_sha256 = activation.get(
+            "owner_authorization_receipt_sha256"
+        )
+        if (
+            activation.get("definition_sha256") != current.definition_sha256
+            or definition.get("owner_authorization_receipt_sha256")
+            != owner_receipt_sha256
+        ):
+            raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
+
+    if (
+        not isinstance(owner_receipt_sha256, str)
+        or not _SHA256.fullmatch(owner_receipt_sha256)
+        or not _SHA256.fullmatch(clock.event_sha256)
+    ):
+        raise SuccessorEpochError("SUCCESSOR_CHAIN_INVALID")
+    return {
+        "epoch_id": current.epoch_id,
+        "definition_sha256": current.definition_sha256,
+        "clock_event_sha256": clock.event_sha256,
+        "owner_authorization_receipt_sha256": owner_receipt_sha256,
+    }
+
+
 def _latest_positions_present(db: Database) -> bool:
     row = db.execute(
         "SELECT payload_json,payload_sha256 FROM positions_snapshots "

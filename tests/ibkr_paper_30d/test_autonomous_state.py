@@ -16,6 +16,17 @@ from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.experiment_control import KillSwitchStore
 from ibkr_paper_30d.open_order_management import canonical_open_order
 from ibkr_paper_30d.persistence import Database
+from ibkr_paper_30d.successor_clock import BrokerTimeObservation, clock_for_epoch
+from ibkr_paper_30d.successor_epoch import (
+    BrokerTransitionEvidence,
+    commit_successor_transition,
+)
+from successor_test_support import (
+    ACCOUNT_HASH,
+    OWNER_SID,
+    SUCCESSOR_START,
+    build_authorized_successor,
+)
 
 
 def open_order_trade():
@@ -387,6 +398,82 @@ def test_state_builder_exposes_v3_continuity_context_without_strategy_guidance(t
     assert value.continuity_context["provider_states"] == []
     assert value.continuity_context["pending_factual_reports"] == []
     assert value.continuity_context["prior_reflections"] == []
+
+
+def _active_successor_state_builder(tmp_path):
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+
+    db_path = tmp_path / "active-successor.sqlite3"
+    receipt_path = tmp_path / "owner-successor.json"
+    definition, receipt = build_authorized_successor(db_path, receipt_path)
+    db = Database.open(db_path)
+    evidence = BrokerTransitionEvidence(
+        account_identity_sha256=ACCOUNT_HASH,
+        collected_at_utc=SUCCESSOR_START + timedelta(seconds=1),
+        observation=BrokerTimeObservation(
+            server_time_utc=SUCCESSOR_START,
+            observed_at_utc=SUCCESSOR_START + timedelta(seconds=1),
+            authenticated=True,
+            paper_session=True,
+        ),
+        positions_count=0,
+        open_orders_count=0,
+        broker_write_count=0,
+    )
+    transition = commit_successor_transition(
+        db=db,
+        launch_attempt_id="continuity-authority-test",
+        target_successor_epoch_id=str(definition["epoch_id"]),
+        target_successor_definition_sha256=str(definition["definition_sha256"]),
+        expected_account_identity_sha256=ACCOUNT_HASH,
+        expected_owner_sid=OWNER_SID,
+        owner_authorization_receipt=receipt,
+        execution_lock_verifier=lambda: True,
+        broker_evidence_collector=lambda: evidence,
+        now_utc=lambda: SUCCESSOR_START + timedelta(seconds=2),
+    )
+    install_continuity_schema_v3(db)
+    clock = clock_for_epoch(db, str(definition["epoch_id"]))
+    subject = AutonomousStateBuilder(
+        db,
+        FakeToolbox(),
+        allocation=Decimal("500.00"),
+        experiment_start_utc=clock.start_utc,
+        experiment_clock=clock,
+        duration_days=30,
+        runtime_market_gate=FakeMarketGate(),
+    )
+    return db, subject, definition, receipt, transition
+
+
+def test_continuity_context_projects_verified_successor_authority(tmp_path):
+    db, subject, definition, receipt, transition = _active_successor_state_builder(
+        tmp_path
+    )
+    try:
+        clock = subject._clock(SUCCESSOR_START + timedelta(minutes=1))
+        context = subject._continuity_context(clock)
+    finally:
+        db.close()
+
+    assert context["epoch_id"] == definition["epoch_id"]
+    assert context["definition_sha256"] == definition["definition_sha256"]
+    assert context["clock_event_sha256"] == transition.clock_event_sha256
+    assert context["owner_authorization_sha256"] == receipt["receipt_sha256"]
+
+
+def test_continuity_context_rejects_forged_clock_authority(tmp_path):
+    db, subject, _, _, _ = _active_successor_state_builder(tmp_path)
+    try:
+        clock = subject._clock(SUCCESSOR_START + timedelta(minutes=1))
+        clock["clock_event_sha256"] = "f" * 64
+        with pytest.raises(
+            AutonomousStateBuildError,
+            match="CONTINUITY_AUTHORITY_BINDING_MISMATCH",
+        ):
+            subject._continuity_context(clock)
+    finally:
+        db.close()
 
 
 def test_state_builder_blocks_when_tracked_position_does_not_match_broker(tmp_path):
