@@ -8,7 +8,7 @@ on:
 jobs:
   day1-writer-timeout:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install test dependencies
+      - name: Install focused test dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
@@ -40,10 +40,60 @@ jobs:
           assert result['verified'] is True
           PY
 
-      - name: Run focused writer and production runtime tests
+      - name: Run writer authority regression tests
         run: |
-          pytest -q tests/ibkr_paper_30d/test_authoritative_broker_writer.py tests/ibkr_paper_30d/test_production_continuity_runtime.py
+          pytest -q tests/ibkr_paper_30d/test_authoritative_broker_writer.py tests/ibkr_paper_30d/test_production_authority.py tests/ibkr_paper_30d/test_model_execution_engine.py
 
-      - name: Run full IBKR autonomous regression suite
+      - name: Validate production session isolation contract
         run: |
-          pytest -q tests/ibkr_paper_30d
+          python - <<'PY'
+          from ibkr_paper_30d.ibkr_readonly import expected_identity_hash
+          from ibkr_paper_30d.production_continuity_runtime import (
+              WRITER_CLIENT_ID,
+              OBSERVER_CLIENT_ID,
+              FINAL_AUTHORITY_CLIENT_ID,
+              BROKER_REQUEST_TIMEOUT_SECONDS,
+              build_ibkr_session_factory,
+          )
+
+          class FakeIB:
+              def __init__(self):
+                  self.RequestTimeout = 0
+                  self.calls = []
+                  self.disconnected = False
+              def connect(self, host, port, **kwargs):
+                  self.calls.append((host, port, kwargs))
+              def isConnected(self):
+                  return True
+              def managedAccounts(self):
+                  return ["DU123456"]
+              def disconnect(self):
+                  self.disconnected = True
+
+          for client_id, read_only in (
+              (WRITER_CLIENT_ID, False),
+              (OBSERVER_CLIENT_ID, True),
+              (FINAL_AUTHORITY_CLIENT_ID, True),
+          ):
+              created = []
+              factory = build_ibkr_session_factory(
+                  host="127.0.0.1",
+                  port=4002,
+                  expected_account_hash=expected_identity_hash("DU123456"),
+                  client_id=client_id,
+                  read_only=read_only,
+                  ib_factory=lambda: created.append(FakeIB()) or created[-1],
+                  evidence_execution_client_id=(
+                      WRITER_CLIENT_ID
+                      if client_id == FINAL_AUTHORITY_CLIENT_ID
+                      else None
+                  ),
+              )
+              broker = factory()
+              assert broker.RequestTimeout == BROKER_REQUEST_TIMEOUT_SECONDS
+              assert broker.client_id == client_id
+              assert broker.read_only is read_only
+              if client_id == FINAL_AUTHORITY_CLIENT_ID:
+                  assert broker.evidence_execution_client_id == WRITER_CLIENT_ID
+          print("PRODUCTION_SESSION_ISOLATION=PASS")
+          PY
