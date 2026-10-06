@@ -56,6 +56,7 @@ class AuthoritativeBrokerWriter:
             ProductionBrokerEvidence,
         ]
         | None = None,
+        authority_broker_factory: Callable[[], Any] | None = None,
         liability_evidence_collector: Callable[
             [Any, AuthorizedBrokerCommand, dict[str, Any]],
             MaximumLiabilityEvidence,
@@ -80,6 +81,7 @@ class AuthoritativeBrokerWriter:
         self.production_broker_evidence_collector = (
             production_broker_evidence_collector
         )
+        self.authority_broker_factory = authority_broker_factory
         self.liability_evidence_collector = liability_evidence_collector
         self.now_utc = now_utc or (lambda: datetime.now(timezone.utc))
         self.resource_closer = resource_closer or (lambda: None)
@@ -195,7 +197,19 @@ class AuthoritativeBrokerWriter:
         if getattr(broker, "all_order_visibility", True) is not True:
             raise PermissionError("ALL_ORDER_VISIBILITY_UNCERTAIN")
         trades = list(broker.reqAllOpenOrders())
-        executions = list(broker.reqExecutions())
+        execution_client_id = getattr(
+            broker, "evidence_execution_client_id", None
+        )
+        if execution_client_id is None:
+            executions = list(broker.reqExecutions())
+        else:
+            from ib_insync import ExecutionFilter
+
+            executions = list(
+                broker.reqExecutions(
+                    ExecutionFilter(clientId=int(execution_client_id))
+                )
+            )
         positions = list(broker.positions())
         return {
             "trades": trades,
@@ -232,64 +246,100 @@ class AuthoritativeBrokerWriter:
         dict[str, Any],
         tuple[str, ...],
     ]:
-        """Collect broker evidence, then re-read DB authority, without a write tx."""
+        """Collect fresh authority evidence outside the write-capable session."""
 
-        try:
-            evidence = self._collect_evidence(broker)
-        except Exception as exc:
-            return (
-                None,
-                {},
-                (f"BROKER_EVIDENCE_UNAVAILABLE:{type(exc).__name__}",),
-            )
-        if self.production_authority_validator is None:
-            return None, evidence, ()
-        if self.production_broker_evidence_collector is None:
-            return None, evidence, ("PRODUCTION_BROKER_EVIDENCE_COLLECTOR_REQUIRED",)
-        try:
-            broker_evidence = self.production_broker_evidence_collector(
-                broker, request, evidence
-            )
-            if not isinstance(broker_evidence, ProductionBrokerEvidence):
-                raise TypeError("ProductionBrokerEvidence required")
-            liability_evidence = None
-            if (
-                isinstance(request, AuthorizedBrokerCommand)
-                and request.command_type == BrokerCommandType.MODIFY
-            ):
-                if self.liability_evidence_collector is None:
-                    return None, evidence, ("LIABILITY_EVIDENCE_COLLECTOR_REQUIRED",)
-                liability_evidence = self.liability_evidence_collector(
-                    broker, request, evidence
+        authority_broker = broker
+        owns_authority_broker = False
+        if self.authority_broker_factory is not None:
+            try:
+                authority_broker = self.authority_broker_factory()
+                owns_authority_broker = True
+            except Exception as exc:
+                return (
+                    None,
+                    {},
+                    (f"AUTHORITY_BROKER_UNAVAILABLE:{type(exc).__name__}",),
                 )
-                if not isinstance(liability_evidence, MaximumLiabilityEvidence):
-                    raise TypeError("MaximumLiabilityEvidence required")
-            decision = self.production_authority_validator.validate_before_write(
-                request=request,
-                broker_evidence=broker_evidence,
-                liability_evidence=liability_evidence,
-                now_utc=self.now_utc(),
-                prior_authority_snapshot=prior_authority_snapshot,
-            )
-        except Exception as exc:
-            return (
-                None,
-                evidence,
-                (f"PRODUCTION_AUTHORITY_VALIDATION_FAILED:{type(exc).__name__}",),
-            )
-        enriched = {
-            **evidence,
-            "production_authority": {
-                "authority_snapshot_sha256": decision.authority_snapshot_sha256,
-                "broker_evidence_sha256": decision.broker_evidence_sha256,
-                "liability_evidence_sha256": (
-                    None
-                    if decision.liability_result is None
-                    else decision.liability_result.evidence_sha256
-                ),
-            },
-        }
-        return decision, enriched, decision.reason_codes
+        try:
+            try:
+                evidence = self._collect_evidence(authority_broker)
+            except Exception as exc:
+                return (
+                    None,
+                    {},
+                    (f"BROKER_EVIDENCE_UNAVAILABLE:{type(exc).__name__}",),
+                )
+            if self.production_authority_validator is None:
+                return None, evidence, ()
+            if self.production_broker_evidence_collector is None:
+                return (
+                    None,
+                    evidence,
+                    ("PRODUCTION_BROKER_EVIDENCE_COLLECTOR_REQUIRED",),
+                )
+            try:
+                broker_evidence = self.production_broker_evidence_collector(
+                    authority_broker, request, evidence
+                )
+                if not isinstance(broker_evidence, ProductionBrokerEvidence):
+                    raise TypeError("ProductionBrokerEvidence required")
+                liability_evidence = None
+                if (
+                    isinstance(request, AuthorizedBrokerCommand)
+                    and request.command_type == BrokerCommandType.MODIFY
+                ):
+                    if self.liability_evidence_collector is None:
+                        return (
+                            None,
+                            evidence,
+                            ("LIABILITY_EVIDENCE_COLLECTOR_REQUIRED",),
+                        )
+                    liability_evidence = self.liability_evidence_collector(
+                        authority_broker, request, evidence
+                    )
+                    if not isinstance(
+                        liability_evidence, MaximumLiabilityEvidence
+                    ):
+                        raise TypeError("MaximumLiabilityEvidence required")
+                decision = (
+                    self.production_authority_validator.validate_before_write(
+                        request=request,
+                        broker_evidence=broker_evidence,
+                        liability_evidence=liability_evidence,
+                        now_utc=self.now_utc(),
+                        prior_authority_snapshot=prior_authority_snapshot,
+                    )
+                )
+            except Exception as exc:
+                return (
+                    None,
+                    evidence,
+                    (
+                        "PRODUCTION_AUTHORITY_VALIDATION_FAILED:"
+                        f"{type(exc).__name__}"
+                    ,),
+                )
+            enriched = {
+                **evidence,
+                "production_authority": {
+                    "authority_snapshot_sha256": (
+                        decision.authority_snapshot_sha256
+                    ),
+                    "broker_evidence_sha256": decision.broker_evidence_sha256,
+                    "liability_evidence_sha256": (
+                        None
+                        if decision.liability_result is None
+                        else decision.liability_result.evidence_sha256
+                    ),
+                },
+            }
+            return decision, enriched, decision.reason_codes
+        finally:
+            if owns_authority_broker:
+                try:
+                    authority_broker.disconnect()
+                except Exception:  # nosec B110
+                    pass
 
     def _execute_model(self, request: ModelExecutionRequest, broker: Any):
         if self._model_write_authority_frozen:
