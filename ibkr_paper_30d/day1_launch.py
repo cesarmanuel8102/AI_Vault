@@ -1520,6 +1520,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
             )
             arm_context = None
             writer_start_attempted = False
+            primary_failure: BaseException | None = None
             try:
                 writer_start_attempted = True
                 try:
@@ -1633,13 +1634,21 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                     heartbeat.stop()
                 if heartbeat.failure_code is not None:
                     raise LaunchError("EXECUTION_LOCK_OWNER_ACTION_REQUIRED")
+            except BaseException as exc:
+                primary_failure = exc
+                raise
             finally:
                 if arm_context is not None:
                     arm_context.__exit__(None, None, None)
                 if writer_start_attempted:
                     stopped = writer.stop(5.0)
                     if stopped is False:
-                        raise LaunchError("CONTINUITY_WRITER_SHUTDOWN_TIMEOUT")
+                        if isinstance(primary_failure, LaunchError):
+                            primary_failure.details.setdefault(
+                                "cleanup_reason_codes", []
+                            ).append("CONTINUITY_WRITER_SHUTDOWN_TIMEOUT")
+                        elif primary_failure is None:
+                            raise LaunchError("CONTINUITY_WRITER_SHUTDOWN_TIMEOUT")
             return "AUTONOMOUS_PAPER_EXPERIMENT_STOPPED"
         except Exception as exc:
             if transition is not None:

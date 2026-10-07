@@ -64,6 +64,8 @@ def build_ibkr_session_factory(
         else:
             broker = ib_factory()
         try:
+            if hasattr(broker, "RequestTimeout"):
+                broker.RequestTimeout = 15.0
             broker.connect(
                 host,
                 int(port),

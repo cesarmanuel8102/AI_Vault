@@ -92,9 +92,12 @@ def test_production_snapshot_accepts_anchored_legacy_epoch_history(tmp_path) -> 
 class FakeIB:
     def __init__(self) -> None:
         self.connect_calls = []
+        self.RequestTimeout = 0.0
+        self.request_timeout_at_connect = None
         self.disconnected = False
 
     def connect(self, host, port, **kwargs):
+        self.request_timeout_at_connect = getattr(self, "RequestTimeout", None)
         self.connect_calls.append((host, port, kwargs))
 
     def isConnected(self):
@@ -169,6 +172,7 @@ def test_ibkr_session_factory_binds_exact_client_and_readonly_mode(
     assert broker.client_id == client_id
     assert broker.read_only is read_only
     assert broker.all_order_visibility is True
+    assert created[0].request_timeout_at_connect == 15.0
     assert created[0].connect_calls == [
         (
             "127.0.0.1",
