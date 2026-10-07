@@ -172,12 +172,12 @@ def test_ibkr_session_factory_binds_exact_client_and_readonly_mode(
     assert broker.client_id == client_id
     assert broker.read_only is read_only
     assert broker.all_order_visibility is True
-    assert created[0].request_timeout_at_connect == 15.0
+    assert created[0].request_timeout_at_connect == 4.0
     assert created[0].connect_calls == [
         (
             "127.0.0.1",
             4002,
-            {"clientId": client_id, "timeout": 20.0, "readonly": read_only},
+            {"clientId": client_id, "timeout": 4.0, "readonly": read_only},
         )
     ]
 
