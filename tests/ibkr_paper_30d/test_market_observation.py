@@ -120,7 +120,28 @@ def test_integer_second_timestamps_accept_negative_age_within_resolution() -> No
     assert corrected_quote_age_ms(quote_time, local_receipt, sample) == -70
 
 
-def test_integer_second_timestamps_reject_age_beyond_resolution_and_rtt() -> None:
+def test_integer_second_clock_and_quote_quantization_are_both_tolerated() -> None:
+    base = utc(2026, 9, 23, 19, 10)
+    sample = ClockSample(
+        local_send_utc=base,
+        broker_time_utc=base,
+        local_receive_utc=base + timedelta(milliseconds=18),
+        round_trip_ms=18,
+        clock_skew_ms=1366,
+        timestamp_resolution_ms=1000,
+    )
+
+    assert (
+        corrected_quote_age_ms(
+            base + timedelta(milliseconds=279),
+            base,
+            sample,
+        )
+        == -1645
+    )
+
+
+def test_integer_second_timestamps_reject_age_beyond_two_resolutions_and_rtt() -> None:
     base = utc(2026, 9, 23, 19, 10)
     sample = ClockSample(
         local_send_utc=base,
@@ -133,7 +154,7 @@ def test_integer_second_timestamps_reject_age_beyond_resolution_and_rtt() -> Non
 
     assert (
         corrected_quote_age_ms(
-            base + timedelta(milliseconds=1010),
+            base + timedelta(milliseconds=2010),
             base,
             sample,
         )

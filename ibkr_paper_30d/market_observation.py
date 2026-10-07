@@ -239,9 +239,10 @@ def corrected_quote_age_ms(
         (local_receipt_timestamp - broker_quote_timestamp).total_seconds() * 1_000
     )
     corrected = raw_age - clock_sample.clock_skew_ms
+    # IBKR quantizes both the server-clock sample and tick timestamp.
     uncertainty = max(
         1,
-        clock_sample.timestamp_resolution_ms + clock_sample.round_trip_ms // 2,
+        2 * clock_sample.timestamp_resolution_ms + clock_sample.round_trip_ms // 2,
     )
     if corrected < -uncertainty:
         return None
