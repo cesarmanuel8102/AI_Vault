@@ -7,8 +7,8 @@
 param(
     [Parameter(Mandatory = $true)][string]$ScriptPath,
     [Parameter(Mandatory = $true)][string]$ReportRoot,
-    [Parameter(Mandatory = $true)][ValidateSet("Initialize-CleanEvidence", "Archive-CollectionEvidence", "Invoke-PythonJson", "Resolve-MarketGateMode", "Test-ReadOnlyReconciliation")][string]$Function,
-    [Parameter(Mandatory = $true)][ValidateSet("0", "1", "many", "friday-pass")][string]$ExistingCount,
+    [Parameter(Mandatory = $true)][ValidateSet("Initialize-CleanEvidence", "Archive-CollectionEvidence", "Invoke-PythonJson", "Resolve-MarketGateMode", "Test-ReadOnlyReconciliation", "Get-ExistingMarketGateStatus")][string]$Function,
+    [Parameter(Mandatory = $true)][ValidateSet("0", "1", "many", "friday-pass", "baseline-block")][string]$ExistingCount,
     [Parameter()][ValidateSet("zero", "one", "many")][string]$PythonJsonMode = "one",
     [Parameter()][ValidateSet("scheduled", "scheduled-force", "inspect", "none", "both")][string]$GateMode = "scheduled",
     [Parameter()][ValidateSet("pass", "safe-partial", "unsafe-partial")][string]$ReadOnlyMode = "pass"
@@ -74,6 +74,23 @@ switch ($ExistingCount) {
             market_data_gate = "PASS"
             validated_at_utc = "2026-09-25T19:00:00Z"
         } | ConvertTo-Json -Compress | Set-Content -LiteralPath $ValidationPath -Encoding UTF8
+    }
+    "baseline-block" {
+        [ordered]@{
+            schema = "MARKET_DATA_POLICY_V1"
+            policy_version = "MARKET_DATA_POLICY_V1"
+            evidence = [ordered]@{
+                accepted_windows = @(1..3 | ForEach-Object { [ordered]@{ status = "COMPLETE" } })
+                ledger_record_count = 747
+            }
+        } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $PolicyPath -Encoding UTF8
+        [ordered]@{
+            schema = "REAL_MARKET_DATA_VALIDATION_V1"
+            status = "BLOCK"
+            market_data_gate = "BLOCK"
+            market_data_policy_frozen = $true
+            reason_codes = @("STALE_QUOTE")
+        } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $ValidationPath -Encoding UTF8
     }
     "0" { }
 }
@@ -156,6 +173,14 @@ try {
         Emit -Payload @{
             status = "OK"
             accepted = (Test-ReadOnlyReconciliation -ReadOnly $ReadOnly)
+        } -Code 0
+    }
+    elseif ($Function -eq "Get-ExistingMarketGateStatus") {
+        $Result = Get-ExistingMarketGateStatus
+        Emit -Payload @{
+            status = "OK"
+            market_data_gate = $Result.market_data_gate
+            reusable_for_scheduled_launch = $Result.reusable_for_scheduled_launch
         } -Code 0
     }
     else {

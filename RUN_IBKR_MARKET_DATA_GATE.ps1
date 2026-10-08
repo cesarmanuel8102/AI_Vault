@@ -67,13 +67,6 @@ function Resolve-MarketGateMode {
 }
 
 function Get-ExistingMarketGateStatus {
-    if (-not (Test-Path -LiteralPath $ValidationPath -PathType Leaf)) {
-        return [ordered]@{
-            status = "MISSING"
-            market_data_gate = "BLOCK"
-            reusable_for_scheduled_launch = $false
-        }
-    }
     if (-not (Test-Path -LiteralPath $PolicyPath -PathType Leaf)) {
         return [ordered]@{
             status = "MISSING_POLICY"
@@ -82,27 +75,52 @@ function Get-ExistingMarketGateStatus {
         }
     }
     try {
+        $Policy = Get-Content -LiteralPath $PolicyPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        return [ordered]@{
+            status = "INVALID_POLICY"
+            market_data_gate = "BLOCK"
+            reusable_for_scheduled_launch = $false
+        }
+    }
+    $AcceptedWindows = @($Policy.evidence.accepted_windows)
+    $PolicyReusable = (
+        [string]$Policy.schema -eq "MARKET_DATA_POLICY_V1" -and
+        [string]$Policy.policy_version -eq "MARKET_DATA_POLICY_V1" -and
+        $AcceptedWindows.Count -eq 3 -and
+        @($AcceptedWindows | Where-Object { [string]$_.status -ne "COMPLETE" }).Count -eq 0 -and
+        [int]$Policy.evidence.ledger_record_count -gt 0
+    )
+    if (-not (Test-Path -LiteralPath $ValidationPath -PathType Leaf)) {
+        return [ordered]@{
+            status = "BASELINE_INSPECTED"
+            market_data_gate = "BLOCK"
+            reusable_for_scheduled_launch = $PolicyReusable
+        }
+    }
+    try {
         $Existing = Get-Content -LiteralPath $ValidationPath -Raw | ConvertFrom-Json
     }
     catch {
         return [ordered]@{
-            status = "INVALID"
+            status = "INVALID_VALIDATION"
             market_data_gate = "BLOCK"
-            reusable_for_scheduled_launch = $false
+            reusable_for_scheduled_launch = $PolicyReusable
         }
     }
     $HasGate = $null -ne $Existing.PSObject.Properties["market_data_gate"]
     $HasStatus = $null -ne $Existing.PSObject.Properties["status"]
     $HasFrozen = $null -ne $Existing.PSObject.Properties["market_data_policy_frozen"]
-    $Reusable = (
+    $CurrentPass = (
         $HasGate -and $Existing.market_data_gate -eq "PASS" -and
         $HasStatus -and $Existing.status -eq "PASS" -and
         $HasFrozen -and $Existing.market_data_policy_frozen -eq $true
     )
     return [ordered]@{
         status = "INSPECTED"
-        market_data_gate = $(if ($Reusable) { "PASS" } else { "BLOCK" })
-        reusable_for_scheduled_launch = $Reusable
+        market_data_gate = $(if ($CurrentPass) { "PASS" } else { "BLOCK" })
+        reusable_for_scheduled_launch = $PolicyReusable
     }
 }
 

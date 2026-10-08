@@ -130,6 +130,20 @@ def test_harness_reproduces_the_strict_mode_count_failure_before_fix():
     assert result["status"] == "OK", result
 
 
+def test_blocked_quick_check_keeps_three_window_baseline_reusable(tmp_path):
+    result = run_harness(
+        tmp_path,
+        "Get-ExistingMarketGateStatus",
+        "baseline-block",
+    )
+
+    assert result == {
+        "status": "OK",
+        "market_data_gate": "BLOCK",
+        "reusable_for_scheduled_launch": True,
+    }
+
+
 @pytest.mark.parametrize(
     ("mode", "accepted"),
     [
