@@ -618,6 +618,27 @@ def test_passing_preflight_accepts_real_read_only_market_validation(
     assert_no_write_authority(ctx)
 
 
+def test_preflight_accepts_only_account_summary_partial_when_core_reconciliation_passes(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    write_identity_receipt(
+        ctx,
+        status="PARTIAL",
+        reason_codes=["ACCOUNT_SUMMARY_FIELDS_INCOMPLETE"],
+        broker_reconciliation_gate="BLOCK",
+        account_summary_consistent=True,
+        account_summary_complete=False,
+        gateway_config_consistent=True,
+        outbound_allowlist_only=True,
+    )
+
+    result = evaluate_launch_preflight(ctx.config, ctx.dependencies)
+
+    assert result.expected_account_hash == ACCOUNT_HASH
+    assert_no_write_authority(ctx)
+
+
 @pytest.mark.parametrize(
     ("updates", "code"),
     [

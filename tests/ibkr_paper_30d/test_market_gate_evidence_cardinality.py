@@ -23,6 +23,7 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / "RUN_IBKR_MARKET_DATA_GATE.ps1"
+FINALIZER = REPO / "FINALIZE_IBKR_PREREQUISITES.ps1"
 HARNESS = REPO / "tests" / "ibkr_paper_30d" / "_market_gate_evidence_harness.ps1"
 
 WINDOWS = shutil.which("powershell.exe") is not None
@@ -137,8 +138,9 @@ def test_harness_reproduces_the_strict_mode_count_failure_before_fix():
         ("unsafe-partial", False),
     ],
 )
+@pytest.mark.parametrize("script_path", [SCRIPT, FINALIZER])
 def test_readonly_reconciliation_accepts_only_safe_account_summary_partial(
-    tmp_path, mode, accepted
+    tmp_path, mode, accepted, script_path
 ):
     completed = subprocess.run(
         [
@@ -149,7 +151,7 @@ def test_readonly_reconciliation_accepts_only_safe_account_summary_partial(
             "-File",
             str(HARNESS),
             "-ScriptPath",
-            str(SCRIPT),
+            str(script_path),
             "-ReportRoot",
             str(tmp_path / "reports"),
             "-Function",

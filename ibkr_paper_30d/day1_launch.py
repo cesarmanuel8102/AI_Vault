@@ -362,7 +362,20 @@ def _validate_identity_receipt(
         raise LaunchError("PAPER_ROUTE_REQUIRED")
     if payload.get("gateway_mode") != "PAPER":
         raise LaunchError("PAPER_ROUTE_REQUIRED")
-    if payload.get("status") != "PASS":
+    completeness = payload.get("query_completeness")
+    safe_account_summary_partial = (
+        payload.get("status") == "PARTIAL"
+        and payload.get("reason_codes") == ["ACCOUNT_SUMMARY_FIELDS_INCOMPLETE"]
+        and payload.get("broker_reconciliation_gate") == "BLOCK"
+        and payload.get("account_summary_consistent") is True
+        and payload.get("account_summary_complete") is False
+        and payload.get("gateway_config_consistent") is True
+        and payload.get("outbound_allowlist_only") is True
+        and isinstance(completeness, dict)
+        and _QUERY_KEYS.issubset(completeness)
+        and all(value is True for value in completeness.values())
+    )
+    if payload.get("status") != "PASS" and not safe_account_summary_partial:
         raise LaunchError("READONLY_RECONCILIATION_REQUIRED")
     if payload.get("managed_account_count") != 1:
         raise LaunchError("MANAGED_ACCOUNT_COUNT_INVALID")
@@ -374,7 +387,10 @@ def _validate_identity_receipt(
         raise LaunchError("PAPER_IDENTITY_REQUIRED")
     if payload.get("real_ibkr_read_only_identity_gate") != "PASS":
         raise LaunchError("READONLY_IDENTITY_REQUIRED")
-    if payload.get("broker_reconciliation_gate") != "PASS":
+    if (
+        payload.get("broker_reconciliation_gate") != "PASS"
+        and not safe_account_summary_partial
+    ):
         raise LaunchError("BROKER_RECONCILIATION_REQUIRED")
     if payload.get("expected_account_identity_bound") is not True:
         raise LaunchError("EXPECTED_ACCOUNT_IDENTITY_REQUIRED")
@@ -384,7 +400,6 @@ def _validate_identity_receipt(
         raise LaunchError("RAW_ACCOUNT_IDENTITY_FORBIDDEN")
     if payload.get("real_order_writes_attempted") != 0:
         raise LaunchError("BROKER_WRITE_DETECTED")
-    completeness = payload.get("query_completeness")
     if (
         not isinstance(completeness, dict)
         or not _QUERY_KEYS.issubset(completeness)

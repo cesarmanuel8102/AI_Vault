@@ -122,6 +122,57 @@ function Invoke-PythonJson {
     return ([string]$Candidates[-1] | ConvertFrom-Json)
 }
 
+function Test-ReadOnlyReconciliation {
+    param([object]$ReadOnly)
+
+    $RequiredFields = @(
+        "status",
+        "reason_codes",
+        "real_ibkr_read_only_identity_gate",
+        "paper_account_identity_gate",
+        "expected_account_identity_bound",
+        "paper_account_namespace_ok",
+        "managed_account_count",
+        "heartbeat_ok",
+        "gateway_mode",
+        "outbound_allowlist_only",
+        "real_order_writes_attempted",
+        "account_summary_consistent",
+        "query_completeness"
+    )
+    foreach ($Name in $RequiredFields) {
+        if ($null -eq $ReadOnly.PSObject.Properties[$Name]) { return $false }
+    }
+    foreach ($Name in @("managed_accounts", "positions", "open_orders", "executions", "current_time")) {
+        if (
+            $null -eq $ReadOnly.query_completeness.PSObject.Properties[$Name] -or
+            $ReadOnly.query_completeness.$Name -ne $true
+        ) { return $false }
+    }
+    $Reasons = @($ReadOnly.reason_codes)
+    $StatusAccepted = (
+        [string]$ReadOnly.status -eq "PASS" -or
+        (
+            [string]$ReadOnly.status -eq "PARTIAL" -and
+            $Reasons.Count -eq 1 -and
+            [string]$Reasons[0] -eq "ACCOUNT_SUMMARY_FIELDS_INCOMPLETE"
+        )
+    )
+    return (
+        $StatusAccepted -and
+        [string]$ReadOnly.real_ibkr_read_only_identity_gate -eq "PASS" -and
+        [string]$ReadOnly.paper_account_identity_gate -eq "PASS" -and
+        $ReadOnly.expected_account_identity_bound -eq $true -and
+        $ReadOnly.paper_account_namespace_ok -eq $true -and
+        [int]$ReadOnly.managed_account_count -eq 1 -and
+        $ReadOnly.heartbeat_ok -eq $true -and
+        [string]$ReadOnly.gateway_mode -eq "PAPER" -and
+        $ReadOnly.outbound_allowlist_only -eq $true -and
+        [int]$ReadOnly.real_order_writes_attempted -eq 0 -and
+        $ReadOnly.account_summary_consistent -eq $true
+    )
+}
+
 function New-RandomSecurePassword {
     $Bytes = New-Object byte[] 36
     $Rng = [Security.Cryptography.RandomNumberGenerator]::Create()
@@ -409,14 +460,13 @@ else {
     }
     $ReadOnly = Get-Content -LiteralPath $ReadOnlyReport -Raw | ConvertFrom-Json
 }
-if ($ReadOnly.status -ne "PASS") {
+if (-not (Test-ReadOnlyReconciliation -ReadOnly $ReadOnly)) {
     throw "READONLY_IDENTITY_GATE_NOT_PASS:$($ReadOnly.reason_codes -join ',')"
 }
 if (
     $ReadOnly.gateway_mode -ne "PAPER" -or
     $ReadOnly.paper_account_identity_gate -ne "PASS" -or
-    $ReadOnly.real_ibkr_read_only_identity_gate -ne "PASS" -or
-    $ReadOnly.broker_reconciliation_gate -ne "PASS"
+    $ReadOnly.real_ibkr_read_only_identity_gate -ne "PASS"
 ) {
     throw "PAPER_IDENTITY_NOT_PROVEN"
 }
