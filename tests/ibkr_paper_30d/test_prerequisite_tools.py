@@ -44,6 +44,43 @@ def test_create_audit_export_preserves_readonly_receipt_bytes(tmp_path):
     assert copied.read_bytes() == source.read_bytes()
 
 
+def test_create_audit_export_accepts_only_safe_account_summary_partial(tmp_path):
+    source = tmp_path / "readonly-partial.json"
+    payload = {
+        **readonly_payload(),
+        "status": "PARTIAL",
+        "reason_codes": ["ACCOUNT_SUMMARY_FIELDS_INCOMPLETE"],
+        "broker_reconciliation_gate": "BLOCK",
+        "expected_account_identity_bound": True,
+        "paper_account_namespace_ok": True,
+        "managed_account_count": 1,
+        "heartbeat_ok": True,
+        "outbound_allowlist_only": True,
+        "real_order_writes_attempted": 0,
+        "account_summary_consistent": True,
+        "account_summary_complete": False,
+        "gateway_config_consistent": True,
+        "query_completeness": {
+            "managed_accounts": True,
+            "positions": True,
+            "open_orders": True,
+            "executions": True,
+            "current_time": True,
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    result = create_audit_export(source, tmp_path / "safe-exports")
+
+    assert Path(result["bundle_path"]).is_dir()
+
+    payload["reason_codes"].append("EXECUTION_VISIBILITY_UNAVAILABLE")
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="READONLY_RECEIPT_NOT_PASS"):
+        create_audit_export(source, tmp_path / "unsafe-exports")
+
+
 def test_readiness_requires_both_auditor_and_market_pass(tmp_path, monkeypatch):
     root = tmp_path / "reports"
     root.mkdir()
