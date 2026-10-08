@@ -7,10 +7,11 @@
 param(
     [Parameter(Mandatory = $true)][string]$ScriptPath,
     [Parameter(Mandatory = $true)][string]$ReportRoot,
-    [Parameter(Mandatory = $true)][ValidateSet("Initialize-CleanEvidence", "Archive-CollectionEvidence", "Invoke-PythonJson", "Resolve-MarketGateMode")][string]$Function,
+    [Parameter(Mandatory = $true)][ValidateSet("Initialize-CleanEvidence", "Archive-CollectionEvidence", "Invoke-PythonJson", "Resolve-MarketGateMode", "Test-ReadOnlyReconciliation")][string]$Function,
     [Parameter(Mandatory = $true)][ValidateSet("0", "1", "many", "friday-pass")][string]$ExistingCount,
     [Parameter()][ValidateSet("zero", "one", "many")][string]$PythonJsonMode = "one",
-    [Parameter()][ValidateSet("scheduled", "scheduled-force", "inspect", "none", "both")][string]$GateMode = "scheduled"
+    [Parameter()][ValidateSet("scheduled", "scheduled-force", "inspect", "none", "both")][string]$GateMode = "scheduled",
+    [Parameter()][ValidateSet("pass", "safe-partial", "unsafe-partial")][string]$ReadOnlyMode = "pass"
 )
 
 Set-StrictMode -Version Latest
@@ -121,6 +122,40 @@ try {
             existing_market_data_gate         = $Existing.market_data_gate
             existing_validated_at_utc         = $Existing.validated_at_utc
             existing_pass_reusable_for_launch = ($Mode -eq "REUSE_EXISTING")
+        } -Code 0
+    }
+    elseif ($Function -eq "Test-ReadOnlyReconciliation") {
+        $Reasons = @()
+        if ($ReadOnlyMode -eq "safe-partial") {
+            $Reasons = @("ACCOUNT_SUMMARY_FIELDS_INCOMPLETE")
+        }
+        elseif ($ReadOnlyMode -eq "unsafe-partial") {
+            $Reasons = @("ACCOUNT_SUMMARY_FIELDS_INCOMPLETE", "EXECUTION_VISIBILITY_UNAVAILABLE")
+        }
+        $ReadOnly = [pscustomobject]@{
+            status = $(if ($ReadOnlyMode -eq "pass") { "PASS" } else { "PARTIAL" })
+            reason_codes = $Reasons
+            real_ibkr_read_only_identity_gate = "PASS"
+            paper_account_identity_gate = "PASS"
+            expected_account_identity_bound = $true
+            paper_account_namespace_ok = $true
+            managed_account_count = 1
+            heartbeat_ok = $true
+            gateway_mode = "PAPER"
+            outbound_allowlist_only = $true
+            real_order_writes_attempted = 0
+            account_summary_consistent = $true
+            query_completeness = [pscustomobject]@{
+                managed_accounts = $true
+                positions = $true
+                open_orders = $true
+                executions = $true
+                current_time = $true
+            }
+        }
+        Emit -Payload @{
+            status = "OK"
+            accepted = (Test-ReadOnlyReconciliation -ReadOnly $ReadOnly)
         } -Code 0
     }
     else {

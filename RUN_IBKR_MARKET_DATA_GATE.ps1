@@ -106,6 +106,64 @@ function Get-ExistingMarketGateStatus {
     }
 }
 
+function Test-ReadOnlyReconciliation {
+    param([object]$ReadOnly)
+
+    $RequiredFields = @(
+        "status",
+        "reason_codes",
+        "real_ibkr_read_only_identity_gate",
+        "paper_account_identity_gate",
+        "expected_account_identity_bound",
+        "paper_account_namespace_ok",
+        "managed_account_count",
+        "heartbeat_ok",
+        "gateway_mode",
+        "outbound_allowlist_only",
+        "real_order_writes_attempted",
+        "account_summary_consistent",
+        "query_completeness"
+    )
+    foreach ($Name in $RequiredFields) {
+        if ($null -eq $ReadOnly.PSObject.Properties[$Name]) { return $false }
+    }
+    $RequiredQueries = @(
+        "managed_accounts",
+        "positions",
+        "open_orders",
+        "executions",
+        "current_time"
+    )
+    foreach ($Name in $RequiredQueries) {
+        if (
+            $null -eq $ReadOnly.query_completeness.PSObject.Properties[$Name] -or
+            $ReadOnly.query_completeness.$Name -ne $true
+        ) { return $false }
+    }
+    $Reasons = @($ReadOnly.reason_codes)
+    $StatusAccepted = (
+        [string]$ReadOnly.status -eq "PASS" -or
+        (
+            [string]$ReadOnly.status -eq "PARTIAL" -and
+            $Reasons.Count -eq 1 -and
+            [string]$Reasons[0] -eq "ACCOUNT_SUMMARY_FIELDS_INCOMPLETE"
+        )
+    )
+    return (
+        $StatusAccepted -and
+        [string]$ReadOnly.real_ibkr_read_only_identity_gate -eq "PASS" -and
+        [string]$ReadOnly.paper_account_identity_gate -eq "PASS" -and
+        $ReadOnly.expected_account_identity_bound -eq $true -and
+        $ReadOnly.paper_account_namespace_ok -eq $true -and
+        [int]$ReadOnly.managed_account_count -eq 1 -and
+        $ReadOnly.heartbeat_ok -eq $true -and
+        [string]$ReadOnly.gateway_mode -eq "PAPER" -and
+        $ReadOnly.outbound_allowlist_only -eq $true -and
+        [int]$ReadOnly.real_order_writes_attempted -eq 0 -and
+        $ReadOnly.account_summary_consistent -eq $true
+    )
+}
+
 function Get-EasternNow {
     $Zone = [TimeZoneInfo]::FindSystemTimeZoneById("Eastern Standard Time")
     return [TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $Zone)
@@ -217,7 +275,7 @@ if ($GateMode -eq "REUSE_EXISTING") {
         "-m", "ibkr_paper_30d.cli", "inspect-ibkr-readonly",
         "--host", "127.0.0.1", "--port", "4002"
     )
-    if ($ReadOnly.status -ne "PASS") {
+    if (-not (Test-ReadOnlyReconciliation -ReadOnly $ReadOnly)) {
         throw "READONLY_IDENTITY_GATE_NOT_PASS:$($ReadOnly.reason_codes -join ',')"
     }
     $Validation = Invoke-PythonJson -Arguments @(
@@ -244,7 +302,7 @@ $ReadOnly = Invoke-PythonJson -Arguments @(
     "-m", "ibkr_paper_30d.cli", "inspect-ibkr-readonly",
     "--host", "127.0.0.1", "--port", "4002"
 )
-if ($ReadOnly.status -ne "PASS") {
+if (-not (Test-ReadOnlyReconciliation -ReadOnly $ReadOnly)) {
     throw "READONLY_IDENTITY_GATE_NOT_PASS:$($ReadOnly.reason_codes -join ',')"
 }
 

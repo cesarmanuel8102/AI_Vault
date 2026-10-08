@@ -127,3 +127,49 @@ def test_harness_reproduces_the_strict_mode_count_failure_before_fix():
     ), "Initialize-CleanEvidence", "0")
     shutil.rmtree(tmp_path_shared, ignore_errors=True)
     assert result["status"] == "OK", result
+
+
+@pytest.mark.parametrize(
+    ("mode", "accepted"),
+    [
+        ("pass", True),
+        ("safe-partial", True),
+        ("unsafe-partial", False),
+    ],
+)
+def test_readonly_reconciliation_accepts_only_safe_account_summary_partial(
+    tmp_path, mode, accepted
+):
+    completed = subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(HARNESS),
+            "-ScriptPath",
+            str(SCRIPT),
+            "-ReportRoot",
+            str(tmp_path / "reports"),
+            "-Function",
+            "Test-ReadOnlyReconciliation",
+            "-ExistingCount",
+            "0",
+            "-ReadOnlyMode",
+            mode,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    lines = [
+        line
+        for line in (completed.stdout or "").splitlines()
+        if line.strip().startswith("{")
+    ]
+    assert lines, completed.stdout + completed.stderr
+    payload = json.loads(lines[-1])
+    assert payload["status"] == "OK", payload
+    assert payload["accepted"] is accepted
