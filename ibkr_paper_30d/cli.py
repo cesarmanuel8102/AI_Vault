@@ -492,12 +492,43 @@ def validate_real_market_data(
 def _market_prerequisite_reasons(
     readonly_report: dict[str, object]
 ) -> list[str]:
+    required_queries = (
+        "managed_accounts",
+        "positions",
+        "open_orders",
+        "executions",
+        "current_time",
+    )
+    completeness = readonly_report.get("query_completeness")
+    safe_account_summary_partial = (
+        readonly_report.get("status") == "PARTIAL"
+        and readonly_report.get("reason_codes")
+        == ["ACCOUNT_SUMMARY_FIELDS_INCOMPLETE"]
+        and readonly_report.get("broker_reconciliation_gate") == "BLOCK"
+        and readonly_report.get("paper_account_identity_gate") == "PASS"
+        and readonly_report.get("real_ibkr_read_only_identity_gate") == "PASS"
+        and readonly_report.get("expected_account_identity_bound") is True
+        and readonly_report.get("paper_account_namespace_ok") is True
+        and readonly_report.get("managed_account_count") == 1
+        and readonly_report.get("heartbeat_ok") is True
+        and readonly_report.get("gateway_mode") == "PAPER"
+        and readonly_report.get("outbound_allowlist_only") is True
+        and readonly_report.get("real_order_writes_attempted") == 0
+        and readonly_report.get("account_summary_consistent") is True
+        and readonly_report.get("account_summary_complete") is False
+        and readonly_report.get("gateway_config_consistent") is True
+        and isinstance(completeness, dict)
+        and all(completeness.get(name) is True for name in required_queries)
+    )
     reasons = []
-    if readonly_report.get("status") != "PASS":
+    if readonly_report.get("status") != "PASS" and not safe_account_summary_partial:
         reasons.append("READ_ONLY_RECONCILIATION_REQUIRED")
     if readonly_report.get("paper_account_identity_gate") != "PASS":
         reasons.append("PAPER_IDENTITY_REQUIRED")
-    if readonly_report.get("broker_reconciliation_gate") != "PASS":
+    if (
+        readonly_report.get("broker_reconciliation_gate") != "PASS"
+        and not safe_account_summary_partial
+    ):
         reasons.append("BROKER_RECONCILIATION_REQUIRED")
     if readonly_report.get("heartbeat_ok") is not True:
         reasons.append("BROKER_HEARTBEAT_REQUIRED")

@@ -7,6 +7,7 @@ from decimal import Decimal
 import pytest
 
 from ibkr_paper_30d.cli import (
+    _market_prerequisite_reasons,
     freeze_market_policy,
     observe_market_data,
     validate_market_observation,
@@ -70,6 +71,42 @@ def passing_readonly_report() -> dict[str, object]:
         "broker_reconciliation_gate": "PASS",
         "heartbeat_ok": True,
     }
+
+
+def test_market_prerequisites_accept_safe_account_summary_partial() -> None:
+    report = {
+        "status": "PARTIAL",
+        "reason_codes": ["ACCOUNT_SUMMARY_FIELDS_INCOMPLETE"],
+        "paper_account_identity_gate": "PASS",
+        "real_ibkr_read_only_identity_gate": "PASS",
+        "broker_reconciliation_gate": "BLOCK",
+        "expected_account_identity_bound": True,
+        "paper_account_namespace_ok": True,
+        "managed_account_count": 1,
+        "heartbeat_ok": True,
+        "gateway_mode": "PAPER",
+        "outbound_allowlist_only": True,
+        "real_order_writes_attempted": 0,
+        "account_summary_consistent": True,
+        "account_summary_complete": False,
+        "gateway_config_consistent": True,
+        "query_completeness": {
+            "managed_accounts": True,
+            "positions": True,
+            "open_orders": True,
+            "executions": True,
+            "current_time": True,
+        },
+    }
+
+    assert _market_prerequisite_reasons(report) == []
+
+    report["query_completeness"]["executions"] = False
+
+    assert _market_prerequisite_reasons(report) == [
+        "READ_ONLY_RECONCILIATION_REQUIRED",
+        "BROKER_RECONCILIATION_REQUIRED",
+    ]
 
 
 def policy() -> MarketDataPolicy:
