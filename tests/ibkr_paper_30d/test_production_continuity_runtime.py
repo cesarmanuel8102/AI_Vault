@@ -333,6 +333,39 @@ def test_readonly_observer_returns_only_canonical_facts(continuity_plan_factory)
     assert not hasattr(observer, "cancelOrder")
 
 
+def test_readonly_observer_reuses_server_time_within_watchdog_tick() -> None:
+    current = [0.0]
+
+    class PacedBroker:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def reqCurrentTime(self):
+            self.calls += 1
+            if self.calls > 1 and current[0] < 4.0:
+                raise TimeoutError("duplicate server-time request was paced")
+            return NOW + timedelta(seconds=self.calls)
+
+    raw = PacedBroker()
+    observer = ReadOnlyContinuityBroker(
+        raw,
+        account_identity_sha256=expected_identity_hash("DU123456"),
+        monotonic=lambda: current[0],
+    )
+
+    first = observer.reqCurrentTime()
+    second = observer.reqCurrentTime()
+
+    assert first == second
+    assert raw.calls == 1
+
+    current[0] = 5.0
+    refreshed = observer.reqCurrentTime()
+
+    assert refreshed == NOW + timedelta(seconds=2)
+    assert raw.calls == 2
+
+
 def test_production_poller_submits_at_most_one_exact_command(
     tmp_path, continuity_plan_factory, monkeypatch
 ) -> None:

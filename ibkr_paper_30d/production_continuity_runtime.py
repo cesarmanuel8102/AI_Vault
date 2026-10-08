@@ -9,6 +9,7 @@ import sqlite3
 import subprocess
 import tempfile
 import threading
+import time
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from decimal import Decimal
@@ -344,12 +345,31 @@ class ReadOnlyContinuityBroker:
     environment = "PAPER"
     all_order_visibility = True
 
-    def __init__(self, broker: Any, *, account_identity_sha256: str) -> None:
+    def __init__(
+        self,
+        broker: Any,
+        *,
+        account_identity_sha256: str,
+        monotonic: Callable[[], float] = time.monotonic,
+    ) -> None:
         self._broker = broker
         self.account_identity_sha256 = account_identity_sha256
+        self._monotonic = monotonic
+        self._last_server_time: datetime | None = None
+        self._last_server_time_observed_at: float | None = None
 
     def reqCurrentTime(self) -> datetime:
-        return self._broker.reqCurrentTime()
+        observed_at = self._monotonic()
+        if (
+            self._last_server_time is not None
+            and self._last_server_time_observed_at is not None
+            and 0 <= observed_at - self._last_server_time_observed_at < 4.0
+        ):
+            return self._last_server_time
+        server_time = self._broker.reqCurrentTime()
+        self._last_server_time = server_time
+        self._last_server_time_observed_at = observed_at
+        return server_time
 
     def disconnect(self) -> None:
         self._broker.disconnect()
