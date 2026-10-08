@@ -550,6 +550,7 @@ def current_epoch_authority_bindings(db: Database) -> dict[str, str] | None:
         "epoch_id": current.epoch_id,
         "definition_sha256": current.definition_sha256,
         "clock_event_sha256": clock.event_sha256,
+        "authorization_event_id": str(authorization["authorization_event_id"]),
         "owner_authorization_receipt_sha256": owner_receipt_sha256,
     }
 

@@ -20,6 +20,7 @@ from .experiment_control import (
 from .ibkr_readonly import expected_identity_hash
 from .ibkr_readonly_session import IBKRReadOnlySessionCollector, ReadOnlyMessageGuard
 from .persistence import Database
+from .successor_epoch import current_epoch_authority_bindings
 
 
 class KillSwitchRecoveryError(RuntimeError):
@@ -93,6 +94,12 @@ def _assert_no_active_execution_authority(
 
 
 def _latest_authority(db: Database) -> tuple[str, str]:
+    successor = current_epoch_authority_bindings(db)
+    if successor is not None:
+        return (
+            successor["authorization_event_id"],
+            successor["clock_event_sha256"],
+        )
     authorization = db.execute(
         "SELECT event_id FROM experiment_authorization_events "
         "ORDER BY sequence DESC LIMIT 1"

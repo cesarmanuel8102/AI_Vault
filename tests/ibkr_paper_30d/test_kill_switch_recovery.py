@@ -16,6 +16,17 @@ from ibkr_paper_30d.experiment_control import (
 from ibkr_paper_30d.ibkr_readonly import expected_identity_hash
 from ibkr_paper_30d.kill_switch_recovery import recover_kill_switch
 from ibkr_paper_30d.persistence import Database
+from ibkr_paper_30d.successor_clock import BrokerTimeObservation
+from ibkr_paper_30d.successor_epoch import (
+    BrokerTransitionEvidence,
+    commit_successor_transition,
+)
+from successor_test_support import (
+    ACCOUNT_HASH as SUCCESSOR_ACCOUNT_HASH,
+    OWNER_SID as SUCCESSOR_OWNER_SID,
+    SUCCESSOR_START,
+    build_authorized_successor,
+)
 
 
 NOW = datetime(2026, 10, 8, 19, 0, tzinfo=timezone.utc)
@@ -293,6 +304,96 @@ def test_recovery_command_collects_readonly_paper_evidence_before_db_clear(
     assert report_path.is_file()
     with Database.open(db_path) as db:
         assert KillSwitchStore(db).current() == "KILL_SWITCH_CLEAR"
+
+
+def test_recovery_command_binds_active_successor_authority(tmp_path) -> None:
+    repo = tmp_path / "repo"
+    db_path = repo / "state" / "ibkr_paper_30d" / "autonomous.sqlite3"
+    successor_receipt_path = repo / "owner-successor.json"
+    expected_path = repo / "Secrets" / "expected_paper_account_identity_v1.json"
+    expected_path.parent.mkdir(parents=True)
+    account = "DU123456"
+    account_hash = expected_identity_hash(account)
+    expected_path.write_text(
+        '{"schema":"EXPECTED_PAPER_ACCOUNT_IDENTITY_V1","account_sha256":"'
+        + account_hash
+        + '"}',
+        encoding="utf-8",
+    )
+    definition, successor_receipt = build_authorized_successor(
+        db_path, successor_receipt_path
+    )
+    collected_at = SUCCESSOR_START + timedelta(seconds=1)
+    with Database.open(db_path) as db:
+        transition = commit_successor_transition(
+            db=db,
+            launch_attempt_id="launch-successor-recovery",
+            target_successor_epoch_id=str(definition["epoch_id"]),
+            target_successor_definition_sha256=str(definition["definition_sha256"]),
+            expected_account_identity_sha256=SUCCESSOR_ACCOUNT_HASH,
+            expected_owner_sid=SUCCESSOR_OWNER_SID,
+            owner_authorization_receipt=successor_receipt,
+            execution_lock_verifier=lambda: True,
+            broker_evidence_collector=lambda: BrokerTransitionEvidence(
+                account_identity_sha256=SUCCESSOR_ACCOUNT_HASH,
+                collected_at_utc=collected_at,
+                observation=BrokerTimeObservation(
+                    server_time_utc=SUCCESSOR_START,
+                    observed_at_utc=collected_at,
+                    authenticated=True,
+                    paper_session=True,
+                ),
+                positions_count=0,
+                open_orders_count=0,
+                broker_write_count=0,
+            ),
+            now_utc=lambda: SUCCESSOR_START + timedelta(seconds=2),
+        )
+        switch = KillSwitchStore(db)
+        switch.set("KILL_SWITCH_CLEAR", reason="initial", actor=SUCCESSOR_OWNER_SID)
+        switch.set(
+            "KILL_SWITCH_TRIGGERED",
+            reason="watchdog failure",
+            actor="CONTINUITY_V3_RUNTIME",
+        )
+    recovery_time = NOW + timedelta(seconds=1)
+    evidence = SimpleNamespace(
+        connected=True,
+        authenticated=True,
+        managed_accounts=(account,),
+        positions=({"account": account, "symbol": "HAE", "position": "4"},),
+        open_orders=(),
+        executions=({"account": account, "execId": "exec-1"},),
+        server_timestamp_utc=recovery_time.isoformat().replace("+00:00", "Z"),
+        heartbeat_ok=True,
+        query_completeness={
+            "managed_accounts": True,
+            "positions": True,
+            "open_orders": True,
+            "executions": True,
+            "current_time": True,
+        },
+        outbound_message_ids=(71, 6, 62),
+        errors=(),
+    )
+
+    result = recover_kill_switch(
+        repo_root=repo,
+        approved_head=APPROVED_HEAD,
+        recovery_reason_code="CONTINUITY_WATCHDOG_PACING_DEFECT_REMEDIATED",
+        evidence_collector=lambda **_: evidence,
+        head_reader=lambda _: APPROVED_HEAD,
+        current_sid=lambda: SUCCESSOR_OWNER_SID,
+        token_elevated=lambda: True,
+        now_utc=lambda: recovery_time,
+    )
+
+    assert result["status"] == "PASS"
+    assert (
+        result["receipt"]["authorization_event_id"]
+        == successor_receipt["authorization_event_id"]
+    )
+    assert result["receipt"]["clock_event_sha256"] == transition.clock_event_sha256
 
 
 def test_recovery_blocks_if_authorization_changes_before_commit(tmp_path) -> None:

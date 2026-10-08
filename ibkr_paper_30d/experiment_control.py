@@ -364,28 +364,44 @@ class KillSwitchStore:
         with self.db.transaction():
             if precommit_verifier is not None:
                 precommit_verifier(self.db)
-            authorization = self.db.execute(
-                "SELECT event_id,state,clock_event_sha256 "
-                "FROM experiment_authorization_events ORDER BY sequence DESC LIMIT 1"
-            ).fetchone()
-            if authorization is not None:
-                if str(authorization[0]) != expected_authorization_event_id:
+            from .successor_epoch import current_epoch_authority_bindings
+
+            successor = current_epoch_authority_bindings(self.db)
+            if successor is not None:
+                if (
+                    successor["authorization_event_id"]
+                    != expected_authorization_event_id
+                ):
                     raise ExperimentControlError(
                         "KILL_SWITCH_RECOVERY_AUTHORIZATION_CHANGED"
                     )
-                if (
-                    str(authorization[1]) != "AUTHORIZED"
-                    or str(authorization[2]) != expected_clock_event_sha256
-                ):
-                    raise ExperimentControlError(
-                        "KILL_SWITCH_RECOVERY_AUTHORIZATION_INVALID"
-                    )
-                clock = ExperimentClockStore(self.db).load()
-                if (
-                    clock is None
-                    or clock.event_sha256 != expected_clock_event_sha256
-                ):
+                if successor["clock_event_sha256"] != expected_clock_event_sha256:
                     raise ExperimentControlError("KILL_SWITCH_RECOVERY_CLOCK_CHANGED")
+            else:
+                authorization = self.db.execute(
+                    "SELECT event_id,state,clock_event_sha256 "
+                    "FROM experiment_authorization_events ORDER BY sequence DESC LIMIT 1"
+                ).fetchone()
+                if authorization is not None:
+                    if str(authorization[0]) != expected_authorization_event_id:
+                        raise ExperimentControlError(
+                            "KILL_SWITCH_RECOVERY_AUTHORIZATION_CHANGED"
+                        )
+                    if (
+                        str(authorization[1]) != "AUTHORIZED"
+                        or str(authorization[2]) != expected_clock_event_sha256
+                    ):
+                        raise ExperimentControlError(
+                            "KILL_SWITCH_RECOVERY_AUTHORIZATION_INVALID"
+                        )
+                    clock = ExperimentClockStore(self.db).load()
+                    if (
+                        clock is None
+                        or clock.event_sha256 != expected_clock_event_sha256
+                    ):
+                        raise ExperimentControlError(
+                            "KILL_SWITCH_RECOVERY_CLOCK_CHANGED"
+                        )
             row = self.db.execute(
                 "SELECT event_id,state,payload_sha256 FROM kill_switch_events "
                 "ORDER BY sequence DESC LIMIT 1"
