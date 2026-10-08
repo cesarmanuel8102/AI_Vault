@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -597,6 +599,16 @@ def test_auditor_account_enablement_is_inside_cleanup_guard():
     assert marker < try_index < enable_index < finally_index < cleanup_disable
     assert "$AuditorEnabledForProbe = $true" in text[enable_index:finally_index]
     assert "$ProbeFirewallInstalled = $true" in text[enable_index:finally_index]
+
+
+def test_finalizer_trust_anchor_hash_matches_checked_in_anchor():
+    text = FINALIZER.read_text(encoding="utf-8")
+    match = re.search(r'\$ExpectedTrustAnchorSha256 = "([0-9a-f]{64})"', text)
+
+    assert match is not None
+    assert match.group(1) == hashlib.sha256(
+        (ROOT / "AUDITOR_RUNTIME_V2_TRUST_ANCHOR_V1.json").read_bytes()
+    ).hexdigest()
 
 
 def test_auditor_probe_launch_uses_clean_explicit_environment():
