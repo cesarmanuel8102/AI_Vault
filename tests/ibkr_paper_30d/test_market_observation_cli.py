@@ -12,7 +12,7 @@ from ibkr_paper_30d.cli import (
     observe_market_data,
     validate_market_observation,
 )
-from ibkr_paper_30d.market_data import MarketDataPolicy, QuoteSnapshot
+from ibkr_paper_30d.market_data import DecisionClass, MarketDataPolicy, QuoteSnapshot
 from ibkr_paper_30d.market_observation import (
     MarketObservation,
     MarketSession,
@@ -238,3 +238,20 @@ def test_validate_passes_fresh_quote_without_order_authority() -> None:
     assert report["market_data_policy_frozen"] is True
     assert report["real_order_writes_attempted"] == 0
     assert report["new_order_authority"] == "FROZEN"
+
+
+def test_validate_allows_postmarket_only_for_open_position_management() -> None:
+    postmarket = quote(market_session="POSTMARKET")
+
+    new_trade = validate_market_observation(policy(), [postmarket], now=NOW)
+    management = validate_market_observation(
+        policy(),
+        [postmarket],
+        now=NOW,
+        decision_class=DecisionClass.OPEN_POSITION_MANAGEMENT,
+    )
+
+    assert new_trade["market_data_gate"] == "BLOCK"
+    assert "MARKET_SESSION_NOT_REGULAR" in new_trade["reason_codes"]
+    assert management["market_data_gate"] == "PASS"
+    assert management["decision_class"] == "OPEN_POSITION_MANAGEMENT"

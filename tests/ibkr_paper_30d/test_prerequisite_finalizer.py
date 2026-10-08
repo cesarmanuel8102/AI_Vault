@@ -325,6 +325,14 @@ def test_market_runner_scheduled_mode_reuses_existing_pass_before_long_collectio
     assert reuse < launch_reused < archive < initialize < validate < launch
 
 
+def test_market_runner_uses_position_management_validation_after_close():
+    text = MARKET_RUNNER.read_text(encoding="utf-8")
+
+    assert "function Resolve-QuickValidationDecisionClass" in text
+    assert 'return "OPEN_POSITION_MANAGEMENT"' in text
+    assert '"--decision-class", $DecisionClass' in text
+
+
 def test_market_runner_inspection_mode_is_explicit_and_read_only():
     text = MARKET_RUNNER.read_text(encoding="utf-8")
     assert "[switch]$InspectStatus" in text

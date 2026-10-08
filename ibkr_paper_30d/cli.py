@@ -378,15 +378,14 @@ def validate_market_observation(
     quotes: Sequence[QuoteSnapshot],
     *,
     now: datetime,
+    decision_class: DecisionClass = DecisionClass.NEW_TRADE,
 ) -> dict[str, object]:
     if not quotes:
         return _blocked_market_report(
             "REAL_MARKET_DATA_VALIDATION_V1", ["MARKET_QUOTES_MISSING"]
         )
     snapshot = MarketDataSnapshot.freeze(quotes, created_at_utc=now)
-    result = MarketDataGate(policy).evaluate(
-        snapshot, DecisionClass.NEW_TRADE, now=now
-    )
+    result = MarketDataGate(policy).evaluate(snapshot, decision_class, now=now)
     return {
         "schema": "REAL_MARKET_DATA_VALIDATION_V1",
         "status": result.status,
@@ -395,6 +394,7 @@ def validate_market_observation(
         "market_data_snapshot_id": result.market_data_snapshot_id,
         "market_data_snapshot_sha256": result.market_data_snapshot_sha256,
         "policy_version": result.market_data_policy_version,
+        "decision_class": decision_class.value,
         "market_data_policy_frozen": True,
         "symbol_count": len(quotes),
         "broker_calls_made": 0,
@@ -411,6 +411,7 @@ def validate_real_market_data(
     output_path: str | Path = MARKET_VALIDATION_REPORT,
     source: MarketDataSource | None = None,
     expected_account_hash: str | None = None,
+    decision_class: DecisionClass = DecisionClass.NEW_TRADE,
     now_utc=None,
 ) -> dict[str, object]:
     reasons = _market_prerequisite_reasons(readonly_report)
@@ -468,7 +469,12 @@ def validate_real_market_data(
             )
             for item in window.observations
         ]
-        report = validate_market_observation(policy, quotes, now=clock())
+        report = validate_market_observation(
+            policy,
+            quotes,
+            now=clock(),
+            decision_class=decision_class,
+        )
         direct_reasons = list(report["reason_codes"])
         if any(
             item.clock_skew_ms is None
@@ -1114,6 +1120,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     validate_parser.add_argument("--host", default="127.0.0.1")
     validate_parser.add_argument("--port", type=int, default=4002)
     validate_parser.add_argument("--policy", type=Path, default=MARKET_POLICY)
+    validate_parser.add_argument(
+        "--decision-class",
+        choices=[item.value for item in DecisionClass],
+        default=DecisionClass.NEW_TRADE.value,
+    )
     args = parser.parse_args(argv)
 
     if args.command == "inspect-ibkr-readonly":
@@ -1152,6 +1163,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             policy_path=args.policy,
             source=IBKRMarketDataSource(host=args.host, port=args.port),
             expected_account_hash=_configured_paper_account_hash(),
+            decision_class=DecisionClass(args.decision_class),
         )
     elif args.command == "probe-auditor-isolation":
         report = write_isolation_report(

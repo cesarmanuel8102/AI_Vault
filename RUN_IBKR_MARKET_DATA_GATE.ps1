@@ -169,6 +169,28 @@ function Get-EasternNow {
     return [TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $Zone)
 }
 
+function Resolve-QuickValidationDecisionClass {
+    param([object]$ReadOnly, [DateTime]$EasternNow)
+
+    $PositionCount = if ($null -ne $ReadOnly.PSObject.Properties["position_count"]) {
+        [int]$ReadOnly.position_count
+    } else { 0 }
+    $OpenOrderCount = if ($null -ne $ReadOnly.PSObject.Properties["open_order_count"]) {
+        [int]$ReadOnly.open_order_count
+    } else { 0 }
+    $HasContinuityObligation = $PositionCount -gt 0 -or $OpenOrderCount -gt 0
+    $Minutes = $EasternNow.Hour * 60 + $EasternNow.Minute
+    $OutsideRegularSession = (
+        $EasternNow.DayOfWeek -in @([DayOfWeek]::Saturday, [DayOfWeek]::Sunday) -or
+        $Minutes -lt (9 * 60 + 30) -or
+        $Minutes -ge (16 * 60)
+    )
+    if ($HasContinuityObligation -and $OutsideRegularSession) {
+        return "OPEN_POSITION_MANAGEMENT"
+    }
+    return "NEW_TRADE"
+}
+
 function Assert-RegularCollectionStart {
     $Now = Get-EasternNow
     if ($Now.DayOfWeek -in @([DayOfWeek]::Saturday, [DayOfWeek]::Sunday)) {
@@ -278,10 +300,13 @@ if ($GateMode -eq "REUSE_EXISTING") {
     if (-not (Test-ReadOnlyReconciliation -ReadOnly $ReadOnly)) {
         throw "READONLY_IDENTITY_GATE_NOT_PASS:$($ReadOnly.reason_codes -join ',')"
     }
+    $DecisionClass = Resolve-QuickValidationDecisionClass `
+        -ReadOnly $ReadOnly -EasternNow (Get-EasternNow)
     $Validation = Invoke-PythonJson -Arguments @(
         "-m", "ibkr_paper_30d.cli", "validate-real-market-data",
         "--host", "127.0.0.1", "--port", "4002",
-        "--policy", $PolicyPath
+        "--policy", $PolicyPath,
+        "--decision-class", $DecisionClass
     )
     if ($Validation.market_data_gate -ne "PASS") {
         throw "MARKET_DATA_QUICK_CHECK_BLOCK:$($Validation.reason_codes -join ',')"
