@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from concurrent.futures import Future
 import hashlib
@@ -137,6 +137,85 @@ def test_broker_evidence_collector_returns_typed_evidence_and_persists_schema(
             "WHERE event_type='BROKER_AUTHORITY_OBSERVATION_V1'"
         ).fetchone()[0]
     assert '"schema":"BROKER_AUTHORITY_OBSERVATION_V1"' in payload
+
+
+def test_broker_evidence_collector_reuses_fresh_server_time_within_pacing_window(
+    tmp_path,
+) -> None:
+    path = tmp_path / "authority.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+
+    class PacedBroker:
+        all_order_visibility = True
+
+        def __init__(self) -> None:
+            self.current_time_calls = 0
+
+        def reqCurrentTime(self):
+            self.current_time_calls += 1
+            if self.current_time_calls > 1:
+                raise TimeoutError("duplicate server-time request was paced")
+            return NOW
+
+        @staticmethod
+        def managedAccounts():
+            return ["DU123456"]
+
+    broker = PacedBroker()
+    collector = _broker_evidence_collector(path)
+    raw = {"open_orders": [], "positions": [], "executions": []}
+
+    first = collector(broker, SimpleNamespace(), raw)
+    second = collector(broker, SimpleNamespace(), raw)
+
+    assert first.broker_time_utc == NOW
+    assert second.broker_time_utc == NOW
+    assert broker.current_time_calls == 1
+    with Database.open(path) as db:
+        persisted = db.execute(
+            "SELECT COUNT(*) FROM state_events "
+            "WHERE event_type='BROKER_AUTHORITY_OBSERVATION_V1'"
+        ).fetchone()[0]
+    assert persisted == 2
+
+
+def test_broker_evidence_collector_refreshes_server_time_after_pacing_window(
+    tmp_path,
+) -> None:
+    path = tmp_path / "authority.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+
+    current = [NOW]
+
+    class Broker:
+        all_order_visibility = True
+
+        def __init__(self) -> None:
+            self.current_time_calls = 0
+
+        def reqCurrentTime(self):
+            self.current_time_calls += 1
+            return current[0]
+
+        @staticmethod
+        def managedAccounts():
+            return ["DU123456"]
+
+    broker = Broker()
+    collector = _broker_evidence_collector(path, now_utc=lambda: current[0])
+    raw = {"open_orders": [], "positions": [], "executions": []}
+
+    first = collector(broker, SimpleNamespace(), raw)
+    current[0] += timedelta(seconds=16)
+    second = collector(broker, SimpleNamespace(), raw)
+
+    assert first.broker_time_utc == NOW
+    assert second.broker_time_utc == NOW + timedelta(seconds=16)
+    assert broker.current_time_calls == 2
 
 
 def test_default_day1_dependencies_have_concrete_continuity_factories() -> None:

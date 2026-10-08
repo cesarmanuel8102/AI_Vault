@@ -666,15 +666,45 @@ class _ProductionSnapshotReader:
             )
 
 
-def _broker_evidence_collector(db_path: Path) -> Callable[..., Any]:
+def _broker_evidence_collector(
+    db_path: Path,
+    *,
+    now_utc: Callable[[], datetime] | None = None,
+) -> Callable[..., Any]:
+    clock = now_utc or (lambda: datetime.now(timezone.utc))
+    last_broker: Any | None = None
+    last_broker_time: datetime | None = None
+    last_broker_time_collected_at: datetime | None = None
+    broker_time_pacing_window = timedelta(seconds=15)
+
     def collect(broker: Any, request: Any, raw: dict[str, Any]) -> Any:
+        nonlocal last_broker
+        nonlocal last_broker_time
+        nonlocal last_broker_time_collected_at
+
         from .broker_write_coordinator import AuthorizedBrokerCommand
         from .persistence import Database
         from .production_authority import ProductionBrokerEvidence
         from .repositories import EventRepository
 
-        collected = datetime.now(timezone.utc)
-        broker_time = broker.reqCurrentTime()
+        collected = clock()
+        reuse_broker_time = bool(
+            broker is last_broker
+            and last_broker_time is not None
+            and last_broker_time_collected_at is not None
+            and last_broker_time_collected_at <= collected
+            and collected - last_broker_time_collected_at
+            < broker_time_pacing_window
+        )
+        if reuse_broker_time:
+            broker_time = last_broker_time
+            broker_time_collected_at = last_broker_time_collected_at
+        else:
+            broker_time = broker.reqCurrentTime()
+            broker_time_collected_at = collected
+            last_broker = broker
+            last_broker_time = broker_time
+            last_broker_time_collected_at = broker_time_collected_at
         if broker_time.tzinfo is None or broker_time.utcoffset() is None:
             broker_time = broker_time.replace(tzinfo=timezone.utc)
         accounts = tuple(str(value) for value in broker.managedAccounts())
@@ -715,7 +745,7 @@ def _broker_evidence_collector(db_path: Path) -> Callable[..., Any]:
             EventRepository(db).append("BROKER_AUTHORITY_OBSERVATION_V1", payload)
         return ProductionBrokerEvidence(
             **body,
-            fresh_until_utc=collected + timedelta(seconds=30),
+            fresh_until_utc=broker_time_collected_at + timedelta(seconds=30),
             evidence_sha256=evidence_sha256,
         )
 
