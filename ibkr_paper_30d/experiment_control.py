@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from .canonical import canonical_bytes, sha256_json
 from .persistence import Database
@@ -184,6 +185,11 @@ class ExperimentClockStore:
 
 class KillSwitchStore:
     VALID_STATES = frozenset({"KILL_SWITCH_CLEAR", "KILL_SWITCH_TRIGGERED"})
+    RECOVERY_RECEIPT_SCHEMA = "KILL_SWITCH_RECOVERY_RECEIPT_V1"
+    RECOVERY_EVENT_SCHEMA = "KILL_SWITCH_RECOVERY_EVENT_V1"
+    _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+    _HEAD_RE = re.compile(r"^[0-9a-f]{40}$")
+    _REASON_RE = re.compile(r"^[A-Z][A-Z0-9_]{2,127}$")
 
     def __init__(self, db: Database):
         self.db = db
@@ -200,6 +206,12 @@ class KillSwitchStore:
     def set(self, state: str, *, reason: str, actor: str = "operator") -> str:
         if state not in self.VALID_STATES:
             raise ValueError("invalid kill-switch state")
+        if state == "KILL_SWITCH_CLEAR":
+            existing = self.db.execute(
+                "SELECT 1 FROM kill_switch_events LIMIT 1"
+            ).fetchone()
+            if existing is not None:
+                raise ExperimentControlError("KILL_SWITCH_RECOVERY_RECEIPT_REQUIRED")
         payload = {
             "schema": "KILL_SWITCH_EVENT_V1",
             "state": state,
@@ -221,6 +233,257 @@ class KillSwitchStore:
             ),
         )
         return event_id
+
+    @staticmethod
+    def _parse_utc(value: object, code: str) -> datetime:
+        if not isinstance(value, str):
+            raise ExperimentControlError(code)
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise ExperimentControlError(code) from exc
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise ExperimentControlError(code)
+        return parsed.astimezone(timezone.utc)
+
+    @classmethod
+    def _validate_recovery_receipt(
+        cls,
+        receipt: object,
+        *,
+        trigger_event_id: str,
+        trigger_payload_sha256: str,
+        expected_owner_sid: str,
+        expected_account_identity_sha256: str,
+        expected_approved_head: str,
+        expected_authorization_event_id: str,
+        expected_clock_event_sha256: str,
+        now_utc: datetime | None,
+    ) -> dict[str, object]:
+        if not isinstance(receipt, dict):
+            raise ExperimentControlError("KILL_SWITCH_RECOVERY_RECEIPT_INVALID")
+        if receipt.get("schema") != cls.RECOVERY_RECEIPT_SCHEMA:
+            raise ExperimentControlError("KILL_SWITCH_RECOVERY_RECEIPT_INVALID")
+        bindings = (
+            ("trigger_event_id", trigger_event_id, "KILL_SWITCH_RECOVERY_TRIGGER_MISMATCH"),
+            (
+                "trigger_payload_sha256",
+                trigger_payload_sha256,
+                "KILL_SWITCH_RECOVERY_TRIGGER_MISMATCH",
+            ),
+            ("owner_sid", expected_owner_sid, "KILL_SWITCH_RECOVERY_OWNER_MISMATCH"),
+            (
+                "account_identity_sha256",
+                expected_account_identity_sha256,
+                "KILL_SWITCH_RECOVERY_ACCOUNT_MISMATCH",
+            ),
+            ("approved_head", expected_approved_head, "KILL_SWITCH_RECOVERY_HEAD_MISMATCH"),
+            (
+                "authorization_event_id",
+                expected_authorization_event_id,
+                "KILL_SWITCH_RECOVERY_AUTHORIZATION_MISMATCH",
+            ),
+            (
+                "clock_event_sha256",
+                expected_clock_event_sha256,
+                "KILL_SWITCH_RECOVERY_CLOCK_MISMATCH",
+            ),
+        )
+        for field, expected, code in bindings:
+            if receipt.get(field) != expected:
+                raise ExperimentControlError(code)
+        if not cls._HEAD_RE.fullmatch(str(receipt.get("approved_head", ""))):
+            raise ExperimentControlError("KILL_SWITCH_RECOVERY_HEAD_MISMATCH")
+        for field in (
+            "trigger_payload_sha256",
+            "account_identity_sha256",
+            "clock_event_sha256",
+            "broker_evidence_sha256",
+        ):
+            if not cls._SHA256_RE.fullmatch(str(receipt.get(field, ""))):
+                raise ExperimentControlError("KILL_SWITCH_RECOVERY_RECEIPT_INVALID")
+        reason = receipt.get("recovery_reason_code")
+        if not isinstance(reason, str) or not cls._REASON_RE.fullmatch(reason):
+            raise ExperimentControlError("KILL_SWITCH_RECOVERY_REASON_INVALID")
+        for field in ("positions_count", "open_orders_count", "executions_count", "broker_write_count"):
+            value = receipt.get(field)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise ExperimentControlError("KILL_SWITCH_RECOVERY_RECEIPT_INVALID")
+        if receipt["open_orders_count"] != 0:
+            raise ExperimentControlError("KILL_SWITCH_RECOVERY_OPEN_ORDERS_PRESENT")
+        if receipt["broker_write_count"] != 0:
+            raise ExperimentControlError("KILL_SWITCH_RECOVERY_BROKER_WRITE_DETECTED")
+        completeness = receipt.get("query_completeness")
+        required_queries = {
+            "managed_accounts",
+            "positions",
+            "open_orders",
+            "executions",
+            "current_time",
+        }
+        if not isinstance(completeness, dict) or any(
+            completeness.get(name) is not True for name in required_queries
+        ):
+            raise ExperimentControlError("KILL_SWITCH_RECOVERY_RECONCILIATION_INCOMPLETE")
+        server_time = cls._parse_utc(
+            receipt.get("broker_server_time_utc"),
+            "KILL_SWITCH_RECOVERY_BROKER_TIME_INVALID",
+        )
+        collected = cls._parse_utc(
+            receipt.get("collected_at_utc"),
+            "KILL_SWITCH_RECOVERY_TIMESTAMP_INVALID",
+        )
+        expires = cls._parse_utc(
+            receipt.get("expires_at_utc"),
+            "KILL_SWITCH_RECOVERY_TIMESTAMP_INVALID",
+        )
+        if expires <= collected or abs((collected - server_time).total_seconds()) > 30:
+            raise ExperimentControlError("KILL_SWITCH_RECOVERY_TIMESTAMP_INVALID")
+        if now_utc is not None:
+            if now_utc.tzinfo is None or now_utc.utcoffset() is None:
+                raise ExperimentControlError("KILL_SWITCH_RECOVERY_TIMESTAMP_INVALID")
+            normalized_now = now_utc.astimezone(timezone.utc)
+            if collected > normalized_now + timedelta(seconds=5):
+                raise ExperimentControlError("KILL_SWITCH_RECOVERY_TIMESTAMP_INVALID")
+            if expires < normalized_now:
+                raise ExperimentControlError("KILL_SWITCH_RECOVERY_EVIDENCE_STALE")
+        return dict(receipt)
+
+    def recover(
+        self,
+        receipt: object,
+        *,
+        now_utc: datetime,
+        expected_owner_sid: str,
+        expected_account_identity_sha256: str,
+        expected_approved_head: str,
+        expected_authorization_event_id: str,
+        expected_clock_event_sha256: str,
+        precommit_verifier: Callable[[Database], None] | None = None,
+    ) -> str:
+        with self.db.transaction():
+            if precommit_verifier is not None:
+                precommit_verifier(self.db)
+            authorization = self.db.execute(
+                "SELECT event_id,state,clock_event_sha256 "
+                "FROM experiment_authorization_events ORDER BY sequence DESC LIMIT 1"
+            ).fetchone()
+            if authorization is not None:
+                if str(authorization[0]) != expected_authorization_event_id:
+                    raise ExperimentControlError(
+                        "KILL_SWITCH_RECOVERY_AUTHORIZATION_CHANGED"
+                    )
+                if (
+                    str(authorization[1]) != "AUTHORIZED"
+                    or str(authorization[2]) != expected_clock_event_sha256
+                ):
+                    raise ExperimentControlError(
+                        "KILL_SWITCH_RECOVERY_AUTHORIZATION_INVALID"
+                    )
+                clock = ExperimentClockStore(self.db).load()
+                if (
+                    clock is None
+                    or clock.event_sha256 != expected_clock_event_sha256
+                ):
+                    raise ExperimentControlError("KILL_SWITCH_RECOVERY_CLOCK_CHANGED")
+            row = self.db.execute(
+                "SELECT event_id,state,payload_sha256 FROM kill_switch_events "
+                "ORDER BY sequence DESC LIMIT 1"
+            ).fetchone()
+            if row is None or str(row[1]) != "KILL_SWITCH_TRIGGERED":
+                raise ExperimentControlError("KILL_SWITCH_RECOVERY_TRIGGER_REQUIRED")
+            trigger_event_id, _, trigger_payload_sha256 = map(str, row)
+            normalized = self._validate_recovery_receipt(
+                receipt,
+                trigger_event_id=trigger_event_id,
+                trigger_payload_sha256=trigger_payload_sha256,
+                expected_owner_sid=expected_owner_sid,
+                expected_account_identity_sha256=expected_account_identity_sha256,
+                expected_approved_head=expected_approved_head,
+                expected_authorization_event_id=expected_authorization_event_id,
+                expected_clock_event_sha256=expected_clock_event_sha256,
+                now_utc=now_utc,
+            )
+            payload = {
+                "schema": self.RECOVERY_EVENT_SCHEMA,
+                "state": "KILL_SWITCH_CLEAR",
+                "reason": normalized["recovery_reason_code"],
+                "actor": expected_owner_sid,
+                "recovery_receipt": normalized,
+                "recovery_receipt_sha256": sha256_json(normalized),
+                "created_at_utc": utc_now(),
+            }
+            event_id = str(new_uuid7())
+            self.db.execute(
+                "INSERT INTO kill_switch_events("
+                "event_id,state,payload_json,payload_sha256,created_at_utc"
+                ") VALUES(?,?,?,?,?)",
+                (
+                    event_id,
+                    "KILL_SWITCH_CLEAR",
+                    canonical_bytes(payload).decode("utf-8"),
+                    sha256_json(payload),
+                    utc_now(),
+                ),
+            )
+            return event_id
+
+    def validate_history(
+        self,
+        *,
+        expected_owner_sid: str,
+        expected_account_identity_sha256: str,
+        expected_approved_head: str,
+        expected_authorization_event_id: str,
+        expected_clock_event_sha256: str,
+    ) -> str:
+        rows = self.db.execute(
+            "SELECT event_id,state,payload_json,payload_sha256 "
+            "FROM kill_switch_events ORDER BY sequence"
+        ).fetchall()
+        if not rows:
+            raise ExperimentControlError("KILL_SWITCH_TRIGGERED")
+        pending_trigger: tuple[str, str] | None = None
+        for index, row in enumerate(rows):
+            event_id, state, payload_json, payload_sha256 = map(str, row)
+            try:
+                payload = json.loads(payload_json)
+            except json.JSONDecodeError as exc:
+                raise ExperimentControlError("KILL_SWITCH_EVENT_INVALID") from exc
+            if not isinstance(payload, dict) or sha256_json(payload) != payload_sha256:
+                raise ExperimentControlError("KILL_SWITCH_EVENT_HASH_MISMATCH")
+            if payload.get("state") != state:
+                raise ExperimentControlError("KILL_SWITCH_EVENT_INVALID")
+            if index == 0:
+                if state != "KILL_SWITCH_CLEAR" or payload.get("schema") != "KILL_SWITCH_EVENT_V1":
+                    raise ExperimentControlError("KILL_SWITCH_HISTORY_INVALID")
+                continue
+            if state == "KILL_SWITCH_TRIGGERED":
+                if pending_trigger is not None or payload.get("schema") != "KILL_SWITCH_EVENT_V1":
+                    raise ExperimentControlError("KILL_SWITCH_HISTORY_INVALID")
+                pending_trigger = (event_id, payload_sha256)
+                continue
+            if state != "KILL_SWITCH_CLEAR" or pending_trigger is None:
+                raise ExperimentControlError("KILL_SWITCH_HISTORY_INVALID")
+            if payload.get("schema") != self.RECOVERY_EVENT_SCHEMA:
+                raise ExperimentControlError("KILL_SWITCH_RECOVERY_RECEIPT_REQUIRED")
+            receipt = self._validate_recovery_receipt(
+                payload.get("recovery_receipt"),
+                trigger_event_id=pending_trigger[0],
+                trigger_payload_sha256=pending_trigger[1],
+                expected_owner_sid=expected_owner_sid,
+                expected_account_identity_sha256=expected_account_identity_sha256,
+                expected_approved_head=expected_approved_head,
+                expected_authorization_event_id=expected_authorization_event_id,
+                expected_clock_event_sha256=expected_clock_event_sha256,
+                now_utc=None,
+            )
+            if payload.get("recovery_receipt_sha256") != sha256_json(receipt):
+                raise ExperimentControlError("KILL_SWITCH_RECOVERY_RECEIPT_HASH_MISMATCH")
+            pending_trigger = None
+        if pending_trigger is not None:
+            raise ExperimentControlError("KILL_SWITCH_TRIGGERED")
+        return "KILL_SWITCH_CLEAR"
 
 
 @dataclass(frozen=True)

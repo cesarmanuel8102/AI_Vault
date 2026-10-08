@@ -107,17 +107,15 @@ def test_existing_authorization_rejects_different_owner_sid(tmp_path: Path):
         create(tmp_path, actor_sid="S-1-5-21-other-owner")
 
 
-def test_validate_rejects_triggered_then_cleared_kill_history(tmp_path: Path):
+def test_owner_authorization_remains_valid_while_kill_switch_is_triggered(tmp_path: Path):
     db_path, receipt_path = paths(tmp_path)
-    create(tmp_path)
+    expected = create(tmp_path)
     with Database.open(db_path) as db:
         switch = KillSwitchStore(db)
         switch.set("KILL_SWITCH_TRIGGERED", reason="owner stop", actor=OWNER_SID)
-        switch.set("KILL_SWITCH_CLEAR", reason="invalid later clear", actor=OWNER_SID)
 
-    with pytest.raises(OwnerAuthorizationError, match="KILL_SWITCH_HISTORY_INVALID"):
-        validate_owner_authorization(
-            db_path=db_path,
-            receipt_path=receipt_path,
-            expected_actor_sid=OWNER_SID,
-        )
+    assert validate_owner_authorization(
+        db_path=db_path,
+        receipt_path=receipt_path,
+        expected_actor_sid=OWNER_SID,
+    ) == expected

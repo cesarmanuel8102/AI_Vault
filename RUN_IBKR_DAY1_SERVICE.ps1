@@ -65,7 +65,8 @@ $FinalizerArguments = @(
 $PythonArguments = @(
     "-m", "ibkr_paper_30d.day1_launch",
     "--repo-root", $ResolvedRepoRoot,
-    "--launch-attempt-id", $LaunchAttemptId
+    "--launch-attempt-id", $LaunchAttemptId,
+    "--approved-head", $ApprovedHead
 )
 if ($TargetSuccessorEpochId) {
     $FinalizerArguments += @(

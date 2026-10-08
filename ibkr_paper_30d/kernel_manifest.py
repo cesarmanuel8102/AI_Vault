@@ -24,6 +24,7 @@ PYTHON_ROOT_ROLES: dict[str, str] = {
     "ibkr_paper_30d/experiment_control.py": "clock_authorization_kill_switch",
     "ibkr_paper_30d/experiment_epoch.py": "epoch_authority",
     "ibkr_paper_30d/experiment_ledger.py": "capital_subledger",
+    "ibkr_paper_30d/kill_switch_recovery.py": "kill_switch_recovery_authority",
     "ibkr_paper_30d/ibkr_readonly_session.py": "broker_session_boundary",
     "ibkr_paper_30d/kernel_manifest.py": "kernel_manifest_authority",
     "ibkr_paper_30d/market_data.py": "market_data_gate",

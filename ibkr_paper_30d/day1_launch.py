@@ -114,6 +114,7 @@ class Day1LaunchConfig:
     model_attestation_exception_path: Path
     launch_attempt_binding_path: Path
     launch_attempt_id: str
+    approved_head: str | None = None
     target_successor_epoch_id: str | None = None
     target_successor_definition_sha256: str | None = None
     epoch_manifest_path: Path | None = None
@@ -127,6 +128,10 @@ class Day1LaunchConfig:
     model_turn_timeout_seconds: int = 600
 
     def __post_init__(self) -> None:
+        if self.approved_head is not None and not re.fullmatch(
+            r"[0-9a-f]{40}", self.approved_head
+        ):
+            raise ValueError("APPROVED_HEAD_INVALID")
         value = self.model_turn_timeout_seconds
         if (
             isinstance(value, bool)
@@ -641,7 +646,12 @@ def _latest_authorization_event_id(db: Database) -> str:
     return str(row[0])
 
 
-def validate_launch_controls(db: Database, config: Day1LaunchConfig) -> LaunchControls:
+def validate_launch_controls(
+    db: Database,
+    config: Day1LaunchConfig,
+    *,
+    preflight: LaunchPreflight | None = None,
+) -> LaunchControls:
     assert_integrity_check_ok(db)
     schema_rows = db.execute(
         "SELECT version FROM schema_versions ORDER BY version"
@@ -768,14 +778,18 @@ def validate_launch_controls(db: Database, config: Day1LaunchConfig) -> LaunchCo
             raise LaunchError("OWNER_AUTHORIZATION_INVALID")
         authorization_event_id = _latest_authorization_event_id(db)
         clock_event_sha256 = clock.event_sha256
-    states = tuple(
-        str(row[0])
-        for row in db.execute(
-            "SELECT state FROM kill_switch_events ORDER BY sequence"
-        ).fetchall()
-    )
-    if states != ("KILL_SWITCH_CLEAR",):
-        raise LaunchError("KILL_SWITCH_TRIGGERED")
+    try:
+        kill_switch_state = KillSwitchStore(db).validate_history(
+            expected_owner_sid=("" if preflight is None else preflight.owner_sid),
+            expected_account_identity_sha256=(
+                "" if preflight is None else preflight.expected_account_hash
+            ),
+            expected_approved_head=(config.approved_head or ""),
+            expected_authorization_event_id=authorization_event_id,
+            expected_clock_event_sha256=clock_event_sha256,
+        )
+    except ExperimentControlError as exc:
+        raise LaunchError(str(exc)) from exc
     ledger = AutonomousExperimentLedger(
         db, allocation=config.initial_allocation
     ).project()
@@ -784,7 +798,7 @@ def validate_launch_controls(db: Database, config: Day1LaunchConfig) -> LaunchCo
     return LaunchControls(
         clock_event_sha256=clock_event_sha256,
         authorization_event_id=authorization_event_id,
-        kill_switch_state=states[0],
+        kill_switch_state=kill_switch_state,
         clock=clock,
         resume_started_epoch=(successor_mode and resume_started_epoch),
     )
@@ -1343,7 +1357,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
             ) != "PASS":
                 raise LaunchError("CONTINUITY_SCHEMA_V3_REQUIRED")
 
-            controls = validate_launch_controls(db, config)
+            controls = validate_launch_controls(db, config, preflight=preflight)
             if controls.authorization_event_id != preflight.authorization_event_id:
                 raise LaunchError("OWNER_AUTHORIZATION_CHANGED_DURING_PREFLIGHT")
             recover_provider = dependencies.provider_abandonment_recoverer
@@ -1714,6 +1728,7 @@ def _default_config(
     repo_root: Path,
     launch_attempt_id: str,
     *,
+    approved_head: str | None = None,
     target_successor_epoch_id: str | None = None,
     target_successor_definition_sha256: str | None = None,
 ) -> Day1LaunchConfig:
@@ -1750,6 +1765,7 @@ def _default_config(
             else "launch_attempt_binding_v1.json"
         ),
         launch_attempt_id=launch_attempt_id,
+        approved_head=approved_head,
         target_successor_epoch_id=target_successor_epoch_id,
         target_successor_definition_sha256=(target_successor_definition_sha256),
     )
@@ -1944,12 +1960,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m ibkr_paper_30d.day1_launch")
     parser.add_argument("--launch-attempt-id", required=True)
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
+    parser.add_argument("--approved-head")
     parser.add_argument("--target-successor-epoch-id")
     parser.add_argument("--target-successor-definition-sha256")
     args = parser.parse_args(argv)
     config = _default_config(
         args.repo_root.resolve(),
         args.launch_attempt_id,
+        approved_head=args.approved_head,
         target_successor_epoch_id=args.target_successor_epoch_id,
         target_successor_definition_sha256=(args.target_successor_definition_sha256),
     )

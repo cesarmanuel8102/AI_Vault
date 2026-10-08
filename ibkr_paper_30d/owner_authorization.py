@@ -206,8 +206,6 @@ def validate_owner_authorization(
     with Database.open(db_path) as db:
         clock = _validate_clock(ExperimentClockStore(db, EXPERIMENT_ID).load())
         event_id = _validate_authorization_event(db, clock, expected_actor_sid)
-        if _kill_history(db) != ("KILL_SWITCH_CLEAR",):
-            raise OwnerAuthorizationError("KILL_SWITCH_HISTORY_INVALID")
         payload = _receipt(clock, event_id, expected_actor_sid)
     _validate_receipt(receipt_path, payload)
     return payload

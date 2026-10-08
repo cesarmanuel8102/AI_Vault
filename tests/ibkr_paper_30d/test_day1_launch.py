@@ -429,6 +429,7 @@ def passing_context(tmp_path: Path) -> LaunchTestContext:
         ),
         launch_attempt_binding_path=reports / "launch_attempt_binding_v1.json",
         launch_attempt_id=ATTEMPT_ID,
+        approved_head="b" * 40,
     )
     config.expected_identity_path.parent.mkdir(parents=True)
     config.expected_identity_path.write_bytes(
@@ -1177,7 +1178,6 @@ def test_validate_launch_controls_rejects_any_triggered_kill_history(
     with Database.open(ctx.config.db_path) as db:
         switch = KillSwitchStore(db)
         switch.set("KILL_SWITCH_TRIGGERED", reason="owner stop")
-        switch.set("KILL_SWITCH_CLEAR", reason="invalid later clear")
         before = tuple(
             str(row[0])
             for row in db.execute(
@@ -1200,9 +1200,67 @@ def test_validate_launch_controls_rejects_any_triggered_kill_history(
         == (
             "KILL_SWITCH_CLEAR",
             "KILL_SWITCH_TRIGGERED",
-            "KILL_SWITCH_CLEAR",
         )
     )
+
+
+def test_validate_launch_controls_accepts_exact_verified_recovery(tmp_path: Path) -> None:
+    ctx = passing_context(tmp_path)
+    preflight = evaluate_launch_preflight(ctx.config, ctx.dependencies)
+    with Database.open(ctx.config.db_path) as db:
+        switch = KillSwitchStore(db)
+        trigger_event_id = switch.set(
+            "KILL_SWITCH_TRIGGERED",
+            reason="watchdog pacing failure",
+            actor="CONTINUITY_V3_RUNTIME",
+        )
+        trigger_payload_sha256 = str(
+            db.execute(
+                "SELECT payload_sha256 FROM kill_switch_events WHERE event_id=?",
+                (trigger_event_id,),
+            ).fetchone()[0]
+        )
+        receipt = {
+            "schema": "KILL_SWITCH_RECOVERY_RECEIPT_V1",
+            "trigger_event_id": trigger_event_id,
+            "trigger_payload_sha256": trigger_payload_sha256,
+            "approved_head": ctx.config.approved_head,
+            "owner_sid": OWNER_SID,
+            "account_identity_sha256": ACCOUNT_HASH,
+            "authorization_event_id": preflight.authorization_event_id,
+            "clock_event_sha256": ExperimentClockStore(db).load().event_sha256,
+            "broker_evidence_sha256": "d" * 64,
+            "broker_server_time_utc": NOW.isoformat().replace("+00:00", "Z"),
+            "collected_at_utc": NOW.isoformat().replace("+00:00", "Z"),
+            "expires_at_utc": (NOW + timedelta(seconds=30)).isoformat().replace(
+                "+00:00", "Z"
+            ),
+            "positions_count": 1,
+            "open_orders_count": 0,
+            "executions_count": 1,
+            "broker_write_count": 0,
+            "query_completeness": {
+                "managed_accounts": True,
+                "positions": True,
+                "open_orders": True,
+                "executions": True,
+                "current_time": True,
+            },
+            "recovery_reason_code": "CONTINUITY_WATCHDOG_PACING_DEFECT_REMEDIATED",
+        }
+        switch.recover(
+            receipt,
+            now_utc=NOW,
+            expected_owner_sid=OWNER_SID,
+            expected_account_identity_sha256=ACCOUNT_HASH,
+            expected_approved_head=str(ctx.config.approved_head),
+            expected_authorization_event_id=preflight.authorization_event_id,
+            expected_clock_event_sha256=ExperimentClockStore(db).load().event_sha256,
+        )
+
+        controls = validate_launch_controls(db, ctx.config, preflight=preflight)
+
+    assert controls.kill_switch_state == "KILL_SWITCH_CLEAR"
 
 
 def test_validate_launch_controls_rejects_invalid_ledger_projection(
@@ -1723,9 +1781,9 @@ def test_launch_order_is_preflight_lock_controls_arm_service(
         events.append("preflight")
         return original_preflight(config, dependencies)
 
-    def controls(db, config):
+    def controls(db, config, *, preflight=None):
         events.append("controls")
-        return original_controls(db, config)
+        return original_controls(db, config, preflight=preflight)
 
     def provenance(config):
         events.append("provenance")
