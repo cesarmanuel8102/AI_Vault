@@ -25,7 +25,7 @@ from .autonomy_workspace import AutonomyWorkspace
 from .canonical import canonical_bytes, sha256_json
 from .continuity_schema import verify_continuity_schema_v3
 from .continuity_store import ContinuityStore, ContinuityStoreError
-from .provider_lifecycle import ProviderLifecycleRecorder
+from .provider_lifecycle import BrokerTimeEvidence, ProviderLifecycleRecorder
 from .epoch_manifest import (
     EpochManifestInputs,
     build_epoch_manifest,
@@ -1760,23 +1760,79 @@ def _default_provider_recovery(
     owner: LockOwner,
     config: Day1LaunchConfig,
     preflight: LaunchPreflight,
+    *,
+    broker_evidence_collector: (
+        Callable[[Day1LaunchConfig, LaunchPreflight], BrokerTransitionEvidence] | None
+    ) = None,
 ) -> dict[str, Any]:
-    unresolved = []
-    rows = db.execute(
-        "SELECT invocation_id FROM provider_invocation_events "
-        "GROUP BY invocation_id"
-    ).fetchall()
     store = ContinuityStore(db)
-    for row in rows:
-        invocation_id = str(row[0])
-        if store.provider_projection(invocation_id)["state"] == "IN_FLIGHT":
-            unresolved.append(invocation_id)
+
+    def unresolved_invocations() -> list[str]:
+        unresolved: list[str] = []
+        rows = db.execute(
+            "SELECT invocation_id FROM provider_invocation_events "
+            "GROUP BY invocation_id"
+        ).fetchall()
+        for row in rows:
+            invocation_id = str(row[0])
+            if store.provider_projection(invocation_id)["state"] == "IN_FLIGHT":
+                unresolved.append(invocation_id)
+        return unresolved
+
+    unresolved = unresolved_invocations()
+    if not unresolved:
+        return {
+            "status": "PASS",
+            "reason_codes": [],
+            "unresolved_invocation_ids": [],
+            "recovered_invocation_ids": [],
+        }
+
+    collector = broker_evidence_collector or _collect_successor_broker_evidence
+    broker_evidence = collector(config, preflight)
+    if (
+        broker_evidence.account_identity_sha256 != preflight.expected_account_hash
+        or broker_evidence.observation.authenticated is not True
+        or broker_evidence.observation.paper_session is not True
+        or broker_evidence.broker_write_count != 0
+    ):
+        return {
+            "status": "BLOCK",
+            "reason_codes": ["PROVIDER_ABANDONMENT_BROKER_EVIDENCE_INVALID"],
+            "unresolved_invocation_ids": unresolved,
+            "recovered_invocation_ids": [],
+        }
+
+    broker_time = BrokerTimeEvidence.create_authenticated_paper(
+        time_utc=broker_evidence.observation.server_time_utc,
+        observed_at_utc=broker_evidence.observation.observed_at_utc,
+        account_identity_sha256=preflight.expected_account_hash,
+    )
+    recorder = ProviderLifecycleRecorder(
+        store,
+        launch_attempt_id=config.launch_attempt_id,
+        pid=owner.pid,
+        boot_session_identity=owner.boot_session_id,
+        expected_account_identity_sha256=preflight.expected_account_hash,
+    )
+    recovered = list(
+        recorder.recover_abandoned(
+            {
+                "status": "OWNED",
+                "pid": owner.pid,
+                "boot_session_identity": owner.boot_session_id,
+            },
+            broker_time,
+        )
+    )
+    unresolved = unresolved_invocations()
     return {
         "status": "PASS" if not unresolved else "BLOCK",
         "reason_codes": (
             [] if not unresolved else ["PROVIDER_ABANDONMENT_RECOVERY_REQUIRED"]
         ),
         "unresolved_invocation_ids": unresolved,
+        "recovered_invocation_ids": recovered,
     }
 
 

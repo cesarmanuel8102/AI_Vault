@@ -149,6 +149,74 @@ def test_pending_recovery_rejects_corrupt_latest_registry_state(tmp_path) -> Non
     }
 
 
+def test_default_provider_recovery_abandons_replaced_owner_invocation(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "provider-recovery.sqlite3"
+    old_invocation_id = "autonomous-abandoned-owner"
+    old_payload = {
+        "decision_cycle_id": "cycle-abandoned-owner",
+        "launch_attempt_id": "old-launch-attempt",
+        "pid": 999999,
+        "boot_session_identity": "old-boot",
+        "broker_time_utc": "2026-09-23T19:50:00+00:00",
+        "declared_deadline_broker_utc": "2026-09-23T19:55:00+00:00",
+        "broker_time_evidence_sha256": "b" * 64,
+        "broker_time_observed_at_utc": "2026-09-23T19:50:00+00:00",
+        "broker_time_authenticated": True,
+        "account_identity_sha256": ACCOUNT_HASH,
+    }
+    owner = LockOwner(
+        owner_id="replacement-owner",
+        pid=os.getpid(),
+        process_start="2026-09-23T19:59:00Z",
+        host_fingerprint="same-host",
+        boot_session_id="new-boot",
+    )
+    broker_evidence = BrokerTransitionEvidence(
+        account_identity_sha256=ACCOUNT_HASH,
+        collected_at_utc=NOW,
+        observation=BrokerTimeObservation(
+            server_time_utc=NOW,
+            observed_at_utc=NOW,
+            authenticated=True,
+            paper_session=True,
+        ),
+        positions_count=0,
+        open_orders_count=0,
+        broker_write_count=0,
+    )
+
+    with Database.open(db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        store = ContinuityStore(db)
+        store.append_provider_event(
+            old_invocation_id,
+            "IN_FLIGHT",
+            old_payload,
+            event_id=f"provider:{old_invocation_id}:in-flight",
+        )
+
+        result = launch_module._default_provider_recovery(
+            db,
+            owner,
+            SimpleNamespace(launch_attempt_id="replacement-launch-attempt"),
+            SimpleNamespace(expected_account_hash=ACCOUNT_HASH),
+            broker_evidence_collector=lambda *_: broker_evidence,
+        )
+        projection = store.provider_projection(old_invocation_id)
+
+    assert result == {
+        "status": "PASS",
+        "reason_codes": [],
+        "unresolved_invocation_ids": [],
+        "recovered_invocation_ids": [old_invocation_id],
+    }
+    assert projection["state"] == "ABANDONED"
+    assert projection["payload"]["failure_code"] == "EXECUTION_LOCK_OWNER_REPLACED"
+
+
 class ExecutorTripwire:
     armed = True
     is_coordinated_model_executor = True

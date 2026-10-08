@@ -5,7 +5,8 @@ param(
     [string]$PythonExe = "python",
     [Parameter(Mandatory = $true)][string]$ApprovedHead,
     [switch]$Scheduled,
-    [switch]$InspectStatus
+    [switch]$InspectStatus,
+    [switch]$ForceFresh
 )
 
 Set-StrictMode -Version Latest
@@ -53,11 +54,15 @@ function Invoke-Day1ForegroundService {
 }
 
 function Resolve-MarketGateMode {
-    param([bool]$IsScheduled, [bool]$IsInspectStatus)
+    param([bool]$IsScheduled, [bool]$IsInspectStatus, [bool]$IsForceFresh)
     if ($IsScheduled -eq $IsInspectStatus) {
         throw "EXACTLY_ONE_MARKET_GATE_MODE_REQUIRED"
     }
-    if ($IsScheduled) { return "COLLECT_FRESH" }
+    if ($IsForceFresh -and -not $IsScheduled) {
+        throw "FORCE_FRESH_REQUIRES_SCHEDULED_MODE"
+    }
+    if ($IsScheduled -and $IsForceFresh) { return "COLLECT_FRESH" }
+    if ($IsScheduled) { return "REUSE_EXISTING" }
     return "INSPECT_EXISTING"
 }
 
@@ -65,6 +70,13 @@ function Get-ExistingMarketGateStatus {
     if (-not (Test-Path -LiteralPath $ValidationPath -PathType Leaf)) {
         return [ordered]@{
             status = "MISSING"
+            market_data_gate = "BLOCK"
+            reusable_for_scheduled_launch = $false
+        }
+    }
+    if (-not (Test-Path -LiteralPath $PolicyPath -PathType Leaf)) {
+        return [ordered]@{
+            status = "MISSING_POLICY"
             market_data_gate = "BLOCK"
             reusable_for_scheduled_launch = $false
         }
@@ -80,10 +92,17 @@ function Get-ExistingMarketGateStatus {
         }
     }
     $HasGate = $null -ne $Existing.PSObject.Properties["market_data_gate"]
+    $HasStatus = $null -ne $Existing.PSObject.Properties["status"]
+    $HasFrozen = $null -ne $Existing.PSObject.Properties["market_data_policy_frozen"]
+    $Reusable = (
+        $HasGate -and $Existing.market_data_gate -eq "PASS" -and
+        $HasStatus -and $Existing.status -eq "PASS" -and
+        $HasFrozen -and $Existing.market_data_policy_frozen -eq $true
+    )
     return [ordered]@{
         status = "INSPECTED"
-        market_data_gate = $(if ($HasGate -and $Existing.market_data_gate -eq "PASS") { "PASS" } else { "BLOCK" })
-        reusable_for_scheduled_launch = $false
+        market_data_gate = $(if ($Reusable) { "PASS" } else { "BLOCK" })
+        reusable_for_scheduled_launch = $Reusable
     }
 }
 
@@ -174,7 +193,8 @@ if (-not (Test-Path -LiteralPath $ResolvedRepoRoot -PathType Container)) {
 }
 $GateMode = Resolve-MarketGateMode `
     -IsScheduled $Scheduled.IsPresent `
-    -IsInspectStatus $InspectStatus.IsPresent
+    -IsInspectStatus $InspectStatus.IsPresent `
+    -IsForceFresh $ForceFresh.IsPresent
 if ($GateMode -eq "INSPECT_EXISTING") {
     Get-ExistingMarketGateStatus | ConvertTo-Json -Depth 4
     exit 0
@@ -188,8 +208,36 @@ if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 4002 -InformationLeve
     throw "IBKR_PAPER_GATEWAY_4002_NOT_LISTENING"
 }
 
+if ($GateMode -eq "REUSE_EXISTING") {
+    $ExistingStatus = Get-ExistingMarketGateStatus
+    if ($ExistingStatus.reusable_for_scheduled_launch -ne $true) {
+        throw "MARKET_DATA_BASELINE_NOT_REUSABLE_USE_FORCE_FRESH"
+    }
+    $ReadOnly = Invoke-PythonJson -Arguments @(
+        "-m", "ibkr_paper_30d.cli", "inspect-ibkr-readonly",
+        "--host", "127.0.0.1", "--port", "4002"
+    )
+    if ($ReadOnly.status -ne "PASS") {
+        throw "READONLY_IDENTITY_GATE_NOT_PASS:$($ReadOnly.reason_codes -join ',')"
+    }
+    $Validation = Invoke-PythonJson -Arguments @(
+        "-m", "ibkr_paper_30d.cli", "validate-real-market-data",
+        "--host", "127.0.0.1", "--port", "4002",
+        "--policy", $PolicyPath
+    )
+    if ($Validation.market_data_gate -ne "PASS") {
+        throw "MARKET_DATA_QUICK_CHECK_BLOCK:$($Validation.reason_codes -join ',')"
+    }
+    $Ready = Invoke-PythonJson -Arguments @(
+        "-m", "ibkr_paper_30d.prerequisite_tools", "readiness",
+        "--report-root", $ReportRoot
+    )
+    Invoke-Day1ForegroundService
+    exit 0
+}
+
 Assert-RegularCollectionStart
-Archive-CollectionEvidence -Reason "scheduled-refresh"
+Archive-CollectionEvidence -Reason "forced-refresh"
 Initialize-CleanEvidence
 
 $ReadOnly = Invoke-PythonJson -Arguments @(

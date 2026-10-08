@@ -308,19 +308,21 @@ def test_nonzero_finalizer_prevents_launcher_invocation(tmp_path: Path):
                 path.unlink(missing_ok=True)
 
 
-def test_market_runner_scheduled_mode_never_reuses_existing_pass():
+def test_market_runner_scheduled_mode_reuses_existing_pass_before_long_collection():
     text = MARKET_RUNNER.read_text(encoding="utf-8")
     assert "function Invoke-Day1ForegroundService" in text
-    assert text.count("Invoke-Day1ForegroundService") == 2
+    assert text.count("Invoke-Day1ForegroundService") >= 3
     assert "RUN_IBKR_DAY1_SERVICE.ps1" in text
     assert "Unregister-ScheduledTask" not in text
-    assert "$ExistingValidation.market_data_gate" not in text
+    assert 'if ($GateMode -eq "REUSE_EXISTING")' in text
 
-    archive = text.index('Archive-CollectionEvidence -Reason "scheduled-refresh"')
+    reuse = text.index('if ($GateMode -eq "REUSE_EXISTING")')
+    launch_reused = text.index("Invoke-Day1ForegroundService", reuse)
+    archive = text.index('Archive-CollectionEvidence -Reason "forced-refresh"')
     initialize = text.index("Initialize-CleanEvidence", archive)
     validate = text.index('"validate-real-market-data"', initialize)
     launch = text.rindex("Invoke-Day1ForegroundService")
-    assert archive < initialize < validate < launch
+    assert reuse < launch_reused < archive < initialize < validate < launch
 
 
 def test_market_runner_inspection_mode_is_explicit_and_read_only():
@@ -329,7 +331,7 @@ def test_market_runner_inspection_mode_is_explicit_and_read_only():
     assert "EXACTLY_ONE_MARKET_GATE_MODE_REQUIRED" in text
 
     start = text.index('if ($GateMode -eq "INSPECT_EXISTING")')
-    end = text.index("Assert-RegularCollectionStart", start)
+    end = text.index('if ($GateMode -eq "REUSE_EXISTING")', start)
     inspection_branch = text[start:end]
     assert "Get-ExistingMarketGateStatus" in inspection_branch
     assert "Invoke-Day1ForegroundService" not in inspection_branch
@@ -338,7 +340,7 @@ def test_market_runner_inspection_mode_is_explicit_and_read_only():
 
 
 @pytest.mark.skipif(os.name != "nt", reason="PowerShell harness is Windows-only")
-def test_friday_pass_cannot_launch_from_monday_scheduled_run(tmp_path: Path):
+def test_existing_pass_is_reused_by_normal_scheduled_run(tmp_path: Path):
     result = subprocess.run(
         [
             "powershell.exe",
@@ -367,6 +369,37 @@ def test_friday_pass_cannot_launch_from_monday_scheduled_run(tmp_path: Path):
 
     assert payload["existing_market_data_gate"] == "PASS"
     assert payload["existing_validated_at_utc"] == "2026-09-25T19:00:00Z"
+    assert payload["mode"] == "REUSE_EXISTING"
+    assert payload["existing_pass_reusable_for_launch"] is True
+
+
+@pytest.mark.skipif(os.name != "nt", reason="PowerShell harness is Windows-only")
+def test_force_fresh_is_explicit(tmp_path: Path):
+    result = subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(MARKET_HARNESS),
+            "-ScriptPath",
+            str(MARKET_RUNNER),
+            "-ReportRoot",
+            str(tmp_path),
+            "-Function",
+            "Resolve-MarketGateMode",
+            "-ExistingCount",
+            "friday-pass",
+            "-GateMode",
+            "scheduled-force",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout.strip().splitlines()[-1])
     assert payload["mode"] == "COLLECT_FRESH"
     assert payload["existing_pass_reusable_for_launch"] is False
 

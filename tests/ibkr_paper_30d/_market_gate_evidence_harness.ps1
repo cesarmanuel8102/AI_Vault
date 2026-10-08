@@ -10,7 +10,7 @@ param(
     [Parameter(Mandatory = $true)][ValidateSet("Initialize-CleanEvidence", "Archive-CollectionEvidence", "Invoke-PythonJson", "Resolve-MarketGateMode")][string]$Function,
     [Parameter(Mandatory = $true)][ValidateSet("0", "1", "many", "friday-pass")][string]$ExistingCount,
     [Parameter()][ValidateSet("zero", "one", "many")][string]$PythonJsonMode = "one",
-    [Parameter()][ValidateSet("scheduled", "inspect", "none", "both")][string]$GateMode = "scheduled"
+    [Parameter()][ValidateSet("scheduled", "scheduled-force", "inspect", "none", "both")][string]$GateMode = "scheduled"
 )
 
 Set-StrictMode -Version Latest
@@ -109,9 +109,10 @@ try {
         Emit-FileOperationResult
     }
     elseif ($Function -eq "Resolve-MarketGateMode") {
-        $Scheduled = $GateMode -in @("scheduled", "both")
+        $Scheduled = $GateMode -in @("scheduled", "scheduled-force", "both")
         $InspectStatus = $GateMode -in @("inspect", "both")
-        $Mode = Resolve-MarketGateMode -IsScheduled $Scheduled -IsInspectStatus $InspectStatus
+        $ForceFresh = $GateMode -eq "scheduled-force"
+        $Mode = Resolve-MarketGateMode -IsScheduled $Scheduled -IsInspectStatus $InspectStatus -IsForceFresh $ForceFresh
         $Existing = Get-Content -LiteralPath $ValidationPath -Raw | ConvertFrom-Json
         Emit -Payload @{
             status                            = "OK"
@@ -119,7 +120,7 @@ try {
             mode                              = $Mode
             existing_market_data_gate         = $Existing.market_data_gate
             existing_validated_at_utc         = $Existing.validated_at_utc
-            existing_pass_reusable_for_launch = $false
+            existing_pass_reusable_for_launch = ($Mode -eq "REUSE_EXISTING")
         } -Code 0
     }
     else {
