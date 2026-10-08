@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Mapping, Sequence
 
 from .canonical import sha256_json
+from .readonly_acceptance import is_safe_account_summary_partial
 
 
 EXPECTED_AUDITOR_SID = "S-1-5-21-214160970-1890373857-4055601883-1012"
@@ -138,10 +139,15 @@ class PaperIdentityBinding:
             readonly_payload.get("real_ibkr_read_only_identity_gate"),
             readonly_payload.get("broker_reconciliation_gate"),
         )
-        if readonly_payload.get("status") != "PASS" or gates != (
-            "PASS",
-            "PASS",
-            "PASS",
+        safe_account_summary_partial = is_safe_account_summary_partial(
+            readonly_payload
+        )
+        if (
+            readonly_payload.get("status") != "PASS"
+            and not safe_account_summary_partial
+        ) or (
+            gates != ("PASS", "PASS", "PASS")
+            and not safe_account_summary_partial
         ):
             raise IdentityBindingError("BROKER_DERIVED_PAPER_IDENTITY_BLOCK")
         expected_hash = readonly_payload.get("expected_account_identity_hash")

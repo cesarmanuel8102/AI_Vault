@@ -361,6 +361,9 @@ def test_consolidated_probe_and_deployment_scripts_have_safe_fixed_surfaces() ->
     assert '"AUDITOR_DENIAL_PROBE_V1.ps1"' in probe_source
     assert '"CODEX_DECISION_AUDITOR_V1.ps1"' in probe_source
     assert "[IO.FileMode]::CreateNew" in probe_source
+    assert "function Test-SafeAccountSummaryPartial" in probe_source
+    assert '"ACCOUNT_SUMMARY_FIELDS_INCOMPLETE"' in probe_source
+    assert "$Reasons.Count -eq 1" in probe_source
     assert '[ValidateSet("Review", "Install", "Remove")]' in deployment_source
     assert "INSTALLATION_PERFORMED" in deployment_source
 

@@ -129,6 +129,38 @@ function Read-StrictJson {
     return ($Text | ConvertFrom-Json)
 }
 
+function Test-SafeAccountSummaryPartial {
+    param([object]$Receipt)
+
+    $RequiredQueries = @("managed_accounts", "positions", "open_orders", "executions", "current_time")
+    if ($null -eq $Receipt.PSObject.Properties["query_completeness"]) { return $false }
+    foreach ($Name in $RequiredQueries) {
+        if (
+            $null -eq $Receipt.query_completeness.PSObject.Properties[$Name] -or
+            $Receipt.query_completeness.$Name -ne $true
+        ) { return $false }
+    }
+    $Reasons = @($Receipt.reason_codes)
+    return (
+        [string]$Receipt.status -eq "PARTIAL" -and
+        $Reasons.Count -eq 1 -and
+        [string]$Reasons[0] -eq "ACCOUNT_SUMMARY_FIELDS_INCOMPLETE" -and
+        [string]$Receipt.broker_reconciliation_gate -eq "BLOCK" -and
+        [string]$Receipt.paper_account_identity_gate -eq "PASS" -and
+        [string]$Receipt.real_ibkr_read_only_identity_gate -eq "PASS" -and
+        $Receipt.expected_account_identity_bound -eq $true -and
+        $Receipt.paper_account_namespace_ok -eq $true -and
+        [int]$Receipt.managed_account_count -eq 1 -and
+        $Receipt.heartbeat_ok -eq $true -and
+        [string]$Receipt.gateway_mode -eq "PAPER" -and
+        $Receipt.outbound_allowlist_only -eq $true -and
+        [int]$Receipt.real_order_writes_attempted -eq 0 -and
+        $Receipt.account_summary_consistent -eq $true -and
+        $Receipt.account_summary_complete -eq $false -and
+        $Receipt.gateway_config_consistent -eq $true
+    )
+}
+
 function Read-ResultLine {
     param([object[]]$Lines)
     $Matches = @($Lines | Where-Object { [string]$_ -like "RESULT_JSON=*" })
@@ -206,11 +238,13 @@ $Functional = Read-ResultLine -Lines $FunctionalLines
 if ($Functional.status -ne "PASS") { throw "FUNCTIONAL_AUDITOR_BLOCK" }
 
 $PaperReceipt = Read-StrictJson -LiteralPath $PaperIdentityReceiptPath
+$SafeAccountSummaryPartial = Test-SafeAccountSummaryPartial -Receipt $PaperReceipt
 if (
     $PaperReceipt.schema -ne "REAL_IBKR_READ_ONLY_RECONCILIATION_V1" -or
+    ([string]$PaperReceipt.status -ne "PASS" -and -not $SafeAccountSummaryPartial) -or
     $PaperReceipt.paper_account_identity_gate -ne "PASS" -or
     $PaperReceipt.real_ibkr_read_only_identity_gate -ne "PASS" -or
-    $PaperReceipt.broker_reconciliation_gate -ne "PASS" -or
+    ($PaperReceipt.broker_reconciliation_gate -ne "PASS" -and -not $SafeAccountSummaryPartial) -or
     $PaperReceipt.gateway_mode -ne "PAPER" -or
     [int]$PaperReceipt.port -ne 4002
 ) { throw "PAPER_IDENTITY_BLOCK" }

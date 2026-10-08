@@ -17,6 +17,7 @@ from .auditor_gate_v2 import (
     PaperIdentityBinding,
     load_and_evaluate_auditor_gate_v2,
 )
+from .readonly_acceptance import is_safe_account_summary_partial
 from .successor_authorization import validate_successor_authorization
 
 
@@ -124,33 +125,7 @@ def create_audit_export(
     payload = json.loads(raw)
     if payload.get("schema") != "REAL_IBKR_READ_ONLY_RECONCILIATION_V1":
         raise ValueError("READONLY_RECEIPT_SCHEMA_INVALID")
-    required_queries = (
-        "managed_accounts",
-        "positions",
-        "open_orders",
-        "executions",
-        "current_time",
-    )
-    completeness = payload.get("query_completeness")
-    safe_account_summary_partial = (
-        payload.get("status") == "PARTIAL"
-        and payload.get("reason_codes") == ["ACCOUNT_SUMMARY_FIELDS_INCOMPLETE"]
-        and payload.get("broker_reconciliation_gate") == "BLOCK"
-        and payload.get("paper_account_identity_gate") == "PASS"
-        and payload.get("real_ibkr_read_only_identity_gate") == "PASS"
-        and payload.get("expected_account_identity_bound") is True
-        and payload.get("paper_account_namespace_ok") is True
-        and payload.get("managed_account_count") == 1
-        and payload.get("heartbeat_ok") is True
-        and payload.get("gateway_mode") == "PAPER"
-        and payload.get("outbound_allowlist_only") is True
-        and payload.get("real_order_writes_attempted") == 0
-        and payload.get("account_summary_consistent") is True
-        and payload.get("account_summary_complete") is False
-        and payload.get("gateway_config_consistent") is True
-        and isinstance(completeness, dict)
-        and all(completeness.get(name) is True for name in required_queries)
-    )
+    safe_account_summary_partial = is_safe_account_summary_partial(payload)
     if payload.get("status") != "PASS" and not safe_account_summary_partial:
         raise ValueError("READONLY_RECEIPT_NOT_PASS")
     if (

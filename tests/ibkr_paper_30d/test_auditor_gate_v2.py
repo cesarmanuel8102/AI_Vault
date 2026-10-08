@@ -472,6 +472,44 @@ def test_paper_binding_rejects_configuration_only_or_failed_broker_gate(
         )
 
 
+def test_paper_binding_accepts_only_safe_account_summary_partial(
+    readonly_receipt_bytes,
+) -> None:
+    payload = {
+        **json.loads(readonly_receipt_bytes),
+        "status": "PARTIAL",
+        "reason_codes": ["ACCOUNT_SUMMARY_FIELDS_INCOMPLETE"],
+        "broker_reconciliation_gate": "BLOCK",
+        "paper_account_namespace_ok": True,
+        "managed_account_count": 1,
+        "heartbeat_ok": True,
+        "outbound_allowlist_only": True,
+        "real_order_writes_attempted": 0,
+        "account_summary_consistent": True,
+        "account_summary_complete": False,
+        "gateway_config_consistent": True,
+        "query_completeness": {
+            "managed_accounts": True,
+            "positions": True,
+            "open_orders": True,
+            "executions": True,
+            "current_time": True,
+        },
+    }
+
+    binding = PaperIdentityBinding.from_readonly_receipt(
+        payload, canonical_bytes(payload)
+    )
+
+    assert binding.broker_reconciliation_gate == "PASS"
+
+    payload["reason_codes"].append("EXECUTION_VISIBILITY_UNAVAILABLE")
+    with pytest.raises(
+        IdentityBindingError, match="BROKER_DERIVED_PAPER_IDENTITY_BLOCK"
+    ):
+        PaperIdentityBinding.from_readonly_receipt(payload, canonical_bytes(payload))
+
+
 @pytest.mark.parametrize(
     ("field", "value", "reason"),
     [

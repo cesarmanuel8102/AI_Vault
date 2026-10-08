@@ -61,6 +61,7 @@ from .runtime_provenance import (
     build_approved_runtime_material,
     verify_runtime_provenance,
 )
+from .readonly_acceptance import is_safe_account_summary_partial
 from .trader_invocation import TraderInputBundle
 from .successor_authorization import (
     SuccessorAuthorizationError,
@@ -363,18 +364,7 @@ def _validate_identity_receipt(
     if payload.get("gateway_mode") != "PAPER":
         raise LaunchError("PAPER_ROUTE_REQUIRED")
     completeness = payload.get("query_completeness")
-    safe_account_summary_partial = (
-        payload.get("status") == "PARTIAL"
-        and payload.get("reason_codes") == ["ACCOUNT_SUMMARY_FIELDS_INCOMPLETE"]
-        and payload.get("broker_reconciliation_gate") == "BLOCK"
-        and payload.get("account_summary_consistent") is True
-        and payload.get("account_summary_complete") is False
-        and payload.get("gateway_config_consistent") is True
-        and payload.get("outbound_allowlist_only") is True
-        and isinstance(completeness, dict)
-        and _QUERY_KEYS.issubset(completeness)
-        and all(value is True for value in completeness.values())
-    )
+    safe_account_summary_partial = is_safe_account_summary_partial(payload)
     if payload.get("status") != "PASS" and not safe_account_summary_partial:
         raise LaunchError("READONLY_RECONCILIATION_REQUIRED")
     if payload.get("managed_account_count") != 1:
