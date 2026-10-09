@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import pytest
 
 from ibkr_paper_30d.autonomous_research import (
+    AutonomousPositionAction,
     AutonomousTradeProposal,
     ProposalLeg,
 )
@@ -25,7 +26,7 @@ from ibkr_paper_30d.ibkr_research_tools import IBKRResearchToolbox
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.prerequisite_tools import evaluate_runtime_trust_anchor
 from ibkr_paper_30d.reporting import FaultInjectionHarness
-from ibkr_paper_30d.trader_invocation import TraderInputBundle
+from ibkr_paper_30d.trader_invocation import TraderDecision, TraderInputBundle
 
 
 def bundle(equity="500.00") -> TraderInputBundle:
@@ -235,6 +236,105 @@ def test_missing_margin_or_commission_evidence_blocks():
     )
     assert ok is False
     assert reasons == ("BROKER_MARGIN_EVIDENCE_MISSING",)
+
+
+@pytest.mark.parametrize(
+    ("position", "action_side", "quantity", "decision"),
+    [
+        ("4", "SELL", "2", TraderDecision.REDUCE_POSITION),
+        ("-4", "BUY", "4", TraderDecision.CLOSE_POSITION),
+    ],
+)
+def test_exposure_reducing_position_action_accepts_successful_whatif_without_economics(
+    monkeypatch, position, action_side, quantity, decision
+):
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    contract = SimpleNamespace(
+        conId=7884,
+        symbol="HAE",
+        localSymbol="HAE",
+        secType="STK",
+        exchange="NYSE",
+        primaryExchange="NYSE",
+        currency="USD",
+        lastTradeDateOrContractMonth="",
+        strike=0,
+        right="",
+        multiplier="",
+    )
+    monkeypatch.setattr(
+        toolbox,
+        "_resolve_open_position",
+        lambda ib, action: SimpleNamespace(position=position, contract=contract),
+    )
+    monkeypatch.setattr(
+        toolbox,
+        "_request_what_if",
+        lambda ib, resolved_contract, order: SimpleNamespace(
+            commission=None,
+            minCommission=None,
+            maxCommission=None,
+            initMarginChange=None,
+            maintMarginChange=None,
+            warningText=None,
+        ),
+    )
+    action = AutonomousPositionAction(
+        symbol="HAE",
+        sec_type="STK",
+        action=action_side,
+        quantity=quantity,
+        order_type="LMT",
+        limit_price="118.60",
+        contract_id=7884,
+        reason="reduce existing exposure",
+    )
+
+    result = toolbox.validate_position_action(action, bundle(), decision, ib=object())
+
+    assert result.passed is True
+    assert result.reason_codes == ()
+    assert result.broker_evidence["success"] is True
+    assert result.broker_evidence["current_position"] == position
+
+
+def test_exposure_reducing_position_action_still_blocks_broker_warning(monkeypatch):
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    contract = SimpleNamespace(conId=7884, symbol="HAE", secType="STK")
+    monkeypatch.setattr(
+        toolbox,
+        "_resolve_open_position",
+        lambda ib, action: SimpleNamespace(position="4", contract=contract),
+    )
+    monkeypatch.setattr(
+        toolbox,
+        "_request_what_if",
+        lambda ib, resolved_contract, order: SimpleNamespace(
+            commission=None,
+            minCommission=None,
+            maxCommission=None,
+            initMarginChange=None,
+            maintMarginChange=None,
+            warningText="Order not allowed for this account",
+        ),
+    )
+    action = AutonomousPositionAction(
+        symbol="HAE",
+        sec_type="STK",
+        action="SELL",
+        quantity="2",
+        order_type="LMT",
+        limit_price="118.60",
+        contract_id=7884,
+        reason="reduce existing exposure",
+    )
+
+    result = toolbox.validate_position_action(
+        action, bundle(), TraderDecision.REDUCE_POSITION, ib=object()
+    )
+
+    assert result.passed is False
+    assert result.reason_codes == ("BROKER_FEASIBILITY_WARNING_BLOCK",)
 
 
 def test_multi_leg_market_buy_cannot_use_model_capital_as_loss_floor():

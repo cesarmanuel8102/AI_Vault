@@ -235,6 +235,16 @@ class IBKRResearchToolbox:
             return False, ("BROKER_MARGIN_EXCEEDS_EXPERIMENT_EQUITY",)
         return True, ()
 
+    def _feasibility_exposure_reducing(
+        self, feasibility: dict[str, Any]
+    ) -> tuple[bool, tuple[str, ...]]:
+        if not feasibility.get("success"):
+            return False, ("BROKER_FEASIBILITY_FAILED",)
+        warning = str(feasibility.get("warningText") or "").lower()
+        if any(token in warning for token in self.WARNING_BLOCK_TOKENS):
+            return False, ("BROKER_FEASIBILITY_WARNING_BLOCK",)
+        return True, ()
+
     def validate_proposal(
         self,
         proposal: AutonomousTradeProposal,
@@ -409,7 +419,7 @@ class IBKRResearchToolbox:
                 "maintMarginChange": getattr(state, "maintMarginChange", None),
                 "warningText": getattr(state, "warningText", None),
             }
-            feasibility_ok, reasons = self._feasibility_common(evidence, equity=equity)
+            feasibility_ok, reasons = self._feasibility_exposure_reducing(evidence)
             if not feasibility_ok:
                 return ProposalValidation(
                     passed=False,
