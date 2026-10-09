@@ -123,6 +123,34 @@ def test_verified_recovery_preserves_trigger_and_restores_clear_state(tmp_path) 
         assert _validate(store) == "KILL_SWITCH_CLEAR"
 
 
+def test_historical_recovery_remains_valid_after_approved_head_promotion(
+    tmp_path,
+) -> None:
+    with Database.open(tmp_path / "head-promotion.sqlite3") as db:
+        store = KillSwitchStore(db)
+        trigger_id, trigger_sha = _trigger(store)
+        store.recover(
+            _receipt(trigger_id, trigger_sha),
+            now_utc=NOW,
+            expected_owner_sid=OWNER_SID,
+            expected_account_identity_sha256=ACCOUNT_HASH,
+            expected_approved_head=APPROVED_HEAD,
+            expected_authorization_event_id=AUTHORIZATION_EVENT_ID,
+            expected_clock_event_sha256=CLOCK_HASH,
+        )
+
+        assert (
+            store.validate_history(
+                expected_owner_sid=OWNER_SID,
+                expected_account_identity_sha256=ACCOUNT_HASH,
+                expected_approved_head="e" * 40,
+                expected_authorization_event_id=AUTHORIZATION_EVENT_ID,
+                expected_clock_event_sha256=CLOCK_HASH,
+            )
+            == "KILL_SWITCH_CLEAR"
+        )
+
+
 def test_generic_clear_cannot_bypass_triggered_history(tmp_path) -> None:
     with Database.open(tmp_path / "generic-clear.sqlite3") as db:
         store = KillSwitchStore(db)

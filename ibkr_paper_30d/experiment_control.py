@@ -255,7 +255,7 @@ class KillSwitchStore:
         trigger_payload_sha256: str,
         expected_owner_sid: str,
         expected_account_identity_sha256: str,
-        expected_approved_head: str,
+        expected_approved_head: str | None,
         expected_authorization_event_id: str,
         expected_clock_event_sha256: str,
         now_utc: datetime | None,
@@ -277,7 +277,6 @@ class KillSwitchStore:
                 expected_account_identity_sha256,
                 "KILL_SWITCH_RECOVERY_ACCOUNT_MISMATCH",
             ),
-            ("approved_head", expected_approved_head, "KILL_SWITCH_RECOVERY_HEAD_MISMATCH"),
             (
                 "authorization_event_id",
                 expected_authorization_event_id,
@@ -292,7 +291,10 @@ class KillSwitchStore:
         for field, expected, code in bindings:
             if receipt.get(field) != expected:
                 raise ExperimentControlError(code)
-        if not cls._HEAD_RE.fullmatch(str(receipt.get("approved_head", ""))):
+        receipt_head = str(receipt.get("approved_head", ""))
+        if not cls._HEAD_RE.fullmatch(receipt_head):
+            raise ExperimentControlError("KILL_SWITCH_RECOVERY_HEAD_MISMATCH")
+        if expected_approved_head is not None and receipt_head != expected_approved_head:
             raise ExperimentControlError("KILL_SWITCH_RECOVERY_HEAD_MISMATCH")
         for field in (
             "trigger_payload_sha256",
@@ -453,6 +455,8 @@ class KillSwitchStore:
         expected_authorization_event_id: str,
         expected_clock_event_sha256: str,
     ) -> str:
+        if not self._HEAD_RE.fullmatch(expected_approved_head):
+            raise ExperimentControlError("KILL_SWITCH_RECOVERY_HEAD_MISMATCH")
         rows = self.db.execute(
             "SELECT event_id,state,payload_json,payload_sha256 "
             "FROM kill_switch_events ORDER BY sequence"
@@ -483,13 +487,16 @@ class KillSwitchStore:
                 raise ExperimentControlError("KILL_SWITCH_HISTORY_INVALID")
             if payload.get("schema") != self.RECOVERY_EVENT_SCHEMA:
                 raise ExperimentControlError("KILL_SWITCH_RECOVERY_RECEIPT_REQUIRED")
+            # A recovery receipt is immutable evidence for the deployment that
+            # performed the recovery. Later approved deployments must not
+            # rewrite that historical authority decision.
             receipt = self._validate_recovery_receipt(
                 payload.get("recovery_receipt"),
                 trigger_event_id=pending_trigger[0],
                 trigger_payload_sha256=pending_trigger[1],
                 expected_owner_sid=expected_owner_sid,
                 expected_account_identity_sha256=expected_account_identity_sha256,
-                expected_approved_head=expected_approved_head,
+                expected_approved_head=None,
                 expected_authorization_event_id=expected_authorization_event_id,
                 expected_clock_event_sha256=expected_clock_event_sha256,
                 now_utc=None,
