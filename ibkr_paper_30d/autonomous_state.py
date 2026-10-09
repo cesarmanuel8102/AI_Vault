@@ -38,6 +38,10 @@ class TransientBrokerStateBuildError(AutonomousStateBuildError):
     pass
 
 
+PROCESS_OBSERVATION_CYCLE_LIMIT = 20
+PROVIDER_STATE_CONTEXT_LIMIT = 5
+
+
 class AutonomousStateBuilder:
     """Build a fresh decision bundle from isolated experiment state + IBKR.
 
@@ -455,6 +459,171 @@ class AutonomousStateBuilder:
                 continue
         return list(reversed(items))
 
+    @staticmethod
+    def _json_mapping(raw: Any) -> dict[str, Any] | None:
+        try:
+            value = json.loads(str(raw))
+        except (TypeError, json.JSONDecodeError):
+            return None
+        return value if isinstance(value, dict) else None
+
+    def _process_observation(
+        self,
+        *,
+        positions_snapshot: list[dict[str, Any]],
+        equity: Decimal,
+        limit: int = PROCESS_OBSERVATION_CYCLE_LIMIT,
+    ) -> dict[str, Any]:
+        rows = self.db.execute(
+            "SELECT decision_cycle_id,invocation_id,payload_json,payload_sha256 "
+            "FROM autonomous_research_events WHERE event_type='final_outcome' "
+            "ORDER BY sequence DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        trigger_counts: dict[str, int] = {}
+        decision_counts: dict[str, int] = {}
+        symbol_cycle_counts: dict[str, int] = {}
+        tools_used: set[str] = set()
+        accepted_results = 0
+        rejected_results = 0
+        telemetry_cycles_observed = 0
+        cycles_with_no_candidates = 0
+        cycles_without_research_requests = 0
+        consecutive_cycles_with_no_candidates = 0
+        still_counting_no_candidates = True
+        aggregate_fields = {
+            "research_requests_executed": 0,
+            "scanner_queries": 0,
+            "scanner_results_received": 0,
+            "option_chains_queried": 0,
+            "feasibility_checks": 0,
+            "blocked_requests": 0,
+        }
+
+        cycles_observed = 0
+        for cycle_id, invocation_id, final_json, final_sha256 in rows:
+            final = self._json_mapping(final_json)
+            if final is None or sha256_json(final) != str(final_sha256):
+                continue
+            cycles_observed += 1
+            if final.get("accepted") is True:
+                accepted_results += 1
+            else:
+                rejected_results += 1
+            decision = str(final.get("decision") or "UNKNOWN")
+            decision_counts[decision] = decision_counts.get(decision, 0) + 1
+
+            invocation_row = self.db.execute(
+                "SELECT payload_json,payload_sha256 FROM trader_invocations "
+                "WHERE invocation_id=? AND decision_cycle_id=?",
+                (str(invocation_id), str(cycle_id)),
+            ).fetchone()
+            invocation = None
+            if invocation_row is not None:
+                candidate = self._json_mapping(invocation_row[0])
+                if (
+                    candidate is not None
+                    and sha256_json(candidate) == str(invocation_row[1])
+                ):
+                    invocation = candidate
+            trigger = str(
+                (invocation or {}).get("invocation_trigger") or "UNKNOWN"
+            )
+            trigger_counts[trigger] = trigger_counts.get(trigger, 0) + 1
+
+            telemetry_row = self.db.execute(
+                "SELECT payload_json,payload_sha256 "
+                "FROM autonomous_research_events "
+                "WHERE decision_cycle_id=? AND invocation_id=? "
+                "AND event_type='research_telemetry_summary' "
+                "ORDER BY sequence DESC LIMIT 1",
+                (str(cycle_id), str(invocation_id)),
+            ).fetchone()
+            telemetry_wrapper = None
+            if telemetry_row is not None:
+                candidate = self._json_mapping(telemetry_row[0])
+                if (
+                    candidate is not None
+                    and sha256_json(candidate) == str(telemetry_row[1])
+                ):
+                    telemetry_wrapper = candidate
+            telemetry = (telemetry_wrapper or {}).get("event")
+            if not isinstance(telemetry, dict):
+                still_counting_no_candidates = False
+                continue
+            telemetry_cycles_observed += 1
+            for field in aggregate_fields:
+                try:
+                    aggregate_fields[field] += int(telemetry.get(field) or 0)
+                except (TypeError, ValueError):
+                    continue
+            cycle_symbols = {
+                str(symbol).upper()
+                for symbol in telemetry.get("symbols_examined", []) or []
+                if str(symbol).strip()
+            }
+            for symbol in cycle_symbols:
+                symbol_cycle_counts[symbol] = symbol_cycle_counts.get(symbol, 0) + 1
+            tools_used.update(
+                str(tool)
+                for tool in telemetry.get("tools_used", []) or []
+                if str(tool).strip()
+            )
+            try:
+                candidates = int(telemetry.get("candidates_generated") or 0)
+                requests = int(telemetry.get("research_requests_executed") or 0)
+            except (TypeError, ValueError):
+                still_counting_no_candidates = False
+                continue
+            if candidates == 0:
+                cycles_with_no_candidates += 1
+                if still_counting_no_candidates:
+                    consecutive_cycles_with_no_candidates += 1
+            else:
+                still_counting_no_candidates = False
+            if requests == 0:
+                cycles_without_research_requests += 1
+
+        largest_position_symbol = None
+        largest_position_value = Decimal("0")
+        for position in positions_snapshot:
+            try:
+                market_value = abs(Decimal(str(position.get("market_value") or 0)))
+            except Exception:
+                continue
+            if market_value > largest_position_value:
+                largest_position_value = market_value
+                largest_position_symbol = str(position.get("symbol") or "") or None
+        largest_share = Decimal("0")
+        if equity.is_finite() and equity > 0:
+            largest_share = (largest_position_value / equity).quantize(
+                Decimal("0.0001")
+            )
+
+        return {
+            "schema": "AUTONOMOUS_PROCESS_OBSERVATION_V1",
+            "telemetry_source": "SYSTEM_GENERATED_DURABLE_EVENTS",
+            "window_cycle_limit": limit,
+            "cycles_observed": cycles_observed,
+            "telemetry_cycles_observed": telemetry_cycles_observed,
+            "accepted_results": accepted_results,
+            "rejected_results": rejected_results,
+            "trigger_counts": dict(sorted(trigger_counts.items())),
+            "decision_counts": dict(sorted(decision_counts.items())),
+            "symbols_examined": sorted(symbol_cycle_counts),
+            "symbol_cycle_counts": dict(sorted(symbol_cycle_counts.items())),
+            "tools_used": sorted(tools_used),
+            **aggregate_fields,
+            "cycles_with_no_candidates": cycles_with_no_candidates,
+            "consecutive_cycles_with_no_candidates": (
+                consecutive_cycles_with_no_candidates
+            ),
+            "cycles_without_research_requests": cycles_without_research_requests,
+            "largest_position_symbol": largest_position_symbol,
+            "largest_position_market_value": str(largest_position_value),
+            "largest_position_share_of_equity": str(largest_share),
+        }
+
     def _clock(self, now: datetime) -> dict[str, Any]:
         snapshot = self.experiment_clock.snapshot(now)
         epoch = self.epoch_store.projection(now)
@@ -482,7 +651,84 @@ class AutonomousStateBuilder:
             )
         return snapshot
 
-    def _continuity_context(self, clock: dict[str, Any]) -> dict[str, Any]:
+    @staticmethod
+    def _clock_datetime(clock: dict[str, Any]) -> datetime:
+        raw = clock.get("now_utc")
+        if isinstance(raw, datetime):
+            value = raw
+        else:
+            try:
+                value = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise AutonomousStateBuildError("EXPERIMENT_CLOCK_INVALID") from exc
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise AutonomousStateBuildError("EXPERIMENT_CLOCK_INVALID")
+        return value.astimezone(timezone.utc)
+
+    @staticmethod
+    def _plan_has_open_order(plan: Any, open_orders: list[dict[str, Any]]) -> bool:
+        binding = plan.order_binding
+        for order in open_orders:
+            if str(order.get("orderRef") or "") != binding.order_ref:
+                continue
+            if (
+                binding.ibkr_order_id is not None
+                and int(order.get("orderId") or 0) != binding.ibkr_order_id
+            ):
+                continue
+            if (
+                binding.perm_id is not None
+                and int(order.get("permId") or 0) != binding.perm_id
+            ):
+                continue
+            return True
+        return False
+
+    def _plan_bound_position_present(
+        self,
+        plan: Any,
+        positions_snapshot: list[dict[str, Any]],
+    ) -> bool:
+        position_contract_ids: set[int] = set()
+        for position in positions_snapshot:
+            try:
+                contract_id = int(position.get("contract_id") or 0)
+                quantity = Decimal(str(position.get("quantity") or 0))
+            except Exception:
+                continue
+            if contract_id > 0 and quantity.is_finite() and quantity != 0:
+                position_contract_ids.add(contract_id)
+        if not position_contract_ids:
+            return False
+        rows = self.db.execute(
+            "SELECT contract_id,payload_json,payload_sha256 "
+            "FROM experiment_order_registry WHERE order_ref=? "
+            "ORDER BY sequence DESC",
+            (plan.order_binding.order_ref,),
+        ).fetchall()
+        for contract_id, payload_json, payload_sha256 in rows:
+            payload = self._json_mapping(payload_json)
+            if payload is None or sha256_json(payload) != str(payload_sha256):
+                continue
+            if payload.get("lifecycle_event") not in {
+                "BROKER_BOUND",
+                "BROKER_IDENTITY_BOUND",
+            }:
+                continue
+            try:
+                registry_contract_id = int(contract_id or 0)
+            except (TypeError, ValueError):
+                continue
+            return registry_contract_id in position_contract_ids
+        return False
+
+    def _continuity_context(
+        self,
+        clock: dict[str, Any],
+        *,
+        open_orders_snapshot: list[dict[str, Any]] | None = None,
+        positions_snapshot: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         installed = self.db.execute(
             "SELECT 1 FROM sqlite_master WHERE type='table' "
             "AND name='continuity_plan_events'"
@@ -492,7 +738,13 @@ class AutonomousStateBuilder:
                 "status": "NOT_INSTALLED",
                 "authority_contract_required": False,
                 "active_plans": [],
+                "inactive_plan_summaries": [],
                 "provider_states": [],
+                "provider_state_summary": {
+                    "total_invocations": 0,
+                    "state_counts": {},
+                    "recent_states_limit": PROVIDER_STATE_CONTEXT_LIMIT,
+                },
                 "pending_factual_reports": [],
                 "prior_reflections": [],
             }
@@ -523,21 +775,54 @@ class AutonomousStateBuilder:
             ).fetchall()
         ]
         active_plans = []
+        inactive_plan_summaries = []
+        current_time = self._clock_datetime(clock)
+        open_orders = open_orders_snapshot or []
+        positions = positions_snapshot or []
         for order_ref in order_refs:
             plan = store.active_plan(order_ref)
             if plan is not None:
+                expired_with_position = (
+                    plan.plan_valid_until <= current_time
+                    and not self._plan_has_open_order(plan, open_orders)
+                    and self._plan_bound_position_present(plan, positions)
+                )
+                if expired_with_position:
+                    inactive_plan_summaries.append(
+                        {
+                            "plan_id": plan.plan_id,
+                            "plan_sha256": plan.sha256,
+                            "order_ref": plan.order_binding.order_ref,
+                            "plan_valid_until": plan.model_dump(mode="json")[
+                                "plan_valid_until"
+                            ],
+                            "reason": "EXPIRED_NO_OPEN_ORDER_POSITION_PRESENT",
+                        }
+                    )
+                    continue
                 active_plans.append(
                     {
                         "plan": plan.model_dump(mode="json"),
                         "plan_sha256": plan.sha256,
                     }
                 )
-        provider_states = [
-            store.provider_projection(str(row[0]))
+        provider_ids = [
+            str(row[0])
             for row in self.db.execute(
-                "SELECT DISTINCT invocation_id FROM provider_invocation_events"
+                "SELECT invocation_id,MAX(sequence) AS latest_sequence "
+                "FROM provider_invocation_events GROUP BY invocation_id "
+                "ORDER BY latest_sequence DESC"
             ).fetchall()
         ]
+        all_provider_states = [
+            store.provider_projection(invocation_id)
+            for invocation_id in provider_ids
+        ]
+        provider_state_counts: dict[str, int] = {}
+        for state in all_provider_states:
+            name = str(state.get("state") or "UNKNOWN")
+            provider_state_counts[name] = provider_state_counts.get(name, 0) + 1
+        provider_states = all_provider_states[:PROVIDER_STATE_CONTEXT_LIMIT]
         reflections = []
         for reflection_id, payload_json in self.db.execute(
             "SELECT reflection_id,payload_json FROM continuity_reflection_events "
@@ -567,7 +852,13 @@ class AutonomousStateBuilder:
                 or clock.get("owner_authorization_receipt_sha256")
             ),
             "active_plans": active_plans,
+            "inactive_plan_summaries": inactive_plan_summaries,
             "provider_states": provider_states,
+            "provider_state_summary": {
+                "total_invocations": len(all_provider_states),
+                "state_counts": dict(sorted(provider_state_counts.items())),
+                "recent_states_limit": PROVIDER_STATE_CONTEXT_LIMIT,
+            },
             "pending_factual_reports": store.pending_reports(),
             "prior_reflections": reflections,
         }
@@ -658,6 +949,13 @@ class AutonomousStateBuilder:
             }
         else:
             market_gate = self.runtime_market_gate.evaluate(decision_class)
+        projected_benchmark_state = dict(benchmark_state or {})
+        projected_benchmark_state["autonomous_process_observation"] = (
+            self._process_observation(
+                positions_snapshot=isolated_positions,
+                equity=ledger_state.equity,
+            )
+        )
         return TraderInputBundle(
             decision_cycle_id=f"cycle-{new_uuid7()}",
             utc_timestamp=clock["now_utc"],
@@ -694,7 +992,11 @@ class AutonomousStateBuilder:
             relevant_previous_immutable_decisions=self._previous_decisions(),
             process_policy_version="AUTONOMOUS_RESEARCH_V1",
             execution_realism_version="IBKR_PAPER_WHATIF_AND_PAPER_EXECUTION_V1",
-            benchmark_state=benchmark_state or {},
+            benchmark_state=projected_benchmark_state,
             experiment_clock=clock,
-            continuity_context=self._continuity_context(clock),
+            continuity_context=self._continuity_context(
+                clock,
+                open_orders_snapshot=isolated_orders,
+                positions_snapshot=isolated_positions,
+            ),
         )

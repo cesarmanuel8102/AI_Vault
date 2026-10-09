@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from types import SimpleNamespace
@@ -13,6 +14,7 @@ from ibkr_paper_30d.autonomous_state import (
     AutonomousStateBuilder,
 )
 from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
+from ibkr_paper_30d.continuity_store import ContinuityStore
 from ibkr_paper_30d.experiment_control import KillSwitchStore
 from ibkr_paper_30d.open_order_management import canonical_open_order
 from ibkr_paper_30d.persistence import Database
@@ -398,6 +400,261 @@ def test_state_builder_exposes_v3_continuity_context_without_strategy_guidance(t
     assert value.continuity_context["provider_states"] == []
     assert value.continuity_context["pending_factual_reports"] == []
     assert value.continuity_context["prior_reflections"] == []
+
+
+def _persist_completed_cycle(
+    db,
+    *,
+    index,
+    trigger,
+    decision,
+    accepted,
+    symbols,
+    tools,
+    scanner_queries=0,
+    option_chains=0,
+    feasibility_checks=0,
+):
+    cycle_id = f"cycle-observation-{index}"
+    invocation_id = f"invocation-observation-{index}"
+    bundle_id = f"bundle-observation-{index}"
+    bundle_payload = {"decision_cycle_id": cycle_id}
+    invocation_payload = {
+        "decision_cycle_id": cycle_id,
+        "invocation_id": invocation_id,
+        "invocation_trigger": trigger,
+    }
+    final_payload = {
+        "decision_cycle_id": cycle_id,
+        "invocation_id": invocation_id,
+        "accepted": accepted,
+        "decision": decision,
+        "reason_codes": [],
+    }
+    telemetry = {
+        "schema": "CODEX_RESEARCH_TELEMETRY_V1",
+        "telemetry_source": "SYSTEM_GENERATED",
+        "research_requests_executed": len(tools),
+        "tools_used": tools,
+        "scanner_queries": scanner_queries,
+        "scanner_results_received": len(symbols) if scanner_queries else 0,
+        "symbols_examined": symbols,
+        "asset_classes_examined": [],
+        "option_chains_queried": option_chains,
+        "candidates_generated": len(symbols),
+        "feasibility_checks": feasibility_checks,
+        "blocked_requests": 0,
+    }
+    db.execute(
+        "INSERT INTO trader_input_bundles(bundle_id,decision_cycle_id,payload_json,"
+        "payload_sha256,created_at_utc) VALUES(?,?,?,?,?)",
+        (
+            bundle_id,
+            cycle_id,
+            canonical_bytes(bundle_payload).decode("utf-8"),
+            sha256_json(bundle_payload),
+            f"2026-10-09T14:{index:02d}:00Z",
+        ),
+    )
+    db.execute(
+        "INSERT INTO trader_invocations(invocation_id,decision_cycle_id,bundle_id,"
+        "payload_json,payload_sha256,created_at_utc) VALUES(?,?,?,?,?,?)",
+        (
+            invocation_id,
+            cycle_id,
+            bundle_id,
+            canonical_bytes(invocation_payload).decode("utf-8"),
+            sha256_json(invocation_payload),
+            f"2026-10-09T14:{index:02d}:01Z",
+        ),
+    )
+    for event_type, payload, round_index in (
+        (
+            "research_telemetry_summary",
+            {
+                "decision_cycle_id": cycle_id,
+                "invocation_id": invocation_id,
+                "event": telemetry,
+            },
+            1,
+        ),
+        ("final_outcome", final_payload, 2),
+    ):
+        db.execute(
+            "INSERT INTO autonomous_research_events(event_id,decision_cycle_id,"
+            "invocation_id,round_index,event_type,payload_json,payload_sha256,"
+            "created_at_utc) VALUES(?,?,?,?,?,?,?,?)",
+            (
+                f"event-{event_type}-{index}",
+                cycle_id,
+                invocation_id,
+                round_index,
+                event_type,
+                canonical_bytes(payload).decode("utf-8"),
+                sha256_json(payload),
+                f"2026-10-09T14:{index:02d}:02Z",
+            ),
+        )
+
+
+def test_state_builder_projects_factual_process_observation_without_guidance(tmp_path):
+    with Database.open(tmp_path / "state.sqlite3") as db:
+        _persist_completed_cycle(
+            db,
+            index=1,
+            trigger="SCHEDULED_SCAN",
+            decision="NO_TRADE",
+            accepted=True,
+            symbols=["HAE"],
+            tools=["QUOTE", "NEWS_SEARCH"],
+        )
+        _persist_completed_cycle(
+            db,
+            index=2,
+            trigger="POSITION_EVENT",
+            decision="MONITOR_POSITION",
+            accepted=True,
+            symbols=["HAE"],
+            tools=["QUOTE"],
+        )
+
+        value = builder(db, FakeToolbox()).build(
+            trigger="SCHEDULED_SCAN",
+            benchmark_state={"owner_benchmark": "preserved"},
+        )
+
+    observation = value.benchmark_state["autonomous_process_observation"]
+    assert value.benchmark_state["owner_benchmark"] == "preserved"
+    assert observation["telemetry_source"] == "SYSTEM_GENERATED_DURABLE_EVENTS"
+    assert observation["cycles_observed"] == 2
+    assert observation["trigger_counts"] == {
+        "POSITION_EVENT": 1,
+        "SCHEDULED_SCAN": 1,
+    }
+    assert observation["decision_counts"] == {
+        "MONITOR_POSITION": 1,
+        "NO_TRADE": 1,
+    }
+    assert observation["symbols_examined"] == ["HAE"]
+    assert observation["symbol_cycle_counts"] == {"HAE": 2}
+    assert observation["scanner_queries"] == 0
+    assert observation["feasibility_checks"] == 0
+    assert observation["largest_position_share_of_equity"] == "0.5008"
+    serialized = json.dumps(observation, sort_keys=True)
+    assert "must" not in serialized.lower()
+    assert "recommend" not in serialized.lower()
+
+
+def test_expired_filled_plan_is_summarized_but_not_model_active(
+    tmp_path, continuity_plan_factory
+):
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+    from ibkr_paper_30d.successor_schema import install_successor_schema_v2
+
+    with Database.open(tmp_path / "state.sqlite3") as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        plan = continuity_plan_factory(
+            order_binding={"order_ref": "filled-order", "client_order_id": "filled-order"}
+        )
+        ContinuityStore(db).append_plan_event("ACTIVATED", plan)
+        registry_payload = {
+            "schema": "EXPERIMENT_ORDER_REGISTRY_V3",
+            "lifecycle_event": "BROKER_BOUND",
+            "order_ref": "filled-order",
+            "contract_id": 101,
+            "contract": {"conId": 101, "symbol": "HAE", "secType": "STK"},
+        }
+        db.execute(
+            "INSERT INTO experiment_order_registry(registry_id,order_ref,client_order_id,"
+            "perm_id,ibkr_order_id,contract_id,action,quantity,payload_json,"
+            "payload_sha256,created_at_utc) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                "filled-order-registry",
+                "filled-order",
+                78,
+                225256222,
+                78,
+                101,
+                "BUY",
+                "1",
+                canonical_bytes(registry_payload).decode("utf-8"),
+                sha256_json(registry_payload),
+                "2026-10-01T14:01:00Z",
+            ),
+        )
+        subject = builder(db, FakeToolbox())
+        context = subject._continuity_context(
+            {"epoch_state": "PRE_EPOCH_HISTORY", "now_utc": "2026-10-02T14:00:00Z"},
+            open_orders_snapshot=[],
+            positions_snapshot=[{"contract_id": 101, "quantity": "1"}],
+        )
+
+    assert context["active_plans"] == []
+    assert context["inactive_plan_summaries"] == [
+        {
+            "plan_id": plan.plan_id,
+            "plan_sha256": plan.sha256,
+            "order_ref": "filled-order",
+            "plan_valid_until": "2026-10-01T20:00:00Z",
+            "reason": "EXPIRED_NO_OPEN_ORDER_POSITION_PRESENT",
+        }
+    ]
+
+
+def test_expired_plan_with_open_order_remains_model_active(
+    tmp_path, continuity_plan_factory
+):
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+    from ibkr_paper_30d.successor_schema import install_successor_schema_v2
+
+    with Database.open(tmp_path / "state.sqlite3") as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        plan = continuity_plan_factory()
+        ContinuityStore(db).append_plan_event("ACTIVATED", plan)
+        subject = builder(db, FakeToolbox())
+        context = subject._continuity_context(
+            {"epoch_state": "PRE_EPOCH_HISTORY", "now_utc": "2026-10-02T14:00:00Z"},
+            open_orders_snapshot=[{"orderRef": "order-78", "orderId": 78}],
+            positions_snapshot=[],
+        )
+
+    assert len(context["active_plans"]) == 1
+    assert context["inactive_plan_summaries"] == []
+
+
+def test_continuity_provider_history_is_bounded_and_summarized(tmp_path):
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+    from ibkr_paper_30d.successor_schema import install_successor_schema_v2
+
+    with Database.open(tmp_path / "state.sqlite3") as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        store = ContinuityStore(db)
+        for index in range(7):
+            store.append_provider_event(
+                f"provider-{index}",
+                "COMPLETED_ACCEPTED" if index % 2 else "TIMEOUT_CONFIRMED",
+                {"index": index},
+            )
+        context = builder(db, FakeToolbox())._continuity_context(
+            {"epoch_state": "PRE_EPOCH_HISTORY", "now_utc": "2026-10-09T15:00:00Z"}
+        )
+
+    assert len(context["provider_states"]) == 5
+    assert [item["invocation_id"] for item in context["provider_states"]] == [
+        "provider-6",
+        "provider-5",
+        "provider-4",
+        "provider-3",
+        "provider-2",
+    ]
+    assert context["provider_state_summary"] == {
+        "total_invocations": 7,
+        "state_counts": {"COMPLETED_ACCEPTED": 3, "TIMEOUT_CONFIRMED": 4},
+        "recent_states_limit": 5,
+    }
 
 
 def _active_successor_state_builder(tmp_path):
