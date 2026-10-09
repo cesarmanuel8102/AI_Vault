@@ -21,7 +21,11 @@ from .continuity_binding import (
     PendingContinuityBinding,
 )
 from .continuity_models import CodexOrderContinuityPlan
-from .ibkr_research_tools import IBKRResearchToolbox
+from .ibkr_research_tools import (
+    IBKRResearchToolbox,
+    PositionExecutionContractError,
+    resolve_position_execution_contract,
+)
 from .open_order_management import (
     ACTIONABLE_ORDER_STATUSES,
     CANCELLED_ORDER_STATUSES,
@@ -1558,7 +1562,22 @@ class WriterOwnedModelExecutionMechanics:
                     broker_validation=validation.broker_evidence,
                 )
 
-            live_quote = self.toolbox.live_contract_quote_evidence(ib, position.contract)
+            try:
+                execution_contract = resolve_position_execution_contract(
+                    ib, position.contract
+                )
+            except PositionExecutionContractError as exc:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=(exc.reason_code,),
+                    order={},
+                    broker_validation=validation.broker_evidence,
+                )
+
+            live_quote = self.toolbox.live_contract_quote_evidence(
+                ib, execution_contract
+            )
             if not live_quote.get("success"):
                 return PaperExecutionResult(
                     success=False,
@@ -1629,6 +1648,22 @@ class WriterOwnedModelExecutionMechanics:
                     broker_validation=final_validation.broker_evidence,
                 )
 
+            try:
+                execution_contract = resolve_position_execution_contract(
+                    ib, position.contract
+                )
+            except PositionExecutionContractError as exc:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=(exc.reason_code,),
+                    order={},
+                    broker_validation={
+                        **final_validation.broker_evidence,
+                        "trade_contract_market_data": live_quote,
+                    },
+                )
+
             operator_reasons = self._operator_control_reasons()
             if operator_reasons:
                 return PaperExecutionResult(
@@ -1658,7 +1693,7 @@ class WriterOwnedModelExecutionMechanics:
                 order.orderId = int(ib.client.getReqId())
             self._register_order(
                 order=order,
-                contract=position.contract,
+                contract=execution_contract,
                 order_ref=order_ref,
                 action=action.action.upper(),
                 quantity=action.quantity,
@@ -1688,12 +1723,12 @@ class WriterOwnedModelExecutionMechanics:
                         "trade_contract_market_data": live_quote,
                     },
                 )
-            trade = ib.placeOrder(position.contract, order)
+            trade = ib.placeOrder(execution_contract, order)
             ib.sleep(self.fill_wait_seconds)
             trade = self._reconcile_post_send_trade(
                 ib,
                 trade,
-                submitted_contract=position.contract,
+                submitted_contract=execution_contract,
                 order_ref=order_ref,
             )
             broker_identity_available = self._broker_bound_identity_available(trade)

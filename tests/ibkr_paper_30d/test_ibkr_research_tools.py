@@ -5,7 +5,11 @@ from types import SimpleNamespace
 import pytest
 
 from ibkr_paper_30d.autonomous_research import ResearchRequest, ResearchTool
-from ibkr_paper_30d.ibkr_research_tools import IBKRResearchToolbox
+from ibkr_paper_30d.ibkr_research_tools import (
+    IBKRResearchToolbox,
+    PositionExecutionContractError,
+    resolve_position_execution_contract,
+)
 
 
 def trade():
@@ -124,6 +128,45 @@ def test_contract_builder_rejects_conflicting_aliases_within_one_level():
                 },
             }
         )
+
+
+def test_position_execution_contract_fails_closed_when_qualification_is_absent():
+    contract = SimpleNamespace(
+        conId=7884,
+        symbol="HAE",
+        secType="STK",
+        exchange="NYSE",
+        primaryExchange="",
+    )
+    broker = SimpleNamespace(qualifyContracts=lambda resolved: [])
+
+    with pytest.raises(
+        PositionExecutionContractError,
+        match="POSITION_ACTION_CONTRACT_QUALIFICATION_NOT_FOUND",
+    ):
+        resolve_position_execution_contract(broker, contract)
+
+
+def test_position_execution_contract_fails_closed_on_identity_change():
+    contract = SimpleNamespace(
+        conId=7884,
+        symbol="HAE",
+        secType="STK",
+        exchange="NYSE",
+        primaryExchange="",
+    )
+
+    def qualify(resolved):
+        resolved.conId = 9999
+        return [resolved]
+
+    broker = SimpleNamespace(qualifyContracts=qualify)
+
+    with pytest.raises(
+        PositionExecutionContractError,
+        match="POSITION_ACTION_CONTRACT_IDENTITY_MISMATCH",
+    ):
+        resolve_position_execution_contract(broker, contract)
 
 
 def test_toolbox_normalizes_connection_subclass_error_category(monkeypatch):

@@ -36,6 +36,76 @@ PAPER_HOSTS = {"127.0.0.1", "localhost"}
 PAPER_PORT = 4002
 
 
+class PositionExecutionContractError(ValueError):
+    def __init__(self, reason_code: str) -> None:
+        super().__init__(reason_code)
+        self.reason_code = reason_code
+
+
+def resolve_position_execution_contract(ib: Any, contract: Any) -> Any:
+    """Qualify stock position actions through SMART without changing identity."""
+    if str(getattr(contract, "secType", "") or "").upper() != "STK":
+        return contract
+
+    original_con_id = int(getattr(contract, "conId", 0) or 0)
+    if original_con_id <= 0:
+        raise PositionExecutionContractError(
+            "POSITION_ACTION_CONTRACT_IDENTITY_REQUIRED"
+        )
+
+    original_exchange = str(getattr(contract, "exchange", "") or "").upper()
+    expected_primary = str(
+        getattr(contract, "primaryExchange", "") or ""
+    ).upper()
+    if not expected_primary and original_exchange not in {"", "SMART"}:
+        expected_primary = original_exchange
+
+    routed = copy.deepcopy(contract)
+    routed.exchange = "SMART"
+    if expected_primary:
+        routed.primaryExchange = expected_primary
+
+    try:
+        qualified = list(ib.qualifyContracts(routed) or [])
+    except Exception as exc:
+        raise PositionExecutionContractError(
+            "POSITION_ACTION_CONTRACT_QUALIFICATION_FAILED"
+        ) from exc
+    if not qualified:
+        raise PositionExecutionContractError(
+            "POSITION_ACTION_CONTRACT_QUALIFICATION_NOT_FOUND"
+        )
+    if len(qualified) != 1:
+        raise PositionExecutionContractError(
+            "POSITION_ACTION_CONTRACT_QUALIFICATION_AMBIGUOUS"
+        )
+
+    resolved = qualified[0]
+    resolved_con_id = int(getattr(resolved, "conId", 0) or 0)
+    resolved_sec_type = str(
+        getattr(resolved, "secType", "") or ""
+    ).upper()
+    resolved_exchange = str(
+        getattr(resolved, "exchange", "") or ""
+    ).upper()
+    resolved_primary = str(
+        getattr(resolved, "primaryExchange", "") or ""
+    ).upper()
+    if resolved_con_id != original_con_id or resolved_sec_type != "STK":
+        raise PositionExecutionContractError(
+            "POSITION_ACTION_CONTRACT_IDENTITY_MISMATCH"
+        )
+    if resolved_exchange != "SMART":
+        raise PositionExecutionContractError(
+            "POSITION_ACTION_CONTRACT_SMART_ROUTE_REQUIRED"
+        )
+    if expected_primary and resolved_primary != expected_primary:
+        raise PositionExecutionContractError(
+            "POSITION_ACTION_CONTRACT_PRIMARY_EXCHANGE_MISMATCH"
+        )
+    return resolved
+
+
 class IBKRResearchToolbox:
     """Primitive IBKR research tools for Codex-directed paper trading.
 
@@ -389,6 +459,20 @@ class IBKRResearchToolbox:
                     broker_evidence={"position": str(position)},
                 )
 
+            try:
+                execution_contract = resolve_position_execution_contract(
+                    broker, matched.contract
+                )
+            except PositionExecutionContractError as exc:
+                return ProposalValidation(
+                    passed=False,
+                    reason_codes=(exc.reason_code,),
+                    broker_evidence={
+                        "contract": self._serialize_contract(matched.contract),
+                        "current_position": str(position),
+                    },
+                )
+
             order = Order(
                 action=action.action.upper(),
                 orderType=action.order_type.upper(),
@@ -399,7 +483,7 @@ class IBKRResearchToolbox:
             if action.limit_price is not None:
                 order.lmtPrice = float(action.limit_price)
             try:
-                state = self._request_what_if(broker, matched.contract, order)
+                state = self._request_what_if(broker, execution_contract, order)
             except Exception as exc:
                 state = None
                 state_error = f"{type(exc).__name__}:broker_operation_failed"
@@ -408,7 +492,7 @@ class IBKRResearchToolbox:
             evidence = {
                 "success": state is not None,
                 "error": state_error or ("WHAT_IF_RETURNED_NONE" if state is None else None),
-                "contract": self._serialize_contract(matched.contract),
+                "contract": self._serialize_contract(execution_contract),
                 "current_position": str(position),
                 "requested_quantity": str(quantity),
                 "whatIf": True,

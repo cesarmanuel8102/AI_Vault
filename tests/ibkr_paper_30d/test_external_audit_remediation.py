@@ -290,7 +290,8 @@ def test_exposure_reducing_position_action_accepts_successful_whatif_without_eco
         reason="reduce existing exposure",
     )
 
-    result = toolbox.validate_position_action(action, bundle(), decision, ib=object())
+    broker = SimpleNamespace(qualifyContracts=lambda resolved: [resolved])
+    result = toolbox.validate_position_action(action, bundle(), decision, ib=broker)
 
     assert result.passed is True
     assert result.reason_codes == ()
@@ -329,8 +330,9 @@ def test_exposure_reducing_position_action_still_blocks_broker_warning(monkeypat
         reason="reduce existing exposure",
     )
 
+    broker = SimpleNamespace(qualifyContracts=lambda resolved: [resolved])
     result = toolbox.validate_position_action(
-        action, bundle(), TraderDecision.REDUCE_POSITION, ib=object()
+        action, bundle(), TraderDecision.REDUCE_POSITION, ib=broker
     )
 
     assert result.passed is False

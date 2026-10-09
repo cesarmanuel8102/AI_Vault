@@ -1130,6 +1130,129 @@ def test_position_management_uses_stable_execution_client(tmp_path):
     assert toolbox.ib.place_calls == 0
 
 
+class _DirectRoutedPositionIB:
+    def __init__(self):
+        self.position_contract = SimpleNamespace(
+            conId=7884,
+            symbol="HAE",
+            localSymbol="HAE",
+            secType="STK",
+            exchange="NYSE",
+            primaryExchange="",
+            currency="USD",
+            lastTradeDateOrContractMonth="",
+            strike=0,
+            right="",
+            multiplier="1",
+            tradingClass="HAE",
+            comboLegs=[],
+        )
+        self.position = SimpleNamespace(
+            contract=self.position_contract,
+            position=Decimal("2"),
+        )
+        self.client = SimpleNamespace(getReqId=lambda: 169)
+        self.qualified_contracts = []
+        self.what_if_contracts = []
+        self.place_contracts = []
+
+    def managedAccounts(self):
+        return ["DU1234567"]
+
+    def positions(self):
+        return [self.position]
+
+    def qualifyContracts(self, contract):
+        self.qualified_contracts.append(deepcopy(contract))
+        return [contract]
+
+    def whatIfOrder(self, contract, order):
+        self.what_if_contracts.append(deepcopy(contract))
+        return SimpleNamespace(
+            commission=None,
+            minCommission=None,
+            maxCommission=None,
+            initMarginChange=None,
+            maintMarginChange=None,
+            warningText=None,
+        )
+
+    def placeOrder(self, contract, order):
+        self.place_contracts.append(deepcopy(contract))
+        order.permId = 249104474
+        order.clientId = EXECUTION_CLIENT_ID
+        return SimpleNamespace(
+            contract=contract,
+            order=order,
+            orderStatus=SimpleNamespace(
+                status="PreSubmitted",
+                filled=0,
+                remaining=1,
+                avgFillPrice=0,
+            ),
+            fills=[],
+        )
+
+    def sleep(self, seconds):
+        return True
+
+    def disconnect(self):
+        return None
+
+
+def test_position_stock_order_uses_smart_route_instead_of_position_exchange(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    broker = _DirectRoutedPositionIB()
+    toolbox = IBKRResearchToolbox()
+    toolbox._connect = lambda *, client_id=None: broker
+    quoted_contracts = []
+
+    def quote(_ib, contract, **_kwargs):
+        quoted_contracts.append(deepcopy(contract))
+        return {"success": True, "market_data_type": 1}
+
+    toolbox.live_contract_quote_evidence = quote
+    action = AutonomousPositionAction(
+        symbol="HAE",
+        sec_type="STK",
+        action="SELL",
+        quantity="1",
+        order_type="MKT",
+        contract_id=7884,
+        reason="Reduce the existing long position.",
+    )
+
+    with Database.open(tmp_path / "smart-position-route.sqlite3") as db:
+        result = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        ).execute_position_action(action, bundle(), TraderDecision.REDUCE_POSITION)
+        registry = [
+            json.loads(row[0])
+            for row in db.execute(
+                "SELECT payload_json FROM experiment_order_registry ORDER BY sequence"
+            ).fetchall()
+        ]
+
+    assert result.success is True
+    assert len(broker.qualified_contracts) >= 1
+    routed = [
+        *broker.what_if_contracts,
+        *quoted_contracts,
+        *broker.place_contracts,
+    ]
+    assert routed
+    assert {item.conId for item in routed} == {7884}
+    assert {item.exchange for item in routed} == {"SMART"}
+    assert {item.primaryExchange for item in routed} == {"NYSE"}
+    assert registry[0]["contract"]["exchange"] == "SMART"
+    assert registry[0]["contract"]["attributes"]["primaryExchange"] == "NYSE"
+
+
 def test_missing_immediate_operator_control_callback_fails_closed(tmp_path):
     from ibkr_paper_30d.persistence import Database
 
