@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import copy
 import threading
+import time
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Callable
@@ -15,6 +16,7 @@ from .broker_write_coordinator import (
     BrokerWriteCoordinator,
 )
 from .canonical import sha256_json
+from .canary_execution import CanaryExecutionAdapter, CanaryExecutionRequest
 from .coordinated_model_executor import ModelExecutionRequest
 from .continuity_liability import MaximumLiabilityEvidence
 from .contract_ownership import canonical_contract_identity as v4_contract_identity
@@ -83,6 +85,11 @@ class AuthoritativeBrokerWriter:
             [Any, ModelExecutionRequest, dict[str, Any]], dict[str, Any]
         ]
         | None = None,
+        canary_execution_adapter: CanaryExecutionAdapter | Any | None = None,
+        canary_evidence_collector: Callable[
+            [Any, CanaryExecutionRequest, dict[str, Any]], dict[str, Any]
+        ]
+        | None = None,
     ) -> None:
         self.coordinator = coordinator
         self.broker_factory = broker_factory
@@ -108,6 +115,15 @@ class AuthoritativeBrokerWriter:
         )
         self.sleeve_authority_snapshot_reader = sleeve_authority_snapshot_reader
         self.sleeve_broker_evidence_collector = sleeve_broker_evidence_collector
+        self.canary_execution_adapter = canary_execution_adapter
+        self.canary_evidence_collector = canary_evidence_collector
+        if (
+            isinstance(self.canary_execution_adapter, CanaryExecutionAdapter)
+            and self.canary_execution_adapter.writer_executor is None
+        ):
+            self.canary_execution_adapter.writer_executor = (
+                self._execute_canary_lifecycle_through_writer
+            )
         if broker_request_timeout_seconds <= 0 or broker_request_timeout_seconds > 60:
             raise ValueError("broker_request_timeout_seconds must be in (0, 60]")
         self.broker_request_timeout_seconds = float(broker_request_timeout_seconds)
@@ -246,9 +262,11 @@ class AuthoritativeBrokerWriter:
 
     def _execute(
         self,
-        command: AuthorizedBrokerCommand | ModelExecutionRequest,
+        command: AuthorizedBrokerCommand | ModelExecutionRequest | CanaryExecutionRequest,
         broker: Any,
     ):
+        if isinstance(command, CanaryExecutionRequest):
+            return self._execute_canary(command, broker)
         if isinstance(command, ModelExecutionRequest):
             return self._execute_model(command, broker)
         if isinstance(command, AuthorizedBrokerCommand):
@@ -258,6 +276,198 @@ class AuthoritativeBrokerWriter:
             status="BLOCKED",
             reasons=("WRITER_REQUEST_TYPE_UNSUPPORTED",),
         )
+
+    def _execute_canary(self, request: CanaryExecutionRequest, broker: Any):
+        if self.execution_lock_verifier() is not True:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=("EXECUTION_LOCK_REQUIRED",),
+            )
+        if self.canary_execution_adapter is None:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=("CANARY_EXECUTION_ADAPTER_REQUIRED",),
+            )
+        if self.canary_evidence_collector is None:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=("CANARY_EVIDENCE_COLLECTOR_REQUIRED",),
+            )
+        try:
+            base_evidence = self._collect_evidence(broker)
+            authority_evidence = self.canary_evidence_collector(
+                broker, request, base_evidence
+            )
+            evidence = {
+                **base_evidence,
+                **dict(authority_evidence),
+                "writer_thread_id": threading.get_ident(),
+                "execution_client_id": self.execution_client_id,
+            }
+        except BrokerEvidenceTimeout as exc:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=(exc.reason_code,),
+            )
+        except Exception as exc:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=(f"CANARY_EVIDENCE_UNAVAILABLE:{type(exc).__name__}",),
+            )
+        result = self.canary_execution_adapter.execute(request, broker, evidence)
+        if getattr(result, "status", None) == "UNCERTAIN":
+            self._report_uncertainty("CANARY_STATE_UNCERTAIN")
+        return result
+
+    def _execute_canary_lifecycle_through_writer(
+        self,
+        request: CanaryExecutionRequest,
+        broker: Any,
+        evidence: dict[str, Any],
+    ) -> list[tuple[str, int, int, bool]]:
+        """Perform the bounded round trip on this writer's existing IB session."""
+
+        from ib_insync import Contract, Order
+
+        identity = request.canonical_contract
+        contract = Contract(
+            conId=identity.con_id,
+            secType=identity.security_type,
+            exchange=identity.exchange,
+            currency=identity.currency,
+            localSymbol=identity.local_symbol,
+            tradingClass=identity.trading_class,
+            multiplier=identity.multiplier,
+        )
+        if hasattr(broker, "qualifyContracts"):
+            qualified = list(broker.qualifyContracts(contract))
+            if len(qualified) != 1 or int(qualified[0].conId or 0) != identity.con_id:
+                raise RuntimeError("CANARY_CONTRACT_QUALIFICATION_MISMATCH")
+            contract = qualified[0]
+
+        entry_ref = f"codex-ibkr-paper-30d-canary-entry-{request.sha256[:12]}"
+        exit_ref = f"codex-ibkr-paper-30d-canary-exit-{request.sha256[:12]}"
+        existing_refs = {
+            str(getattr(item.order, "orderRef", "") or "")
+            for item in evidence.get("trades", ())
+        }
+        if entry_ref in existing_refs or exit_ref in existing_refs:
+            raise RuntimeError("CANARY_DUPLICATE_ORDER_PRESENT")
+
+        def make_order(*, action: str, order_type: str, order_ref: str) -> Any:
+            order = Order(
+                action=action,
+                orderType=order_type,
+                totalQuantity=float(request.quantity),
+                transmit=True,
+                whatIf=False,
+                orderRef=order_ref,
+                outsideRth=request.entry_terms.outside_regular_hours,
+            )
+            if order_type == "LMT":
+                price = (
+                    request.entry_terms.limit_price
+                    if order_ref == entry_ref
+                    else evidence.get("flat_return_limit_price")
+                )
+                if price is None or Decimal(str(price)) <= 0:
+                    raise RuntimeError("CANARY_LIMIT_PRICE_REQUIRED")
+                order.lmtPrice = float(Decimal(str(price)))
+            if hasattr(broker, "client") and hasattr(broker.client, "getReqId"):
+                order.orderId = int(broker.client.getReqId())
+            return order
+
+        def wait_terminal(trade: Any) -> tuple[str, Decimal, Decimal]:
+            deadline = time.monotonic() + self.broker_request_timeout_seconds
+            while True:
+                status = str(getattr(trade.orderStatus, "status", "") or "")
+                filled = Decimal(str(getattr(trade.orderStatus, "filled", 0) or 0))
+                remaining = Decimal(
+                    str(getattr(trade.orderStatus, "remaining", 0) or 0)
+                )
+                if status in {"Filled", "Cancelled", "ApiCancelled", "Inactive"}:
+                    return status, filled, remaining
+                if time.monotonic() >= deadline:
+                    try:
+                        broker.cancelOrder(trade.order)
+                    except Exception as exc:
+                        raise RuntimeError("CANARY_CANCEL_STATE_UNCERTAIN") from exc
+                    status = str(getattr(trade.orderStatus, "status", "") or "")
+                    filled = Decimal(
+                        str(getattr(trade.orderStatus, "filled", 0) or 0)
+                    )
+                    remaining = Decimal(
+                        str(getattr(trade.orderStatus, "remaining", 0) or 0)
+                    )
+                    if status in {"Cancelled", "ApiCancelled", "Inactive"} and filled == 0:
+                        return status, filled, remaining
+                    raise RuntimeError("CANARY_ORDER_STATE_UNCERTAIN")
+                if hasattr(broker, "sleep"):
+                    broker.sleep(0.05)
+                else:
+                    time.sleep(0.05)
+
+        entry_order = make_order(
+            action=request.entry_terms.action,
+            order_type=request.entry_terms.order_type,
+            order_ref=entry_ref,
+        )
+        entry_trade = broker.placeOrder(contract, entry_order)
+        events: list[tuple[str, int, int, bool]] = [
+            ("BROKER_BOUND", 1, 0, False),
+        ]
+        status, filled, _remaining = wait_terminal(entry_trade)
+        if filled == 0 and status in {"Cancelled", "ApiCancelled", "Inactive"}:
+            events.append(("TERMINAL_NO_FILL", 0, 0, False))
+            return events
+        if status != "Filled" or filled != request.quantity:
+            raise RuntimeError("CANARY_PARTIAL_FILL_UNCERTAIN")
+        events.extend(
+            [
+                ("ENTRY_FILL", 0, 1, False),
+                ("POSITION_VISIBLE", 0, 1, False),
+                ("MANAGEMENT_OBSERVED", 0, 1, False),
+            ]
+        )
+
+        exit_order = make_order(
+            action=request.flat_return_plan.action,
+            order_type=request.flat_return_plan.order_type,
+            order_ref=exit_ref,
+        )
+        exit_trade = broker.placeOrder(contract, exit_order)
+        exit_status, exit_filled, _exit_remaining = wait_terminal(exit_trade)
+        if exit_status != "Filled" or exit_filled != request.quantity:
+            raise RuntimeError("CANARY_EXIT_NOT_FILLED")
+
+        open_refs = {
+            str(getattr(item.order, "orderRef", "") or "")
+            for item in self._broker_list_read(
+                "CANARY_OPEN_ORDERS", broker.reqAllOpenOrders
+            )
+        }
+        positions = self._broker_list_read("CANARY_POSITIONS", broker.positions)
+        canary_positions = [
+            item
+            for item in positions
+            if int(getattr(item.contract, "conId", 0) or 0) == identity.con_id
+            and Decimal(str(getattr(item, "position", 0) or 0)) != 0
+        ]
+        if entry_ref in open_refs or exit_ref in open_refs or canary_positions:
+            raise RuntimeError("CANARY_FLAT_STATE_NOT_PROVEN")
+        events.extend(
+            [
+                ("EXIT_FILL", 0, 0, False),
+                ("FLAT_STATE", 0, 0, False),
+                ("ECONOMICS_RECONCILED", 0, 0, True),
+            ]
+        )
+        return events
 
     def _production_authority_read(
         self,
