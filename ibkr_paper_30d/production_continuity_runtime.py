@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 from .broker_write_coordinator import BrokerWriteCoordinator
 from .canonical import sha256_json
@@ -29,6 +29,149 @@ DEFAULT_SMTP_CONFIG = Path("Secrets/email_alerts.env")
 
 class ProductionRuntimeConfigurationError(RuntimeError):
     pass
+
+
+@dataclass(frozen=True)
+class MultiUniverseRuntimeAuthority:
+    """DB-derived launch authority shared by the one successor runtime graph."""
+
+    schema: str
+    transition_phase: str
+    supervision_binding_sha256: str
+    continuous_authority_sha256: str
+    entry_authority_mode: str
+    writer_start_allowed: bool
+    management_actions_allowed: bool
+    continuity_actions_allowed: bool
+    new_regular_entries_allowed: bool
+    new_continuous_entries_allowed: bool
+    legacy_predecessor_allowed: bool
+
+
+def _is_sha256(value: Any) -> bool:
+    return bool(
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def normalize_multi_universe_launch_authority(
+    decision: Mapping[str, Any],
+) -> MultiUniverseRuntimeAuthority:
+    """Reject caller-shaped authority and freeze the DB-derived decision."""
+
+    payload = dict(decision)
+    if payload.get("schema") != "MULTI_UNIVERSE_LAUNCH_DECISION_V1":
+        raise ProductionRuntimeConfigurationError(
+            "MULTI_UNIVERSE_LAUNCH_AUTHORITY_INVALID"
+        )
+    if not _is_sha256(payload.get("supervision_binding_sha256")):
+        raise ProductionRuntimeConfigurationError("SUPERVISION_BINDING_AMBIGUOUS")
+    if not _is_sha256(payload.get("continuous_authority_sha256")):
+        raise ProductionRuntimeConfigurationError(
+            "CONTINUOUS_ENTRY_AUTHORITY_AMBIGUOUS"
+        )
+    if payload.get("legacy_predecessor_allowed") is not False:
+        raise ProductionRuntimeConfigurationError(
+            "PREDECESSOR_REACTIVATION_ATTEMPT"
+        )
+    if payload.get("writer_start_allowed") is not True:
+        raise ProductionRuntimeConfigurationError("SUCCESSOR_WRITER_AUTHORITY_REQUIRED")
+    boolean_fields = (
+        "management_actions_allowed",
+        "continuity_actions_allowed",
+        "new_regular_entries_allowed",
+        "new_continuous_entries_allowed",
+    )
+    if any(type(payload.get(field)) is not bool for field in boolean_fields):
+        raise ProductionRuntimeConfigurationError(
+            "MULTI_UNIVERSE_LAUNCH_AUTHORITY_INVALID"
+        )
+
+    phase = str(payload.get("transition_phase") or "")
+    mode = str(payload.get("entry_authority_mode") or "")
+    phases = {
+        "SUCCESSOR_COMMITTED",
+        "SUPERVISION_BOUND",
+        "CANARY_EXCLUSIVE",
+        "CANARY_PASS",
+        "RUNTIME_BOUND",
+        "ACTIVE",
+    }
+    if phase not in phases:
+        raise ProductionRuntimeConfigurationError("SUCCESSOR_TRANSITION_NOT_ELIGIBLE")
+    expected_mode = (
+        "CANARY_EXCLUSIVE"
+        if phase == "CANARY_EXCLUSIVE"
+        else "NORMAL"
+        if phase == "ACTIVE"
+        else "FROZEN"
+    )
+    if mode != expected_mode and mode != "UNCERTAIN_FREEZE":
+        raise ProductionRuntimeConfigurationError("ENTRY_AUTHORITY_PHASE_MISMATCH")
+    if mode == "UNCERTAIN_FREEZE" and phase not in {
+        "CANARY_EXCLUSIVE",
+        "CANARY_PASS",
+        "RUNTIME_BOUND",
+        "ACTIVE",
+    }:
+        raise ProductionRuntimeConfigurationError("ENTRY_AUTHORITY_PHASE_MISMATCH")
+    normal_entries = mode == "NORMAL"
+    if bool(payload.get("new_regular_entries_allowed")) is not normal_entries:
+        raise ProductionRuntimeConfigurationError("ENTRY_AUTHORITY_PHASE_MISMATCH")
+    if mode != "NORMAL" and bool(payload.get("new_continuous_entries_allowed")):
+        raise ProductionRuntimeConfigurationError("ENTRY_AUTHORITY_PHASE_MISMATCH")
+    phase_order = (
+        "SUCCESSOR_COMMITTED",
+        "SUPERVISION_BOUND",
+        "CANARY_EXCLUSIVE",
+        "CANARY_PASS",
+        "RUNTIME_BOUND",
+        "ACTIVE",
+    )
+    management_expected = (
+        phase_order.index(phase) >= phase_order.index("SUPERVISION_BOUND")
+    )
+    if (
+        payload.get("management_actions_allowed") is not management_expected
+        or payload.get("continuity_actions_allowed") is not management_expected
+    ):
+        raise ProductionRuntimeConfigurationError("MANAGEMENT_AUTHORITY_PHASE_MISMATCH")
+
+    return MultiUniverseRuntimeAuthority(
+        schema="MULTI_UNIVERSE_RUNTIME_AUTHORITY_V1",
+        transition_phase=phase,
+        supervision_binding_sha256=str(payload["supervision_binding_sha256"]),
+        continuous_authority_sha256=str(payload["continuous_authority_sha256"]),
+        entry_authority_mode=mode,
+        writer_start_allowed=True,
+        management_actions_allowed=management_expected,
+        continuity_actions_allowed=management_expected,
+        new_regular_entries_allowed=normal_entries,
+        new_continuous_entries_allowed=bool(
+            payload.get("new_continuous_entries_allowed")
+        ),
+        legacy_predecessor_allowed=False,
+    )
+
+
+def inject_multi_universe_runtime_authority(
+    authority: MultiUniverseRuntimeAuthority, *components: Any
+) -> None:
+    """Attach one immutable authority object to every runtime component."""
+
+    for component in components:
+        if component is None:
+            raise ProductionRuntimeConfigurationError(
+                "MULTI_UNIVERSE_COMPONENT_MISSING"
+            )
+        existing = getattr(component, "multi_universe_runtime_authority", None)
+        if existing is not None and existing is not authority:
+            raise ProductionRuntimeConfigurationError(
+                "MULTI_UNIVERSE_RUNTIME_AUTHORITY_CONFLICT"
+            )
+        setattr(component, "multi_universe_runtime_authority", authority)
 
 
 @dataclass(frozen=True)

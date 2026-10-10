@@ -7,6 +7,7 @@ import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
@@ -1390,6 +1391,56 @@ def test_successor_service_never_invokes_legacy_three_window_collector():
     source = inspect.getsource(AutonomousExperimentService)
     assert "market_observation_collector" not in source
     assert "FORCE_FRESH" not in source
+
+
+def test_v4_service_can_arm_with_legacy_regular_market_gate_closed(
+    tmp_path, monkeypatch
+):
+    class ClosedRegularGate:
+        def evaluate(self, *_args, **_kwargs):
+            return {
+                "gate_status": "BLOCK",
+                "reason_codes": ["REGULAR_SESSION_CLOSED"],
+            }
+
+    class ArmedExecutor:
+        armed = True
+        is_coordinated_model_executor = True
+
+    authority = SimpleNamespace(
+        schema="MULTI_UNIVERSE_RUNTIME_AUTHORITY_V1",
+        transition_phase="SUPERVISION_BOUND",
+        entry_authority_mode="FROZEN",
+        writer_start_allowed=True,
+        management_actions_allowed=True,
+        new_regular_entries_allowed=False,
+        new_continuous_entries_allowed=False,
+        legacy_predecessor_allowed=False,
+    )
+    monkeypatch.setattr(
+        AutonomousExperimentService,
+        "_owner_authorization_is_current",
+        lambda self: True,
+    )
+    with Database.open(tmp_path / "v4-supervision.sqlite3") as db:
+        KillSwitchStore(db).set(
+            "KILL_SWITCH_CLEAR", reason="test successor supervision startup"
+        )
+        service = AutonomousExperimentService(
+            db,
+            experiment_start_utc=datetime.now(timezone.utc),
+            allocation=Decimal("500.00"),
+            execute_paper=True,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=ArmedExecutor(),
+            runtime_market_gate=ClosedRegularGate(),
+            runtime_auditor_gate=PassGate(),
+            broker_now=lambda: datetime.now(timezone.utc),
+            multi_universe_runtime_authority=authority,
+        )
+
+    assert service.multi_universe_runtime_authority is authority
 
 
 class _IdleStoppingClock(Clock):

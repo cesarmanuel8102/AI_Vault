@@ -36,3 +36,7 @@ def test_multi_universe_launcher_is_direct_and_fail_closed() -> None:
     assert "--target-successor-epoch-id" in source
     assert "--target-successor-definition-sha256" in source
     assert "validated_only" in lowered
+    assert "--transition-phase" not in lowered
+    assert "--entry-authority-mode" not in lowered
+    assert "--new-regular-entries-allowed" not in lowered
+    assert "--new-continuous-entries-allowed" not in lowered

@@ -268,6 +268,75 @@ def test_multi_universe_composition_has_one_of_each_authority(tmp_path) -> None:
     assert writer.multi_universe_stores is stores
 
 
+def test_multi_universe_runtime_authority_is_exact_and_shared() -> None:
+    from ibkr_paper_30d.production_continuity_runtime import (
+        inject_multi_universe_runtime_authority,
+        normalize_multi_universe_launch_authority,
+    )
+
+    decision = {
+        "schema": "MULTI_UNIVERSE_LAUNCH_DECISION_V1",
+        "transition_phase": "SUPERVISION_BOUND",
+        "supervision_binding_sha256": "1" * 64,
+        "continuous_authority_sha256": "2" * 64,
+        "entry_authority_mode": "FROZEN",
+        "writer_start_allowed": True,
+        "management_actions_allowed": True,
+        "continuity_actions_allowed": True,
+        "new_regular_entries_allowed": False,
+        "new_continuous_entries_allowed": False,
+        "legacy_predecessor_allowed": False,
+    }
+
+    authority = normalize_multi_universe_launch_authority(decision)
+    provider = SimpleNamespace()
+    service = SimpleNamespace()
+    writer = SimpleNamespace()
+    inject_multi_universe_runtime_authority(authority, provider, service, writer)
+
+    assert authority.transition_phase == "SUPERVISION_BOUND"
+    assert authority.entry_authority_mode == "FROZEN"
+    assert provider.multi_universe_runtime_authority is authority
+    assert service.multi_universe_runtime_authority is authority
+    assert writer.multi_universe_runtime_authority is authority
+
+
+@pytest.mark.parametrize(
+    ("update", "reason"),
+    [
+        ({"supervision_binding_sha256": "bad"}, "SUPERVISION_BINDING_AMBIGUOUS"),
+        ({"continuous_authority_sha256": "bad"}, "CONTINUOUS_ENTRY_AUTHORITY_AMBIGUOUS"),
+        ({"entry_authority_mode": "NORMAL"}, "ENTRY_AUTHORITY_PHASE_MISMATCH"),
+        ({"legacy_predecessor_allowed": True}, "PREDECESSOR_REACTIVATION_ATTEMPT"),
+        ({"management_actions_allowed": False}, "MANAGEMENT_AUTHORITY_PHASE_MISMATCH"),
+        ({"new_regular_entries_allowed": "false"}, "MULTI_UNIVERSE_LAUNCH_AUTHORITY_INVALID"),
+    ],
+)
+def test_multi_universe_runtime_authority_rejects_ambiguous_claims(update, reason):
+    from ibkr_paper_30d.production_continuity_runtime import (
+        ProductionRuntimeConfigurationError,
+        normalize_multi_universe_launch_authority,
+    )
+
+    decision = {
+        "schema": "MULTI_UNIVERSE_LAUNCH_DECISION_V1",
+        "transition_phase": "SUPERVISION_BOUND",
+        "supervision_binding_sha256": "1" * 64,
+        "continuous_authority_sha256": "2" * 64,
+        "entry_authority_mode": "FROZEN",
+        "writer_start_allowed": True,
+        "management_actions_allowed": True,
+        "continuity_actions_allowed": True,
+        "new_regular_entries_allowed": False,
+        "new_continuous_entries_allowed": False,
+        "legacy_predecessor_allowed": False,
+    }
+    decision.update(update)
+
+    with pytest.raises(ProductionRuntimeConfigurationError, match=reason):
+        normalize_multi_universe_launch_authority(decision)
+
+
 @pytest.mark.parametrize(
     ("update", "reason"),
     [

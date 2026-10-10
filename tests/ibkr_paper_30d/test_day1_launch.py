@@ -72,6 +72,10 @@ def _multi_universe_launch_evidence(**updates):
         "continuity_gap": False,
         "continuity_action_due": False,
         "same_committed_successor": False,
+        "supervision_binding_sha256": "5" * 64,
+        "reconciliation_status": "PASS",
+        "canary_status": "NONE",
+        "inherited_position_present": True,
     }
     values.update(updates)
     return MultiUniverseLaunchEvidence(**values)
@@ -175,6 +179,74 @@ def test_initial_successor_supervision_does_not_require_available_family() -> No
     assert result["management_actions_allowed"] is True
     assert result["new_regular_entries_allowed"] is False
     assert result["new_continuous_entries_allowed"] is False
+
+
+@pytest.mark.parametrize(
+    ("phase", "mode", "management", "regular", "continuous"),
+    [
+        ("SUCCESSOR_COMMITTED", "FROZEN", False, False, False),
+        ("SUPERVISION_BOUND", "FROZEN", True, False, False),
+        ("CANARY_EXCLUSIVE", "CANARY_EXCLUSIVE", True, False, False),
+        ("CANARY_PASS", "FROZEN", True, False, False),
+        ("RUNTIME_BOUND", "FROZEN", True, False, False),
+        ("ACTIVE", "NORMAL", True, True, True),
+    ],
+)
+def test_successor_launch_authority_matrix(
+    phase, mode, management, regular, continuous
+) -> None:
+    from ibkr_paper_30d.day1_launch import evaluate_multi_universe_successor_launch
+
+    result = evaluate_multi_universe_successor_launch(
+        _multi_universe_launch_evidence(
+            transition_phase=phase,
+            same_committed_successor=True,
+        ),
+        initial_activation=False,
+    )
+
+    assert result["transition_phase"] == phase
+    assert result["supervision_binding_sha256"] == "5" * 64
+    assert result["continuous_authority_sha256"] == "f" * 64
+    assert result["entry_authority_mode"] == mode
+    assert result["management_actions_allowed"] is management
+    assert result["new_regular_entries_allowed"] is regular
+    assert result["new_continuous_entries_allowed"] is continuous
+
+
+@pytest.mark.parametrize("canary_status", ["PARTIAL", "UNCERTAIN"])
+def test_canary_exposure_uncertainty_freezes_entries_but_preserves_management(
+    canary_status,
+) -> None:
+    from ibkr_paper_30d.day1_launch import evaluate_multi_universe_successor_launch
+
+    result = evaluate_multi_universe_successor_launch(
+        _multi_universe_launch_evidence(
+            transition_phase="ACTIVE",
+            same_committed_successor=True,
+            canary_status=canary_status,
+        ),
+        initial_activation=False,
+    )
+
+    assert result["entry_authority_mode"] == "UNCERTAIN_FREEZE"
+    assert result["new_regular_entries_allowed"] is False
+    assert result["new_continuous_entries_allowed"] is False
+    assert result["management_actions_allowed"] is True
+
+
+def test_restart_requires_fresh_reconciliation() -> None:
+    from ibkr_paper_30d.day1_launch import evaluate_multi_universe_successor_launch
+
+    with pytest.raises(LaunchError, match="SUCCESSOR_RECONCILIATION_REQUIRED"):
+        evaluate_multi_universe_successor_launch(
+            _multi_universe_launch_evidence(
+                transition_phase="ACTIVE",
+                same_committed_successor=True,
+                reconciliation_status="STALE",
+            ),
+            initial_activation=False,
+        )
 
 
 def test_schema_mode_accepts_v4_only_for_explicit_successor(tmp_path) -> None:
@@ -1769,6 +1841,9 @@ def test_launch_passes_only_writer_command_interface_to_model_service(
     assert executor_args["config"] == ctx.config
     assert executor_args["preflight"].expected_account_hash == ACCOUNT_HASH
     assert len(executor_args["production_validation_sha256"]) == 64
+    assert "current_adapter_sha256" not in executor_args
+    writer_args = ctx.dependencies.authoritative_writer_factory.call_args.kwargs
+    assert len(writer_args["current_adapter_sha256"]) == 64
     assert captured["executor"] is model_executor
     lifecycle = captured["provider_lifecycle"]
     assert lifecycle.launch_attempt_id == ATTEMPT_ID

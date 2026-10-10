@@ -216,6 +216,10 @@ class MultiUniverseLaunchEvidence:
     continuity_gap: bool
     continuity_action_due: bool
     same_committed_successor: bool
+    supervision_binding_sha256: str
+    reconciliation_status: str
+    canary_status: str
+    inherited_position_present: bool
 
 
 def evaluate_multi_universe_successor_launch(
@@ -280,6 +284,10 @@ def evaluate_multi_universe_successor_launch(
         raise LaunchError("PREDECESSOR_PATH_STILL_ACTIVE")
     if evidence.continuity_gap:
         raise LaunchError("SUCCESSOR_CONTINUITY_GAP")
+    if evidence.reconciliation_status != "PASS":
+        raise LaunchError("SUCCESSOR_RECONCILIATION_REQUIRED")
+    if not _SHA256_RE.fullmatch(evidence.supervision_binding_sha256):
+        raise LaunchError("SUPERVISION_BINDING_AMBIGUOUS")
 
     if initial_activation:
         if evidence.transition_phase not in {
@@ -313,17 +321,50 @@ def evaluate_multi_universe_successor_launch(
                 else "MARKET_CLOSED_IDLE"
             )
         )
+    phase_order = (
+        "PREPARED",
+        "PREDECESSOR_QUIESCED",
+        "PREDECESSOR_RETIRED",
+        "SUCCESSOR_COMMITTED",
+        "SUPERVISION_BOUND",
+        "CANARY_EXCLUSIVE",
+        "CANARY_PASS",
+        "RUNTIME_BOUND",
+        "ACTIVE",
+    )
+    phase_index = phase_order.index(evidence.transition_phase)
+    supervision_index = phase_order.index("SUPERVISION_BOUND")
+    canary_uncertain = evidence.canary_status in {"PARTIAL", "UNCERTAIN"}
+    entry_authority_mode = (
+        "UNCERTAIN_FREEZE"
+        if canary_uncertain
+        else "CANARY_EXCLUSIVE"
+        if evidence.transition_phase == "CANARY_EXCLUSIVE"
+        else "NORMAL"
+        if evidence.transition_phase == "ACTIVE"
+        else "FROZEN"
+    )
+    management_allowed = bool(
+        phase_index >= supervision_index
+        or evidence.continuity_action_due
+        or canary_uncertain
+    )
+    normal_entries = entry_authority_mode == "NORMAL"
     return {
         "schema": "MULTI_UNIVERSE_LAUNCH_DECISION_V1",
         "status": status,
         "reason_codes": [],
+        "transition_phase": evidence.transition_phase,
+        "supervision_binding_sha256": evidence.supervision_binding_sha256,
+        "continuous_authority_sha256": evidence.continuous_sleeve_authority_sha256,
+        "entry_authority_mode": entry_authority_mode,
         "writer_start_allowed": True,
         "reconciliation_required": True,
-        "management_actions_allowed": True,
-        "continuity_actions_allowed": True,
-        "new_regular_entries_allowed": evidence.transition_phase == "ACTIVE",
+        "management_actions_allowed": management_allowed,
+        "continuity_actions_allowed": management_allowed,
+        "new_regular_entries_allowed": normal_entries,
         "new_continuous_entries_allowed": bool(
-            evidence.transition_phase == "ACTIVE"
+            normal_entries
             and evidence.extended_family_tradable_now
         ),
         "legacy_predecessor_allowed": False,
@@ -457,6 +498,22 @@ def _validate_multi_universe_launch_from_db(
         retirement_sha = (
             retirement_payload.get("evidence") or {}
         ).get("retirement_tombstone_sha256")
+    supervision_row = db.execute(
+        "SELECT event_sha256 FROM successor_transition_events "
+        "WHERE transition_id=? AND phase='SUPERVISION_BOUND' "
+        "ORDER BY sequence DESC LIMIT 1",
+        (target.transition_id,),
+    ).fetchone()
+    supervision_sha = (
+        str(supervision_row[0])
+        if supervision_row is not None
+        else target.writer_binding_sha256
+    )
+    ownership_count = int(
+        db.execute(
+            "SELECT COUNT(*) FROM contract_ownership_events"
+        ).fetchone()[0]
+    )
     clock = clock_for_epoch(db, target.successor_epoch_id)
     phase = recovered.phase
     phase_index = tuple(TransitionPhase).index(phase)
@@ -501,6 +558,14 @@ def _validate_multi_universe_launch_from_db(
         ),
         continuity_action_due=False,
         same_committed_successor=phase_index >= committed_index,
+        supervision_binding_sha256=supervision_sha,
+        reconciliation_status="PASS",
+        canary_status=(
+            "PASS"
+            if phase_index >= tuple(TransitionPhase).index(TransitionPhase.CANARY_PASS)
+            else "NONE"
+        ),
+        inherited_position_present=ownership_count > 0,
     )
     return evaluate_multi_universe_successor_launch(
         evidence,
@@ -1002,6 +1067,9 @@ def _validate_launch_database_mode(
             ).fetchone()
             if latest is not None and str(latest[0]) in {
                 "SUCCESSOR_COMMITTED",
+                "SUPERVISION_BOUND",
+                "CANARY_EXCLUSIVE",
+                "CANARY_PASS",
                 "RUNTIME_BOUND",
                 "ACTIVE",
             }:
@@ -1673,6 +1741,7 @@ def _append_successor_pre_start_failure(
 
 def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) -> str:
     multi_universe_launch = _load_multi_universe_launch_authority(config)
+    multi_universe_runtime_authority = None
     try:
         preflight = evaluate_launch_preflight(config, dependencies)
     except LaunchError as exc:
@@ -1698,6 +1767,18 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 )
             except LaunchError:
                 raise
+            except Exception as exc:
+                raise LaunchError("MULTI_UNIVERSE_LAUNCH_AUTHORITY_INVALID") from exc
+            from .production_continuity_runtime import (
+                normalize_multi_universe_launch_authority,
+            )
+
+            try:
+                multi_universe_runtime_authority = (
+                    normalize_multi_universe_launch_authority(
+                        multi_universe_launch
+                    )
+                )
             except Exception as exc:
                 raise LaunchError("MULTI_UNIVERSE_LAUNCH_AUTHORITY_INVALID") from exc
         lock = dependencies.lock_factory(db)
@@ -1865,7 +1946,6 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 config=config,
                 preflight=preflight,
                 production_validation_sha256=prepared.manifest["epoch_manifest_sha256"],
-                current_adapter_sha256=prepared.manifest["epoch_manifest_sha256"],
             )
             critical_alert_reporter = dependencies.critical_alert_reporter_factory(
                 db_path=config.db_path,
@@ -1901,6 +1981,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 uncertainty_reporter=critical_alert_reporter,
                 toolbox=prepared.toolbox,
                 production_validation_sha256=prepared.manifest["epoch_manifest_sha256"],
+                current_adapter_sha256=prepared.manifest["epoch_manifest_sha256"],
             )
             watchdog = dependencies.continuity_watchdog_factory(
                 coordinator=coordinator,
@@ -1911,11 +1992,20 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
             )
             if multi_universe_stores is not None:
                 from .production_continuity_runtime import (
+                    inject_multi_universe_runtime_authority,
                     inject_multi_universe_runtime_stores,
                 )
 
                 inject_multi_universe_runtime_stores(
                     multi_universe_stores,
+                    prepared.provider,
+                    coordinator,
+                    model_executor,
+                    writer,
+                    watchdog,
+                )
+                inject_multi_universe_runtime_authority(
+                    multi_universe_runtime_authority,
                     prepared.provider,
                     coordinator,
                     model_executor,
@@ -2002,6 +2092,9 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                             if multi_universe_stores is None
                             else multi_universe_stores.capability
                         ),
+                        multi_universe_runtime_authority=(
+                            multi_universe_runtime_authority
+                        ),
                     )
                 except AutonomousServiceError as exc:
                     reason_codes = [
@@ -2017,11 +2110,15 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                     ) from exc
                 if multi_universe_stores is not None:
                     from .production_continuity_runtime import (
+                        inject_multi_universe_runtime_authority,
                         inject_multi_universe_runtime_stores,
                         validate_multi_universe_runtime_topology,
                     )
 
                     inject_multi_universe_runtime_stores(multi_universe_stores, service)
+                    inject_multi_universe_runtime_authority(
+                        multi_universe_runtime_authority, service
+                    )
                     topology = validate_multi_universe_runtime_topology(
                         providers=(prepared.provider,),
                         service_loops=(service,),

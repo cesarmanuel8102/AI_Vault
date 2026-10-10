@@ -173,6 +173,7 @@ class AutonomousExperimentService:
         sleeve_ledger_store: Any | None = None,
         contract_ownership_store: Any | None = None,
         product_certification_store: Any | None = None,
+        multi_universe_runtime_authority: Any | None = None,
         sleep: Callable[[float], None] = time.sleep,
         monotonic: Callable[[], float] = time.monotonic,
     ) -> None:
@@ -262,6 +263,7 @@ class AutonomousExperimentService:
         self.sleeve_ledger_store = sleeve_ledger_store
         self.contract_ownership_store = contract_ownership_store
         self.product_certification_store = product_certification_store
+        self.multi_universe_runtime_authority = multi_universe_runtime_authority
         self._last_orchestration_action: OrchestrationAction | None = None
         self._watchdog_started = False
         self._watchdog_alert_active = False
@@ -466,6 +468,25 @@ class AutonomousExperimentService:
                 reason_codes=("OWNER_AUTHORIZATION_REQUIRED_FRESH",),
             )
         reasons = self._fresh_execution_safety("NEW_TRADE")
+        if self.multi_universe_runtime_authority is not None:
+            authority = self.multi_universe_runtime_authority
+            if (
+                getattr(authority, "schema", None)
+                != "MULTI_UNIVERSE_RUNTIME_AUTHORITY_V1"
+                or getattr(authority, "writer_start_allowed", None) is not True
+                or getattr(authority, "legacy_predecessor_allowed", None) is not False
+            ):
+                raise AutonomousServiceError(
+                    "MULTI_UNIVERSE_RUNTIME_AUTHORITY_INVALID",
+                    reason_codes=("MULTI_UNIVERSE_RUNTIME_AUTHORITY_INVALID",),
+                )
+            market_reasons = {"MARKET_DATA_GATE_BLOCK_FRESH"}
+            if self.runtime_market_gate is not None:
+                market = self.runtime_market_gate.evaluate(DecisionClass.NEW_TRADE)
+                market_reasons.update(
+                    str(code) for code in market.get("reason_codes", []) or []
+                )
+            reasons = tuple(reason for reason in reasons if reason not in market_reasons)
         if reasons:
             raise AutonomousServiceError(
                 "paper execution prerequisites are not PASS: " + ",".join(reasons),
