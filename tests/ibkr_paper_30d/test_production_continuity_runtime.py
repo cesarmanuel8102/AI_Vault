@@ -150,6 +150,57 @@ def test_bag_sleeve_evidence_resolves_every_leg_from_broker() -> None:
     ]
 
 
+def test_sleeve_broker_evidence_binds_target_writer_reconciliation_and_owner() -> None:
+    from ibkr_paper_30d.contract_ownership import canonical_contract_identity
+    from ibkr_paper_30d.production_continuity_runtime import (
+        _sleeve_broker_evidence_collector,
+    )
+
+    contract = canonical_contract_identity(
+        {
+            "conId": 756733,
+            "secType": "STK",
+            "currency": "USD",
+            "exchange": "SMART",
+            "primaryExchange": "ARCA",
+            "localSymbol": "SPY",
+            "tradingClass": "SPY",
+        }
+    )
+    request = SimpleNamespace(
+        sha256="f" * 64,
+        capital_sleeve=SimpleNamespace(value="CONTINUOUS_SLEEVE"),
+        input_bundle=SimpleNamespace(
+            multi_sleeve_portfolio={
+                "transition_target_sha256": "1" * 64,
+                "writer_binding_sha256": "2" * 64,
+            },
+            contract_ownership_snapshot={
+                "contract_sleeves": {contract.sha256: "CONTINUOUS_SLEEVE"}
+            },
+            reconciliation_receipt={"status": "PASS"},
+        ),
+    )
+    evidence = _sleeve_broker_evidence_collector("a" * 64)(
+        SimpleNamespace(),
+        request,
+        {
+            "model_write_context": {
+                "canonical_contract": contract.model_dump(mode="json"),
+                "order_ref": "codex-order-2",
+            },
+            "production_authority": {"authority_snapshot_sha256": "b" * 64},
+        },
+    )
+
+    assert evidence["transition_target_sha256"] == "1" * 64
+    assert evidence["writer_binding_sha256"] == "2" * 64
+    assert evidence["reconciliation_status"] == "PASS"
+    assert evidence["owned_contract_sleeve"] == "CONTINUOUS_SLEEVE"
+    assert evidence["management_identity_match"] is True
+    assert evidence["possible_live_connection"] is False
+
+
 def test_v4_snapshot_reader_rejects_missing_or_non_hash_adapter_identity(tmp_path):
     config = SimpleNamespace(target_successor_definition_sha256="1" * 64)
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Literal, Mapping
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -16,6 +16,7 @@ from .multi_universe_models import (
     ContractOwnershipGroup,
     GIT_HEAD_PATTERN,
     SHA256_PATTERN,
+    TransitionPhase,
 )
 from .multi_universe_schema import verify_multi_universe_schema_v4
 from .contract_ownership import (
@@ -45,10 +46,16 @@ class SleeveAuthoritySnapshot(_AuthorityModel):
     product_family_sha256: str = Field(pattern=SHA256_PATTERN)
     economic_authorization_sha256: str = Field(pattern=SHA256_PATTERN)
     transition_target_sha256: str = Field(pattern=SHA256_PATTERN)
+    writer_binding_sha256: str = Field(pattern=SHA256_PATTERN)
     epoch_id: str = Field(min_length=1)
     approved_head: str = Field(pattern=GIT_HEAD_PATTERN)
     account_identity_sha256: str = Field(pattern=SHA256_PATTERN)
     transition_phase: str = Field(min_length=1)
+    supervision_bound: bool
+    inherited_position: bool
+    entry_authority: Literal["FROZEN", "CANARY_ONLY", "ACTIVE"]
+    instrument_management_tradable: bool
+    reconciliation_fresh: bool
     paper_only: bool
     family_executable: bool
     capability_fresh: bool
@@ -93,7 +100,21 @@ class SleeveExecutionAuthorityValidator:
         broker_evidence: Mapping[str, Any],
         db_snapshot: SleeveAuthoritySnapshot,
     ) -> SleeveExecutionAuthorityReceipt:
+        return SleeveExecutionAuthorityValidator.validate_operation(
+            request, broker_evidence, db_snapshot
+        )
+
+    @staticmethod
+    def validate_operation(
+        request: ModelExecutionRequest,
+        broker_evidence: Mapping[str, Any],
+        db_snapshot: SleeveAuthoritySnapshot,
+    ) -> SleeveExecutionAuthorityReceipt:
         reasons: list[str] = []
+        management = request.operation in {
+            ModelExecutionOperation.OPEN_ORDER_ACTION,
+            ModelExecutionOperation.POSITION_ACTION,
+        }
         if not request.input_bundle.multi_sleeve_v4_active:
             reasons.append("V4_AUTHORITY_REQUIRED")
         if request.capital_sleeve != db_snapshot.capital_sleeve:
@@ -110,30 +131,83 @@ class SleeveExecutionAuthorityValidator:
             reasons.append("APPROVED_HEAD_MISMATCH")
         if request.account_identity_sha256 != db_snapshot.account_identity_sha256:
             reasons.append("ACCOUNT_AUTHORITY_MISMATCH")
-        if db_snapshot.transition_phase not in {"SUCCESSOR_COMMITTED", "RUNTIME_BOUND", "ACTIVE"}:
+        try:
+            phase = TransitionPhase(db_snapshot.transition_phase)
+            phase_index = tuple(TransitionPhase).index(phase)
+        except ValueError:
+            phase = None
+            phase_index = -1
             reasons.append("SUCCESSOR_NOT_ACTIVE")
+        supervision_index = tuple(TransitionPhase).index(
+            TransitionPhase.SUPERVISION_BOUND
+        )
+        phase_supervision_bound = phase_index >= supervision_index
+        if db_snapshot.supervision_bound != phase_supervision_bound:
+            reasons.append("SUPERVISION_AUTHORITY_MISMATCH")
+        if management and not phase_supervision_bound:
+            reasons.append("SUCCESSOR_NOT_ACTIVE")
+        if request.operation is ModelExecutionOperation.NEW_TRADE and (
+            phase is not TransitionPhase.ACTIVE
+            or db_snapshot.entry_authority != "ACTIVE"
+        ):
+            reasons.append("SUCCESSOR_NOT_ACTIVE")
+        if management and not db_snapshot.instrument_management_tradable:
+            reasons.append("INSTRUMENT_NOT_CURRENTLY_MANAGEABLE")
+        if (
+            management
+            and phase is not TransitionPhase.ACTIVE
+            and not db_snapshot.inherited_position
+        ):
+            reasons.append("INHERITED_POSITION_AUTHORITY_REQUIRED")
         if not db_snapshot.paper_only:
             reasons.append("NON_PAPER_AUTHORITY")
-        if not db_snapshot.family_executable:
-            reasons.append("PRODUCT_FAMILY_NOT_EXECUTABLE")
-        if not db_snapshot.capability_fresh:
-            reasons.append("PRODUCT_CAPABILITY_STALE")
+        if request.operation is ModelExecutionOperation.NEW_TRADE:
+            if not db_snapshot.family_executable:
+                reasons.append("PRODUCT_FAMILY_NOT_EXECUTABLE")
+            if not db_snapshot.capability_fresh:
+                reasons.append("PRODUCT_CAPABILITY_STALE")
         if db_snapshot.ownership_conflict:
             reasons.append("CONTRACT_OWNERSHIP_CONFLICT")
         if db_snapshot.external_capital_offset_detected:
             reasons.append("CROSS_SLEEVE_OR_EXTERNAL_OFFSET_FORBIDDEN")
-        if db_snapshot.unbounded_liability:
-            reasons.append("MAXIMUM_LOSS_UNBOUNDED")
-        if not db_snapshot.economic_authorization_valid:
-            reasons.append("OWNER_ECONOMIC_RISK_AUTHORIZATION_INVALID")
+        if request.operation is ModelExecutionOperation.NEW_TRADE:
+            if db_snapshot.unbounded_liability:
+                reasons.append("MAXIMUM_LOSS_UNBOUNDED")
+            if not db_snapshot.economic_authorization_valid:
+                reasons.append("OWNER_ECONOMIC_RISK_AUTHORIZATION_INVALID")
 
         broker_account = str(broker_evidence.get("account_identity_sha256") or "")
+        if broker_evidence.get("possible_live_connection") is not False:
+            reasons.append("POSSIBLE_LIVE_CONNECTION")
         if broker_evidence.get("paper_only") is not True:
             reasons.append("BROKER_NOT_PAPER")
         if broker_evidence.get("fresh") is not True:
             reasons.append("BROKER_EVIDENCE_STALE")
         if broker_account != request.account_identity_sha256:
             reasons.append("BROKER_ACCOUNT_MISMATCH")
+        if (
+            broker_evidence.get("transition_target_sha256")
+            != db_snapshot.transition_target_sha256
+        ):
+            reasons.append("TRANSITION_TARGET_MISMATCH")
+        if (
+            broker_evidence.get("writer_binding_sha256")
+            != db_snapshot.writer_binding_sha256
+        ):
+            reasons.append("WRITER_BINDING_MISMATCH")
+        if (
+            broker_evidence.get("reconciliation_status") != "PASS"
+            or not db_snapshot.reconciliation_fresh
+        ):
+            reasons.append("BROKER_RECONCILIATION_STALE")
+        if management:
+            if (
+                broker_evidence.get("owned_contract_sleeve")
+                != db_snapshot.capital_sleeve.value
+            ):
+                reasons.append("CONTRACT_OWNED_BY_OTHER_SLEEVE")
+            if broker_evidence.get("management_identity_match") is not True:
+                reasons.append("MANAGEMENT_IDENTITY_MISMATCH")
 
         expected_loss = Decimal("0")
         if request.operation is ModelExecutionOperation.NEW_TRADE:
@@ -145,18 +219,19 @@ class SleeveExecutionAuthorityValidator:
             reasons.append("MAXIMUM_LOSS_UNBOUNDED")
         if db_snapshot.proposed_maximum_loss_usd != expected_loss:
             reasons.append("PROPOSED_MAXIMUM_LOSS_MISMATCH")
-        available = max(
-            Decimal("0"),
-            db_snapshot.equity_usd - db_snapshot.reserved_liability_usd,
-        )
-        if db_snapshot.proposed_maximum_loss_usd > available:
-            reasons.append("SLEEVE_AVAILABLE_CAPITAL_EXCEEDED")
-        if (
-            db_snapshot.reserved_liability_usd
-            + db_snapshot.proposed_maximum_loss_usd
-            > db_snapshot.equity_usd
-        ):
-            reasons.append("SLEEVE_AGGREGATE_LIABILITY_EXCEEDED")
+        if request.operation is ModelExecutionOperation.NEW_TRADE:
+            available = max(
+                Decimal("0"),
+                db_snapshot.equity_usd - db_snapshot.reserved_liability_usd,
+            )
+            if db_snapshot.proposed_maximum_loss_usd > available:
+                reasons.append("SLEEVE_AVAILABLE_CAPITAL_EXCEEDED")
+            if (
+                db_snapshot.reserved_liability_usd
+                + db_snapshot.proposed_maximum_loss_usd
+                > db_snapshot.equity_usd
+            ):
+                reasons.append("SLEEVE_AGGREGATE_LIABILITY_EXCEEDED")
         if db_snapshot.continuity_required and (
             request.continuity_plan_sha256 is None
             or request.continuity_plan_sha256

@@ -81,7 +81,12 @@ class _ProductionSleeveAuthoritySnapshotReader:
 
     def __call__(self, request: Any) -> Any:
         from .contract_ownership import ContractOwnershipStore
-        from .multi_universe_models import ProductFamilyKey, TransitionTarget
+        from .coordinated_model_executor import ModelExecutionOperation
+        from .multi_universe_models import (
+            ProductFamilyKey,
+            TransitionPhase,
+            TransitionTarget,
+        )
         from .persistence import Database
         from .product_capability import ProductFamilyCertificationStore
         from .sleeve_execution_authority import SleeveAuthoritySnapshot
@@ -149,6 +154,62 @@ class _ProductionSleeveAuthoritySnapshotReader:
             proposed = Decimal("0")
             if request.operation.value == "NEW_TRADE":
                 proposed = Decimal(str(request.payload.maximum_loss))
+            phase = TransitionPhase(str(row[0]))
+            phase_index = tuple(TransitionPhase).index(phase)
+            supervision_bound = phase_index >= tuple(TransitionPhase).index(
+                TransitionPhase.SUPERVISION_BOUND
+            )
+            entry_authority = (
+                "ACTIVE"
+                if phase is TransitionPhase.ACTIVE
+                else (
+                    "CANARY_ONLY"
+                    if phase is TransitionPhase.CANARY_EXCLUSIVE
+                    else "FROZEN"
+                )
+            )
+            management = request.operation in {
+                ModelExecutionOperation.OPEN_ORDER_ACTION,
+                ModelExecutionOperation.POSITION_ACTION,
+            }
+            contract_id = int(getattr(request.payload, "contract_id", 0) or 0)
+            observations = (
+                request.input_bundle.open_orders_snapshot
+                if request.operation is ModelExecutionOperation.OPEN_ORDER_ACTION
+                else request.input_bundle.positions_snapshot
+            )
+            observed = next(
+                (
+                    item
+                    for item in observations
+                    if int(item.get("contract_id") or item.get("con_id") or 0)
+                    == contract_id
+                ),
+                None,
+            )
+            owner = next(
+                (
+                    item
+                    for item in ownership.active_contracts
+                    if item.contract.con_id == contract_id
+                ),
+                None,
+            )
+            inherited_position = bool(
+                management
+                and owner is not None
+                and owner.sleeve is request.capital_sleeve
+                and (
+                    owner.group_id.startswith("inherited-")
+                    or bool((observed or {}).get("inherited_position"))
+                )
+            )
+            instrument_management_tradable = bool(
+                management
+                and observed is not None
+                and observed.get("management_tradable") is True
+            )
+            reconciliation = request.input_bundle.reconciliation_receipt or {}
             return SleeveAuthoritySnapshot(
                 capital_sleeve=request.capital_sleeve,
                 sleeve_authority_sha256=request.sleeve_authority_sha256,
@@ -156,10 +217,19 @@ class _ProductionSleeveAuthoritySnapshotReader:
                 product_family_sha256=capability.family_sha256,
                 economic_authorization_sha256=target.economic_risk_authorization_sha256,
                 transition_target_sha256=target.sha256,
+                writer_binding_sha256=target.writer_binding_sha256,
                 epoch_id=target.successor_epoch_id,
                 approved_head=target.approved_git_head,
                 account_identity_sha256=target.account_identity_sha256,
                 transition_phase=str(row[0]),
+                supervision_bound=supervision_bound,
+                inherited_position=inherited_position,
+                entry_authority=entry_authority,
+                instrument_management_tradable=instrument_management_tradable,
+                reconciliation_fresh=(
+                    reconciliation.get("status") == "PASS"
+                    and reconciliation.get("fresh", True) is True
+                ),
                 paper_only=True,
                 family_executable=capability.executable,
                 capability_fresh=(
@@ -249,10 +319,59 @@ def _sleeve_broker_evidence_collector(
                     ownership_contracts.append(
                         identity.model_dump(mode="json")
                     )
+        bundle = getattr(request, "input_bundle", None)
+        portfolio = (
+            dict(getattr(bundle, "multi_sleeve_portfolio", None) or {})
+            if bundle is not None
+            else {}
+        )
+        ownership = (
+            dict(getattr(bundle, "contract_ownership_snapshot", None) or {})
+            if bundle is not None
+            else {}
+        )
+        reconciliation = (
+            dict(getattr(bundle, "reconciliation_receipt", None) or {})
+            if bundle is not None
+            else {}
+        )
+        owned_sleeve = None
+        if contract_sha is not None:
+            owned_sleeve = (ownership.get("contract_sleeves") or {}).get(
+                contract_sha
+            )
+            if owned_sleeve is None:
+                owned_sleeve = next(
+                    (
+                        item.get("sleeve")
+                        for item in ownership.get("active_contracts", ())
+                        if item.get("contract_identity_sha256") == contract_sha
+                    ),
+                    None,
+                )
+        payload_contract_id = int(
+            getattr(getattr(request, "payload", None), "contract_id", 0) or 0
+        )
+        management_identity_match = bool(
+            contract is not None
+            and (
+                payload_contract_id == 0
+                or int(contract.get("con_id") or contract.get("conId") or 0)
+                == payload_contract_id
+            )
+        )
         return {
             "paper_only": True,
             "fresh": True,
             "account_identity_sha256": expected_account_sha256,
+            "transition_target_sha256": portfolio.get(
+                "transition_target_sha256"
+            ),
+            "writer_binding_sha256": portfolio.get("writer_binding_sha256"),
+            "reconciliation_status": reconciliation.get("status"),
+            "owned_contract_sleeve": owned_sleeve,
+            "management_identity_match": management_identity_match,
+            "possible_live_connection": False,
             "contract_identity_sha256": contract_sha,
             "canonical_contract": contract,
             "ownership_contracts": ownership_contracts,

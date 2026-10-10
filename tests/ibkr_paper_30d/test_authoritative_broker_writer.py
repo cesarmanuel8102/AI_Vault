@@ -525,6 +525,157 @@ def test_v4_writer_reserves_sleeve_authority_before_write_boundary(tmp_path):
         ).fetchone()[0] == 1
 
 
+def test_v4_writer_blocks_new_entry_before_attempt_while_supervision_only(tmp_path):
+    from test_sleeve_execution_authority import _broker, _snapshot, _v4_request
+
+    events = []
+    request = _v4_request(ModelExecutionOperation.NEW_TRADE)
+
+    class FinalGateEngine:
+        def execute(
+            self,
+            broker,
+            candidate,
+            authority_context,
+            final_write_authority_check=None,
+        ):
+            events.append("what_if")
+            reasons = tuple(
+                final_write_authority_check(
+                    {"canonical_contract": _broker(candidate)["canonical_contract"]}
+                )
+            )
+            if reasons:
+                return PaperExecutionResult(False, "BLOCKED", reasons, {}, {})
+            events.append("write")
+            return PaperExecutionResult(True, "SUBMITTED", (), {}, {})
+
+    with Database.open(tmp_path / "writer-v4-block.sqlite3") as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+        reservation_store = SleeveAuthorityReservationStore(db)
+        from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+
+        SleeveLedgerStore(db).bootstrap_extended()
+
+        def snapshot_reader(candidate):
+            assert db.connection.in_transaction is True
+            events.append("db")
+            return _snapshot(candidate, transition_phase="SUPERVISION_BOUND")
+
+        coordinator = BrokerWriteCoordinator()
+        capability = coordinator.attach_writer()
+        writer = AuthoritativeBrokerWriter(
+            coordinator,
+            broker_factory=GatewayFactory(),
+            execution_client_id=19761,
+            execution_lock_verifier=lambda: True,
+            authority_validator=lambda command, evidence: (),
+            model_execution_engine=FinalGateEngine(),
+            production_validation_sha256="6" * 64,
+            attempt_persister=lambda candidate, evidence: events.append("attempt"),
+            sleeve_authority_reservation_store=reservation_store,
+            sleeve_authority_snapshot_reader=snapshot_reader,
+            sleeve_broker_evidence_collector=lambda broker, candidate, raw: (
+                events.append("broker") or _broker(candidate)
+            ),
+        )
+        future = coordinator.submit(request)
+        claimed_request, _ = coordinator.claim(capability, timeout=0.1)
+        result = writer._execute_model(claimed_request, FakeGateway(19761))
+        future.set_result(result)
+        coordinator.task_done(capability)
+        coordinator.detach_writer(capability)
+
+        assert result.success is False
+        assert "SUCCESSOR_NOT_ACTIVE" in result.reason_codes
+        assert events == ["what_if", "broker", "db"]
+        assert db.execute(
+            "SELECT COUNT(*) FROM sleeve_authority_events"
+        ).fetchone()[0] == 0
+
+
+def test_v4_writer_allows_inherited_position_management_during_supervision(tmp_path):
+    from test_sleeve_execution_authority import (
+        _broker,
+        _claim_contract,
+        _snapshot,
+        _v4_request,
+    )
+
+    events = []
+    request = _v4_request(ModelExecutionOperation.POSITION_ACTION)
+
+    class FinalGateEngine:
+        def execute(
+            self,
+            broker,
+            candidate,
+            authority_context,
+            final_write_authority_check=None,
+        ):
+            events.append("manage")
+            reasons = tuple(
+                final_write_authority_check(
+                    {"canonical_contract": _broker(candidate)["canonical_contract"]}
+                )
+            )
+            if reasons:
+                return PaperExecutionResult(False, "BLOCKED", reasons, {}, {})
+            events.append("write")
+            return PaperExecutionResult(True, "POSITION_ACTION", (), {}, {})
+
+    with Database.open(tmp_path / "writer-v4-manage.sqlite3") as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+        reservation_store = SleeveAuthorityReservationStore(db)
+        from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+
+        SleeveLedgerStore(db).bootstrap_extended()
+        _claim_contract(db, request)
+
+        def snapshot_reader(candidate):
+            assert db.connection.in_transaction is True
+            events.append("db")
+            return _snapshot(
+                candidate,
+                transition_phase="SUPERVISION_BOUND",
+                proposed_maximum_loss_usd=Decimal("0"),
+            )
+
+        coordinator = BrokerWriteCoordinator()
+        capability = coordinator.attach_writer()
+        writer = AuthoritativeBrokerWriter(
+            coordinator,
+            broker_factory=GatewayFactory(),
+            execution_client_id=19761,
+            execution_lock_verifier=lambda: True,
+            authority_validator=lambda command, evidence: (),
+            model_execution_engine=FinalGateEngine(),
+            production_validation_sha256="6" * 64,
+            attempt_persister=lambda candidate, evidence: events.append("attempt"),
+            sleeve_authority_reservation_store=reservation_store,
+            sleeve_authority_snapshot_reader=snapshot_reader,
+            sleeve_broker_evidence_collector=lambda broker, candidate, raw: (
+                events.append("broker") or _broker(candidate)
+            ),
+        )
+        future = coordinator.submit(request)
+        claimed_request, _ = coordinator.claim(capability, timeout=0.1)
+        result = writer._execute_model(claimed_request, FakeGateway(19761))
+        future.set_result(result)
+        coordinator.task_done(capability)
+        coordinator.detach_writer(capability)
+
+        assert result.success is True
+        assert events == ["manage", "broker", "db", "attempt", "write"]
+        assert db.execute(
+            "SELECT COUNT(*) FROM sleeve_authority_events"
+        ).fetchone()[0] == 1
+
+
 def test_all_model_operations_dispatch_on_one_writer_thread_and_broker():
     engine = RecordingModelEngine()
     coordinator, writer, factory = _start_writer(model_execution_engine=engine)

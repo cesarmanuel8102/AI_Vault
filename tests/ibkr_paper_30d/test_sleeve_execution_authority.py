@@ -8,7 +8,7 @@ import pytest
 from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
 from ibkr_paper_30d.coordinated_model_executor import ModelExecutionOperation
-from ibkr_paper_30d.multi_universe_models import CapitalSleeve
+from ibkr_paper_30d.multi_universe_models import CapitalSleeve, TransitionPhase
 from ibkr_paper_30d.contract_ownership import canonical_contract_identity
 from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
 from ibkr_paper_30d.persistence import Database
@@ -26,12 +26,15 @@ NOW = datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc)
 
 def _v4_request(
     operation: ModelExecutionOperation = ModelExecutionOperation.NEW_TRADE,
+    sleeve: CapitalSleeve = CapitalSleeve.CONTINUOUS_SLEEVE,
 ):
     legacy = _request(operation)
     family = "f" * 64
     portfolio = {
         "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
-        "sleeves": {"regular": {}, "extended": {}},
+        "sleeves": {"regular": {}, "continuous": {}},
+        "transition_target_sha256": "a" * 64,
+        "writer_binding_sha256": "b" * 64,
     }
     ownership = {"projection_sha256": "d" * 64, "contract_sleeves": {}}
     bundle = legacy.input_bundle.model_copy(
@@ -43,7 +46,7 @@ def _v4_request(
     )
     payload = legacy.payload.model_copy(
         update={
-            "capital_sleeve": CapitalSleeve.EXTENDED_SLEEVE,
+            "capital_sleeve": sleeve,
             "product_family_sha256": family,
         }
     )
@@ -54,7 +57,7 @@ def _v4_request(
             "payload_sha256": sha256_json(payload),
             "input_bundle": bundle,
             "input_bundle_sha256": bundle.sha256,
-            "capital_sleeve": CapitalSleeve.EXTENDED_SLEEVE,
+            "capital_sleeve": sleeve,
             "sleeve_authority_sha256": sha256_json(portfolio),
             "ownership_projection_sha256": "d" * 64,
             "product_family_sha256": family,
@@ -77,17 +80,37 @@ def _claim_contract(db, request) -> None:
 
 
 def _snapshot(request, **changes):
+    phase = str(changes.get("transition_phase") or "ACTIVE")
+    phase_order = tuple(item.value for item in TransitionPhase)
+    supervision_bound = phase_order.index(phase) >= phase_order.index(
+        TransitionPhase.SUPERVISION_BOUND.value
+    )
+    entry_authority = (
+        "ACTIVE"
+        if phase == TransitionPhase.ACTIVE.value
+        else (
+            "CANARY_ONLY"
+            if phase == TransitionPhase.CANARY_EXCLUSIVE.value
+            else "FROZEN"
+        )
+    )
     values = {
-        "capital_sleeve": CapitalSleeve.EXTENDED_SLEEVE,
+        "capital_sleeve": request.capital_sleeve,
         "sleeve_authority_sha256": request.sleeve_authority_sha256,
         "ownership_projection_sha256": request.ownership_projection_sha256,
         "product_family_sha256": request.product_family_sha256,
         "economic_authorization_sha256": "e" * 64,
         "transition_target_sha256": "a" * 64,
+        "writer_binding_sha256": "b" * 64,
         "epoch_id": request.epoch_id,
         "approved_head": request.approved_head,
         "account_identity_sha256": request.account_identity_sha256,
         "transition_phase": "ACTIVE",
+        "supervision_bound": supervision_bound,
+        "inherited_position": request.operation is not ModelExecutionOperation.NEW_TRADE,
+        "entry_authority": entry_authority,
+        "instrument_management_tradable": True,
+        "reconciliation_fresh": True,
         "paper_only": True,
         "family_executable": True,
         "capability_fresh": True,
@@ -118,12 +141,104 @@ def _broker(request, **changes):
         "paper_only": True,
         "fresh": True,
         "account_identity_sha256": request.account_identity_sha256,
+        "transition_target_sha256": "a" * 64,
+        "writer_binding_sha256": "b" * 64,
+        "reconciliation_status": "PASS",
+        "owned_contract_sleeve": request.capital_sleeve.value,
+        "management_identity_match": True,
+        "possible_live_connection": False,
         "contract_identity_sha256": contract.sha256,
         "canonical_contract": contract.model_dump(mode="json"),
         "observed_at_utc": NOW,
     }
     value.update(changes)
     return value
+
+
+@pytest.mark.parametrize("sleeve", tuple(CapitalSleeve))
+@pytest.mark.parametrize("operation", tuple(ModelExecutionOperation))
+@pytest.mark.parametrize("phase", tuple(TransitionPhase))
+def test_every_operation_has_explicit_authority_in_every_phase(
+    sleeve, operation, phase
+) -> None:
+    request = _v4_request(operation, sleeve)
+    management = operation in {
+        ModelExecutionOperation.OPEN_ORDER_ACTION,
+        ModelExecutionOperation.POSITION_ACTION,
+    }
+    allowed = (
+        management
+        and tuple(TransitionPhase).index(phase)
+        >= tuple(TransitionPhase).index(TransitionPhase.SUPERVISION_BOUND)
+    ) or (operation is ModelExecutionOperation.NEW_TRADE and phase is TransitionPhase.ACTIVE)
+    proposed = Decimal("1") if operation is ModelExecutionOperation.NEW_TRADE else Decimal("0")
+
+    receipt = SleeveExecutionAuthorityValidator.validate_operation(
+        request,
+        _broker(request),
+        _snapshot(
+            request,
+            transition_phase=phase.value,
+            proposed_maximum_loss_usd=proposed,
+        ),
+    )
+
+    assert (receipt.status == "PASS") is allowed
+
+
+def test_management_ignores_entry_family_and_capacity_but_requires_manageability() -> None:
+    request = _v4_request(ModelExecutionOperation.POSITION_ACTION)
+    snapshot = _snapshot(
+        request,
+        transition_phase="SUPERVISION_BOUND",
+        proposed_maximum_loss_usd=Decimal("0"),
+        family_executable=False,
+        capability_fresh=False,
+        economic_authorization_valid=False,
+        reserved_liability_usd=Decimal("500"),
+    )
+    assert SleeveExecutionAuthorityValidator.validate_operation(
+        request, _broker(request), snapshot
+    ).status == "PASS"
+
+    blocked = SleeveExecutionAuthorityValidator.validate_operation(
+        request,
+        _broker(request),
+        snapshot.model_copy(update={"instrument_management_tradable": False}),
+    )
+    assert blocked.status == "BLOCK"
+    assert "INSTRUMENT_NOT_CURRENTLY_MANAGEABLE" in blocked.reason_codes
+
+
+@pytest.mark.parametrize(
+    ("evidence_change", "snapshot_change", "reason"),
+    [
+        ({"possible_live_connection": True}, {}, "POSSIBLE_LIVE_CONNECTION"),
+        ({"reconciliation_status": "BLOCK"}, {}, "BROKER_RECONCILIATION_STALE"),
+        ({"writer_binding_sha256": "c" * 64}, {}, "WRITER_BINDING_MISMATCH"),
+        ({"transition_target_sha256": "c" * 64}, {}, "TRANSITION_TARGET_MISMATCH"),
+        ({"owned_contract_sleeve": "REGULAR_SLEEVE"}, {}, "CONTRACT_OWNED_BY_OTHER_SLEEVE"),
+        ({"management_identity_match": False}, {}, "MANAGEMENT_IDENTITY_MISMATCH"),
+        ({}, {"reconciliation_fresh": False}, "BROKER_RECONCILIATION_STALE"),
+        ({}, {"inherited_position": False}, "INHERITED_POSITION_AUTHORITY_REQUIRED"),
+    ],
+)
+def test_management_blocks_ambiguous_or_mismatched_authority(
+    evidence_change, snapshot_change, reason
+) -> None:
+    request = _v4_request(ModelExecutionOperation.POSITION_ACTION)
+    receipt = SleeveExecutionAuthorityValidator.validate_operation(
+        request,
+        _broker(request, **evidence_change),
+        _snapshot(
+            request,
+            transition_phase="SUPERVISION_BOUND",
+            proposed_maximum_loss_usd=Decimal("0"),
+            **snapshot_change,
+        ),
+    )
+    assert receipt.status == "BLOCK"
+    assert reason in receipt.reason_codes
 
 
 def _bag_broker(request, **changes):
