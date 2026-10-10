@@ -14,7 +14,7 @@ from .types import new_uuid7
 MONEY = Decimal("0.01")
 
 
-def _d(value: Any, default: str = "0") -> Decimal:
+def normalized_decimal(value: Any, default: str = "0") -> Decimal:
     try:
         result = Decimal(str(value))
     except Exception:
@@ -22,8 +22,12 @@ def _d(value: Any, default: str = "0") -> Decimal:
     return result if result.is_finite() else Decimal(default)
 
 
-def _money(value: Decimal) -> Decimal:
+def normalized_money(value: Decimal) -> Decimal:
     return value.quantize(MONEY)
+
+
+_d = normalized_decimal
+_money = normalized_money
 
 
 @dataclass(frozen=True)

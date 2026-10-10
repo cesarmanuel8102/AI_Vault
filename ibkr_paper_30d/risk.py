@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
+
+from .multi_universe_models import CapitalSleeve, OwnerEconomicRiskAuthorization
 
 
 CENT = Decimal("0.01")
@@ -191,4 +195,156 @@ class CapitalBoundaryRiskEngine:
             reason_codes=tuple(dict.fromkeys(reasons)),
             policy_version=self.policy.version,
             maximum_allowed_loss=max(equity, Decimal("0")),
+        )
+
+
+class SleeveCapitalBoundaryInputs(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
+
+    sleeve: CapitalSleeve
+    sleeve_equity_usd: Decimal
+    reserved_liability_usd: Decimal
+    proposed_maximum_loss_usd: Decimal
+    aggregate_reserved_after_usd: Decimal
+    liability_is_bounded: bool
+    uses_external_capital: bool
+    uses_other_sleeve_offset: bool
+    uses_non_experiment_offset: bool
+    owner_id: str
+    successor_definition_sha256: str
+    evaluated_at_utc: datetime
+    daily_loss_usd: Decimal
+    drawdown_usd: Decimal
+    action_kind: Literal["NEW_RISK", "EXACT_EXIT", "CONTINUITY_ACTION"]
+    broker_account_buying_power_usd: Decimal | None = None
+    other_sleeve_margin_offset_usd: Decimal = Decimal("0")
+
+    @field_validator("evaluated_at_utc")
+    @classmethod
+    def _require_utc(cls, value: datetime) -> datetime:
+        if (
+            value.tzinfo is None
+            or value.utcoffset() is None
+            or value.utcoffset().total_seconds() != 0
+        ):
+            raise ValueError("evaluated_at_utc must use UTC")
+        return value
+
+
+class SleeveCapitalBoundaryDecision(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, use_enum_values=False)
+
+    result: RiskResult
+    reason_codes: tuple[str, ...]
+    policy_version: str
+    sleeve: CapitalSleeve
+    available_usd: Decimal
+    maximum_allowed_aggregate_liability_usd: Decimal
+    new_authority_frozen: bool
+
+
+class SleeveCapitalBoundaryRiskEngine:
+    POLICY_VERSION = "AGGRESSIVE_CAPITAL_BOUNDARY_V1"
+
+    @staticmethod
+    def _limit_is_valid(value: object) -> bool:
+        if value == "DISABLED":
+            return True
+        try:
+            threshold = Decimal(value)  # type: ignore[arg-type]
+        except (TypeError, ValueError, ArithmeticError):
+            return False
+        return threshold.is_finite() and threshold >= 0
+
+    def evaluate(
+        self,
+        inputs: SleeveCapitalBoundaryInputs,
+        economic_authorization: OwnerEconomicRiskAuthorization | None,
+    ) -> SleeveCapitalBoundaryDecision:
+        equity = inputs.sleeve_equity_usd
+        reserved = inputs.reserved_liability_usd
+        proposed = inputs.proposed_maximum_loss_usd
+        aggregate = inputs.aggregate_reserved_after_usd
+        available = max(Decimal("0"), equity - max(reserved, Decimal("0")))
+        reasons: list[str] = []
+
+        authority = economic_authorization
+        if authority is None:
+            reasons.append("ECONOMIC_AUTHORIZATION_MISSING")
+        else:
+            if authority.expires_at_utc <= inputs.evaluated_at_utc:
+                reasons.append("ECONOMIC_AUTHORIZATION_EXPIRED")
+            if authority.issued_at_utc > inputs.evaluated_at_utc:
+                reasons.append("ECONOMIC_AUTHORIZATION_NOT_YET_VALID")
+            if authority.owner_id != inputs.owner_id:
+                reasons.append("ECONOMIC_AUTHORIZATION_OWNER_MISMATCH")
+            if (
+                authority.regular_allocation_usd != Decimal("500.00")
+                or authority.extended_allocation_usd != Decimal("500.00")
+            ):
+                reasons.append("ECONOMIC_AUTHORIZATION_ALLOCATION_MISMATCH")
+            if authority.policy_version != self.POLICY_VERSION:
+                reasons.append("ECONOMIC_AUTHORIZATION_POLICY_MISMATCH")
+            if authority.maximum_liability_ratio != Decimal("1.00"):
+                reasons.append("ECONOMIC_AUTHORIZATION_RATIO_MISMATCH")
+            if (
+                authority.successor_definition_sha256
+                != inputs.successor_definition_sha256
+            ):
+                reasons.append("ECONOMIC_AUTHORIZATION_SUCCESSOR_MISMATCH")
+            if not self._limit_is_valid(authority.daily_loss_limit_usd):
+                reasons.append("ECONOMIC_AUTHORIZATION_DAILY_LOSS_UNSPECIFIED")
+            if not self._limit_is_valid(authority.drawdown_limit_usd):
+                reasons.append("ECONOMIC_AUTHORIZATION_DRAWDOWN_UNSPECIFIED")
+
+        if inputs.action_kind == "NEW_RISK":
+            if not equity.is_finite() or equity <= 0:
+                reasons.append("INVALID_SLEEVE_EQUITY")
+            if not reserved.is_finite() or reserved < 0:
+                reasons.append("INVALID_RESERVED_LIABILITY")
+            if not proposed.is_finite() or proposed < 0:
+                reasons.append("INVALID_PROPOSED_LIABILITY")
+            if not aggregate.is_finite() or aggregate < 0:
+                reasons.append("INVALID_AGGREGATE_LIABILITY")
+            if not inputs.liability_is_bounded:
+                reasons.append("UNBOUNDED_LIABILITY")
+            if inputs.uses_external_capital:
+                reasons.append("EXTERNAL_CAPITAL_FORBIDDEN")
+            if (
+                inputs.uses_other_sleeve_offset
+                or inputs.other_sleeve_margin_offset_usd != 0
+            ):
+                reasons.append("CROSS_SLEEVE_OFFSET_FORBIDDEN")
+            if inputs.uses_non_experiment_offset:
+                reasons.append("NON_EXPERIMENT_OFFSET_FORBIDDEN")
+            if proposed.is_finite() and proposed > available:
+                reasons.append("PROPOSED_LIABILITY_EXCEEDS_AVAILABLE")
+            if equity.is_finite() and aggregate.is_finite() and aggregate > equity:
+                reasons.append("AGGREGATE_LIABILITY_EXCEEDS_SLEEVE_EQUITY")
+
+            if authority is not None:
+                daily_limit = authority.daily_loss_limit_usd
+                if (
+                    daily_limit != "DISABLED"
+                    and self._limit_is_valid(daily_limit)
+                    and inputs.daily_loss_usd >= Decimal(daily_limit)
+                ):
+                    reasons.append("MAX_DAILY_LOSS_REACHED")
+                drawdown_limit = authority.drawdown_limit_usd
+                if (
+                    drawdown_limit != "DISABLED"
+                    and self._limit_is_valid(drawdown_limit)
+                    and inputs.drawdown_usd >= Decimal(drawdown_limit)
+                ):
+                    reasons.append("MAX_DRAWDOWN_REACHED")
+
+        unique_reasons = tuple(dict.fromkeys(reasons))
+        return SleeveCapitalBoundaryDecision(
+            result=RiskResult.PASS if not unique_reasons else RiskResult.BLOCK,
+            reason_codes=unique_reasons,
+            policy_version=self.POLICY_VERSION,
+            sleeve=inputs.sleeve,
+            available_usd=available,
+            maximum_allowed_aggregate_liability_usd=max(equity, Decimal("0")),
+            new_authority_frozen=bool(unique_reasons and inputs.action_kind == "NEW_RISK"),
         )
