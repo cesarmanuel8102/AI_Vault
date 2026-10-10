@@ -18,7 +18,7 @@
 - Implementation-time broker writes are zero. Do not run a real canary, install V4 in production, retire Day1, create the successor epoch, or start its 30-day clock under this plan.
 - Preserve one Codex provider lifecycle, one Windows execution mutex, one `BrokerWriteCoordinator`, one `AuthoritativeBrokerWriter`, and one write-capable PAPER session.
 - Preserve Codex autonomy over instruments, markets, strategies, timing, sizing, and management. Do not add a symbol allowlist, preferred asset class, trading schedule, or host-authored economic action.
-- Preserve `AGGRESSIVE_CAPITAL_BOUNDARY_V1`: verified aggregate liability may reach but never exceed `1.00x` the independently computed equity of its owning sleeve.
+- Preserve `AGGRESSIVE_CAPITAL_BOUNDARY_V1`: verified aggregate liability may reach but never exceed `1.00x` the independently computed equity of its owning sleeve. Implementation compatibility does not authorize activation: initial successor activation requires a separate exact Owner economic-risk authorization bound to both sleeve allocations, the `1.00x` ratio, and explicit daily-loss and drawdown choices (a concrete threshold or `DISABLED` for each).
 - `REGULAR_SLEEVE` carries exact Day1 economics; `EXTENDED_SLEEVE` opens with USD 500 and zero P&L. Capital, loss, fees, collateral, and currency subledgers never transfer between them.
 - The frozen regular-sleeve three-window baseline remains reusable. Ordinary startup must not recollect it.
 - No SQLite write transaction may span broker or model network I/O. Collect external evidence first, then reread every database authority inside a short `BEGIN IMMEDIATE` transaction.
@@ -88,11 +88,11 @@ Existing modules extended in place:
 
 **Interfaces:**
 - Produce `CapitalSleeve = {REGULAR_SLEEVE, EXTENDED_SLEEVE}` and `TransitionPhase = {PREPARED, PREDECESSOR_QUIESCED, CANARY_EXCLUSIVE, CANARY_PASS, PREDECESSOR_RETIRED, SUCCESSOR_COMMITTED, RUNTIME_BOUND, ACTIVE}`.
-- Produce immutable `CanonicalContractIdentity`, `ContractOwnershipGroup`, `ProductFamilyKey`, `SleeveAuthorityDefinition`, `CanaryAuthorization`, and `TransitionTarget` Pydantic models with canonical `.sha256` properties.
+- Produce immutable `CanonicalContractIdentity`, `ContractOwnershipGroup`, `ProductFamilyKey`, `SleeveAuthorityDefinition`, `OwnerEconomicRiskAuthorization`, `CanaryAuthorization`, and `TransitionTarget` Pydantic models with canonical `.sha256` properties.
 - Produce `install_multi_universe_schema_v4(db: Database) -> dict[str, Any]` and `verify_multi_universe_schema_v4(db: Database) -> dict[str, Any]`.
-- Schema V4 owns append-only tables `sleeve_authority_events`, `sleeve_ledger_events`, `contract_ownership_events`, `product_family_certification_events`, `canary_authorization_events`, and `successor_transition_events`.
+- Schema V4 owns append-only tables `sleeve_authority_events`, `sleeve_ledger_events`, `contract_ownership_events`, `product_family_certification_events`, `owner_economic_risk_authorization_events`, `canary_authorization_events`, and `successor_transition_events`.
 
-- [ ] **Step 1: Write RED model tests.** Add `test_only_two_economic_sleeves_exist`, `test_contract_identity_hash_includes_bag_legs`, `test_currency_is_not_an_exclusive_contract_identity`, and `test_transition_target_hash_binds_all_authority`; assert invalid enums, duplicate legs, non-SHA bindings, and mutable extras are rejected.
+- [ ] **Step 1: Write RED model tests.** Add `test_only_two_economic_sleeves_exist`, `test_contract_identity_hash_includes_bag_legs`, `test_currency_is_not_an_exclusive_contract_identity`, and `test_transition_target_hash_binds_all_authority`; assert invalid enums, duplicate legs, non-SHA bindings, and mutable extras are rejected. Require `OwnerEconomicRiskAuthorization` to bind exact sleeve allocations, policy version, maximum-liability ratio, daily-loss choice, drawdown choice, Owner identity, issuance/expiry, and target successor definition hash.
 - [ ] **Step 2: Write RED schema tests.** Assert `Database.open()` does not install V4, V4 requires verified versions 2 and 3, explicit install is idempotent, every table rejects UPDATE/DELETE, partial schemas fail, and production-compatible databases remain byte-for-byte unchanged until install.
 - [ ] **Step 3: Run RED.** Run `python -m pytest -q tests\ibkr_paper_30d\test_multi_universe_models.py tests\ibkr_paper_30d\test_multi_universe_schema.py tests\ibkr_paper_30d\test_persistence.py`; expect import and missing-schema failures.
 - [ ] **Step 4: Implement the models and explicit installer.** Follow `successor_schema.py` and `continuity_schema.py`; use schema version `4`, exact column verification, named indexes, immutable triggers, integrity checks, and no implicit migration.
@@ -111,11 +111,12 @@ Existing modules extended in place:
 **Interfaces:**
 - Define immutable `RegularCarryForward`, `SleeveLedgerReceipt`, `SleeveLedgerState`, and `MultiSleeveLedgerState` in `sleeve_ledger.py`.
 - Produce `SleeveLedgerStore.bootstrap_regular(carry: RegularCarryForward) -> SleeveLedgerReceipt`, `.bootstrap_extended() -> SleeveLedgerReceipt`, `.append(sleeve, event_type, payload) -> str`, `.project(sleeve) -> SleeveLedgerState`, and `.project_all() -> MultiSleeveLedgerState`.
-- Produce `SleeveCapitalBoundaryInputs` and `SleeveCapitalBoundaryRiskEngine.evaluate(inputs) -> SleeveCapitalBoundaryDecision`.
+- Produce `SleeveCapitalBoundaryInputs` and `SleeveCapitalBoundaryRiskEngine.evaluate(inputs, economic_authorization) -> SleeveCapitalBoundaryDecision`; enforce any authorized daily-loss or drawdown threshold independently per sleeve, while `DISABLED` is an explicit Owner choice rather than a missing value.
 - `AVAILABLE_s = max(0, EQUITY_s - RESERVED_s)`; proposed maximum loss must be `<= AVAILABLE_s`; aggregate reserved authority must be `<= EQUITY_s`; no cross-sleeve or non-experiment offset is permitted.
 
 - [ ] **Step 1: Write RED opening-state tests.** Assert regular carry-forward preserves allocation, cost basis, fills, fees, realized/unrealized P&L, and historical hashes; extended opens at exactly USD 500, zero P&L, zero positions, and zero orders; retries are idempotent only for identical carry hashes.
 - [ ] **Step 2: Write RED boundary tests.** Parameterize proposed and aggregate liability immediately below, exactly at (PASS), and USD 0.01 above (BLOCK); cover zero/negative equity, unbounded liability, external capital, and a broker margin offset from the other sleeve.
+- [ ] **Step 2a: Write RED economic-authorization tests.** Missing, expired, wrong-Owner, wrong-allocation, wrong-policy, wrong-ratio, wrong-successor, or incompletely specified daily-loss/drawdown authority blocks initial activation. Accept either an explicit nonnegative threshold or the explicit enum `DISABLED`; never infer a limit from prose, defaults, account buying power, or prior Day1 authority. When enabled, equality at a loss/drawdown threshold freezes new authority for that sleeve without borrowing capacity from the other sleeve, while exact exits and continuity actions remain available.
 - [ ] **Step 3: Write RED currency tests.** Let both sleeves hold USD and EUR virtual balances, assert aggregate-by-currency reconciliation, and block one sleeve spending or pledging the other's balance.
 - [ ] **Step 4: Run RED.** Run the new files plus `test_experiment_ledger.py`; expect missing store/engine failures.
 - [ ] **Step 5: Implement append-only projection and risk evaluation.** Reuse canonical hashing and fill normalization from `AutonomousExperimentLedger`; never infer authority from account buying power. Keep the old ledger readable for Day1 and route successor events through the sleeve store only after V4 activation.
@@ -157,11 +158,12 @@ Existing modules extended in place:
 **Interfaces:**
 - Produce `ProductCapabilityEvidence`, `ProductExecutionCapability`, `AvailabilityDecision`, `ProductFamilyCertificationStatus = {RESEARCH_ONLY, ORDER_TRANSMIT_VERIFIED, FULL_LIFECYCLE_VERIFIED, REVOKED}`, and `ProductFamilyCertificationStore`.
 - Produce `.record_step(family, step, evidence_sha256)`, `.projection(family)`, and `.assert_executable(family, now_utc, account_sha256) -> ProductExecutionCapability`.
-- Produce `ExtendedAvailabilityGate.evaluate(certifications, session_evidence, now_utc) -> AvailabilityDecision`; PASS requires at least one extended family fully verified and tradable now or within 24 authenticated hours.
+- Produce `ExtendedAvailabilityGate.evaluate_initial_activation(certifications, session_evidence, now_utc) -> AvailabilityDecision` and `.evaluate_runtime_session(certifications, session_evidence, continuity_state, now_utc) -> AvailabilityDecision`. Initial activation PASS requires at least one extended family fully verified and tradable now or within 24 authenticated hours. Ordinary restart must start reconciliation and supervision even when no family is currently available; it may return `MARKET_CLOSED_IDLE` only when no exact continuity action is due.
 
 - [ ] **Step 1: Write RED separation tests.** Assert Codex can discover an arbitrary candidate without host allowlists, while execution remains blocked until IBKR qualifies the exact contract, permissions, market data, order/quantity semantics, and bounded economics.
 - [ ] **Step 2: Write RED certification tests.** A no-fill terminal order reaches only `ORDER_TRANSMIT_VERIFIED`; only ordered evidence for entry fill, visible position, management observation, closing fill, flat state, and economics reconciliation reaches `FULL_LIFECYCLE_VERIFIED`.
 - [ ] **Step 3: Write RED family-scope tests.** Certification for one security type/venue/quantity/order representation does not authorize another; stale, wrong-account, changed-adapter, or revoked evidence blocks only that family.
+- [ ] **Step 3a: Write RED activation-versus-restart tests.** Block first activation when no certified extended family is available within 24 authenticated hours. After an exact committed/active successor exists, allow an ordinary restart during a holiday or closure without failing recovery; preserve broker reconciliation, watchdogs, open-order/position supervision, and continuity obligations. Enter `MARKET_CLOSED_IDLE` only when none is due. Block only `EXTENDED_SLEEVE` entries for unavailable families; never block exits, exact continuity actions, or otherwise-valid `REGULAR_SLEEVE` decisions because an extended market is closed.
 - [ ] **Step 4: Run RED.** Run the new test plus toolbox/scanner/session evidence tests.
 - [ ] **Step 5: Implement capability confirmation.** Reuse read-only toolbox qualification and session evidence. Persist PAPER limitations on every certification; never represent PAPER evidence as LIVE readiness.
 - [ ] **Step 6: Run GREEN and focused regression.** Include broker feasibility, session evidence, and market policy tests.
@@ -281,12 +283,12 @@ Existing modules extended in place:
 **Interfaces:**
 - Define immutable `TransitionRecoveryResult` in `multi_universe_transition.py`.
 - Produce `MultiUniverseTransitionCoordinator.prepare(target)`, `.advance(expected_phase, evidence)`, and `.recover(target) -> TransitionRecoveryResult`.
-- Produce `PredecessorLaunchInventory`, `PredecessorRetirementReceipt`, and pure `validate_retirement(inventory, observations) -> RetirementDecision`.
-- Every transition append uses one immutable `transition_id`, expected phase/hash compare-and-swap, target definition/head/Owner/clock/sleeve/certification hashes, and exact writer binding.
+- Produce `PredecessorLaunchInventory`, `PredecessorRetirementReceipt`, `PredecessorRetirementTombstone`, and pure `validate_retirement(inventory, observations) -> RetirementDecision`. The tombstone is immutable and hash-bound to predecessor identities, all historical launch receipt hashes, target successor transition, and retirement evidence.
+- Every transition append uses one immutable `transition_id`, expected phase/hash compare-and-swap, target definition/head/Owner/clock/sleeve/certification/economic-risk-authorization hashes, and exact writer binding.
 
 - [ ] **Step 1: Write RED phase tests.** Assert only the eight ordered phases are legal, exact retries are idempotent, different targets block, and no phase can skip predecessor quiescence, canary PASS, or retirement.
 - [ ] **Step 2: Write RED crash matrix.** Stop after every durable phase, including after successor DB commit before runtime binding; recovery must neither duplicate events/canaries nor reauthorize the predecessor.
-- [ ] **Step 3: Write RED retirement tests.** Inventory Scheduled Tasks, AtLogOn triggers, services, startup entries, launch bindings, and active receipt. Missing inventory, a still-enabled path, or a managed direct invocation capable of reaching `4002` blocks `PREDECESSOR_RETIRED`.
+- [ ] **Step 3: Write RED retirement tests.** Inventory Scheduled Tasks, AtLogOn triggers, services, startup entries, launch bindings, and active receipt. Missing inventory, a still-enabled path, or a managed direct invocation capable of reaching `4002` blocks `PREDECESSOR_RETIRED`. After `SUCCESSOR_COMMITTED`, invoke every known legacy launcher with prior approved HEADs, old arguments, old Owner receipts, and old launch bindings; each must reject before execution-lock acquisition and before broker connection construction, with zero writes and no fallback path.
 - [ ] **Step 4: Write RED broker-ordering tests.** Execution lock -> fresh PAPER identity/time/account evidence -> `BEGIN IMMEDIATE` -> reread DB authority -> freshness/hash checks -> atomic commit. Assert no broker I/O while the transaction is open.
 - [ ] **Step 5: Run RED.** Run new transition/retirement files plus existing successor clock/graph/authorization tests.
 - [ ] **Step 6: Implement state machine and recovery.** Before commit, audited rollback may restore the predecessor only when canary is flat and continuity exact. At/after `SUCCESSOR_COMMITTED`, startup must resume the successor and cannot select Day1. Any ambiguous transition phase, predecessor-retirement state, or recovery projection must freeze new order authority, persist one deduplicated critical event, write Windows Event Log, and send the configured external Owner alert before awaiting reconciliation.
@@ -333,12 +335,12 @@ Existing modules extended in place:
 
 **Interfaces:**
 - Extend the existing production composition; do not create a second autonomous service. Inject dual ledger, ownership, capability, reconciliation, and transition stores into the one state builder, provider, coordinator, writer, and watchdog.
-- Successor startup requires V4 schema, `ACTIVE` transition, exact approved HEAD/account/Owner/clock/sleeve/risk/certification hashes, at least one extended family available within 24 hours, and retired predecessor launch evidence.
+- Initial successor activation requires V4 schema, an activation-eligible transition, exact approved HEAD/account/Owner/clock/sleeve/risk/certification/economic-risk-authorization hashes, at least one extended family available within 24 authenticated hours, and retired predecessor launch evidence. An ordinary restart of the same exact committed/active successor must not reapply the 24-hour activation predicate; it starts reconciliation and supervision, handles any due continuity obligation, and otherwise may enter `MARKET_CLOSED_IDLE` until a certified family becomes available.
 - `RUN_IBKR_MULTI_UNIVERSE_SERVICE.ps1` launches the successor directly and never invokes the legacy three-window collection.
 
 - [ ] **Step 1: Write RED composition tests.** Assert one provider, one service loop, one coordinator, one writer, one write-capable client, and one execution lock. Reject any fallback to direct execution or second session.
-- [ ] **Step 2: Write RED launch tests.** Parameterize every prerequisite, including V4 absence, non-ACTIVE phase, mismatched hashes, no extended family, predecessor path active, continuity gap, and regular baseline misuse; each blocks before writer startup.
-- [ ] **Step 3: Write RED restart tests.** After `SUCCESSOR_COMMITTED`, simulated Windows restart resumes the exact successor; invoking old task arguments or old receipts cannot reach broker connection construction.
+- [ ] **Step 2: Write RED launch tests.** Parameterize every initial-activation prerequisite, including V4 absence, ineligible phase, mismatched hashes, missing/invalid economic-risk authorization, no extended family within 24 authenticated hours, predecessor path active, continuity gap, and regular baseline misuse; each blocks before writer startup.
+- [ ] **Step 3: Write RED restart tests.** After `SUCCESSOR_COMMITTED`, simulated Windows restart resumes the exact successor even when a holiday keeps every certified family unavailable beyond 24 hours. It enters `MARKET_CLOSED_IDLE` only with no due continuity obligation; otherwise it performs the exact authorized continuity path while new entries remain unavailable. Invoking old task arguments, historical approved HEADs, old Owner receipts, or old launch bindings must encounter the retirement tombstone and cannot acquire the execution lock or reach broker connection construction.
 - [ ] **Step 4: Write RED reporting tests.** Report regular historical P&L, each successor sleeve, combined successor/lifetime P&L, currency balances, canary adjustment, ownership, certified families, and PAPER limitations without rebasing or mixing capital.
 - [ ] **Step 5: Run RED.** Run composition, launch, scheduler, reporting, and script files.
 - [ ] **Step 6: Implement successor wiring.** Reuse Day1 preflight/provenance/lock helpers and Continuity V3 composition. Keep legacy Day1 behavior unchanged when V4 is absent and no successor target is requested.
@@ -389,6 +391,9 @@ DUAL_LEDGER:
 STANDALONE_SOLVENCY:
 CONTRACT_OWNERSHIP:
 PRODUCT_FAMILY_CERTIFICATION:
+OWNER_ECONOMIC_RISK_AUTHORIZATION:
+INITIAL_ACTIVATION_AVAILABILITY:
+ORDINARY_RESTART_CLOSED_MARKET:
 MODEL_AUTONOMY_PRESERVED:
 SOLE_WRITE_CAPABLE_SESSION:
 CONTINUITY_COVERAGE:
