@@ -1,14 +1,16 @@
 # Continuous Multi-Universe Sleeves Design
 
-**Status:** Owner-approved design; implementation is not authorized by this
-document alone.
+**Status:** Owner-approved base design, revised after independent review and
+pending Owner review of this revision. Implementation and production activation
+are not authorized by this document alone.
 
 **Canonical design baseline:**
 `1e3286dc336ca8ca01930044b124f45884aab257`
 
-**Operational constraint:** The active Day1 runtime remains untouched until
-the successor implementation, capability evidence, tests, and PAPER canary
-have passed.
+**Operational constraint:** Development, static verification, and read-only
+capability discovery must not alter the active Day1 runtime. The PAPER canary
+requires a later, explicitly authorized maintenance transition with exclusive
+writer authority and a tested rollback path to the original runtime.
 
 ## Context
 
@@ -35,6 +37,11 @@ specific product.
 
 Maximize combined final PAPER equity over one new 30-day successor epoch while
 managing two non-transferable USD 500 sleeves autonomously.
+
+The purpose is not to make Codex trade for more hours. It is to let Codex find
+better opportunities across every safely supported market and session while
+preserving capital. Remaining idle is valid whenever the agent finds no
+positive-expectancy use of a sleeve.
 
 Success is measured as:
 
@@ -106,6 +113,47 @@ The account-level risk view includes both sleeves and any non-experiment
 exposure. Account uncertainty may freeze new risk, but it cannot transfer
 ownership or capital.
 
+### Capital Authority and Performance Formulas
+
+Let:
+
+- `R_PRINCIPAL = 500`, the original regular-sleeve contribution;
+- `R_EQUITY_0`, the exact marked regular-sleeve equity at successor activation;
+- `E_PRINCIPAL = E_EQUITY_0 = 500`, the extended-sleeve opening contribution;
+- `R_EQUITY_t` and `E_EQUITY_t`, each sleeve's ledger equity at time `t`; and
+- `RESERVED_s`, the sleeve-local authority already committed to open orders,
+  positions, accrued costs, and pending obligations.
+
+The successor opens with economic equity:
+
+`SUCCESSOR_EQUITY_0 = R_EQUITY_0 + E_EQUITY_0`
+
+not an assumed USD 1,000. USD 1,000 is total contributed principal, while the
+successor-period denominator reflects the actual carried regular result.
+
+For each sleeve:
+
+`AVAILABLE_s = max(0, EQUITY_s - RESERVED_s)`
+
+`RESERVED_s` is not broker buying power. For each exposure it uses the greater
+of cash debit, broker margin plus a product-specific buffer, and independently
+verified maximum economic liability. If maximum loss is relevant but cannot be
+bounded or verified for the exact contract and direction, the proposal is
+blocked. Margin alone must never be presented as maximum loss.
+
+Performance is reported without rebasing:
+
+- `REGULAR_HISTORICAL_PNL = R_EQUITY_0 - R_PRINCIPAL`;
+- `REGULAR_SUCCESSOR_PNL_t = R_EQUITY_t - R_EQUITY_0`;
+- `EXTENDED_SUCCESSOR_PNL_t = E_EQUITY_t - E_PRINCIPAL`;
+- `COMBINED_SUCCESSOR_PNL_t = (R_EQUITY_t + E_EQUITY_t) - SUCCESSOR_EQUITY_0`;
+- `COMBINED_LIFETIME_PNL_t = (R_EQUITY_t + E_EQUITY_t) - 1000`.
+
+Equity and P&L include realized and unrealized results, commissions, fees,
+financing, settlements, and attributable cash events. Because transfers are
+forbidden, no cash-flow adjustment is expected; any external account cash event
+must be classified before authority can resume.
+
 ## Successor Epoch and Clock
 
 Create one new successor epoch with one authenticated 30-day clock beginning
@@ -128,6 +176,10 @@ The successor transition atomically binds:
 Only one active clock is required. Both sleeves share its activation and expiry
 timestamps. The regular sleeve may therefore have more total historical days;
 reports disclose that difference rather than hiding or normalizing it.
+
+Superseding the original Day1 clock is an explicit Owner decision. The old
+clock and its results remain immutable evidence, but they no longer govern the
+running process after successor activation.
 
 Existing expiration semantics remain in force. Codex receives authoritative
 time-to-expiry evidence and retains autonomy over how to reach the required
@@ -210,10 +262,48 @@ Rules:
 This restriction protects accounting and authority. It does not express a
 market preference.
 
-## Dynamic Capability Discovery
+### Broker-Generated Positions and Cash Events
 
-The expanded universe is discovered from authenticated IBKR PAPER evidence,
-not from a host-authored symbol or asset allowlist.
+Ownership must cover events that do not begin with a new model order:
+
+- option exercise, assignment, expiration, and resulting underlying shares;
+- futures expiration, settlement, and delivery-equivalent cash events;
+- multi-leg orders whose broker positions appear as individual legs;
+- currency conversions and resulting per-currency cash balances;
+- splits, mergers, spin-offs, symbol or contract-identity changes, and other
+  corporate actions;
+- dividends, interest, withholding, fees, and financing; and
+- broker corrections or any manually created/unattributed account item.
+
+Before accepting a derivative or multi-leg order, the ownership gate reserves
+contingent identities for every leg, underlying, settlement currency, and
+deterministically possible child position. A conflict with the other sleeve
+blocks the proposal before transmission.
+
+When a broker event occurs, ownership follows the verified source lineage. An
+option assignment and its resulting stock position, for example, remain in the
+option's sleeve. Corporate-action successor instruments inherit the source
+position's sleeve. Multi-leg fills bind the parent and every resulting leg as
+one ownership group until reconciliation proves all related exposure terminal.
+
+An event with no independently verifiable lineage is recorded as
+`UNATTRIBUTED_ACCOUNT_EVENT`. The runtime freezes new risk, preserves only
+exactly owned reduce-only authority, and alerts the Owner. It never assigns an
+unexplained position or cash movement from model narrative.
+
+## Opportunity Discovery and Capability Confirmation
+
+Opportunity discovery and execution capability are separate responsibilities:
+
+1. **Codex opportunity discovery** uses research, searches, scanners, market
+   observations, news, and its own hypotheses to identify candidates. IBKR is
+   not assumed to provide an exhaustive universe list.
+2. **IBKR capability confirmation** qualifies the exact candidate against
+   authenticated PAPER evidence before any economic authority exists.
+
+No host-authored symbol or asset allowlist ranks the universe. Conversely, a
+candidate discovered by Codex does not become executable merely because a
+symbol search or scanner returned it.
 
 The read-only capability layer records:
 
@@ -234,6 +324,12 @@ An instrument is executable only when its adapter can represent the exact
 contract, order, liability, fills, position, and lifecycle state without
 lossy assumptions. Unsupported evidence blocks that proposal while leaving the
 rest of the universe available.
+
+PAPER evidence proves PAPER integration only. Simulated liquidity, fills,
+slippage, order-type behavior, and product availability may differ from LIVE.
+Every affected result and report carries an explicit
+`PAPER_SIMULATION_LIMITATION` classification; no PAPER canary is represented as
+LIVE readiness.
 
 ## Market Sessions and Continuous Operation
 
@@ -399,8 +495,14 @@ Tests must prove:
 
 - USD 500 plus USD 500 authority and no transfer path;
 - profit, loss, fees, margin, and reserved capital remain sleeve-local;
+- capital availability uses sleeve equity and obligations rather than account
+  buying power, and margin is never substituted for maximum loss;
 - carried-forward regular state preserves original cost basis and history;
+- historical, successor-period, and lifetime P&L formulas remain distinct;
 - exact-contract cross-sleeve collision is blocked;
+- exercise, assignment, settlement, multi-leg, currency, and corporate-action
+  descendants preserve verified ownership lineage;
+- unattributed account events freeze new risk instead of being guessed;
 - ownership releases only after complete broker reconciliation;
 - each supported contract adapter preserves exact IBKR identity and quantity;
 - unsupported order or liability semantics fail closed;
@@ -424,6 +526,11 @@ Cover at minimum:
 - maintenance-window transition;
 - insufficient sleeve capital despite ample account buying power;
 - attempt to charge fees or loss to the other sleeve; and
+- assignment into an underlying owned by the other sleeve;
+- corporate-action contract replacement and spin-off ownership;
+- unsolicited or manually created broker position;
+- multi-leg fill represented as separate broker positions;
+- currency conversion and per-sleeve cash attribution;
 - clock expiry with multiple product sessions.
 
 ### PAPER Capability Probe
@@ -435,8 +542,13 @@ contracts, sessions, data, quantity rules, order types, and what-if support.
 ### PAPER Canary
 
 After code verification and before the successor epoch begins, execute one
-separately authorized, minimum-exposure PAPER canary outside both economic
-ledgers. It uses a dedicated order namespace and proves:
+separately authorized, minimum-exposure PAPER canary under an exclusive
+maintenance authority. The old Day1 writer must be stopped and its lock
+released before the canary writer starts; they may never overlap.
+
+The canary uses a dedicated order namespace, contract not owned or contingently
+reserved by Day1, and an Owner-authorized canary reserve outside both economic
+ledgers. It proves:
 
 1. contract qualification;
 2. market-data binding;
@@ -447,7 +559,22 @@ ledgers. It uses a dedicated order namespace and proves:
 7. position management and closure when a fill occurs; and
 8. final zero canary exposure with complete reconciliation.
 
-The canary does not select or imply the autonomous strategy.
+The canary does not select or imply the autonomous strategy. Its fills,
+commissions, fees, financing, and P&L are persisted in a separate canary ledger
+and excluded from both sleeves. The resulting aggregate account cash difference
+remains an explicit reconciliation adjustment rather than hidden sleeve P&L.
+
+Before the maintenance authority begins, the deployment must prove a rollback
+that can restart the original approved HEAD, epoch, lock generation, and Day1
+state without accepting any successor authority. During the short maintenance
+window, a read-only observer may remain active, but there is exactly one writer
+or none. If a current Day1 order or continuity obligation requires a write, the
+canary is aborted and the original runtime is restored.
+
+If the canary cannot reach a terminal, flat, exactly reconciled state, successor
+activation is prohibited. A proven-flat canary failure restores the original
+runtime. Any uncertain canary state remains fail-closed and requires Owner
+action; rollback must not create a competing writer.
 
 ## Activation Sequence
 
@@ -456,16 +583,28 @@ The canary does not select or imply the autonomous strategy.
 3. Pass kernel, provenance, PowerShell AST, schema, hash-chain, and
    `git diff --check` verification.
 4. Run the read-only PAPER capability probe.
-5. Run the authorized PAPER canary and reconcile it to zero.
-6. Produce and review the exact successor definition and Owner authorization.
-7. Bind the approved implementation HEAD and receipts.
-8. Stop the old runtime through its audited shutdown path.
-9. Collect fresh PAPER broker identity, positions, orders, executions, and
-   authenticated server time.
-10. Atomically create the successor clock, carried regular sleeve, new extended
-    sleeve, ownership projection, and activation event.
-11. Start the single continuous runtime.
-12. Verify writer readiness and the first accepted autonomous cycle without
+5. Produce the exact successor definition, separate canary authorization,
+   successor Owner authorization, approved implementation HEAD, and receipts.
+6. Prove the rollback launcher for the original HEAD and active predecessor
+   epoch without changing production state.
+7. Enter an audited maintenance window: freeze new Day1 entries, drain the
+   writer queue, verify no open Day1 order requires action, reconcile the
+   account, stop the old runtime, and release its execution lock.
+8. Start the new implementation in exclusive canary mode with successor
+   activation still disabled.
+9. Run the authorized PAPER canary, persist its separate economics, and
+   reconcile canary exposure and orders to zero.
+10. If the canary fails while proven flat, stop the new runtime and restore the
+    predecessor runtime. If state is uncertain, remain fail-closed and require
+    Owner action.
+11. After canary PASS, collect fresh PAPER identity, positions, orders,
+    executions, authenticated server time, and exact carried Day1 economics.
+12. Atomically create the successor clock, regular sleeve, extended sleeve,
+    ownership projection, and activation event.
+13. Transition the already-exclusive writer from canary authority to successor
+    authority without opening another write-capable session.
+14. Start the single continuous autonomous loop.
+15. Verify writer readiness and the first accepted autonomous cycle without
     forcing a trade.
 
 No step may silently repair, cancel, close, or reassign an existing Day1 item.
@@ -484,7 +623,10 @@ The expanded experiment is ready only when:
 - no capital-transfer path exists;
 - capability evidence is fresh and bound to the PAPER account;
 - contract ownership is unique and reconciled;
+- broker-generated descendants and cash events have verified sleeve lineage;
 - the canary is terminal and flat;
+- canary economics are excluded from both sleeves and exactly reconciled;
+- rollback to the predecessor runtime was proven before maintenance began;
 - no critical alert, uncertain order, or unresolved reconciliation remains;
 - at least one autonomous cycle is accepted; and
 - the scheduler/runtime cannot repeat the legacy three-window collection
