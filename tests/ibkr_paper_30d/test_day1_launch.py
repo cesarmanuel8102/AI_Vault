@@ -264,6 +264,112 @@ def test_schema_mode_accepts_v4_only_for_explicit_successor(tmp_path) -> None:
             launch_module._validate_launch_database_mode(db, successor_mode=False)
 
 
+def _launch_transition_target():
+    from ibkr_paper_30d.multi_universe_models import TransitionTarget
+
+    return TransitionTarget(
+        transition_id="transition-launch-bindings",
+        predecessor_epoch_id="AUTONOMY_EPOCH_1",
+        successor_epoch_id="AUTONOMY_EPOCH_2",
+        successor_definition_sha256="1" * 64,
+        owner_authorization_sha256="2" * 64,
+        approved_git_head="3" * 40,
+        account_identity_sha256="4" * 64,
+        clock_authority_sha256="5" * 64,
+        regular_sleeve_authority_sha256="6" * 64,
+        continuous_sleeve_authority_sha256="7" * 64,
+        economic_risk_authorization_sha256="8" * 64,
+        certified_family_set_sha256=sha256_json([]),
+        canary_authorization_sha256="a" * 64,
+        writer_binding_sha256="b" * 64,
+    )
+
+
+def _launch_phase_evidence(phase):
+    from ibkr_paper_30d.multi_universe_models import TransitionPhase
+
+    evidence = {
+        "phase_evidence_sha256": "e" * 64,
+        "canary_flat": True,
+        "continuity_exact": True,
+    }
+    if phase is TransitionPhase.PREDECESSOR_RETIRED:
+        evidence.update(
+            retirement_status="PASS", retirement_tombstone_sha256="c" * 64
+        )
+    if phase is TransitionPhase.SUCCESSOR_COMMITTED:
+        evidence["successor_commit_sha256"] = "d" * 64
+    if phase is TransitionPhase.SUPERVISION_BOUND:
+        evidence.update(
+            reconciliation_status="PASS",
+            inherited_position_projection_sha256="1" * 64,
+            ownership_projection_sha256="2" * 64,
+            writer_binding_sha256="b" * 64,
+            new_entry_authority=False,
+        )
+    if phase is TransitionPhase.CANARY_PASS:
+        evidence.update(
+            canary_status="PASS", certified_family_set_sha256="f" * 64
+        )
+    return evidence
+
+
+def test_pre_supervision_launch_uses_immutable_target_authorities(tmp_path) -> None:
+    from ibkr_paper_30d.multi_universe_models import TransitionPhase
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+    from ibkr_paper_30d.multi_universe_transition import MultiUniverseTransitionCoordinator
+    from ibkr_paper_30d.persistence import Database
+    from ibkr_paper_30d.successor_schema import install_successor_schema_v2
+
+    target = _launch_transition_target()
+    with Database.open(tmp_path / "pre-bind.sqlite3") as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+        coordinator = MultiUniverseTransitionCoordinator(db)
+        coordinator.prepare(target)
+        for phase in (
+            TransitionPhase.PREDECESSOR_QUIESCED,
+            TransitionPhase.PREDECESSOR_RETIRED,
+            TransitionPhase.SUCCESSOR_COMMITTED,
+        ):
+            coordinator.advance(phase, _launch_phase_evidence(phase))
+
+        bindings = launch_module._multi_universe_authority_bindings(
+            db, target, TransitionPhase.SUCCESSOR_COMMITTED
+        )
+
+    assert bindings["regular_sleeve_authority_sha256"] == target.regular_sleeve_authority_sha256
+    assert bindings["continuous_sleeve_authority_sha256"] == target.continuous_sleeve_authority_sha256
+    assert bindings["economic_risk_authorization_sha256"] == target.economic_risk_authorization_sha256
+    assert bindings["continuity_gap"] is False
+
+
+def test_post_canary_launch_uses_phase_bound_dynamic_family_set(tmp_path) -> None:
+    from ibkr_paper_30d.multi_universe_models import TransitionPhase
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+    from ibkr_paper_30d.multi_universe_transition import MultiUniverseTransitionCoordinator
+    from ibkr_paper_30d.persistence import Database
+    from ibkr_paper_30d.successor_schema import install_successor_schema_v2
+
+    target = _launch_transition_target()
+    with Database.open(tmp_path / "dynamic-family.sqlite3") as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+        coordinator = MultiUniverseTransitionCoordinator(db)
+        coordinator.prepare(target)
+        for phase in tuple(TransitionPhase)[1 : tuple(TransitionPhase).index(TransitionPhase.CANARY_PASS) + 1]:
+            coordinator.advance(phase, _launch_phase_evidence(phase))
+
+        bindings = launch_module._multi_universe_authority_bindings(
+            db, target, TransitionPhase.CANARY_PASS
+        )
+
+    assert bindings["expected_certified_family_set_sha256"] == "f" * 64
+    assert bindings["continuity_gap"] is True
+
+
 def test_legacy_launcher_rejects_committed_successor_before_schema_gate(tmp_path) -> None:
     from ibkr_paper_30d.multi_universe_models import TransitionPhase, TransitionTarget
     from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4

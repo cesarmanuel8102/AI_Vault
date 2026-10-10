@@ -18,9 +18,15 @@ from .multi_universe_models import (
     CapitalSleeve,
     CanonicalContractIdentity,
     ContractOwnershipGroup,
+    OwnerEconomicRiskAuthorization,
     SHA256_PATTERN,
+    SleeveAuthorityDefinition,
     TransitionPhase,
     TransitionTarget,
+)
+from .multi_universe_authority import (
+    MultiUniverseAuthorityError,
+    MultiUniverseAuthorityStore,
 )
 from .multi_universe_transition import (
     MultiUniverseTransitionCoordinator,
@@ -91,6 +97,11 @@ class SupervisionBindingPlan(_BindingModel):
     day1_lineage_sha256: str = Field(pattern=SHA256_PATTERN)
     inherited_position_projection_sha256: str = Field(pattern=SHA256_PATTERN)
     regular_sleeve_authority_sha256: str = Field(pattern=SHA256_PATTERN)
+    continuous_sleeve_authority_sha256: str = Field(pattern=SHA256_PATTERN)
+    economic_risk_authorization_sha256: str = Field(pattern=SHA256_PATTERN)
+    regular_sleeve_authority: SleeveAuthorityDefinition
+    continuous_sleeve_authority: SleeveAuthorityDefinition
+    economic_risk_authorization: OwnerEconomicRiskAuthorization
     transition_target_sha256: str = Field(pattern=SHA256_PATTERN)
     execution_lock_generation: int = Field(gt=0)
     writer_binding_sha256: str = Field(pattern=SHA256_PATTERN)
@@ -105,6 +116,8 @@ class SupervisionBindingReceipt(_BindingModel):
     day1_lineage_sha256: str = Field(pattern=SHA256_PATTERN)
     inherited_position_projection_sha256: str = Field(pattern=SHA256_PATTERN)
     regular_sleeve_authority_sha256: str = Field(pattern=SHA256_PATTERN)
+    continuous_sleeve_authority_sha256: str = Field(pattern=SHA256_PATTERN)
+    economic_risk_authorization_sha256: str = Field(pattern=SHA256_PATTERN)
     transition_target_sha256: str = Field(pattern=SHA256_PATTERN)
     execution_lock_generation: int = Field(gt=0)
     writer_binding_sha256: str = Field(pattern=SHA256_PATTERN)
@@ -146,6 +159,9 @@ def build_supervision_binding_plan(
     day1_projection: Mapping[str, Any],
     account_identity_sha256: str,
     transition_target_sha256: str,
+    regular_sleeve_authority: SleeveAuthorityDefinition,
+    continuous_sleeve_authority: SleeveAuthorityDefinition,
+    economic_risk_authorization: OwnerEconomicRiskAuthorization,
 ) -> SupervisionBindingPlan:
     """Build a deterministic plan without touching a database or broker."""
 
@@ -176,6 +192,13 @@ def build_supervision_binding_plan(
         for item in (writer_binding, regular_authority, day1_lineage)
     ):
         raise SupervisionBindingError("SUPERVISION_BINDING_INPUT_INVALID")
+    if (
+        regular_sleeve_authority.sleeve is not CapitalSleeve.REGULAR_SLEEVE
+        or continuous_sleeve_authority.sleeve
+        is not CapitalSleeve.CONTINUOUS_SLEEVE
+        or regular_sleeve_authority.sha256 != regular_authority
+    ):
+        raise SupervisionBindingError("SUPERVISION_AUTHORITY_MISMATCH")
     if broker_snapshot.get("writer_binding_sha256") != writer_binding:
         raise SupervisionBindingError("WRITER_BINDING_MISMATCH")
     try:
@@ -352,6 +375,13 @@ def build_supervision_binding_plan(
             [item.model_dump(mode="json") for item in bindings_tuple]
         ),
         regular_sleeve_authority_sha256=regular_authority,
+        continuous_sleeve_authority_sha256=(
+            continuous_sleeve_authority.sha256
+        ),
+        economic_risk_authorization_sha256=economic_risk_authorization.sha256,
+        regular_sleeve_authority=regular_sleeve_authority,
+        continuous_sleeve_authority=continuous_sleeve_authority,
+        economic_risk_authorization=economic_risk_authorization,
         transition_target_sha256=transition_target_sha256,
         execution_lock_generation=lock_generation,
         writer_binding_sha256=writer_binding,
@@ -382,6 +412,10 @@ class SuccessorSupervisionBinder:
             or target.account_identity_sha256 != plan.account_identity_sha256
             or target.regular_sleeve_authority_sha256
             != plan.regular_sleeve_authority_sha256
+            or target.continuous_sleeve_authority_sha256
+            != plan.continuous_sleeve_authority_sha256
+            or target.economic_risk_authorization_sha256
+            != plan.economic_risk_authorization_sha256
             or target.writer_binding_sha256 != plan.writer_binding_sha256
         ):
             raise SupervisionBindingError("SUPERVISION_AUTHORITY_MISMATCH")
@@ -396,15 +430,27 @@ class SuccessorSupervisionBinder:
             raise SupervisionBindingError("SUPERVISION_BINDING_STALE")
         target = self._transition_target(plan)
         ledger = SleeveLedgerStore(self.db)
+        authorities = MultiUniverseAuthorityStore(self.db)
         ownership = ContractOwnershipStore(self.db)
         coordinator = MultiUniverseTransitionCoordinator(self.db)
         try:
             with self.db.transaction():
                 target = self._transition_target(plan)
-                regular_receipt = ledger.bootstrap_regular_in_transaction(
-                    plan.regular_carry
+                authority_receipt = authorities.bind_in_transaction(
+                    target=target,
+                    sleeve_authorities=(
+                        plan.regular_sleeve_authority,
+                        plan.continuous_sleeve_authority,
+                    ),
+                    economic_authorization=plan.economic_risk_authorization,
                 )
-                continuous_receipt = ledger.bootstrap_continuous_in_transaction()
+                regular_receipt = ledger.bootstrap_regular_in_transaction(
+                    plan.regular_carry,
+                    plan.regular_sleeve_authority_sha256,
+                )
+                continuous_receipt = ledger.bootstrap_continuous_in_transaction(
+                    plan.continuous_sleeve_authority_sha256
+                )
                 for inherited in plan.inherited_positions:
                     ownership.reserve_group_in_transaction(
                         ContractOwnershipGroup(
@@ -432,6 +478,15 @@ class SuccessorSupervisionBinder:
                     "continuous_ledger_event_sha256": (
                         continuous_receipt.event_sha256
                     ),
+                    "regular_sleeve_authority_sha256": (
+                        authority_receipt.regular_sleeve_authority_sha256
+                    ),
+                    "continuous_sleeve_authority_sha256": (
+                        authority_receipt.continuous_sleeve_authority_sha256
+                    ),
+                    "economic_risk_authorization_sha256": (
+                        authority_receipt.economic_risk_authorization_sha256
+                    ),
                     "new_entry_authority": False,
                 }
                 transition = coordinator.advance_in_transaction(
@@ -441,7 +496,12 @@ class SuccessorSupervisionBinder:
                 )
         except SupervisionBindingError:
             raise
-        except (OwnershipError, SleeveLedgerError, MultiUniverseTransitionError) as exc:
+        except (
+            MultiUniverseAuthorityError,
+            OwnershipError,
+            SleeveLedgerError,
+            MultiUniverseTransitionError,
+        ) as exc:
             raise SupervisionBindingError(str(exc)) from exc
         return SupervisionBindingReceipt(
             account_identity_sha256=plan.account_identity_sha256,
@@ -452,6 +512,12 @@ class SuccessorSupervisionBinder:
             ),
             regular_sleeve_authority_sha256=(
                 plan.regular_sleeve_authority_sha256
+            ),
+            continuous_sleeve_authority_sha256=(
+                plan.continuous_sleeve_authority_sha256
+            ),
+            economic_risk_authorization_sha256=(
+                plan.economic_risk_authorization_sha256
             ),
             transition_target_sha256=plan.transition_target_sha256,
             execution_lock_generation=plan.execution_lock_generation,

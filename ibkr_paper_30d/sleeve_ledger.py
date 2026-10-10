@@ -275,19 +275,26 @@ class SleeveLedgerStore:
             duplicate=True,
         )
 
-    def bootstrap_regular(self, carry: RegularCarryForward) -> SleeveLedgerReceipt:
+    def bootstrap_regular(
+        self,
+        carry: RegularCarryForward,
+        authority_sha256: str | None = None,
+    ) -> SleeveLedgerReceipt:
         with self.db.transaction():
-            return self.bootstrap_regular_in_transaction(carry)
+            return self.bootstrap_regular_in_transaction(carry, authority_sha256)
 
     def bootstrap_regular_in_transaction(
-        self, carry: RegularCarryForward
+        self,
+        carry: RegularCarryForward,
+        authority_sha256: str | None = None,
     ) -> SleeveLedgerReceipt:
         if not self.db.connection.in_transaction:
             raise SleeveLedgerError("ATOMIC_BOOTSTRAP_TRANSACTION_REQUIRED")
+        authority_sha256 = authority_sha256 or carry.sha256
         existing = self._bootstrap_receipt(
             CapitalSleeve.REGULAR_SLEEVE,
             "REGULAR_BOOTSTRAP",
-            carry.sha256,
+            authority_sha256,
         )
         if existing is not None:
             return existing
@@ -296,7 +303,7 @@ class SleeveLedgerStore:
             currency="USD",
             event_type="REGULAR_BOOTSTRAP",
             payload={
-                "authority_sha256": carry.sha256,
+                "authority_sha256": authority_sha256,
                 "carry": carry.model_dump(mode="json"),
             },
         )
@@ -310,15 +317,19 @@ class SleeveLedgerStore:
             "open_order_count": 0,
         }
 
-    def bootstrap_continuous(self) -> SleeveLedgerReceipt:
+    def bootstrap_continuous(
+        self, authority_sha256: str | None = None
+    ) -> SleeveLedgerReceipt:
         with self.db.transaction():
-            return self.bootstrap_continuous_in_transaction()
+            return self.bootstrap_continuous_in_transaction(authority_sha256)
 
-    def bootstrap_continuous_in_transaction(self) -> SleeveLedgerReceipt:
+    def bootstrap_continuous_in_transaction(
+        self, authority_sha256: str | None = None
+    ) -> SleeveLedgerReceipt:
         if not self.db.connection.in_transaction:
             raise SleeveLedgerError("ATOMIC_BOOTSTRAP_TRANSACTION_REQUIRED")
         authority = self._continuous_authority()
-        authority_sha256 = sha256_json(authority)
+        authority_sha256 = authority_sha256 or sha256_json(authority)
         existing = self._bootstrap_receipt(
             CapitalSleeve.CONTINUOUS_SLEEVE,
             "CONTINUOUS_BOOTSTRAP",

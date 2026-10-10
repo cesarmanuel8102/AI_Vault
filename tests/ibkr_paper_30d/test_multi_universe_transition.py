@@ -59,7 +59,10 @@ def _evidence(phase: TransitionPhase) -> dict[str, object]:
         "broker_write_count": 0,
     }
     if phase is TransitionPhase.CANARY_PASS:
-        evidence["canary_status"] = "PASS"
+        evidence.update(
+            canary_status="PASS",
+            certified_family_set_sha256="9" * 64,
+        )
     if phase is TransitionPhase.PREDECESSOR_RETIRED:
         evidence.update(
             {
@@ -80,7 +83,10 @@ def _evidence(phase: TransitionPhase) -> dict[str, object]:
             }
         )
     if phase is TransitionPhase.RUNTIME_BOUND:
-        evidence["writer_binding_sha256"] = "b" * 64
+        evidence.update(
+            writer_binding_sha256="b" * 64,
+            certified_family_set_sha256="9" * 64,
+        )
     if phase is TransitionPhase.ACTIVE:
         classifications = {
             "classified_canary_currency_balances": [],
@@ -210,6 +216,24 @@ def test_retirement_and_canary_require_positive_hash_bound_evidence(tmp_path):
         invalid_canary.pop("canary_status")
         with pytest.raises(MultiUniverseTransitionError, match="CANARY_EVIDENCE"):
             coordinator.advance(TransitionPhase.CANARY_PASS, invalid_canary)
+
+
+@pytest.mark.parametrize(
+    "phase", (TransitionPhase.CANARY_PASS, TransitionPhase.RUNTIME_BOUND)
+)
+def test_dynamic_family_set_must_be_hash_bound_in_phase_evidence(tmp_path, phase):
+    with _open(tmp_path / f"family-{phase.value}.sqlite3") as db:
+        coordinator = MultiUniverseTransitionCoordinator(db)
+        coordinator.prepare(_target())
+        for prior in PHASES[1 : PHASES.index(phase)]:
+            coordinator.advance(prior, _evidence(prior))
+        invalid = _evidence(phase)
+        invalid.pop("certified_family_set_sha256")
+        with pytest.raises(
+            MultiUniverseTransitionError,
+            match="CERTIFIED_FAMILY_SET_EVIDENCE_INVALID",
+        ):
+            coordinator.advance(phase, invalid)
 
 
 def test_successor_supervision_precedes_canary(tmp_path):

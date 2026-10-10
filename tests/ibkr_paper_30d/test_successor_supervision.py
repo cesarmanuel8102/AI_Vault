@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -13,11 +14,14 @@ from ibkr_paper_30d.contract_ownership import (
 )
 from ibkr_paper_30d.multi_universe_models import (
     CapitalSleeve,
+    OwnerEconomicRiskAuthorization,
+    SleeveAuthorityDefinition,
     TransitionPhase,
     TransitionTarget,
 )
 from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
 from ibkr_paper_30d.multi_universe_transition import MultiUniverseTransitionCoordinator
+from ibkr_paper_30d.multi_universe_authority import MultiUniverseAuthorityStore
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
 from ibkr_paper_30d.successor_schema import install_successor_schema_v2
@@ -28,7 +32,42 @@ from ibkr_paper_30d.successor_supervision import (
 )
 
 
+NOW = datetime(2026, 10, 10, 17, 0, tzinfo=timezone.utc)
+
+
+def _authorities():
+    regular = SleeveAuthorityDefinition(
+        sleeve=CapitalSleeve.REGULAR_SLEEVE,
+        authorized_principal_usd=Decimal("500"),
+        opening_equity_usd=Decimal("493.98"),
+        opening_pnl_usd=Decimal("-6.02"),
+        source_state_sha256="d" * 64,
+    )
+    continuous = SleeveAuthorityDefinition(
+        sleeve=CapitalSleeve.CONTINUOUS_SLEEVE,
+        authorized_principal_usd=Decimal("500"),
+        opening_equity_usd=Decimal("500"),
+        opening_pnl_usd=Decimal("0"),
+        source_state_sha256="e" * 64,
+    )
+    economic = OwnerEconomicRiskAuthorization(
+        authorization_id="owner-two-sleeve-risk-v1",
+        owner_id="S-1-5-21-owner",
+        policy_version="AGGRESSIVE_CAPITAL_BOUNDARY_V1",
+        regular_allocation_usd=Decimal("500"),
+        extended_allocation_usd=Decimal("500"),
+        maximum_liability_ratio=Decimal("1.00"),
+        daily_loss_limit_usd="DISABLED",
+        drawdown_limit_usd="DISABLED",
+        successor_definition_sha256="1" * 64,
+        issued_at_utc=NOW,
+        expires_at_utc=NOW + timedelta(days=30),
+    )
+    return regular, continuous, economic
+
+
 def _target() -> TransitionTarget:
+    regular, continuous, economic = _authorities()
     return TransitionTarget(
         transition_id="transition-supervision-1",
         predecessor_epoch_id="AUTONOMY_EPOCH_2",
@@ -38,9 +77,9 @@ def _target() -> TransitionTarget:
         approved_git_head="3" * 40,
         account_identity_sha256="4" * 64,
         clock_authority_sha256="5" * 64,
-        regular_sleeve_authority_sha256="6" * 64,
-        continuous_sleeve_authority_sha256="7" * 64,
-        economic_risk_authorization_sha256="8" * 64,
+        regular_sleeve_authority_sha256=regular.sha256,
+        continuous_sleeve_authority_sha256=continuous.sha256,
+        economic_risk_authorization_sha256=economic.sha256,
         certified_family_set_sha256="9" * 64,
         canary_authorization_sha256="a" * 64,
         writer_binding_sha256="b" * 64,
@@ -195,7 +234,7 @@ def _inputs(*, include_second: bool = False, include_bag: bool = False):
         "transition_id": "transition-supervision-1",
         "writer_binding_sha256": "b" * 64,
         "execution_lock_generation": 46,
-        "regular_sleeve_authority_sha256": "6" * 64,
+        "regular_sleeve_authority_sha256": _authorities()[0].sha256,
         "allocation_usd": "500.00",
         "currency_balances": [{"currency": "USD", "amount": "25.60"}],
         "positions": day1_positions,
@@ -211,6 +250,19 @@ def _inputs(*, include_second: bool = False, include_bag: bool = False):
     return broker, day1
 
 
+def _build_plan(broker, day1):
+    regular, continuous, economic = _authorities()
+    return build_supervision_binding_plan(
+        broker_snapshot=broker,
+        day1_projection=day1,
+        account_identity_sha256="4" * 64,
+        transition_target_sha256=_target().sha256,
+        regular_sleeve_authority=regular,
+        continuous_sleeve_authority=continuous,
+        economic_risk_authorization=economic,
+    )
+
+
 @pytest.mark.parametrize(
     ("include_second", "include_bag", "expected_positions", "expected_contracts"),
     [
@@ -223,18 +275,17 @@ def test_exact_inherited_carry_is_bound_without_rebase(
     tmp_path, include_second, include_bag, expected_positions, expected_contracts
 ) -> None:
     broker, day1 = _inputs(include_second=include_second, include_bag=include_bag)
-    plan = build_supervision_binding_plan(
-        broker_snapshot=broker,
-        day1_projection=day1,
-        account_identity_sha256="4" * 64,
-        transition_target_sha256=_target().sha256,
-    )
+    plan = _build_plan(broker, day1)
     with _open_committed(tmp_path / "supervision.sqlite3") as db:
         receipt = SuccessorSupervisionBinder(db).bind(plan, deepcopy(broker))
         ledgers = SleeveLedgerStore(db).project_all()
         ownership = ContractOwnershipStore(db).projection()
+        authorities = MultiUniverseAuthorityStore(db)
 
         assert receipt.status == "PASS"
+        assert authorities.sleeve_authority(CapitalSleeve.REGULAR_SLEEVE) == _authorities()[0]
+        assert authorities.sleeve_authority(CapitalSleeve.CONTINUOUS_SLEEVE) == _authorities()[1]
+        assert authorities.economic_authorization() == _authorities()[2]
         assert len(ledgers.regular.positions) == expected_positions
         regular_by_contract = {
             item.contract_identity_sha256: item for item in ledgers.regular.positions
@@ -290,40 +341,26 @@ def test_invalid_inherited_state_fails_closed(mutate, reason) -> None:
     broker, day1 = _inputs()
     mutate(broker, day1)
     with pytest.raises(SupervisionBindingError, match=reason):
-        build_supervision_binding_plan(
-            broker_snapshot=broker,
-            day1_projection=day1,
-            account_identity_sha256="4" * 64,
-            transition_target_sha256=_target().sha256,
-        )
+        _build_plan(broker, day1)
 
 
 def test_changed_broker_snapshot_rolls_back_all_bootstrap_events(tmp_path) -> None:
     broker, day1 = _inputs()
-    plan = build_supervision_binding_plan(
-        broker_snapshot=broker,
-        day1_projection=day1,
-        account_identity_sha256="4" * 64,
-        transition_target_sha256=_target().sha256,
-    )
+    plan = _build_plan(broker, day1)
     fresh = deepcopy(broker)
     fresh["positions"][0]["quantity"] = "2"
     with _open_committed(tmp_path / "stale.sqlite3") as db:
         with pytest.raises(SupervisionBindingError, match="SUPERVISION_BINDING_STALE"):
             SuccessorSupervisionBinder(db).bind(plan, fresh)
         assert db.execute("SELECT COUNT(*) FROM sleeve_ledger_events").fetchone()[0] == 0
+        assert db.execute("SELECT COUNT(*) FROM sleeve_authority_events").fetchone()[0] == 0
         assert db.execute("SELECT COUNT(*) FROM contract_ownership_events").fetchone()[0] == 0
         assert MultiUniverseTransitionCoordinator(db).recover(_target()).phase is TransitionPhase.SUCCESSOR_COMMITTED
 
 
 def test_existing_continuous_claim_blocks_atomic_binding(tmp_path) -> None:
     broker, day1 = _inputs()
-    plan = build_supervision_binding_plan(
-        broker_snapshot=broker,
-        day1_projection=day1,
-        account_identity_sha256="4" * 64,
-        transition_target_sha256=_target().sha256,
-    )
+    plan = _build_plan(broker, day1)
     with _open_committed(tmp_path / "ownership-conflict.sqlite3") as db:
         contract = canonical_contract_identity(broker["positions"][0]["contract"])
         ContractOwnershipStore(db).claim(CapitalSleeve.CONTINUOUS_SLEEVE, contract)
@@ -331,18 +368,14 @@ def test_existing_continuous_claim_blocks_atomic_binding(tmp_path) -> None:
         with pytest.raises(SupervisionBindingError, match="CONTRACT_OWNED_BY_OTHER_SLEEVE"):
             SuccessorSupervisionBinder(db).bind(plan, deepcopy(broker))
         assert db.execute("SELECT COUNT(*) FROM sleeve_ledger_events").fetchone()[0] == 0
+        assert db.execute("SELECT COUNT(*) FROM sleeve_authority_events").fetchone()[0] == 0
         assert db.execute("SELECT COUNT(*) FROM contract_ownership_events").fetchone()[0] == before
         assert MultiUniverseTransitionCoordinator(db).recover(_target()).phase is TransitionPhase.SUCCESSOR_COMMITTED
 
 
 def test_exact_retry_returns_same_supervision_receipt(tmp_path) -> None:
     broker, day1 = _inputs()
-    plan = build_supervision_binding_plan(
-        broker_snapshot=broker,
-        day1_projection=day1,
-        account_identity_sha256="4" * 64,
-        transition_target_sha256=_target().sha256,
-    )
+    plan = _build_plan(broker, day1)
     with _open_committed(tmp_path / "retry.sqlite3") as db:
         binder = SuccessorSupervisionBinder(db)
         first = binder.bind(plan, deepcopy(broker))

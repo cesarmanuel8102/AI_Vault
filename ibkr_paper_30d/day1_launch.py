@@ -418,6 +418,97 @@ def _load_multi_universe_launch_authority(
     }
 
 
+def _multi_universe_authority_bindings(
+    db: Database,
+    target: object,
+    phase: object,
+) -> dict[str, object]:
+    """Derive launch bindings from the immutable target or persisted authority."""
+
+    from .multi_universe_authority import MultiUniverseAuthorityStore
+    from .multi_universe_models import CapitalSleeve, TransitionPhase, TransitionTarget
+
+    if not isinstance(target, TransitionTarget) or not isinstance(
+        phase, TransitionPhase
+    ):
+        raise LaunchError("SUCCESSOR_TRANSITION_AUTHORITY_INVALID")
+    phase_index = tuple(TransitionPhase).index(phase)
+    supervision_index = tuple(TransitionPhase).index(
+        TransitionPhase.SUPERVISION_BOUND
+    )
+    if phase_index < supervision_index:
+        regular_hash = target.regular_sleeve_authority_sha256
+        continuous_hash = target.continuous_sleeve_authority_sha256
+        economic_hash = target.economic_risk_authorization_sha256
+        continuity_gap = False
+    else:
+        try:
+            store = MultiUniverseAuthorityStore(db)
+            regular = store.sleeve_authority(CapitalSleeve.REGULAR_SLEEVE)
+            continuous = store.sleeve_authority(
+                CapitalSleeve.CONTINUOUS_SLEEVE
+            )
+            economic = store.economic_authorization()
+        except Exception as exc:
+            raise LaunchError("SUCCESSOR_TRANSITION_AUTHORITY_INVALID") from exc
+        regular_hash = "" if regular is None else regular.sha256
+        continuous_hash = "" if continuous is None else continuous.sha256
+        economic_hash = "" if economic is None else economic.sha256
+        continuity_gap = not all(
+            (regular_hash, continuous_hash, economic_hash)
+        )
+
+    family_rows = db.execute(
+        "SELECT product_family_sha256,event_type FROM "
+        "product_family_certification_events ORDER BY sequence"
+    ).fetchall()
+    family_state: dict[str, str] = {}
+    for family_sha, event_type in family_rows:
+        family_state[str(family_sha)] = str(event_type)
+    certified = sorted(
+        family_sha
+        for family_sha, event_type in family_state.items()
+        if event_type == "ECONOMICS_RECONCILED"
+    )
+    certified_set_sha256 = sha256_json(certified)
+    expected_certified_set_sha256 = target.certified_family_set_sha256
+    if phase_index >= tuple(TransitionPhase).index(TransitionPhase.CANARY_PASS):
+        evidence_phase = (
+            TransitionPhase.RUNTIME_BOUND
+            if phase_index
+            >= tuple(TransitionPhase).index(TransitionPhase.RUNTIME_BOUND)
+            else TransitionPhase.CANARY_PASS
+        )
+        row = db.execute(
+            "SELECT payload_json FROM successor_transition_events "
+            "WHERE transition_id=? AND phase=? ORDER BY sequence DESC LIMIT 1",
+            (target.transition_id, evidence_phase.value),
+        ).fetchone()
+        if row is None:
+            expected_certified_set_sha256 = ""
+        else:
+            try:
+                body = json.loads(str(row[0]))
+                expected_certified_set_sha256 = str(
+                    (body.get("evidence") or {}).get(
+                        "certified_family_set_sha256"
+                    )
+                    or ""
+                )
+            except (TypeError, json.JSONDecodeError):
+                expected_certified_set_sha256 = ""
+    return {
+        "regular_sleeve_authority_sha256": regular_hash,
+        "continuous_sleeve_authority_sha256": continuous_hash,
+        "economic_risk_authorization_sha256": economic_hash,
+        "certified_family_set_sha256": certified_set_sha256,
+        "expected_certified_family_set_sha256": (
+            expected_certified_set_sha256
+        ),
+        "continuity_gap": continuity_gap,
+    }
+
+
 def _validate_multi_universe_launch_from_db(
     db: Database,
     config: Day1LaunchConfig,
@@ -452,46 +543,6 @@ def _validate_multi_universe_launch_from_db(
     ):
         raise LaunchError("SUCCESSOR_DEFINITION_HASH_MISMATCH")
 
-    def bootstrap_authority(sleeve: CapitalSleeve) -> str:
-        item = db.execute(
-            "SELECT payload_json FROM sleeve_ledger_events WHERE sleeve=? "
-            "ORDER BY sequence LIMIT 1",
-            (sleeve.value,),
-        ).fetchone()
-        if item is None:
-            return ""
-        body = json.loads(str(item[0]))
-        return str(body.get("authority_sha256") or "")
-
-    economic_row = db.execute(
-        "SELECT payload_json FROM owner_economic_risk_authorization_events "
-        "ORDER BY sequence DESC LIMIT 1"
-    ).fetchone()
-    economic_hash = ""
-    if economic_row is not None:
-        economic_payload = json.loads(str(economic_row[0]))
-        economic_hash = str(
-            economic_payload.get("authorization_sha256")
-            or economic_payload.get("authority_sha256")
-            or (
-                sha256_json(economic_payload["authorization"])
-                if "authorization" in economic_payload
-                else ""
-            )
-        )
-    family_rows = db.execute(
-        "SELECT product_family_sha256,event_type FROM "
-        "product_family_certification_events ORDER BY sequence"
-    ).fetchall()
-    family_state: dict[str, str] = {}
-    for family_sha, event_type in family_rows:
-        family_state[str(family_sha)] = str(event_type)
-    certified = sorted(
-        family_sha
-        for family_sha, event_type in family_state.items()
-        if event_type == "ECONOMICS_RECONCILED"
-    )
-    certified_set_sha256 = sha256_json(certified)
     retirement_row = db.execute(
         "SELECT payload_json FROM successor_transition_events "
         "WHERE transition_id=? AND phase='PREDECESSOR_RETIRED' "
@@ -525,6 +576,7 @@ def _validate_multi_universe_launch_from_db(
     phase_index = tuple(TransitionPhase).index(phase)
     retired_index = tuple(TransitionPhase).index(TransitionPhase.PREDECESSOR_RETIRED)
     committed_index = tuple(TransitionPhase).index(TransitionPhase.SUCCESSOR_COMMITTED)
+    bindings = _multi_universe_authority_bindings(db, target, phase)
     evidence = MultiUniverseLaunchEvidence(
         schema_v4_valid=True,
         transition_phase=phase.value,
@@ -536,32 +588,37 @@ def _validate_multi_universe_launch_from_db(
         expected_owner_authorization_sha256=target.owner_authorization_sha256,
         clock_authority_sha256=clock.event_sha256,
         expected_clock_authority_sha256=target.clock_authority_sha256,
-        regular_sleeve_authority_sha256=bootstrap_authority(
-            CapitalSleeve.REGULAR_SLEEVE
+        regular_sleeve_authority_sha256=str(
+            bindings["regular_sleeve_authority_sha256"]
         ),
         expected_regular_sleeve_authority_sha256=target.regular_sleeve_authority_sha256,
-        continuous_sleeve_authority_sha256=bootstrap_authority(
-            CapitalSleeve.CONTINUOUS_SLEEVE
+        continuous_sleeve_authority_sha256=str(
+            bindings["continuous_sleeve_authority_sha256"]
         ),
         expected_continuous_sleeve_authority_sha256=(
             target.continuous_sleeve_authority_sha256
         ),
-        economic_risk_authorization_sha256=economic_hash,
+        economic_risk_authorization_sha256=str(
+            bindings["economic_risk_authorization_sha256"]
+        ),
         expected_economic_risk_authorization_sha256=target.economic_risk_authorization_sha256,
-        certified_family_set_sha256=certified_set_sha256,
-        expected_certified_family_set_sha256=target.certified_family_set_sha256,
+        certified_family_set_sha256=str(
+            bindings["certified_family_set_sha256"]
+        ),
+        expected_certified_family_set_sha256=str(
+            bindings["expected_certified_family_set_sha256"]
+        ),
         successor_definition_sha256=str(config.target_successor_definition_sha256),
         expected_successor_definition_sha256=target.successor_definition_sha256,
         retirement_tombstone_sha256=(
             None if retirement_sha is None else str(retirement_sha)
         ),
         predecessor_path_active=phase_index < retired_index,
-        extended_family_available_within_24h=bool(certified),
-        extended_family_tradable_now=False,
-        continuity_gap=(
-            not bootstrap_authority(CapitalSleeve.REGULAR_SLEEVE)
-            or not bootstrap_authority(CapitalSleeve.CONTINUOUS_SLEEVE)
+        extended_family_available_within_24h=(
+            str(bindings["certified_family_set_sha256"]) != sha256_json([])
         ),
+        extended_family_tradable_now=False,
+        continuity_gap=bool(bindings["continuity_gap"]),
         continuity_action_due=False,
         same_committed_successor=phase_index >= committed_index,
         supervision_binding_sha256=supervision_sha,

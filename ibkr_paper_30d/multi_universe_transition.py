@@ -203,6 +203,15 @@ class MultiUniverseTransitionCoordinator:
             or evidence.get("continuity_exact") is not True
         ):
             raise MultiUniverseTransitionError("CANARY_EVIDENCE_INVALID")
+        if phase in {
+            TransitionPhase.CANARY_PASS,
+            TransitionPhase.RUNTIME_BOUND,
+        } and not self._sha256_value(
+            evidence.get("certified_family_set_sha256")
+        ):
+            raise MultiUniverseTransitionError(
+                "CERTIFIED_FAMILY_SET_EVIDENCE_INVALID"
+            )
         if phase is TransitionPhase.PREDECESSOR_RETIRED and (
             evidence.get("retirement_status") != "PASS"
             or not self._sha256_value(

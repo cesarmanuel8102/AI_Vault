@@ -204,6 +204,17 @@ class _PathSleeveAuthorityReservationStore:
             )
 
 
+def _database_sleeve_authority_sha256(db: Any, sleeve: Any) -> str:
+    from .multi_universe_authority import MultiUniverseAuthorityStore
+
+    authority = MultiUniverseAuthorityStore(db).sleeve_authority(sleeve)
+    if authority is None:
+        raise ProductionRuntimeConfigurationError(
+            "SLEEVE_DATABASE_AUTHORITY_REQUIRED"
+        )
+    return authority.sha256
+
+
 class _ProductionSleeveAuthoritySnapshotReader:
     def __init__(
         self,
@@ -234,6 +245,7 @@ class _ProductionSleeveAuthoritySnapshotReader:
             TransitionTarget,
         )
         from .persistence import Database
+        from .multi_universe_authority import MultiUniverseAuthorityStore
         from .product_capability import ProductFamilyCertificationStore
         from .sleeve_execution_authority import SleeveAuthoritySnapshot
         from .sleeve_ledger import SleeveLedgerStore
@@ -242,6 +254,9 @@ class _ProductionSleeveAuthoritySnapshotReader:
             ledger = SleeveLedgerStore(db).project(request.capital_sleeve)
             if not ledger.initialized:
                 raise ProductionRuntimeConfigurationError("SLEEVE_NOT_INITIALIZED")
+            sleeve_authority_sha256 = _database_sleeve_authority_sha256(
+                db, request.capital_sleeve
+            )
             ownership = ContractOwnershipStore(db).projection()
             family_payload = next(
                 (
@@ -278,19 +293,13 @@ class _ProductionSleeveAuthoritySnapshotReader:
                 raise ProductionRuntimeConfigurationError(
                     "SUCCESSOR_TRANSITION_BINDING_MISMATCH"
                 )
-            economic_row = db.execute(
-                "SELECT payload_json FROM owner_economic_risk_authorization_events "
-                "ORDER BY sequence DESC LIMIT 1"
-            ).fetchone()
-            economic_valid = False
-            if economic_row is not None:
-                economic_payload = json.loads(str(economic_row[0]))
-                economic_valid = (
-                    economic_payload.get("authorization_sha256")
-                    == target.economic_risk_authorization_sha256
-                    or economic_payload.get("authority_sha256")
-                    == target.economic_risk_authorization_sha256
-                )
+            economic = MultiUniverseAuthorityStore(db).economic_authorization()
+            economic_valid = bool(
+                economic is not None
+                and economic.sha256 == target.economic_risk_authorization_sha256
+                and economic.successor_definition_sha256
+                == target.successor_definition_sha256
+            )
             equity = (
                 ledger.allocation_usd
                 + ledger.realized_pnl_usd
@@ -358,7 +367,7 @@ class _ProductionSleeveAuthoritySnapshotReader:
             reconciliation = request.input_bundle.reconciliation_receipt or {}
             return SleeveAuthoritySnapshot(
                 capital_sleeve=request.capital_sleeve,
-                sleeve_authority_sha256=request.sleeve_authority_sha256,
+                sleeve_authority_sha256=sleeve_authority_sha256,
                 ownership_projection_sha256=ownership.projection_sha256,
                 product_family_sha256=capability.family_sha256,
                 economic_authorization_sha256=target.economic_risk_authorization_sha256,
