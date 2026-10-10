@@ -104,6 +104,8 @@ def test_real_kernel_has_complete_roots_roles_and_valid_hashes() -> None:
     assert {
         "RUN_IBKR_MARKET_DATA_GATE.ps1",
         "RUN_IBKR_DAY1_SERVICE.ps1",
+        "RUN_IBKR_MULTI_UNIVERSE_SERVICE.ps1",
+        "INVOKE_IBKR_MULTI_UNIVERSE_MAINTENANCE.ps1",
         "FINALIZE_IBKR_PREREQUISITES.ps1",
         "ibkr_paper_30d/day1_launch.py",
         "ibkr_paper_30d/autonomous_execution.py",
@@ -122,6 +124,8 @@ def test_real_kernel_has_complete_roots_roles_and_valid_hashes() -> None:
         "ibkr_paper_30d/continuity_executor.py",
         "ibkr_paper_30d/continuity_watchdog.py",
         "ibkr_paper_30d/continuity_reporting.py",
+        "ibkr_paper_30d/predecessor_retirement.py",
+        "ibkr_paper_30d/reporting.py",
     } <= paths
     assert manifest["file_count"] == len(paths)
     assert all(len(item["sha256"]) == 64 for item in manifest["kernel_files"])

@@ -32,7 +32,9 @@ PYTHON_ROOT_ROLES: dict[str, str] = {
     "ibkr_paper_30d/open_order_management.py": "order_lifecycle_authority",
     "ibkr_paper_30d/owner_authorization.py": "owner_authorization",
     "ibkr_paper_30d/persistence.py": "authoritative_storage",
+    "ibkr_paper_30d/predecessor_retirement.py": "predecessor_retirement_authority",
     "ibkr_paper_30d/reconciliation.py": "broker_reconciliation",
+    "ibkr_paper_30d/reporting.py": "multi_universe_reporting_authority",
     "ibkr_paper_30d/risk.py": "capital_risk_boundary",
     "ibkr_paper_30d/runtime_integrity.py": "runtime_auditor_market_gate",
     "ibkr_paper_30d/scheduler_validation.py": "scheduler_startup_gate",
@@ -54,6 +56,8 @@ POWERSHELL_ROOT_ROLES: dict[str, str] = {
     "FINALIZE_IBKR_PREREQUISITES.ps1": "privileged_finalizer_entrypoint",
     "RUN_IBKR_DAY1_SERVICE.ps1": "day1_service_entrypoint",
     "RUN_IBKR_MARKET_DATA_GATE.ps1": "scheduled_market_gate_entrypoint",
+    "RUN_IBKR_MULTI_UNIVERSE_SERVICE.ps1": "multi_universe_service_entrypoint",
+    "INVOKE_IBKR_MULTI_UNIVERSE_MAINTENANCE.ps1": "multi_universe_maintenance_entrypoint",
 }
 
 # Reviewed dynamic authority dependencies that are not guaranteed to appear as
