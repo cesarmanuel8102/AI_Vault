@@ -1253,6 +1253,76 @@ def test_position_stock_order_uses_smart_route_instead_of_position_exchange(tmp_
     assert registry[0]["contract"]["attributes"]["primaryExchange"] == "NYSE"
 
 
+def test_v4_position_action_supplies_exact_contract_to_final_authority(tmp_path):
+    from ibkr_paper_30d.multi_universe_models import CapitalSleeve
+    from ibkr_paper_30d.persistence import Database
+
+    broker = _DirectRoutedPositionIB()
+    toolbox = IBKRResearchToolbox()
+    toolbox._connect = lambda *, client_id=None: broker
+    toolbox.live_contract_quote_evidence = lambda *_args, **_kwargs: {
+        "success": True,
+        "market_data_type": 1,
+    }
+    action = AutonomousPositionAction(
+        symbol="HAE",
+        sec_type="STK",
+        action="SELL",
+        quantity="1",
+        order_type="MKT",
+        contract_id=7884,
+        reason="Reduce the existing long position.",
+        capital_sleeve=CapitalSleeve.REGULAR_SLEEVE,
+        product_family_sha256="f" * 64,
+    )
+    value = bundle().model_copy(
+        update={
+            "multi_sleeve_portfolio": {
+                "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+                "sleeves": {
+                    "regular": {"equity_usd": "500"},
+                    "extended": {"equity_usd": "500"},
+                },
+            },
+            "contract_ownership_snapshot": {
+                "contract_sleeves": {"7884": "REGULAR_SLEEVE"}
+            },
+            "product_capability_snapshot": {"families": []},
+        }
+    )
+    contexts = []
+
+    with Database.open(tmp_path / "v4-position-context.sqlite3") as db:
+        result = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        ).execute_position_action_with_broker(
+            broker,
+            action,
+            value,
+            TraderDecision.REDUCE_POSITION,
+            final_write_authority_check=lambda context: (
+                contexts.append(context) or ("TEST_BLOCK_BEFORE_WRITE",)
+            ),
+        )
+
+    assert result.reason_codes == ("TEST_BLOCK_BEFORE_WRITE",)
+    assert contexts[0]["canonical_contract"] == {
+        "con_id": 7884,
+        "security_type": "STK",
+        "currency": "USD",
+        "exchange": "SMART",
+        "primary_exchange": "NYSE",
+        "local_symbol": "HAE",
+        "trading_class": "HAE",
+        "multiplier": "1",
+        "bag_legs": [],
+    }
+
+
 def test_missing_immediate_operator_control_callback_fails_closed(tmp_path):
     from ibkr_paper_30d.persistence import Database
 

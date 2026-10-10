@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Literal
 
@@ -98,8 +98,67 @@ class CanaryLifecycleError(RuntimeError):
     pass
 
 
+CanaryLifecycleStep = Literal[
+    "SUBMITTED",
+    "BROKER_BOUND",
+    "ENTRY_FILL",
+    "POSITION_VISIBLE",
+    "MANAGEMENT_OBSERVED",
+    "EXIT_FILL",
+    "FLAT_STATE",
+    "ECONOMICS_RECONCILED",
+    "TERMINAL_NO_FILL",
+]
+
+
+class CanaryBrokerLifecycleReceipt(_CanaryModel):
+    schema: Literal["CANARY_BROKER_LIFECYCLE_RECEIPT_V1"] = (
+        "CANARY_BROKER_LIFECYCLE_RECEIPT_V1"
+    )
+    canary_id: str = Field(min_length=1)
+    step: CanaryLifecycleStep
+    endpoint: Literal["PAPER"]
+    account_identity_sha256: str = Field(pattern=SHA256_PATTERN)
+    product_family_sha256: str = Field(pattern=SHA256_PATTERN)
+    contract_identity_sha256: str = Field(pattern=SHA256_PATTERN)
+    broker_event_id_sha256: str = Field(pattern=SHA256_PATTERN)
+    broker_snapshot_sha256: str = Field(pattern=SHA256_PATTERN)
+    previous_receipt_sha256: str | None = Field(
+        default=None, pattern=SHA256_PATTERN
+    )
+    observed_at_utc: datetime
+    open_orders: int = Field(ge=0)
+    positions: int = Field(ge=0)
+    economics_reconciled: bool = False
+
+    @model_validator(mode="after")
+    def validate_broker_state(self) -> "CanaryBrokerLifecycleReceipt":
+        if (
+            self.observed_at_utc.tzinfo is None
+            or self.observed_at_utc.utcoffset() is None
+            or self.observed_at_utc.astimezone(timezone.utc).utcoffset()
+            != timedelta(0)
+        ):
+            raise ValueError("observed_at_utc must be timezone-aware")
+        if self.step in {"FLAT_STATE", "ECONOMICS_RECONCILED"} and (
+            self.open_orders != 0 or self.positions != 0
+        ):
+            raise ValueError("terminal canary receipt must prove flat state")
+        if self.step == "ECONOMICS_RECONCILED":
+            if self.economics_reconciled is not True:
+                raise ValueError("economics receipt must prove reconciliation")
+        elif self.economics_reconciled:
+            raise ValueError("only economics receipt may claim reconciliation")
+        if self.step == "TERMINAL_NO_FILL" and (
+            self.open_orders != 0 or self.positions != 0
+        ):
+            raise ValueError("terminal no-fill receipt must prove flat state")
+        return self
+
+
 class CanaryLifecycleProjection(_CanaryModel):
     canary_id: str
+    account_identity_sha256: str = Field(pattern=SHA256_PATTERN)
     product_family_sha256: str = Field(pattern=SHA256_PATTERN)
     contract_identity_sha256: str = Field(pattern=SHA256_PATTERN)
     status: Literal["EMPTY", "IN_PROGRESS", "TRANSMIT_ONLY", "PASS"]
@@ -123,74 +182,65 @@ class CanaryLifecycleRecorder:
     )
 
     def __init__(
-        self, canary_id: str, product_family_sha256: str, contract_identity_sha256: str
+        self,
+        canary_id: str,
+        account_identity_sha256: str,
+        product_family_sha256: str,
+        contract_identity_sha256: str,
     ) -> None:
         self.canary_id = canary_id
+        self.account_identity_sha256 = account_identity_sha256
         self.product_family_sha256 = product_family_sha256
         self.contract_identity_sha256 = contract_identity_sha256
-        self._events: list[tuple[str, str]] = []
+        self._events: list[CanaryBrokerLifecycleReceipt] = []
         self._terminal_no_fill = False
 
-    @staticmethod
-    def _validate_hash(value: str) -> None:
-        if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
-            raise CanaryLifecycleError("CANARY_EVIDENCE_HASH_INVALID")
+    @property
+    def sequence(self) -> tuple[str, ...]:
+        return self._SEQUENCE
 
-    def _record(self, step: str, evidence_sha256: str) -> CanaryLifecycleProjection:
-        self._validate_hash(evidence_sha256)
+    @property
+    def last_receipt_sha256(self) -> str | None:
+        return None if not self._events else self._events[-1].sha256
+
+    def record(
+        self, receipt: CanaryBrokerLifecycleReceipt
+    ) -> CanaryLifecycleProjection:
+        if not isinstance(receipt, CanaryBrokerLifecycleReceipt):
+            raise TypeError("CanaryBrokerLifecycleReceipt required")
         if self._terminal_no_fill:
             raise CanaryLifecycleError("LIFECYCLE_STEP_OUT_OF_ORDER")
+        if (
+            receipt.canary_id != self.canary_id
+            or receipt.account_identity_sha256 != self.account_identity_sha256
+            or receipt.product_family_sha256 != self.product_family_sha256
+            or receipt.contract_identity_sha256 != self.contract_identity_sha256
+        ):
+            raise CanaryLifecycleError("CANARY_RECEIPT_IDENTITY_MISMATCH")
+        if receipt.previous_receipt_sha256 != self.last_receipt_sha256:
+            raise CanaryLifecycleError("CANARY_RECEIPT_CHAIN_MISMATCH")
+        if self._events and receipt.observed_at_utc <= self._events[-1].observed_at_utc:
+            raise CanaryLifecycleError("CANARY_RECEIPT_TIME_NOT_MONOTONIC")
+        if receipt.step == "TERMINAL_NO_FILL":
+            if tuple(item.step for item in self._events) != (
+                "SUBMITTED",
+                "BROKER_BOUND",
+            ):
+                raise CanaryLifecycleError("LIFECYCLE_STEP_OUT_OF_ORDER")
+            self._events.append(receipt)
+            self._terminal_no_fill = True
+            return self.projection()
         expected_index = len(self._events)
-        if expected_index >= len(self._SEQUENCE) or self._SEQUENCE[expected_index] != step:
-            raise CanaryLifecycleError("LIFECYCLE_STEP_OUT_OF_ORDER")
-        self._events.append((step, evidence_sha256))
-        return self.projection()
-
-    def record_submit(self, evidence_sha256: str) -> CanaryLifecycleProjection:
-        return self._record("SUBMITTED", evidence_sha256)
-
-    def record_bind(self, evidence_sha256: str) -> CanaryLifecycleProjection:
-        return self._record("BROKER_BOUND", evidence_sha256)
-
-    def record_entry_fill(self, evidence_sha256: str) -> CanaryLifecycleProjection:
-        return self._record("ENTRY_FILL", evidence_sha256)
-
-    def record_position(self, evidence_sha256: str) -> CanaryLifecycleProjection:
-        return self._record("POSITION_VISIBLE", evidence_sha256)
-
-    def record_management(self, evidence_sha256: str) -> CanaryLifecycleProjection:
-        return self._record("MANAGEMENT_OBSERVED", evidence_sha256)
-
-    def record_exit_fill(self, evidence_sha256: str) -> CanaryLifecycleProjection:
-        return self._record("EXIT_FILL", evidence_sha256)
-
-    def record_flat_state(
-        self, evidence_sha256: str, *, open_orders: int, positions: int
-    ) -> CanaryLifecycleProjection:
-        if open_orders != 0 or positions != 0:
-            raise CanaryLifecycleError("CANARY_NOT_FLAT")
-        return self._record("FLAT_STATE", evidence_sha256)
-
-    def record_economics(
-        self, evidence_sha256: str, *, reconciled: bool
-    ) -> CanaryLifecycleProjection:
-        if not reconciled:
-            raise CanaryLifecycleError("CANARY_ECONOMICS_NOT_RECONCILED")
-        return self._record("ECONOMICS_RECONCILED", evidence_sha256)
-
-    def record_terminal_no_fill(self, evidence_sha256: str) -> CanaryLifecycleProjection:
-        self._validate_hash(evidence_sha256)
-        if tuple(step for step, _ in self._events) != (
-            "SUBMITTED",
-            "BROKER_BOUND",
+        if (
+            expected_index >= len(self._SEQUENCE)
+            or self._SEQUENCE[expected_index] != receipt.step
         ):
             raise CanaryLifecycleError("LIFECYCLE_STEP_OUT_OF_ORDER")
-        self._events.append(("TERMINAL_NO_FILL", evidence_sha256))
-        self._terminal_no_fill = True
+        self._events.append(receipt)
         return self.projection()
 
     def projection(self) -> CanaryLifecycleProjection:
-        completed = tuple(step for step, _ in self._events)
+        completed = tuple(item.step for item in self._events)
         full = completed == self._SEQUENCE
         status = (
             "PASS"
@@ -203,6 +253,7 @@ class CanaryLifecycleRecorder:
         )
         return CanaryLifecycleProjection(
             canary_id=self.canary_id,
+            account_identity_sha256=self.account_identity_sha256,
             product_family_sha256=self.product_family_sha256,
             contract_identity_sha256=self.contract_identity_sha256,
             status=status,
@@ -210,7 +261,7 @@ class CanaryLifecycleRecorder:
             full_lifecycle_verified=full,
             flat="FLAT_STATE" in completed,
             terminal_no_fill=self._terminal_no_fill,
-            terminal_event_sha256=(None if not self._events else self._events[-1][1]),
+            terminal_event_sha256=self.last_receipt_sha256,
         )
 
 

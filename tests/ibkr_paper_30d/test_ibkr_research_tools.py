@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from types import SimpleNamespace
 
 import pytest
 
 from ibkr_paper_30d.autonomous_research import ResearchRequest, ResearchTool
+from ibkr_paper_30d.multi_universe_models import CapitalSleeve
 from ibkr_paper_30d.ibkr_research_tools import (
     IBKRResearchToolbox,
     PositionExecutionContractError,
@@ -59,6 +61,25 @@ class FakeIB:
         self.disconnected = True
 
 
+class FakeAccountSummaryIB:
+    def __init__(self):
+        self.disconnected = False
+
+    def accountSummary(self):
+        return [
+            SimpleNamespace(tag="TotalCashValue", currency="BASE", value="999999"),
+            SimpleNamespace(tag="TotalCashValue", currency="USD", value="1000000"),
+            SimpleNamespace(tag="TotalCashValue", currency="EUR", value="125.50"),
+            SimpleNamespace(tag="BuyingPower", currency="USD", value="9999999"),
+        ]
+
+    def reqCurrentTime(self):
+        return datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc)
+
+    def disconnect(self):
+        self.disconnected = True
+
+
 def test_open_orders_are_global_canonical_snapshots():
     subject = IBKRResearchToolbox(expected_account_hash="unused")
     fake = FakeIB()
@@ -73,6 +94,23 @@ def test_open_orders_are_global_canonical_snapshots():
     assert value["contract"]["conId"] == 756733
     assert len(value["state_sha256"]) == 64
     assert fake.req_all_open_orders_calls == 1
+    assert fake.disconnected is True
+
+
+def test_account_reconciliation_snapshot_reads_independent_broker_cash():
+    subject = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    fake = FakeAccountSummaryIB()
+    subject._connect = lambda: fake
+
+    snapshot = subject.account_reconciliation_snapshot()
+
+    assert snapshot["paper_only"] is True
+    assert snapshot["account_identity_sha256"] == "a" * 64
+    assert snapshot["currency_balances"] == [
+        {"currency": "EUR", "amount": "125.50"},
+        {"currency": "USD", "amount": "1000000"},
+    ]
+    assert len(snapshot["broker_snapshot_sha256"]) == 64
     assert fake.disconnected is True
 
 
@@ -208,3 +246,43 @@ def test_broker_checks_remain_descriptive_until_every_execution_fact_is_proven()
     )
     assert evidence.research_visible is True
     assert evidence.execution_ready is False
+
+
+def test_v4_equity_selection_is_bound_to_the_declared_sleeve():
+    subject = IBKRResearchToolbox(expected_account_hash="unused")
+    bundle = SimpleNamespace(
+        multi_sleeve_v4_active=True,
+        experiment_subledger_snapshot={"equity": "9999.00"},
+        multi_sleeve_portfolio={
+            "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+            "sleeves": {
+                "regular": {"equity_usd": "475.00"},
+                "extended": {"equity_usd": "321.50"},
+            },
+        },
+    )
+
+    assert subject._capital_equity(bundle, CapitalSleeve.REGULAR_SLEEVE) == Decimal(
+        "475.00"
+    )
+    assert subject._capital_equity(bundle, CapitalSleeve.EXTENDED_SLEEVE) == Decimal(
+        "321.50"
+    )
+
+
+def test_v4_equity_selection_fails_closed_without_a_sleeve_binding():
+    subject = IBKRResearchToolbox(expected_account_hash="unused")
+    bundle = SimpleNamespace(
+        multi_sleeve_v4_active=True,
+        experiment_subledger_snapshot={"equity": "9999.00"},
+        multi_sleeve_portfolio={
+            "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+            "sleeves": {
+                "regular": {"equity_usd": "475.00"},
+                "extended": {"equity_usd": "321.50"},
+            },
+        },
+    )
+
+    with pytest.raises(ValueError, match="V4_SLEEVE_BINDING_REQUIRED"):
+        subject._capital_equity(bundle, None)

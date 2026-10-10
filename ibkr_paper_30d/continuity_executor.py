@@ -107,6 +107,10 @@ class ContinuityExecutor:
             return BrokerCommandType.CANCEL
         if action.action_type == ContinuityActionType.MODIFY_EXISTING_ORDER:
             return BrokerCommandType.MODIFY
+        if action.action_type == ContinuityActionType.REDUCE_POSITION:
+            return BrokerCommandType.REDUCE_POSITION
+        if action.action_type == ContinuityActionType.CLOSE_POSITION:
+            return BrokerCommandType.CLOSE_POSITION
         if (
             action.action_type == ContinuityActionType.REQUIRES_AGENT
             and action.interim_action is not None
@@ -164,10 +168,24 @@ class ContinuityExecutor:
             if action.new_limit_price is not None
             else None
         )
+        position_quantity = (
+            self._value(action.position_quantity, facts)
+            if action.position_quantity is not None
+            else None
+        )
+        position_limit = (
+            self._value(action.position_limit_price, facts)
+            if action.position_limit_price is not None
+            else None
+        )
         if new_total is not None and new_total <= 0:
             raise ContinuityCommandBuildError("ORDER_TOTAL_INVALID")
         if new_limit is not None and new_limit <= 0:
             raise ContinuityCommandBuildError("ORDER_LIMIT_INVALID")
+        if position_quantity is not None and position_quantity <= 0:
+            raise ContinuityCommandBuildError("POSITION_QUANTITY_INVALID")
+        if position_limit is not None and position_limit <= 0:
+            raise ContinuityCommandBuildError("POSITION_LIMIT_INVALID")
         if (
             action.new_good_till_date_utc is not None
             and action.new_good_till_date_utc > plan.epoch_authority_end_utc
@@ -176,8 +194,40 @@ class ContinuityExecutor:
 
         current_total = Decimal(str(binding["current_total_quantity"]))
         current_limit = Decimal(str(binding["current_limit_price"]))
-        resolved_total = new_total if new_total is not None else current_total
-        resolved_limit = new_limit if new_limit is not None else current_limit
+        position_command = action.action_type in {
+            ContinuityActionType.REDUCE_POSITION,
+            ContinuityActionType.CLOSE_POSITION,
+        }
+        if position_command:
+            try:
+                signed_position = Decimal(str(facts["POSITION_QUANTITY"]))
+            except (KeyError, ValueError) as exc:
+                raise ContinuityCommandBuildError(
+                    "POSITION_QUANTITY_UNAVAILABLE"
+                ) from exc
+            if signed_position == 0 or not signed_position.is_finite():
+                raise ContinuityCommandBuildError("POSITION_QUANTITY_UNAVAILABLE")
+            expected_side = "SELL" if signed_position > 0 else "BUY"
+            if action.position_action != expected_side:
+                raise ContinuityCommandBuildError(
+                    "POSITION_ACTION_WOULD_INCREASE_EXPOSURE"
+                )
+            assert position_quantity is not None
+            current_position_size = abs(signed_position)
+            if action.action_type == ContinuityActionType.REDUCE_POSITION:
+                if position_quantity >= current_position_size:
+                    raise ContinuityCommandBuildError(
+                        "REDUCE_POSITION_REQUIRES_PARTIAL_SIZE"
+                    )
+            elif position_quantity != current_position_size:
+                raise ContinuityCommandBuildError(
+                    "CLOSE_POSITION_REQUIRES_FULL_SIZE"
+                )
+            resolved_total = position_quantity
+            resolved_limit = position_limit or Decimal("0")
+        else:
+            resolved_total = new_total if new_total is not None else current_total
+            resolved_limit = new_limit if new_limit is not None else current_limit
         increases_liability = (
             new_total is not None and new_total > current_total
         ) or (
@@ -204,7 +254,11 @@ class ContinuityExecutor:
                     extends_time = (
                         action.new_good_till_date_utc > plan.session_end_utc
                     )
-        if increases_liability:
+        if action.action_type == ContinuityActionType.REDUCE_POSITION:
+            authority_class = ContinuityAuthorityClass.REDUCE_POSITION
+        elif action.action_type == ContinuityActionType.CLOSE_POSITION:
+            authority_class = ContinuityAuthorityClass.CLOSE_POSITION
+        elif increases_liability:
             authority_class = ContinuityAuthorityClass.INCREASED_MAXIMUM_LIABILITY
         elif extends_time:
             authority_class = ContinuityAuthorityClass.EXTENDED_TEMPORAL_AUTHORITY
@@ -218,28 +272,37 @@ class ContinuityExecutor:
 
         now = datetime.now(timezone.utc)
         command_type = self._command_type(action)
+        resolved_contract_sha256 = (
+            str(plan.canonical_contract_sha256)
+            if position_command
+            else str(binding["contract_identity_sha256"])
+        )
         proposed_order_sha256 = sha256_json(
             {
                 "order_ref": str(binding["order_ref"]),
                 "order_id": int(binding["order_id"]),
                 "perm_id": int(binding["perm_id"]),
                 "execution_client_id": int(binding["execution_client_id"]),
-                "contract_identity_sha256": str(
-                    binding["contract_identity_sha256"]
-                ),
+                "contract_identity_sha256": resolved_contract_sha256,
                 "action": plan.order_binding.action,
                 "command_type": command_type.value,
                 "resolved_total_quantity": resolved_total,
                 "resolved_limit_price": resolved_limit,
                 "new_tif": action.new_tif,
                 "new_good_till_date_utc": action.new_good_till_date_utc,
+                "position_action": action.position_action,
+                "position_quantity": position_quantity,
+                "position_order_type": action.position_order_type,
+                "position_limit_price": position_limit,
+                "position_identity_sha256": plan.position_identity_sha256,
+                "canonical_contract_sha256": plan.canonical_contract_sha256,
             }
         )
         leg_hashes = tuple(
             str(value)
             for value in binding.get(
                 "contract_leg_identity_sha256",
-                (str(binding["contract_identity_sha256"]),),
+                (resolved_contract_sha256,),
             )
         )
         liability_requirement = MaximumLiabilityRequirement(
@@ -247,7 +310,7 @@ class ContinuityExecutor:
             plan_sha256=plan.sha256,
             maximum_authorized_liability=plan.maximum_authorized_liability,
             account_identity_sha256=str(binding["account_identity_sha256"]),
-            contract_identity_sha256=str(binding["contract_identity_sha256"]),
+            contract_identity_sha256=resolved_contract_sha256,
             proposed_order_sha256=proposed_order_sha256,
             required_leg_identity_sha256=leg_hashes,
             maximum_evidence_age_seconds=Decimal("30"),
@@ -276,7 +339,7 @@ class ContinuityExecutor:
             perm_id=int(binding["perm_id"]),
             execution_client_id=int(binding["execution_client_id"]),
             account_identity_sha256=str(binding["account_identity_sha256"]),
-            contract_identity_sha256=str(binding["contract_identity_sha256"]),
+            contract_identity_sha256=resolved_contract_sha256,
             observed_state_sha256=str(binding["observed_state_sha256"]),
             epoch_id=plan.epoch_id,
             definition_sha256=plan.definition_sha256,
@@ -286,6 +349,12 @@ class ContinuityExecutor:
             new_limit_price=new_limit,
             new_tif=action.new_tif,
             new_good_till_date_utc=action.new_good_till_date_utc,
+            position_action=action.position_action,
+            position_quantity=position_quantity,
+            position_order_type=action.position_order_type,
+            position_limit_price=position_limit,
+            position_identity_sha256=plan.position_identity_sha256,
+            canonical_contract_sha256=plan.canonical_contract_sha256,
             resolved_total_quantity=resolved_total,
             resolved_limit_price=resolved_limit,
             proposed_order_sha256=proposed_order_sha256,

@@ -334,10 +334,6 @@ def _load_multi_universe_launch_authority(
         )
         if payload.get("schema") != "MULTI_UNIVERSE_LAUNCH_AUTHORITY_V1":
             raise ValueError("authority schema mismatch")
-        raw_evidence = payload["evidence"]
-        if payload.get("evidence_sha256") != sha256_json(raw_evidence):
-            raise ValueError("authority evidence hash mismatch")
-        evidence = MultiUniverseLaunchEvidence(**raw_evidence)
         if payload.get("successor_epoch_id") != config.target_successor_epoch_id:
             raise ValueError("successor epoch mismatch")
         if (
@@ -345,11 +341,161 @@ def _load_multi_universe_launch_authority(
             != config.target_successor_definition_sha256
         ):
             raise ValueError("successor definition mismatch")
+        owner_receipt_sha256 = str(
+            payload.get("owner_authorization_receipt_sha256")
+            or (payload.get("evidence") or {}).get(
+                "expected_owner_authorization_sha256"
+            )
+            or ""
+        )
+        if not _SHA256_RE.fullmatch(owner_receipt_sha256):
+            raise ValueError("owner authorization receipt binding missing")
         initial_activation = bool(payload["initial_activation"])
     except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
         raise LaunchError("MULTI_UNIVERSE_LAUNCH_AUTHORITY_INVALID") from exc
+    return {
+        "schema": "MULTI_UNIVERSE_LAUNCH_ENVELOPE_V1",
+        "successor_epoch_id": str(config.target_successor_epoch_id),
+        "successor_definition_sha256": str(
+            config.target_successor_definition_sha256
+        ),
+        "owner_authorization_receipt_sha256": owner_receipt_sha256,
+        "initial_activation": initial_activation,
+    }
+
+
+def _validate_multi_universe_launch_from_db(
+    db: Database,
+    config: Day1LaunchConfig,
+    preflight: LaunchPreflight,
+    envelope: dict[str, object],
+) -> dict[str, object]:
+    from .multi_universe_models import CapitalSleeve, TransitionPhase, TransitionTarget
+    from .multi_universe_transition import MultiUniverseTransitionCoordinator
+
+    verify_multi_universe_schema_v4(db)
+    if (
+        envelope.get("owner_authorization_receipt_sha256")
+        != preflight.owner_authorization_receipt_sha256
+    ):
+        raise LaunchError("SUCCESSOR_OWNER_AUTHORIZATION_MISMATCH")
+    row = db.execute(
+        "SELECT phase,payload_json FROM successor_transition_events "
+        "ORDER BY sequence DESC LIMIT 1"
+    ).fetchone()
+    if row is None:
+        raise LaunchError("SUCCESSOR_TRANSITION_NOT_ELIGIBLE")
+    try:
+        payload = json.loads(str(row[1]))
+        target = TransitionTarget.model_validate(payload.get("target"))
+        recovered = MultiUniverseTransitionCoordinator(db).recover(target)
+    except Exception as exc:
+        raise LaunchError("SUCCESSOR_TRANSITION_AUTHORITY_INVALID") from exc
+    if (
+        target.successor_epoch_id != config.target_successor_epoch_id
+        or target.successor_definition_sha256
+        != config.target_successor_definition_sha256
+    ):
+        raise LaunchError("SUCCESSOR_DEFINITION_HASH_MISMATCH")
+
+    def bootstrap_authority(sleeve: CapitalSleeve) -> str:
+        item = db.execute(
+            "SELECT payload_json FROM sleeve_ledger_events WHERE sleeve=? "
+            "ORDER BY sequence LIMIT 1",
+            (sleeve.value,),
+        ).fetchone()
+        if item is None:
+            return ""
+        body = json.loads(str(item[0]))
+        return str(body.get("authority_sha256") or "")
+
+    economic_row = db.execute(
+        "SELECT payload_json FROM owner_economic_risk_authorization_events "
+        "ORDER BY sequence DESC LIMIT 1"
+    ).fetchone()
+    economic_hash = ""
+    if economic_row is not None:
+        economic_payload = json.loads(str(economic_row[0]))
+        economic_hash = str(
+            economic_payload.get("authorization_sha256")
+            or economic_payload.get("authority_sha256")
+            or (
+                sha256_json(economic_payload["authorization"])
+                if "authorization" in economic_payload
+                else ""
+            )
+        )
+    family_rows = db.execute(
+        "SELECT product_family_sha256,event_type FROM "
+        "product_family_certification_events ORDER BY sequence"
+    ).fetchall()
+    family_state: dict[str, str] = {}
+    for family_sha, event_type in family_rows:
+        family_state[str(family_sha)] = str(event_type)
+    certified = sorted(
+        family_sha
+        for family_sha, event_type in family_state.items()
+        if event_type == "ECONOMICS_RECONCILED"
+    )
+    certified_set_sha256 = sha256_json(certified)
+    retirement_row = db.execute(
+        "SELECT payload_json FROM successor_transition_events "
+        "WHERE transition_id=? AND phase='PREDECESSOR_RETIRED' "
+        "ORDER BY sequence DESC LIMIT 1",
+        (target.transition_id,),
+    ).fetchone()
+    retirement_sha = None
+    if retirement_row is not None:
+        retirement_payload = json.loads(str(retirement_row[0]))
+        retirement_sha = (
+            retirement_payload.get("evidence") or {}
+        ).get("retirement_tombstone_sha256")
+    clock = clock_for_epoch(db, target.successor_epoch_id)
+    phase = recovered.phase
+    phase_index = tuple(TransitionPhase).index(phase)
+    retired_index = tuple(TransitionPhase).index(TransitionPhase.PREDECESSOR_RETIRED)
+    committed_index = tuple(TransitionPhase).index(TransitionPhase.SUCCESSOR_COMMITTED)
+    evidence = MultiUniverseLaunchEvidence(
+        schema_v4_valid=True,
+        transition_phase=phase.value,
+        approved_head=_current_git_commit(config.repo_root),
+        expected_approved_head=target.approved_git_head,
+        account_identity_sha256=preflight.expected_account_hash,
+        expected_account_identity_sha256=target.account_identity_sha256,
+        owner_authorization_sha256=preflight.owner_authorization_receipt_sha256,
+        expected_owner_authorization_sha256=target.owner_authorization_sha256,
+        clock_authority_sha256=clock.event_sha256,
+        expected_clock_authority_sha256=target.clock_authority_sha256,
+        regular_sleeve_authority_sha256=bootstrap_authority(
+            CapitalSleeve.REGULAR_SLEEVE
+        ),
+        expected_regular_sleeve_authority_sha256=target.regular_sleeve_authority_sha256,
+        extended_sleeve_authority_sha256=bootstrap_authority(
+            CapitalSleeve.EXTENDED_SLEEVE
+        ),
+        expected_extended_sleeve_authority_sha256=target.extended_sleeve_authority_sha256,
+        economic_risk_authorization_sha256=economic_hash,
+        expected_economic_risk_authorization_sha256=target.economic_risk_authorization_sha256,
+        certified_family_set_sha256=certified_set_sha256,
+        expected_certified_family_set_sha256=target.certified_family_set_sha256,
+        successor_definition_sha256=str(config.target_successor_definition_sha256),
+        expected_successor_definition_sha256=target.successor_definition_sha256,
+        retirement_tombstone_sha256=(
+            None if retirement_sha is None else str(retirement_sha)
+        ),
+        predecessor_path_active=phase_index < retired_index,
+        extended_family_available_within_24h=bool(certified),
+        extended_family_tradable_now=False,
+        continuity_gap=(
+            not bootstrap_authority(CapitalSleeve.REGULAR_SLEEVE)
+            or not bootstrap_authority(CapitalSleeve.EXTENDED_SLEEVE)
+        ),
+        continuity_action_due=False,
+        same_committed_successor=phase_index >= committed_index,
+    )
     return evaluate_multi_universe_successor_launch(
-        evidence, initial_activation=initial_activation
+        evidence,
+        initial_activation=bool(envelope["initial_activation"]),
     )
 
 
@@ -819,6 +965,41 @@ def _latest_authorization_event_id(db: Database) -> str:
     return str(row[0])
 
 
+def _validate_launch_database_mode(
+    db: Database, *, successor_mode: bool
+) -> None:
+    versions = [
+        int(row[0])
+        for row in db.execute(
+            "SELECT version FROM schema_versions ORDER BY version"
+        ).fetchall()
+    ]
+    if successor_mode:
+        if versions != [1, 2, 3, 4]:
+            raise LaunchError("DATABASE_SCHEMA_INVALID")
+        verify_multi_universe_schema_v4(db)
+        return
+    if versions == [1, 2, 3]:
+        return
+    if versions == [1, 2, 3, 4]:
+        table = db.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' "
+            "AND name='successor_transition_events'"
+        ).fetchone()
+        if table is not None:
+            latest = db.execute(
+                "SELECT phase FROM successor_transition_events "
+                "ORDER BY sequence DESC LIMIT 1"
+            ).fetchone()
+            if latest is not None and str(latest[0]) in {
+                "SUCCESSOR_COMMITTED",
+                "RUNTIME_BOUND",
+                "ACTIVE",
+            }:
+                raise LaunchError("PREDECESSOR_RETIRED")
+    raise LaunchError("DATABASE_SCHEMA_INVALID")
+
+
 def validate_launch_controls(
     db: Database,
     config: Day1LaunchConfig,
@@ -826,13 +1007,13 @@ def validate_launch_controls(
     preflight: LaunchPreflight | None = None,
 ) -> LaunchControls:
     assert_integrity_check_ok(db)
-    schema_rows = db.execute(
-        "SELECT version FROM schema_versions ORDER BY version"
-    ).fetchall()
     successor_mode = config.target_successor_epoch_id is not None
-    expected_schema_versions = [1, 2, 3]
-    if [int(row[0]) for row in schema_rows] != expected_schema_versions:
-        raise LaunchError("DATABASE_SCHEMA_INVALID")
+    multi_universe_successor_mode = bool(
+        successor_mode and config.multi_universe_authority_path is not None
+    )
+    _validate_launch_database_mode(
+        db, successor_mode=multi_universe_successor_mode
+    )
     clock: ExperimentClock | None = None
     if successor_mode:
         failed = db.execute(
@@ -1503,9 +1684,13 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
     with dependencies.database_factory(config.db_path) as db:
         if multi_universe_launch is not None:
             try:
-                verify_multi_universe_schema_v4(db)
+                multi_universe_launch = _validate_multi_universe_launch_from_db(
+                    db, config, preflight, multi_universe_launch
+                )
+            except LaunchError:
+                raise
             except Exception as exc:
-                raise LaunchError("MULTI_UNIVERSE_SCHEMA_V4_REQUIRED") from exc
+                raise LaunchError("MULTI_UNIVERSE_LAUNCH_AUTHORITY_INVALID") from exc
         lock = dependencies.lock_factory(db)
         owner = dependencies.lock_owner_factory(preflight.actual_start_utc)
         try:
@@ -1671,6 +1856,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 config=config,
                 preflight=preflight,
                 production_validation_sha256=prepared.manifest["epoch_manifest_sha256"],
+                current_adapter_sha256=prepared.manifest["epoch_manifest_sha256"],
             )
             critical_alert_reporter = dependencies.critical_alert_reporter_factory(
                 db_path=config.db_path,

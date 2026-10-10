@@ -5,7 +5,10 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
-from ibkr_paper_30d.canary_authority import CanaryLifecycleRecorder
+from ibkr_paper_30d.canary_authority import (
+    CanaryBrokerLifecycleReceipt,
+    CanaryLifecycleRecorder,
+)
 from ibkr_paper_30d.multi_universe_models import ProductFamilyKey
 from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
 from ibkr_paper_30d.persistence import Database
@@ -23,6 +26,33 @@ from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 NOW = datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc)
 ACCOUNT = "a" * 64
 ADAPTER = "b" * 64
+CONTRACT = "c" * 64
+
+
+def _lifecycle_receipt(recorder, step, ordinal):
+    return CanaryBrokerLifecycleReceipt(
+        canary_id=recorder.canary_id,
+        step=step,
+        endpoint="PAPER",
+        account_identity_sha256=ACCOUNT,
+        product_family_sha256=recorder.product_family_sha256,
+        contract_identity_sha256=CONTRACT,
+        broker_event_id_sha256=f"{ordinal:064x}",
+        broker_snapshot_sha256=f"{ordinal + 8:064x}",
+        previous_receipt_sha256=recorder.last_receipt_sha256,
+        observed_at_utc=NOW + timedelta(seconds=ordinal),
+        open_orders=(0 if step in {"FLAT_STATE", "ECONOMICS_RECONCILED", "TERMINAL_NO_FILL"} else 1),
+        positions=(0 if step in {"SUBMITTED", "BROKER_BOUND", "FLAT_STATE", "ECONOMICS_RECONCILED", "TERMINAL_NO_FILL"} else 1),
+        economics_reconciled=step == "ECONOMICS_RECONCILED",
+    )
+
+
+def _complete_lifecycle(canary_id, family_sha256):
+    recorder = CanaryLifecycleRecorder(canary_id, ACCOUNT, family_sha256, CONTRACT)
+    projection = recorder.projection()
+    for ordinal, step in enumerate(recorder.sequence, 1):
+        projection = recorder.record(_lifecycle_receipt(recorder, step, ordinal))
+    return projection
 
 
 def _family(sec_type="STK", venue="SMART"):
@@ -57,21 +87,18 @@ def _record(store, family, step):
 
 
 def _full(store, family):
-    for step in (
-        "CONTRACT_QUALIFIED",
-        "PERMISSIONS_VERIFIED",
-        "MARKET_DATA_VERIFIED",
-        "ORDER_SEMANTICS_VERIFIED",
-        "BOUNDED_ECONOMICS_VERIFIED",
-        "ORDER_TRANSMIT_VERIFIED",
-        "ENTRY_FILL_VERIFIED",
-        "POSITION_VISIBLE",
-        "MANAGEMENT_OBSERVED",
-        "CLOSING_FILL_VERIFIED",
-        "FLAT_STATE_VERIFIED",
-        "ECONOMICS_RECONCILED",
-    ):
+    for step in CERTIFICATION_SEQUENCE[:6]:
         _record(store, family, step)
+    projection = _complete_lifecycle("full-canary", family.sha256)
+    store.record_canary_lifecycle(
+        family,
+        projection,
+        account_sha256=ACCOUNT,
+        adapter_sha256=ADAPTER,
+        observed_at_utc=NOW,
+        expires_at_utc=NOW + timedelta(days=1),
+        paper_limitations=("PAPER_SIMULATION_ONLY",),
+    )
 
 
 def test_research_discovery_does_not_imply_execution_authority() -> None:
@@ -118,7 +145,7 @@ def test_only_ordered_full_lifecycle_reaches_full_certification(tmp_path) -> Non
     db, store = _store(tmp_path)
     family = _family()
     try:
-        with pytest.raises(ProductCapabilityError, match="CERTIFICATION_STEP_OUT_OF_ORDER"):
+        with pytest.raises(ProductCapabilityError, match="AUTHORIZED_CANARY_FINALIZER_REQUIRED"):
             _record(store, family, "ENTRY_FILL_VERIFIED")
         _full(store, family)
         projection = store.projection(family)
@@ -136,10 +163,12 @@ def test_full_canary_projection_completes_family_but_no_fill_cannot(tmp_path) ->
     try:
         for step in CERTIFICATION_SEQUENCE[:6]:
             _record(store, family, step)
-        recorder = CanaryLifecycleRecorder("canary-1", family.sha256, "c" * 64)
-        recorder.record_submit("1" * 64)
-        recorder.record_bind("2" * 64)
-        no_fill = recorder.record_terminal_no_fill("3" * 64)
+        recorder = CanaryLifecycleRecorder("canary-1", ACCOUNT, family.sha256, CONTRACT)
+        recorder.record(_lifecycle_receipt(recorder, "SUBMITTED", 1))
+        recorder.record(_lifecycle_receipt(recorder, "BROKER_BOUND", 2))
+        no_fill = recorder.record(
+            _lifecycle_receipt(recorder, "TERMINAL_NO_FILL", 3)
+        )
         with pytest.raises(ProductCapabilityError, match="CANARY_FULL_LIFECYCLE_REQUIRED"):
             store.record_canary_lifecycle(
                 family,
@@ -151,15 +180,7 @@ def test_full_canary_projection_completes_family_but_no_fill_cannot(tmp_path) ->
                 paper_limitations=("PAPER_SIMULATION_ONLY",),
             )
 
-        complete = CanaryLifecycleRecorder("canary-2", family.sha256, "c" * 64)
-        complete.record_submit("1" * 64)
-        complete.record_bind("2" * 64)
-        complete.record_entry_fill("3" * 64)
-        complete.record_position("4" * 64)
-        complete.record_management("5" * 64)
-        complete.record_exit_fill("6" * 64)
-        complete.record_flat_state("7" * 64, open_orders=0, positions=0)
-        projection = complete.record_economics("8" * 64, reconciled=True)
+        projection = _complete_lifecycle("canary-2", family.sha256)
         certified = store.record_canary_lifecycle(
             family,
             projection,
@@ -214,6 +235,18 @@ def test_store_enumerates_each_durable_family_once(tmp_path) -> None:
             stock.sha256,
             future.sha256,
         }
+    finally:
+        db.close()
+
+
+def test_generic_step_api_cannot_self_attest_post_transmit_lifecycle(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    family = _family()
+    try:
+        for step in CERTIFICATION_SEQUENCE[:6]:
+            _record(store, family, step)
+        with pytest.raises(ProductCapabilityError, match="AUTHORIZED_CANARY_FINALIZER_REQUIRED"):
+            _record(store, family, "ENTRY_FILL_VERIFIED")
     finally:
         db.close()
 

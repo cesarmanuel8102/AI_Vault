@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from decimal import Decimal
 from typing import Any, Mapping, Sequence
 
@@ -33,6 +34,8 @@ LINEAGE_EVENTS = frozenset(
         "SPIN_OFF",
         "CONTRACT_REPLACEMENT",
         "BROKER_CORRECTION",
+        "BAG_LEG_MATERIALIZATION",
+        "SETTLEMENT",
     }
 )
 
@@ -62,6 +65,24 @@ class ReleaseEvidence(_OwnershipModel):
     broker_snapshot_fresh: bool
 
 
+class BrokerLineageEvidence(_OwnershipModel):
+    source_contract_sha256: str = Field(pattern=SHA256_PATTERN)
+    descendant_contract_sha256: str = Field(pattern=SHA256_PATTERN)
+    lineage_event: str = Field(min_length=1)
+    broker_event_id: str = Field(min_length=1)
+    broker_snapshot_sha256: str = Field(pattern=SHA256_PATTERN)
+    observed_at_utc: datetime
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.lineage_event not in LINEAGE_EVENTS:
+            raise ValueError("unsupported broker lineage event")
+        if (
+            self.observed_at_utc.tzinfo is None
+            or self.observed_at_utc.utcoffset() is None
+        ):
+            raise ValueError("lineage observation must be timezone-aware")
+
+
 class OwnershipReceipt(_OwnershipModel):
     status: str
     reason_codes: tuple[str, ...] = ()
@@ -87,6 +108,7 @@ class OwnershipRecord(_OwnershipModel):
 
 class OwnershipProjection(_OwnershipModel):
     active_contracts: tuple[OwnershipRecord, ...]
+    released_contracts: tuple[OwnershipRecord, ...] = ()
     event_count: int
     projection_sha256: str
 
@@ -236,6 +258,7 @@ class ContractOwnershipStore:
 
     def projection(self) -> OwnershipProjection:
         active: dict[str, OwnershipRecord] = {}
+        released: dict[str, OwnershipRecord] = {}
         events = self._events()
         for event in events:
             identity_hash = event["contract_identity_sha256"]
@@ -244,7 +267,7 @@ class ContractOwnershipStore:
                 "GROUP_MEMBER_RESERVED",
                 "DESCENDANT_CLAIMED",
             }:
-                active[identity_hash] = OwnershipRecord(
+                record = OwnershipRecord(
                     contract_identity_sha256=identity_hash,
                     contract=CanonicalContractIdentity.model_validate(event["contract"]),
                     sleeve=CapitalSleeve(event["sleeve"]),
@@ -254,12 +277,25 @@ class ContractOwnershipStore:
                     source_contract_sha256=event.get("source_contract_sha256"),
                     lineage_event=event.get("lineage_event"),
                 )
+                active[identity_hash] = record
+                released.pop(identity_hash, None)
             elif event["event_type"] == "RELEASED":
-                active.pop(identity_hash, None)
+                record = active.pop(identity_hash, None)
+                if record is not None:
+                    released[identity_hash] = record
         records = tuple(sorted(active.values(), key=lambda item: item.contract_identity_sha256))
-        projection_body = [item.model_dump(mode="json") for item in records]
+        released_records = tuple(
+            sorted(released.values(), key=lambda item: item.contract_identity_sha256)
+        )
+        projection_body = {
+            "active_contracts": [item.model_dump(mode="json") for item in records],
+            "released_contracts": [
+                item.model_dump(mode="json") for item in released_records
+            ],
+        }
         return OwnershipProjection(
             active_contracts=records,
+            released_contracts=released_records,
             event_count=len(events),
             projection_sha256=sha256_json(projection_body),
         )
@@ -305,40 +341,83 @@ class ContractOwnershipStore:
             )
         return receipt
 
-    def reserve_group(self, group: ContractOwnershipGroup) -> OwnershipReceipt:
-        members = (*group.member_contracts, *group.contingent_contracts)
-        with self.db.transaction():
-            projection = self.projection()
-            existing = [projection.owner_of(member.sha256) for member in members]
-            if any(
-                record is not None and record.sleeve is not group.sleeve
-                for record in existing
-            ):
+    def claim_in_transaction(
+        self,
+        sleeve: CapitalSleeve,
+        contract: CanonicalContractIdentity,
+        *,
+        side: str | None = None,
+        group_id: str | None = None,
+    ) -> OwnershipReceipt:
+        """Claim a canonical contract without opening a nested transaction."""
+
+        if not self.db.connection.in_transaction:
+            raise OwnershipError("ATOMIC_OWNERSHIP_TRANSACTION_REQUIRED")
+        normalized_side = None if side is None else side.upper()
+        if normalized_side not in {None, "BUY", "SELL"}:
+            raise OwnershipError("INVALID_OWNERSHIP_SIDE")
+        existing = self.projection().owner_of(contract.sha256)
+        if existing is not None:
+            if existing.sleeve is not sleeve:
                 raise OwnershipError("CONTRACT_OWNED_BY_OTHER_SLEEVE")
-            if all(
-                record is not None
-                and record.group_id == group.group_id
-                and record.group_sha256 == group.sha256
-                for record in existing
-            ):
-                return OwnershipReceipt(
-                    status="GROUP_RESERVED",
-                    sleeve=group.sleeve,
-                    group_id=group.group_id,
-                    member_contract_sha256=tuple(member.sha256 for member in members),
-                    idempotent=True,
-                )
-            if any(record is not None for record in existing):
-                raise OwnershipError("CONTRACT_GROUP_CONFLICT")
-            last: OwnershipReceipt | None = None
-            for member in members:
-                last = self._append(
-                    group_id=group.group_id,
-                    contract=member,
-                    sleeve=group.sleeve,
-                    event_type="GROUP_MEMBER_RESERVED",
-                    payload={"group_sha256": group.sha256},
-                )
+            return OwnershipReceipt(
+                status="CLAIMED",
+                sleeve=sleeve,
+                group_id=existing.group_id,
+                contract_identity_sha256=contract.sha256,
+                idempotent=True,
+            )
+        return self._append(
+            group_id=group_id or f"contract:{contract.sha256}",
+            contract=contract,
+            sleeve=sleeve,
+            event_type="CLAIMED",
+            payload={"side": normalized_side},
+        )
+
+    def reserve_group(self, group: ContractOwnershipGroup) -> OwnershipReceipt:
+        with self.db.transaction():
+            return self.reserve_group_in_transaction(group)
+
+    def reserve_group_in_transaction(
+        self, group: ContractOwnershipGroup
+    ) -> OwnershipReceipt:
+        """Reserve one parent/leg ownership group in the caller's transaction."""
+
+        if not self.db.connection.in_transaction:
+            raise OwnershipError("ATOMIC_OWNERSHIP_TRANSACTION_REQUIRED")
+        members = (*group.member_contracts, *group.contingent_contracts)
+        projection = self.projection()
+        existing = [projection.owner_of(member.sha256) for member in members]
+        if any(
+            record is not None and record.sleeve is not group.sleeve
+            for record in existing
+        ):
+            raise OwnershipError("CONTRACT_OWNED_BY_OTHER_SLEEVE")
+        if all(
+            record is not None
+            and record.group_id == group.group_id
+            and record.group_sha256 == group.sha256
+            for record in existing
+        ):
+            return OwnershipReceipt(
+                status="GROUP_RESERVED",
+                sleeve=group.sleeve,
+                group_id=group.group_id,
+                member_contract_sha256=tuple(member.sha256 for member in members),
+                idempotent=True,
+            )
+        if any(record is not None for record in existing):
+            raise OwnershipError("CONTRACT_GROUP_CONFLICT")
+        last: OwnershipReceipt | None = None
+        for member in members:
+            last = self._append(
+                group_id=group.group_id,
+                contract=member,
+                sleeve=group.sleeve,
+                event_type="GROUP_MEMBER_RESERVED",
+                payload={"group_sha256": group.sha256},
+            )
         assert last is not None
         return OwnershipReceipt(
             status="GROUP_RESERVED",
@@ -352,20 +431,18 @@ class ContractOwnershipStore:
     def record_descendant(
         self,
         *,
-        source_contract_sha256: str,
         descendant: CanonicalContractIdentity,
-        lineage_event: str,
-        lineage_verified: bool,
+        evidence: BrokerLineageEvidence,
     ) -> OwnershipReceipt:
-        if not lineage_verified or lineage_event not in LINEAGE_EVENTS:
+        if evidence.descendant_contract_sha256 != descendant.sha256:
             return OwnershipReceipt(
                 status="BLOCK",
-                reason_codes=("UNATTRIBUTED_ACCOUNT_EVENT",),
+                reason_codes=("LINEAGE_EVIDENCE_MISMATCH",),
                 contract_identity_sha256=descendant.sha256,
             )
         with self.db.transaction():
             projection = self.projection()
-            source = projection.owner_of(source_contract_sha256)
+            source = projection.owner_of(evidence.source_contract_sha256)
             if source is None:
                 return OwnershipReceipt(
                     status="BLOCK",
@@ -389,8 +466,12 @@ class ContractOwnershipStore:
                 sleeve=source.sleeve,
                 event_type="DESCENDANT_CLAIMED",
                 payload={
-                    "source_contract_sha256": source_contract_sha256,
-                    "lineage_event": lineage_event,
+                    "source_contract_sha256": evidence.source_contract_sha256,
+                    "lineage_event": evidence.lineage_event,
+                    "lineage_evidence_sha256": evidence.sha256,
+                    "broker_event_id": evidence.broker_event_id,
+                    "broker_snapshot_sha256": evidence.broker_snapshot_sha256,
+                    "observed_at_utc": evidence.observed_at_utc,
                 },
             )
         return receipt
@@ -423,32 +504,48 @@ class ContractOwnershipStore:
         if reasons:
             raise OwnershipError(reasons[0])
         with self.db.transaction():
-            projection = self.projection()
-            existing = projection.owner_of(contract_identity_sha256)
-            if existing is None:
-                releases = [
-                    event
-                    for event in self._events()
-                    if event["event_type"] == "RELEASED"
-                    and event["contract_identity_sha256"] == contract_identity_sha256
-                ]
-                if not releases or releases[-1].get("release_evidence_sha256") != evidence.sha256:
-                    raise OwnershipError("OWNERSHIP_NOT_ACTIVE")
-                latest = releases[-1]
-                return OwnershipReceipt(
-                    status="RELEASED",
-                    sleeve=CapitalSleeve(latest["sleeve"]),
-                    group_id=latest["group_id"],
-                    contract_identity_sha256=contract_identity_sha256,
-                    event_id=latest["event_id"],
-                    event_sha256=latest["event_sha256"],
-                    idempotent=True,
-                )
-            receipt = self._append(
-                group_id=existing.group_id,
-                contract=existing.contract,
-                sleeve=existing.sleeve,
-                event_type="RELEASED",
-                payload={"release_evidence_sha256": evidence.sha256},
+            return self.release_in_transaction(contract_identity_sha256, evidence)
+
+    def release_in_transaction(
+        self,
+        contract_identity_sha256: str,
+        evidence: ReleaseEvidence,
+    ) -> OwnershipReceipt:
+        """Release exact terminal ownership inside the caller's transaction."""
+
+        if not self.db.connection.in_transaction:
+            raise OwnershipError("ATOMIC_OWNERSHIP_TRANSACTION_REQUIRED")
+        reasons = self._release_reasons(evidence)
+        if reasons:
+            raise OwnershipError(reasons[0])
+        projection = self.projection()
+        existing = projection.owner_of(contract_identity_sha256)
+        if existing is None:
+            releases = [
+                event
+                for event in self._events()
+                if event["event_type"] == "RELEASED"
+                and event["contract_identity_sha256"] == contract_identity_sha256
+            ]
+            if (
+                not releases
+                or releases[-1].get("release_evidence_sha256") != evidence.sha256
+            ):
+                raise OwnershipError("OWNERSHIP_NOT_ACTIVE")
+            latest = releases[-1]
+            return OwnershipReceipt(
+                status="RELEASED",
+                sleeve=CapitalSleeve(latest["sleeve"]),
+                group_id=latest["group_id"],
+                contract_identity_sha256=contract_identity_sha256,
+                event_id=latest["event_id"],
+                event_sha256=latest["event_sha256"],
+                idempotent=True,
             )
-        return receipt
+        return self._append(
+            group_id=existing.group_id,
+            contract=existing.contract,
+            sleeve=existing.sleeve,
+            event_type="RELEASED",
+            payload={"release_evidence_sha256": evidence.sha256},
+        )

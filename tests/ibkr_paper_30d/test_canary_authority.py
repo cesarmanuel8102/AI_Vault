@@ -7,6 +7,7 @@ import pytest
 
 from ibkr_paper_30d.canary_authority import (
     CanaryAuthorityValidator,
+    CanaryBrokerLifecycleReceipt,
     CanaryExecutionTarget,
     CanaryLifecycleError,
     CanaryLifecycleRecorder,
@@ -22,6 +23,26 @@ FAMILY = "1" * 64
 CONTRACT = "2" * 64
 SUCCESSOR = "3" * 64
 ACCOUNT = "4" * 64
+
+
+def _receipt(recorder, step, ordinal, **overrides):
+    values = {
+        "canary_id": recorder.canary_id,
+        "step": step,
+        "endpoint": "PAPER",
+        "account_identity_sha256": ACCOUNT,
+        "product_family_sha256": FAMILY,
+        "contract_identity_sha256": CONTRACT,
+        "broker_event_id_sha256": f"{ordinal:064x}",
+        "broker_snapshot_sha256": f"{ordinal + 8:064x}",
+        "previous_receipt_sha256": recorder.last_receipt_sha256,
+        "observed_at_utc": NOW + timedelta(seconds=ordinal),
+        "open_orders": 0 if step in {"FLAT_STATE", "ECONOMICS_RECONCILED"} else 1,
+        "positions": 0 if step in {"SUBMITTED", "BROKER_BOUND", "FLAT_STATE", "ECONOMICS_RECONCILED"} else 1,
+        "economics_reconciled": step == "ECONOMICS_RECONCILED",
+    }
+    values.update(overrides)
+    return CanaryBrokerLifecycleReceipt(**values)
 
 
 def _authorization(**overrides) -> CanaryAuthorization:
@@ -92,15 +113,9 @@ def test_canary_authority_fails_closed_at_exact_boundary(
 
 
 def test_full_canary_lifecycle_requires_ordered_broker_evidence():
-    recorder = CanaryLifecycleRecorder("canary-1", FAMILY, CONTRACT)
-    recorder.record_submit("a" * 64)
-    recorder.record_bind("b" * 64)
-    recorder.record_entry_fill("c" * 64)
-    recorder.record_position("d" * 64)
-    recorder.record_management("e" * 64)
-    recorder.record_exit_fill("f" * 64)
-    recorder.record_flat_state("0" * 64, open_orders=0, positions=0)
-    projection = recorder.record_economics("9" * 64, reconciled=True)
+    recorder = CanaryLifecycleRecorder("canary-1", ACCOUNT, FAMILY, CONTRACT)
+    for ordinal, step in enumerate(recorder.sequence, 1):
+        projection = recorder.record(_receipt(recorder, step, ordinal))
 
     assert projection.status == "PASS"
     assert projection.full_lifecycle_verified is True
@@ -108,15 +123,47 @@ def test_full_canary_lifecycle_requires_ordered_broker_evidence():
 
 
 def test_no_fill_terminal_order_cannot_certify_family():
-    recorder = CanaryLifecycleRecorder("canary-1", FAMILY, CONTRACT)
-    recorder.record_submit("a" * 64)
-    recorder.record_bind("b" * 64)
-    projection = recorder.record_terminal_no_fill("c" * 64)
+    recorder = CanaryLifecycleRecorder("canary-1", ACCOUNT, FAMILY, CONTRACT)
+    recorder.record(_receipt(recorder, "SUBMITTED", 1))
+    recorder.record(_receipt(recorder, "BROKER_BOUND", 2))
+    projection = recorder.record(
+        _receipt(recorder, "TERMINAL_NO_FILL", 3, open_orders=0, positions=0)
+    )
 
     assert projection.status == "TRANSMIT_ONLY"
     assert projection.full_lifecycle_verified is False
     with pytest.raises(CanaryLifecycleError, match="LIFECYCLE_STEP_OUT_OF_ORDER"):
-        recorder.record_position("d" * 64)
+        recorder.record(_receipt(recorder, "POSITION_VISIBLE", 4))
+
+
+def test_arbitrary_hash_cannot_be_used_as_broker_lifecycle_evidence():
+    recorder = CanaryLifecycleRecorder("canary-1", ACCOUNT, FAMILY, CONTRACT)
+
+    with pytest.raises(TypeError, match="CanaryBrokerLifecycleReceipt"):
+        recorder.record("a" * 64)
+
+
+def test_lifecycle_receipt_must_preserve_identity_and_hash_chain():
+    recorder = CanaryLifecycleRecorder("canary-1", ACCOUNT, FAMILY, CONTRACT)
+    recorder.record(_receipt(recorder, "SUBMITTED", 1))
+
+    wrong_account = _receipt(
+        recorder,
+        "BROKER_BOUND",
+        2,
+        account_identity_sha256="f" * 64,
+    )
+    with pytest.raises(CanaryLifecycleError, match="CANARY_RECEIPT_IDENTITY_MISMATCH"):
+        recorder.record(wrong_account)
+
+    broken_chain = _receipt(
+        recorder,
+        "BROKER_BOUND",
+        2,
+        previous_receipt_sha256="e" * 64,
+    )
+    with pytest.raises(CanaryLifecycleError, match="CANARY_RECEIPT_CHAIN_MISMATCH"):
+        recorder.record(broken_chain)
 
 
 def test_rollback_envelope_must_be_strictly_shorter_than_deadline():

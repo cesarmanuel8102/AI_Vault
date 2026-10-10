@@ -652,6 +652,74 @@ def test_loss_above_experimental_equity_is_blocked():
     assert outcome.reason_codes == ("EXPERIMENT_CAPITAL_BOUNDARY",)
 
 
+def _v4_bundle(*, legacy_equity: str, regular_equity: str, extended_equity: str):
+    return bundle(legacy_equity).model_copy(
+        update={
+            "multi_sleeve_portfolio": {
+                "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+                "sleeves": {
+                    "regular": {"equity_usd": regular_equity},
+                    "extended": {"equity_usd": extended_equity},
+                },
+            },
+            "contract_ownership_snapshot": {"contract_sleeves": {}},
+            "product_capability_snapshot": {"families": []},
+        }
+    )
+
+
+def _extended_proposal(maximum_loss: str):
+    return proposal(maximum_loss=maximum_loss).model_copy(
+        update={
+            "capital_sleeve": CapitalSleeve.EXTENDED_SLEEVE,
+            "product_family_sha256": "f" * 64,
+        }
+    )
+
+
+def test_v4_proposal_uses_selected_sleeve_equity_not_smaller_legacy_equity():
+    value = _v4_bundle(
+        legacy_equity="100.00",
+        regular_equity="100.00",
+        extended_equity="500.00",
+    )
+    final = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        decision=TraderDecision.PROPOSE_TRADE,
+        proposal=_extended_proposal("400.00"),
+        confidence="0.7",
+        reasoning_summary="Use the selected extended sleeve only.",
+    )
+
+    outcome = AutonomousResearchLoop(SequenceProvider([final]), FakeToolbox()).run(
+        request(value), value
+    )
+
+    assert outcome.accepted is True
+
+
+def test_v4_proposal_blocks_against_selected_sleeve_not_larger_legacy_equity():
+    value = _v4_bundle(
+        legacy_equity="1000.00",
+        regular_equity="700.00",
+        extended_equity="300.00",
+    )
+    final = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        decision=TraderDecision.PROPOSE_TRADE,
+        proposal=_extended_proposal("400.00"),
+        confidence="0.7",
+        reasoning_summary="Do not borrow authority from the legacy ledger.",
+    )
+
+    outcome = AutonomousResearchLoop(SequenceProvider([final]), FakeToolbox()).run(
+        request(value), value
+    )
+
+    assert outcome.accepted is False
+    assert outcome.reason_codes == ("EXPERIMENT_CAPITAL_BOUNDARY",)
+
+
 def test_no_trade_remains_valid_after_autonomous_research():
     value = bundle()
     final = AutonomousTurn(

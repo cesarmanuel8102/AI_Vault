@@ -239,3 +239,88 @@ def test_command_uses_shared_durable_sequence_allocator(continuity_plan_factory)
 
     assert first.durable_sequence == 41
     assert second.durable_sequence == 42
+
+
+@pytest.mark.parametrize(
+    ("action_type", "quantity", "command_type", "authority_class"),
+    [
+        ("REDUCE_POSITION", "1", BrokerCommandType.REDUCE_POSITION, "REDUCE_POSITION"),
+        ("CLOSE_POSITION", "4", BrokerCommandType.CLOSE_POSITION, "CLOSE_POSITION"),
+    ],
+)
+def test_v4_builds_exact_position_continuity_command(
+    continuity_plan_factory,
+    action_type,
+    quantity,
+    command_type,
+    authority_class,
+):
+    action = {
+        "action_type": action_type,
+        "position_action": "SELL",
+        "position_quantity": {"operator": "LITERAL", "literal": quantity},
+        "position_order_type": "LMT",
+        "position_limit_price": {"operator": "LITERAL", "literal": "118.60"},
+    }
+    plan = continuity_plan_factory(
+        schema="CODEX_ORDER_CONTINUITY_PLAN_V4",
+        capital_sleeve="REGULAR_SLEEVE",
+        canonical_contract_sha256="4" * 64,
+        ownership_group_sha256="5" * 64,
+        product_family_sha256="6" * 64,
+        position_identity_sha256="7" * 64,
+        next_decision_deadline_utc=NOW.replace(hour=18),
+        sleeve_authority_sha256="8" * 64,
+        ownership_projection_sha256="9" * 64,
+        contingencies=[
+            {
+                "contingency_id": "position-outage",
+                "priority": 10,
+                "valid_from_utc": NOW,
+                "valid_until_utc": NOW.replace(hour=18),
+                "condition": {
+                    "operator": "PREDICATE",
+                    "fact": "POSITION_EXISTS",
+                    "comparator": "EQ",
+                    "value": True,
+                    "max_age_seconds": 30,
+                },
+                "state_actions": {
+                    state: action
+                    for state in (
+                        "UNFILLED", "PARTIALLY_FILLED", "FILLED",
+                        "PENDING_CANCEL", "CANCELLED", "REJECTED", "ABSENT",
+                    )
+                },
+                "unavailable_data_action": {"action_type": "RETAIN"},
+                "maximum_execution_count": 1,
+                "expectations": ["Exact position management."],
+                "why_i_chose_this_contingency": "Preserve the model-authored exit.",
+            }
+        ],
+    )
+    binding_updates = {
+        "capital_sleeve": "REGULAR_SLEEVE",
+        "canonical_contract_sha256": plan.canonical_contract_sha256,
+        "ownership_group_sha256": plan.ownership_group_sha256,
+        "product_family_sha256": plan.product_family_sha256,
+        "position_identity_sha256": plan.position_identity_sha256,
+        "sleeve_authority_sha256": plan.sleeve_authority_sha256,
+        "ownership_projection_sha256": plan.ownership_projection_sha256,
+    }
+    executor = _executor(
+        plan,
+        binding_updates=binding_updates,
+    )
+    executor.fact_values_reader = lambda _: {"POSITION_QUANTITY": "4"}
+
+    command = executor.build_command(_evaluation(plan, action))
+
+    assert command.command_type == command_type
+    assert command.authority_class.value == authority_class
+    assert command.position_action == "SELL"
+    assert command.position_quantity == Decimal(quantity)
+    assert command.position_order_type == "LMT"
+    assert command.position_limit_price == Decimal("118.60")
+    assert command.position_identity_sha256 == plan.position_identity_sha256
+    assert command.canonical_contract_sha256 == plan.canonical_contract_sha256

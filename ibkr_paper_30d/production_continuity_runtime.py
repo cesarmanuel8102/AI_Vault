@@ -42,6 +42,231 @@ class MultiUniverseRuntimeStores:
     transition: Any
 
 
+class _PathSleeveAuthorityReservationStore:
+    """Open the V4 reservation store on the writer thread for each commit."""
+
+    def __init__(self, db_path: Path) -> None:
+        self.db_path = Path(db_path)
+
+    def reserve(self, request: Any, broker_evidence: Any, snapshot_reader: Any) -> Any:
+        from .persistence import Database
+        from .sleeve_execution_authority import SleeveAuthorityReservationStore
+
+        with Database.open(self.db_path) as db:
+            return SleeveAuthorityReservationStore(db).reserve(
+                request, broker_evidence, snapshot_reader
+            )
+
+
+class _ProductionSleeveAuthoritySnapshotReader:
+    def __init__(
+        self,
+        db_path: Path,
+        config: Any,
+        current_adapter_sha256: str,
+    ) -> None:
+        if (
+            len(str(current_adapter_sha256)) != 64
+            or any(
+                char not in "0123456789abcdef"
+                for char in str(current_adapter_sha256)
+            )
+        ):
+            raise ProductionRuntimeConfigurationError(
+                "CURRENT_ADAPTER_SHA256_REQUIRED"
+            )
+        self.db_path = Path(db_path)
+        self.config = config
+        self.current_adapter_sha256 = str(current_adapter_sha256)
+
+    def __call__(self, request: Any) -> Any:
+        from .contract_ownership import ContractOwnershipStore
+        from .multi_universe_models import ProductFamilyKey, TransitionTarget
+        from .persistence import Database
+        from .product_capability import ProductFamilyCertificationStore
+        from .sleeve_execution_authority import SleeveAuthoritySnapshot
+        from .sleeve_ledger import SleeveLedgerStore
+
+        with Database.open(self.db_path) as db:
+            ledger = SleeveLedgerStore(db).project(request.capital_sleeve)
+            if not ledger.initialized:
+                raise ProductionRuntimeConfigurationError("SLEEVE_NOT_INITIALIZED")
+            ownership = ContractOwnershipStore(db).projection()
+            family_payload = next(
+                (
+                    item.get("family")
+                    for item in (
+                        request.input_bundle.product_capability_snapshot or {}
+                    ).get("families", ())
+                    if item.get("family_sha256") == request.product_family_sha256
+                ),
+                None,
+            )
+            if family_payload is None:
+                raise ProductionRuntimeConfigurationError(
+                    "PRODUCT_FAMILY_DB_AUTHORITY_REQUIRED"
+                )
+            family = ProductFamilyKey.model_validate(family_payload)
+            capability = ProductFamilyCertificationStore(
+                db,
+                current_adapter_sha256=self.current_adapter_sha256,
+            ).projection(family)
+            row = db.execute(
+                "SELECT phase,payload_json FROM successor_transition_events "
+                "ORDER BY sequence DESC LIMIT 1"
+            ).fetchone()
+            if row is None:
+                raise ProductionRuntimeConfigurationError("SUCCESSOR_TRANSITION_REQUIRED")
+            transition_payload = json.loads(str(row[1]))
+            target = TransitionTarget.model_validate(transition_payload.get("target"))
+            if (
+                target.successor_epoch_id != request.epoch_id
+                or target.successor_definition_sha256
+                != str(self.config.target_successor_definition_sha256)
+            ):
+                raise ProductionRuntimeConfigurationError(
+                    "SUCCESSOR_TRANSITION_BINDING_MISMATCH"
+                )
+            economic_row = db.execute(
+                "SELECT payload_json FROM owner_economic_risk_authorization_events "
+                "ORDER BY sequence DESC LIMIT 1"
+            ).fetchone()
+            economic_valid = False
+            if economic_row is not None:
+                economic_payload = json.loads(str(economic_row[0]))
+                economic_valid = (
+                    economic_payload.get("authorization_sha256")
+                    == target.economic_risk_authorization_sha256
+                    or economic_payload.get("authority_sha256")
+                    == target.economic_risk_authorization_sha256
+                )
+            equity = (
+                ledger.allocation_usd
+                + ledger.realized_pnl_usd
+                + ledger.unrealized_pnl_usd
+                - ledger.fees_usd
+            )
+            proposed = Decimal("0")
+            if request.operation.value == "NEW_TRADE":
+                proposed = Decimal(str(request.payload.maximum_loss))
+            return SleeveAuthoritySnapshot(
+                capital_sleeve=request.capital_sleeve,
+                sleeve_authority_sha256=request.sleeve_authority_sha256,
+                ownership_projection_sha256=ownership.projection_sha256,
+                product_family_sha256=capability.family_sha256,
+                economic_authorization_sha256=target.economic_risk_authorization_sha256,
+                transition_target_sha256=target.sha256,
+                epoch_id=target.successor_epoch_id,
+                approved_head=target.approved_git_head,
+                account_identity_sha256=target.account_identity_sha256,
+                transition_phase=str(row[0]),
+                paper_only=True,
+                family_executable=capability.executable,
+                capability_fresh=(
+                    capability.expires_at_utc is not None
+                    and capability.expires_at_utc > datetime.now(timezone.utc)
+                ),
+                ownership_conflict=(
+                    ownership.projection_sha256
+                    != request.ownership_projection_sha256
+                ),
+                economic_authorization_valid=economic_valid,
+                equity_usd=equity,
+                reserved_liability_usd=ledger.reserved_liability_usd,
+                proposed_maximum_loss_usd=proposed,
+                continuity_required=bool(
+                    request.input_bundle.continuity_context.get(
+                        "authority_contract_required", False
+                    )
+                ),
+                continuity_plan_sha256=request.continuity_plan_sha256,
+            )
+
+
+def _sleeve_broker_evidence_collector(
+    expected_account_sha256: str,
+) -> Callable[[Any, Any, dict[str, Any]], dict[str, Any]]:
+    def collect(_broker: Any, request: Any, evidence: dict[str, Any]) -> dict[str, Any]:
+        context = dict(evidence.get("model_write_context") or {})
+        contract = context.get("canonical_contract")
+        contract_sha = None
+        ownership_contracts: list[dict[str, Any]] = []
+        if contract is not None:
+            from .contract_ownership import (
+                CanonicalContractIdentity,
+                canonical_contract_identity,
+            )
+
+            parent = CanonicalContractIdentity.model_validate(contract)
+            contract_sha = parent.sha256
+            ownership_contracts.append(parent.model_dump(mode="json"))
+            if parent.security_type == "BAG":
+                from ib_insync import Contract
+
+                for leg in parent.bag_legs:
+                    details = list(
+                        _broker.reqContractDetails(Contract(conId=leg.con_id))
+                    )
+                    if len(details) != 1:
+                        raise RuntimeError(
+                            "BAG_LEG_CONTRACT_IDENTITY_UNCERTAIN"
+                        )
+                    resolved = details[0].contract
+                    identity = canonical_contract_identity(
+                        {
+                            "conId": int(getattr(resolved, "conId", 0) or 0),
+                            "secType": str(
+                                getattr(resolved, "secType", "") or ""
+                            ),
+                            "currency": str(
+                                getattr(resolved, "currency", "") or ""
+                            ),
+                            "exchange": str(
+                                getattr(resolved, "exchange", "") or ""
+                            ),
+                            "primaryExchange": str(
+                                getattr(resolved, "primaryExchange", "") or ""
+                            )
+                            or None,
+                            "localSymbol": str(
+                                getattr(resolved, "localSymbol", "") or ""
+                            )
+                            or None,
+                            "tradingClass": str(
+                                getattr(resolved, "tradingClass", "") or ""
+                            )
+                            or None,
+                            "multiplier": str(
+                                getattr(resolved, "multiplier", "") or ""
+                            )
+                            or None,
+                        }
+                    )
+                    if identity.con_id != leg.con_id:
+                        raise RuntimeError(
+                            "BAG_LEG_CONTRACT_IDENTITY_MISMATCH"
+                        )
+                    ownership_contracts.append(
+                        identity.model_dump(mode="json")
+                    )
+        return {
+            "paper_only": True,
+            "fresh": True,
+            "account_identity_sha256": expected_account_sha256,
+            "contract_identity_sha256": contract_sha,
+            "canonical_contract": contract,
+            "ownership_contracts": ownership_contracts,
+            "order_ref": str(context.get("order_ref") or ""),
+            "observed_at_utc": datetime.now(timezone.utc),
+            "production_authority_sha256": (
+                evidence.get("production_authority") or {}
+            ).get("authority_snapshot_sha256"),
+            "request_sha256": request.sha256,
+        }
+
+    return collect
+
+
 def build_multi_universe_runtime_stores(
     db: Any, *, current_adapter_sha256: str
 ) -> MultiUniverseRuntimeStores:
@@ -1178,6 +1403,7 @@ def create_authoritative_writer(
     toolbox: Any,
     production_validation_sha256: str | None,
     validation_broker_factory: Callable[[], Any] | None = None,
+    current_adapter_sha256: str | None = None,
 ) -> Any:
     from .authoritative_broker_writer import AuthoritativeBrokerWriter
     from .production_authority import ProductionAuthorityValidator
@@ -1203,6 +1429,22 @@ def create_authoritative_writer(
         expected_approved_head=_current_head(Path(config.repo_root)),
     )
     effective_session_factory = validation_broker_factory or session_factory
+    v4_active = getattr(config, "target_successor_definition_sha256", None) is not None
+    sleeve_reservation_store = (
+        _PathSleeveAuthorityReservationStore(Path(db_path)) if v4_active else None
+    )
+    sleeve_snapshot_reader = (
+        _ProductionSleeveAuthoritySnapshotReader(
+            Path(db_path), config, str(current_adapter_sha256 or "")
+        )
+        if v4_active
+        else None
+    )
+    sleeve_broker_collector = (
+        _sleeve_broker_evidence_collector(str(preflight.expected_account_hash))
+        if v4_active
+        else None
+    )
     return AuthoritativeBrokerWriter(
         coordinator,
         broker_factory=lambda client_id: (
@@ -1224,6 +1466,9 @@ def create_authoritative_writer(
         liability_evidence_collector=_collect_continuity_liability_evidence,
         resource_closer=lazy_engine.close,
         uncertainty_reporter=uncertainty_reporter,
+        sleeve_authority_reservation_store=sleeve_reservation_store,
+        sleeve_authority_snapshot_reader=sleeve_snapshot_reader,
+        sleeve_broker_evidence_collector=sleeve_broker_collector,
     )
 
 

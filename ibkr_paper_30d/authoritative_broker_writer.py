@@ -17,12 +17,16 @@ from .broker_write_coordinator import (
 from .canonical import sha256_json
 from .coordinated_model_executor import ModelExecutionRequest
 from .continuity_liability import MaximumLiabilityEvidence
+from .contract_ownership import canonical_contract_identity as v4_contract_identity
 from .ibkr_readonly import expected_identity_hash
 from .model_execution_engine import (
     ModelExecutionAuthorityContext,
     ModelExecutionEngine,
 )
-from .open_order_management import ACTIONABLE_ORDER_STATUSES, canonical_open_order
+from .open_order_management import (
+    ACTIONABLE_ORDER_STATUSES,
+    canonical_open_order,
+)
 from .production_authority import (
     ProductionAuthorityDecision,
     ProductionAuthoritySnapshot,
@@ -379,7 +383,9 @@ class AuthoritativeBrokerWriter:
             )
         final_gate_invoked = False
 
-        def final_write_authority_check() -> tuple[str, ...]:
+        def final_write_authority_check(
+            write_context: dict[str, Any] | None = None,
+        ) -> tuple[str, ...]:
             nonlocal decision, evidence, final_gate_invoked
             final_gate_invoked = True
             if self.coordinator.is_execution_expired(request.execution_key):
@@ -401,6 +407,7 @@ class AuthoritativeBrokerWriter:
                 "request_sha256": request.sha256,
                 "writer_thread_id": threading.get_ident(),
                 "execution_client_id": self.execution_client_id,
+                "model_write_context": dict(write_context or {}),
             }
             if final_reasons:
                 return final_reasons
@@ -561,6 +568,12 @@ class AuthoritativeBrokerWriter:
             return self._result(
                 success=False, status="BLOCKED", reasons=reasons, evidence=evidence
             )
+
+        if command.command_type in {
+            BrokerCommandType.REDUCE_POSITION,
+            BrokerCommandType.CLOSE_POSITION,
+        }:
+            return self._execute_position_continuity(command, broker, evidence)
 
         matches = [
             (trade, snapshot)
@@ -737,5 +750,324 @@ class AuthoritativeBrokerWriter:
                 reasons=("CONTINUITY_ORDER_STATE_UNCERTAIN",),
                 order={"orderRef": command.order_ref},
                 evidence=evidence,
+            )
+        return result
+
+    @staticmethod
+    def _position_identity(
+        *, account_identity_sha256: str, contract_sha256: str, quantity: Decimal
+    ) -> str:
+        normalized = quantity.normalize()
+        quantity_text = (
+            str(normalized.quantize(Decimal("1")))
+            if normalized == normalized.to_integral()
+            else format(normalized, "f")
+        )
+        return sha256_json(
+            {
+                "account_identity_sha256": account_identity_sha256,
+                "canonical_contract_sha256": contract_sha256,
+                "signed_quantity": quantity_text,
+            }
+        )
+
+    @staticmethod
+    def _v4_contract_sha256(contract: Any) -> str:
+        return v4_contract_identity(
+            {
+                "conId": int(getattr(contract, "conId", 0) or 0),
+                "secType": str(getattr(contract, "secType", "") or ""),
+                "currency": str(getattr(contract, "currency", "") or ""),
+                "exchange": str(getattr(contract, "exchange", "") or ""),
+                "primaryExchange": str(
+                    getattr(contract, "primaryExchange", "") or ""
+                )
+                or None,
+                "localSymbol": str(
+                    getattr(contract, "localSymbol", "") or ""
+                )
+                or None,
+                "tradingClass": str(
+                    getattr(contract, "tradingClass", "") or ""
+                )
+                or None,
+                "multiplier": str(getattr(contract, "multiplier", "") or "")
+                or None,
+                "comboLegs": [
+                    {
+                        "conId": int(getattr(leg, "conId", 0) or 0),
+                        "ratio": int(getattr(leg, "ratio", 0) or 0),
+                        "action": str(getattr(leg, "action", "") or ""),
+                        "exchange": str(getattr(leg, "exchange", "") or ""),
+                    }
+                    for leg in list(getattr(contract, "comboLegs", None) or [])
+                ],
+            }
+        ).sha256
+
+    def _confirm_immediate_position_fill(
+        self,
+        *,
+        broker: Any,
+        command: AuthorizedBrokerCommand,
+        order_ref: str,
+        order_id: int,
+        before_quantity: Decimal,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        executions = list(broker.reqExecutions())
+        matches: list[Any] = []
+        for fill in executions:
+            execution = getattr(fill, "execution", fill)
+            contract = getattr(fill, "contract", None)
+            raw_side = str(getattr(execution, "side", "") or "").upper()
+            side = "BUY" if raw_side in {"BUY", "BOT"} else "SELL" if raw_side in {"SELL", "SLD"} else raw_side
+            if (
+                str(getattr(execution, "orderRef", "") or "") == order_ref
+                and int(getattr(execution, "orderId", 0) or 0) == order_id
+                and int(getattr(execution, "clientId", -1) or -1)
+                == self.execution_client_id
+                and int(getattr(execution, "permId", 0) or 0) > 0
+                and expected_identity_hash(
+                    str(getattr(execution, "acctNumber", "") or "")
+                )
+                == command.account_identity_sha256
+                and contract is not None
+                and self._v4_contract_sha256(contract)
+                == command.canonical_contract_sha256
+                and side == command.position_action
+            ):
+                matches.append(fill)
+        if not matches:
+            raise RuntimeError("POST_WRITE_POSITION_EXECUTION_UNCONFIRMED")
+        filled = sum(
+            Decimal(
+                str(
+                    getattr(getattr(fill, "execution", fill), "shares", 0)
+                    or 0
+                )
+            )
+            for fill in matches
+        )
+        if filled != command.position_quantity:
+            raise RuntimeError("POST_WRITE_POSITION_FILL_QUANTITY_UNCONFIRMED")
+        perm_ids = {
+            int(
+                getattr(getattr(fill, "execution", fill), "permId", 0) or 0
+            )
+            for fill in matches
+        }
+        if len(perm_ids) != 1:
+            raise RuntimeError("POST_WRITE_POSITION_PERM_ID_AMBIGUOUS")
+
+        post_quantities: list[Decimal] = []
+        for position in list(broker.positions()):
+            contract = getattr(position, "contract", None)
+            if (
+                expected_identity_hash(
+                    str(getattr(position, "account", "") or "")
+                )
+                == command.account_identity_sha256
+                and contract is not None
+                and self._v4_contract_sha256(contract)
+                == command.canonical_contract_sha256
+            ):
+                post_quantities.append(
+                    Decimal(str(getattr(position, "position", 0) or 0))
+                )
+        if len(post_quantities) > 1:
+            raise RuntimeError("POST_WRITE_POSITION_IDENTITY_AMBIGUOUS")
+        post_quantity = post_quantities[0] if post_quantities else Decimal("0")
+        signed_delta = (
+            command.position_quantity
+            if command.position_action == "BUY"
+            else -command.position_quantity
+        )
+        if post_quantity != before_quantity + signed_delta:
+            raise RuntimeError("POST_WRITE_POSITION_QUANTITY_UNCONFIRMED")
+        return (
+            {
+                "orderRef": order_ref,
+                "orderId": order_id,
+                "permId": next(iter(perm_ids)),
+                "status": "Filled",
+            },
+            {
+                "execution_count": len(matches),
+                "filled_quantity": str(filled),
+                "post_write_position_quantity": str(post_quantity),
+            },
+        )
+
+    def _execute_position_continuity(
+        self,
+        command: AuthorizedBrokerCommand,
+        broker: Any,
+        evidence: dict[str, Any],
+    ):
+        from ib_insync import Order
+
+        candidates: list[tuple[Any, str, Decimal]] = []
+        for position in evidence.get("positions", ()):  # fresh, writer-owned read
+            account_hash = expected_identity_hash(
+                str(getattr(position, "account", "") or "")
+            )
+            contract = getattr(position, "contract", None)
+            contract_hash = self._v4_contract_sha256(contract)
+            if (
+                account_hash == command.account_identity_sha256
+                and contract_hash == command.canonical_contract_sha256
+            ):
+                candidates.append(
+                    (
+                        position,
+                        contract_hash,
+                        Decimal(str(getattr(position, "position", 0) or 0)),
+                    )
+                )
+        if len(candidates) != 1:
+            reason = (
+                "CONTINUITY_POSITION_IDENTITY_AMBIGUOUS"
+                if len(candidates) > 1
+                else "CONTINUITY_POSITION_NOT_FOUND"
+            )
+            return self._result(
+                success=False, status="BLOCKED", reasons=(reason,), evidence=evidence
+            )
+        position, contract_hash, signed_quantity = candidates[0]
+        current_identity = self._position_identity(
+            account_identity_sha256=command.account_identity_sha256,
+            contract_sha256=contract_hash,
+            quantity=signed_quantity,
+        )
+        if current_identity != command.position_identity_sha256:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=("CONTINUITY_POSITION_IDENTITY_CHANGED",),
+                evidence=evidence,
+            )
+        if signed_quantity == 0:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=("CONTINUITY_POSITION_NOT_FOUND",),
+                evidence=evidence,
+            )
+        required_action = "SELL" if signed_quantity > 0 else "BUY"
+        assert command.position_action is not None
+        assert command.position_quantity is not None
+        if command.position_action != required_action:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=("POSITION_ACTION_WOULD_INCREASE_EXPOSURE",),
+                evidence=evidence,
+            )
+        current_size = abs(signed_quantity)
+        if command.command_type == BrokerCommandType.REDUCE_POSITION:
+            quantity_valid = command.position_quantity < current_size
+            size_reason = "REDUCE_POSITION_SIZE_CHANGED_BEFORE_SEND"
+        else:
+            quantity_valid = command.position_quantity == current_size
+            size_reason = "CLOSE_POSITION_SIZE_CHANGED_BEFORE_SEND"
+        if not quantity_valid:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=(size_reason,),
+                evidence=evidence,
+            )
+
+        order_ref = f"codex-ibkr-paper-30d-c-{command.sha256[:16]}"
+        try:
+            self.attempt_persister(command, evidence)
+        except Exception:
+            return self._result(
+                success=False,
+                status="BLOCKED",
+                reasons=("CONTINUITY_ATTEMPT_PERSISTENCE_FAILED",),
+                evidence=evidence,
+            )
+        try:
+            order = Order(
+                action=command.position_action,
+                orderType=command.position_order_type,
+                totalQuantity=float(command.position_quantity),
+                transmit=True,
+                whatIf=False,
+                orderRef=order_ref,
+                account=str(getattr(position, "account", "") or ""),
+            )
+            if command.position_limit_price is not None:
+                order.lmtPrice = float(command.position_limit_price)
+            order.orderId = int(broker.client.getReqId())
+            trade = broker.placeOrder(position.contract, order)
+            post_trades = list(broker.reqAllOpenOrders())
+            post_matches = [
+                item
+                for item in post_trades
+                if str(getattr(item.order, "orderRef", "") or "") == order_ref
+                and int(getattr(item.order, "orderId", 0) or 0) == order.orderId
+                and int(getattr(item.order, "permId", 0) or 0) > 0
+                and int(getattr(item.order, "clientId", 0) or 0)
+                == self.execution_client_id
+            ]
+            fill_evidence: dict[str, Any] = {}
+            if len(post_matches) == 1:
+                bound = post_matches[0]
+                order_result = {
+                    "orderRef": order_ref,
+                    "orderId": int(getattr(bound.order, "orderId", 0) or 0),
+                    "permId": int(getattr(bound.order, "permId", 0) or 0),
+                    "status": str(
+                        getattr(bound.orderStatus, "status", "UNKNOWN")
+                        or "UNKNOWN"
+                    ),
+                }
+                post_write_order = canonical_open_order(bound)
+                status = "BROKER_BOUND"
+            elif not post_matches:
+                order_result, fill_evidence = self._confirm_immediate_position_fill(
+                    broker=broker,
+                    command=command,
+                    order_ref=order_ref,
+                    order_id=order.orderId,
+                    before_quantity=signed_quantity,
+                )
+                post_write_order = order_result
+                status = "FILLED"
+            else:
+                raise RuntimeError("POST_WRITE_POSITION_ORDER_IDENTITY_AMBIGUOUS")
+            result = self._result(
+                success=True,
+                status=status,
+                order=order_result,
+                evidence={
+                    **evidence,
+                    "post_write_order": post_write_order,
+                    **fill_evidence,
+                },
+            )
+        except Exception:
+            self._frozen_order_refs.add(order_ref)
+            self._report_uncertainty("CONTINUITY_POSITION_ORDER_STATE_UNCERTAIN")
+            return self._result(
+                success=False,
+                status="UNCERTAIN",
+                reasons=("CONTINUITY_POSITION_ORDER_STATE_UNCERTAIN",),
+                order={"orderRef": order_ref},
+                evidence=evidence,
+            )
+        try:
+            self.result_persister(command, result, result.broker_validation)
+        except Exception:
+            self._frozen_order_refs.add(order_ref)
+            self._report_uncertainty("CONTINUITY_POSITION_ORDER_STATE_UNCERTAIN")
+            return self._result(
+                success=False,
+                status="UNCERTAIN",
+                reasons=("CONTINUITY_POSITION_ORDER_STATE_UNCERTAIN",),
+                order={"orderRef": order_ref},
+                evidence=result.broker_validation,
             )
         return result

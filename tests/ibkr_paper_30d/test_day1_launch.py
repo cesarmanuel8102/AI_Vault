@@ -4,7 +4,7 @@ import hashlib
 import json
 import os
 import time
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -160,6 +160,104 @@ def test_successor_restart_prioritizes_due_continuity_when_market_closed() -> No
     assert result["status"] == "CONTINUITY_ACTION_DUE"
     assert result["continuity_actions_allowed"] is True
     assert result["new_extended_entries_allowed"] is False
+
+
+def test_schema_mode_accepts_v4_only_for_explicit_successor(tmp_path) -> None:
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+    from ibkr_paper_30d.persistence import Database
+    from ibkr_paper_30d.successor_schema import install_successor_schema_v2
+
+    path = tmp_path / "schema-mode.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+        launch_module._validate_launch_database_mode(db, successor_mode=True)
+        with pytest.raises(LaunchError, match="DATABASE_SCHEMA_INVALID"):
+            launch_module._validate_launch_database_mode(db, successor_mode=False)
+
+
+def test_legacy_launcher_rejects_committed_successor_before_schema_gate(tmp_path) -> None:
+    from ibkr_paper_30d.multi_universe_models import TransitionPhase, TransitionTarget
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+    from ibkr_paper_30d.multi_universe_transition import MultiUniverseTransitionCoordinator
+    from ibkr_paper_30d.persistence import Database
+    from ibkr_paper_30d.successor_schema import install_successor_schema_v2
+
+    target = TransitionTarget(
+        transition_id="transition-launch-guard",
+        predecessor_epoch_id="AUTONOMY_EPOCH_2",
+        successor_epoch_id="AUTONOMY_EPOCH_3",
+        successor_definition_sha256="1" * 64,
+        owner_authorization_sha256="2" * 64,
+        approved_git_head="3" * 40,
+        account_identity_sha256="4" * 64,
+        clock_authority_sha256="5" * 64,
+        regular_sleeve_authority_sha256="6" * 64,
+        extended_sleeve_authority_sha256="7" * 64,
+        economic_risk_authorization_sha256="8" * 64,
+        certified_family_set_sha256="9" * 64,
+        canary_authorization_sha256="a" * 64,
+        writer_binding_sha256="b" * 64,
+    )
+    path = tmp_path / "retired.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+        coordinator = MultiUniverseTransitionCoordinator(db)
+        coordinator.prepare(target)
+        for phase in tuple(TransitionPhase)[1:6]:
+            evidence = {
+                "phase_evidence_sha256": phase.value.encode().hex().ljust(64, "0")[:64],
+                "canary_flat": True,
+                "continuity_exact": True,
+            }
+            if phase is TransitionPhase.CANARY_PASS:
+                evidence["canary_status"] = "PASS"
+            if phase is TransitionPhase.PREDECESSOR_RETIRED:
+                evidence.update(
+                    retirement_status="PASS",
+                    retirement_tombstone_sha256="c" * 64,
+                )
+            if phase is TransitionPhase.SUCCESSOR_COMMITTED:
+                evidence["successor_commit_sha256"] = "d" * 64
+            coordinator.advance(phase, evidence)
+
+        with pytest.raises(LaunchError, match="PREDECESSOR_RETIRED"):
+            launch_module._validate_launch_database_mode(db, successor_mode=False)
+
+
+def test_launch_authority_file_cannot_self_attest_runtime_decision(tmp_path) -> None:
+    authority = tmp_path / "authority.json"
+    authority.write_text(
+        json.dumps(
+            {
+                "schema": "MULTI_UNIVERSE_LAUNCH_AUTHORITY_V1",
+                "successor_epoch_id": "AUTONOMY_EPOCH_3",
+                "successor_definition_sha256": "1" * 64,
+                "initial_activation": False,
+                "owner_authorization_receipt_sha256": "2" * 64,
+                "evidence": asdict(_multi_universe_launch_evidence(
+                    transition_phase="ACTIVE",
+                    predecessor_path_active=False,
+                    same_committed_successor=True,
+                )),
+            }
+        ),
+        encoding="utf-8",
+    )
+    config = SimpleNamespace(
+        multi_universe_authority_path=authority,
+        target_successor_epoch_id="AUTONOMY_EPOCH_3",
+        target_successor_definition_sha256="1" * 64,
+    )
+
+    envelope = launch_module._load_multi_universe_launch_authority(config)
+
+    assert "status" not in envelope
+    assert "evidence" not in envelope
+    assert envelope["owner_authorization_receipt_sha256"] == "2" * 64
 
 
 from ibkr_paper_30d.execution_lock import ExecutionLock, LockIntegrityError, LockOwner

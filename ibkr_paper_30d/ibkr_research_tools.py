@@ -17,6 +17,7 @@ from .autonomous_research import (
     ResearchRequest,
     ResearchResult,
     ResearchTool,
+    capital_equity_for_sleeve,
 )
 from .canonical import sha256_json
 from .ibkr_readonly import expected_identity_hash
@@ -172,6 +173,13 @@ class IBKRResearchToolbox:
                 configured_hash = store.load_hash()
         self.expected_account_hash = configured_hash.lower() if configured_hash else None
         self.risk_engine = CapitalBoundaryRiskEngine.aggressive_month1()
+
+    @staticmethod
+    def _capital_equity(
+        bundle: TraderInputBundle,
+        sleeve: Any,
+    ) -> Decimal:
+        return capital_equity_for_sleeve(bundle, sleeve)
 
     def manifest(self) -> list[dict[str, Any]]:
         return [
@@ -353,7 +361,7 @@ class IBKRResearchToolbox:
         *,
         ib: Any | None = None,
     ) -> ProposalValidation:
-        equity = Decimal(str(bundle.experiment_subledger_snapshot.get("equity", "0")))
+        equity = self._capital_equity(bundle, proposal.capital_sleeve)
         structural_floor, structural_reason = self._structure_loss_floor(proposal, bundle)
         if structural_reason is not None:
             return ProposalValidation(
@@ -450,7 +458,7 @@ class IBKRResearchToolbox:
     ) -> ProposalValidation:
         from ib_insync import Order
 
-        equity = Decimal(str(bundle.experiment_subledger_snapshot.get("equity", "0")))
+        equity = self._capital_equity(bundle, action.capital_sleeve)
         owns_connection = ib is None
         broker = ib or self._connect()
         try:
@@ -759,9 +767,7 @@ class IBKRResearchToolbox:
                 "maintMarginChange": getattr(state, "maintMarginChange", None),
                 "warningText": getattr(state, "warningText", None),
             }
-            equity = Decimal(
-                str(bundle.experiment_subledger_snapshot.get("equity", "0"))
-            )
+            equity = self._capital_equity(bundle, action.capital_sleeve)
             feasibility_ok, reasons = self._feasibility_common(
                 evidence, equity=equity
             )
@@ -1102,6 +1108,43 @@ class IBKRResearchToolbox:
                 "global_broker_balances_redacted": True,
                 "server_time_utc": server_time_utc,
             }
+        finally:
+            ib.disconnect()
+
+    def account_reconciliation_snapshot(self) -> dict[str, Any]:
+        """Collect host-only PAPER cash evidence, never exposed as a model tool."""
+
+        ib = self._connect()
+        try:
+            balances: dict[str, Decimal] = {}
+            for item in ib.accountSummary():
+                if str(getattr(item, "tag", "")) != "TotalCashValue":
+                    continue
+                currency = str(getattr(item, "currency", "") or "").upper()
+                if not currency or currency == "BASE":
+                    continue
+                value = Decimal(str(getattr(item, "value", "")))
+                if not value.is_finite():
+                    raise ValueError("BROKER_CASH_BALANCE_INVALID")
+                balances[currency] = balances.get(currency, Decimal("0")) + value
+            if not balances:
+                raise ValueError("BROKER_CASH_BALANCES_REQUIRED")
+            server_time = ib.reqCurrentTime()
+            observed_at = (
+                server_time.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+                if hasattr(server_time, "astimezone")
+                else str(server_time)
+            )
+            body = {
+                "paper_only": True,
+                "account_identity_sha256": self.expected_account_hash,
+                "observed_at_utc": observed_at,
+                "currency_balances": [
+                    {"currency": currency, "amount": str(amount)}
+                    for currency, amount in sorted(balances.items())
+                ],
+            }
+            return {**body, "broker_snapshot_sha256": sha256_json(body)}
         finally:
             ib.disconnect()
 

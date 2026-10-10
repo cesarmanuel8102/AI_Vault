@@ -1,6 +1,6 @@
 # Continuous Multi-Universe Implementation Report
 
-Date: 2026-10-09 ET
+Date: 2026-10-10 ET
 
 ## Scope
 
@@ -20,7 +20,8 @@ The implementation was developed only in
 - Approved design HEAD: `c923765574c1dda57789ecfa5c408ed9fd619464`
 - Implementation-plan HEAD: `11b0e14feea224898cf38f349fbd200142612579`
 - Operational base HEAD: `1e3286dc336ca8ca01930044b124f45884aab257`
-- Code-complete HEAD before this evidence commit: `131c96a6d0ef2970d1daef2664074f3ad3a12865`
+- Original code-complete HEAD: `131c96a6d0ef2970d1daef2664074f3ad3a12865`
+- Adversarial fix-pass parent HEAD: `07fe97e230373e7ac785e81aa5275ab3997f40a3`
 - Final evidence HEAD: the Git commit containing this report
 - Branch: `codex/continuous-multi-universe-design`
 
@@ -37,19 +38,22 @@ Implementation commits, in order:
 9. `9cdcc13` - add recoverable multi-universe transition
 10. `97eb44b` - prepare bounded PAPER canaries
 11. `131c96a` - compose continuous multi-universe runtime
+12. Final evidence commit - close the adversarial authority and lifecycle findings
 
 ## Verification Evidence
 
-- Directly affected matrix: `624 passed, 0 failed, 1308 deselected`
-- Full regression: `1932 passed, 0 failed, 0 skipped`
+- Critical ownership/ledger/reconciliation/state matrix: `105 passed, 0 failed`
+- Changed-file matrix before manifest regeneration: `461 passed`; the expected
+  15 launcher failures were exclusively `IMMUTABLE_KERNEL_MANIFEST_MISMATCH`
+- Full regression after manifest regeneration: `1972 passed, 0 failed, 0 skipped`
 - Kernel closure and runtime provenance: `14 passed, 0 failed`
 - PowerShell AST: `13/13` production IBKR scripts passed under both Windows
   PowerShell 5.1 and PowerShell 7
 - Kernel manifest entries: `86`
 - Kernel manifest file SHA-256:
-  `8dce7764a5382148d571be3db8a5009670760be8ecd99121c9f411b776c32b85`
+  `e282cbbbfd27a797bb8200e0697e7d2104d0f1b3b038b94f90cbac4297887acd`
 - Declared kernel SHA-256:
-  `146788e371cc6ecfa74d3def650ba567a55c28069519a864c39e700bbfbc0691`
+  `34b9c4773736b65b053d1c169ea75f089f2fa1ca3e01d6ae525a96cb8b8abe02`
 - `git diff --check`: PASS
 - High-confidence secret matches in changed authority files: `0`
 - Added LIVE-port or global-cancel paths: `0`
@@ -59,6 +63,28 @@ The immutable closure explicitly includes the multi-universe launcher,
 maintenance entrypoint, predecessor-retirement authority, canary authority,
 transition authority, sleeve ledgers, ownership, capability, reconciliation,
 reporting, writer, and continuity dependencies.
+
+## Adversarial Fix Pass
+
+The final review identified and repaired authority gaps that broad happy-path
+coverage had not exposed:
+
+- liability reservation and contract ownership are now one atomic transaction;
+- open-order and position actions require existing exact ownership and never
+  create a new reservation;
+- terminal reconciliation requires two distinct fresh broker observations,
+  releases every reservation on a flat contract, releases BAG parent and legs
+  as one group, and remains idempotent;
+- released ownership remains available only for historical execution, fee, and
+  financing attribution, never for current positions or open orders;
+- BAG ownership binds the exact canonical parent and every resolved leg before
+  the SQLite write transaction;
+- account cash reconciliation is collected from host-only PAPER evidence and
+  is not exposed as a model research tool;
+- immediate fills, model-authored position exits, adapter identity, launch
+  authority, broker snapshots, and exact canonical contracts are hash-bound
+  through the production writer path; and
+- V4 uses sleeve-local equity as authority and ignores legacy aggregate equity.
 
 ## Architecture Result
 
@@ -70,9 +96,11 @@ reporting, writer, and continuity dependencies.
   offset grants authority.
 - Every contract and descendant lineage has one exact sleeve owner.
 - Research visibility is separate from executable family certification.
-- Initial activation requires an authenticated extended-family session within
-  24 hours; an exact ordinary restart does not repeat that predicate and may
-  enter `MARKET_CLOSED_IDLE` while preserving reconciliation and continuity.
+- The initial-activation decision type requires an authenticated
+  extended-family session within 24 hours; actual operational proof remains a
+  deployment-time requirement. An exact ordinary restart does not repeat that
+  predicate and may enter `MARKET_CLOSED_IDLE` while preserving reconciliation
+  and continuity.
 - The Owner economic-risk authorization binds both USD 500 allocations, the
   `AGGRESSIVE_CAPITAL_BOUNDARY_V1` maximum liability ratio, and an explicit
   threshold-or-`DISABLED` choice for daily loss and drawdown.
@@ -124,6 +152,9 @@ are not implementation mutations and granted no V4 authority.
 - Initial operational activation still requires real Owner receipts, current
   PAPER capability/session evidence, transition evidence, and a separately
   authorized maintenance window.
+- The current implementation must not be described as operationally proving
+  initial family availability until that fresh authenticated session evidence
+  is collected during the separately authorized installation/canary phase.
 - No test can guarantee future availability of IBKR Gateway, market data,
   external alerts, the Codex provider, Windows scheduling, or network service.
 - Existing Pydantic field-shadowing warnings remain known non-failing technical
@@ -146,7 +177,7 @@ authorized or performed by this report.
 - `CONTRACT_OWNERSHIP=PASS`
 - `PRODUCT_FAMILY_CERTIFICATION=PASS_SIMULATION_ONLY`
 - `OWNER_ECONOMIC_RISK_AUTHORIZATION=PASS_CODE_ONLY_RECEIPT_PENDING`
-- `INITIAL_ACTIVATION_AVAILABILITY=PASS_SIMULATION_ONLY`
+- `INITIAL_ACTIVATION_AVAILABILITY=BLOCK_PENDING_REAL_RUNTIME_EVIDENCE`
 - `ORDINARY_RESTART_CLOSED_MARKET=PASS`
 - `MODEL_AUTONOMY_PRESERVED=PASS`
 - `SOLE_WRITE_CAPABLE_SESSION=PASS`

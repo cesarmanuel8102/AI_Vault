@@ -8,6 +8,7 @@ import pytest
 
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
 from ibkr_paper_30d.contract_ownership import (
+    BrokerLineageEvidence,
     ContractOwnershipStore,
     OwnershipError,
     ReleaseEvidence,
@@ -184,10 +185,15 @@ def test_verified_broker_descendants_inherit_source_sleeve(tmp_path, event_type)
         store = ContractOwnershipStore(db)
         store.claim(CapitalSleeve.REGULAR_SLEEVE, source)
         receipt = store.record_descendant(
-            source_contract_sha256=source.sha256,
             descendant=descendant,
-            lineage_event=event_type,
-            lineage_verified=True,
+            evidence=BrokerLineageEvidence(
+                source_contract_sha256=source.sha256,
+                descendant_contract_sha256=descendant.sha256,
+                lineage_event=event_type,
+                broker_event_id=f"event-{event_type}",
+                broker_snapshot_sha256="e" * 64,
+                observed_at_utc="2026-10-09T18:00:00Z",
+            ),
         )
         assert receipt.status == "DESCENDANT_CLAIMED"
         record = store.projection().owner_of(descendant.sha256)
@@ -199,15 +205,37 @@ def test_unverified_descendant_is_unattributed_and_not_claimed(tmp_path) -> None
     path = tmp_path / "unattributed.sqlite3"
     _install(path)
     with Database.open(path) as db:
-        receipt = ContractOwnershipStore(db).record_descendant(
-            source_contract_sha256="a" * 64,
-            descendant=_contract(6001),
-            lineage_event="BROKER_CORRECTION",
-            lineage_verified=False,
+        with pytest.raises(TypeError):
+            ContractOwnershipStore(db).record_descendant(
+                source_contract_sha256="a" * 64,
+                descendant=_contract(6001),
+                lineage_event="BROKER_CORRECTION",
+                lineage_verified=True,
+            )
+        assert ContractOwnershipStore(db).projection().active_contracts == ()
+
+
+def test_lineage_receipt_must_bind_exact_descendant(tmp_path) -> None:
+    path = tmp_path / "lineage-mismatch.sqlite3"
+    _install(path)
+    source = _contract(4001, sec_type="OPT")
+    descendant = _contract(5001)
+    with Database.open(path) as db:
+        store = ContractOwnershipStore(db)
+        store.claim(CapitalSleeve.REGULAR_SLEEVE, source)
+        receipt = store.record_descendant(
+            descendant=descendant,
+            evidence=BrokerLineageEvidence(
+                source_contract_sha256=source.sha256,
+                descendant_contract_sha256="f" * 64,
+                lineage_event="OPTION_ASSIGNMENT",
+                broker_event_id="assignment-1",
+                broker_snapshot_sha256="e" * 64,
+                observed_at_utc="2026-10-09T18:00:00Z",
+            ),
         )
         assert receipt.status == "BLOCK"
-        assert receipt.reason_codes == ("UNATTRIBUTED_ACCOUNT_EVENT",)
-        assert ContractOwnershipStore(db).projection().active_contracts == ()
+        assert receipt.reason_codes == ("LINEAGE_EVIDENCE_MISMATCH",)
 
 
 def _release(**updates) -> ReleaseEvidence:

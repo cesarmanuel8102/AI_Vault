@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import inspect
 import os
 import sqlite3
 from contextlib import contextmanager
@@ -68,6 +69,45 @@ class WriterOwnedModelExecutionMechanics:
 
     execution_client_id = EXECUTION_CLIENT_ID
 
+    @staticmethod
+    def _authority_contract(
+        contract: Any,
+        bundle: TraderInputBundle,
+    ) -> dict[str, Any]:
+        if not bundle.multi_sleeve_v4_active:
+            return canonical_contract_identity(contract)
+        from .contract_ownership import canonical_contract_identity as v4_identity
+
+        return v4_identity(
+            {
+                "conId": int(getattr(contract, "conId", 0) or 0),
+                "secType": str(getattr(contract, "secType", "") or ""),
+                "currency": str(getattr(contract, "currency", "") or ""),
+                "exchange": str(getattr(contract, "exchange", "") or ""),
+                "primaryExchange": str(
+                    getattr(contract, "primaryExchange", "") or ""
+                )
+                or None,
+                "localSymbol": str(getattr(contract, "localSymbol", "") or "")
+                or None,
+                "tradingClass": str(
+                    getattr(contract, "tradingClass", "") or ""
+                )
+                or None,
+                "multiplier": str(getattr(contract, "multiplier", "") or "")
+                or None,
+                "comboLegs": [
+                    {
+                        "conId": int(getattr(leg, "conId", 0) or 0),
+                        "ratio": int(getattr(leg, "ratio", 0) or 0),
+                        "action": str(getattr(leg, "action", "") or ""),
+                        "exchange": str(getattr(leg, "exchange", "") or ""),
+                    }
+                    for leg in list(getattr(contract, "comboLegs", None) or [])
+                ],
+            }
+        ).model_dump(mode="json")
+
     def __init__(
         self,
         toolbox: IBKRResearchToolbox,
@@ -91,7 +131,7 @@ class WriterOwnedModelExecutionMechanics:
         self.operator_control_check = operator_control_check
         self.continuity_binding_service = continuity_binding_service
         self._writer_owned_broker: Any | None = None
-        self._final_write_authority_check: Callable[[], tuple[str, ...]] | None = None
+        self._final_write_authority_check: Callable[..., tuple[str, ...]] | None = None
 
     @staticmethod
     def _fills_payload(
@@ -179,11 +219,27 @@ class WriterOwnedModelExecutionMechanics:
         except Exception as exc:
             return (f"FRESH_OPERATOR_CONTROL_CHECK_FAILED:{type(exc).__name__}",)
 
-    def _final_write_authority_reasons(self) -> tuple[str, ...]:
+    def _final_write_authority_reasons(
+        self, write_context: dict[str, Any] | None = None
+    ) -> tuple[str, ...]:
         if self._final_write_authority_check is None:
             return ()
         try:
-            return tuple(self._final_write_authority_check())
+            parameters = inspect.signature(
+                self._final_write_authority_check
+            ).parameters.values()
+            accepts_context = any(
+                parameter.kind
+                in {
+                    inspect.Parameter.POSITIONAL_ONLY,
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                    inspect.Parameter.VAR_POSITIONAL,
+                }
+                for parameter in parameters
+            )
+            if write_context is None or not accepts_context:
+                return tuple(self._final_write_authority_check())
+            return tuple(self._final_write_authority_check(write_context))
         except Exception as exc:
             return (f"FINAL_WRITE_AUTHORITY_CHECK_FAILED:{type(exc).__name__}",)
 
@@ -200,7 +256,7 @@ class WriterOwnedModelExecutionMechanics:
     def _using_writer_owned_broker(
         self,
         broker: Any,
-        final_write_authority_check: Callable[[], tuple[str, ...]] | None,
+        final_write_authority_check: Callable[..., tuple[str, ...]] | None,
     ):
         if broker is None:
             raise ValueError("writer-owned broker is required")
@@ -222,7 +278,7 @@ class WriterOwnedModelExecutionMechanics:
         *,
         continuity_plan: CodexOrderContinuityPlan | None = None,
         invocation_id: str | None = None,
-        final_write_authority_check: Callable[[], tuple[str, ...]] | None = None,
+        final_write_authority_check: Callable[..., tuple[str, ...]] | None = None,
     ) -> PaperExecutionResult:
         if bundle.multi_sleeve_v4_active and final_write_authority_check is None:
             return PaperExecutionResult(
@@ -248,7 +304,7 @@ class WriterOwnedModelExecutionMechanics:
         decision: TraderDecision,
         *,
         invocation_id: str | None = None,
-        final_write_authority_check: Callable[[], tuple[str, ...]] | None = None,
+        final_write_authority_check: Callable[..., tuple[str, ...]] | None = None,
     ) -> PaperExecutionResult:
         if bundle.multi_sleeve_v4_active and final_write_authority_check is None:
             return PaperExecutionResult(
@@ -273,7 +329,7 @@ class WriterOwnedModelExecutionMechanics:
         bundle: TraderInputBundle,
         decision: TraderDecision,
         *,
-        final_write_authority_check: Callable[[], tuple[str, ...]] | None = None,
+        final_write_authority_check: Callable[..., tuple[str, ...]] | None = None,
     ) -> PaperExecutionResult:
         if bundle.multi_sleeve_v4_active and final_write_authority_check is None:
             return PaperExecutionResult(
@@ -691,7 +747,16 @@ class WriterOwnedModelExecutionMechanics:
                 modified.tif = requested_tif
                 modified.goodTillDate = requested_good_till
 
-            final_authority_reasons = self._final_write_authority_reasons()
+            final_authority_reasons = self._final_write_authority_reasons(
+                {
+                    "canonical_contract": self._authority_contract(
+                        selected_trade.contract, bundle
+                    ),
+                    "order_ref": action.order_ref,
+                    "action": str(getattr(modified, "action", "") or "").upper(),
+                    "quantity": str(requested_total),
+                }
+            )
             if final_authority_reasons:
                 return PaperExecutionResult(
                     success=False,
@@ -991,7 +1056,20 @@ class WriterOwnedModelExecutionMechanics:
                     order={},
                     broker_validation={},
                 )
-            final_authority_reasons = self._final_write_authority_reasons()
+            final_authority_reasons = self._final_write_authority_reasons(
+                {
+                    "canonical_contract": self._authority_contract(
+                        selected_trade.contract, bundle
+                    ),
+                    "order_ref": action.order_ref,
+                    "action": str(
+                        getattr(selected_trade.order, "action", "") or ""
+                    ).upper(),
+                    "quantity": str(
+                        getattr(selected_trade.order, "totalQuantity", "0") or "0"
+                    ),
+                }
+            )
             if final_authority_reasons:
                 return PaperExecutionResult(
                     success=False,
@@ -1383,7 +1461,16 @@ class WriterOwnedModelExecutionMechanics:
                             "trade_contract_market_data": live_quote,
                         },
                     )
-            final_authority_reasons = self._final_write_authority_reasons()
+            final_authority_reasons = self._final_write_authority_reasons(
+                {
+                    "canonical_contract": self._authority_contract(
+                        contract, bundle
+                    ),
+                    "order_ref": order_ref,
+                    "action": proposal.action.upper(),
+                    "quantity": str(proposal.quantity),
+                }
+            )
             if final_authority_reasons:
                 if pending_binding is not None:
                     assert self.continuity_binding_service is not None
@@ -1735,7 +1822,16 @@ class WriterOwnedModelExecutionMechanics:
                         "trade_contract_market_data": live_quote,
                     },
                 )
-            final_authority_reasons = self._final_write_authority_reasons()
+            final_authority_reasons = self._final_write_authority_reasons(
+                {
+                    "canonical_contract": self._authority_contract(
+                        execution_contract, bundle
+                    ),
+                    "order_ref": order_ref,
+                    "action": action.action.upper(),
+                    "quantity": str(action.quantity),
+                }
+            )
             if final_authority_reasons:
                 return PaperExecutionResult(
                     success=False,

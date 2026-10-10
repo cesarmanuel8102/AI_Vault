@@ -6,6 +6,7 @@ import pytest
 
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
 from ibkr_paper_30d.multi_universe_models import CapitalSleeve
+from ibkr_paper_30d.contract_ownership import ContractOwnershipStore, canonical_contract_identity
 from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.sleeve_ledger import (
@@ -157,5 +158,85 @@ def test_one_sleeve_cannot_spend_or_pledge_the_others_currency(tmp_path) -> None
 
         assert store.project(CapitalSleeve.REGULAR_SLEEVE).balance("EUR") == Decimal("40.00")
         assert store.project(CapitalSleeve.EXTENDED_SLEEVE).balance("EUR") == Decimal("0.00")
+    finally:
+        db.close()
+
+
+def test_broker_snapshot_projects_owned_positions_orders_fills_and_fees(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    contract = canonical_contract_identity(
+        {
+            "conId": 9001,
+            "secType": "FUT",
+            "currency": "USD",
+            "exchange": "GLOBEX",
+            "localSymbol": "MESZ6",
+            "multiplier": "5",
+        }
+    )
+    try:
+        store.bootstrap_regular(_carry())
+        store.bootstrap_extended()
+        ownership = ContractOwnershipStore(db)
+        ownership.claim(CapitalSleeve.EXTENDED_SLEEVE, contract)
+        receipt = store.reconcile_broker_snapshot(
+            {
+                "positions": [
+                    {
+                        "contract_identity_sha256": contract.sha256,
+                        "quantity": "1",
+                        "multiplier": "5",
+                        "average_cost": "10",
+                        "mark": "11",
+                        "market_value_usd": "55",
+                    }
+                ],
+                "open_orders": [
+                    {"contract_identity_sha256": contract.sha256}
+                ],
+                "executions": [
+                    {
+                        "contract_identity_sha256": contract.sha256,
+                        "execution_id_hash": "e" * 64,
+                        "commission": "1.25",
+                    }
+                ],
+            },
+            ownership.projection(),
+        )
+        state = store.project(CapitalSleeve.EXTENDED_SLEEVE)
+        assert receipt[CapitalSleeve.EXTENDED_SLEEVE.value]
+        assert state.positions[0].contract_identity_sha256 == contract.sha256
+        assert state.open_order_count == 1
+        assert state.fill_count == 1
+        assert state.fees_usd == Decimal("1.25")
+
+        again = store.reconcile_broker_snapshot(
+            {
+                "positions": [
+                    {
+                        "contract_identity_sha256": contract.sha256,
+                        "quantity": "1",
+                        "multiplier": "5",
+                        "average_cost": "10",
+                        "mark": "11",
+                        "market_value_usd": "55",
+                    }
+                ],
+                "open_orders": [
+                    {"contract_identity_sha256": contract.sha256}
+                ],
+                "executions": [
+                    {
+                        "contract_identity_sha256": contract.sha256,
+                        "execution_id_hash": "e" * 64,
+                        "commission": "1.25",
+                    }
+                ],
+            },
+            ownership.projection(),
+        )
+        assert again == receipt
+        assert state.event_count + 0 == store.project(CapitalSleeve.EXTENDED_SLEEVE).event_count
     finally:
         db.close()

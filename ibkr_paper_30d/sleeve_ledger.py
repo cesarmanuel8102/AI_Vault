@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from decimal import Decimal
-from typing import Any
+from typing import Any, Mapping
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -357,6 +357,192 @@ class SleeveLedgerStore:
             )
         return receipt.event_id
 
+    def reserve_liability_in_transaction(
+        self,
+        sleeve: CapitalSleeve,
+        *,
+        amount_usd: Decimal,
+        reservation_key: str,
+    ) -> SleeveLedgerReceipt:
+        """Append one liability reservation inside the caller's transaction."""
+
+        if not self.db.connection.in_transaction:
+            raise SleeveLedgerError("ATOMIC_RESERVATION_TRANSACTION_REQUIRED")
+        state = self.project(sleeve)
+        if not state.initialized:
+            raise SleeveLedgerError("SLEEVE_NOT_INITIALIZED")
+        amount = normalized_decimal(amount_usd)
+        if amount < 0:
+            raise SleeveLedgerError("INVALID_RESERVED_LIABILITY")
+        if state.reserved_liability_usd + amount > state.allocation_usd:
+            raise SleeveLedgerError("SLEEVE_AGGREGATE_LIABILITY_EXCEEDED")
+        return self._insert(
+            sleeve=sleeve,
+            currency="USD",
+            event_type="LIABILITY_RESERVED",
+            payload={
+                "amount_usd": str(amount),
+                "collateral_sleeve": sleeve.value,
+                "reservation_key": reservation_key,
+            },
+        )
+
+    def release_liability_in_transaction(
+        self,
+        sleeve: CapitalSleeve,
+        *,
+        amount_usd: Decimal,
+        reservation_key: str,
+        broker_snapshot_sha256: str,
+    ) -> SleeveLedgerReceipt:
+        """Release one proven-terminal reservation in the caller's transaction."""
+
+        if not self.db.connection.in_transaction:
+            raise SleeveLedgerError("ATOMIC_RESERVATION_TRANSACTION_REQUIRED")
+        state = self.project(sleeve)
+        amount = normalized_decimal(amount_usd)
+        if amount < 0 or amount > state.reserved_liability_usd:
+            raise SleeveLedgerError("INVALID_RELEASED_LIABILITY")
+        return self._insert(
+            sleeve=sleeve,
+            currency="USD",
+            event_type="LIABILITY_RELEASED",
+            payload={
+                "amount_usd": str(amount),
+                "reservation_key": reservation_key,
+                "broker_snapshot_sha256": broker_snapshot_sha256,
+            },
+        )
+
+    def reconcile_broker_snapshot(
+        self,
+        snapshot: Mapping[str, Any],
+        ownership: Any,
+    ) -> dict[str, str]:
+        """Project one complete broker snapshot into both owned sleeve ledgers."""
+
+        ownership_data = (
+            ownership.model_dump(mode="python")
+            if hasattr(ownership, "model_dump")
+            else dict(ownership)
+        )
+        owner_by_contract = {
+            str(item["contract_identity_sha256"]): CapitalSleeve(item["sleeve"])
+            for item in ownership_data.get("active_contracts", ())
+        }
+        historical_owner_by_contract = dict(owner_by_contract)
+        historical_owner_by_contract.update(
+            {
+                str(item["contract_identity_sha256"]): CapitalSleeve(
+                    item["sleeve"]
+                )
+                for item in ownership_data.get("released_contracts", ())
+            }
+        )
+        per_sleeve: dict[CapitalSleeve, dict[str, Any]] = {
+            sleeve: {
+                "positions": [],
+                "open_order_count": 0,
+                "execution_ids": set(),
+                "fees_usd": Decimal("0"),
+            }
+            for sleeve in CapitalSleeve
+        }
+
+        def owner(
+            raw: Mapping[str, Any], *, allow_released: bool = False
+        ) -> CapitalSleeve:
+            contract_hash = str(raw.get("contract_identity_sha256") or "")
+            sleeve = (
+                historical_owner_by_contract.get(contract_hash)
+                if allow_released
+                else owner_by_contract.get(contract_hash)
+            )
+            if sleeve is None:
+                raise SleeveLedgerError("UNATTRIBUTED_ACCOUNT_EVENT")
+            return sleeve
+
+        for raw in snapshot.get("positions", ()) or ():
+            quantity = normalized_decimal(raw.get("quantity"))
+            if quantity == 0:
+                continue
+            sleeve = owner(raw)
+            per_sleeve[sleeve]["positions"].append(
+                CarryForwardPosition(
+                    contract_identity_sha256=str(
+                        raw["contract_identity_sha256"]
+                    ),
+                    quantity=quantity,
+                    multiplier=normalized_decimal(raw.get("multiplier") or "1"),
+                    average_cost=normalized_decimal(
+                        raw.get("average_cost") or "0"
+                    ),
+                    mark=normalized_decimal(raw.get("mark") or "0"),
+                    market_value_usd=normalized_decimal(
+                        raw.get("market_value_usd") or "0"
+                    ),
+                )
+            )
+        for raw in snapshot.get("open_orders", ()) or ():
+            per_sleeve[owner(raw)]["open_order_count"] += 1
+        for raw in snapshot.get("executions", ()) or ():
+            sleeve = owner(raw, allow_released=True)
+            execution_id = str(raw.get("execution_id_hash") or "")
+            if execution_id:
+                per_sleeve[sleeve]["execution_ids"].add(execution_id)
+            commission = raw.get("commission")
+            if commission not in {None, ""}:
+                per_sleeve[sleeve]["fees_usd"] += abs(
+                    normalized_decimal(commission)
+                )
+
+        snapshot_sha256 = sha256_json(dict(snapshot))
+        receipts: dict[str, str] = {}
+        with self.db.transaction():
+            events = self._events()
+            for sleeve in CapitalSleeve:
+                state = self.project(sleeve)
+                if not state.initialized:
+                    raise SleeveLedgerError("SLEEVE_NOT_INITIALIZED")
+                prior = next(
+                    (
+                        event
+                        for event in reversed(events)
+                        if event["sleeve"] == sleeve.value
+                        and event["event_type"] == "BROKER_STATE_RECONCILED"
+                        and event.get("broker_snapshot_sha256") == snapshot_sha256
+                    ),
+                    None,
+                )
+                if prior is not None:
+                    receipts[sleeve.value] = str(prior["event_sha256"])
+                    continue
+                data = per_sleeve[sleeve]
+                receipt = self._insert(
+                    sleeve=sleeve,
+                    currency="USD",
+                    event_type="BROKER_STATE_RECONCILED",
+                    payload={
+                        "broker_snapshot_sha256": snapshot_sha256,
+                        "ownership_projection_sha256": str(
+                            ownership_data.get("projection_sha256")
+                            or sha256_json(ownership_data)
+                        ),
+                        "positions": [
+                            item.model_dump(mode="json")
+                            for item in sorted(
+                                data["positions"],
+                                key=lambda item: item.contract_identity_sha256,
+                            )
+                        ],
+                        "open_order_count": data["open_order_count"],
+                        "fill_count": len(data["execution_ids"]),
+                        "fees_usd": str(data["fees_usd"]),
+                    },
+                )
+                receipts[sleeve.value] = receipt.event_sha256
+        return receipts
+
     def project(self, sleeve: CapitalSleeve) -> SleeveLedgerState:
         if not isinstance(sleeve, CapitalSleeve):
             sleeve = CapitalSleeve(sleeve)
@@ -414,6 +600,14 @@ class SleeveLedgerStore:
                 open_orders = max(0, open_orders - 1)
             elif event_type == "FILL_RECORDED":
                 fill_count += 1
+            elif event_type == "BROKER_STATE_RECONCILED":
+                positions = tuple(
+                    CarryForwardPosition.model_validate(item)
+                    for item in event.get("positions", ())
+                )
+                open_orders = int(event.get("open_order_count") or 0)
+                fill_count = int(event.get("fill_count") or 0)
+                fees = normalized_decimal(event.get("fees_usd") or "0")
 
         currency_balances = tuple(
             CurrencyBalance(currency=currency, amount=normalized_money(amount))

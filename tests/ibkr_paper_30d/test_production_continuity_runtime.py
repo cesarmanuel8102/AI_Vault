@@ -27,13 +27,133 @@ from ibkr_paper_30d.production_continuity_runtime import (
     ProductionContinuityPoller,
     ProductionCriticalAlertReporter,
     _ProductionSnapshotReader,
+    _ProductionSleeveAuthoritySnapshotReader,
     build_ibkr_session_factory,
     validate_production_runtime_configuration,
     _verified_registry_binding,
     _collect_continuity_liability_evidence,
     _broker_evidence_collector,
+    create_authoritative_writer,
     validate_production_composition,
 )
+
+
+def test_v4_writer_factory_wires_path_scoped_sleeve_authority(tmp_path, monkeypatch) -> None:
+    from ibkr_paper_30d.broker_write_coordinator import BrokerWriteCoordinator
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+
+    smtp = tmp_path / "Secrets" / "email_alerts.env"
+    smtp.parent.mkdir(parents=True)
+    smtp.write_text("synthetic", encoding="utf-8")
+    db_path = tmp_path / "runtime.sqlite3"
+    with Database.open(db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+    config = SimpleNamespace(
+        repo_root=tmp_path,
+        db_path=db_path,
+        paper_host="127.0.0.1",
+        paper_port=4002,
+        target_successor_epoch_id="AUTONOMY_EPOCH_3",
+        target_successor_definition_sha256="1" * 64,
+        initial_allocation=Decimal("500"),
+    )
+    preflight = SimpleNamespace(expected_account_hash="a" * 64)
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._current_head",
+        lambda _root: "b" * 40,
+    )
+
+    writer = create_authoritative_writer(
+        coordinator=BrokerWriteCoordinator(),
+        db_path=db_path,
+        config=config,
+        preflight=preflight,
+        execution_lock_verifier=lambda: True,
+        uncertainty_reporter=lambda _reason: None,
+        toolbox=object(),
+        production_validation_sha256="c" * 64,
+        validation_broker_factory=lambda: object(),
+        current_adapter_sha256="d" * 64,
+    )
+
+    assert writer.sleeve_authority_reservation_store is not None
+    assert callable(writer.sleeve_authority_snapshot_reader)
+    assert callable(writer.sleeve_broker_evidence_collector)
+
+
+def test_bag_sleeve_evidence_resolves_every_leg_from_broker() -> None:
+    from ibkr_paper_30d.contract_ownership import canonical_contract_identity
+    from ibkr_paper_30d.production_continuity_runtime import (
+        _sleeve_broker_evidence_collector,
+    )
+
+    parent = canonical_contract_identity(
+        {
+            "conId": 9000,
+            "secType": "BAG",
+            "currency": "USD",
+            "exchange": "SMART",
+            "comboLegs": [
+                {"conId": 9001, "ratio": 1, "action": "BUY", "exchange": "SMART"},
+                {"conId": 9002, "ratio": 1, "action": "SELL", "exchange": "SMART"},
+            ],
+        }
+    )
+
+    class Broker:
+        def reqContractDetails(self, requested):
+            con_id = int(requested.conId)
+            return [
+                SimpleNamespace(
+                    contract=SimpleNamespace(
+                        conId=con_id,
+                        secType="OPT",
+                        currency="USD",
+                        exchange="SMART",
+                        primaryExchange="",
+                        localSymbol=f"LEG-{con_id}",
+                        tradingClass="SPY",
+                        multiplier="100",
+                    )
+                )
+            ]
+
+    request = SimpleNamespace(sha256="f" * 64)
+    evidence = _sleeve_broker_evidence_collector("a" * 64)(
+        Broker(),
+        request,
+        {
+            "model_write_context": {
+                "canonical_contract": parent.model_dump(mode="json"),
+                "order_ref": "codex-order-1",
+            },
+            "production_authority": {
+                "authority_snapshot_sha256": "b" * 64
+            },
+        },
+    )
+
+    assert evidence["contract_identity_sha256"] == parent.sha256
+    assert evidence["order_ref"] == "codex-order-1"
+    assert [item["con_id"] for item in evidence["ownership_contracts"]] == [
+        9000,
+        9001,
+        9002,
+    ]
+
+
+def test_v4_snapshot_reader_rejects_missing_or_non_hash_adapter_identity(tmp_path):
+    config = SimpleNamespace(target_successor_definition_sha256="1" * 64)
+
+    with pytest.raises(
+        ProductionRuntimeConfigurationError,
+        match="CURRENT_ADAPTER_SHA256_REQUIRED",
+    ):
+        _ProductionSleeveAuthoritySnapshotReader(
+            tmp_path / "runtime.sqlite3", config, "process-policy-v4"
+        )
 
 
 def test_multi_universe_composition_has_one_of_each_authority(tmp_path) -> None:

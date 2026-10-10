@@ -9,6 +9,11 @@ from .autonomous_research import ResearchRequest, ResearchTool
 from .canonical import sha256_json
 from .continuity_store import ContinuityStore
 from .contract_ownership import ContractOwnershipStore
+from .multi_universe_models import CapitalSleeve
+from .multi_universe_transition import (
+    MultiUniverseTransitionError,
+    active_cash_classifications,
+)
 from .experiment_control import ExperimentClock, ExperimentClockStore, KillSwitchStore
 from .experiment_epoch import ExperimentEpochStore
 from .experiment_ledger import AutonomousExperimentLedger
@@ -24,6 +29,7 @@ from .repositories import utc_now
 from .product_capability import ProductFamilyCertificationStore
 from .runtime_integrity import RuntimeMarketDataGate
 from .sleeve_ledger import SleeveLedgerStore
+from .sleeve_reconciliation import SleeveReconciler
 from .successor_clock import clock_for_epoch
 from .successor_epoch import (
     SuccessorEpochError,
@@ -120,6 +126,7 @@ class AutonomousStateBuilder:
         self.sleeve_ledger_store = sleeve_ledger_store
         self.contract_ownership_store = contract_ownership_store
         self.product_certification_store = product_certification_store
+        self._latest_executions: list[dict[str, Any]] = []
 
     def _tool(self, tool: ResearchTool, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
         request = ResearchRequest(
@@ -362,6 +369,7 @@ class AutonomousStateBuilder:
 
     def _sync_executions(self) -> list[str]:
         executions = self._tool(ResearchTool.EXECUTIONS)
+        self._latest_executions = list(executions.get("executions", []) or [])
         reasons: list[str] = []
         for fill in executions.get("executions", []) or []:
             order_ref = str(fill.get("orderRef") or "")
@@ -374,6 +382,154 @@ class AutonomousStateBuilder:
                 continue
             self.ledger.record_fill(fill)
         return reasons
+
+    def _sync_and_reconcile_v4(
+        self,
+        *,
+        account: dict[str, Any],
+        broker_positions: dict[str, Any],
+        open_orders: dict[str, Any],
+    ) -> dict[str, Any]:
+        if self.sleeve_ledger_store is None:
+            raise AutonomousStateBuildError("V4_STATE_DEPENDENCIES_REQUIRED")
+        assert self.contract_ownership_store is not None
+        ownership = self.contract_ownership_store.projection()
+        ownership_records = (
+            *ownership.active_contracts,
+            *getattr(ownership, "released_contracts", ()),
+        )
+        by_con_id = {
+            int(item.contract.con_id): item.contract_identity_sha256
+            for item in ownership_records
+            if int(item.contract.con_id) > 0
+        }
+
+        def contract_hash(raw: dict[str, Any]) -> str:
+            contract = raw.get("contract") or {}
+            con_id = int(
+                contract.get("conId")
+                or contract.get("con_id")
+                or raw.get("contract_id")
+                or 0
+            )
+            return str(by_con_id.get(con_id) or "")
+
+        positions: list[dict[str, Any]] = []
+        for raw in broker_positions.get("positions", ()) or ():
+            quantity = Decimal(str(raw.get("position") or raw.get("quantity") or "0"))
+            if quantity == 0:
+                continue
+            multiplier = Decimal(str((raw.get("contract") or {}).get("multiplier") or "1"))
+            average_cost = Decimal(str(raw.get("avgCost") or raw.get("average_cost") or "0"))
+            positions.append(
+                {
+                    "contract_identity_sha256": contract_hash(raw),
+                    "quantity": str(quantity),
+                    "multiplier": str(multiplier),
+                    "average_cost": str(average_cost),
+                    "mark": str(max(average_cost, Decimal("0"))),
+                    "market_value_usd": str(quantity * multiplier * average_cost),
+                }
+            )
+        orders = [
+            {"contract_identity_sha256": contract_hash(raw)}
+            for raw in open_orders.get("open_orders", ()) or ()
+            if str(raw.get("orderRef") or "").startswith(
+                f"{EXPERIMENT_ORDER_PREFIX}-"
+            )
+        ]
+        executions = [
+            {
+                "contract_identity_sha256": contract_hash(raw),
+                "execution_id_hash": raw.get("execution_id_hash"),
+                "commission": raw.get("commission"),
+            }
+            for raw in self._latest_executions
+            if str(raw.get("orderRef") or "").startswith(
+                f"{EXPERIMENT_ORDER_PREFIX}-"
+            )
+        ]
+        broker_snapshot = {
+            "positions": positions,
+            "open_orders": orders,
+            "executions": executions,
+        }
+        self.sleeve_ledger_store.reconcile_broker_snapshot(
+            broker_snapshot, ownership
+        )
+        ledgers = self.sleeve_ledger_store.project_all()
+        ledger_payload = self._dump(ledgers)
+        try:
+            account_snapshot = dict(
+                self.toolbox.account_reconciliation_snapshot()
+            )
+        except Exception as exc:
+            raise AutonomousStateBuildError(
+                "V4_BROKER_CASH_EVIDENCE_REQUIRED"
+            ) from exc
+        account_snapshot.update(self._transition_cash_classifications())
+        account_snapshot.update({
+            "positions": positions,
+            "open_orders": orders,
+            "executions": executions,
+            "fees": [
+                {
+                    "contract_identity_sha256": item["contract_identity_sha256"],
+                    "amount": item["commission"],
+                }
+                for item in executions
+                if item.get("commission") not in {None, ""}
+            ],
+            "financing": [],
+        })
+        receipt = SleeveReconciler.reconcile(
+            account_snapshot, ledger_payload, self._dump(ownership)
+        )
+        if receipt.status == "PASS":
+            from .sleeve_execution_authority import (
+                SleeveAuthorityReservationStore,
+            )
+
+            terminal_snapshot = {
+                **broker_snapshot,
+                "pending_execution_contract_sha256": [],
+                "fill_ambiguity": False,
+                "fresh": True,
+            }
+            finalized = SleeveAuthorityReservationStore(
+                self.db
+            ).finalize_terminal_reservations(
+                terminal_snapshot,
+                observation_id=sha256_json(
+                    {
+                        "account": account,
+                        "broker_snapshot": broker_snapshot,
+                        "observed_at_utc": utc_now(),
+                    }
+                ),
+            )
+            if finalized["released"]:
+                ownership = self.contract_ownership_store.projection()
+                self.sleeve_ledger_store.reconcile_broker_snapshot(
+                    broker_snapshot, ownership
+                )
+                ledgers = self.sleeve_ledger_store.project_all()
+                receipt = SleeveReconciler.reconcile(
+                    account_snapshot,
+                    self._dump(ledgers),
+                    self._dump(ownership),
+                )
+        return receipt.model_dump(mode="json")
+
+    def _transition_cash_classifications(
+        self,
+    ) -> dict[str, list[dict[str, str]]]:
+        try:
+            return active_cash_classifications(self.db)
+        except MultiUniverseTransitionError as exc:
+            raise AutonomousStateBuildError(
+                "V4_ACTIVE_CASH_CLASSIFICATION_REQUIRED"
+            ) from exc
 
     def _mark_open_positions(self) -> list[str]:
         state = self.ledger.project()
@@ -929,6 +1085,11 @@ class AutonomousStateBuilder:
         ):
             raise AutonomousStateBuildError("V4_STATE_DEPENDENCIES_REQUIRED")
         ledger = self._dump(self.sleeve_ledger_store.project_all())
+        if not all(
+            bool((ledger.get(name) or {}).get("initialized"))
+            for name in ("regular", "extended")
+        ):
+            raise AutonomousStateBuildError("V4_SLEEVE_BOOTSTRAP_REQUIRED")
         ownership_projection = self._dump(
             self.contract_ownership_store.projection()
         )
@@ -954,8 +1115,16 @@ class AutonomousStateBuilder:
         portfolio = {
             "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
             "sleeves": {
-                "regular": ledger.get("regular"),
-                "extended": ledger.get("extended"),
+                name: {
+                    **dict(ledger.get(name) or {}),
+                    "equity_usd": str(
+                        Decimal(str((ledger.get(name) or {}).get("allocation_usd") or "0"))
+                        + Decimal(str((ledger.get(name) or {}).get("realized_pnl_usd") or "0"))
+                        + Decimal(str((ledger.get(name) or {}).get("unrealized_pnl_usd") or "0"))
+                        - Decimal(str((ledger.get(name) or {}).get("fees_usd") or "0"))
+                    ),
+                }
+                for name in ("regular", "extended")
             },
             "aggregate_currency_balances": ledger.get(
                 "aggregate_currency_balances", []
@@ -999,6 +1168,12 @@ class AutonomousStateBuilder:
         broker_positions = self._tool(ResearchTool.POSITIONS)
         open_orders = self._tool(ResearchTool.OPEN_ORDERS)
         reconciliation = self._reconcile(ledger_state, broker_positions)
+        if self.sleeve_ledger_store is not None:
+            reconciliation = self._sync_and_reconcile_v4(
+                account=account,
+                broker_positions=broker_positions,
+                open_orders=open_orders,
+            )
         state_reasons = execution_reasons + mark_reasons
         if state_reasons:
             reconciliation["status"] = "BLOCK"

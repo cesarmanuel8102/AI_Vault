@@ -44,8 +44,26 @@ def test_v4_state_context_contains_both_sleeves_ownership_and_capabilities() -> 
     subject.sleeve_ledger_store = SimpleNamespace(
         project_all=lambda: _Dumpable(
             {
-                "regular": {"sleeve": "REGULAR_SLEEVE", "allocation_usd": "500"},
-                "extended": {"sleeve": "EXTENDED_SLEEVE", "allocation_usd": "500"},
+                "regular": {
+                    "sleeve": "REGULAR_SLEEVE",
+                    "allocation_usd": "500",
+                    "currency_balances": [{"currency": "USD", "amount": "450"}],
+                    "positions": [{"market_value_usd": "25"}],
+                    "realized_pnl_usd": "-25",
+                    "unrealized_pnl_usd": "0",
+                    "fees_usd": "0",
+                    "initialized": True,
+                },
+                "extended": {
+                    "sleeve": "EXTENDED_SLEEVE",
+                    "allocation_usd": "500",
+                    "currency_balances": [{"currency": "USD", "amount": "510"}],
+                    "positions": [],
+                    "realized_pnl_usd": "10",
+                    "unrealized_pnl_usd": "0",
+                    "fees_usd": "0",
+                    "initialized": True,
+                },
                 "aggregate_currency_balances": [{"currency": "USD", "amount": "1000"}],
             }
         )
@@ -85,10 +103,96 @@ def test_v4_state_context_contains_both_sleeves_ownership_and_capabilities() -> 
 
     assert portfolio["schema"] == "MULTI_SLEEVE_PORTFOLIO_V4"
     assert set(portfolio["sleeves"]) == {"regular", "extended"}
+    assert portfolio["sleeves"]["regular"]["equity_usd"] == "475"
+    assert portfolio["sleeves"]["extended"]["equity_usd"] == "510"
     assert portfolio["new_entries_enabled"] is False
     assert portfolio["account_observation"]["position_count"] == 1
     assert ownership["contract_sleeves"] == {"756733": "REGULAR_SLEEVE"}
     assert capabilities["families"][0]["family_sha256"] == "f" * 64
+
+
+def test_v4_state_blocks_until_both_sleeves_are_bootstrapped() -> None:
+    subject = object.__new__(AutonomousStateBuilder)
+    subject.sleeve_ledger_store = SimpleNamespace(
+        project_all=lambda: _Dumpable(
+            {
+                "regular": {"sleeve": "REGULAR_SLEEVE", "initialized": True},
+                "extended": {"sleeve": "EXTENDED_SLEEVE", "initialized": False},
+                "aggregate_currency_balances": [],
+            }
+        )
+    )
+    subject.contract_ownership_store = SimpleNamespace(
+        projection=lambda: _Dumpable(
+            {"active_contracts": [], "projection_sha256": "c" * 64}
+        )
+    )
+    subject.product_certification_store = SimpleNamespace(projections=lambda: ())
+
+    with pytest.raises(AutonomousStateBuildError, match="V4_SLEEVE_BOOTSTRAP_REQUIRED"):
+        subject._multi_sleeve_context(
+            reconciliation={"status": "PASS", "reason_codes": []},
+            account={},
+            broker_positions={"positions": []},
+            open_orders={"open_orders": []},
+        )
+
+
+def test_v4_reconciliation_uses_independent_broker_cash_not_ledger_copy() -> None:
+    class Ownership:
+        active_contracts = ()
+
+        def model_dump(self, *, mode="python"):
+            return {"active_contracts": [], "projection_sha256": "a" * 64}
+
+    ledger_payload = {
+        "regular": {
+            "initialized": True,
+            "currency_balances": [{"currency": "USD", "amount": "500"}],
+            "positions": [],
+            "open_order_count": 0,
+            "fees_usd": "0",
+        },
+        "extended": {
+            "initialized": True,
+            "currency_balances": [{"currency": "USD", "amount": "500"}],
+            "positions": [],
+            "open_order_count": 0,
+            "fees_usd": "0",
+        },
+        "aggregate_currency_balances": [{"currency": "USD", "amount": "1000"}],
+    }
+    ledger_store = SimpleNamespace(
+        reconcile_broker_snapshot=lambda _snapshot, _ownership: {},
+        project_all=lambda: _Dumpable(ledger_payload),
+    )
+    subject = object.__new__(AutonomousStateBuilder)
+    subject.sleeve_ledger_store = ledger_store
+    subject.contract_ownership_store = SimpleNamespace(
+        projection=lambda: Ownership()
+    )
+    subject.toolbox = SimpleNamespace(
+        account_reconciliation_snapshot=lambda: {
+            "paper_only": True,
+            "account_identity_sha256": "b" * 64,
+            "currency_balances": [{"currency": "USD", "amount": "1001"}],
+            "broker_snapshot_sha256": "c" * 64,
+        }
+    )
+    subject._latest_executions = []
+    subject._transition_cash_classifications = lambda: {
+        "classified_canary_currency_balances": [],
+        "classified_non_experiment_currency_balances": [],
+    }
+
+    receipt = subject._sync_and_reconcile_v4(
+        account={"paper_account": True},
+        broker_positions={"positions": []},
+        open_orders={"open_orders": []},
+    )
+
+    assert receipt["status"] == "BLOCK"
+    assert "AGGREGATE_CURRENCY_MISMATCH:USD" in receipt["reason_codes"]
 
 
 def open_order_trade():

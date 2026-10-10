@@ -11,6 +11,7 @@ from ibkr_paper_30d.continuity_models import (
     CodexOrderContinuityPlan,
     ContinuityActionType,
     ContinuityCondition,
+    ContinuityExecutableAction,
     ContinuityFactName,
     ContinuityOrderBinding,
     ContinuityOrderState,
@@ -388,3 +389,41 @@ def test_fact_enum_contains_runtime_activation_inputs() -> None:
     assert ContinuityFactName.PROVIDER_STATE.value == "PROVIDER_STATE"
     assert ContinuityFactName.MODEL_INVOCATION_IN_FLIGHT.value == "MODEL_INVOCATION_IN_FLIGHT"
     assert ContinuityActionType.REQUIRES_AGENT.value == "REQUIRES_AGENT"
+
+
+def test_position_continuity_action_requires_exact_execution_terms() -> None:
+    action = ContinuityExecutableAction.model_validate(
+        {
+            "action_type": "REDUCE_POSITION",
+            "position_action": "SELL",
+            "position_quantity": {"operator": "LITERAL", "literal": "2"},
+            "position_order_type": "LMT",
+            "position_limit_price": {"operator": "LITERAL", "literal": "118.60"},
+        }
+    )
+
+    assert action.position_action == "SELL"
+    assert action.position_order_type == "LMT"
+
+    with pytest.raises(ValidationError, match="exact position execution terms"):
+        ContinuityExecutableAction.model_validate(
+            {
+                "action_type": "CLOSE_POSITION",
+                "position_action": "SELL",
+            }
+        )
+
+
+def test_position_continuity_authority_is_v4_only() -> None:
+    payload = _valid_plan(terminal_disposition=_action("CANCEL"))
+    payload["contingencies"][0]["state_actions"] = _state_actions(  # type: ignore[index]
+        _action(
+            "CLOSE_POSITION",
+            position_action="SELL",
+            position_quantity={"operator": "FACT", "fact": "POSITION_QUANTITY"},
+            position_order_type="MKT",
+        )
+    )
+
+    with pytest.raises(ValidationError, match="V4"):
+        CodexOrderContinuityPlan.model_validate(payload)

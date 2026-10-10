@@ -325,6 +325,35 @@ def validate_multi_sleeve_payload(
     return None
 
 
+def capital_equity_for_sleeve(
+    bundle: TraderInputBundle,
+    sleeve: CapitalSleeve | None,
+) -> Decimal:
+    """Return the only equity that may authorize the selected payload."""
+
+    if bundle.multi_sleeve_v4_active:
+        if sleeve is None:
+            raise ValueError("V4_SLEEVE_BINDING_REQUIRED")
+        key = {
+            CapitalSleeve.REGULAR_SLEEVE: "regular",
+            CapitalSleeve.EXTENDED_SLEEVE: "extended",
+        }[sleeve]
+        portfolio = bundle.multi_sleeve_portfolio or {}
+        raw = ((portfolio.get("sleeves") or {}).get(key) or {}).get(
+            "equity_usd"
+        )
+        if raw is None:
+            raise ValueError("V4_SLEEVE_EQUITY_REQUIRED")
+    else:
+        raw = bundle.experiment_subledger_snapshot.get("equity")
+        if raw is None:
+            raise ValueError("experiment subledger equity is required")
+    equity = Decimal(str(raw))
+    if not equity.is_finite() or equity <= 0:
+        raise ValueError("experimental equity must be positive")
+    return equity
+
+
 class ProposalValidation(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
@@ -874,16 +903,6 @@ class AutonomousResearchLoop:
         self.max_rounds = max_rounds
         self.max_requests_per_round = max_requests_per_round
 
-    @staticmethod
-    def _experimental_equity(bundle: TraderInputBundle) -> Decimal:
-        raw = bundle.experiment_subledger_snapshot.get("equity")
-        if raw is None:
-            raise ValueError("experiment subledger equity is required")
-        equity = Decimal(str(raw))
-        if not equity.is_finite() or equity <= 0:
-            raise ValueError("experimental equity must be positive")
-        return equity
-
     def run(
         self, request: InvocationRequest, bundle: TraderInputBundle
     ) -> AutonomousResearchOutcome:
@@ -901,8 +920,6 @@ class AutonomousResearchLoop:
             return self._blocked(history, telemetry, 0, "MARKET_DATA_GATE_BLOCK")
 
         manifest = self.toolbox.manifest()
-        equity = self._experimental_equity(bundle)
-
         for round_index in range(1, self.max_rounds + 1):
             turn = self.provider.next_turn(request, bundle, history, manifest)
             history.append({
@@ -1050,6 +1067,7 @@ class AutonomousResearchLoop:
                 return self._blocked(history, telemetry, round_index, "MISSING_PROPOSAL")
             if not proposal.loss_is_bounded:
                 return self._blocked(history, telemetry, round_index, "UNBOUNDED_LIABILITY")
+            equity = capital_equity_for_sleeve(bundle, proposal.capital_sleeve)
             if proposal.maximum_loss > equity:
                 return self._blocked(history, telemetry, round_index, "EXPERIMENT_CAPITAL_BOUNDARY")
             # capital_required is a model estimate, not an authority boundary.

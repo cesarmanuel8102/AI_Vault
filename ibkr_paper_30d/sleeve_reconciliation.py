@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .canonical import sha256_json
 from .multi_universe_models import CapitalSleeve
+from .contract_ownership import BrokerLineageEvidence
 
 
 _LINEAGE_EVENTS = frozenset(
@@ -80,6 +81,18 @@ def _currency_map(rows: Any) -> dict[str, Decimal]:
     return dict(result)
 
 
+def _classified_currency_map(rows: Any, reasons: set[str]) -> dict[str, Decimal]:
+    result: dict[str, Decimal] = defaultdict(Decimal)
+    for raw in rows or ():
+        row = _dump(raw)
+        provenance = str(row.get("provenance_sha256") or "")
+        if len(provenance) != 64 or any(char not in "0123456789abcdef" for char in provenance):
+            reasons.add("EXTERNAL_CASH_PROVENANCE_REQUIRED")
+            continue
+        result[str(row["currency"]).upper()] += _decimal(row["amount"])
+    return dict(result)
+
+
 class SleeveReconciler:
     """Attribute every broker fact, then compare it to both sleeve ledgers."""
 
@@ -101,6 +114,7 @@ class SleeveReconciler:
             CapitalSleeve.EXTENDED_SLEEVE.value: "extended",
         }
         owner_by_contract: dict[str, str] = {}
+        historical_owner_by_contract: dict[str, str] = {}
         for raw in ownership_data.get("active_contracts", ()):
             row = _dump(raw)
             contract_hash = str(row.get("contract_identity_sha256") or "")
@@ -113,18 +127,48 @@ class SleeveReconciler:
             if contract_hash in owner_by_contract and owner_by_contract[contract_hash] != sleeve:
                 reasons.add("CONTRACT_OWNERSHIP_AMBIGUOUS")
             owner_by_contract[contract_hash] = sleeve
+            historical_owner_by_contract[contract_hash] = sleeve
+        for raw in ownership_data.get("released_contracts", ()):
+            row = _dump(raw)
+            contract_hash = str(row.get("contract_identity_sha256") or "")
+            sleeve_value = row.get("sleeve")
+            sleeve = (
+                sleeve_value.value
+                if isinstance(sleeve_value, CapitalSleeve)
+                else str(sleeve_value)
+            )
+            existing = historical_owner_by_contract.get(contract_hash)
+            if existing is not None and existing != sleeve:
+                reasons.add("CONTRACT_OWNERSHIP_AMBIGUOUS")
+            historical_owner_by_contract[contract_hash] = sleeve
 
         lineage_assignments: dict[str, str] = {}
 
-        def attribute(raw: Any) -> tuple[str | None, dict[str, Any]]:
+        def attribute(
+            raw: Any, *, allow_released: bool = False
+        ) -> tuple[str | None, dict[str, Any]]:
             row = _dump(raw)
             contract_hash = str(row.get("contract_identity_sha256") or "")
-            sleeve = owner_by_contract.get(contract_hash)
+            sleeve = (
+                historical_owner_by_contract.get(contract_hash)
+                if allow_released
+                else owner_by_contract.get(contract_hash)
+            )
             if sleeve is None:
-                source = str(row.get("source_contract_identity_sha256") or "")
-                lineage_event = str(row.get("lineage_event") or "").upper()
+                try:
+                    lineage = BrokerLineageEvidence.model_validate(
+                        row.get("lineage_evidence")
+                    )
+                except Exception:
+                    lineage = None
+                source = "" if lineage is None else lineage.source_contract_sha256
                 source_sleeve = owner_by_contract.get(source)
-                if source_sleeve is not None and lineage_event in _LINEAGE_EVENTS:
+                if (
+                    lineage is not None
+                    and lineage.descendant_contract_sha256 == contract_hash
+                    and source_sleeve is not None
+                    and lineage.lineage_event in _LINEAGE_EVENTS
+                ):
                     existing = lineage_assignments.get(contract_hash)
                     if existing is not None and existing != source_sleeve:
                         reasons.add("CONTRACT_OWNERSHIP_AMBIGUOUS")
@@ -160,12 +204,12 @@ class SleeveReconciler:
             if sleeve is not None:
                 observed[sleeve]["open_order_count"] += 1
         for raw in account.get("executions", ()):
-            sleeve, _ = attribute(raw)
+            sleeve, _ = attribute(raw, allow_released=True)
             if sleeve is not None:
                 observed[sleeve]["execution_count"] += 1
         for collection, field in (("fees", "fees_usd"), ("financing", "financing_usd")):
             for raw in account.get(collection, ()):
-                sleeve, row = attribute(raw)
+                sleeve, row = attribute(raw, allow_released=True)
                 if sleeve is not None:
                     observed[sleeve][field] += _decimal(row.get("amount", "0"))
 
@@ -204,6 +248,15 @@ class SleeveReconciler:
         expected_currency = _currency_map(
             ledgers.get("aggregate_currency_balances", ())
         )
+        for classification in (
+            "classified_canary_currency_balances",
+            "classified_non_experiment_currency_balances",
+        ):
+            classified = _classified_currency_map(account.get(classification, ()), reasons)
+            for currency, amount in classified.items():
+                expected_currency[currency] = expected_currency.get(
+                    currency, Decimal("0")
+                ) + amount
         for currency in sorted(set(broker_currency) | set(expected_currency)):
             if broker_currency.get(currency, Decimal("0")) != expected_currency.get(
                 currency, Decimal("0")

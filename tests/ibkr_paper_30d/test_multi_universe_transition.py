@@ -11,6 +11,7 @@ from ibkr_paper_30d.multi_universe_transition import (
     require_predecessor_retired,
 )
 from ibkr_paper_30d.persistence import Database
+from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.successor_authorization import (
     SuccessorAuthorizationError,
     validate_transition_target_authorization,
@@ -71,7 +72,23 @@ def _evidence(phase: TransitionPhase) -> dict[str, object]:
     if phase is TransitionPhase.RUNTIME_BOUND:
         evidence["writer_binding_sha256"] = "b" * 64
     if phase is TransitionPhase.ACTIVE:
-        evidence["reconciliation_status"] = "PASS"
+        classifications = {
+            "classified_canary_currency_balances": [],
+            "classified_non_experiment_currency_balances": [
+                {
+                    "currency": "USD",
+                    "amount": "999000",
+                    "provenance_sha256": "e" * 64,
+                }
+            ],
+        }
+        evidence.update(
+            {
+                "reconciliation_status": "PASS",
+                **classifications,
+                "cash_classification_sha256": sha256_json(classifications),
+            }
+        )
     return evidence
 
 
@@ -93,6 +110,22 @@ def test_only_ordered_phases_are_legal_and_exact_retries_are_idempotent(tmp_path
             "SELECT COUNT(*) FROM successor_transition_events"
         ).fetchone()[0]
     assert count == len(PHASES)
+
+
+def test_active_phase_requires_hash_bound_external_cash_classification(tmp_path):
+    with _open(tmp_path / "cash-classification.sqlite3") as db:
+        coordinator = MultiUniverseTransitionCoordinator(db)
+        coordinator.prepare(_target())
+        for phase in PHASES[1:-1]:
+            coordinator.advance(phase, _evidence(phase))
+        invalid = _evidence(TransitionPhase.ACTIVE)
+        invalid.pop("cash_classification_sha256")
+
+        with pytest.raises(
+            MultiUniverseTransitionError,
+            match="ACTIVE_CASH_CLASSIFICATION_REQUIRED",
+        ):
+            coordinator.advance(TransitionPhase.ACTIVE, invalid)
 
 
 @pytest.mark.parametrize(

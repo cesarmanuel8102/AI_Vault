@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from ibkr_paper_30d.contract_ownership import BrokerLineageEvidence
 
 from ibkr_paper_30d.sleeve_reconciliation import SleeveReconciler
 
@@ -85,12 +86,19 @@ def test_unattributed_or_aggregate_mismatch_freezes_new_entries() -> None:
 
 
 def test_verified_descendant_inherits_source_sleeve() -> None:
+    evidence = BrokerLineageEvidence(
+        source_contract_sha256=STOCK,
+        descendant_contract_sha256="d" * 64,
+        lineage_event="OPTION_ASSIGNMENT",
+        broker_event_id="assignment-1",
+        broker_snapshot_sha256="f" * 64,
+        observed_at_utc="2026-10-09T18:00:00Z",
+    )
     account = _account()
     account["positions"].append(
         {
             "contract_identity_sha256": "d" * 64,
-            "source_contract_identity_sha256": STOCK,
-            "lineage_event": "OPTION_ASSIGNMENT",
+            "lineage_evidence": evidence.model_dump(mode="json"),
             "quantity": "0",
         }
     )
@@ -131,19 +139,25 @@ def test_verified_descendant_events_inherit_ownership_and_economics(
 ) -> None:
     account = _account()
     descendant = "d" * 64
+    evidence = BrokerLineageEvidence(
+        source_contract_sha256=STOCK,
+        descendant_contract_sha256=descendant,
+        lineage_event=lineage_event,
+        broker_event_id=f"descendant-{lineage_event}",
+        broker_snapshot_sha256="f" * 64,
+        observed_at_utc="2026-10-09T18:00:00Z",
+    )
     account["executions"].append(
         {
             "contract_identity_sha256": descendant,
-            "source_contract_identity_sha256": STOCK,
-            "lineage_event": lineage_event,
+            "lineage_evidence": evidence.model_dump(mode="json"),
             "execution_id": f"descendant-{lineage_event}",
         }
     )
     account["fees"].append(
         {
             "contract_identity_sha256": descendant,
-            "source_contract_identity_sha256": STOCK,
-            "lineage_event": lineage_event,
+            "lineage_evidence": evidence.model_dump(mode="json"),
             "amount": "0.25",
         }
     )
@@ -166,3 +180,53 @@ def test_fill_and_commission_mismatch_is_attributed_but_blocks() -> None:
     assert receipt.status == "BLOCK"
     assert "SLEEVE_FEES_MISMATCH:REGULAR_SLEEVE" in receipt.reason_codes
     assert "UNATTRIBUTED_ACCOUNT_EVENT" not in receipt.reason_codes
+
+
+def test_classified_canary_and_non_experiment_cash_are_included_with_provenance() -> None:
+    account = _account()
+    account["currency_balances"] = [{"currency": "USD", "amount": "850"}]
+    account["classified_canary_currency_balances"] = [
+        {"currency": "USD", "amount": "5", "provenance_sha256": "d" * 64}
+    ]
+    account["classified_non_experiment_currency_balances"] = [
+        {"currency": "USD", "amount": "15", "provenance_sha256": "e" * 64}
+    ]
+
+    receipt = SleeveReconciler.reconcile(account, _ledgers(), _ownership())
+
+    assert receipt.status == "PASS"
+    assert receipt.aggregate_currency_balances == {"USD": "850"}
+
+
+def test_unproven_external_cash_classification_blocks() -> None:
+    account = _account()
+    account["currency_balances"] = [{"currency": "USD", "amount": "845"}]
+    account["classified_non_experiment_currency_balances"] = [
+        {"currency": "USD", "amount": "15"}
+    ]
+
+    receipt = SleeveReconciler.reconcile(account, _ledgers(), _ownership())
+
+    assert receipt.status == "BLOCK"
+    assert "EXTERNAL_CASH_PROVENANCE_REQUIRED" in receipt.reason_codes
+
+
+def test_terminal_execution_uses_released_historical_ownership() -> None:
+    account = _account()
+    account["positions"] = [
+        {"contract_identity_sha256": FUTURE, "quantity": "2"}
+    ]
+    ledgers = _ledgers()
+    ledgers["regular"]["positions"] = []
+    ownership = _ownership()
+    ownership["active_contracts"] = [
+        {"contract_identity_sha256": FUTURE, "sleeve": EXTENDED}
+    ]
+    ownership["released_contracts"] = [
+        {"contract_identity_sha256": STOCK, "sleeve": REGULAR}
+    ]
+
+    receipt = SleeveReconciler.reconcile(account, ledgers, ownership)
+
+    assert receipt.status == "PASS"
+    assert receipt.per_sleeve[REGULAR]["execution_count"] == 1

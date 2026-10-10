@@ -29,6 +29,8 @@ class ContinuityActionType(str, Enum):
     RETAIN = "RETAIN"
     CANCEL = "CANCEL"
     MODIFY_EXISTING_ORDER = "MODIFY_EXISTING_ORDER"
+    REDUCE_POSITION = "REDUCE_POSITION"
+    CLOSE_POSITION = "CLOSE_POSITION"
     REQUIRES_AGENT = "REQUIRES_AGENT"
 
 
@@ -293,6 +295,10 @@ class ContinuityExecutableAction(BaseModel, frozen=True):
     new_limit_price: ContinuityValueExpression | None = None
     new_tif: TimeInForce | None = None
     new_good_till_date_utc: datetime | None = None
+    position_action: Literal["BUY", "SELL"] | None = None
+    position_quantity: ContinuityValueExpression | None = None
+    position_order_type: Literal["MKT", "LMT"] | None = None
+    position_limit_price: ContinuityValueExpression | None = None
     retain_authority: RetainAuthority | None = None
     interim_action: "ContinuityExecutableAction | None" = None
 
@@ -304,6 +310,12 @@ class ContinuityExecutableAction(BaseModel, frozen=True):
             self.new_tif,
             self.new_good_till_date_utc,
         )
+        position_terms = (
+            self.position_action,
+            self.position_quantity,
+            self.position_order_type,
+            self.position_limit_price,
+        )
         if self.new_good_till_date_utc is not None:
             _require_aware(self.new_good_till_date_utc, "new_good_till_date_utc")
         if self.new_tif == TimeInForce.GTD and self.new_good_till_date_utc is None:
@@ -314,17 +326,47 @@ class ContinuityExecutableAction(BaseModel, frozen=True):
         if self.action_type == ContinuityActionType.MODIFY_EXISTING_ORDER:
             if not any(value is not None for value in modifications):
                 raise ValueError("MODIFY_EXISTING_ORDER requires an exact mutable value")
-            if self.interim_action is not None or self.retain_authority is not None:
+            if (
+                self.interim_action is not None
+                or self.retain_authority is not None
+                or any(value is not None for value in position_terms)
+            ):
                 raise ValueError("MODIFY_EXISTING_ORDER cannot contain interim/retain authority")
+        elif self.action_type in {
+            ContinuityActionType.REDUCE_POSITION,
+            ContinuityActionType.CLOSE_POSITION,
+        }:
+            if any(value is not None for value in modifications):
+                raise ValueError("position action cannot modify an existing order")
+            if (
+                self.position_action is None
+                or self.position_quantity is None
+                or self.position_order_type is None
+            ):
+                raise ValueError("position action requires exact position execution terms")
+            if self.position_order_type == "LMT" and self.position_limit_price is None:
+                raise ValueError("LMT position action requires position_limit_price")
+            if self.position_order_type == "MKT" and self.position_limit_price is not None:
+                raise ValueError("MKT position action cannot contain position_limit_price")
+            if self.interim_action is not None or self.retain_authority is not None:
+                raise ValueError("position action cannot contain interim/retain authority")
         elif self.action_type == ContinuityActionType.REQUIRES_AGENT:
-            if any(value is not None for value in modifications) or self.retain_authority:
+            if (
+                any(value is not None for value in modifications)
+                or any(value is not None for value in position_terms)
+                or self.retain_authority
+            ):
                 raise ValueError("REQUIRES_AGENT cannot directly modify an order")
             if self.interim_action is None:
                 raise ValueError("REQUIRES_AGENT requires an exact interim disposition")
             if self.interim_action.action_type == ContinuityActionType.REQUIRES_AGENT:
                 raise ValueError("interim action cannot require the agent again")
         else:
-            if any(value is not None for value in modifications) or self.interim_action is not None:
+            if (
+                any(value is not None for value in modifications)
+                or any(value is not None for value in position_terms)
+                or self.interim_action is not None
+            ):
                 raise ValueError(f"{self.action_type.value} cannot contain order modifications")
             if (
                 self.retain_authority is not None
@@ -530,6 +572,15 @@ class CodexOrderContinuityPlan(BaseModel, frozen=True):
         for action in _iter_actions(self):
             if action.new_good_till_date_utc is not None:
                 self._validate_order_expiry(action.new_good_till_date_utc)
+            if (
+                action.action_type
+                in {
+                    ContinuityActionType.REDUCE_POSITION,
+                    ContinuityActionType.CLOSE_POSITION,
+                }
+                and self.schema != "CODEX_ORDER_CONTINUITY_PLAN_V4"
+            ):
+                raise ValueError("position continuity authority requires V4")
         if self.schema == "CODEX_ORDER_CONTINUITY_PLAN_V4":
             required = (
                 self.capital_sleeve,

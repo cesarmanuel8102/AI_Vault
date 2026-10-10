@@ -23,6 +23,8 @@ class BrokerCommandType(str, Enum):
     RETAIN = "RETAIN"
     CANCEL = "CANCEL"
     MODIFY = "MODIFY"
+    REDUCE_POSITION = "REDUCE_POSITION"
+    CLOSE_POSITION = "CLOSE_POSITION"
 
 
 class AuthorizedBrokerCommand(BaseModel, frozen=True):
@@ -53,8 +55,18 @@ class AuthorizedBrokerCommand(BaseModel, frozen=True):
     new_limit_price: Decimal | None = Field(default=None, gt=0)
     new_tif: TimeInForce | None = None
     new_good_till_date_utc: datetime | None = None
+    position_action: Literal["BUY", "SELL"] | None = None
+    position_quantity: Decimal | None = Field(default=None, gt=0)
+    position_order_type: Literal["MKT", "LMT"] | None = None
+    position_limit_price: Decimal | None = Field(default=None, gt=0)
+    position_identity_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
+    canonical_contract_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
     resolved_total_quantity: Decimal = Field(gt=0)
-    resolved_limit_price: Decimal = Field(gt=0)
+    resolved_limit_price: Decimal = Field(ge=0)
     proposed_order_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     maximum_authorized_liability: Decimal = Field(ge=0)
     liability_requirement: MaximumLiabilityRequirement
@@ -70,11 +82,37 @@ class AuthorizedBrokerCommand(BaseModel, frozen=True):
             self.new_tif,
             self.new_good_till_date_utc,
         )
+        position_terms = (
+            self.position_action,
+            self.position_quantity,
+            self.position_order_type,
+            self.position_identity_sha256,
+            self.canonical_contract_sha256,
+        )
         if self.command_type == BrokerCommandType.MODIFY:
             if not any(value is not None for value in mutable):
                 raise ValueError("MODIFY requires an exact mutable value")
         elif any(value is not None for value in mutable):
             raise ValueError("only MODIFY may contain mutable values")
+        if self.command_type in {
+            BrokerCommandType.REDUCE_POSITION,
+            BrokerCommandType.CLOSE_POSITION,
+        }:
+            if any(value is None for value in position_terms):
+                raise ValueError("position command requires exact identity and terms")
+            if self.position_order_type == "LMT" and self.position_limit_price is None:
+                raise ValueError("LMT position command requires position_limit_price")
+            if self.position_order_type == "MKT" and self.position_limit_price is not None:
+                raise ValueError("MKT position command cannot contain position_limit_price")
+            expected_authority = (
+                ContinuityAuthorityClass.REDUCE_POSITION
+                if self.command_type == BrokerCommandType.REDUCE_POSITION
+                else ContinuityAuthorityClass.CLOSE_POSITION
+            )
+            if self.authority_class != expected_authority:
+                raise ValueError("position command authority class mismatch")
+        elif any(value is not None for value in position_terms) or self.position_limit_price is not None:
+            raise ValueError("only position commands may contain position terms")
         if self.new_tif == TimeInForce.GTD:
             if self.new_good_till_date_utc is None:
                 raise ValueError("GTD requires new_good_till_date_utc")

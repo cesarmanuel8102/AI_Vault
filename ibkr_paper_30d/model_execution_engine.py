@@ -46,7 +46,7 @@ class ModelExecutionEngine:
         broker: Any,
         request: ModelExecutionRequest,
         authority_context: ModelExecutionAuthorityContext,
-        final_write_authority_check: Callable[[], tuple[str, ...]] | None = None,
+        final_write_authority_check: Callable[..., tuple[str, ...]] | None = None,
     ) -> PaperExecutionResult:
         if not isinstance(request, ModelExecutionRequest):
             raise TypeError("MODEL_EXECUTION_REQUEST_REQUIRED")

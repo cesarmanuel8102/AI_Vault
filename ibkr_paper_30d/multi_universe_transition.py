@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from decimal import Decimal, InvalidOperation
 from typing import Any, Callable, Mapping, Literal
 
 from pydantic import BaseModel, ConfigDict
@@ -138,6 +139,56 @@ class MultiUniverseTransitionCoordinator:
         text = str(value or "")
         return len(text) == 64 and all(char in "0123456789abcdef" for char in text)
 
+    @classmethod
+    def _cash_classifications(
+        cls, evidence: Mapping[str, Any]
+    ) -> dict[str, list[dict[str, str]]]:
+        result: dict[str, list[dict[str, str]]] = {}
+        for name in (
+            "classified_canary_currency_balances",
+            "classified_non_experiment_currency_balances",
+        ):
+            raw_rows = evidence.get(name)
+            if not isinstance(raw_rows, list):
+                raise MultiUniverseTransitionError(
+                    "ACTIVE_CASH_CLASSIFICATION_REQUIRED"
+                )
+            rows: list[dict[str, str]] = []
+            for raw in raw_rows:
+                if not isinstance(raw, Mapping):
+                    raise MultiUniverseTransitionError(
+                        "ACTIVE_CASH_CLASSIFICATION_INVALID"
+                    )
+                currency = str(raw.get("currency") or "").upper()
+                provenance = str(raw.get("provenance_sha256") or "")
+                try:
+                    amount = Decimal(str(raw.get("amount")))
+                except (InvalidOperation, ValueError):
+                    amount = Decimal("NaN")
+                if (
+                    len(currency) != 3
+                    or not amount.is_finite()
+                    or amount < 0
+                    or not cls._sha256_value(provenance)
+                ):
+                    raise MultiUniverseTransitionError(
+                        "ACTIVE_CASH_CLASSIFICATION_INVALID"
+                    )
+                rows.append(
+                    {
+                        "currency": currency,
+                        "amount": str(amount),
+                        "provenance_sha256": provenance,
+                    }
+                )
+            result[name] = rows
+        expected = evidence.get("cash_classification_sha256")
+        if not cls._sha256_value(expected) or expected != sha256_json(result):
+            raise MultiUniverseTransitionError(
+                "ACTIVE_CASH_CLASSIFICATION_REQUIRED"
+            )
+        return result
+
     def _validate_evidence(
         self,
         target: TransitionTarget,
@@ -171,6 +222,8 @@ class MultiUniverseTransitionCoordinator:
             evidence.get("reconciliation_status") != "PASS"
         ):
             raise MultiUniverseTransitionError("ACTIVE_RECONCILIATION_REQUIRED")
+        if phase is TransitionPhase.ACTIVE:
+            self._cash_classifications(evidence)
 
     def _result(
         self,
@@ -274,6 +327,31 @@ class MultiUniverseTransitionCoordinator:
                 {"transition_id": target.transition_id, "reason": str(exc)},
             )
             raise
+
+
+def active_cash_classifications(db: Database) -> dict[str, list[dict[str, str]]]:
+    """Recover hash-chained cash classifications from the ACTIVE transition."""
+
+    row = db.execute(
+        "SELECT payload_json FROM successor_transition_events "
+        "ORDER BY sequence DESC LIMIT 1"
+    ).fetchone()
+    if row is None:
+        raise MultiUniverseTransitionError("ACTIVE_TRANSITION_REQUIRED")
+    try:
+        payload = json.loads(str(row[0]))
+        target = TransitionTarget.model_validate(payload.get("target"))
+    except Exception as exc:
+        raise MultiUniverseTransitionError(
+            "TRANSITION_PROJECTION_AMBIGUOUS"
+        ) from exc
+    recovered = MultiUniverseTransitionCoordinator(db).recover(target)
+    if recovered.phase is not TransitionPhase.ACTIVE:
+        raise MultiUniverseTransitionError("ACTIVE_TRANSITION_REQUIRED")
+    evidence = payload.get("evidence")
+    if not isinstance(evidence, Mapping):
+        raise MultiUniverseTransitionError("ACTIVE_CASH_CLASSIFICATION_REQUIRED")
+    return MultiUniverseTransitionCoordinator._cash_classifications(evidence)
 
 
 def require_predecessor_retired(

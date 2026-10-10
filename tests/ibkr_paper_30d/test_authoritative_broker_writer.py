@@ -19,6 +19,7 @@ from ibkr_paper_30d.broker_write_coordinator import (
     BrokerWriteCoordinator,
 )
 from ibkr_paper_30d.canonical import sha256_json
+from ibkr_paper_30d.contract_ownership import canonical_contract_identity
 from ibkr_paper_30d.coordinated_model_executor import (
     ModelExecutionOperation,
     ModelExecutionRequest,
@@ -30,7 +31,10 @@ from ibkr_paper_30d.autonomous_research import (
     AutonomousTradeProposal,
 )
 from ibkr_paper_30d.ibkr_readonly import expected_identity_hash
-from ibkr_paper_30d.open_order_management import canonical_open_order
+from ibkr_paper_30d.open_order_management import (
+    canonical_open_order,
+    canonical_order_contract_snapshot,
+)
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
 from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
@@ -163,6 +167,79 @@ class FakeGateway:
 
     def disconnect(self):
         self.disconnected = True
+
+
+class PositionGateway(FakeGateway):
+    def __init__(self, client_id, *, quantity=Decimal("4")):
+        super().__init__(client_id)
+        self.position = SimpleNamespace(
+            account="DU123456",
+            contract=self.trade.contract,
+            position=quantity,
+            avgCost=Decimal("118.60"),
+        )
+        self.client = SimpleNamespace(getReqId=lambda: 84)
+
+    def positions(self):
+        return [self.position]
+
+    def placeOrder(self, contract, order):
+        self.place_calls.append((contract.conId, order.orderId))
+        order.permId = 9100
+        order.clientId = self.client_id
+        self.trade = SimpleNamespace(
+            contract=contract,
+            order=order,
+            orderStatus=SimpleNamespace(
+                status="PreSubmitted", filled=0, remaining=order.totalQuantity,
+                avgFillPrice=0,
+            ),
+            fills=[],
+        )
+        return self.trade
+
+
+class ImmediateFillPositionGateway(PositionGateway):
+    def __init__(self, client_id):
+        super().__init__(client_id)
+        self._filled = False
+        self.execution = None
+
+    def reqAllOpenOrders(self):
+        return [] if self._filled else [self.trade]
+
+    def reqExecutions(self):
+        return [] if self.execution is None else [self.execution]
+
+    def positions(self):
+        return [] if self._filled else [self.position]
+
+    def placeOrder(self, contract, order):
+        self.place_calls.append((contract.conId, order.orderId))
+        self._filled = True
+        self.execution = SimpleNamespace(
+            contract=contract,
+            execution=SimpleNamespace(
+                orderRef=order.orderRef,
+                orderId=order.orderId,
+                permId=9200,
+                clientId=self.client_id,
+                acctNumber=order.account,
+                shares=order.totalQuantity,
+                side="SLD",
+            ),
+        )
+        return SimpleNamespace(
+            contract=contract,
+            order=order,
+            orderStatus=SimpleNamespace(
+                status="Filled",
+                filled=order.totalQuantity,
+                remaining=0,
+                avgFillPrice=119,
+            ),
+            fills=[self.execution],
+        )
 
 
 class TimeoutAwareGateway(FakeGateway):
@@ -388,7 +465,11 @@ def test_v4_writer_reserves_sleeve_authority_before_write_boundary(tmp_path):
             final_write_authority_check=None,
         ):
             events.append("what_if")
-            reasons = tuple(final_write_authority_check())
+            reasons = tuple(
+                final_write_authority_check(
+                    {"canonical_contract": _broker(candidate)["canonical_contract"]}
+                )
+            )
             if reasons:
                 return PaperExecutionResult(False, "BLOCKED", reasons, {}, {})
             events.append("write")
@@ -399,6 +480,8 @@ def test_v4_writer_reserves_sleeve_authority_before_write_boundary(tmp_path):
         install_continuity_schema_v3(db)
         install_multi_universe_schema_v4(db)
         reservation_store = SleeveAuthorityReservationStore(db)
+        from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+        SleeveLedgerStore(db).bootstrap_extended()
 
         def snapshot_reader(candidate):
             assert db.connection.in_transaction is True
@@ -419,7 +502,13 @@ def test_v4_writer_reserves_sleeve_authority_before_write_boundary(tmp_path):
             sleeve_authority_reservation_store=reservation_store,
             sleeve_authority_snapshot_reader=snapshot_reader,
             sleeve_broker_evidence_collector=lambda broker, candidate, raw: (
-                events.append("broker") or _broker(candidate)
+                events.append("broker")
+                or (
+                    _broker(candidate)
+                    if raw["model_write_context"]["canonical_contract"]
+                    == _broker(candidate)["canonical_contract"]
+                    else (_ for _ in ()).throw(AssertionError("missing write context"))
+                )
             ),
         )
         future = coordinator.submit(request)
@@ -534,6 +623,95 @@ def test_model_and_watchdog_commands_share_one_writer_owned_client_id():
     assert cancel.success is True
     assert factory.connection_ids == [19761]
     assert factory.gateway.cancel_calls == [41]
+
+
+def _position_command(*, command_type=BrokerCommandType.CLOSE_POSITION, quantity="4"):
+    contract = _trade().contract
+    contract_sha = canonical_contract_identity(
+        {
+            "conId": contract.conId,
+            "secType": contract.secType,
+            "currency": contract.currency,
+            "exchange": contract.exchange,
+            "localSymbol": contract.localSymbol,
+            "multiplier": contract.multiplier,
+        }
+    ).sha256
+    account_sha = expected_identity_hash("DU123456")
+    position_sha = sha256_json(
+        {
+            "account_identity_sha256": account_sha,
+            "canonical_contract_sha256": contract_sha,
+            "signed_quantity": "4",
+        }
+    )
+    return _command(
+        1,
+        command_type,
+        authority_class=(
+            "CLOSE_POSITION"
+            if command_type == BrokerCommandType.CLOSE_POSITION
+            else "REDUCE_POSITION"
+        ),
+        account_identity_sha256=account_sha,
+        contract_identity_sha256=contract_sha,
+        canonical_contract_sha256=contract_sha,
+        position_identity_sha256=position_sha,
+        position_action="SELL",
+        position_quantity=Decimal(quantity),
+        position_order_type="MKT",
+        position_limit_price=None,
+    )
+
+
+def test_writer_executes_exact_model_authored_position_close():
+    gateway = PositionGateway(19761)
+    coordinator, writer, _ = _start_writer(factory=lambda _: gateway)
+    try:
+        result = coordinator.submit(_position_command()).result(2)
+    finally:
+        writer.stop(2)
+
+    assert result.success is True
+    assert result.status == "BROKER_BOUND"
+    assert result.order["orderId"] == 84
+    assert result.order["permId"] == 9100
+    assert gateway.trade.order.action == "SELL"
+    assert Decimal(str(gateway.trade.order.totalQuantity)) == Decimal("4")
+    assert gateway.trade.order.orderType == "MKT"
+
+
+def test_writer_accepts_exact_immediate_fill_when_order_leaves_open_orders():
+    gateway = ImmediateFillPositionGateway(19761)
+    coordinator, writer, _ = _start_writer(factory=lambda _: gateway)
+    try:
+        result = coordinator.submit(_position_command()).result(2)
+    finally:
+        writer.stop(2)
+
+    assert result.success is True
+    assert result.status == "FILLED"
+    assert result.order == {
+        "orderRef": result.order["orderRef"],
+        "orderId": 84,
+        "permId": 9200,
+        "status": "Filled",
+    }
+    assert result.broker_validation["post_write_position_quantity"] == "0"
+    assert writer._frozen_order_refs == set()
+
+
+def test_writer_blocks_position_continuity_when_broker_position_changed():
+    gateway = PositionGateway(19761, quantity=Decimal("3"))
+    coordinator, writer, _ = _start_writer(factory=lambda _: gateway)
+    try:
+        result = coordinator.submit(_position_command()).result(2)
+    finally:
+        writer.stop(2)
+
+    assert result.success is False
+    assert result.reason_codes == ("CONTINUITY_POSITION_IDENTITY_CHANGED",)
+    assert gateway.place_calls == []
 
 
 def test_queue_is_fifo_and_final_authority_is_reread_for_each_command():

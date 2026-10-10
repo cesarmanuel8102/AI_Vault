@@ -235,6 +235,31 @@ class ProductFamilyCertificationStore:
         expires_at_utc: datetime,
         paper_limitations: tuple[str, ...],
     ) -> str:
+        if step in CERTIFICATION_SEQUENCE[6:]:
+            raise ProductCapabilityError("AUTHORIZED_CANARY_FINALIZER_REQUIRED")
+        return self._record_step(
+            family,
+            step,
+            evidence_sha256,
+            account_sha256=account_sha256,
+            adapter_sha256=adapter_sha256,
+            observed_at_utc=observed_at_utc,
+            expires_at_utc=expires_at_utc,
+            paper_limitations=paper_limitations,
+        )
+
+    def _record_step(
+        self,
+        family: ProductFamilyKey,
+        step: str,
+        evidence_sha256: str,
+        *,
+        account_sha256: str,
+        adapter_sha256: str,
+        observed_at_utc: datetime,
+        expires_at_utc: datetime,
+        paper_limitations: tuple[str, ...],
+    ) -> str:
         if len(evidence_sha256) != 64 or any(c not in "0123456789abcdef" for c in evidence_sha256):
             raise ProductCapabilityError("INVALID_EVIDENCE_SHA256")
         if not paper_limitations:
@@ -290,13 +315,14 @@ class ProductFamilyCertificationStore:
     ) -> ProductExecutionCapability:
         if (
             lifecycle.product_family_sha256 != family.sha256
+            or lifecycle.account_identity_sha256 != account_sha256
             or lifecycle.status != "PASS"
             or lifecycle.full_lifecycle_verified is not True
             or lifecycle.flat is not True
         ):
             raise ProductCapabilityError("CANARY_FULL_LIFECYCLE_REQUIRED")
         for step in CERTIFICATION_SEQUENCE[6:]:
-            self.record_step(
+            self._record_step(
                 family,
                 step,
                 lifecycle.sha256,
