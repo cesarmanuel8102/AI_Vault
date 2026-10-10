@@ -59,6 +59,22 @@ def bundle(*, reconciliation="PASS", kill_switch="KILL_SWITCH_CLEAR", market_gat
     )
 
 
+def v4_bundle(**kwargs):
+    return bundle(**kwargs).model_copy(
+        update={
+            "multi_sleeve_portfolio": {
+                "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+                "sleeves": {
+                    "regular": {"equity_usd": "500"},
+                    "extended": {"equity_usd": "500"},
+                },
+            },
+            "contract_ownership_snapshot": {"contract_sleeves": {}},
+            "product_capability_snapshot": {"families": []},
+        }
+    )
+
+
 def proposal():
     return AutonomousTradeProposal(
         thesis="test",
@@ -657,6 +673,22 @@ class _PassUntilOperatorControlToolbox:
         )
 
 
+class _V4PassUntilOperatorControlToolbox(_PassUntilOperatorControlToolbox):
+    def _proposal_contract(self, ib, proposal):
+        return SimpleNamespace(
+            conId=123,
+            symbol=proposal.symbol,
+            secType="STK",
+            currency="USD",
+            exchange="SMART",
+            primaryExchange="ARCA",
+            localSymbol=proposal.symbol,
+            tradingClass=proposal.symbol,
+            multiplier="1",
+            comboLegs=[],
+        )
+
+
 class _RejectingContinuityBindingService:
     def __init__(self):
         self.stage_calls = 0
@@ -701,6 +733,70 @@ def test_writer_owned_mechanics_uses_injected_broker_without_connect_or_disconne
     assert toolbox.requested_client_ids == []
     assert toolbox.validation_connections == [toolbox.ib]
     assert toolbox.ib.disconnect_calls == 0
+
+
+def test_direct_v4_entry_cannot_bypass_missing_final_writer_authority(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _V4PassUntilOperatorControlToolbox()
+    with Database.open(tmp_path / "v4-direct-entry.sqlite3") as db:
+        mechanics = WriterOwnedModelExecutionMechanics(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        )
+        mechanics._writer_owned_broker = toolbox.ib
+
+        result = mechanics.execute(proposal(), v4_bundle())
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("SLEEVE_FINAL_WRITE_AUTHORITY_REQUIRED",)
+    assert toolbox.ib.place_calls == 0
+
+
+def test_runtime_v4_authority_cannot_be_bypassed_with_legacy_bundle(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _PassUntilOperatorControlToolbox()
+    with Database.open(tmp_path / "v4-forged-legacy-bundle.sqlite3") as db:
+        mechanics = WriterOwnedModelExecutionMechanics(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+            final_write_authority_required=True,
+        )
+        mechanics._writer_owned_broker = toolbox.ib
+
+        result = mechanics.execute(proposal(), bundle())
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("SLEEVE_FINAL_WRITE_AUTHORITY_REQUIRED",)
+    assert toolbox.ib.place_calls == 0
+
+
+def test_legacy_day1_direct_writer_mechanics_remain_compatible(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _PassUntilOperatorControlToolbox()
+    with Database.open(tmp_path / "legacy-direct-mechanics.sqlite3") as db:
+        mechanics = WriterOwnedModelExecutionMechanics(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: ("LEGACY_TEST_BLOCK",),
+        )
+        mechanics._writer_owned_broker = toolbox.ib
+
+        result = mechanics.execute(proposal(), bundle())
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("LEGACY_TEST_BLOCK",)
+    assert toolbox.ib.place_calls == 0
 
 
 class _ResolvedBagIB:
@@ -1323,6 +1419,92 @@ def test_v4_position_action_supplies_exact_contract_to_final_authority(tmp_path)
     }
 
 
+def test_direct_v4_position_action_cannot_bypass_missing_final_writer_authority(
+    tmp_path,
+):
+    from ibkr_paper_30d.multi_universe_models import CapitalSleeve
+    from ibkr_paper_30d.persistence import Database
+
+    broker = _DirectRoutedPositionIB()
+    toolbox = IBKRResearchToolbox()
+    toolbox.live_contract_quote_evidence = lambda *_args, **_kwargs: {
+        "success": True,
+        "market_data_type": 1,
+    }
+    action = AutonomousPositionAction(
+        symbol="HAE",
+        sec_type="STK",
+        action="SELL",
+        quantity="1",
+        order_type="MKT",
+        contract_id=7884,
+        reason="Reduce the existing long position.",
+        capital_sleeve=CapitalSleeve.REGULAR_SLEEVE,
+        product_family_sha256="f" * 64,
+    )
+
+    with Database.open(tmp_path / "v4-direct-position.sqlite3") as db:
+        mechanics = WriterOwnedModelExecutionMechanics(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        )
+        mechanics._writer_owned_broker = broker
+
+        result = mechanics.execute_position_action(
+            action, v4_bundle(), TraderDecision.REDUCE_POSITION
+        )
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("SLEEVE_FINAL_WRITE_AUTHORITY_REQUIRED",)
+    assert broker.place_contracts == []
+
+
+def test_authorized_v4_position_action_still_reaches_broker(tmp_path):
+    from ibkr_paper_30d.multi_universe_models import CapitalSleeve
+    from ibkr_paper_30d.persistence import Database
+
+    broker = _DirectRoutedPositionIB()
+    toolbox = IBKRResearchToolbox()
+    toolbox.live_contract_quote_evidence = lambda *_args, **_kwargs: {
+        "success": True,
+        "market_data_type": 1,
+    }
+    action = AutonomousPositionAction(
+        symbol="HAE",
+        sec_type="STK",
+        action="SELL",
+        quantity="1",
+        order_type="MKT",
+        contract_id=7884,
+        reason="Reduce the existing long position.",
+        capital_sleeve=CapitalSleeve.REGULAR_SLEEVE,
+        product_family_sha256="f" * 64,
+    )
+
+    with Database.open(tmp_path / "v4-authorized-position.sqlite3") as db:
+        result = WriterOwnedModelExecutionMechanics(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+            final_write_authority_required=True,
+        ).execute_position_action_with_broker(
+            broker,
+            action,
+            v4_bundle(),
+            TraderDecision.REDUCE_POSITION,
+            final_write_authority_check=lambda context: (),
+        )
+
+    assert result.success is True
+    assert result.reason_codes == ()
+    assert len(broker.place_contracts) == 1
+
+
 def test_missing_immediate_operator_control_callback_fails_closed(tmp_path):
     from ibkr_paper_30d.persistence import Database
 
@@ -1499,6 +1681,54 @@ def test_order_registry_rejects_blank_account_anchor(tmp_path):
         assert db.execute(
             "SELECT COUNT(*) FROM experiment_order_registry"
         ).fetchone()[0] == 0
+
+
+def test_direct_v4_cancel_cannot_bypass_missing_final_writer_authority(tmp_path):
+    with armed_cancel_fixture(tmp_path) as (executor, _db, broker, action, value):
+        executor._writer_owned_broker = broker
+        result = executor.execute_open_order_action(
+            action,
+            value.model_copy(
+                update={
+                    "multi_sleeve_portfolio": v4_bundle().multi_sleeve_portfolio,
+                    "contract_ownership_snapshot": {
+                        "contract_sleeves": {
+                            str(action.contract_id): "REGULAR_SLEEVE"
+                        }
+                    },
+                    "product_capability_snapshot": {"families": []},
+                }
+            ),
+            TraderDecision.CANCEL_ORDER,
+        )
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("SLEEVE_FINAL_WRITE_AUTHORITY_REQUIRED",)
+    assert broker.cancel_calls == 0
+
+
+def test_direct_v4_modify_cannot_bypass_missing_final_writer_authority(tmp_path):
+    with armed_modify_fixture(tmp_path) as (executor, _db, broker, action, value):
+        executor._writer_owned_broker = broker
+        result = executor.execute_open_order_action(
+            action,
+            value.model_copy(
+                update={
+                    "multi_sleeve_portfolio": v4_bundle().multi_sleeve_portfolio,
+                    "contract_ownership_snapshot": {
+                        "contract_sleeves": {
+                            str(action.contract_id): "REGULAR_SLEEVE"
+                        }
+                    },
+                    "product_capability_snapshot": {"families": []},
+                }
+            ),
+            TraderDecision.MODIFY_ORDER,
+        )
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("SLEEVE_FINAL_WRITE_AUTHORITY_REQUIRED",)
+    assert broker.place_calls == []
 
 
 def test_cancel_calls_only_selected_owned_order_and_persists_attempt_and_result(

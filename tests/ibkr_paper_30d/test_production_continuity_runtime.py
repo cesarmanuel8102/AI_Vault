@@ -81,6 +81,12 @@ def test_v4_writer_factory_wires_path_scoped_sleeve_authority(tmp_path, monkeypa
     assert writer.sleeve_authority_reservation_store is not None
     assert callable(writer.sleeve_authority_snapshot_reader)
     assert callable(writer.sleeve_broker_evidence_collector)
+    assert writer.model_execution_engine.final_write_authority_required is True
+    assert (
+        writer.model_execution_engine._load().mechanics
+        ._runtime_final_write_authority_required
+        is True
+    )
 
 
 def test_bag_sleeve_evidence_resolves_every_leg_from_broker() -> None:

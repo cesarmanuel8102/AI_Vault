@@ -1108,9 +1108,18 @@ def _broker_evidence_collector(
 
 
 class _LazyProductionModelEngine:
-    def __init__(self, *, db_path: Path, toolbox: Any) -> None:
+    def __init__(
+        self,
+        *,
+        db_path: Path,
+        toolbox: Any,
+        final_write_authority_required: bool = False,
+    ) -> None:
         self.db_path = Path(db_path)
         self.toolbox = toolbox
+        self.final_write_authority_required = bool(
+            final_write_authority_required
+        )
         self.db = None
         self.engine = None
 
@@ -1130,6 +1139,9 @@ class _LazyProductionModelEngine:
                 fresh_safety_check=lambda scope: (),
                 operator_control_check=lambda: (),
                 continuity_binding_service=ContinuityBindingService(self.db, store),
+                final_write_authority_required=(
+                    self.final_write_authority_required
+                ),
             )
             self.engine = ModelExecutionEngine(mechanics=mechanics)
         return self.engine
@@ -1416,7 +1428,12 @@ def create_authoritative_writer(
         client_id=WRITER_CLIENT_ID,
         read_only=False,
     )
-    lazy_engine = _LazyProductionModelEngine(db_path=Path(db_path), toolbox=toolbox)
+    v4_active = getattr(config, "target_successor_definition_sha256", None) is not None
+    lazy_engine = _LazyProductionModelEngine(
+        db_path=Path(db_path),
+        toolbox=toolbox,
+        final_write_authority_required=v4_active,
+    )
     snapshot_reader = _ProductionSnapshotReader(
         db_path=Path(db_path),
         config=config,
@@ -1429,7 +1446,6 @@ def create_authoritative_writer(
         expected_approved_head=_current_head(Path(config.repo_root)),
     )
     effective_session_factory = validation_broker_factory or session_factory
-    v4_active = getattr(config, "target_successor_definition_sha256", None) is not None
     sleeve_reservation_store = (
         _PathSleeveAuthorityReservationStore(Path(db_path)) if v4_active else None
     )

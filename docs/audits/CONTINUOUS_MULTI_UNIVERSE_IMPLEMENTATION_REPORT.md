@@ -38,22 +38,24 @@ Implementation commits, in order:
 9. `9cdcc13` - add recoverable multi-universe transition
 10. `97eb44b` - prepare bounded PAPER canaries
 11. `131c96a` - compose continuous multi-universe runtime
-12. Final evidence commit - close the adversarial authority and lifecycle findings
+12. `1fef9ec` - close the adversarial authority and lifecycle findings
+13. Final authority commit - make V4 mechanics fail closed without writer authority
 
 ## Verification Evidence
 
 - Critical ownership/ledger/reconciliation/state matrix: `105 passed, 0 failed`
 - Changed-file matrix before manifest regeneration: `461 passed`; the expected
   15 launcher failures were exclusively `IMMUTABLE_KERNEL_MANIFEST_MISMATCH`
-- Full regression after manifest regeneration: `1972 passed, 0 failed, 0 skipped`
+- Final-authority focused regression: `139 passed, 0 failed`
+- Full regression after final manifest regeneration: `1979 passed, 0 failed, 0 skipped`
 - Kernel closure and runtime provenance: `14 passed, 0 failed`
 - PowerShell AST: `13/13` production IBKR scripts passed under both Windows
   PowerShell 5.1 and PowerShell 7
 - Kernel manifest entries: `86`
 - Kernel manifest file SHA-256:
-  `e282cbbbfd27a797bb8200e0697e7d2104d0f1b3b038b94f90cbac4297887acd`
+  `6ba8b529f1f6a52079c2cbfb6171ef3e278dd6c64a109815b7e805819a0cbd42`
 - Declared kernel SHA-256:
-  `34b9c4773736b65b053d1c169ea75f089f2fa1ca3e01d6ae525a96cb8b8abe02`
+  `6cc89bb604c62ba2f80d3ff3aaba1fe6b0fc0a035e5bb1fec33408c4c1d1a8a4`
 - `git diff --check`: PASS
 - High-confidence secret matches in changed authority files: `0`
 - Added LIVE-port or global-cancel paths: `0`
@@ -85,6 +87,15 @@ coverage had not exposed:
   authority, broker snapshots, and exact canonical contracts are hash-bound
   through the production writer path; and
 - V4 uses sleeve-local equity as authority and ignores legacy aggregate equity.
+- direct entry, modification, cancellation, and position-management methods now
+  reject V4 before broker interaction unless they are inside the writer-owned
+  authority context with a final authority callback;
+- the production runtime derives the V4 authority requirement from the
+  authoritative successor configuration, so a caller cannot disable it by
+  omitting or forging the model bundle's V4 fields; and
+- adversarial fake-broker tests prove zero unauthorized `placeOrder` and
+  `cancelOrder` calls, while authorized V4 position management and legacy Day1
+  compatibility remain operational in simulation.
 
 ## Architecture Result
 
@@ -160,14 +171,16 @@ are not implementation mutations and granted no V4 authority.
 - Existing Pydantic field-shadowing warnings remain known non-failing technical
   debt.
 
-## Next Authorization
+## Next Operational Phase
 
-The next Owner decision is whether to authorize a differential external audit
-of this final evidence HEAD. A later and separate authorization would be needed
-to install V4 in production, produce real Owner economic-risk and transition
-receipts, quiesce Day1, run bounded PAPER canaries, retire the predecessor, bind
-the scheduler, or activate the successor epoch. None of those operations is
-authorized or performed by this report.
+The Owner has waived another external differential audit and authorized a
+controlled PAPER pilot after this final authority correction. This report does
+not itself install V4 or execute that pilot. The operational phase must first
+prove a flat/certain PAPER account, port `4002` only, no active predecessor
+writer, exact pilot receipts, and a reversible isolated runtime. The pilot must
+remain autonomous: no host-selected trade is required or forced. Its success
+criterion is broker-visible submit/bind/reconciliation followed by a later
+model-authored management decision and a terminal flat/economics receipt.
 
 ## Completion Fields
 
@@ -195,5 +208,6 @@ authorized or performed by this report.
 - `REAL_BROKER_WRITES=0`
 - `LIVE_CONNECTIONS=0`
 - `DAY1_PRODUCTION_TOUCHED=false`
-- `EXTERNAL_AUDIT_REQUIRED=true`
-- `NEXT_OWNER_DECISION_REQUIRED=true`
+- `EXTERNAL_AUDIT_REQUIRED=false`
+- `PAPER_PILOT_AUTHORIZED_PENDING_PREFLIGHT=true`
+- `NEXT_OWNER_DECISION_REQUIRED=false`

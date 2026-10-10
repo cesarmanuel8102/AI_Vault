@@ -118,6 +118,7 @@ class WriterOwnedModelExecutionMechanics:
         fresh_safety_check: Callable[[str], tuple[str, ...]] | None = None,
         operator_control_check: Callable[[], tuple[str, ...]] | None = None,
         continuity_binding_service: ContinuityBindingService | None = None,
+        final_write_authority_required: bool = False,
     ) -> None:
         self.toolbox = toolbox
         self.armed = (
@@ -130,8 +131,13 @@ class WriterOwnedModelExecutionMechanics:
         self.fresh_safety_check = fresh_safety_check
         self.operator_control_check = operator_control_check
         self.continuity_binding_service = continuity_binding_service
+        self._runtime_final_write_authority_required = bool(
+            final_write_authority_required
+        )
         self._writer_owned_broker: Any | None = None
         self._final_write_authority_check: Callable[..., tuple[str, ...]] | None = None
+        self._writer_authority_context_active = False
+        self._bound_final_write_authority_required = False
 
     @staticmethod
     def _fills_payload(
@@ -222,6 +228,11 @@ class WriterOwnedModelExecutionMechanics:
     def _final_write_authority_reasons(
         self, write_context: dict[str, Any] | None = None
     ) -> tuple[str, ...]:
+        if self._bound_final_write_authority_required and (
+            not self._writer_authority_context_active
+            or self._final_write_authority_check is None
+        ):
+            return ("SLEEVE_FINAL_WRITE_AUTHORITY_REQUIRED",)
         if self._final_write_authority_check is None:
             return ()
         try:
@@ -257,6 +268,8 @@ class WriterOwnedModelExecutionMechanics:
         self,
         broker: Any,
         final_write_authority_check: Callable[..., tuple[str, ...]] | None,
+        *,
+        final_write_authority_required: bool,
     ):
         if broker is None:
             raise ValueError("writer-owned broker is required")
@@ -264,11 +277,36 @@ class WriterOwnedModelExecutionMechanics:
             raise RuntimeError("WRITER_BROKER_ALREADY_BOUND")
         self._writer_owned_broker = broker
         self._final_write_authority_check = final_write_authority_check
+        self._writer_authority_context_active = True
+        self._bound_final_write_authority_required = bool(
+            final_write_authority_required
+        )
         try:
             yield
         finally:
+            self._bound_final_write_authority_required = False
+            self._writer_authority_context_active = False
             self._final_write_authority_check = None
             self._writer_owned_broker = None
+
+    def _requires_final_write_authority(self, bundle: TraderInputBundle) -> bool:
+        return bool(
+            self._runtime_final_write_authority_required
+            or bundle.multi_sleeve_v4_active
+        )
+
+    def _writer_authority_binding_reasons(
+        self, bundle: TraderInputBundle
+    ) -> tuple[str, ...]:
+        if not self._requires_final_write_authority(bundle):
+            return ()
+        if (
+            not self._writer_authority_context_active
+            or not self._bound_final_write_authority_required
+            or self._final_write_authority_check is None
+        ):
+            return ("SLEEVE_FINAL_WRITE_AUTHORITY_REQUIRED",)
+        return ()
 
     def execute_with_broker(
         self,
@@ -280,7 +318,8 @@ class WriterOwnedModelExecutionMechanics:
         invocation_id: str | None = None,
         final_write_authority_check: Callable[..., tuple[str, ...]] | None = None,
     ) -> PaperExecutionResult:
-        if bundle.multi_sleeve_v4_active and final_write_authority_check is None:
+        authority_required = self._requires_final_write_authority(bundle)
+        if authority_required and final_write_authority_check is None:
             return PaperExecutionResult(
                 False,
                 "BLOCKED",
@@ -288,7 +327,11 @@ class WriterOwnedModelExecutionMechanics:
                 {},
                 {},
             )
-        with self._using_writer_owned_broker(broker, final_write_authority_check):
+        with self._using_writer_owned_broker(
+            broker,
+            final_write_authority_check,
+            final_write_authority_required=authority_required,
+        ):
             return self.execute(
                 proposal,
                 bundle,
@@ -306,7 +349,8 @@ class WriterOwnedModelExecutionMechanics:
         invocation_id: str | None = None,
         final_write_authority_check: Callable[..., tuple[str, ...]] | None = None,
     ) -> PaperExecutionResult:
-        if bundle.multi_sleeve_v4_active and final_write_authority_check is None:
+        authority_required = self._requires_final_write_authority(bundle)
+        if authority_required and final_write_authority_check is None:
             return PaperExecutionResult(
                 False,
                 "BLOCKED",
@@ -314,7 +358,11 @@ class WriterOwnedModelExecutionMechanics:
                 {},
                 {},
             )
-        with self._using_writer_owned_broker(broker, final_write_authority_check):
+        with self._using_writer_owned_broker(
+            broker,
+            final_write_authority_check,
+            final_write_authority_required=authority_required,
+        ):
             return self.execute_open_order_action(
                 action,
                 bundle,
@@ -331,7 +379,8 @@ class WriterOwnedModelExecutionMechanics:
         *,
         final_write_authority_check: Callable[..., tuple[str, ...]] | None = None,
     ) -> PaperExecutionResult:
-        if bundle.multi_sleeve_v4_active and final_write_authority_check is None:
+        authority_required = self._requires_final_write_authority(bundle)
+        if authority_required and final_write_authority_check is None:
             return PaperExecutionResult(
                 False,
                 "BLOCKED",
@@ -339,7 +388,11 @@ class WriterOwnedModelExecutionMechanics:
                 {},
                 {},
             )
-        with self._using_writer_owned_broker(broker, final_write_authority_check):
+        with self._using_writer_owned_broker(
+            broker,
+            final_write_authority_check,
+            final_write_authority_required=authority_required,
+        ):
             return self.execute_position_action(action, bundle, decision)
 
     def _reconcile_post_send_trade(
@@ -571,6 +624,15 @@ class WriterOwnedModelExecutionMechanics:
         *,
         invocation_id: str | None = None,
     ) -> PaperExecutionResult:
+        authority_reasons = self._writer_authority_binding_reasons(bundle)
+        if authority_reasons:
+            return PaperExecutionResult(
+                success=False,
+                status="BLOCKED",
+                reason_codes=authority_reasons,
+                order={},
+                broker_validation={},
+            )
         if decision == TraderDecision.CANCEL_ORDER:
             return self._cancel_open_order(
                 action, bundle, invocation_id=invocation_id
@@ -1284,6 +1346,15 @@ class WriterOwnedModelExecutionMechanics:
             raise AutonomousPaperExecutionNotArmed(
                 "set IBKR_AUTONOMOUS_PAPER_ARMED=true only when the paper experiment is explicitly started"
             )
+        authority_reasons = self._writer_authority_binding_reasons(bundle)
+        if authority_reasons:
+            return PaperExecutionResult(
+                success=False,
+                status="BLOCKED",
+                reason_codes=authority_reasons,
+                order={},
+                broker_validation={},
+            )
         safety_reasons = []
         if bundle.reconciliation_receipt.get("status") != "PASS":
             safety_reasons.append("BROKER_RECONCILIATION_REQUIRED")
@@ -1577,6 +1648,15 @@ class WriterOwnedModelExecutionMechanics:
         if not self.armed:
             raise AutonomousPaperExecutionNotArmed(
                 "set IBKR_AUTONOMOUS_PAPER_ARMED=true only when the paper experiment is explicitly started"
+            )
+        authority_reasons = self._writer_authority_binding_reasons(bundle)
+        if authority_reasons:
+            return PaperExecutionResult(
+                success=False,
+                status="BLOCKED",
+                reason_codes=authority_reasons,
+                order={},
+                broker_validation={},
             )
         safety_reasons = []
         if bundle.reconciliation_receipt.get("status") != "PASS":
