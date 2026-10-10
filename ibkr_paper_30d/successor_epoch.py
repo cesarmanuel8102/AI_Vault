@@ -976,9 +976,15 @@ def commit_successor_transition(
     broker_evidence_collector: Callable[[], BrokerTransitionEvidence],
     now_utc: Callable[[], datetime],
     after_evidence_collected: Callable[[BrokerTransitionEvidence], None] | None = None,
+    multi_universe_transition_id: str | None = None,
+    multi_universe_target_sha256: str | None = None,
 ) -> SuccessorTransitionResult:
     """Collect broker evidence outside SQLite, then commit one atomic edge."""
 
+    if (multi_universe_transition_id is None) != (
+        multi_universe_target_sha256 is None
+    ):
+        raise SuccessorEpochError("MULTI_UNIVERSE_TRANSITION_BINDING_INCOMPLETE")
     if db.connection.in_transaction:
         raise SuccessorEpochError("BROKER_EVIDENCE_COLLECTION_TRANSACTION_ACTIVE")
     if execution_lock_verifier() is not True:
@@ -1012,6 +1018,20 @@ def commit_successor_transition(
     try:
         with db.transaction():
             verify_successor_schema_v2(db)
+            if multi_universe_transition_id is not None:
+                from .multi_universe_transition import (
+                    MultiUniverseTransitionError,
+                    require_predecessor_retired,
+                )
+
+                try:
+                    require_predecessor_retired(
+                        db,
+                        transition_id=multi_universe_transition_id,
+                        target_sha256=str(multi_universe_target_sha256),
+                    )
+                except MultiUniverseTransitionError as exc:
+                    raise SuccessorEpochError(str(exc)) from exc
             if execution_lock_verifier() is not True:
                 raise SuccessorEpochError("EXECUTION_LOCK_NOT_VERIFIED")
             rebuilt_payload, rebuilt_sha = _canonical_broker_evidence(

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .canonical import canonical_bytes, sha256_json
+from .multi_universe_models import TransitionTarget
 from .owner_authorization import (
     OWNER_PHRASE,
     atomic_authorization_receipt,
@@ -25,6 +26,23 @@ EXPERIMENT_ID = "ibkr-paper-30d"
 
 class SuccessorAuthorizationError(RuntimeError):
     pass
+
+
+def validate_transition_target_authorization(
+    target: TransitionTarget, receipt: dict[str, Any]
+) -> dict[str, Any]:
+    """Bind a V4 transition target to one exact Owner receipt."""
+
+    if (
+        receipt.get("receipt_sha256") != target.owner_authorization_sha256
+        or receipt.get("definition_sha256")
+        != target.successor_definition_sha256
+        or receipt.get("approved_git_head") != target.approved_git_head
+    ):
+        raise SuccessorAuthorizationError(
+            "SUCCESSOR_AUTHORIZATION_BINDING_MISMATCH"
+        )
+    return receipt
 
 
 def _definition(db: Database, epoch_id: str) -> dict[str, Any]:

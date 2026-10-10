@@ -6,7 +6,11 @@ from datetime import timedelta
 import pytest
 
 from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
+from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
 from ibkr_paper_30d.experiment_epoch import ExperimentEpochStore
+from ibkr_paper_30d.multi_universe_models import TransitionPhase, TransitionTarget
+from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+from ibkr_paper_30d.multi_universe_transition import MultiUniverseTransitionCoordinator
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.repositories import EventRepository
 from ibkr_paper_30d.successor_authorization import revoke_successor_authorization
@@ -62,6 +66,21 @@ def _commit(db, definition, receipt, **overrides):
     }
     values.update(overrides)
     return commit_successor_transition(**values)
+
+
+def _transition_evidence(phase: TransitionPhase) -> dict[str, object]:
+    result: dict[str, object] = {
+        "phase_evidence_sha256": sha256_json({"phase": phase.value}),
+        "canary_flat": True,
+        "continuity_exact": True,
+        "broker_write_count": 0,
+    }
+    if phase is TransitionPhase.CANARY_PASS:
+        result["canary_status"] = "PASS"
+    if phase is TransitionPhase.PREDECESSOR_RETIRED:
+        result["retirement_status"] = "PASS"
+        result["retirement_tombstone_sha256"] = "f" * 64
+    return result
 
 
 def test_atomic_transition_writes_one_clock_supersession_and_activation(
@@ -142,6 +161,59 @@ def test_broker_collector_runs_after_lock_check_and_before_begin_immediate(
     assert order[0] == ("lock", False)
     assert order[1] == ("broker", False)
     assert all(not in_transaction for _, in_transaction in order[:2])
+
+
+def test_successor_commit_requires_exact_predecessor_retirement_when_v4_bound(
+    tmp_path,
+) -> None:
+    db_path, definition, receipt = _setup(tmp_path)
+    with Database.open(db_path) as db:
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+        target = TransitionTarget(
+            transition_id="successor-transition-v4",
+            predecessor_epoch_id=definition["predecessor_epoch_id"],
+            successor_epoch_id=definition["epoch_id"],
+            successor_definition_sha256=definition["definition_sha256"],
+            owner_authorization_sha256=receipt["receipt_sha256"],
+            approved_git_head=definition["approved_git_head"],
+            account_identity_sha256=ACCOUNT_HASH,
+            clock_authority_sha256="1" * 64,
+            regular_sleeve_authority_sha256="2" * 64,
+            extended_sleeve_authority_sha256="3" * 64,
+            economic_risk_authorization_sha256="4" * 64,
+            certified_family_set_sha256="5" * 64,
+            canary_authorization_sha256="6" * 64,
+            writer_binding_sha256="7" * 64,
+        )
+        coordinator = MultiUniverseTransitionCoordinator(db)
+        coordinator.prepare(target)
+
+        with pytest.raises(SuccessorEpochError, match="RETIREMENT_NOT_PROVEN"):
+            _commit(
+                db,
+                definition,
+                receipt,
+                multi_universe_transition_id=target.transition_id,
+                multi_universe_target_sha256=target.sha256,
+            )
+        for phase in (
+            TransitionPhase.PREDECESSOR_QUIESCED,
+            TransitionPhase.CANARY_EXCLUSIVE,
+            TransitionPhase.CANARY_PASS,
+            TransitionPhase.PREDECESSOR_RETIRED,
+        ):
+            coordinator.advance(phase, _transition_evidence(phase))
+
+        result = _commit(
+            db,
+            definition,
+            receipt,
+            multi_universe_transition_id=target.transition_id,
+            multi_universe_target_sha256=target.sha256,
+        )
+
+    assert result.epoch_id == definition["epoch_id"]
 
 
 @pytest.mark.parametrize(
