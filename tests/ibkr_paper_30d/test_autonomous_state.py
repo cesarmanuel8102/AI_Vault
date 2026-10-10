@@ -54,8 +54,8 @@ def test_v4_state_context_contains_both_sleeves_ownership_and_capabilities() -> 
                     "fees_usd": "0",
                     "initialized": True,
                 },
-                "extended": {
-                    "sleeve": "EXTENDED_SLEEVE",
+                "continuous": {
+                    "sleeve": "CONTINUOUS_SLEEVE",
                     "allocation_usd": "500",
                     "currency_balances": [{"currency": "USD", "amount": "510"}],
                     "positions": [],
@@ -94,21 +94,62 @@ def test_v4_state_context_contains_both_sleeves_ownership_and_capabilities() -> 
         )
     )
 
+    family_sha256 = "f" * 64
     portfolio, ownership, capabilities = subject._multi_sleeve_context(
         reconciliation={"status": "BLOCK", "reason_codes": ["ACCOUNT_MISMATCH"]},
         account={"net_liquidation": "1000"},
         broker_positions={"positions": [{"contract_id": 756733}]},
         open_orders={"open_orders": []},
+        transition_phase="ACTIVE",
+        regular_entry_open=True,
+        family_sessions={
+            family_sha256: {
+                "authenticated": True,
+                "tradable_now": True,
+                "session": "REGULAR",
+                "eligible_sleeves": [
+                    "REGULAR_SLEEVE",
+                    "CONTINUOUS_SLEEVE",
+                ],
+            }
+        },
     )
 
     assert portfolio["schema"] == "MULTI_SLEEVE_PORTFOLIO_V4"
-    assert set(portfolio["sleeves"]) == {"regular", "extended"}
+    assert set(portfolio["sleeves"]) == {"regular", "continuous"}
     assert portfolio["sleeves"]["regular"]["equity_usd"] == "475"
-    assert portfolio["sleeves"]["extended"]["equity_usd"] == "510"
+    assert portfolio["sleeves"]["continuous"]["equity_usd"] == "510"
     assert portfolio["new_entries_enabled"] is False
+    assert portfolio["transition_phase"] == "ACTIVE"
+    assert set(portfolio["entry_eligibility"]) == {
+        "REGULAR_SLEEVE",
+        "CONTINUOUS_SLEEVE",
+    }
+    assert portfolio["entry_eligibility"]["CONTINUOUS_SLEEVE"] == {
+        "status": "BLOCK",
+        "reason_codes": ["BROKER_RECONCILIATION_REQUIRED"],
+        "eligible_family_sha256": [family_sha256],
+    }
+    assert portfolio["entry_eligibility"]["REGULAR_SLEEVE"] == {
+        "status": "BLOCK",
+        "reason_codes": ["BROKER_RECONCILIATION_REQUIRED"],
+        "eligible_family_sha256": [family_sha256],
+    }
+    assert portfolio["management_eligibility"]["756733"]["status"] == "PASS"
     assert portfolio["account_observation"]["position_count"] == 1
     assert ownership["contract_sleeves"] == {"756733": "REGULAR_SLEEVE"}
     assert capabilities["families"][0]["family_sha256"] == "f" * 64
+    assert capabilities["authenticated_sessions"] == {
+        family_sha256: {
+            "authenticated": True,
+            "tradable_now": True,
+            "session": "REGULAR",
+            "eligible_sleeves": [
+                "REGULAR_SLEEVE",
+                "CONTINUOUS_SLEEVE",
+            ],
+        }
+    }
 
 
 def test_v4_state_blocks_until_both_sleeves_are_bootstrapped() -> None:
@@ -117,7 +158,10 @@ def test_v4_state_blocks_until_both_sleeves_are_bootstrapped() -> None:
         project_all=lambda: _Dumpable(
             {
                 "regular": {"sleeve": "REGULAR_SLEEVE", "initialized": True},
-                "extended": {"sleeve": "EXTENDED_SLEEVE", "initialized": False},
+                "continuous": {
+                    "sleeve": "CONTINUOUS_SLEEVE",
+                    "initialized": False,
+                },
                 "aggregate_currency_balances": [],
             }
         )

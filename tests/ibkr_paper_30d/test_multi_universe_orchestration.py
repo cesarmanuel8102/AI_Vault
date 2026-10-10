@@ -12,6 +12,8 @@ from ibkr_paper_30d.session_orchestration import (
 
 
 NOW = datetime(2026, 10, 9, 20, 5, tzinfo=timezone.utc)
+REGULAR_FAMILY = "a" * 64
+CONTINUOUS_FAMILY = "b" * 64
 
 
 def _family(*, session="CLOSED", next_open=None, authenticated=True):
@@ -32,27 +34,32 @@ def _decide(families, *, orders=(), positions=(), deadlines=()):
     )
 
 
-def test_regular_closed_extended_open_runs_one_autonomous_cycle() -> None:
+def test_regular_closed_continuous_open_runs_one_autonomous_cycle() -> None:
     decision = _decide(
         {
-            "regular": _family(session="CLOSED"),
-            "extended": _family(session="REGULAR"),
+            REGULAR_FAMILY: _family(session="CLOSED"),
+            CONTINUOUS_FAMILY: _family(session="REGULAR"),
         }
     )
 
     assert decision.action is OrchestrationAction.RUN_AUTONOMOUS_CYCLE
     assert decision.session is MarketSession.REGULAR
-    assert "CERTIFIED_FAMILY_OPEN:extended" in decision.reason_codes
+    assert f"CERTIFIED_FAMILY_OPEN:{CONTINUOUS_FAMILY}" in decision.reason_codes
 
 
 def test_both_open_run_and_both_closed_idle() -> None:
     both_open = _decide(
-        {"regular": _family(session="REGULAR"), "extended": _family(session="REGULAR")}
+        {
+            REGULAR_FAMILY: _family(session="REGULAR"),
+            CONTINUOUS_FAMILY: _family(session="REGULAR"),
+        }
     )
     both_closed = _decide(
         {
-            "regular": _family(session="CLOSED", next_open=NOW + timedelta(hours=12)),
-            "extended": _family(session="MAINTENANCE"),
+            REGULAR_FAMILY: _family(
+                session="CLOSED", next_open=NOW + timedelta(hours=12)
+            ),
+            CONTINUOUS_FAMILY: _family(session="MAINTENANCE"),
         }
     )
 
@@ -71,7 +78,7 @@ def test_closed_markets_never_idle_a_continuity_obligation(obligation) -> None:
     else:
         kwargs["deadlines"] = (NOW + timedelta(minutes=5),)
 
-    decision = _decide({"extended": _family(session="CLOSED")}, **kwargs)
+    decision = _decide({CONTINUOUS_FAMILY: _family(session="CLOSED")}, **kwargs)
 
     assert decision.should_run_cycle is True
     assert decision.continuity_obligation is True
@@ -80,20 +87,23 @@ def test_closed_markets_never_idle_a_continuity_obligation(obligation) -> None:
 def test_opening_inside_adaptive_wake_horizon_runs_instead_of_long_idle() -> None:
     decision = _decide(
         {
-            "extended": _family(
+            CONTINUOUS_FAMILY: _family(
                 session="CLOSED", next_open=NOW + timedelta(minutes=10)
             )
         }
     )
 
     assert decision.should_run_cycle is True
-    assert "FAMILY_OPENING_WITHIN_WAKE_HORIZON:extended" in decision.reason_codes
+    assert (
+        f"FAMILY_OPENING_WITHIN_WAKE_HORIZON:{CONTINUOUS_FAMILY}"
+        in decision.reason_codes
+    )
 
 
 def test_unknown_or_unauthenticated_calendar_runs_fail_closed() -> None:
     for family in (
-        {"extended": _family(session="UNKNOWN")},
-        {"extended": _family(session="CLOSED", authenticated=False)},
+        {CONTINUOUS_FAMILY: _family(session="UNKNOWN")},
+        {CONTINUOUS_FAMILY: _family(session="CLOSED", authenticated=False)},
     ):
         decision = _decide(family)
         assert decision.should_run_cycle is True
@@ -104,7 +114,9 @@ def test_dst_aware_next_open_is_preserved() -> None:
     next_open = datetime(2026, 11, 2, 14, 30, tzinfo=timezone.utc)
     decision = decide_multi_universe_orchestration(
         now_utc=datetime(2026, 11, 1, 15, 0, tzinfo=timezone.utc),
-        family_sessions={"extended": _family(session="CLOSED", next_open=next_open)},
+        family_sessions={
+            CONTINUOUS_FAMILY: _family(session="CLOSED", next_open=next_open)
+        },
         open_orders=(),
         positions=(),
         continuity_deadlines=(),
@@ -112,3 +124,17 @@ def test_dst_aware_next_open_is_preserved() -> None:
 
     assert decision.action is OrchestrationAction.MARKET_CLOSED_IDLE
     assert decision.next_wake_utc == next_open
+
+
+def test_open_authenticated_family_is_not_hidden_by_unusable_peer_evidence() -> None:
+    decision = _decide(
+        {
+            REGULAR_FAMILY: _family(session="CLOSED", authenticated=False),
+            CONTINUOUS_FAMILY: _family(session="REGULAR", authenticated=True),
+        }
+    )
+
+    assert decision.should_run_cycle is True
+    assert decision.reason_codes == (
+        f"CERTIFIED_FAMILY_OPEN:{CONTINUOUS_FAMILY}",
+    )

@@ -3,13 +3,13 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Any
+from typing import Any, Callable, Mapping
 
 from .autonomous_research import ResearchRequest, ResearchTool
 from .canonical import sha256_json
 from .continuity_store import ContinuityStore
 from .contract_ownership import ContractOwnershipStore
-from .multi_universe_models import CapitalSleeve
+from .multi_universe_models import CapitalSleeve, TransitionPhase
 from .multi_universe_transition import (
     MultiUniverseTransitionError,
     active_cash_classifications,
@@ -73,6 +73,7 @@ class AutonomousStateBuilder:
         sleeve_ledger_store: SleeveLedgerStore | None = None,
         contract_ownership_store: ContractOwnershipStore | None = None,
         product_certification_store: ProductFamilyCertificationStore | None = None,
+        session_evidence_reader: Callable[[], dict[str, Any] | None] | None = None,
     ) -> None:
         if (
             experiment_start_utc is not None
@@ -126,6 +127,7 @@ class AutonomousStateBuilder:
         self.sleeve_ledger_store = sleeve_ledger_store
         self.contract_ownership_store = contract_ownership_store
         self.product_certification_store = product_certification_store
+        self.session_evidence_reader = session_evidence_reader
         self._latest_executions: list[dict[str, Any]] = []
 
     def _tool(self, tool: ResearchTool, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -1077,6 +1079,11 @@ class AutonomousStateBuilder:
         account: dict[str, Any],
         broker_positions: dict[str, Any],
         open_orders: dict[str, Any],
+        transition_phase: str = TransitionPhase.ACTIVE.value,
+        transition_target_sha256: str | None = None,
+        writer_binding_sha256: str | None = None,
+        family_sessions: Mapping[str, Mapping[str, Any]] | None = None,
+        regular_entry_open: bool = False,
     ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
         if (
             self.sleeve_ledger_store is None
@@ -1085,9 +1092,14 @@ class AutonomousStateBuilder:
         ):
             raise AutonomousStateBuildError("V4_STATE_DEPENDENCIES_REQUIRED")
         ledger = self._dump(self.sleeve_ledger_store.project_all())
+        continuous_ledger = ledger.get("continuous") or ledger.get("extended") or {}
+        canonical_ledger = {
+            "regular": ledger.get("regular") or {},
+            "continuous": continuous_ledger,
+        }
         if not all(
-            bool((ledger.get(name) or {}).get("initialized"))
-            for name in ("regular", "extended")
+            bool((canonical_ledger.get(name) or {}).get("initialized"))
+            for name in ("regular", "continuous")
         ):
             raise AutonomousStateBuildError("V4_SLEEVE_BOOTSTRAP_REQUIRED")
         ownership_projection = self._dump(
@@ -1097,7 +1109,92 @@ class AutonomousStateBuilder:
             self._dump(item)
             for item in self.product_certification_store.projections()
         ]
+        capability_by_sha = {
+            str(item.get("family_sha256") or ""): item
+            for item in capabilities
+            if item.get("family_sha256")
+        }
+        authenticated_sessions = {
+            family_sha: dict(evidence)
+            for family_sha, evidence in sorted((family_sessions or {}).items())
+            if family_sha in capability_by_sha
+            and isinstance(evidence, Mapping)
+        }
+        executable_family_sha256 = sorted(
+            family_sha
+            for family_sha, item in capability_by_sha.items()
+            if item.get("executable") is True
+        )
+        open_family_sha256 = sorted(
+            family_sha
+            for family_sha in executable_family_sha256
+            if (authenticated_sessions.get(family_sha) or {}).get("authenticated")
+            is True
+            and (
+                (authenticated_sessions.get(family_sha) or {}).get("tradable_now")
+                is True
+                or str(
+                    (authenticated_sessions.get(family_sha) or {}).get("session")
+                    or ""
+                ).upper()
+                == "REGULAR"
+            )
+        )
+        eligible_families_by_sleeve: dict[str, list[str]] = {
+            CapitalSleeve.REGULAR_SLEEVE.value: [],
+            CapitalSleeve.CONTINUOUS_SLEEVE.value: [],
+        }
+        for family_sha in open_family_sha256:
+            declared = tuple(
+                str(item)
+                for item in (
+                    authenticated_sessions[family_sha].get("eligible_sleeves")
+                    or (CapitalSleeve.CONTINUOUS_SLEEVE.value,)
+                )
+            )
+            for sleeve_name in declared:
+                if sleeve_name in eligible_families_by_sleeve:
+                    eligible_families_by_sleeve[sleeve_name].append(family_sha)
+        regular_eligible_families = eligible_families_by_sleeve[
+            CapitalSleeve.REGULAR_SLEEVE.value
+        ]
+        continuous_eligible_families = eligible_families_by_sleeve[
+            CapitalSleeve.CONTINUOUS_SLEEVE.value
+        ]
+        phase_active = transition_phase == TransitionPhase.ACTIVE.value
+        reconciliation_pass = reconciliation.get("status") == "PASS"
+
+        def entry_eligibility(
+            *, available: bool, eligible_families: list[str]
+        ) -> dict[str, Any]:
+            reasons: list[str] = []
+            if not phase_active:
+                reasons.append("SUCCESSOR_NOT_ACTIVE")
+            if not reconciliation_pass:
+                reasons.append("BROKER_RECONCILIATION_REQUIRED")
+            if not available:
+                reasons.append("FAMILY_SESSION_CLOSED")
+            return {
+                "status": "PASS" if not reasons else "BLOCK",
+                "reason_codes": reasons,
+                "eligible_family_sha256": eligible_families,
+            }
+
         contract_sleeves: dict[str, str] = {}
+        management_eligibility: dict[str, dict[str, Any]] = {}
+        account_positions = list(broker_positions.get("positions", []) or [])
+        account_orders = list(open_orders.get("open_orders", []) or [])
+
+        def observed_contract_id(raw: Mapping[str, Any]) -> int:
+            contract = raw.get("contract") or {}
+            return int(
+                raw.get("contract_id")
+                or raw.get("con_id")
+                or contract.get("conId")
+                or contract.get("con_id")
+                or 0
+            )
+
         for item in ownership_projection.get("active_contracts", []):
             contract = item.get("contract") or {}
             contract_id = int(
@@ -1105,8 +1202,42 @@ class AutonomousStateBuilder:
             )
             if contract_id > 0:
                 contract_sleeves[str(contract_id)] = str(item.get("sleeve") or "")
-        account_positions = list(broker_positions.get("positions", []) or [])
-        account_orders = list(open_orders.get("open_orders", []) or [])
+                observations = [
+                    raw
+                    for raw in (*account_positions, *account_orders)
+                    if observed_contract_id(raw) == contract_id
+                ]
+                owner_sleeve = str(item.get("sleeve") or "")
+                explicitly_manageable = any(
+                    raw.get("management_tradable") is True for raw in observations
+                )
+                observed_families = {
+                    str(raw.get("product_family_sha256") or "")
+                    for raw in observations
+                    if raw.get("product_family_sha256")
+                }
+                manageable = bool(
+                    explicitly_manageable
+                    or (
+                        owner_sleeve == CapitalSleeve.REGULAR_SLEEVE.value
+                        and regular_entry_open
+                    )
+                    or observed_families.intersection(
+                        continuous_eligible_families
+                    )
+                )
+                management_eligibility[str(contract_id)] = {
+                    "status": "PASS" if manageable else "BLOCK",
+                    "reason_codes": (
+                        []
+                        if manageable
+                        else ["INSTRUMENT_NOT_CURRENTLY_MANAGEABLE"]
+                    ),
+                    "capital_sleeve": owner_sleeve,
+                    "contract_identity_sha256": item.get(
+                        "contract_identity_sha256"
+                    ),
+                }
         redacted_account = {
             key: value
             for key, value in account.items()
@@ -1116,16 +1247,32 @@ class AutonomousStateBuilder:
             "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
             "sleeves": {
                 name: {
-                    **dict(ledger.get(name) or {}),
+                    **dict(canonical_ledger.get(name) or {}),
                     "equity_usd": str(
-                        Decimal(str((ledger.get(name) or {}).get("allocation_usd") or "0"))
-                        + Decimal(str((ledger.get(name) or {}).get("realized_pnl_usd") or "0"))
-                        + Decimal(str((ledger.get(name) or {}).get("unrealized_pnl_usd") or "0"))
-                        - Decimal(str((ledger.get(name) or {}).get("fees_usd") or "0"))
+                        Decimal(str((canonical_ledger.get(name) or {}).get("allocation_usd") or "0"))
+                        + Decimal(str((canonical_ledger.get(name) or {}).get("realized_pnl_usd") or "0"))
+                        + Decimal(str((canonical_ledger.get(name) or {}).get("unrealized_pnl_usd") or "0"))
+                        - Decimal(str((canonical_ledger.get(name) or {}).get("fees_usd") or "0"))
                     ),
                 }
-                for name in ("regular", "extended")
+                for name in ("regular", "continuous")
             },
+            "transition_phase": transition_phase,
+            "transition_target_sha256": transition_target_sha256,
+            "writer_binding_sha256": writer_binding_sha256,
+            "entry_eligibility": {
+                CapitalSleeve.REGULAR_SLEEVE.value: entry_eligibility(
+                    available=(
+                        regular_entry_open and bool(regular_eligible_families)
+                    ),
+                    eligible_families=regular_eligible_families,
+                ),
+                CapitalSleeve.CONTINUOUS_SLEEVE.value: entry_eligibility(
+                    available=bool(continuous_eligible_families),
+                    eligible_families=continuous_eligible_families,
+                ),
+            },
+            "management_eligibility": management_eligibility,
             "aggregate_currency_balances": ledger.get(
                 "aggregate_currency_balances", []
             ),
@@ -1146,13 +1293,35 @@ class AutonomousStateBuilder:
         }
         capability_snapshot = {
             "families": capabilities,
-            "executable_family_sha256": sorted(
-                item["family_sha256"]
-                for item in capabilities
-                if item.get("executable") is True and item.get("family_sha256")
-            ),
+            "executable_family_sha256": executable_family_sha256,
+            "authenticated_sessions": authenticated_sessions,
         }
         return portfolio, ownership, capability_snapshot
+
+    def _multi_universe_transition_context(self) -> dict[str, Any]:
+        row = self.db.execute(
+            "SELECT phase,payload_json FROM successor_transition_events "
+            "ORDER BY sequence DESC LIMIT 1"
+        ).fetchone()
+        if row is None:
+            return {
+                "phase": TransitionPhase.PREPARED.value,
+                "target_sha256": None,
+                "writer_binding_sha256": None,
+            }
+        try:
+            payload = json.loads(str(row[1]))
+            target = dict(payload.get("target") or {})
+            phase = TransitionPhase(str(row[0])).value
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise AutonomousStateBuildError(
+                "TRANSITION_PROJECTION_AMBIGUOUS"
+            ) from exc
+        return {
+            "phase": phase,
+            "target_sha256": payload.get("target_sha256"),
+            "writer_binding_sha256": target.get("writer_binding_sha256"),
+        }
 
     def build(
         self,
@@ -1230,6 +1399,13 @@ class AutonomousStateBuilder:
         contract_ownership_snapshot = None
         product_capability_snapshot = None
         if self.sleeve_ledger_store is not None:
+            transition = self._multi_universe_transition_context()
+            session_evidence: dict[str, Any] = {}
+            if self.session_evidence_reader is not None:
+                try:
+                    session_evidence = dict(self.session_evidence_reader() or {})
+                except Exception:
+                    session_evidence = {}
             (
                 multi_sleeve_portfolio,
                 contract_ownership_snapshot,
@@ -1239,6 +1415,18 @@ class AutonomousStateBuilder:
                 account=account,
                 broker_positions=broker_positions,
                 open_orders=open_orders,
+                transition_phase=str(transition["phase"]),
+                transition_target_sha256=transition["target_sha256"],
+                writer_binding_sha256=transition["writer_binding_sha256"],
+                family_sessions=(session_evidence.get("family_sessions") or {}),
+                regular_entry_open=(
+                    market_gate.get("gate_status") == "PASS"
+                    and (
+                        market_session_state.upper() == "REGULAR"
+                        or str(session_evidence.get("session") or "").upper()
+                        == "REGULAR"
+                    )
+                ),
             )
         return TraderInputBundle(
             decision_cycle_id=f"cycle-{new_uuid7()}",

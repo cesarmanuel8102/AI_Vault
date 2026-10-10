@@ -314,6 +314,19 @@ def validate_multi_sleeve_payload(
         return "V4_SLEEVE_BINDING_REQUIRED"
     if payload.product_family_sha256 is None:
         return "V4_PRODUCT_FAMILY_BINDING_REQUIRED"
+    portfolio = bundle.multi_sleeve_portfolio or {}
+    if isinstance(payload, AutonomousTradeProposal):
+        eligibility = (portfolio.get("entry_eligibility") or {}).get(
+            payload.capital_sleeve.value
+        )
+        if not isinstance(eligibility, dict):
+            return "V4_ENTRY_ELIGIBILITY_REQUIRED"
+        if eligibility.get("status") != "PASS":
+            return "SLEEVE_ENTRY_NOT_ELIGIBLE"
+        if payload.product_family_sha256 not in set(
+            eligibility.get("eligible_family_sha256") or ()
+        ):
+            return "PRODUCT_FAMILY_NOT_CURRENTLY_ELIGIBLE"
     if isinstance(payload, (AutonomousPositionAction, AutonomousOpenOrderAction)):
         contract_id = payload.contract_id
         ownership = bundle.contract_ownership_snapshot or {}
@@ -336,12 +349,17 @@ def capital_equity_for_sleeve(
             raise ValueError("V4_SLEEVE_BINDING_REQUIRED")
         key = {
             CapitalSleeve.REGULAR_SLEEVE: "regular",
-            CapitalSleeve.EXTENDED_SLEEVE: "extended",
+            CapitalSleeve.CONTINUOUS_SLEEVE: "continuous",
         }[sleeve]
         portfolio = bundle.multi_sleeve_portfolio or {}
-        raw = ((portfolio.get("sleeves") or {}).get(key) or {}).get(
-            "equity_usd"
-        )
+        sleeves = portfolio.get("sleeves") or {}
+        sleeve_state = sleeves.get(key) or {}
+        if (
+            sleeve is CapitalSleeve.CONTINUOUS_SLEEVE
+            and not sleeve_state
+        ):
+            sleeve_state = sleeves.get("extended") or {}
+        raw = sleeve_state.get("equity_usd")
         if raw is None:
             raise ValueError("V4_SLEEVE_EQUITY_REQUIRED")
     else:

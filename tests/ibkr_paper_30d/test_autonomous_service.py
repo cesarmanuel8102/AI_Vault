@@ -722,6 +722,65 @@ class _ReadyBuilder:
         return _ReadyBundle()
 
 
+class _ContinuousReadyBundle(_ReadyBundle):
+    market_data_snapshot = {
+        "gate_status": "BLOCK",
+        "reason_codes": ["REGULAR_MARKET_CLOSED"],
+    }
+    multi_sleeve_portfolio = {
+        "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+        "entry_eligibility": {
+            "REGULAR_SLEEVE": {"status": "BLOCK"},
+            "CONTINUOUS_SLEEVE": {
+                "status": "PASS",
+                "eligible_family_sha256": ["f" * 64],
+            },
+        },
+        "management_eligibility": {},
+    }
+    multi_sleeve_v4_active = True
+
+    def model_dump(self, mode=None):
+        return {
+            **super().model_dump(mode=mode),
+            "multi_sleeve_portfolio": self.multi_sleeve_portfolio,
+        }
+
+
+class _ContinuousReadyBuilder:
+    def build(self, trigger):
+        return _ContinuousReadyBundle()
+
+
+def test_regular_market_gate_block_does_not_hide_eligible_continuous_family(
+    tmp_path, monkeypatch
+) -> None:
+    with Database.open(tmp_path / "continuous-open.sqlite3") as db:
+        subject = AutonomousExperimentService(
+            db,
+            experiment_start_utc=datetime.now(timezone.utc),
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=StubExecutor(),
+            runtime_market_gate=PassGate(),
+            runtime_auditor_gate=PassGate(),
+        )
+        monkeypatch.setattr(subject, "_builder", lambda: _ContinuousReadyBuilder())
+        monkeypatch.setattr(
+            service_module,
+            "run_autonomous_cycle",
+            lambda *args, **kwargs: {
+                "status": "PASS",
+                "outcome": {"validation": "PASS", "decision": "NO_TRADE"},
+            },
+        )
+
+        result = subject._run_cycle("SCHEDULED_SCAN")
+
+    assert result["status"] == "PASS"
+
+
 def test_provider_failure_is_observed_without_claiming_policy_attribution(
     tmp_path, monkeypatch
 ):

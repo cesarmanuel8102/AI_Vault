@@ -121,15 +121,11 @@ def decide_multi_universe_orchestration(
         )
 
     next_openings: list[tuple[str, datetime]] = []
+    unusable: list[str] = []
     for family_sha, evidence in sorted(family_sessions.items()):
         if evidence.get("authenticated") is not True:
-            reasons.extend((f"SESSION_EVIDENCE_UNAUTHENTICATED:{family_sha}", "SESSION_EVIDENCE_UNAVAILABLE"))
-            return SessionOrchestrationDecision(
-                action=OrchestrationAction.RUN_AUTONOMOUS_CYCLE,
-                session=MarketSession.UNKNOWN,
-                continuity_obligation=False,
-                reason_codes=tuple(reasons),
-            )
+            unusable.append(f"SESSION_EVIDENCE_UNAUTHENTICATED:{family_sha}")
+            continue
         raw_session = evidence.get("session")
         session_name = (
             raw_session.value if isinstance(raw_session, MarketSession) else str(raw_session or "UNKNOWN").upper()
@@ -142,15 +138,19 @@ def decide_multi_universe_orchestration(
                 reason_codes=(f"CERTIFIED_FAMILY_OPEN:{family_sha}",),
             )
         if session_name == MarketSession.UNKNOWN.value:
-            return SessionOrchestrationDecision(
-                action=OrchestrationAction.RUN_AUTONOMOUS_CYCLE,
-                session=MarketSession.UNKNOWN,
-                continuity_obligation=False,
-                reason_codes=("SESSION_EVIDENCE_UNAVAILABLE",),
-            )
+            unusable.append(f"SESSION_EVIDENCE_UNKNOWN:{family_sha}")
+            continue
         next_open = _utc_datetime(evidence.get("next_open_utc"))
         if next_open is not None and next_open >= now_utc:
             next_openings.append((family_sha, next_open))
+
+    if unusable:
+        return SessionOrchestrationDecision(
+            action=OrchestrationAction.RUN_AUTONOMOUS_CYCLE,
+            session=MarketSession.UNKNOWN,
+            continuity_obligation=False,
+            reason_codes=tuple((*unusable, "SESSION_EVIDENCE_UNAVAILABLE")),
+        )
 
     if next_openings:
         family_sha, next_open = min(next_openings, key=lambda item: item[1])

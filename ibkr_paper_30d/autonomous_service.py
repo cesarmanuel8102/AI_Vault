@@ -486,6 +486,7 @@ class AutonomousExperimentService:
             sleeve_ledger_store=self.sleeve_ledger_store,
             contract_ownership_store=self.contract_ownership_store,
             product_certification_store=self.product_certification_store,
+            session_evidence_reader=self.session_evidence_reader,
         )
 
     def _provider_broker_time_evidence(self) -> BrokerTimeEvidence:
@@ -533,7 +534,20 @@ class AutonomousExperimentService:
         if bundle.kill_switch_state != "KILL_SWITCH_CLEAR":
             state_reasons.append("KILL_SWITCH_TRIGGERED")
         if bundle.market_data_snapshot.get("gate_status") != "PASS":
-            state_reasons.append("MARKET_DATA_GATE_BLOCK")
+            portfolio = getattr(bundle, "multi_sleeve_portfolio", None) or {}
+            action_eligibility = [
+                *(portfolio.get("entry_eligibility") or {}).values(),
+                *(portfolio.get("management_eligibility") or {}).values(),
+            ]
+            v4_action_available = bool(
+                getattr(bundle, "multi_sleeve_v4_active", False)
+                and any(
+                    isinstance(item, dict) and item.get("status") == "PASS"
+                    for item in action_eligibility
+                )
+            )
+            if not v4_action_available:
+                state_reasons.append("MARKET_DATA_GATE_BLOCK")
         if state_reasons:
             return {
                 "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",

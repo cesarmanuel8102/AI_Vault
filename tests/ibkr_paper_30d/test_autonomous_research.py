@@ -166,6 +166,23 @@ def test_v4_payload_requires_explicit_sleeve_and_family_bindings():
             "product_family_sha256": "f" * 64,
         }
     )
+    assert (
+        validate_multi_sleeve_payload(value, bound)
+        == "V4_ENTRY_ELIGIBILITY_REQUIRED"
+    )
+    value = value.model_copy(
+        update={
+            "multi_sleeve_portfolio": {
+                "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+                "entry_eligibility": {
+                    "CONTINUOUS_SLEEVE": {
+                        "status": "PASS",
+                        "eligible_family_sha256": ["f" * 64],
+                    }
+                },
+            }
+        }
+    )
     assert validate_multi_sleeve_payload(value, bound) is None
 
 
@@ -591,6 +608,9 @@ def test_native_prompt_mandate_preserves_unconstrained_discovery():
     assert payload["mandate"]["predefined_strategy_family"] is False
     assert payload["mandate"]["broker_and_account_permissions_are_authoritative"] is True
     assert payload["bundle"]["candidate_screen_results"] == []
+    assert "preferred_market" not in payload["mandate"]
+    assert "preferred_symbol" not in payload["mandate"]
+    assert payload["mandate"]["no_trade_remains_valid"] is True
 
 
 def test_full_experimental_equity_may_be_risked():
@@ -659,8 +679,19 @@ def _v4_bundle(*, legacy_equity: str, regular_equity: str, extended_equity: str)
                 "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
                 "sleeves": {
                     "regular": {"equity_usd": regular_equity},
-                    "extended": {"equity_usd": extended_equity},
+                    "continuous": {"equity_usd": extended_equity},
                 },
+                "entry_eligibility": {
+                    "REGULAR_SLEEVE": {
+                        "status": "PASS",
+                        "eligible_family_sha256": ["f" * 64],
+                    },
+                    "CONTINUOUS_SLEEVE": {
+                        "status": "PASS",
+                        "eligible_family_sha256": ["f" * 64],
+                    },
+                },
+                "management_eligibility": {},
             },
             "contract_ownership_snapshot": {"contract_sleeves": {}},
             "product_capability_snapshot": {"families": []},
@@ -674,6 +705,60 @@ def _extended_proposal(maximum_loss: str):
             "capital_sleeve": CapitalSleeve.EXTENDED_SLEEVE,
             "product_family_sha256": "f" * 64,
         }
+    )
+
+
+@pytest.mark.parametrize(
+    "sleeve",
+    (CapitalSleeve.REGULAR_SLEEVE, CapitalSleeve.CONTINUOUS_SLEEVE),
+)
+def test_v4_provider_may_select_either_eligible_sleeve(sleeve) -> None:
+    value = _v4_bundle(
+        legacy_equity="100.00",
+        regular_equity="500.00",
+        extended_equity="500.00",
+    )
+    selected = proposal(maximum_loss="100.00").model_copy(
+        update={
+            "capital_sleeve": sleeve,
+            "product_family_sha256": "f" * 64,
+        }
+    )
+    final = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        decision=TraderDecision.PROPOSE_TRADE,
+        proposal=selected,
+        confidence="0.7",
+        reasoning_summary="The model selected the best currently eligible sleeve.",
+    )
+
+    outcome = AutonomousResearchLoop(SequenceProvider([final]), FakeToolbox()).run(
+        request(value), value
+    )
+
+    assert outcome.accepted is True
+
+
+def test_v4_new_entry_requires_exact_sleeve_and_family_eligibility() -> None:
+    value = _v4_bundle(
+        legacy_equity="500.00",
+        regular_equity="500.00",
+        extended_equity="500.00",
+    )
+    portfolio = dict(value.multi_sleeve_portfolio or {})
+    portfolio["entry_eligibility"] = {
+        **portfolio["entry_eligibility"],
+        "CONTINUOUS_SLEEVE": {
+            "status": "BLOCK",
+            "reason_codes": ["FAMILY_SESSION_CLOSED"],
+            "eligible_family_sha256": [],
+        },
+    }
+    value = value.model_copy(update={"multi_sleeve_portfolio": portfolio})
+
+    assert (
+        validate_multi_sleeve_payload(value, _extended_proposal("100.00"))
+        == "SLEEVE_ENTRY_NOT_ELIGIBLE"
     )
 
 
