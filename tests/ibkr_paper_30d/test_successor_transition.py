@@ -199,8 +199,6 @@ def test_successor_commit_requires_exact_predecessor_retirement_when_v4_bound(
             )
         for phase in (
             TransitionPhase.PREDECESSOR_QUIESCED,
-            TransitionPhase.CANARY_EXCLUSIVE,
-            TransitionPhase.CANARY_PASS,
             TransitionPhase.PREDECESSOR_RETIRED,
         ):
             coordinator.advance(phase, _transition_evidence(phase))

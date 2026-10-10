@@ -125,9 +125,26 @@ def _evidence(request: CanaryExecutionRequest, authorization=None, **updates):
         "successor_definition_sha256": request.successor_definition_sha256,
         "writer_binding_sha256": request.writer_binding_sha256,
         "request_sha256": request.sha256,
+        "flat_return_limit_price": Decimal("9.90"),
     }
     values.update(updates)
     return values
+
+
+def test_unresolved_limit_exit_blocks_before_write() -> None:
+    request = _request()
+    writes: list[str] = []
+    evidence = _evidence(request)
+    evidence.pop("flat_return_limit_price")
+
+    result = CanaryExecutionAdapter(
+        begin_write=lambda key: writes.append(key) or True,
+        now_utc=lambda: NOW,
+    ).execute(request, LifecycleBroker(_full_events()), evidence)
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("CANARY_FLAT_RETURN_PRICE_UNRESOLVED",)
+    assert writes == []
 
 
 class LifecycleBroker:

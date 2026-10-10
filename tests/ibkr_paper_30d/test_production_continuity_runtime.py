@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from concurrent.futures import Future
 import hashlib
+import sqlite3
 
 import pytest
 
@@ -15,6 +16,8 @@ from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.canonical import canonical_bytes
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
 from ibkr_paper_30d.continuity_store import ContinuityStore
+from ibkr_paper_30d.canary_authority import CanaryBrokerLifecycleReceipt
+from ibkr_paper_30d.multi_universe_models import CanaryAuthorization
 from ibkr_paper_30d.open_order_management import canonical_contract_identity
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.successor_schema import install_successor_schema_v2
@@ -33,9 +36,105 @@ from ibkr_paper_30d.production_continuity_runtime import (
     _verified_registry_binding,
     _collect_continuity_liability_evidence,
     _broker_evidence_collector,
+    _ProductionCanaryStore,
     create_authoritative_writer,
     validate_production_composition,
 )
+
+
+def test_production_canary_store_persists_authority_claim_and_receipt_once(
+    tmp_path,
+) -> None:
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+
+    db_path = tmp_path / "canary-store.sqlite3"
+    with Database.open(db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+    now = datetime(2026, 10, 10, 18, 0, tzinfo=timezone.utc)
+    authorization = CanaryAuthorization(
+        authorization_id="canary-auth-1",
+        owner_id="owner",
+        account_identity_sha256="a" * 64,
+        successor_definition_sha256="b" * 64,
+        product_family_sha256="c" * 64,
+        contract_scope_sha256=("d" * 64,),
+        maximum_debit_usd=Decimal("10"),
+        maximum_loss_usd=Decimal("10"),
+        fee_allowance_usd=Decimal("1"),
+        maximum_order_count=2,
+        issued_at_utc=now - timedelta(minutes=1),
+        expires_at_utc=now + timedelta(minutes=10),
+    )
+    store = _ProductionCanaryStore(db_path)
+
+    first = store.persist_authorization(
+        candidate_sha256="e" * 64, authorization=authorization
+    )
+    duplicate = store.persist_authorization(
+        candidate_sha256="e" * 64, authorization=authorization
+    )
+    assert duplicate == first
+    assert store.begin_write("canary-execution-1") is True
+    assert store.begin_write("canary-execution-1") is False
+
+    receipt = CanaryBrokerLifecycleReceipt(
+        canary_id="canary-1",
+        step="SUBMITTED",
+        endpoint="PAPER",
+        account_identity_sha256="a" * 64,
+        product_family_sha256="c" * 64,
+        contract_identity_sha256="d" * 64,
+        broker_event_id_sha256="f" * 64,
+        broker_snapshot_sha256="1" * 64,
+        observed_at_utc=now,
+        open_orders=0,
+        positions=0,
+    )
+    store.persist_receipt(receipt)
+    store.persist_receipt(receipt)
+
+    with Database.open(db_path) as db:
+        counts = dict(
+            db.execute(
+                "SELECT event_type,COUNT(*) FROM canary_authorization_events "
+                "GROUP BY event_type"
+            ).fetchall()
+        )
+    assert counts == {
+        "AUTHORIZED": 1,
+        "EXECUTION_CLAIMED": 1,
+        "LIFECYCLE_RECEIPT": 1,
+    }
+
+
+def test_production_canary_store_rejects_tampered_authority_chain(tmp_path) -> None:
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+
+    db_path = tmp_path / "tampered-canary.sqlite3"
+    with Database.open(db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+    store = _ProductionCanaryStore(db_path)
+    assert store.begin_write("first") is True
+
+    connection = sqlite3.connect(db_path)
+    try:
+        connection.execute("DROP TRIGGER canary_authorization_events_no_update")
+        connection.execute(
+            "UPDATE canary_authorization_events SET payload_json='{}'"
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+    with pytest.raises(
+        ProductionRuntimeConfigurationError,
+        match="CANARY_AUTHORITY_CHAIN_INVALID",
+    ):
+        store.begin_write("second")
 
 
 def test_v4_writer_factory_wires_path_scoped_sleeve_authority(tmp_path, monkeypatch) -> None:
@@ -81,6 +180,10 @@ def test_v4_writer_factory_wires_path_scoped_sleeve_authority(tmp_path, monkeypa
     assert writer.sleeve_authority_reservation_store is not None
     assert callable(writer.sleeve_authority_snapshot_reader)
     assert callable(writer.sleeve_broker_evidence_collector)
+    assert writer.canary_execution_adapter is not None
+    assert callable(writer.canary_execution_adapter.begin_write)
+    assert callable(writer.canary_execution_adapter.receipt_persister)
+    assert callable(writer.canary_evidence_collector)
     assert writer.model_execution_engine.final_write_authority_required is True
     assert (
         writer.model_execution_engine._load().mechanics
@@ -976,6 +1079,7 @@ def test_validate_only_constructs_composition_without_broker_io(
         db_path=tmp_path / "runtime.sqlite3",
         launch_attempt_id="validate-only",
         target_successor_epoch_id="AUTONOMY_EPOCH_2",
+        target_successor_definition_sha256="1" * 64,
         initial_allocation=Decimal("500"),
         paper_host="127.0.0.1",
         paper_port=4002,
@@ -986,6 +1090,9 @@ def test_validate_only_constructs_composition_without_broker_io(
     with Database.open(config.db_path) as db:
         install_successor_schema_v2(db)
         install_continuity_schema_v3(db)
+        from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+
+        install_multi_universe_schema_v4(db)
 
     monkeypatch.setattr(
         "ibkr_paper_30d.production_continuity_runtime._current_head",
@@ -1025,6 +1132,8 @@ def test_validate_only_constructs_composition_without_broker_io(
     assert result["legacy_direct_executor_selected"] is False
     assert result["production_gates_callable"] is True
     assert result["liability_evidence_collector_callable"] is True
+    assert result["canary_execution_adapter_wired"] is True
+    assert result["canary_evidence_collector_callable"] is True
     assert calls == [
         ("configured", WRITER_CLIENT_ID, False),
         ("configured", OBSERVER_CLIENT_ID, True),

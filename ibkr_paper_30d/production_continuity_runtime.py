@@ -18,9 +18,12 @@ from pathlib import Path
 from typing import Any, Callable, Mapping
 
 from .broker_write_coordinator import BrokerWriteCoordinator
-from .canonical import sha256_json
+from .canonical import canonical_bytes, sha256_json
 from .continuity_store import ContinuityStore
 from .ibkr_readonly import expected_identity_hash
+from .persistence import Database
+from .repositories import utc_now
+from .types import new_uuid7
 
 WRITER_CLIENT_ID = 19761
 OBSERVER_CLIENT_ID = 19762
@@ -1680,6 +1683,7 @@ def create_authoritative_writer(
     current_adapter_sha256: str | None = None,
 ) -> Any:
     from .authoritative_broker_writer import AuthoritativeBrokerWriter
+    from .canary_execution import CanaryExecutionAdapter
     from .production_authority import ProductionAuthorityValidator
 
     validate_production_runtime_configuration(config)
@@ -1723,6 +1727,15 @@ def create_authoritative_writer(
         if v4_active
         else None
     )
+    canary_store = _ProductionCanaryStore(Path(db_path)) if v4_active else None
+    canary_adapter = (
+        CanaryExecutionAdapter(
+            begin_write=canary_store.begin_write,
+            receipt_persister=canary_store.persist_receipt,
+        )
+        if canary_store is not None
+        else None
+    )
     return AuthoritativeBrokerWriter(
         coordinator,
         broker_factory=lambda client_id: (
@@ -1747,7 +1760,213 @@ def create_authoritative_writer(
         sleeve_authority_reservation_store=sleeve_reservation_store,
         sleeve_authority_snapshot_reader=sleeve_snapshot_reader,
         sleeve_broker_evidence_collector=sleeve_broker_collector,
+        canary_execution_adapter=canary_adapter,
+        canary_evidence_collector=(
+            canary_store.authority_evidence if canary_store is not None else None
+        ),
     )
+
+
+class _ProductionCanaryStore:
+    """Durable canary authorization, idempotency, and lifecycle receipts."""
+
+    SCHEMA = "PRODUCTION_CANARY_EVENT_V1"
+
+    def __init__(self, db_path: Path) -> None:
+        self.db_path = Path(db_path)
+
+    @staticmethod
+    def _verified_events(db: Any) -> list[dict[str, Any]]:
+        rows = db.execute(
+            "SELECT payload_json,payload_sha256,previous_event_sha256,event_sha256 "
+            "FROM canary_authorization_events ORDER BY sequence"
+        ).fetchall()
+        events: list[dict[str, Any]] = []
+        previous: str | None = None
+        for payload_json, payload_sha256, stored_previous, event_sha256 in rows:
+            try:
+                payload = json.loads(str(payload_json))
+            except (TypeError, json.JSONDecodeError) as exc:
+                raise ProductionRuntimeConfigurationError(
+                    "CANARY_AUTHORITY_CHAIN_INVALID"
+                ) from exc
+            normalized_previous = (
+                None if stored_previous is None else str(stored_previous)
+            )
+            expected_event = sha256_json(
+                {"previous_event_sha256": previous, "payload": payload}
+            )
+            if (
+                payload.get("schema") != _ProductionCanaryStore.SCHEMA
+                or sha256_json(payload) != str(payload_sha256)
+                or normalized_previous != previous
+                or expected_event != str(event_sha256)
+            ):
+                raise ProductionRuntimeConfigurationError(
+                    "CANARY_AUTHORITY_CHAIN_INVALID"
+                )
+            events.append({**payload, "event_sha256": str(event_sha256)})
+            previous = str(event_sha256)
+        return events
+
+    @staticmethod
+    def _append_in_transaction(
+        db: Any,
+        *,
+        authorization_id: str,
+        event_type: str,
+        body: Mapping[str, Any],
+    ) -> str:
+        previous_row = db.execute(
+            "SELECT event_sha256 FROM canary_authorization_events "
+            "ORDER BY sequence DESC LIMIT 1"
+        ).fetchone()
+        previous = None if previous_row is None else str(previous_row[0])
+        payload = {
+            "schema": _ProductionCanaryStore.SCHEMA,
+            "authorization_id": authorization_id,
+            "event_type": event_type,
+            **dict(body),
+        }
+        event_sha256 = sha256_json(
+            {"previous_event_sha256": previous, "payload": payload}
+        )
+        db.execute(
+            "INSERT INTO canary_authorization_events("
+            "event_id,authorization_id,event_type,payload_json,payload_sha256,"
+            "previous_event_sha256,event_sha256,created_at_utc) "
+            "VALUES(?,?,?,?,?,?,?,?)",
+            (
+                str(new_uuid7()),
+                authorization_id,
+                event_type,
+                canonical_bytes(payload).decode("utf-8"),
+                sha256_json(payload),
+                previous,
+                event_sha256,
+                utc_now(),
+            ),
+        )
+        return event_sha256
+
+    def persist_authorization(
+        self, *, candidate_sha256: str, authorization: Any
+    ) -> str:
+        payload = authorization.model_dump(mode="json")
+        with Database.open(self.db_path) as db, db.transaction():
+            existing = next(
+                (
+                    event
+                    for event in reversed(self._verified_events(db))
+                    if event.get("authorization_id") == authorization.authorization_id
+                    and event.get("event_type") == "AUTHORIZED"
+                ),
+                None,
+            )
+            if existing is not None:
+                stored = existing
+                if (
+                    stored.get("candidate_sha256") != candidate_sha256
+                    or stored.get("authorization_sha256") != authorization.sha256
+                ):
+                    raise ProductionRuntimeConfigurationError(
+                        "CANARY_AUTHORIZATION_CONFLICT"
+                    )
+                return str(existing["event_sha256"])
+            return self._append_in_transaction(
+                db,
+                authorization_id=authorization.authorization_id,
+                event_type="AUTHORIZED",
+                body={
+                    "candidate_sha256": candidate_sha256,
+                    "authorization_sha256": authorization.sha256,
+                    "authorization": payload,
+                },
+            )
+
+    def begin_write(self, execution_key: str) -> bool:
+        with Database.open(self.db_path) as db, db.transaction():
+            if any(
+                event.get("event_type") == "EXECUTION_CLAIMED"
+                and event.get("execution_key") == execution_key
+                for event in self._verified_events(db)
+            ):
+                return False
+            self._append_in_transaction(
+                db,
+                authorization_id=execution_key,
+                event_type="EXECUTION_CLAIMED",
+                body={"execution_key": execution_key},
+            )
+            return True
+
+    def persist_receipt(self, receipt: Any) -> None:
+        with Database.open(self.db_path) as db, db.transaction():
+            if any(
+                event.get("authorization_id") == receipt.canary_id
+                and event.get("event_type") == "LIFECYCLE_RECEIPT"
+                and event.get("receipt_sha256") == receipt.sha256
+                for event in self._verified_events(db)
+            ):
+                return
+            self._append_in_transaction(
+                db,
+                authorization_id=receipt.canary_id,
+                event_type="LIFECYCLE_RECEIPT",
+                body={
+                    "receipt_sha256": receipt.sha256,
+                    "receipt": receipt.model_dump(mode="json"),
+                },
+            )
+
+    def authority_evidence(
+        self, broker: Any, request: Any, base_evidence: dict[str, Any]
+    ) -> dict[str, Any]:
+        del broker, base_evidence
+        from .multi_universe_models import CanaryAuthorization
+
+        with Database.open(self.db_path) as db:
+            events = self._verified_events(db)
+            transition_row = db.execute(
+                "SELECT phase,payload_json FROM successor_transition_events "
+                "ORDER BY sequence DESC LIMIT 1"
+            ).fetchone()
+        if transition_row is None:
+            return {"fresh": False}
+        transition_payload = json.loads(str(transition_row[1]))
+        target = dict(transition_payload.get("target") or {})
+        authorization = None
+        candidate_sha256 = None
+        for payload in reversed(events):
+            if payload.get("event_type") != "AUTHORIZED":
+                continue
+            if payload.get("authorization_sha256") == request.authorization_sha256:
+                authorization = CanaryAuthorization.model_validate(
+                    payload.get("authorization")
+                )
+                candidate_sha256 = payload.get("candidate_sha256")
+                break
+        now = datetime.now(timezone.utc)
+        return {
+            "transition_phase": str(transition_row[0]),
+            "ordinary_entry_authority": False,
+            "paper_only": True,
+            "fresh": bool(
+                authorization is not None
+                and authorization.issued_at_utc <= now < authorization.expires_at_utc
+            ),
+            "candidate_sha256": candidate_sha256,
+            "authorization_sha256": (
+                None if authorization is None else authorization.sha256
+            ),
+            "authorization": authorization,
+            "account_identity_sha256": target.get("account_identity_sha256"),
+            "successor_definition_sha256": target.get(
+                "successor_definition_sha256"
+            ),
+            "writer_binding_sha256": target.get("writer_binding_sha256"),
+            "request_sha256": request.sha256,
+        }
 
 
 class _ProductionClock:
@@ -2088,6 +2307,10 @@ def validate_production_composition(
             with Database.open(validation_db_path) as db:
                 install_successor_schema_v2(db)
                 install_continuity_schema_v3(db)
+                if getattr(config, "target_successor_definition_sha256", None):
+                    from .multi_universe_schema import install_multi_universe_schema_v4
+
+                    install_multi_universe_schema_v4(db)
             validation_config = SimpleNamespace(
                 **{
                     **vars(config),
@@ -2124,6 +2347,7 @@ def validate_production_composition(
                 uncertainty_reporter=reporter,
                 toolbox=toolbox,
                 production_validation_sha256=None,
+                current_adapter_sha256=production_validation_sha256,
                 validation_broker_factory=lambda: _ValidationBroker(
                     client_id=WRITER_CLIENT_ID, read_only=False
                 ),
@@ -2155,6 +2379,10 @@ def validate_production_composition(
             watchdog.start(2.0)
             watchdog_started = True
 
+            v4_active = (
+                getattr(config, "target_successor_definition_sha256", None)
+                is not None
+            )
             production_gates_callable = all(
                 (
                     callable(getattr(writer, "execution_lock_verifier", None)),
@@ -2167,6 +2395,14 @@ def validate_production_composition(
                     ),
                     callable(reporter),
                     callable(getattr(writer, "liability_evidence_collector", None)),
+                    (
+                        not v4_active
+                        or getattr(writer, "canary_execution_adapter", None) is not None
+                    ),
+                    (
+                        not v4_active
+                        or callable(getattr(writer, "canary_evidence_collector", None))
+                    ),
                 )
             )
             if production_gates_callable is not True:
@@ -2200,6 +2436,12 @@ def validate_production_composition(
                 "production_gates_callable": production_gates_callable,
                 "liability_evidence_collector_callable": callable(
                     getattr(writer, "liability_evidence_collector", None)
+                ),
+                "canary_execution_adapter_wired": (
+                    getattr(writer, "canary_execution_adapter", None) is not None
+                ),
+                "canary_evidence_collector_callable": callable(
+                    getattr(writer, "canary_evidence_collector", None)
                 ),
             }
     except ProductionRuntimeConfigurationError as exc:

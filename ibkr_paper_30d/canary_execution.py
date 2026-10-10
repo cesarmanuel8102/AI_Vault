@@ -121,6 +121,11 @@ class CanaryExecutionAdapter:
             (evidence.get("successor_definition_sha256") == request.successor_definition_sha256, "CANARY_SUCCESSOR_MISMATCH"),
             (evidence.get("writer_binding_sha256") == request.writer_binding_sha256, "CANARY_WRITER_MISMATCH"),
             (evidence.get("request_sha256") == request.sha256, "CANARY_REQUEST_MISMATCH"),
+            (
+                request.flat_return_plan.order_type != "LMT"
+                or evidence.get("flat_return_limit_price") is not None,
+                "CANARY_FLAT_RETURN_PRICE_UNRESOLVED",
+            ),
         )
         reasons.extend(reason for passed, reason in checks if not passed)
         authorization = evidence.get("authorization")
