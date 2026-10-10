@@ -248,6 +248,40 @@ class ProductFamilyCertificationStore:
             paper_limitations=paper_limitations,
         )
 
+    def record_read_only_candidate_evidence(
+        self,
+        family: ProductFamilyKey,
+        *,
+        evidence_sha256: str,
+        account_sha256: str,
+        adapter_sha256: str,
+        observed_at_utc: datetime,
+        expires_at_utc: datetime,
+        paper_limitations: tuple[str, ...],
+    ) -> ProductExecutionCapability:
+        """Persist read-only capability steps without implying transmission."""
+
+        for step in CERTIFICATION_SEQUENCE[:5]:
+            self.record_step(
+                family,
+                step,
+                sha256_json(
+                    {
+                        "read_only_candidate_evidence_sha256": evidence_sha256,
+                        "step": step,
+                    }
+                ),
+                account_sha256=account_sha256,
+                adapter_sha256=adapter_sha256,
+                observed_at_utc=observed_at_utc,
+                expires_at_utc=expires_at_utc,
+                paper_limitations=paper_limitations,
+            )
+        projection = self.projection(family)
+        if projection.status is not ProductFamilyCertificationStatus.RESEARCH_ONLY:
+            raise ProductCapabilityError("READ_ONLY_EVIDENCE_CERTIFICATION_ESCALATION")
+        return projection
+
     def _record_step(
         self,
         family: ProductFamilyKey,

@@ -251,6 +251,27 @@ def test_generic_step_api_cannot_self_attest_post_transmit_lifecycle(tmp_path) -
         db.close()
 
 
+def test_read_only_candidate_evidence_never_full_certifies_family(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    family = _family("CRYPTO", "PAXOS")
+    try:
+        projection = store.record_read_only_candidate_evidence(
+            family,
+            evidence_sha256="f" * 64,
+            account_sha256=ACCOUNT,
+            adapter_sha256=ADAPTER,
+            observed_at_utc=NOW,
+            expires_at_utc=NOW + timedelta(hours=1),
+            paper_limitations=("PAPER_SIMULATION_ONLY",),
+        )
+
+        assert projection.status is ProductFamilyCertificationStatus.RESEARCH_ONLY
+        assert projection.executable is False
+        assert "ORDER_TRANSMIT_VERIFIED" not in projection.completed_steps
+    finally:
+        db.close()
+
+
 def test_initial_activation_requires_full_family_available_within_24_hours(tmp_path) -> None:
     db, store = _store(tmp_path)
     family = _family()

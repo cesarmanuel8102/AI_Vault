@@ -11,11 +11,12 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Callable, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from .canonical import canonical_bytes, sha256_json
+from .canary_candidate import CanaryCandidateProposal, CanaryDiscoveryOutcome
 from .continuity_models import (
     CodexOrderContinuityPlan,
     ContinuityReview,
@@ -304,6 +305,30 @@ class AutonomousTurn(BaseModel, frozen=True):
         return self
 
 
+class CanaryDiscoveryTurn(BaseModel, frozen=True):
+    """Dedicated read-only turn; it has no broker-execution payload."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    mode: AutonomousTurnMode
+    research_requests: list[ResearchRequest] = Field(default_factory=list)
+    decision: Literal["CANDIDATE", "NO_CANDIDATE"] | None = None
+    proposal: CanaryCandidateProposal | None = None
+    reasoning_summary: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _validate_mode(self) -> "CanaryDiscoveryTurn":
+        if self.mode is AutonomousTurnMode.RESEARCH:
+            if not self.research_requests or self.decision is not None or self.proposal is not None:
+                raise ValueError("canary RESEARCH turn requires only research requests")
+            return self
+        if self.research_requests or self.decision is None:
+            raise ValueError("canary FINAL turn requires a decision and no research requests")
+        if (self.decision == "CANDIDATE") != (self.proposal is not None):
+            raise ValueError("canary decision/proposal mismatch")
+        return self
+
+
 def validate_multi_sleeve_payload(
     bundle: TraderInputBundle,
     payload: AutonomousTradeProposal | AutonomousPositionAction | AutonomousOpenOrderAction | None,
@@ -408,6 +433,16 @@ class AutonomousModelProvider(Protocol):
         history: list[dict[str, Any]],
         toolbox_manifest: list[dict[str, Any]],
     ) -> AutonomousTurn: ...
+
+
+class CanaryCandidateModelProvider(Protocol):
+    def next_canary_candidate(
+        self,
+        request: InvocationRequest,
+        bundle: TraderInputBundle,
+        history: list[dict[str, Any]],
+        toolbox_manifest: list[dict[str, Any]],
+    ) -> CanaryDiscoveryTurn: ...
 
 
 class CodexAutonomousCLIProvider:
@@ -621,6 +656,144 @@ class CodexAutonomousCLIProvider:
                 self.last_failure_detail = None
                 return turn
             raise AssertionError("semantic repair loop exhausted unexpectedly")
+
+    def next_canary_candidate(
+        self,
+        request: InvocationRequest,
+        bundle: TraderInputBundle,
+        history: list[dict[str, Any]],
+        toolbox_manifest: list[dict[str, Any]],
+    ) -> CanaryDiscoveryTurn:
+        """Run the same attested Codex provider in discovery-only mode."""
+
+        with tempfile.TemporaryDirectory(prefix="codex-canary-discovery-") as raw_dir:
+            workdir = Path(raw_dir)
+            schema_path = workdir / "canary_discovery_schema.json"
+            output_path = workdir / "canary_discovery_turn.json"
+            schema_path.write_text(
+                json.dumps(self.canary_strict_output_schema(), sort_keys=True),
+                encoding="utf-8",
+            )
+            executable = self.codex_executable
+            if executable is None:
+                executable = (
+                    _resolve_codex_executable()
+                    if self.runner is subprocess.run
+                    else "codex"
+                )
+            command = [
+                executable,
+                "--search",
+                "exec",
+                "--ephemeral",
+                "--ignore-rules",
+                "--ignore-user-config",
+                "--skip-git-repo-check",
+                "--sandbox",
+                "read-only",
+                "--json",
+                "--model",
+                request.requested_model,
+                "-c",
+                f'model_reasoning_effort="{request.reasoning_effort.lower()}"',
+                "--output-schema",
+                str(schema_path),
+                "--output-last-message",
+                str(output_path),
+                "-",
+            ]
+            payload = self._canary_prompt_payload(
+                request, bundle, history, toolbox_manifest
+            )
+            try:
+                completed = self.runner(
+                    command,
+                    input=canonical_bytes(payload).decode("utf-8"),
+                    text=True,
+                    capture_output=True,
+                    timeout=request.timeout_seconds,
+                    cwd=workdir,
+                    env=self._sanitized_environment(),
+                    check=False,
+                )
+            except subprocess.TimeoutExpired as exc:
+                self.last_failure_code = "TIMEOUT"
+                raise TimeoutError("canary discovery Codex provider timed out") from exc
+            if completed.returncode != 0:
+                self.last_failure_code = f"RETURN_CODE_{completed.returncode}"
+                raise RuntimeError("CANARY_DISCOVERY_CODEX_PROVIDER_FAILED")
+            if self.owner_model_attestation_exception_sha256 is None:
+                self._assert_effective_model(completed.stdout, request.requested_model)
+                self.last_model_attestation_mode = "SERVER_REPORTED"
+            else:
+                self._assert_effective_model_with_owner_exception(
+                    completed.stdout, request.requested_model
+                )
+                self.last_model_attestation_mode = "OWNER_EXCEPTION_REQUEST_PIN"
+            self.last_native_tool_events = self._native_tool_events(completed.stdout)
+            try:
+                raw = json.loads(output_path.read_text(encoding="utf-8"))
+                for item in raw.get("research_requests", []):
+                    if isinstance(item, dict) and isinstance(item.get("arguments"), str):
+                        decoded = json.loads(item["arguments"])
+                        if not isinstance(decoded, dict):
+                            raise ValueError(
+                                "research request arguments must decode to an object"
+                            )
+                        item["arguments"] = decoded
+                turn = CanaryDiscoveryTurn.model_validate(raw)
+            except (OSError, json.JSONDecodeError, ValidationError, ValueError) as exc:
+                self.last_failure_code = "OUTPUT_INVALID"
+                raise RuntimeError("CANARY_DISCOVERY_CODEX_OUTPUT_INVALID") from exc
+            self.last_failure_code = None
+            self.last_failure_detail = None
+            return turn
+
+    @staticmethod
+    def _canary_prompt_payload(
+        request: InvocationRequest,
+        bundle: TraderInputBundle,
+        history: list[dict[str, Any]],
+        toolbox_manifest: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        return {
+            "schema": "CODEX_CANARY_CANDIDATE_DISCOVERY_V1",
+            "mandate": {
+                "objective": (
+                    "Select an exact PAPER continuous-market canary candidate only "
+                    "when its expected information value and bounded economics justify it."
+                ),
+                "predefined_symbol_universe": False,
+                "predefined_security_type": False,
+                "fallback_candidate": False,
+                "no_candidate_is_valid": True,
+                "read_only_discovery": True,
+                "broker_writes_prohibited": True,
+                "instruction": (
+                    "Independently investigate any technically available continuous-market "
+                    "family and contract. Return NO_CANDIDATE when no exact candidate is "
+                    "justified. For CANDIDATE, author the exact family, canonical contract "
+                    "group, entry economics, expiry, and exact flat-return plan. Do not "
+                    "substitute a host suggestion or assume that read-only evidence certifies "
+                    "the family for ordinary execution."
+                ),
+            },
+            "request": request.model_dump(mode="json"),
+            "request_sha256": sha256_json(request),
+            "bundle": bundle.model_dump(mode="json"),
+            "toolbox": toolbox_manifest,
+            "research_history": history,
+            "output_contract": {
+                "research_request_arguments": (
+                    "Encode each research_requests[].arguments value as a JSON object string."
+                ),
+                "candidate_binding": (
+                    "Copy all account, successor, approved-HEAD, invocation, family, contract, "
+                    "economics, expiry, and flat-return bindings exactly from authenticated "
+                    "evidence. The host validates every field and may reject the proposal."
+                ),
+            },
+        }
 
     @staticmethod
     def _semantic_validation_errors(exc: Exception) -> list[dict[str, Any]]:
@@ -839,6 +1012,36 @@ class CodexAutonomousCLIProvider:
         return schema
 
     @staticmethod
+    def canary_strict_output_schema() -> dict[str, Any]:
+        schema = CanaryDiscoveryTurn.model_json_schema()
+
+        def normalize(node: object) -> None:
+            if isinstance(node, dict):
+                node.pop("pattern", None)
+                properties = node.get("properties")
+                if isinstance(properties, dict):
+                    node["required"] = list(properties)
+                    node["additionalProperties"] = False
+                for value in node.values():
+                    normalize(value)
+            elif isinstance(node, list):
+                for value in node:
+                    normalize(value)
+
+        normalize(schema)
+        arguments_schema = schema["$defs"]["ResearchRequest"]["properties"][
+            "arguments"
+        ]
+        arguments_schema.clear()
+        arguments_schema.update(
+            {
+                "type": "string",
+                "description": "JSON object string containing read-only tool arguments",
+            }
+        )
+        return schema
+
+    @staticmethod
     def _assert_effective_model(output: object, requested_model: str) -> None:
         _assert_codex_actual_model(
             output,
@@ -903,6 +1106,112 @@ class AutonomousResearchOutcome(BaseModel, frozen=True):
     broker_validation: dict[str, Any] = Field(default_factory=dict)
     continuity_plan: CodexOrderContinuityPlan | None = None
     continuity_reviews: tuple[ContinuityReview, ...] = ()
+
+
+class CanaryCandidateDiscoveryLoop:
+    """Read-only model-directed discovery for an exact continuous canary."""
+
+    def __init__(
+        self,
+        provider: CanaryCandidateModelProvider,
+        toolbox: ResearchToolbox,
+        *,
+        event_persister: Callable[[str, dict[str, Any]], None] | None = None,
+        max_rounds: int = 24,
+        max_requests_per_round: int = 16,
+    ) -> None:
+        if max_rounds <= 0 or max_requests_per_round <= 0:
+            raise ValueError("research loop limits must be positive")
+        self.provider = provider
+        self.toolbox = toolbox
+        self.event_persister = event_persister or (lambda _kind, _payload: None)
+        self.max_rounds = max_rounds
+        self.max_requests_per_round = max_requests_per_round
+
+    def run(
+        self, request: InvocationRequest, bundle: TraderInputBundle
+    ) -> CanaryDiscoveryOutcome:
+        if request.decision_cycle_id != bundle.decision_cycle_id:
+            raise ValueError("CYCLE_MISMATCH")
+        if request.input_bundle_sha256 != bundle.sha256:
+            raise ValueError("INPUT_HASH_MISMATCH")
+        if bundle.reconciliation_receipt.get("status") != "PASS":
+            raise ValueError("BROKER_RECONCILIATION_REQUIRED")
+        if bundle.kill_switch_state != "KILL_SWITCH_CLEAR":
+            raise ValueError("KILL_SWITCH_TRIGGERED")
+
+        history: list[dict[str, Any]] = []
+        manifest = self.toolbox.manifest()
+        for round_index in range(1, self.max_rounds + 1):
+            turn = self.provider.next_canary_candidate(
+                request, bundle, history, manifest
+            )
+            history.append(
+                {
+                    "round": round_index,
+                    "type": "model_turn",
+                    "payload": turn.model_dump(mode="json"),
+                }
+            )
+            if turn.mode is AutonomousTurnMode.RESEARCH:
+                if len(turn.research_requests) > self.max_requests_per_round:
+                    raise ValueError("RESEARCH_REQUEST_BATCH_TOO_LARGE")
+                for research_request in turn.research_requests:
+                    result = self.toolbox.execute(research_request, bundle)
+                    event = {
+                        "round": round_index,
+                        "request": research_request.model_dump(mode="json"),
+                        "result": result.model_dump(mode="json"),
+                    }
+                    history.append(
+                        {
+                            "round": round_index,
+                            "type": "research_result",
+                            "payload": event,
+                        }
+                    )
+                    self.event_persister(
+                        "CANARY_DISCOVERY_RESEARCH_EVENT", event
+                    )
+                continue
+
+            transcript_sha256 = sha256_json(history)
+            if turn.decision == "NO_CANDIDATE":
+                outcome = CanaryDiscoveryOutcome(
+                    decision="NO_CANDIDATE",
+                    invocation_sha256=sha256_json(request),
+                    result_sha256=sha256_json(turn),
+                    transcript_sha256=transcript_sha256,
+                )
+                self.event_persister(
+                    "CANARY_DISCOVERY_NO_CANDIDATE",
+                    {
+                        "outcome_sha256": outcome.sha256,
+                        "transcript_sha256": transcript_sha256,
+                    },
+                )
+                return outcome
+
+            if turn.proposal is None:
+                raise ValueError("CANARY_CANDIDATE_REQUIRED")
+            outcome = CanaryDiscoveryOutcome(
+                decision="CANDIDATE",
+                invocation_sha256=turn.proposal.invocation_sha256,
+                result_sha256=turn.proposal.result_sha256,
+                transcript_sha256=transcript_sha256,
+                proposal=turn.proposal,
+            )
+            self.event_persister(
+                "CANARY_CANDIDATE_ACCEPTED",
+                {
+                    "candidate_id": turn.proposal.candidate_id,
+                    "candidate_sha256": turn.proposal.sha256,
+                    "outcome_sha256": outcome.sha256,
+                    "transcript_sha256": transcript_sha256,
+                },
+            )
+            return outcome
+        raise RuntimeError("CANARY_DISCOVERY_MAX_ROUNDS_EXCEEDED")
 
 
 class AutonomousResearchLoop:
