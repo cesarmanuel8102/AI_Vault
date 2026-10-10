@@ -126,6 +126,22 @@ def test_database_open_does_not_implicitly_install_continuity_schema_v3(
     assert "continuity_execution_events" not in tables
 
 
+def test_database_open_does_not_implicitly_install_multi_universe_schema_v4(
+    db_path,
+) -> None:
+    from ibkr_paper_30d.persistence import MULTI_UNIVERSE_CANONICAL_TABLES
+
+    with Database.open(db_path) as db:
+        tables = {
+            str(row[0])
+            for row in db.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        }
+
+    assert MULTI_UNIVERSE_CANONICAL_TABLES.isdisjoint(tables)
+
+
 def test_tampered_hash_chain_is_detected(db_path) -> None:
     with Database.open(db_path) as db:
         EventRepository(db).append("X", {"n": 1})

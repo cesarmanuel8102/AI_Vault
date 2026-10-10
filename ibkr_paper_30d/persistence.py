@@ -86,6 +86,18 @@ CONTINUITY_CANONICAL_TABLES = frozenset({
 
 CONTINUITY_APPEND_ONLY_TABLES = tuple(sorted(CONTINUITY_CANONICAL_TABLES))
 
+MULTI_UNIVERSE_CANONICAL_TABLES = frozenset({
+    "sleeve_authority_events",
+    "sleeve_ledger_events",
+    "contract_ownership_events",
+    "product_family_certification_events",
+    "owner_economic_risk_authorization_events",
+    "canary_authorization_events",
+    "successor_transition_events",
+})
+
+MULTI_UNIVERSE_APPEND_ONLY_TABLES = tuple(sorted(MULTI_UNIVERSE_CANONICAL_TABLES))
+
 
 def configure_connection(conn: sqlite3.Connection) -> None:
     conn.execute("PRAGMA journal_mode=WAL")
