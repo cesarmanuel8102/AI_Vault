@@ -28,6 +28,7 @@ from .open_order_management import (
     canonical_contract_identity,
     canonical_open_order,
 )
+from .product_capability import ProductCapabilityEvidence
 from .risk import CapitalBoundaryInputs, CapitalBoundaryRiskEngine, RiskResult
 from .trader_invocation import TraderDecision, TraderInputBundle
 
@@ -40,6 +41,36 @@ class PositionExecutionContractError(ValueError):
     def __init__(self, reason_code: str) -> None:
         super().__init__(reason_code)
         self.reason_code = reason_code
+
+
+def capability_evidence_from_broker_checks(
+    *,
+    candidate: dict[str, Any],
+    paper_account_sha256: str,
+    contract_qualified: bool,
+    permissions_verified: bool,
+    market_data_verified: bool,
+    order_semantics_verified: bool,
+    quantity_semantics_verified: bool,
+    bounded_economics_verified: bool,
+    paper_limitations: tuple[str, ...],
+    observed_at_utc: Any,
+    expires_at_utc: Any,
+) -> ProductCapabilityEvidence:
+    """Normalize broker facts without converting research into authority."""
+    return ProductCapabilityEvidence(
+        candidate=candidate,
+        paper_account_sha256=paper_account_sha256,
+        contract_qualified=contract_qualified,
+        permissions_verified=permissions_verified,
+        market_data_verified=market_data_verified,
+        order_semantics_verified=order_semantics_verified,
+        quantity_semantics_verified=quantity_semantics_verified,
+        bounded_economics_verified=bounded_economics_verified,
+        paper_limitations=paper_limitations,
+        observed_at_utc=observed_at_utc,
+        expires_at_utc=expires_at_utc,
+    )
 
 
 def resolve_position_execution_contract(ib: Any, contract: Any) -> Any:

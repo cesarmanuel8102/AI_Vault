@@ -137,6 +137,19 @@ def test_market_scanner_research_tool_is_preserved_in_toolbox():
     assert "Codex chooses instrument/location/scan code" in source
 
 
+def test_scanner_subscription_builder_has_no_host_product_allowlist():
+    subscription = scanner.build_scanner_subscription(
+        instrument="FUT.US",
+        location_code="FUT.GLOBEX",
+        scan_code="MOST_ACTIVE",
+        rows=17,
+    )
+    assert subscription.instrument == "FUT.US"
+    assert subscription.locationCode == "FUT.GLOBEX"
+    assert subscription.scanCode == "MOST_ACTIVE"
+    assert subscription.numberOfRows == 17
+
+
 def test_scanner_output_is_discovery_evidence_never_a_universe():
     toolbox_source = inspect.getsource(research_tools)
     validate_source = Path(

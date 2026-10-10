@@ -58,6 +58,20 @@ class ScannerMessageGuard:
         return message_id
 
 
+def build_scanner_subscription(
+    *, instrument: str, location_code: str, scan_code: str, rows: int = 50
+) -> ScannerSubscription:
+    """Build model-directed discovery input without a host product allowlist."""
+    if not instrument or not location_code or not scan_code or rows <= 0:
+        raise ValueError("complete positive scanner subscription fields are required")
+    subscription = ScannerSubscription()
+    subscription.instrument = instrument
+    subscription.locationCode = location_code
+    subscription.scanCode = scan_code
+    subscription.numberOfRows = rows
+    return subscription
+
+
 @dataclass(frozen=True)
 class ScannerCapabilityReport:
     available: bool | None
@@ -335,11 +349,12 @@ def probe_scanner_capability(
         request_id = 50_000
         client.scanner_rows[request_id] = []
         client.scanner_end_events[request_id] = threading.Event()
-        subscription = ScannerSubscription()
-        subscription.instrument = "STK"
-        subscription.locationCode = "STK.US.MAJOR"
-        subscription.scanCode = "TOP_PERC_GAIN"
-        subscription.numberOfRows = 50
+        subscription = build_scanner_subscription(
+            instrument="STK",
+            location_code="STK.US.MAJOR",
+            scan_code="TOP_PERC_GAIN",
+            rows=50,
+        )
         client.reqScannerSubscription(request_id, subscription, [], [])
         if not client.scanner_end_events[request_id].wait(timeout_seconds):
             reasons.append("SCANNER_SUBSCRIPTION_TIMEOUT")

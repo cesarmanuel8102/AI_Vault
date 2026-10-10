@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -8,6 +9,7 @@ from ibkr_paper_30d.autonomous_research import ResearchRequest, ResearchTool
 from ibkr_paper_30d.ibkr_research_tools import (
     IBKRResearchToolbox,
     PositionExecutionContractError,
+    capability_evidence_from_broker_checks,
     resolve_position_execution_contract,
 )
 
@@ -187,3 +189,22 @@ def test_toolbox_normalizes_connection_subclass_error_category(monkeypatch):
 
     assert result.success is False
     assert result.error == "ConnectionError:tool_failed"
+
+
+def test_broker_checks_remain_descriptive_until_every_execution_fact_is_proven():
+    now = datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc)
+    evidence = capability_evidence_from_broker_checks(
+        candidate={"symbol": "MODEL_CHOSEN", "secType": "FUT"},
+        paper_account_sha256="a" * 64,
+        contract_qualified=True,
+        permissions_verified=True,
+        market_data_verified=True,
+        order_semantics_verified=True,
+        quantity_semantics_verified=True,
+        bounded_economics_verified=False,
+        paper_limitations=("PAPER_SIMULATION_ONLY",),
+        observed_at_utc=now,
+        expires_at_utc=now + timedelta(hours=1),
+    )
+    assert evidence.research_visible is True
+    assert evidence.execution_ready is False
