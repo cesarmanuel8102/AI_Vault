@@ -1,6 +1,6 @@
 # Continuous Multi-Universe Sleeves Design
 
-**Status:** Owner-approved base design, revised after independent review and
+**Status:** Owner-approved base design, revised after independent reviews and
 pending Owner review of this revision. Implementation and production activation
 are not authorized by this document alone.
 
@@ -141,6 +141,15 @@ verified maximum economic liability. If maximum loss is relevant but cannot be
 bounded or verified for the exact contract and direction, the proposal is
 blocked. Margin alone must never be presented as maximum loss.
 
+Each sleeve must also pass a standalone-solvency test that ignores every margin
+offset, guarantee, cash balance, hedge, or correlated position owned by the
+other sleeve or outside the experiment. Account-level IBKR margin is supporting
+broker evidence, not sufficient sleeve authority. The runtime computes a
+conservative standalone requirement from the sleeve's exact contracts,
+economic liabilities, cash debits, product-specific margin rules, and stress
+buffers. If standalone support cannot be established independently, the
+proposal is blocked even when IBKR reports ample account buying power.
+
 Performance is reported without rebasing:
 
 - `REGULAR_HISTORICAL_PNL = R_EQUITY_0 - R_PRINCIPAL`;
@@ -276,9 +285,17 @@ Ownership must cover events that do not begin with a new model order:
 - broker corrections or any manually created/unattributed account item.
 
 Before accepting a derivative or multi-leg order, the ownership gate reserves
-contingent identities for every leg, underlying, settlement currency, and
-deterministically possible child position. A conflict with the other sleeve
-blocks the proposal before transmission.
+contingent identities for every leg, underlying, and deterministically possible
+child position. A conflict with the other sleeve blocks the proposal before
+transmission.
+
+Currency codes are not exclusive contract identities. Both sleeves may own
+separate virtual USD, EUR, or other currency balances. Every conversion,
+settlement, fee, financing charge, and cash movement posts to the initiating
+sleeve's per-currency subledger. Reconciliation proves that the sum of both
+sleeve balances plus classified non-experiment and canary balances equals the
+broker's aggregate cash by currency. One sleeve may not spend, pledge, or use
+margin against the other sleeve's virtual currency balance.
 
 When a broker event occurs, ownership follows the verified source lineage. An
 option assignment and its resulting stock position, for example, remain in the
@@ -444,9 +461,19 @@ orders, executions, and positions, and reconcile before restoring authority.
 
 ### Provider Timeout or Crash
 
-Freeze new entries. Existing deterministic continuity may execute only a
-model-authored, still-valid, hash-bound plan. The host does not invent a new
-economic action.
+New exposure may be opened only when the accepted proposal includes a
+model-authored, hash-bound continuity plan that covers provider unavailability
+through the next required decision deadline. The plan identifies the exact
+contract and position, validity interval, permitted reduce/cancel/close actions,
+deterministic triggers, quantity bounds, and terminal conditions.
+
+On timeout or crash, freeze new entries. The host and writer may execute only
+an action already authorized by that still-valid plan; they do not infer market
+intent or invent a new economic action. Positions carried into the successor
+must have equivalent unexpired coverage before maintenance begins. If a plan is
+absent, expired, exhausted, mismatched, or cannot be verified, the system
+preserves exact state, freezes new risk, alerts the Owner, and remains
+fail-closed rather than fabricating management authority.
 
 ### Order-State Uncertainty
 
@@ -497,11 +524,16 @@ Tests must prove:
 - profit, loss, fees, margin, and reserved capital remain sleeve-local;
 - capital availability uses sleeve equity and obligations rather than account
   buying power, and margin is never substituted for maximum loss;
+- each sleeve remains solvent when every cross-sleeve and non-experiment cash,
+  collateral, hedge, guarantee, and margin offset is removed;
 - carried-forward regular state preserves original cost basis and history;
 - historical, successor-period, and lifetime P&L formulas remain distinct;
 - exact-contract cross-sleeve collision is blocked;
 - exercise, assignment, settlement, multi-leg, currency, and corporate-action
   descendants preserve verified ownership lineage;
+- both sleeves may hold the same currency only through separate virtual
+  subledgers whose sum reconciles to broker cash by currency, with no
+  cross-sleeve spending or collateral use;
 - unattributed account events freeze new risk instead of being guessed;
 - ownership releases only after complete broker reconciliation;
 - each supported contract adapter preserves exact IBKR identity and quantity;
@@ -525,12 +557,22 @@ Cover at minimum:
 - stale or mismatched capability evidence;
 - maintenance-window transition;
 - insufficient sleeve capital despite ample account buying power;
+- an IBKR account-margin offset that would make an independently insolvent
+  sleeve appear solvent;
 - attempt to charge fees or loss to the other sleeve; and
 - assignment into an underlying owned by the other sleeve;
 - corporate-action contract replacement and spin-off ownership;
 - unsolicited or manually created broker position;
 - multi-leg fill represented as separate broker positions;
 - currency conversion and per-sleeve cash attribution;
+- two sleeves holding USD while an attempted cross-spend is blocked;
+- maintenance attempted with a Day1 open order or an uncovered position;
+- provider outage with a position, proving that only its accepted
+  model-authored continuity plan can act;
+- a no-fill canary incorrectly attempting to authorize an instrument family;
+- crash injection after every successor-transition phase, including after the
+  successor database commit but before runtime binding;
+- predecessor executor reuse after successor commit; and
 - clock expiry with multiple product sessions.
 
 ### PAPER Capability Probe
@@ -541,40 +583,98 @@ contracts, sessions, data, quantity rules, order types, and what-if support.
 
 ### PAPER Canary
 
-After code verification and before the successor epoch begins, execute one
-separately authorized, minimum-exposure PAPER canary under an exclusive
+After code verification and before the successor epoch begins, execute
+separately authorized, minimum-exposure PAPER canaries under an exclusive
 maintenance authority. The old Day1 writer must be stopped and its lock
-released before the canary writer starts; they may never overlap.
+released before a canary writer starts; they may never overlap.
 
-The canary uses a dedicated order namespace, contract not owned or contingently
-reserved by Day1, and an Owner-authorized canary reserve outside both economic
-ledgers. It proves:
+Each canary uses a dedicated order namespace, a contract not owned or
+contingently reserved by Day1, and an Owner-authorized canary reserve outside
+both economic ledgers. Certification is scoped to a product-family key that
+includes security type, venue/routing semantics, quantity semantics, order
+representation, and lifecycle behavior. A family reaches
+`FULL_LIFECYCLE_VERIFIED` only after proving:
 
 1. contract qualification;
 2. market-data binding;
 3. broker feasibility;
 4. one exact submit;
 5. broker binding and all-order visibility;
-6. fill or deterministic terminal order state;
-7. position management and closure when a fill occurs; and
-8. final zero canary exposure with complete reconciliation.
+6. an actual PAPER entry fill;
+7. broker-visible position creation and exact reconciliation;
+8. at least one management observation through the production decision and
+   continuity path;
+9. an actual PAPER closing fill; and
+10. final zero canary exposure, zero open order, and exact economics
+    reconciliation including fills, commissions, fees, financing, and cash.
+
+A submitted order that reaches a deterministic terminal state without a fill
+may establish `ORDER_TRANSMIT_VERIFIED`, but it cannot authorize autonomous
+execution for that family. Initial successor activation includes only families
+already marked `FULL_LIFECYCLE_VERIFIED`. Codex may research other families,
+and additional families may be certified later through the same exclusive
+maintenance procedure, but their proposals remain non-executable until their
+own full lifecycle passes. Failure or lack of support in one family does not
+block already certified families.
 
 The canary does not select or imply the autonomous strategy. Its fills,
 commissions, fees, financing, and P&L are persisted in a separate canary ledger
 and excluded from both sleeves. The resulting aggregate account cash difference
 remains an explicit reconciliation adjustment rather than hidden sleeve P&L.
 
-Before the maintenance authority begins, the deployment must prove a rollback
-that can restart the original approved HEAD, epoch, lock generation, and Day1
-state without accepting any successor authority. During the short maintenance
-window, a read-only observer may remain active, but there is exactly one writer
-or none. If a current Day1 order or continuity obligation requires a write, the
-canary is aborted and the original runtime is restored.
+Before maintenance authority begins, the deployment must prove a rollback that
+can restart the original approved HEAD, epoch, lock generation, and Day1 state
+without accepting any successor authority. Day1 must have zero open orders;
+orders are not cancelled merely to make the canary possible. Every carried
+position must have an unexpired, hash-bound, model-authored continuity plan that
+remains valid throughout the maintenance and rollback envelope. If either
+condition is not met, maintenance is postponed rather than liquidating or
+altering Day1 exposure for deployment convenience.
+
+During the maintenance window, a read-only observer continuously reconciles
+positions, executions, account state, and continuity deadlines, but there is
+exactly one writer or none. Any broker-state change, plan trigger, expiring
+coverage, or required Day1 write aborts the canary and restores the original
+runtime only when exact rollback safety is still proven. Day1 is never
+liquidated merely to run a canary.
 
 If the canary cannot reach a terminal, flat, exactly reconciled state, successor
 activation is prohibited. A proven-flat canary failure restores the original
 runtime. Any uncertain canary state remains fail-closed and requires Owner
 action; rollback must not create a competing writer.
+
+## Recoverable Transition State Machine
+
+The successor transition is a durable, idempotent state machine:
+
+`PREPARED -> PREDECESSOR_QUIESCED -> CANARY_EXCLUSIVE -> CANARY_PASS -> SUCCESSOR_COMMITTED -> RUNTIME_BOUND -> ACTIVE`
+
+Every phase transition uses the same immutable `transition_id`, expected prior
+phase and state hash, predecessor and successor epoch IDs, approved HEAD,
+successor definition hash, Owner authorization hash, writer ownership, and
+transition hash. The database update is compare-and-swap: an exact retry may
+return the already-committed result only after every binding matches; a
+different target or inconsistent phase blocks.
+
+Recovery rules are phase-specific:
+
+- Before `SUCCESSOR_COMMITTED`, the predecessor may restart only when canary
+  exposure and orders are proven zero and all predecessor continuity remains
+  exact. Otherwise the system remains fail-closed.
+- At and after `SUCCESSOR_COMMITTED`, the predecessor executor is permanently
+  barred from reacquiring order authority. Startup must resume the exact
+  successor transition rather than fall back to Day1.
+- After `RUNTIME_BOUND` and before `ACTIVE`, restart verifies the bound process,
+  lock generation, approved HEAD, broker identity, and committed transition
+  before completing activation.
+- Any missing phase evidence, conflicting executor, stale hash, or ambiguous
+  broker state freezes new risk, persists the failure, and raises the critical
+  Owner alert.
+
+Fault-injection tests stop the process after every durable phase, including the
+database commit immediately before Windows runtime restart, and prove that
+recovery neither duplicates a canary/activation nor revives predecessor
+authority.
 
 ## Activation Sequence
 
@@ -587,23 +687,30 @@ action; rollback must not create a competing writer.
    successor Owner authorization, approved implementation HEAD, and receipts.
 6. Prove the rollback launcher for the original HEAD and active predecessor
    epoch without changing production state.
-7. Enter an audited maintenance window: freeze new Day1 entries, drain the
-   writer queue, verify no open Day1 order requires action, reconcile the
-   account, stop the old runtime, and release its execution lock.
+7. Persist `PREPARED`, then enter an audited maintenance window only after
+   proving zero Day1 open orders and valid continuity coverage for every carried
+   position. Freeze new Day1 entries, drain the writer queue, reconcile the
+   account, stop the old runtime, release its execution lock, and persist
+   `PREDECESSOR_QUIESCED`.
 8. Start the new implementation in exclusive canary mode with successor
-   activation still disabled.
-9. Run the authorized PAPER canary, persist its separate economics, and
-   reconcile canary exposure and orders to zero.
+   activation still disabled, and persist `CANARY_EXCLUSIVE`.
+9. Run the authorized PAPER canaries required for the initially enabled product
+   families, persist their separate economics, reconcile canary exposure and
+   orders to zero, and persist `CANARY_PASS` with the exact certified-family
+   set.
 10. If the canary fails while proven flat, stop the new runtime and restore the
     predecessor runtime. If state is uncertain, remain fail-closed and require
     Owner action.
 11. After canary PASS, collect fresh PAPER identity, positions, orders,
     executions, authenticated server time, and exact carried Day1 economics.
 12. Atomically create the successor clock, regular sleeve, extended sleeve,
-    ownership projection, and activation event.
+    ownership projection, certified-family set, and activation event, then
+    persist `SUCCESSOR_COMMITTED`.
 13. Transition the already-exclusive writer from canary authority to successor
-    authority without opening another write-capable session.
-14. Start the single continuous autonomous loop.
+    authority without opening another write-capable session, bind its exact
+    process and lock generation, and persist `RUNTIME_BOUND`.
+14. Start the single continuous autonomous loop and persist `ACTIVE` only after
+    all committed bindings revalidate.
 15. Verify writer readiness and the first accepted autonomous cycle without
     forcing a trade.
 
@@ -621,12 +728,24 @@ The expanded experiment is ready only when:
 - `EXTENDED_SLEEVE` has exactly USD 500 authority and zero opening P&L;
 - combined opening principal is exactly USD 1,000;
 - no capital-transfer path exists;
+- each sleeve independently satisfies solvency without account-level offsets
+  from the other sleeve or non-experiment assets;
+- per-currency virtual subledgers reconcile exactly to classified broker cash;
 - capability evidence is fresh and bound to the PAPER account;
 - contract ownership is unique and reconciled;
 - broker-generated descendants and cash events have verified sleeve lineage;
-- the canary is terminal and flat;
+- every executable product family is `FULL_LIFECYCLE_VERIFIED`, and every
+  uncertified family remains research-only;
+- each canary is terminal and flat after entry fill, management observation,
+  closing fill, and economics reconciliation;
 - canary economics are excluded from both sleeves and exactly reconciled;
 - rollback to the predecessor runtime was proven before maintenance began;
+- Day1 had zero open orders and every carried position had valid model-authored
+  continuity coverage before maintenance;
+- the successor transition passes crash recovery at every durable phase and
+  the predecessor executor cannot reacquire authority after successor commit;
+- every newly opened position carries valid model-authored continuity coverage
+  for provider unavailability;
 - no critical alert, uncertain order, or unresolved reconciliation remains;
 - at least one autonomous cycle is accepted; and
 - the scheduler/runtime cannot repeat the legacy three-window collection
