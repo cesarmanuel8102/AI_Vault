@@ -10,6 +10,7 @@ from typing import Any, Mapping
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .canonical import canonical_bytes, sha256_json
+from .canary_authority import CanaryLifecycleProjection
 from .multi_universe_models import ProductFamilyKey, SHA256_PATTERN
 from .multi_universe_schema import verify_multi_universe_schema_v4
 from .persistence import Database
@@ -275,6 +276,37 @@ class ProductFamilyCertificationStore:
                     "endpoint": "PAPER",
                 },
             )
+
+    def record_canary_lifecycle(
+        self,
+        family: ProductFamilyKey,
+        lifecycle: CanaryLifecycleProjection,
+        *,
+        account_sha256: str,
+        adapter_sha256: str,
+        observed_at_utc: datetime,
+        expires_at_utc: datetime,
+        paper_limitations: tuple[str, ...],
+    ) -> ProductExecutionCapability:
+        if (
+            lifecycle.product_family_sha256 != family.sha256
+            or lifecycle.status != "PASS"
+            or lifecycle.full_lifecycle_verified is not True
+            or lifecycle.flat is not True
+        ):
+            raise ProductCapabilityError("CANARY_FULL_LIFECYCLE_REQUIRED")
+        for step in CERTIFICATION_SEQUENCE[6:]:
+            self.record_step(
+                family,
+                step,
+                lifecycle.sha256,
+                account_sha256=account_sha256,
+                adapter_sha256=adapter_sha256,
+                observed_at_utc=observed_at_utc,
+                expires_at_utc=expires_at_utc,
+                paper_limitations=paper_limitations,
+            )
+        return self.projection(family)
 
     def revoke(self, family: ProductFamilyKey, *, reason: str) -> str:
         with self.db.transaction():

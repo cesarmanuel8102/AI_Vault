@@ -5,10 +5,12 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+from ibkr_paper_30d.canary_authority import CanaryLifecycleRecorder
 from ibkr_paper_30d.multi_universe_models import ProductFamilyKey
 from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.product_capability import (
+    CERTIFICATION_SEQUENCE,
     ExtendedAvailabilityGate,
     ProductCapabilityError,
     ProductCapabilityEvidence,
@@ -124,6 +126,51 @@ def test_only_ordered_full_lifecycle_reaches_full_certification(tmp_path) -> Non
         assert store.assert_executable(family, NOW, ACCOUNT).executable is True
         assert projection.paper_only is True
         assert "PAPER_SIMULATION_ONLY" in projection.paper_limitations
+    finally:
+        db.close()
+
+
+def test_full_canary_projection_completes_family_but_no_fill_cannot(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    family = _family("FUT", "GLOBEX")
+    try:
+        for step in CERTIFICATION_SEQUENCE[:6]:
+            _record(store, family, step)
+        recorder = CanaryLifecycleRecorder("canary-1", family.sha256, "c" * 64)
+        recorder.record_submit("1" * 64)
+        recorder.record_bind("2" * 64)
+        no_fill = recorder.record_terminal_no_fill("3" * 64)
+        with pytest.raises(ProductCapabilityError, match="CANARY_FULL_LIFECYCLE_REQUIRED"):
+            store.record_canary_lifecycle(
+                family,
+                no_fill,
+                account_sha256=ACCOUNT,
+                adapter_sha256=ADAPTER,
+                observed_at_utc=NOW,
+                expires_at_utc=NOW + timedelta(days=1),
+                paper_limitations=("PAPER_SIMULATION_ONLY",),
+            )
+
+        complete = CanaryLifecycleRecorder("canary-2", family.sha256, "c" * 64)
+        complete.record_submit("1" * 64)
+        complete.record_bind("2" * 64)
+        complete.record_entry_fill("3" * 64)
+        complete.record_position("4" * 64)
+        complete.record_management("5" * 64)
+        complete.record_exit_fill("6" * 64)
+        complete.record_flat_state("7" * 64, open_orders=0, positions=0)
+        projection = complete.record_economics("8" * 64, reconciled=True)
+        certified = store.record_canary_lifecycle(
+            family,
+            projection,
+            account_sha256=ACCOUNT,
+            adapter_sha256=ADAPTER,
+            observed_at_utc=NOW,
+            expires_at_utc=NOW + timedelta(days=1),
+            paper_limitations=("PAPER_SIMULATION_ONLY",),
+        )
+
+        assert certified.status is ProductFamilyCertificationStatus.FULL_LIFECYCLE_VERIFIED
     finally:
         db.close()
 
