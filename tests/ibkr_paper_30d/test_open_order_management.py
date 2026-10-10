@@ -11,10 +11,17 @@ from ibkr_paper_30d.open_order_management import (
     EXECUTION_CLIENT_ID,
     OpenOrderOwnershipError,
     append_order_registry_event,
+    canonical_contract_identity,
+    canonical_order_contract_snapshot,
     canonical_open_order,
     lifecycle_attempt_exists,
     resolve_owned_open_trade,
 )
+
+
+def test_legacy_order_contract_snapshot_alias_has_exact_parity():
+    contract = trade().contract
+    assert canonical_order_contract_snapshot(contract) == canonical_contract_identity(contract)
 from ibkr_paper_30d.persistence import Database
 
 

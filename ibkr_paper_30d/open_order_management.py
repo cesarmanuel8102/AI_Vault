@@ -135,7 +135,7 @@ def _semantic_attributes(value: Any, decimal_fields: frozenset[str]) -> Any:
     return attributes
 
 
-def canonical_contract_identity(contract: Any) -> dict[str, Any]:
+def canonical_order_contract_snapshot(contract: Any) -> dict[str, Any]:
     attributes = _semantic_attributes(contract, frozenset({"strike", "multiplier"}))
     if isinstance(attributes, dict):
         for explicit_field in {
@@ -180,6 +180,15 @@ def canonical_contract_identity(contract: Any) -> dict[str, Any]:
         "comboLegs": combo_legs,
         "attributes": attributes,
     }
+
+
+def canonical_contract_identity(contract: Any) -> dict[str, Any]:
+    """Backward-compatible order snapshot identity.
+
+    New sleeve ownership uses the typed helper in contract_ownership; this
+    wrapper remains until parity is proven across every legacy order caller.
+    """
+    return canonical_order_contract_snapshot(contract)
 
 
 def canonical_open_order(trade: Any) -> dict[str, Any]:
