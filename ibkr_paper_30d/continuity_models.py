@@ -7,6 +7,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from .multi_universe_models import CapitalSleeve
+
 from .canonical import sha256_json
 
 
@@ -434,7 +436,9 @@ def _iter_actions(plan: "CodexOrderContinuityPlan"):
 class CodexOrderContinuityPlan(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
-    schema: Literal["CODEX_ORDER_CONTINUITY_PLAN_V1"]
+    schema: Literal[
+        "CODEX_ORDER_CONTINUITY_PLAN_V1", "CODEX_ORDER_CONTINUITY_PLAN_V4"
+    ]
     plan_id: str = Field(min_length=1, max_length=128)
     plan_version: int = Field(gt=0)
     created_at_utc: datetime
@@ -458,6 +462,16 @@ class CodexOrderContinuityPlan(BaseModel, frozen=True):
     expiry_authority_mode: ExpiryAuthorityMode
     terminal_disposition: ContinuityExecutableAction
     contingencies: tuple[ContinuityContingency, ...] = Field(min_length=1, max_length=64)
+    capital_sleeve: CapitalSleeve | None = None
+    canonical_contract_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
+    ownership_group_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
+    product_family_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
+    position_identity_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
+    next_decision_deadline_utc: datetime | None = None
+    sleeve_authority_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
+    ownership_projection_sha256: str | None = Field(
+        default=None, pattern=SHA256_PATTERN
+    )
 
     @property
     def sha256(self) -> str:
@@ -516,6 +530,25 @@ class CodexOrderContinuityPlan(BaseModel, frozen=True):
         for action in _iter_actions(self):
             if action.new_good_till_date_utc is not None:
                 self._validate_order_expiry(action.new_good_till_date_utc)
+        if self.schema == "CODEX_ORDER_CONTINUITY_PLAN_V4":
+            required = (
+                self.capital_sleeve,
+                self.canonical_contract_sha256,
+                self.ownership_group_sha256,
+                self.product_family_sha256,
+                self.position_identity_sha256,
+                self.next_decision_deadline_utc,
+                self.sleeve_authority_sha256,
+                self.ownership_projection_sha256,
+            )
+            if any(value is None for value in required):
+                raise ValueError("V4 continuity authority is incomplete")
+            assert self.next_decision_deadline_utc is not None
+            _require_aware(
+                self.next_decision_deadline_utc, "next_decision_deadline_utc"
+            )
+            if self.next_decision_deadline_utc > self.plan_valid_until:
+                raise ValueError("V4 continuity authority exceeds plan validity")
         return self
 
     def _validate_order_expiry(self, order_expiry: datetime) -> None:

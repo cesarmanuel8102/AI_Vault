@@ -5,6 +5,7 @@ import json
 import threading
 import time
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
 from ibkr_paper_30d.continuity_watchdog import ContinuityWatchdog
@@ -217,3 +218,39 @@ def test_poll_failure_records_failed_and_reports_uncertainty(tmp_path):
     failed = next(json.loads(row[1]) for row in rows if row[0] == "FAILED")
     assert failed["error_type"] == "RuntimeError"
     assert reports == ["CONTINUITY_WATCHDOG_FAILED"]
+
+
+def test_non_executable_plan_freeze_is_alerted_without_inventing_action(tmp_path):
+    path = tmp_path / "authority-frozen.sqlite3"
+    _initialize(path)
+    reports = []
+    watchdog = ContinuityWatchdog(
+        db_factory=lambda: Database.open(path),
+        broker_factory=Broker,
+        poll_once=lambda db, broker, coordinator: SimpleNamespace(
+            selected_action=None,
+            reason_codes=("V4_NEXT_DECISION_DEADLINE_EXPIRED",),
+        ),
+        coordinator=object(),
+        broker_time_reader=lambda value: NOW,
+        poll_interval_seconds=0.01,
+        heartbeat_max_age_seconds=1,
+        uncertainty_reporter=reports.append,
+    )
+
+    watchdog.start()
+    time.sleep(0.04)
+    watchdog.stop(2)
+
+    with Database.open(path) as db:
+        rows = db.execute(
+            "SELECT event_type,payload_json FROM continuity_watchdog_events "
+            "ORDER BY sequence"
+        ).fetchall()
+    frozen = [json.loads(row[1]) for row in rows if row[0] == "AUTHORITY_FROZEN"]
+    assert frozen == [
+        {"reason_codes": ["V4_NEXT_DECISION_DEADLINE_EXPIRED"]}
+    ]
+    assert reports == [
+        "CONTINUITY_AUTHORITY_FROZEN:V4_NEXT_DECISION_DEADLINE_EXPIRED"
+    ]

@@ -141,6 +141,20 @@ class ContinuityBindingService:
             "account_identity_sha256": binding.account_identity_sha256,
             "execution_client_id": int(execution_client_id),
         }
+        if plan.schema == "CODEX_ORDER_CONTINUITY_PLAN_V4":
+            bindings.update(
+                {
+                    "capital_sleeve": plan.capital_sleeve.value,
+                    "canonical_contract_sha256": plan.canonical_contract_sha256,
+                    "ownership_group_sha256": plan.ownership_group_sha256,
+                    "product_family_sha256": plan.product_family_sha256,
+                    "position_identity_sha256": plan.position_identity_sha256,
+                    "sleeve_authority_sha256": plan.sleeve_authority_sha256,
+                    "ownership_projection_sha256": (
+                        plan.ownership_projection_sha256
+                    ),
+                }
+            )
         registry_payload = {
             "schema": "EXPERIMENT_ORDER_REGISTRY_V3",
             "lifecycle_event": "ISSUED_PRE_SEND",

@@ -130,6 +130,23 @@ class ContinuityExecutor:
             or binding.get("plan_sha256") != plan.sha256
         ):
             raise ContinuityCommandBuildError("ACTIVE_BINDING_MISMATCH")
+        if plan.schema == "CODEX_ORDER_CONTINUITY_PLAN_V4":
+            exact_v4_bindings = {
+                "capital_sleeve": plan.capital_sleeve.value
+                if plan.capital_sleeve is not None
+                else None,
+                "canonical_contract_sha256": plan.canonical_contract_sha256,
+                "ownership_group_sha256": plan.ownership_group_sha256,
+                "product_family_sha256": plan.product_family_sha256,
+                "position_identity_sha256": plan.position_identity_sha256,
+                "sleeve_authority_sha256": plan.sleeve_authority_sha256,
+                "ownership_projection_sha256": plan.ownership_projection_sha256,
+            }
+            if any(
+                binding.get(name) != value
+                for name, value in exact_v4_bindings.items()
+            ):
+                raise ContinuityCommandBuildError("V4_CONTINUITY_BINDING_MISMATCH")
         action = evaluation.selected_action
         if (
             action.action_type == ContinuityActionType.REQUIRES_AGENT

@@ -55,12 +55,27 @@ class ContinuityWatchdog:
         self._failure: BaseException | None = None
         self._reported: set[str] = set()
 
-    def _report_once(self, code: str) -> None:
+    def _report_once(self, code: str) -> bool:
         with self._state_lock:
             if code in self._reported:
-                return
+                return False
             self._reported.add(code)
         self.uncertainty_reporter(code)
+        return True
+
+    def _observe_poll_result(self, store: ContinuityStore, result: Any) -> None:
+        if result is None or not hasattr(result, "selected_action"):
+            return
+        reasons = tuple(str(code) for code in getattr(result, "reason_codes", ()))
+        if getattr(result, "selected_action") is not None or not reasons:
+            return
+        alert_code = "CONTINUITY_AUTHORITY_FROZEN:" + "|".join(reasons)
+        if self._report_once(alert_code):
+            self._append(
+                store,
+                "AUTHORITY_FROZEN",
+                {"reason_codes": list(reasons)},
+            )
 
     @staticmethod
     def _as_utc(value: datetime) -> datetime:
@@ -154,7 +169,8 @@ class ContinuityWatchdog:
                     "HEARTBEAT",
                     {"broker_time_utc": broker_now.isoformat()},
                 )
-                self.poll_once(db, broker, self.coordinator)
+                poll_result = self.poll_once(db, broker, self.coordinator)
+                self._observe_poll_result(store, poll_result)
                 self._stop.wait(self.poll_interval_seconds)
         except BaseException as exc:
             with self._state_lock:

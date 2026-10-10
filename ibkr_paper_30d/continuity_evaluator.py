@@ -342,6 +342,28 @@ class ContinuityEvaluator:
         self, plan: CodexOrderContinuityPlan, facts: ContinuityFactSnapshot
     ) -> ContinuityEvaluation:
         now = facts.broker_time_utc
+        if (
+            plan.schema == "CODEX_ORDER_CONTINUITY_PLAN_V4"
+            and plan.next_decision_deadline_utc is not None
+            and now >= plan.next_decision_deadline_utc
+        ):
+            body = {
+                "plan_sha256": plan.sha256,
+                "fact_snapshot_sha256": facts.evidence_sha256,
+                "selected_contingency_id": None,
+                "selected_action": None,
+                "reason_codes": ["V4_NEXT_DECISION_DEADLINE_EXPIRED"],
+            }
+            digest = sha256_json(body)
+            return ContinuityEvaluation(
+                evaluation_id=f"continuity-evaluation-{digest[:24]}",
+                evaluated_at_utc=now,
+                plan_id=plan.plan_id,
+                plan_sha256=plan.sha256,
+                fact_snapshot_sha256=facts.evidence_sha256,
+                authority_active=False,
+                reason_codes=("V4_NEXT_DECISION_DEADLINE_EXPIRED",),
+            )
         activation = evaluate_condition(plan.authority_activation_condition, facts)
         expired = now >= plan.plan_valid_until
         selected_id = None

@@ -20,6 +20,10 @@ from ibkr_paper_30d.continuity_evaluator import (
     ContinuityEvaluator,
     ContinuityFactCollector,
 )
+from ibkr_paper_30d.continuity_executor import (
+    ContinuityCommandBuildError,
+    ContinuityExecutor,
+)
 from ibkr_paper_30d.continuity_models import (
     ContinuityFactEvidence,
     ContinuityFactSnapshot,
@@ -38,6 +42,42 @@ from ibkr_paper_30d.trader_invocation import InvocationRequest
 
 
 NOW = datetime(2026, 10, 1, 14, tzinfo=timezone.utc)
+
+
+def _v4_plan(continuity_plan_factory, **overrides):
+    payload = continuity_plan_factory().model_dump(mode="python")
+    payload.update(
+        {
+            "schema": "CODEX_ORDER_CONTINUITY_PLAN_V4",
+            "capital_sleeve": "REGULAR_SLEEVE",
+            "canonical_contract_sha256": "1" * 64,
+            "ownership_group_sha256": "4" * 64,
+            "product_family_sha256": "5" * 64,
+            "position_identity_sha256": "6" * 64,
+            "next_decision_deadline_utc": NOW + timedelta(minutes=5),
+            "sleeve_authority_sha256": "7" * 64,
+            "ownership_projection_sha256": "8" * 64,
+        }
+    )
+    payload.update(overrides)
+    return type(continuity_plan_factory()).model_validate(payload)
+
+
+def _outage_snapshot(*, now: datetime = NOW) -> ContinuityFactSnapshot:
+    facts = (
+        _fact("PROVIDER_STATE", "TIMEOUT_CONFIRMED"),
+        _fact("ORDER_STATUS", "UNFILLED"),
+        _fact("ORDER_REMAINING_QUANTITY", "1"),
+    )
+    return ContinuityFactSnapshot(
+        snapshot_id="v4-outage-snapshot",
+        collected_at_utc=now,
+        broker_time_utc=now,
+        facts=facts,
+        evidence_sha256=sha256_json(
+            [item.model_dump(mode="json") for item in facts]
+        ),
+    )
 
 
 def _trade():
@@ -402,6 +442,109 @@ def test_stale_fact_uses_only_model_authored_unavailable_branch(
     evaluation = ContinuityEvaluator().evaluate(plan, snapshot)
     assert "EVIDENCE_UNAVAILABLE" in evaluation.reason_codes
     assert evaluation.selected_action == plan.contingencies[0].unavailable_data_action
+
+
+def test_v4_outage_uses_exact_model_authored_action_before_deadline(
+    continuity_plan_factory,
+):
+    plan = _v4_plan(continuity_plan_factory)
+
+    evaluation = ContinuityEvaluator().evaluate(plan, _outage_snapshot())
+
+    assert evaluation.selected_action == plan.contingencies[0].state_actions[
+        "UNFILLED"
+    ]
+    assert evaluation.reason_codes == ("CONTINGENCY_MATCHED",)
+
+
+def test_v4_missing_authority_binding_is_rejected(continuity_plan_factory):
+    payload = continuity_plan_factory().model_dump(mode="python")
+    payload["schema"] = "CODEX_ORDER_CONTINUITY_PLAN_V4"
+
+    with pytest.raises(Exception, match="V4 continuity authority"):
+        type(continuity_plan_factory()).model_validate(payload)
+
+
+def test_v4_expired_decision_deadline_freezes_without_inventing_action(
+    continuity_plan_factory,
+):
+    plan = _v4_plan(
+        continuity_plan_factory,
+        next_decision_deadline_utc=NOW - timedelta(seconds=1),
+    )
+
+    evaluation = ContinuityEvaluator().evaluate(plan, _outage_snapshot())
+
+    assert evaluation.selected_action is None
+    assert evaluation.reason_codes == ("V4_NEXT_DECISION_DEADLINE_EXPIRED",)
+
+
+def test_v4_binding_mismatch_cannot_build_a_broker_write(continuity_plan_factory):
+    plan = _v4_plan(continuity_plan_factory)
+    evaluation = ContinuityEvaluator().evaluate(plan, _outage_snapshot())
+    binding = {
+        "plan_id": plan.plan_id,
+        "plan_sha256": plan.sha256,
+        "order_ref": plan.order_binding.order_ref,
+        "order_id": plan.order_binding.ibkr_order_id,
+        "perm_id": plan.order_binding.perm_id,
+        "execution_client_id": plan.order_binding.execution_client_id,
+        "account_identity_sha256": plan.order_binding.account_identity_sha256,
+        "contract_identity_sha256": plan.order_binding.contract_identity_sha256,
+        "observed_state_sha256": plan.order_binding.original_order_state_sha256,
+        "current_total_quantity": "1",
+        "current_limit_price": "4.90",
+        "current_tif": "DAY",
+        "current_good_till_date_utc": None,
+        "current_maximum_liability": "353.82",
+        "capital_sleeve": "EXTENDED_SLEEVE",
+        "canonical_contract_sha256": plan.canonical_contract_sha256,
+        "ownership_group_sha256": plan.ownership_group_sha256,
+        "product_family_sha256": plan.product_family_sha256,
+        "position_identity_sha256": plan.position_identity_sha256,
+        "sleeve_authority_sha256": plan.sleeve_authority_sha256,
+        "ownership_projection_sha256": plan.ownership_projection_sha256,
+    }
+    executor = ContinuityExecutor(
+        plan_reader=lambda _: plan,
+        active_binding_reader=lambda _: binding,
+        fact_values_reader=lambda _: {},
+        fresh_gate_checker=lambda _: (),
+    )
+
+    with pytest.raises(
+        ContinuityCommandBuildError,
+        match="V4_CONTINUITY_BINDING_MISMATCH",
+    ):
+        executor.build_command(evaluation)
+
+
+def test_simultaneous_sleeve_positions_need_independent_exact_plans(
+    continuity_plan_factory,
+):
+    regular = _v4_plan(continuity_plan_factory)
+    extended = _v4_plan(
+        continuity_plan_factory,
+        plan_id="plan-test-extended",
+        capital_sleeve="EXTENDED_SLEEVE",
+        canonical_contract_sha256="9" * 64,
+        ownership_group_sha256="a" * 64,
+        product_family_sha256="b" * 64,
+        position_identity_sha256="c" * 64,
+        sleeve_authority_sha256="d" * 64,
+        ownership_projection_sha256="e" * 64,
+    )
+
+    regular_eval = ContinuityEvaluator().evaluate(regular, _outage_snapshot())
+    extended_eval = ContinuityEvaluator().evaluate(extended, _outage_snapshot())
+
+    assert regular_eval.plan_sha256 != extended_eval.plan_sha256
+    assert regular_eval.selected_action == regular.contingencies[0].state_actions[
+        "UNFILLED"
+    ]
+    assert extended_eval.selected_action == extended.contingencies[0].state_actions[
+        "UNFILLED"
+    ]
 
 
 def test_missing_broker_time_never_activates_continuity(continuity_plan_factory):
