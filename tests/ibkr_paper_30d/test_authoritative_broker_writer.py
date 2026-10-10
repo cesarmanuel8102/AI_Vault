@@ -31,6 +31,13 @@ from ibkr_paper_30d.autonomous_research import (
 )
 from ibkr_paper_30d.ibkr_readonly import expected_identity_hash
 from ibkr_paper_30d.open_order_management import canonical_open_order
+from ibkr_paper_30d.persistence import Database
+from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+from ibkr_paper_30d.sleeve_execution_authority import (
+    SleeveAuthorityReservationStore,
+)
+from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 from ibkr_paper_30d.production_authority import (
     ProductionAuthoritySnapshot,
     ProductionAuthorityValidator,
@@ -192,6 +199,7 @@ def _start_writer(
     result_persister=None,
     model_execution_engine=None,
     production_validation_sha256="6" * 64,
+    **writer_kwargs,
 ):
     coordinator = BrokerWriteCoordinator()
     factory = factory or GatewayFactory()
@@ -205,6 +213,7 @@ def _start_writer(
         result_persister=result_persister,
         model_execution_engine=model_execution_engine,
         production_validation_sha256=production_validation_sha256,
+        **writer_kwargs,
     )
     writer.start()
     assert writer.wait_until_ready(2)
@@ -362,6 +371,69 @@ class RecordingModelEngine:
         return PaperExecutionResult(
             True, request.operation.value, (), {"request": request.request_id}, {}
         )
+
+
+def test_v4_writer_reserves_sleeve_authority_before_write_boundary(tmp_path):
+    from test_sleeve_execution_authority import _broker, _snapshot, _v4_request
+
+    events = []
+    request = _v4_request()
+
+    class FinalGateEngine:
+        def execute(
+            self,
+            broker,
+            candidate,
+            authority_context,
+            final_write_authority_check=None,
+        ):
+            events.append("what_if")
+            reasons = tuple(final_write_authority_check())
+            if reasons:
+                return PaperExecutionResult(False, "BLOCKED", reasons, {}, {})
+            events.append("write")
+            return PaperExecutionResult(True, "SUBMITTED", (), {}, {})
+
+    with Database.open(tmp_path / "writer-v4.sqlite3") as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+        reservation_store = SleeveAuthorityReservationStore(db)
+
+        def snapshot_reader(candidate):
+            assert db.connection.in_transaction is True
+            events.append("db")
+            return _snapshot(candidate)
+
+        coordinator = BrokerWriteCoordinator()
+        capability = coordinator.attach_writer()
+        writer = AuthoritativeBrokerWriter(
+            coordinator,
+            broker_factory=GatewayFactory(),
+            execution_client_id=19761,
+            execution_lock_verifier=lambda: True,
+            authority_validator=lambda command, evidence: (),
+            model_execution_engine=FinalGateEngine(),
+            production_validation_sha256="6" * 64,
+            attempt_persister=lambda candidate, evidence: events.append("attempt"),
+            sleeve_authority_reservation_store=reservation_store,
+            sleeve_authority_snapshot_reader=snapshot_reader,
+            sleeve_broker_evidence_collector=lambda broker, candidate, raw: (
+                events.append("broker") or _broker(candidate)
+            ),
+        )
+        future = coordinator.submit(request)
+        claimed_request, _ = coordinator.claim(capability, timeout=0.1)
+        result = writer._execute_model(claimed_request, FakeGateway(19761))
+        future.set_result(result)
+        coordinator.task_done(capability)
+        coordinator.detach_writer(capability)
+
+        assert result.success is True
+        assert events == ["what_if", "broker", "db", "attempt", "write"]
+        assert db.execute(
+            "SELECT COUNT(*) FROM sleeve_authority_events"
+        ).fetchone()[0] == 1
 
 
 def test_all_model_operations_dispatch_on_one_writer_thread_and_broker():

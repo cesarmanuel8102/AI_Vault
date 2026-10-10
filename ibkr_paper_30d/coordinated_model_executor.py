@@ -56,6 +56,8 @@ class ModelExecutionRequest(BaseModel, frozen=True):
     continuity_plan_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
     created_at_utc: datetime
     capital_sleeve: CapitalSleeve | None = None
+    sleeve_authority_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
+    ownership_projection_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
     product_family_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
 
     @model_validator(mode="after")
@@ -95,9 +97,23 @@ class ModelExecutionRequest(BaseModel, frozen=True):
         if self.product_family_sha256 != payload_family:
             raise ValueError("product family binding mismatch")
         if self.input_bundle.multi_sleeve_v4_active and (
-            self.capital_sleeve is None or self.product_family_sha256 is None
+            self.capital_sleeve is None
+            or self.sleeve_authority_sha256 is None
+            or self.ownership_projection_sha256 is None
+            or self.product_family_sha256 is None
         ):
             raise ValueError("V4 execution bindings are required")
+        if self.input_bundle.multi_sleeve_v4_active:
+            if self.sleeve_authority_sha256 != sha256_json(
+                self.input_bundle.multi_sleeve_portfolio
+            ):
+                raise ValueError("sleeve authority binding mismatch")
+            ownership = self.input_bundle.contract_ownership_snapshot or {}
+            expected_ownership = ownership.get("projection_sha256")
+            if expected_ownership is None:
+                expected_ownership = sha256_json(ownership)
+            if self.ownership_projection_sha256 != expected_ownership:
+                raise ValueError("ownership projection binding mismatch")
         if self.continuity_plan is None:
             if self.continuity_plan_sha256 is not None:
                 raise ValueError("continuity plan hash requires a plan")
@@ -215,6 +231,21 @@ class CoordinatedModelExecutor:
             ),
             created_at_utc=self._now_utc(),
             capital_sleeve=getattr(payload, "capital_sleeve", None),
+            sleeve_authority_sha256=(
+                sha256_json(bundle.multi_sleeve_portfolio)
+                if bundle.multi_sleeve_v4_active
+                else None
+            ),
+            ownership_projection_sha256=(
+                (
+                    (bundle.contract_ownership_snapshot or {}).get(
+                        "projection_sha256"
+                    )
+                    or sha256_json(bundle.contract_ownership_snapshot or {})
+                )
+                if bundle.multi_sleeve_v4_active
+                else None
+            ),
             product_family_sha256=getattr(payload, "product_family_sha256", None),
         )
 

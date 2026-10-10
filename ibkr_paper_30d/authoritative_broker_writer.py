@@ -29,6 +29,7 @@ from .production_authority import (
     ProductionAuthorityValidator,
     ProductionBrokerEvidence,
 )
+from .sleeve_execution_authority import SleeveAuthorityReservationStore
 
 
 class BrokerEvidenceTimeout(TimeoutError):
@@ -71,6 +72,13 @@ class AuthoritativeBrokerWriter:
         resource_closer: Callable[[], None] | None = None,
         uncertainty_reporter: Callable[[str], None] | None = None,
         broker_request_timeout_seconds: float = 15.0,
+        sleeve_authority_reservation_store: SleeveAuthorityReservationStore | None = None,
+        sleeve_authority_snapshot_reader: Callable[[ModelExecutionRequest], Any]
+        | None = None,
+        sleeve_broker_evidence_collector: Callable[
+            [Any, ModelExecutionRequest, dict[str, Any]], dict[str, Any]
+        ]
+        | None = None,
     ) -> None:
         self.coordinator = coordinator
         self.broker_factory = broker_factory
@@ -91,6 +99,11 @@ class AuthoritativeBrokerWriter:
         self.now_utc = now_utc or (lambda: datetime.now(timezone.utc))
         self.resource_closer = resource_closer or (lambda: None)
         self.uncertainty_reporter = uncertainty_reporter or (lambda code: None)
+        self.sleeve_authority_reservation_store = (
+            sleeve_authority_reservation_store
+        )
+        self.sleeve_authority_snapshot_reader = sleeve_authority_snapshot_reader
+        self.sleeve_broker_evidence_collector = sleeve_broker_evidence_collector
         if broker_request_timeout_seconds <= 0 or broker_request_timeout_seconds > 60:
             raise ValueError("broker_request_timeout_seconds must be in (0, 60]")
         self.broker_request_timeout_seconds = float(broker_request_timeout_seconds)
@@ -394,6 +407,34 @@ class AuthoritativeBrokerWriter:
             legacy_reasons = tuple(self.authority_validator(request, evidence))
             if legacy_reasons:
                 return legacy_reasons
+            if request.input_bundle.multi_sleeve_v4_active:
+                if (
+                    self.sleeve_authority_reservation_store is None
+                    or self.sleeve_authority_snapshot_reader is None
+                    or self.sleeve_broker_evidence_collector is None
+                ):
+                    return ("SLEEVE_EXECUTION_AUTHORITY_REQUIRED",)
+                try:
+                    sleeve_broker_evidence = self.sleeve_broker_evidence_collector(
+                        broker, request, evidence
+                    )
+                    reservation = self.sleeve_authority_reservation_store.reserve(
+                        request,
+                        sleeve_broker_evidence,
+                        lambda: self.sleeve_authority_snapshot_reader(request),
+                    )
+                except Exception as exc:
+                    return (
+                        f"SLEEVE_EXECUTION_AUTHORITY_FAILED:{type(exc).__name__}",
+                    )
+                if reservation.status != "PASS":
+                    return reservation.reason_codes
+                evidence = {
+                    **evidence,
+                    "sleeve_execution_authority": reservation.model_dump(
+                        mode="json"
+                    ),
+                }
             if self.coordinator.is_execution_expired(request.execution_key):
                 return ("MODEL_EXECUTION_REQUEST_EXPIRED",)
             try:
@@ -404,7 +445,10 @@ class AuthoritativeBrokerWriter:
                 return ("MODEL_EXECUTION_REQUEST_EXPIRED",)
             return ()
 
-        if self.production_authority_validator is None:
+        if (
+            self.production_authority_validator is None
+            and not request.input_bundle.multi_sleeve_v4_active
+        ):
             try:
                 self.attempt_persister(request, evidence)
             except Exception:
@@ -427,11 +471,15 @@ class AuthoritativeBrokerWriter:
             final_write_authority_check=(
                 final_write_authority_check
                 if self.production_authority_validator is not None
+                or request.input_bundle.multi_sleeve_v4_active
                 else None
             ),
         )
         if (
-            self.production_authority_validator is not None
+            (
+                self.production_authority_validator is not None
+                or request.input_bundle.multi_sleeve_v4_active
+            )
             and result.success
             and not final_gate_invoked
         ):

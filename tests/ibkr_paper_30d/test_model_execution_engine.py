@@ -152,6 +152,12 @@ def test_v4_model_execution_request_binds_sleeve_and_product_family() -> None:
             "input_bundle": bundle,
             "input_bundle_sha256": bundle.sha256,
             "capital_sleeve": CapitalSleeve.EXTENDED_SLEEVE,
+            "sleeve_authority_sha256": sha256_json(
+                bundle.multi_sleeve_portfolio
+            ),
+            "ownership_projection_sha256": sha256_json(
+                bundle.contract_ownership_snapshot
+            ),
             "product_family_sha256": family_sha256,
         }
     )

@@ -164,6 +164,22 @@ class BrokerWriteCoordinator:
                     )
                 )
                 return future
+            if (
+                isinstance(command, ModelExecutionRequest)
+                and command.input_bundle.multi_sleeve_v4_active
+                and (
+                    command.sleeve_authority_sha256 is None
+                    or command.ownership_projection_sha256 is None
+                    or command.product_family_sha256 is None
+                )
+            ):
+                future.set_result(
+                    self._result(
+                        status="BLOCKED",
+                        reasons=("SLEEVE_EXECUTION_BINDINGS_REQUIRED",),
+                    )
+                )
+                return future
             if command.durable_sequence <= self._last_durable_sequence:
                 future.set_result(
                     self._result(

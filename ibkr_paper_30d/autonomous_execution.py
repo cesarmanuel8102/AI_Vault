@@ -224,6 +224,14 @@ class WriterOwnedModelExecutionMechanics:
         invocation_id: str | None = None,
         final_write_authority_check: Callable[[], tuple[str, ...]] | None = None,
     ) -> PaperExecutionResult:
+        if bundle.multi_sleeve_v4_active and final_write_authority_check is None:
+            return PaperExecutionResult(
+                False,
+                "BLOCKED",
+                ("SLEEVE_FINAL_WRITE_AUTHORITY_REQUIRED",),
+                {},
+                {},
+            )
         with self._using_writer_owned_broker(broker, final_write_authority_check):
             return self.execute(
                 proposal,
@@ -242,6 +250,14 @@ class WriterOwnedModelExecutionMechanics:
         invocation_id: str | None = None,
         final_write_authority_check: Callable[[], tuple[str, ...]] | None = None,
     ) -> PaperExecutionResult:
+        if bundle.multi_sleeve_v4_active and final_write_authority_check is None:
+            return PaperExecutionResult(
+                False,
+                "BLOCKED",
+                ("SLEEVE_FINAL_WRITE_AUTHORITY_REQUIRED",),
+                {},
+                {},
+            )
         with self._using_writer_owned_broker(broker, final_write_authority_check):
             return self.execute_open_order_action(
                 action,
@@ -259,6 +275,14 @@ class WriterOwnedModelExecutionMechanics:
         *,
         final_write_authority_check: Callable[[], tuple[str, ...]] | None = None,
     ) -> PaperExecutionResult:
+        if bundle.multi_sleeve_v4_active and final_write_authority_check is None:
+            return PaperExecutionResult(
+                False,
+                "BLOCKED",
+                ("SLEEVE_FINAL_WRITE_AUTHORITY_REQUIRED",),
+                {},
+                {},
+            )
         with self._using_writer_owned_broker(broker, final_write_authority_check):
             return self.execute_position_action(action, bundle, decision)
 
