@@ -145,6 +145,74 @@ def test_continuity_failures_use_both_owner_channels_and_deduplicate(
     assert repo.latest_channel_state(first.alert_id, "SMTP") == "CONFIRMED"
 
 
+@pytest.mark.parametrize(
+    "event_type",
+    [
+        "SUPERVISION_BINDING_AMBIGUOUS",
+        "CANARY_STATE_UNCERTAIN",
+        "PREDECESSOR_REACTIVATION_ATTEMPT",
+        "CONTINUOUS_ENTRY_AUTHORITY_AMBIGUOUS",
+    ],
+)
+def test_supervision_first_failures_freeze_entries_but_preserve_risk_reduction(
+    repo, event_type
+) -> None:
+    service, authority, smtp, event_log, _ = build(repo)
+
+    first = service.raise_critical(
+        AlertEvent(
+            event_type=event_type,
+            correlation_id="transition-1",
+            occurred_at_utc=NOW,
+            detail="successor transition blocked",
+            reason_codes=(event_type, "FRESH_RECONCILIATION_REQUIRED"),
+        )
+    )
+    second = service.raise_critical(
+        AlertEvent(
+            event_type=event_type,
+            correlation_id="transition-1",
+            occurred_at_utc=NOW,
+            detail="successor transition blocked",
+            reason_codes=("FRESH_RECONCILIATION_REQUIRED", event_type),
+        )
+    )
+
+    assert first == second
+    assert authority.new_order_authority is False
+    assert authority.risk_reducing_management_authority is True
+    assert len(event_log.records) == 1
+    assert smtp.attempt_count == 1
+
+
+def test_changed_reason_set_creates_one_new_durable_owner_delivery(repo) -> None:
+    service, _, smtp, event_log, _ = build(repo)
+    base = AlertEvent(
+        event_type="CANARY_STATE_UNCERTAIN",
+        correlation_id="canary-1",
+        occurred_at_utc=NOW,
+        detail="canary evidence uncertain",
+        reason_codes=("CANARY_STATE_UNCERTAIN",),
+    )
+    changed = AlertEvent(
+        event_type="CANARY_STATE_UNCERTAIN",
+        correlation_id="canary-1",
+        occurred_at_utc=NOW,
+        detail="canary evidence uncertain",
+        reason_codes=("CANARY_STATE_UNCERTAIN", "BROKER_RECEIPT_MISSING"),
+    )
+
+    first = service.raise_critical(base)
+    duplicate = service.raise_critical(base)
+    second = service.raise_critical(changed)
+
+    assert duplicate == first
+    assert second.alert_id != first.alert_id
+    assert repo.persisted_count() == 2
+    assert len(event_log.records) == 2
+    assert smtp.attempt_count == 2
+
+
 def test_noncritical_event_is_rejected_before_persistence(repo) -> None:
     service, _, smtp, _, _ = build(repo)
 

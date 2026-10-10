@@ -50,6 +50,10 @@ CRITICAL_EVENT_TYPES = frozenset(
         "CANARY_LIFECYCLE_UNCERTAIN",
         "CANARY_CLEANUP_UNCERTAIN",
         "ROLLBACK_ENVELOPE_UNSAFE",
+        "SUPERVISION_BINDING_AMBIGUOUS",
+        "CANARY_STATE_UNCERTAIN",
+        "PREDECESSOR_REACTIVATION_ATTEMPT",
+        "CONTINUOUS_ENTRY_AUTHORITY_AMBIGUOUS",
     }
 )
 
@@ -64,6 +68,7 @@ class AlertEvent:
     correlation_id: str
     occurred_at_utc: datetime
     detail: str
+    reason_codes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -74,6 +79,7 @@ class CriticalAlert:
     occurred_at_utc: datetime
     detail: str
     owner_action_required: bool
+    reason_codes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -115,6 +121,7 @@ class InMemoryAuthority:
     def __init__(self, trace: list[str] | None = None):
         self.trace = trace
         self.new_order_authority = True
+        self.risk_reducing_management_authority = True
         self.recovery_required = False
 
     def revoke_new_orders(self, correlation_id: str) -> None:
@@ -455,13 +462,20 @@ def load_smtp_channel(path: str | Path) -> SMTPChannel:
 
 
 def _to_redacted_alert(event: AlertEvent) -> CriticalAlert:
+    reason_codes = tuple(sorted(set(event.reason_codes)))
+    reason_suffix = (
+        "-" + hashlib.sha256(canonical_bytes(reason_codes)).hexdigest()[:12]
+        if reason_codes
+        else ""
+    )
     return CriticalAlert(
-        alert_id=f"alert-{event.correlation_id}",
+        alert_id=f"alert-{event.correlation_id}{reason_suffix}",
         event_type=event.event_type,
         correlation_id=event.correlation_id,
         occurred_at_utc=event.occurred_at_utc,
         detail=redact_text(event.detail),
         owner_action_required=event.event_type == "BROKER_2FA_REAUTH_REQUIRED",
+        reason_codes=reason_codes,
     )
 
 
@@ -473,6 +487,7 @@ def _message_for(alert: CriticalAlert) -> AlertMessage:
             f"CORRELATION_ID={alert.correlation_id}",
             f"OCCURRED_AT_UTC={alert.occurred_at_utc.isoformat()}",
             f"OWNER_ACTION_REQUIRED={str(alert.owner_action_required).lower()}",
+            f"REASON_CODES={','.join(alert.reason_codes)}",
             "AUTONOMOUS_TRADING_STATUS=PAUSED",
             f"DETAIL={alert.detail}",
         )

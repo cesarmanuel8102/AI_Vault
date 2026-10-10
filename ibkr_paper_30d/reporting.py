@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from copy import deepcopy
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -318,6 +319,182 @@ def build_multi_universe_performance_report(
         "capital_rebased": False,
         "cross_sleeve_netting": False,
     }
+
+
+def build_supervision_first_pilot_report(
+    evidence: Mapping[str, object],
+    *,
+    generated_at_utc: datetime | None = None,
+) -> dict[str, object]:
+    """Build a factual pilot report, blocking on incomplete authority evidence."""
+
+    generated = (generated_at_utc or datetime.now(timezone.utc)).astimezone(
+        timezone.utc
+    )
+    snapshot = deepcopy(dict(evidence))
+    reasons: list[str] = []
+
+    required_sections = (
+        "transition",
+        "account",
+        "writer",
+        "execution_lock",
+        "inherited_bindings",
+        "sleeve_economics",
+        "family_lifecycle",
+        "canary",
+        "orders",
+        "fills",
+        "positions",
+        "accepted_model_cycles",
+        "alert_delivery",
+        "broker_write_counts",
+        "db_receipts",
+        "broker_receipts",
+    )
+    for section in required_sections:
+        if section not in snapshot:
+            reasons.append(f"{section.upper()}_EVIDENCE_REQUIRED")
+
+    exact_head = str(snapshot.get("exact_head") or "")
+    if not _is_lower_hex(exact_head, 40):
+        reasons.append("EXACT_HEAD_REQUIRED")
+
+    transition = _mapping(snapshot.get("transition"))
+    account = _mapping(snapshot.get("account"))
+    writer = _mapping(snapshot.get("writer"))
+    lock = _mapping(snapshot.get("execution_lock"))
+    canary = _mapping(snapshot.get("canary"))
+    alert_delivery = _mapping(snapshot.get("alert_delivery"))
+    db_receipts = _mapping(snapshot.get("db_receipts"))
+    broker_receipts = _mapping(snapshot.get("broker_receipts"))
+
+    if not _is_sha256(writer.get("writer_binding_sha256")):
+        reasons.append("WRITER_BINDING_HASH_REQUIRED")
+    if any(
+        receipt.get("fresh") is not True
+        for receipt in (account, writer, lock, db_receipts)
+    ):
+        reasons.append("DATABASE_EVIDENCE_STALE")
+    if broker_receipts.get("fresh") is not True:
+        reasons.append("BROKER_EVIDENCE_STALE")
+    if account.get("paper_only") is not True:
+        reasons.append("PAPER_IDENTITY_NOT_PROVEN")
+    if (
+        account.get("account_identity_sha256")
+        != broker_receipts.get("account_identity_sha256")
+    ):
+        reasons.append("ACCOUNT_IDENTITY_MISMATCH")
+    if (
+        writer.get("writer_binding_sha256")
+        != broker_receipts.get("writer_binding_sha256")
+    ):
+        reasons.append("WRITER_BINDING_MISMATCH")
+    if writer.get("pid") != lock.get("pid") or lock.get("state") != "ACTIVE":
+        reasons.append("EXECUTION_LOCK_WRITER_MISMATCH")
+
+    phase = str(transition.get("phase") or "")
+    phase_event = transition.get("phase_event_sha256")
+    if phase == "ACTIVE" and (
+        db_receipts.get("phase") != "ACTIVE"
+        or db_receipts.get("phase_event_sha256") != phase_event
+    ):
+        reasons.append("ACTIVE_PHASE_RECEIPT_MISMATCH")
+    if phase == "ACTIVE" and not snapshot.get("accepted_model_cycles"):
+        reasons.append("ACTIVE_ACCEPTED_CYCLE_REQUIRED")
+
+    if (
+        alert_delivery.get("windows_event_log") != "CONFIRMED"
+        or alert_delivery.get("external_owner_channel") != "CONFIRMED"
+    ):
+        reasons.append("ALERT_DELIVERY_NOT_CONFIRMED")
+
+    if canary.get("status") == "CANARY_PASS":
+        lifecycle = canary.get("lifecycle_receipt_sha256")
+        flat = canary.get("flat_state_sha256")
+        if (
+            db_receipts.get("canary_lifecycle_receipt_sha256") != lifecycle
+            or broker_receipts.get("canary_lifecycle_receipt_sha256") != lifecycle
+            or db_receipts.get("canary_flat_state_sha256") != flat
+            or broker_receipts.get("canary_flat_state_sha256") != flat
+        ):
+            reasons.append("CANARY_PASS_RECEIPT_MISMATCH")
+
+    positions = snapshot.get("positions")
+    if (
+        not _is_sha256(db_receipts.get("orders_state_sha256"))
+        or db_receipts.get("orders_state_sha256")
+        != broker_receipts.get("orders_state_sha256")
+    ):
+        reasons.append("ORDER_STATE_RECEIPT_MISMATCH")
+    if (
+        not _is_sha256(db_receipts.get("executions_state_sha256"))
+        or db_receipts.get("executions_state_sha256")
+        != broker_receipts.get("executions_state_sha256")
+    ):
+        reasons.append("EXECUTION_STATE_RECEIPT_MISMATCH")
+    if isinstance(positions, Sequence) and not isinstance(positions, (str, bytes)):
+        if len(positions) == 0 and (
+            not _is_sha256(db_receipts.get("positions_state_sha256"))
+            or db_receipts.get("positions_state_sha256")
+            != broker_receipts.get("positions_state_sha256")
+        ):
+            reasons.append("ZERO_EXPOSURE_NOT_PROVEN")
+
+    if _contains_invalid_sha256(snapshot):
+        reasons.append("UNHASHED_EVIDENCE")
+
+    counts = _mapping(snapshot.get("broker_write_counts"))
+    normalized_counts: dict[str, int] = {}
+    for key, value in counts.items():
+        if str(key) == "total":
+            continue
+        try:
+            count = int(value)
+        except (TypeError, ValueError):
+            reasons.append("BROKER_WRITE_COUNT_INVALID")
+            continue
+        if count < 0:
+            reasons.append("BROKER_WRITE_COUNT_INVALID")
+            continue
+        normalized_counts[str(key)] = count
+    normalized_counts["total"] = sum(normalized_counts.values())
+
+    report: dict[str, object] = {
+        "schema": "SUPERVISION_FIRST_PILOT_REPORT_V1",
+        "generated_at_utc": generated.isoformat().replace("+00:00", "Z"),
+        **snapshot,
+        "broker_write_counts": normalized_counts,
+        "gate": "PASS" if not reasons else "BLOCK",
+        "reason_codes": list(dict.fromkeys(reasons)),
+    }
+    report["report_sha256"] = hashlib.sha256(canonical_bytes(report)).hexdigest()
+    return report
+
+
+def _mapping(value: object) -> Mapping[str, object]:
+    return value if isinstance(value, Mapping) else {}
+
+
+def _is_lower_hex(value: object, length: int) -> bool:
+    text = str(value or "")
+    return len(text) == length and all(character in "0123456789abcdef" for character in text)
+
+
+def _is_sha256(value: object) -> bool:
+    return _is_lower_hex(value, 64)
+
+
+def _contains_invalid_sha256(value: object) -> bool:
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            if str(key).endswith("_sha256") and not _is_sha256(item):
+                return True
+            if _contains_invalid_sha256(item):
+                return True
+    elif isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        return any(_contains_invalid_sha256(item) for item in value)
+    return False
 
 
 def write_local_reports(
