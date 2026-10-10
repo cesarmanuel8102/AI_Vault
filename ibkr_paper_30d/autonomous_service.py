@@ -44,6 +44,7 @@ from .runtime_integrity import RuntimeAuditorGate, RuntimeMarketDataGate
 from .session_orchestration import (
     OrchestrationAction,
     SessionOrchestrationDecision,
+    decide_multi_universe_orchestration,
     decide_session_orchestration,
 )
 from .trader_invocation import TraderDecision
@@ -169,6 +170,9 @@ class AutonomousExperimentService:
         critical_alert_reporter: Callable[[str], None] | None = None,
         watchdog_shutdown_timeout_seconds: float = 5.0,
         session_evidence_reader: Callable[[], dict[str, Any] | None] | None = None,
+        sleeve_ledger_store: Any | None = None,
+        contract_ownership_store: Any | None = None,
+        product_certification_store: Any | None = None,
         sleep: Callable[[float], None] = time.sleep,
         monotonic: Callable[[], float] = time.monotonic,
     ) -> None:
@@ -255,6 +259,9 @@ class AutonomousExperimentService:
         self.critical_alert_reporter = critical_alert_reporter
         self.watchdog_shutdown_timeout_seconds = watchdog_shutdown_timeout_seconds
         self.session_evidence_reader = session_evidence_reader
+        self.sleeve_ledger_store = sleeve_ledger_store
+        self.contract_ownership_store = contract_ownership_store
+        self.product_certification_store = product_certification_store
         self._last_orchestration_action: OrchestrationAction | None = None
         self._watchdog_started = False
         self._watchdog_alert_active = False
@@ -476,6 +483,9 @@ class AutonomousExperimentService:
             experiment_clock=(self.clock if self.clock.epoch_id is not None else None),
             duration_days=self.duration_days,
             runtime_market_gate=self.runtime_market_gate,
+            sleeve_ledger_store=self.sleeve_ledger_store,
+            contract_ownership_store=self.contract_ownership_store,
+            product_certification_store=self.product_certification_store,
         )
 
     def _provider_broker_time_evidence(self) -> BrokerTimeEvidence:
@@ -845,6 +855,18 @@ class AutonomousExperimentService:
                 now_utc = self.broker_now()
         except Exception:
             now_utc = self.broker_now()
+        family_sessions = evidence.get("family_sessions")
+        if isinstance(family_sessions, dict):
+            raw_orders = evidence.get("open_orders")
+            if raw_orders is None and evidence.get("has_open_orders"):
+                raw_orders = ({"present": True},)
+            return decide_multi_universe_orchestration(
+                now_utc=now_utc,
+                family_sessions=family_sessions,
+                open_orders=raw_orders or (),
+                positions=({"present": True},) if has_open_positions else (),
+                continuity_deadlines=evidence.get("continuity_deadlines") or (),
+            )
         return decide_session_orchestration(
             now_utc=now_utc,
             liquid_hours=str(evidence.get("liquid_hours") or ""),

@@ -8,6 +8,7 @@ from typing import Any
 from .autonomous_research import ResearchRequest, ResearchTool
 from .canonical import sha256_json
 from .continuity_store import ContinuityStore
+from .contract_ownership import ContractOwnershipStore
 from .experiment_control import ExperimentClock, ExperimentClockStore, KillSwitchStore
 from .experiment_epoch import ExperimentEpochStore
 from .experiment_ledger import AutonomousExperimentLedger
@@ -20,7 +21,9 @@ from .open_order_management import (
 from .persistence import Database
 from .market_data import DecisionClass
 from .repositories import utc_now
+from .product_capability import ProductFamilyCertificationStore
 from .runtime_integrity import RuntimeMarketDataGate
+from .sleeve_ledger import SleeveLedgerStore
 from .successor_clock import clock_for_epoch
 from .successor_epoch import (
     SuccessorEpochError,
@@ -61,6 +64,9 @@ class AutonomousStateBuilder:
         duration_days: int = 30,
         kill_switch_state: str | None = None,
         runtime_market_gate: RuntimeMarketDataGate | None = None,
+        sleeve_ledger_store: SleeveLedgerStore | None = None,
+        contract_ownership_store: ContractOwnershipStore | None = None,
+        product_certification_store: ProductFamilyCertificationStore | None = None,
     ) -> None:
         if (
             experiment_start_utc is not None
@@ -102,6 +108,18 @@ class AutonomousStateBuilder:
             if expected_hash
             else None
         )
+        stores = (
+            sleeve_ledger_store,
+            contract_ownership_store,
+            product_certification_store,
+        )
+        if any(store is not None for store in stores) and not all(
+            store is not None for store in stores
+        ):
+            raise ValueError("V4 state dependencies must be supplied together")
+        self.sleeve_ledger_store = sleeve_ledger_store
+        self.contract_ownership_store = contract_ownership_store
+        self.product_certification_store = product_certification_store
 
     def _tool(self, tool: ResearchTool, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
         request = ResearchRequest(
@@ -890,6 +908,83 @@ class AutonomousStateBuilder:
             ),
         }
 
+    @staticmethod
+    def _dump(value: Any) -> dict[str, Any]:
+        if hasattr(value, "model_dump"):
+            return dict(value.model_dump(mode="json"))
+        return dict(value)
+
+    def _multi_sleeve_context(
+        self,
+        *,
+        reconciliation: dict[str, Any],
+        account: dict[str, Any],
+        broker_positions: dict[str, Any],
+        open_orders: dict[str, Any],
+    ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+        if (
+            self.sleeve_ledger_store is None
+            or self.contract_ownership_store is None
+            or self.product_certification_store is None
+        ):
+            raise AutonomousStateBuildError("V4_STATE_DEPENDENCIES_REQUIRED")
+        ledger = self._dump(self.sleeve_ledger_store.project_all())
+        ownership_projection = self._dump(
+            self.contract_ownership_store.projection()
+        )
+        capabilities = [
+            self._dump(item)
+            for item in self.product_certification_store.projections()
+        ]
+        contract_sleeves: dict[str, str] = {}
+        for item in ownership_projection.get("active_contracts", []):
+            contract = item.get("contract") or {}
+            contract_id = int(
+                contract.get("con_id") or contract.get("conId") or 0
+            )
+            if contract_id > 0:
+                contract_sleeves[str(contract_id)] = str(item.get("sleeve") or "")
+        account_positions = list(broker_positions.get("positions", []) or [])
+        account_orders = list(open_orders.get("open_orders", []) or [])
+        redacted_account = {
+            key: value
+            for key, value in account.items()
+            if key.lower() not in {"account", "account_id", "account_code"}
+        }
+        portfolio = {
+            "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+            "sleeves": {
+                "regular": ledger.get("regular"),
+                "extended": ledger.get("extended"),
+            },
+            "aggregate_currency_balances": ledger.get(
+                "aggregate_currency_balances", []
+            ),
+            "account_observation": {
+                "authority": False,
+                "account_state": redacted_account,
+                "positions": account_positions,
+                "open_orders": account_orders,
+                "position_count": len(account_positions),
+                "open_order_count": len(account_orders),
+            },
+            "reconciliation": dict(reconciliation),
+            "new_entries_enabled": reconciliation.get("status") == "PASS",
+        }
+        ownership = {
+            **ownership_projection,
+            "contract_sleeves": contract_sleeves,
+        }
+        capability_snapshot = {
+            "families": capabilities,
+            "executable_family_sha256": sorted(
+                item["family_sha256"]
+                for item in capabilities
+                if item.get("executable") is True and item.get("family_sha256")
+            ),
+        }
+        return portfolio, ownership, capability_snapshot
+
     def build(
         self,
         *,
@@ -956,6 +1051,20 @@ class AutonomousStateBuilder:
                 equity=ledger_state.equity,
             )
         )
+        multi_sleeve_portfolio = None
+        contract_ownership_snapshot = None
+        product_capability_snapshot = None
+        if self.sleeve_ledger_store is not None:
+            (
+                multi_sleeve_portfolio,
+                contract_ownership_snapshot,
+                product_capability_snapshot,
+            ) = self._multi_sleeve_context(
+                reconciliation=reconciliation,
+                account=account,
+                broker_positions=broker_positions,
+                open_orders=open_orders,
+            )
         return TraderInputBundle(
             decision_cycle_id=f"cycle-{new_uuid7()}",
             utc_timestamp=clock["now_utc"],
@@ -999,4 +1108,7 @@ class AutonomousStateBuilder:
                 open_orders_snapshot=isolated_orders,
                 positions_snapshot=isolated_positions,
             ),
+            multi_sleeve_portfolio=multi_sleeve_portfolio,
+            contract_ownership_snapshot=contract_ownership_snapshot,
+            product_capability_snapshot=product_capability_snapshot,
         )

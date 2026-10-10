@@ -19,7 +19,7 @@ behaviour untouched.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any
 
@@ -37,6 +37,7 @@ class SessionOrchestrationDecision:
     session: MarketSession
     continuity_obligation: bool
     reason_codes: tuple[str, ...]
+    next_wake_utc: datetime | None = None
 
     @property
     def should_run_cycle(self) -> bool:
@@ -49,7 +50,128 @@ class SessionOrchestrationDecision:
             "market_session": self.session.value,
             "continuity_obligation": self.continuity_obligation,
             "reason_codes": list(self.reason_codes),
+            "next_wake_utc": (
+                None
+                if self.next_wake_utc is None
+                else self.next_wake_utc.isoformat().replace("+00:00", "Z")
+            ),
         }
+
+
+MULTI_UNIVERSE_WAKE_HORIZON = timedelta(minutes=15)
+
+
+def _utc_datetime(value: Any) -> datetime | None:
+    if isinstance(value, datetime):
+        parsed = value
+    elif isinstance(value, str) and value:
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    else:
+        return None
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        return None
+    return parsed.astimezone(timezone.utc)
+
+
+def decide_multi_universe_orchestration(
+    *,
+    now_utc: datetime,
+    family_sessions: dict[str, dict[str, Any]],
+    open_orders: Any,
+    positions: Any,
+    continuity_deadlines: Any,
+) -> SessionOrchestrationDecision:
+    """Choose one cycle/idle decision across all certified product families."""
+    if now_utc.tzinfo is None or now_utc.utcoffset() is None:
+        raise ValueError("now_utc must be timezone-aware")
+    now_utc = now_utc.astimezone(timezone.utc)
+    orders = tuple(open_orders or ())
+    held_positions = tuple(positions or ())
+    deadlines = tuple(
+        value
+        for raw in (continuity_deadlines or ())
+        if (value := _utc_datetime(raw)) is not None
+    )
+    reasons: list[str] = []
+    if orders:
+        reasons.append("CONTINUITY_OBLIGATION_OPEN_ORDER")
+    if held_positions:
+        reasons.append("CONTINUITY_OBLIGATION_OPEN_POSITION")
+    if deadlines:
+        reasons.append("CONTINUITY_OBLIGATION_DEADLINE")
+    obligation = bool(orders or held_positions or deadlines)
+    if obligation:
+        return SessionOrchestrationDecision(
+            action=OrchestrationAction.RUN_AUTONOMOUS_CYCLE,
+            session=MarketSession.UNKNOWN,
+            continuity_obligation=True,
+            reason_codes=tuple(reasons),
+            next_wake_utc=min(deadlines, default=None),
+        )
+
+    if not family_sessions:
+        return SessionOrchestrationDecision(
+            action=OrchestrationAction.RUN_AUTONOMOUS_CYCLE,
+            session=MarketSession.UNKNOWN,
+            continuity_obligation=False,
+            reason_codes=("SESSION_EVIDENCE_UNAVAILABLE",),
+        )
+
+    next_openings: list[tuple[str, datetime]] = []
+    for family_sha, evidence in sorted(family_sessions.items()):
+        if evidence.get("authenticated") is not True:
+            reasons.extend((f"SESSION_EVIDENCE_UNAUTHENTICATED:{family_sha}", "SESSION_EVIDENCE_UNAVAILABLE"))
+            return SessionOrchestrationDecision(
+                action=OrchestrationAction.RUN_AUTONOMOUS_CYCLE,
+                session=MarketSession.UNKNOWN,
+                continuity_obligation=False,
+                reason_codes=tuple(reasons),
+            )
+        raw_session = evidence.get("session")
+        session_name = (
+            raw_session.value if isinstance(raw_session, MarketSession) else str(raw_session or "UNKNOWN").upper()
+        )
+        if evidence.get("tradable_now") is True or session_name == MarketSession.REGULAR.value:
+            return SessionOrchestrationDecision(
+                action=OrchestrationAction.RUN_AUTONOMOUS_CYCLE,
+                session=MarketSession.REGULAR,
+                continuity_obligation=False,
+                reason_codes=(f"CERTIFIED_FAMILY_OPEN:{family_sha}",),
+            )
+        if session_name == MarketSession.UNKNOWN.value:
+            return SessionOrchestrationDecision(
+                action=OrchestrationAction.RUN_AUTONOMOUS_CYCLE,
+                session=MarketSession.UNKNOWN,
+                continuity_obligation=False,
+                reason_codes=("SESSION_EVIDENCE_UNAVAILABLE",),
+            )
+        next_open = _utc_datetime(evidence.get("next_open_utc"))
+        if next_open is not None and next_open >= now_utc:
+            next_openings.append((family_sha, next_open))
+
+    if next_openings:
+        family_sha, next_open = min(next_openings, key=lambda item: item[1])
+        if next_open <= now_utc + MULTI_UNIVERSE_WAKE_HORIZON:
+            return SessionOrchestrationDecision(
+                action=OrchestrationAction.RUN_AUTONOMOUS_CYCLE,
+                session=MarketSession.PREMARKET,
+                continuity_obligation=False,
+                reason_codes=(f"FAMILY_OPENING_WITHIN_WAKE_HORIZON:{family_sha}",),
+                next_wake_utc=next_open,
+            )
+    else:
+        next_open = None
+
+    return SessionOrchestrationDecision(
+        action=OrchestrationAction.MARKET_CLOSED_IDLE,
+        session=MarketSession.CLOSED,
+        continuity_obligation=False,
+        reason_codes=("ALL_CERTIFIED_FAMILIES_CLOSED", "NO_CONTINUITY_OBLIGATION"),
+        next_wake_utc=next_open,
+    )
 
 
 def decide_session_orchestration(

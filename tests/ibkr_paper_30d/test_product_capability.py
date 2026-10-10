@@ -153,6 +153,24 @@ def test_family_scope_account_adapter_staleness_and_revocation_are_local(tmp_pat
         db.close()
 
 
+def test_store_enumerates_each_durable_family_once(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    stock = _family()
+    future = _family("FUT", "GLOBEX")
+    try:
+        _record(store, stock, "CONTRACT_QUALIFIED")
+        _record(store, future, "CONTRACT_QUALIFIED")
+
+        projections = store.projections()
+
+        assert {item.family_sha256 for item in projections} == {
+            stock.sha256,
+            future.sha256,
+        }
+    finally:
+        db.close()
+
+
 def test_initial_activation_requires_full_family_available_within_24_hours(tmp_path) -> None:
     db, store = _store(tmp_path)
     family = _family()

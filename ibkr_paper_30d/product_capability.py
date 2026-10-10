@@ -335,6 +335,23 @@ class ProductFamilyCertificationStore:
             revoked_reason=revoked_reason,
         )
 
+    def projections(self) -> tuple[ProductExecutionCapability, ...]:
+        rows = self.db.execute(
+            "SELECT payload_json FROM product_family_certification_events "
+            "ORDER BY sequence"
+        ).fetchall()
+        families: dict[str, ProductFamilyKey] = {}
+        for (payload_json,) in rows:
+            try:
+                payload = json.loads(str(payload_json))
+                family = ProductFamilyKey.model_validate(payload.get("family"))
+            except (TypeError, ValueError, json.JSONDecodeError):
+                continue
+            families[family.sha256] = family
+        return tuple(
+            self.projection(families[key]) for key in sorted(families)
+        )
+
     def assert_executable(
         self,
         family: ProductFamilyKey,

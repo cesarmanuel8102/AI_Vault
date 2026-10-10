@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import inspect
 import sqlite3
 import threading
 from dataclasses import dataclass
@@ -1304,6 +1305,32 @@ def test_model_substitution_fails_first_cycle_before_executor(tmp_path, monkeypa
 
 _REGULAR_DAY_LIQUID_HOURS = "20261002:0930-20261002:1600"
 _CLOSED_DAY_LIQUID_HOURS = "20261004:CLOSED"
+
+
+def test_service_uses_family_sessions_without_idling_an_open_extended_market():
+    service = object.__new__(AutonomousExperimentService)
+    service.session_evidence_reader = lambda: {
+        "broker_time_utc": "2026-10-09T20:05:00Z",
+        "family_sessions": {
+            "regular": {"authenticated": True, "session": "CLOSED"},
+            "extended": {"authenticated": True, "session": "REGULAR"},
+        },
+        "open_orders": [],
+        "continuity_deadlines": [],
+    }
+    service.broker_now = Mock(side_effect=AssertionError("unexpected broker read"))
+
+    decision = service._session_orchestration_decision(False)
+
+    assert decision is not None
+    assert decision.should_run_cycle is True
+    service.broker_now.assert_not_called()
+
+
+def test_successor_service_never_invokes_legacy_three_window_collector():
+    source = inspect.getsource(AutonomousExperimentService)
+    assert "market_observation_collector" not in source
+    assert "FORCE_FRESH" not in source
 
 
 class _IdleStoppingClock(Clock):

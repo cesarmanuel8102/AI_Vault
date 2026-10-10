@@ -31,6 +31,66 @@ from successor_test_support import (
 )
 
 
+class _Dumpable:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def model_dump(self, *, mode="python"):
+        return self.payload
+
+
+def test_v4_state_context_contains_both_sleeves_ownership_and_capabilities() -> None:
+    subject = object.__new__(AutonomousStateBuilder)
+    subject.sleeve_ledger_store = SimpleNamespace(
+        project_all=lambda: _Dumpable(
+            {
+                "regular": {"sleeve": "REGULAR_SLEEVE", "allocation_usd": "500"},
+                "extended": {"sleeve": "EXTENDED_SLEEVE", "allocation_usd": "500"},
+                "aggregate_currency_balances": [{"currency": "USD", "amount": "1000"}],
+            }
+        )
+    )
+    subject.contract_ownership_store = SimpleNamespace(
+        projection=lambda: _Dumpable(
+            {
+                "active_contracts": [
+                    {
+                        "contract_identity_sha256": "c" * 64,
+                        "contract": {"con_id": 756733},
+                        "sleeve": "REGULAR_SLEEVE",
+                    }
+                ],
+                "projection_sha256": "o" * 64,
+            }
+        )
+    )
+    subject.product_certification_store = SimpleNamespace(
+        projections=lambda: (
+            _Dumpable(
+                {
+                    "family_sha256": "f" * 64,
+                    "status": "FULL_LIFECYCLE_VERIFIED",
+                    "executable": True,
+                }
+            ),
+        )
+    )
+
+    portfolio, ownership, capabilities = subject._multi_sleeve_context(
+        reconciliation={"status": "BLOCK", "reason_codes": ["ACCOUNT_MISMATCH"]},
+        account={"net_liquidation": "1000"},
+        broker_positions={"positions": [{"contract_id": 756733}]},
+        open_orders={"open_orders": []},
+    )
+
+    assert portfolio["schema"] == "MULTI_SLEEVE_PORTFOLIO_V4"
+    assert set(portfolio["sleeves"]) == {"regular", "extended"}
+    assert portfolio["new_entries_enabled"] is False
+    assert portfolio["account_observation"]["position_count"] == 1
+    assert ownership["contract_sleeves"] == {"756733": "REGULAR_SLEEVE"}
+    assert capabilities["families"][0]["family_sha256"] == "f" * 64
+
+
 def open_order_trade():
     return SimpleNamespace(
         contract=SimpleNamespace(
