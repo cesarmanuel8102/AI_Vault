@@ -13,29 +13,24 @@ param(
     [ValidateSet(
         "PREPARED",
         "PREDECESSOR_QUIESCED",
-        "CANARY_EXCLUSIVE",
-        "CANARY_PASS",
         "PREDECESSOR_RETIRED",
         "SUCCESSOR_COMMITTED",
+        "SUPERVISION_BOUND",
+        "CANARY_EXCLUSIVE",
+        "CANARY_PASS",
         "RUNTIME_BOUND",
         "ACTIVE"
     )]
-    [string]$PhaseTarget,
+    [string]$PhaseTarget = "PREPARED",
 
     [Parameter()]
-    [string]$OwnerReceiptPath,
+    [string]$ConfigPath,
 
     [Parameter()]
-    [string]$CanaryReceiptPath,
+    [string]$EvidencePath,
 
     [Parameter()]
-    [string]$SuccessorReceiptPath,
-
-    [Parameter()]
-    [string]$ApprovedHead,
-
-    [Parameter()]
-    [string]$ExclusiveLockEvidencePath
+    [string]$ApprovedHead
 )
 
 Set-StrictMode -Version Latest
@@ -50,49 +45,30 @@ $CurrentHead = (& git -C $ResolvedRoot rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0 -or -not $CurrentHead) {
     throw "REPOSITORY_HEAD_UNAVAILABLE"
 }
+if ($ApprovedHead -and $CurrentHead -ne $ApprovedHead) {
+    throw "APPROVED_HEAD_MISMATCH"
+}
 
-if ($Apply) {
-    $Required = @{
-        OwnerReceiptPath = $OwnerReceiptPath
-        CanaryReceiptPath = $CanaryReceiptPath
-        SuccessorReceiptPath = $SuccessorReceiptPath
-        ApprovedHead = $ApprovedHead
-        ExclusiveLockEvidencePath = $ExclusiveLockEvidencePath
-        PhaseTarget = $PhaseTarget
-    }
-    foreach ($Entry in $Required.GetEnumerator()) {
-        if ([string]::IsNullOrWhiteSpace([string]$Entry.Value)) {
-            throw "MAINTENANCE_APPLY_AUTHORITY_INCOMPLETE:$($Entry.Key)"
-        }
-    }
-    foreach ($Receipt in @(
-        $OwnerReceiptPath,
-        $CanaryReceiptPath,
-        $SuccessorReceiptPath,
-        $ExclusiveLockEvidencePath
-    )) {
-        if (-not (Test-Path -LiteralPath $Receipt -PathType Leaf)) {
-            throw "MAINTENANCE_RECEIPT_MISSING"
-        }
-    }
-    if ($CurrentHead -ne $ApprovedHead) {
-        throw "APPROVED_HEAD_MISMATCH"
-    }
+$Mode = if ($Apply) { "apply" } else { "validate" }
+if ([string]::IsNullOrWhiteSpace($ConfigPath) -or
+    [string]::IsNullOrWhiteSpace($EvidencePath)) {
     [ordered]@{
-        schema = "IBKR_MULTI_UNIVERSE_MAINTENANCE_V1"
-        mode = "APPLY_PREPARED"
+        schema = "IBKR_MULTI_UNIVERSE_MAINTENANCE_V2"
+        mode = "VALIDATE_ONLY"
+        status = "BLOCK"
         mutation_performed = $false
-        phase_target = $PhaseTarget
         approved_head = $CurrentHead
-        reason_codes = @("OWNER_REVIEW_REQUIRED_BEFORE_APPLY")
+        reason_codes = @("MAINTENANCE_CONFIG_EVIDENCE_REQUIRED")
     } | ConvertTo-Json -Compress
     exit 0
 }
 
-[ordered]@{
-    schema = "IBKR_MULTI_UNIVERSE_MAINTENANCE_V1"
-    mode = "VALIDATE_ONLY"
-    mutation_performed = $false
-    approved_head = $CurrentHead
-    reason_codes = @()
-} | ConvertTo-Json -Compress
+$ResolvedConfig = (Resolve-Path -LiteralPath $ConfigPath).Path
+$ResolvedEvidence = (Resolve-Path -LiteralPath $EvidencePath).Path
+$Python = (Get-Command python.exe -ErrorAction Stop).Source
+& $Python -B -m ibkr_paper_30d.multi_universe_maintenance `
+    --mode $Mode `
+    --phase $PhaseTarget `
+    --config $ResolvedConfig `
+    --evidence $ResolvedEvidence
+exit $LASTEXITCODE

@@ -6,6 +6,7 @@ from ibkr_paper_30d.predecessor_retirement import (
     PredecessorLaunchInventory,
     PredecessorLaunchPath,
     PredecessorRetirementTombstone,
+    authorize_launch_after_retirement,
     validate_retirement,
 )
 
@@ -117,3 +118,38 @@ def test_old_launch_receipts_must_reject_before_lock_and_broker():
     assert decision.status == "BLOCK"
     assert "LEGACY_LAUNCH_REACHED_BROKER" in decision.reason_codes
     assert "LEGACY_BROKER_WRITE_DETECTED" in decision.reason_codes
+
+
+def test_tombstone_rejects_every_old_receipt_and_allows_exact_successor_supervision():
+    inventory = _inventory()
+    decision = validate_retirement(inventory, _observations())
+    tombstone = PredecessorRetirementTombstone.create(
+        inventory=inventory,
+        decision=decision,
+        target_successor_transition_sha256="4" * 64,
+    )
+
+    for receipt in (
+        inventory.active_launch_receipt_sha256,
+        *inventory.historical_launch_receipt_sha256,
+    ):
+        blocked = authorize_launch_after_retirement(
+            tombstone,
+            launch_binding_sha256=receipt,
+            successor_transition_sha256="4" * 64,
+            supervision_launch=False,
+        )
+        assert blocked.status == "BLOCK"
+        assert blocked.broker_connection_permitted is False
+        assert blocked.execution_lock_permitted is False
+        assert blocked.reason_codes == ("PREDECESSOR_REACTIVATION_ATTEMPT",)
+
+    allowed = authorize_launch_after_retirement(
+        tombstone,
+        launch_binding_sha256="f" * 64,
+        successor_transition_sha256="4" * 64,
+        supervision_launch=True,
+    )
+    assert allowed.status == "PASS"
+    assert allowed.execution_lock_permitted is True
+    assert allowed.broker_connection_permitted is True

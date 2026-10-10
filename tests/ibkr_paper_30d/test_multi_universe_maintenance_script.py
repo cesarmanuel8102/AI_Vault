@@ -16,6 +16,9 @@ def test_script_defaults_to_validate_only_and_forbids_dangerous_surfaces():
     lowered = source.lower()
     assert "validateonly" in lowered
     assert "if ($apply)" in lowered
+    assert "ibkr_paper_30d.multi_universe_maintenance" in source
+    assert "--mode $Mode" in source
+    assert "--phase $PhaseTarget" in source
     assert "4001" not in source
     assert "globalcancel" not in lowered
     assert "reqglobalcancel" not in lowered
@@ -65,4 +68,5 @@ def test_default_invocation_is_report_only(tmp_path):
     after = tuple(tmp_path.iterdir())
     assert result.returncode == 0, result.stdout + result.stderr
     assert '"mode":"VALIDATE_ONLY"' in result.stdout.replace(" ", "")
+    assert '"status":"BLOCK"' in result.stdout.replace(" ", "")
     assert before == after

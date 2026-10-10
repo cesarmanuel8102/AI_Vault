@@ -96,6 +96,42 @@ class PredecessorRetirementTombstone(PredecessorRetirementReceipt):
         )
 
 
+class LaunchAfterRetirementDecision(_RetirementModel):
+    status: Literal["PASS", "BLOCK"]
+    reason_codes: tuple[str, ...]
+    execution_lock_permitted: bool
+    broker_connection_permitted: bool
+
+
+def authorize_launch_after_retirement(
+    tombstone: PredecessorRetirementTombstone,
+    *,
+    launch_binding_sha256: str,
+    successor_transition_sha256: str,
+    supervision_launch: bool,
+) -> LaunchAfterRetirementDecision:
+    retired = {
+        tombstone.active_launch_receipt_sha256,
+        *tombstone.historical_launch_receipt_sha256,
+    }
+    if launch_binding_sha256 in retired:
+        reasons = ("PREDECESSOR_REACTIVATION_ATTEMPT",)
+    elif (
+        supervision_launch is not True
+        or successor_transition_sha256
+        != tombstone.target_successor_transition_sha256
+    ):
+        reasons = ("SUCCESSOR_SUPERVISION_BINDING_REQUIRED",)
+    else:
+        reasons = ()
+    return LaunchAfterRetirementDecision(
+        status="BLOCK" if reasons else "PASS",
+        reason_codes=reasons,
+        execution_lock_permitted=not reasons,
+        broker_connection_permitted=not reasons,
+    )
+
+
 def validate_retirement(
     inventory: PredecessorLaunchInventory,
     observations: Mapping[str, Mapping[str, Any]],
