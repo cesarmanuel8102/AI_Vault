@@ -111,19 +111,22 @@ class SleeveReconciler:
 
         sleeve_keys = {
             CapitalSleeve.REGULAR_SLEEVE.value: "regular",
-            CapitalSleeve.EXTENDED_SLEEVE.value: "extended",
+            CapitalSleeve.CONTINUOUS_SLEEVE.value: "extended",
         }
+
+        def canonical_sleeve(value: Any) -> str:
+            raw = value.value if isinstance(value, CapitalSleeve) else str(value)
+            try:
+                return CapitalSleeve(raw).value
+            except ValueError:
+                return raw
+
         owner_by_contract: dict[str, str] = {}
         historical_owner_by_contract: dict[str, str] = {}
         for raw in ownership_data.get("active_contracts", ()):
             row = _dump(raw)
             contract_hash = str(row.get("contract_identity_sha256") or "")
-            sleeve_value = row.get("sleeve")
-            sleeve = (
-                sleeve_value.value
-                if isinstance(sleeve_value, CapitalSleeve)
-                else str(sleeve_value)
-            )
+            sleeve = canonical_sleeve(row.get("sleeve"))
             if contract_hash in owner_by_contract and owner_by_contract[contract_hash] != sleeve:
                 reasons.add("CONTRACT_OWNERSHIP_AMBIGUOUS")
             owner_by_contract[contract_hash] = sleeve
@@ -131,12 +134,7 @@ class SleeveReconciler:
         for raw in ownership_data.get("released_contracts", ()):
             row = _dump(raw)
             contract_hash = str(row.get("contract_identity_sha256") or "")
-            sleeve_value = row.get("sleeve")
-            sleeve = (
-                sleeve_value.value
-                if isinstance(sleeve_value, CapitalSleeve)
-                else str(sleeve_value)
-            )
+            sleeve = canonical_sleeve(row.get("sleeve"))
             existing = historical_owner_by_contract.get(contract_hash)
             if existing is not None and existing != sleeve:
                 reasons.add("CONTRACT_OWNERSHIP_AMBIGUOUS")

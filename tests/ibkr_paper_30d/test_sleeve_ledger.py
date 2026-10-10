@@ -77,11 +77,11 @@ def test_regular_bootstrap_preserves_exact_day1_economics(tmp_path) -> None:
         db.close()
 
 
-def test_extended_bootstrap_is_exactly_usd_500_and_flat(tmp_path) -> None:
+def test_continuous_bootstrap_is_exactly_usd_500_and_flat(tmp_path) -> None:
     db, store = _store(tmp_path)
     try:
-        receipt = store.bootstrap_extended()
-        state = store.project(CapitalSleeve.EXTENDED_SLEEVE)
+        receipt = store.bootstrap_continuous()
+        state = store.project(CapitalSleeve.CONTINUOUS_SLEEVE)
 
         assert receipt.duplicate is False
         assert state.allocation_usd == Decimal("500.00")
@@ -93,6 +93,24 @@ def test_extended_bootstrap_is_exactly_usd_500_and_flat(tmp_path) -> None:
         assert state.positions == ()
         assert state.open_order_count == 0
         assert state.fill_count == 0
+    finally:
+        db.close()
+
+
+def test_bootstrap_in_transaction_variants_require_caller_transaction(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    try:
+        with pytest.raises(SleeveLedgerError, match="ATOMIC_BOOTSTRAP_TRANSACTION_REQUIRED"):
+            store.bootstrap_regular_in_transaction(_carry())
+        with pytest.raises(SleeveLedgerError, match="ATOMIC_BOOTSTRAP_TRANSACTION_REQUIRED"):
+            store.bootstrap_continuous_in_transaction()
+
+        with db.transaction():
+            regular = store.bootstrap_regular_in_transaction(_carry())
+            continuous = store.bootstrap_continuous_in_transaction()
+        assert regular.event_type == "REGULAR_BOOTSTRAP"
+        assert continuous.event_type == "CONTINUOUS_BOOTSTRAP"
+        assert store.project(CapitalSleeve.CONTINUOUS_SLEEVE).positions == ()
     finally:
         db.close()
 

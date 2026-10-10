@@ -7,7 +7,7 @@ from ibkr_paper_30d.sleeve_reconciliation import SleeveReconciler
 
 
 REGULAR = "REGULAR_SLEEVE"
-EXTENDED = "EXTENDED_SLEEVE"
+EXTENDED = "CONTINUOUS_SLEEVE"
 STOCK = "a" * 64
 FUTURE = "b" * 64
 

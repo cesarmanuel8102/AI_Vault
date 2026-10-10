@@ -306,25 +306,41 @@ class MultiUniverseTransitionCoordinator:
         target = self._target
         if target is None:
             raise MultiUniverseTransitionError("TRANSITION_TARGET_NOT_PREPARED")
-        self._validate_evidence(target, expected_phase, evidence)
         with self.db.transaction():
-            events = self._events(target)
-            if not events:
-                raise MultiUniverseTransitionError("TRANSITION_TARGET_NOT_PREPARED")
-            current = TransitionPhase(events[-1]["phase"])
-            if current is expected_phase:
-                if events[-1].get("evidence_sha256") != sha256_json(dict(evidence)):
-                    raise MultiUniverseTransitionError("TRANSITION_RETRY_CONFLICT")
-                return self._result(target, events[-1], idempotent=True)
-            current_index = _PHASES.index(current)
-            if current_index + 1 >= len(_PHASES) or _PHASES[current_index + 1] is not expected_phase:
-                raise MultiUniverseTransitionError("TRANSITION_PHASE_ORDER_INVALID")
-            event_sha = self._append(target, expected_phase, evidence)
-            event = {
-                "phase": expected_phase.value,
-                "event_sha256": event_sha,
-                "evidence": dict(evidence),
-            }
+            return self.advance_in_transaction(target, expected_phase, evidence)
+
+    def advance_in_transaction(
+        self,
+        target: TransitionTarget,
+        expected_phase: TransitionPhase,
+        evidence: Mapping[str, Any],
+    ) -> TransitionRecoveryResult:
+        if not self.db.connection.in_transaction:
+            raise MultiUniverseTransitionError(
+                "ATOMIC_TRANSITION_TRANSACTION_REQUIRED"
+            )
+        self._target = target
+        self._validate_evidence(target, expected_phase, evidence)
+        events = self._events(target)
+        if not events:
+            raise MultiUniverseTransitionError("TRANSITION_TARGET_NOT_PREPARED")
+        current = TransitionPhase(events[-1]["phase"])
+        if current is expected_phase:
+            if events[-1].get("evidence_sha256") != sha256_json(dict(evidence)):
+                raise MultiUniverseTransitionError("TRANSITION_RETRY_CONFLICT")
+            return self._result(target, events[-1], idempotent=True)
+        current_index = _PHASES.index(current)
+        if (
+            current_index + 1 >= len(_PHASES)
+            or _PHASES[current_index + 1] is not expected_phase
+        ):
+            raise MultiUniverseTransitionError("TRANSITION_PHASE_ORDER_INVALID")
+        event_sha = self._append(target, expected_phase, evidence)
+        event = {
+            "phase": expected_phase.value,
+            "event_sha256": event_sha,
+            "evidence": dict(evidence),
+        }
         return self._result(target, event, idempotent=False)
 
     def recover(self, target: TransitionTarget) -> TransitionRecoveryResult:

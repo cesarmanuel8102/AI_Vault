@@ -122,6 +122,10 @@ class MultiSleeveLedgerState(_LedgerModel):
     extended: SleeveLedgerState
     aggregate_currency_balances: tuple[CurrencyBalance, ...]
 
+    @property
+    def continuous(self) -> SleeveLedgerState:
+        return self.extended
+
     def aggregate_balance(self, currency: str) -> Decimal:
         normalized = currency.upper()
         return next(
@@ -250,7 +254,11 @@ class SleeveLedgerStore:
         event_type: str,
         authority_sha256: str,
     ) -> SleeveLedgerReceipt | None:
-        rows = [event for event in self._events() if event["sleeve"] == sleeve.value]
+        rows = [
+            event
+            for event in self._events()
+            if CapitalSleeve(event["sleeve"]) is sleeve
+        ]
         if not rows:
             return None
         first = rows[0]
@@ -269,48 +277,74 @@ class SleeveLedgerStore:
 
     def bootstrap_regular(self, carry: RegularCarryForward) -> SleeveLedgerReceipt:
         with self.db.transaction():
-            existing = self._bootstrap_receipt(
-                CapitalSleeve.REGULAR_SLEEVE,
-                "REGULAR_BOOTSTRAP",
-                carry.sha256,
-            )
-            if existing is not None:
-                return existing
-            return self._insert(
-                sleeve=CapitalSleeve.REGULAR_SLEEVE,
-                currency="USD",
-                event_type="REGULAR_BOOTSTRAP",
-                payload={
-                    "authority_sha256": carry.sha256,
-                    "carry": carry.model_dump(mode="json"),
-                },
-            )
+            return self.bootstrap_regular_in_transaction(carry)
 
-    def bootstrap_extended(self) -> SleeveLedgerReceipt:
-        authority = {
+    def bootstrap_regular_in_transaction(
+        self, carry: RegularCarryForward
+    ) -> SleeveLedgerReceipt:
+        if not self.db.connection.in_transaction:
+            raise SleeveLedgerError("ATOMIC_BOOTSTRAP_TRANSACTION_REQUIRED")
+        existing = self._bootstrap_receipt(
+            CapitalSleeve.REGULAR_SLEEVE,
+            "REGULAR_BOOTSTRAP",
+            carry.sha256,
+        )
+        if existing is not None:
+            return existing
+        return self._insert(
+            sleeve=CapitalSleeve.REGULAR_SLEEVE,
+            currency="USD",
+            event_type="REGULAR_BOOTSTRAP",
+            payload={
+                "authority_sha256": carry.sha256,
+                "carry": carry.model_dump(mode="json"),
+            },
+        )
+
+    @staticmethod
+    def _continuous_authority() -> dict[str, Any]:
+        return {
             "allocation_usd": "500.00",
             "opening_pnl_usd": "0.00",
             "positions": [],
             "open_order_count": 0,
         }
-        authority_sha256 = sha256_json(authority)
+
+    def bootstrap_continuous(self) -> SleeveLedgerReceipt:
         with self.db.transaction():
-            existing = self._bootstrap_receipt(
-                CapitalSleeve.EXTENDED_SLEEVE,
-                "EXTENDED_BOOTSTRAP",
-                authority_sha256,
-            )
-            if existing is not None:
-                return existing
-            return self._insert(
-                sleeve=CapitalSleeve.EXTENDED_SLEEVE,
-                currency="USD",
-                event_type="EXTENDED_BOOTSTRAP",
-                payload={
-                    "authority_sha256": authority_sha256,
-                    "authority": authority,
-                },
-            )
+            return self.bootstrap_continuous_in_transaction()
+
+    def bootstrap_continuous_in_transaction(self) -> SleeveLedgerReceipt:
+        if not self.db.connection.in_transaction:
+            raise SleeveLedgerError("ATOMIC_BOOTSTRAP_TRANSACTION_REQUIRED")
+        authority = self._continuous_authority()
+        authority_sha256 = sha256_json(authority)
+        existing = self._bootstrap_receipt(
+            CapitalSleeve.CONTINUOUS_SLEEVE,
+            "CONTINUOUS_BOOTSTRAP",
+            authority_sha256,
+        )
+        if existing is not None:
+            return existing
+        return self._insert(
+            sleeve=CapitalSleeve.CONTINUOUS_SLEEVE,
+            currency="USD",
+            event_type="CONTINUOUS_BOOTSTRAP",
+            payload={
+                "authority_sha256": authority_sha256,
+                "authority": authority,
+            },
+        )
+
+    def bootstrap_extended(self) -> SleeveLedgerReceipt:
+        """Compatibility delegate; new receipts use continuous vocabulary."""
+
+        return self.bootstrap_continuous()
+
+    def bootstrap_extended_in_transaction(self) -> SleeveLedgerReceipt:
+        """Compatibility delegate for callers migrating to the canonical API."""
+
+        return self.bootstrap_continuous_in_transaction()
 
     def append(
         self,
@@ -546,7 +580,11 @@ class SleeveLedgerStore:
     def project(self, sleeve: CapitalSleeve) -> SleeveLedgerState:
         if not isinstance(sleeve, CapitalSleeve):
             sleeve = CapitalSleeve(sleeve)
-        events = [event for event in self._events() if event["sleeve"] == sleeve.value]
+        events = [
+            event
+            for event in self._events()
+            if CapitalSleeve(event["sleeve"]) is sleeve
+        ]
         balances: dict[str, Decimal] = {}
         positions: tuple[CarryForwardPosition, ...] = ()
         allocation = Decimal("0.00")
@@ -574,7 +612,7 @@ class SleeveLedgerStore:
                 unrealized = carry.unrealized_pnl_usd
                 historical = carry.historical_event_sha256
                 source_hash = carry.source_ledger_sha256
-            elif event_type == "EXTENDED_BOOTSTRAP":
+            elif event_type in {"EXTENDED_BOOTSTRAP", "CONTINUOUS_BOOTSTRAP"}:
                 initialized = True
                 allocation = Decimal("500.00")
                 balances = {"USD": Decimal("500.00")}
@@ -621,9 +659,9 @@ class SleeveLedgerStore:
             positions=positions,
             open_order_count=open_orders,
             fill_count=fill_count,
-            fees_usd=normalized_money(fees),
-            realized_pnl_usd=normalized_money(realized),
-            unrealized_pnl_usd=normalized_money(unrealized),
+            fees_usd=normalized_decimal(fees),
+            realized_pnl_usd=normalized_decimal(realized),
+            unrealized_pnl_usd=normalized_decimal(unrealized),
             reserved_liability_usd=normalized_money(reserved),
             historical_event_sha256=historical,
             source_ledger_sha256=source_hash,

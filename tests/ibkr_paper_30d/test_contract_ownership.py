@@ -75,6 +75,21 @@ def test_same_contract_and_opposite_side_cannot_cross_sleeves(tmp_path) -> None:
             store.claim(CapitalSleeve.EXTENDED_SLEEVE, _contract(), side="SELL")
 
 
+def test_claim_in_transaction_requires_caller_transaction(tmp_path) -> None:
+    path = tmp_path / "ownership-atomic.sqlite3"
+    _install(path)
+    with Database.open(path) as db:
+        store = ContractOwnershipStore(db)
+        with pytest.raises(OwnershipError, match="ATOMIC_OWNERSHIP_TRANSACTION_REQUIRED"):
+            store.claim_in_transaction(CapitalSleeve.REGULAR_SLEEVE, _contract())
+        with db.transaction():
+            receipt = store.claim_in_transaction(
+                CapitalSleeve.REGULAR_SLEEVE,
+                _contract(),
+            )
+        assert receipt.status == "CLAIMED"
+
+
 def test_simultaneous_contenders_create_exactly_one_claim(tmp_path) -> None:
     path = tmp_path / "race.sqlite3"
     _install(path)
