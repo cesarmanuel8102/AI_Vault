@@ -78,6 +78,23 @@ def request(bundle, *, cycle="cycle-1", invocation="invocation-1", **updates):
     return InvocationRequest(**values)
 
 
+def test_multi_sleeve_context_is_optional_and_hash_bound(valid_bundle):
+    assert valid_bundle.multi_sleeve_portfolio is None
+    v4 = valid_bundle.model_copy(
+        update={
+            "multi_sleeve_portfolio": {
+                "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+                "regular": {"equity": "500.00"},
+                "extended": {"equity": "500.00"},
+            },
+            "contract_ownership_snapshot": {"contract_sleeves": {}},
+            "product_capability_snapshot": {"families": []},
+        }
+    )
+    assert v4.sha256 != valid_bundle.sha256
+    assert TraderInputBundle.model_validate(v4.model_dump()).sha256 == v4.sha256
+
+
 def no_trade_output(bundle, *, cycle="cycle-1", invocation="invocation-1"):
     return {
         "decision_cycle_id": cycle,

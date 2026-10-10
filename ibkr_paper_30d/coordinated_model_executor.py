@@ -17,6 +17,7 @@ from .autonomous_research import (
 )
 from .canonical import sha256_json
 from .continuity_models import CodexOrderContinuityPlan, SHA256_PATTERN
+from .multi_universe_models import CapitalSleeve
 from .trader_invocation import TraderDecision, TraderInputBundle
 
 
@@ -54,6 +55,8 @@ class ModelExecutionRequest(BaseModel, frozen=True):
     continuity_plan: CodexOrderContinuityPlan | None = None
     continuity_plan_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
     created_at_utc: datetime
+    capital_sleeve: CapitalSleeve | None = None
+    product_family_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
 
     @model_validator(mode="after")
     def validate_bindings(self) -> "ModelExecutionRequest":
@@ -85,6 +88,16 @@ class ModelExecutionRequest(BaseModel, frozen=True):
             raise ValueError("model execution input bundle hash mismatch")
         if self.input_bundle.decision_cycle_id != self.decision_cycle_id:
             raise ValueError("decision cycle binding mismatch")
+        payload_sleeve = getattr(self.payload, "capital_sleeve", None)
+        payload_family = getattr(self.payload, "product_family_sha256", None)
+        if self.capital_sleeve != payload_sleeve:
+            raise ValueError("capital sleeve binding mismatch")
+        if self.product_family_sha256 != payload_family:
+            raise ValueError("product family binding mismatch")
+        if self.input_bundle.multi_sleeve_v4_active and (
+            self.capital_sleeve is None or self.product_family_sha256 is None
+        ):
+            raise ValueError("V4 execution bindings are required")
         if self.continuity_plan is None:
             if self.continuity_plan_sha256 is not None:
                 raise ValueError("continuity plan hash requires a plan")
@@ -201,6 +214,8 @@ class CoordinatedModelExecutor:
                 None if continuity_plan is None else continuity_plan.sha256
             ),
             created_at_utc=self._now_utc(),
+            capital_sleeve=getattr(payload, "capital_sleeve", None),
+            product_family_sha256=getattr(payload, "product_family_sha256", None),
         )
 
     def _submit(self, request: ModelExecutionRequest) -> PaperExecutionResult:

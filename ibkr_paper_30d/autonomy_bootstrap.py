@@ -313,6 +313,15 @@ class AutonomyBootstrapBuilder:
                 "market_data_gate": bundle.market_data_snapshot.get("gate_status"),
                 "kill_switch_state": bundle.kill_switch_state,
                 "risk_policy": bundle.risk_snapshot.get("policy"),
+                "multi_sleeve_authority": (
+                    None
+                    if not bundle.multi_sleeve_v4_active
+                    else {
+                        "portfolio": bundle.multi_sleeve_portfolio,
+                        "contract_ownership": bundle.contract_ownership_snapshot,
+                        "product_capabilities": bundle.product_capability_snapshot,
+                    }
+                ),
             },
             "tools": self._tools(toolbox),
             "quantconnect": self._quantconnect(toolbox),

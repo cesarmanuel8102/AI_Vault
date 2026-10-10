@@ -188,6 +188,35 @@ def test_empty_bootstrap_has_exact_authority_and_epoch_fields(tmp_path) -> None:
     assert b"DU-SHOULD-NOT-LEAK" not in canonical_bytes(first)
 
 
+def test_v4_bootstrap_exposes_neutral_multi_sleeve_authority(tmp_path) -> None:
+    bundle = _bundle().model_copy(
+        update={
+            "multi_sleeve_portfolio": {
+                "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+                "sleeves": {
+                    "REGULAR_SLEEVE": {"equity": "500"},
+                    "EXTENDED_SLEEVE": {"equity": "500"},
+                },
+            },
+            "contract_ownership_snapshot": {"contract_sleeves": {}},
+            "product_capability_snapshot": {"families": []},
+        }
+    )
+    with Database.open(tmp_path / "bootstrap-v4.sqlite3") as db:
+        value = AutonomyBootstrapBuilder(db).build(
+            bundle=bundle, toolbox=Toolbox(), execute_paper=False
+        )
+
+    authority = value["current_state"]["multi_sleeve_authority"]
+    assert set(authority["portfolio"]["sleeves"]) == {
+        "REGULAR_SLEEVE",
+        "EXTENDED_SLEEVE",
+    }
+    encoded = canonical_bytes(authority).lower()
+    for recommendation in (b"prefer", b"crypto", b"constant trading"):
+        assert recommendation not in encoded
+
+
 def test_bootstrap_includes_pending_reports_and_untrusted_model_reviews(tmp_path):
     with Database.open(tmp_path / "continuity-bootstrap.sqlite3") as db:
         install_successor_schema_v2(db)

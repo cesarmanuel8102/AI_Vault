@@ -19,7 +19,9 @@ from ibkr_paper_30d.autonomous_research import (
     ResearchRequest,
     ResearchResult,
     ResearchTool,
+    validate_multi_sleeve_payload,
 )
+from ibkr_paper_30d.multi_universe_models import CapitalSleeve
 from ibkr_paper_30d.trader_invocation import InvocationRequest, TraderDecision, TraderInputBundle
 from ibkr_paper_30d.autonomy_toolbox import AutonomyToolbox
 
@@ -147,6 +149,47 @@ def proposal(maximum_loss="500.00", symbol="NVDA"):
         disconfirming_evidence=["event risk"],
         confidence="0.72",
     )
+
+
+def test_v4_payload_requires_explicit_sleeve_and_family_bindings():
+    value = bundle().model_copy(
+        update={
+            "multi_sleeve_portfolio": {"schema": "MULTI_SLEEVE_PORTFOLIO_V4"},
+            "contract_ownership_snapshot": {"contract_sleeves": {}},
+            "product_capability_snapshot": {"families": []},
+        }
+    )
+    assert validate_multi_sleeve_payload(value, proposal()) == "V4_SLEEVE_BINDING_REQUIRED"
+    bound = proposal().model_copy(
+        update={
+            "capital_sleeve": CapitalSleeve.EXTENDED_SLEEVE,
+            "product_family_sha256": "f" * 64,
+        }
+    )
+    assert validate_multi_sleeve_payload(value, bound) is None
+
+
+def test_unknown_sleeve_and_durable_ownership_mismatch_block():
+    with pytest.raises(ValidationError):
+        AutonomousTradeProposal.model_validate(
+            {**proposal().model_dump(), "capital_sleeve": "UNKNOWN"}
+        )
+    value = bundle().model_copy(
+        update={
+            "multi_sleeve_portfolio": {"schema": "MULTI_SLEEVE_PORTFOLIO_V4"},
+            "contract_ownership_snapshot": {
+                "contract_sleeves": {"756733": "REGULAR_SLEEVE"}
+            },
+            "product_capability_snapshot": {"families": []},
+        }
+    )
+    action = open_order_action().model_copy(
+        update={
+            "capital_sleeve": CapitalSleeve.EXTENDED_SLEEVE,
+            "product_family_sha256": "f" * 64,
+        }
+    )
+    assert validate_multi_sleeve_payload(value, action) == "DURABLE_OWNERSHIP_SLEEVE_MISMATCH"
 
 
 def open_order_action(**updates):

@@ -50,6 +50,17 @@ class TraderInputBundle(BaseModel, frozen=True):
     benchmark_state: dict[str, Any]
     experiment_clock: dict[str, Any] = Field(default_factory=dict)
     continuity_context: dict[str, Any] = Field(default_factory=dict)
+    multi_sleeve_portfolio: dict[str, Any] | None = None
+    contract_ownership_snapshot: dict[str, Any] | None = None
+    product_capability_snapshot: dict[str, Any] | None = None
+
+    @property
+    def multi_sleeve_v4_active(self) -> bool:
+        return bool(
+            self.multi_sleeve_portfolio
+            and self.multi_sleeve_portfolio.get("schema")
+            == "MULTI_SLEEVE_PORTFOLIO_V4"
+        )
 
     @property
     def sha256(self) -> str:

@@ -23,6 +23,7 @@ from .continuity_models import (
     TimeInForce,
 )
 from .open_order_management import EXPERIMENT_ORDER_PREFIX
+from .multi_universe_models import CapitalSleeve, SHA256_PATTERN
 from .research_telemetry import (
     ResearchTelemetryAccumulator,
     build_telemetry_summary_from_history,
@@ -123,6 +124,8 @@ class AutonomousPositionAction(BaseModel, frozen=True):
     strike: Decimal | None = None
     right: str | None = None
     reason: str
+    capital_sleeve: CapitalSleeve | None = None
+    product_family_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
 
 
 class AutonomousOpenOrderAction(BaseModel, frozen=True):
@@ -139,6 +142,8 @@ class AutonomousOpenOrderAction(BaseModel, frozen=True):
     new_tif: TimeInForce | None = None
     new_good_till_date_utc: datetime | None = None
     reason: str = Field(min_length=1)
+    capital_sleeve: CapitalSleeve | None = None
+    product_family_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
 
     @model_validator(mode="after")
     def validate_time_in_force(self) -> "AutonomousOpenOrderAction":
@@ -189,6 +194,8 @@ class AutonomousTradeProposal(BaseModel, frozen=True):
     evidence_used: list[str]
     disconfirming_evidence: list[str]
     confidence: Decimal = Field(ge=0, le=1)
+    capital_sleeve: CapitalSleeve | None = None
+    product_family_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
 
     @model_validator(mode="after")
     def probability_mass_is_sane(self) -> "AutonomousTradeProposal":
@@ -295,6 +302,27 @@ class AutonomousTurn(BaseModel, frozen=True):
             ):
                 raise ValueError("trade payload not allowed for this decision")
         return self
+
+
+def validate_multi_sleeve_payload(
+    bundle: TraderInputBundle,
+    payload: AutonomousTradeProposal | AutonomousPositionAction | AutonomousOpenOrderAction | None,
+) -> str | None:
+    if not bundle.multi_sleeve_v4_active or payload is None:
+        return None
+    if payload.capital_sleeve is None:
+        return "V4_SLEEVE_BINDING_REQUIRED"
+    if payload.product_family_sha256 is None:
+        return "V4_PRODUCT_FAMILY_BINDING_REQUIRED"
+    if isinstance(payload, (AutonomousPositionAction, AutonomousOpenOrderAction)):
+        contract_id = payload.contract_id
+        ownership = bundle.contract_ownership_snapshot or {}
+        durable = (ownership.get("contract_sleeves") or {}).get(str(contract_id))
+        if durable is None:
+            return "DURABLE_OWNERSHIP_REQUIRED"
+        if durable != payload.capital_sleeve.value:
+            return "DURABLE_OWNERSHIP_SLEEVE_MISMATCH"
+    return None
 
 
 class ProposalValidation(BaseModel, frozen=True):
@@ -911,6 +939,13 @@ class AutonomousResearchLoop:
                 return self._blocked(
                     history, telemetry, round_index, continuity_error
                 )
+
+            selected_payload = (
+                turn.proposal or turn.position_action or turn.open_order_action
+            )
+            sleeve_error = validate_multi_sleeve_payload(bundle, selected_payload)
+            if sleeve_error is not None:
+                return self._blocked(history, telemetry, round_index, sleeve_error)
 
             decision = turn.decision or TraderDecision.NO_TRADE
             if decision in {TraderDecision.CANCEL_ORDER, TraderDecision.MODIFY_ORDER}:

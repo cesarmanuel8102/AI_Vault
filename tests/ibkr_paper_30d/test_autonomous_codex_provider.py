@@ -138,6 +138,24 @@ def test_strict_schema_and_prompt_expose_neutral_continuity_authority() -> None:
     )
 
 
+def test_prompt_exposes_both_sleeves_and_capabilities_without_host_recommendation():
+    value = bundle().model_copy(
+        update={
+            "multi_sleeve_portfolio": {
+                "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+                "regular": {"equity": "500"},
+                "extended": {"equity": "500"},
+            },
+            "contract_ownership_snapshot": {"contract_sleeves": {}},
+            "product_capability_snapshot": {"families": []},
+        }
+    )
+    payload = CodexAutonomousCLIProvider._prompt_payload(request(value), value, [], [])
+    assert payload["bundle"]["multi_sleeve_portfolio"] == value.multi_sleeve_portfolio
+    assert payload["mandate"]["predefined_symbol_universe"] is False
+    assert payload["mandate"]["predefined_strategy_family"] is False
+
+
 def test_prompt_exposes_host_derived_continuity_provenance_bindings() -> None:
     value = bundle().model_copy(
         update={

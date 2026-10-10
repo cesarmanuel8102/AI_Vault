@@ -21,6 +21,7 @@ from ibkr_paper_30d.model_execution_engine import (
     ModelExecutionEngine,
 )
 from ibkr_paper_30d.trader_invocation import TraderDecision, TraderInputBundle
+from ibkr_paper_30d.multi_universe_models import CapitalSleeve
 
 
 NOW = datetime(2026, 10, 2, 14, 0, tzinfo=timezone.utc)
@@ -119,6 +120,66 @@ def _request(operation: ModelExecutionOperation) -> ModelExecutionRequest:
         continuity_plan_sha256=None,
         created_at_utc=NOW,
     )
+
+
+def test_v4_model_execution_request_binds_sleeve_and_product_family() -> None:
+    legacy = _request(ModelExecutionOperation.NEW_TRADE)
+    family_sha256 = "f" * 64
+    bundle = legacy.input_bundle.model_copy(
+        update={
+            "multi_sleeve_portfolio": {
+                "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+                "sleeves": {
+                    "REGULAR_SLEEVE": {"equity": "500"},
+                    "EXTENDED_SLEEVE": {"equity": "500"},
+                },
+            },
+            "contract_ownership_snapshot": {"contract_sleeves": {}},
+            "product_capability_snapshot": {"families": []},
+        }
+    )
+    payload = legacy.payload.model_copy(
+        update={
+            "capital_sleeve": CapitalSleeve.EXTENDED_SLEEVE,
+            "product_family_sha256": family_sha256,
+        }
+    )
+    data = legacy.model_dump()
+    data.update(
+        {
+            "payload": payload,
+            "payload_sha256": sha256_json(payload),
+            "input_bundle": bundle,
+            "input_bundle_sha256": bundle.sha256,
+            "capital_sleeve": CapitalSleeve.EXTENDED_SLEEVE,
+            "product_family_sha256": family_sha256,
+        }
+    )
+
+    assert (
+        ModelExecutionRequest.model_validate(data).capital_sleeve
+        is CapitalSleeve.EXTENDED_SLEEVE
+    )
+    with pytest.raises(ValueError, match="capital sleeve binding mismatch"):
+        ModelExecutionRequest.model_validate(
+            {**data, "capital_sleeve": CapitalSleeve.REGULAR_SLEEVE}
+        )
+    with pytest.raises(ValueError, match="V4 execution bindings are required"):
+        ModelExecutionRequest.model_validate(
+            {
+                **data,
+                "payload": payload.model_copy(
+                    update={"capital_sleeve": None, "product_family_sha256": None}
+                ),
+                "payload_sha256": sha256_json(
+                    payload.model_copy(
+                        update={"capital_sleeve": None, "product_family_sha256": None}
+                    )
+                ),
+                "capital_sleeve": None,
+                "product_family_sha256": None,
+            }
+        )
 
 
 class BrokerTripwire:
