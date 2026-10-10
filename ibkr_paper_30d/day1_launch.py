@@ -25,6 +25,7 @@ from .autonomy_workspace import AutonomyWorkspace
 from .canonical import canonical_bytes, sha256_json
 from .continuity_schema import verify_continuity_schema_v3
 from .continuity_store import ContinuityStore, ContinuityStoreError
+from .multi_universe_schema import verify_multi_universe_schema_v4
 from .provider_lifecycle import BrokerTimeEvidence, ProviderLifecycleRecorder
 from .epoch_manifest import (
     EpochManifestInputs,
@@ -118,6 +119,7 @@ class Day1LaunchConfig:
     approved_head: str | None = None
     target_successor_epoch_id: str | None = None
     target_successor_definition_sha256: str | None = None
+    multi_universe_authority_path: Path | None = None
     epoch_manifest_path: Path | None = None
     scheduled_start_utc: datetime = datetime(2026, 9, 23, 13, 30, tzinfo=timezone.utc)
     duration_days: int = 30
@@ -183,6 +185,172 @@ class LaunchError(RuntimeError):
         self.code = code
         self.details = details or {}
         super().__init__(code)
+
+
+@dataclass(frozen=True)
+class MultiUniverseLaunchEvidence:
+    schema_v4_valid: bool
+    transition_phase: str
+    approved_head: str
+    expected_approved_head: str
+    account_identity_sha256: str
+    expected_account_identity_sha256: str
+    owner_authorization_sha256: str
+    expected_owner_authorization_sha256: str
+    clock_authority_sha256: str
+    expected_clock_authority_sha256: str
+    regular_sleeve_authority_sha256: str
+    expected_regular_sleeve_authority_sha256: str
+    extended_sleeve_authority_sha256: str
+    expected_extended_sleeve_authority_sha256: str
+    economic_risk_authorization_sha256: str
+    expected_economic_risk_authorization_sha256: str
+    certified_family_set_sha256: str
+    expected_certified_family_set_sha256: str
+    successor_definition_sha256: str
+    expected_successor_definition_sha256: str
+    retirement_tombstone_sha256: str | None
+    predecessor_path_active: bool
+    extended_family_available_within_24h: bool
+    extended_family_tradable_now: bool
+    continuity_gap: bool
+    continuity_action_due: bool
+    same_committed_successor: bool
+
+
+def evaluate_multi_universe_successor_launch(
+    evidence: MultiUniverseLaunchEvidence, *, initial_activation: bool
+) -> dict[str, object]:
+    if not evidence.schema_v4_valid:
+        raise LaunchError("MULTI_UNIVERSE_SCHEMA_V4_REQUIRED")
+    exact_bindings = (
+        (
+            evidence.approved_head,
+            evidence.expected_approved_head,
+            "SUCCESSOR_APPROVED_HEAD_MISMATCH",
+        ),
+        (
+            evidence.account_identity_sha256,
+            evidence.expected_account_identity_sha256,
+            "SUCCESSOR_ACCOUNT_MISMATCH",
+        ),
+        (
+            evidence.owner_authorization_sha256,
+            evidence.expected_owner_authorization_sha256,
+            "SUCCESSOR_OWNER_AUTHORIZATION_MISMATCH",
+        ),
+        (
+            evidence.clock_authority_sha256,
+            evidence.expected_clock_authority_sha256,
+            "SUCCESSOR_CLOCK_AUTHORITY_MISMATCH",
+        ),
+        (
+            evidence.regular_sleeve_authority_sha256,
+            evidence.expected_regular_sleeve_authority_sha256,
+            "REGULAR_SLEEVE_AUTHORITY_MISMATCH",
+        ),
+        (
+            evidence.extended_sleeve_authority_sha256,
+            evidence.expected_extended_sleeve_authority_sha256,
+            "EXTENDED_SLEEVE_AUTHORITY_MISMATCH",
+        ),
+        (
+            evidence.economic_risk_authorization_sha256,
+            evidence.expected_economic_risk_authorization_sha256,
+            "ECONOMIC_RISK_AUTHORIZATION_MISMATCH",
+        ),
+        (
+            evidence.certified_family_set_sha256,
+            evidence.expected_certified_family_set_sha256,
+            "CERTIFIED_FAMILY_SET_MISMATCH",
+        ),
+        (
+            evidence.successor_definition_sha256,
+            evidence.expected_successor_definition_sha256,
+            "SUCCESSOR_DEFINITION_HASH_MISMATCH",
+        ),
+    )
+    for actual, expected, reason in exact_bindings:
+        if actual != expected:
+            raise LaunchError(reason)
+    tombstone = evidence.retirement_tombstone_sha256 or ""
+    if not _SHA256_RE.fullmatch(tombstone):
+        raise LaunchError("PREDECESSOR_RETIREMENT_REQUIRED")
+    if evidence.predecessor_path_active:
+        raise LaunchError("PREDECESSOR_PATH_STILL_ACTIVE")
+    if evidence.continuity_gap:
+        raise LaunchError("SUCCESSOR_CONTINUITY_GAP")
+
+    if initial_activation:
+        if evidence.transition_phase not in {
+            "PREDECESSOR_RETIRED",
+            "SUCCESSOR_COMMITTED",
+            "RUNTIME_BOUND",
+            "ACTIVE",
+        }:
+            raise LaunchError("SUCCESSOR_TRANSITION_NOT_ELIGIBLE")
+        if not evidence.extended_family_available_within_24h:
+            raise LaunchError("NO_EXTENDED_FAMILY_AVAILABLE_WITHIN_24H")
+        status = "PASS"
+    else:
+        if not evidence.same_committed_successor or evidence.transition_phase not in {
+            "SUCCESSOR_COMMITTED",
+            "RUNTIME_BOUND",
+            "ACTIVE",
+        }:
+            raise LaunchError("SUCCESSOR_RESTART_BINDING_MISMATCH")
+        status = (
+            "CONTINUITY_ACTION_DUE"
+            if evidence.continuity_action_due
+            else (
+                "PASS"
+                if evidence.extended_family_tradable_now
+                else "MARKET_CLOSED_IDLE"
+            )
+        )
+    return {
+        "schema": "MULTI_UNIVERSE_LAUNCH_DECISION_V1",
+        "status": status,
+        "reason_codes": [],
+        "writer_start_allowed": True,
+        "reconciliation_required": True,
+        "continuity_actions_allowed": True,
+        "new_extended_entries_allowed": bool(
+            evidence.extended_family_tradable_now
+            or (initial_activation and evidence.extended_family_available_within_24h)
+        ),
+        "legacy_predecessor_allowed": False,
+    }
+
+
+def _load_multi_universe_launch_authority(
+    config: Day1LaunchConfig,
+) -> dict[str, object] | None:
+    if config.multi_universe_authority_path is None:
+        return None
+    try:
+        payload = json.loads(
+            config.multi_universe_authority_path.read_text(encoding="utf-8")
+        )
+        if payload.get("schema") != "MULTI_UNIVERSE_LAUNCH_AUTHORITY_V1":
+            raise ValueError("authority schema mismatch")
+        raw_evidence = payload["evidence"]
+        if payload.get("evidence_sha256") != sha256_json(raw_evidence):
+            raise ValueError("authority evidence hash mismatch")
+        evidence = MultiUniverseLaunchEvidence(**raw_evidence)
+        if payload.get("successor_epoch_id") != config.target_successor_epoch_id:
+            raise ValueError("successor epoch mismatch")
+        if (
+            payload.get("successor_definition_sha256")
+            != config.target_successor_definition_sha256
+        ):
+            raise ValueError("successor definition mismatch")
+        initial_activation = bool(payload["initial_activation"])
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise LaunchError("MULTI_UNIVERSE_LAUNCH_AUTHORITY_INVALID") from exc
+    return evaluate_multi_universe_successor_launch(
+        evidence, initial_activation=initial_activation
+    )
 
 
 @dataclass(frozen=True)
@@ -676,9 +844,7 @@ def validate_launch_controls(
             raise LaunchError("FAILED_EPOCH_REQUIRES_EXPLICIT_SUCCESSOR")
         try:
             target_epoch_id = str(config.target_successor_epoch_id)
-            target_definition_sha256 = str(
-                config.target_successor_definition_sha256
-            )
+            target_definition_sha256 = str(config.target_successor_definition_sha256)
             successor_store = SuccessorEpochStore(db)
             definition = successor_store.definition(target_epoch_id)
             if definition.get("definition_sha256") != target_definition_sha256:
@@ -1316,6 +1482,7 @@ def _append_successor_pre_start_failure(
 
 
 def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) -> str:
+    multi_universe_launch = _load_multi_universe_launch_authority(config)
     try:
         preflight = evaluate_launch_preflight(config, dependencies)
     except LaunchError as exc:
@@ -1334,6 +1501,11 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
         raise LaunchError("RUNTIME_SOURCE_PROVENANCE_BLOCK")
 
     with dependencies.database_factory(config.db_path) as db:
+        if multi_universe_launch is not None:
+            try:
+                verify_multi_universe_schema_v4(db)
+            except Exception as exc:
+                raise LaunchError("MULTI_UNIVERSE_SCHEMA_V4_REQUIRED") from exc
         lock = dependencies.lock_factory(db)
         owner = dependencies.lock_owner_factory(preflight.actual_start_utc)
         try:
@@ -1357,9 +1529,10 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 schema_result = verifier(db)
             except Exception as exc:
                 raise LaunchError("CONTINUITY_SCHEMA_V3_REQUIRED") from exc
-            if not isinstance(schema_result, dict) or schema_result.get(
-                "status"
-            ) != "PASS":
+            if (
+                not isinstance(schema_result, dict)
+                or schema_result.get("status") != "PASS"
+            ):
                 raise LaunchError("CONTINUITY_SCHEMA_V3_REQUIRED")
 
             controls = validate_launch_controls(db, config, preflight=preflight)
@@ -1369,16 +1542,15 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
             if recover_provider is None:
                 raise LaunchError("CONTINUITY_PROVIDER_RECOVERY_BLOCK")
             try:
-                provider_recovery = recover_provider(
-                    db, owner, config, preflight
-                )
+                provider_recovery = recover_provider(db, owner, config, preflight)
             except ContinuityStoreError as exc:
                 raise LaunchError("CONTINUITY_AUTHORITY_CORRUPT") from exc
             except Exception as exc:
                 raise LaunchError("CONTINUITY_PROVIDER_RECOVERY_BLOCK") from exc
-            if not isinstance(provider_recovery, dict) or provider_recovery.get(
-                "status"
-            ) != "PASS":
+            if (
+                not isinstance(provider_recovery, dict)
+                or provider_recovery.get("status") != "PASS"
+            ):
                 raise LaunchError("CONTINUITY_PROVIDER_RECOVERY_BLOCK")
 
             reconcile_bindings = dependencies.pending_binding_reconciler
@@ -1390,9 +1562,10 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 raise LaunchError("CONTINUITY_AUTHORITY_CORRUPT") from exc
             except Exception as exc:
                 raise LaunchError("CONTINUITY_PENDING_BINDING_AMBIGUOUS") from exc
-            if not isinstance(binding_recovery, dict) or binding_recovery.get(
-                "status"
-            ) != "PASS":
+            if (
+                not isinstance(binding_recovery, dict)
+                or binding_recovery.get("status") != "PASS"
+            ):
                 raise LaunchError("CONTINUITY_PENDING_BINDING_AMBIGUOUS")
 
             read_uncertainty = dependencies.continuity_uncertainty_reader
@@ -1497,18 +1670,24 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 db_path=config.db_path,
                 config=config,
                 preflight=preflight,
-                production_validation_sha256=prepared.manifest[
-                    "epoch_manifest_sha256"
-                ],
+                production_validation_sha256=prepared.manifest["epoch_manifest_sha256"],
             )
-            critical_alert_reporter = (
-                dependencies.critical_alert_reporter_factory(
-                    db_path=config.db_path,
-                    config=config,
-                    preflight=preflight,
-                )
+            critical_alert_reporter = dependencies.critical_alert_reporter_factory(
+                db_path=config.db_path,
+                config=config,
+                preflight=preflight,
             )
             continuity_store = dependencies.continuity_store_factory(db)
+            multi_universe_stores = None
+            if multi_universe_launch is not None:
+                from .production_continuity_runtime import (
+                    build_multi_universe_runtime_stores,
+                )
+
+                multi_universe_stores = build_multi_universe_runtime_stores(
+                    db,
+                    current_adapter_sha256=prepared.manifest["epoch_manifest_sha256"],
+                )
             provider_lifecycle = ProviderLifecycleRecorder(
                 continuity_store,
                 launch_attempt_id=config.launch_attempt_id,
@@ -1526,9 +1705,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 ),
                 uncertainty_reporter=critical_alert_reporter,
                 toolbox=prepared.toolbox,
-                production_validation_sha256=prepared.manifest[
-                    "epoch_manifest_sha256"
-                ],
+                production_validation_sha256=prepared.manifest["epoch_manifest_sha256"],
             )
             watchdog = dependencies.continuity_watchdog_factory(
                 coordinator=coordinator,
@@ -1537,6 +1714,19 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 preflight=preflight,
                 uncertainty_reporter=critical_alert_reporter,
             )
+            if multi_universe_stores is not None:
+                from .production_continuity_runtime import (
+                    inject_multi_universe_runtime_stores,
+                )
+
+                inject_multi_universe_runtime_stores(
+                    multi_universe_stores,
+                    prepared.provider,
+                    coordinator,
+                    model_executor,
+                    writer,
+                    watchdog,
+                )
             arm_context = None
             writer_start_attempted = False
             primary_failure: BaseException | None = None
@@ -1551,9 +1741,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                     raise
                 except Exception as exc:
                     raise LaunchError("CONTINUITY_WRITER_START_FAILURE") from exc
-                arm_context = paper_arm_environment(
-                    preflight.expected_account_hash
-                )
+                arm_context = paper_arm_environment(preflight.expected_account_hash)
                 arm_context.__enter__()
                 auditor_gate = dependencies.auditor_gate_factory(config)
                 market_gate = dependencies.market_gate_factory(
@@ -1603,8 +1791,21 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                             preflight.expected_account_hash
                         ),
                         critical_alert_reporter=critical_alert_reporter,
-                        session_evidence_reader=(
-                            prepared.session_evidence_reader
+                        session_evidence_reader=(prepared.session_evidence_reader),
+                        sleeve_ledger_store=(
+                            None
+                            if multi_universe_stores is None
+                            else multi_universe_stores.ledger
+                        ),
+                        contract_ownership_store=(
+                            None
+                            if multi_universe_stores is None
+                            else multi_universe_stores.ownership
+                        ),
+                        product_certification_store=(
+                            None
+                            if multi_universe_stores is None
+                            else multi_universe_stores.capability
                         ),
                     )
                 except AutonomousServiceError as exc:
@@ -1619,15 +1820,37 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                         "AUTONOMOUS_SERVICE_CONSTRUCTION_BLOCK",
                         details={"service_reason_codes": reason_codes},
                     ) from exc
+                if multi_universe_stores is not None:
+                    from .production_continuity_runtime import (
+                        inject_multi_universe_runtime_stores,
+                        validate_multi_universe_runtime_topology,
+                    )
+
+                    inject_multi_universe_runtime_stores(multi_universe_stores, service)
+                    topology = validate_multi_universe_runtime_topology(
+                        providers=(prepared.provider,),
+                        service_loops=(service,),
+                        coordinators=(coordinator,),
+                        writers=(writer,),
+                        write_capable_client_ids=(
+                            int(getattr(writer, "execution_client_id", -1)),
+                        ),
+                        execution_locks=(lock,),
+                        stores=multi_universe_stores,
+                        direct_executor_selected=False,
+                    )
+                    if topology["status"] != "PASS":
+                        raise LaunchError(
+                            "MULTI_UNIVERSE_RUNTIME_TOPOLOGY_BLOCK",
+                            details={"topology_reason_codes": topology["reason_codes"]},
+                        )
                 if not controls.resume_started_epoch:
                     EventRepository(db).append(
                         "EPOCH_STARTED",
                         {
                             "schema": "EPOCH_STARTED_V1",
                             "epoch_id": prepared.manifest["epoch_id"],
-                            "definition_sha256": prepared.manifest[
-                                "definition_sha256"
-                            ],
+                            "definition_sha256": prepared.manifest["definition_sha256"],
                             "clock_event_sha256": prepared.manifest[
                                 "clock_event_sha256"
                             ],
@@ -1736,6 +1959,7 @@ def _default_config(
     approved_head: str | None = None,
     target_successor_epoch_id: str | None = None,
     target_successor_definition_sha256: str | None = None,
+    multi_universe_authority_path: Path | None = None,
 ) -> Day1LaunchConfig:
     reports = repo_root / "state" / "ibkr_paper_30d" / "reports"
     return Day1LaunchConfig(
@@ -1773,6 +1997,7 @@ def _default_config(
         approved_head=approved_head,
         target_successor_epoch_id=target_successor_epoch_id,
         target_successor_definition_sha256=(target_successor_definition_sha256),
+        multi_universe_authority_path=multi_universe_authority_path,
     )
 
 
@@ -1968,6 +2193,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--approved-head")
     parser.add_argument("--target-successor-epoch-id")
     parser.add_argument("--target-successor-definition-sha256")
+    parser.add_argument("--multi-universe-authority-path", type=Path)
     args = parser.parse_args(argv)
     config = _default_config(
         args.repo_root.resolve(),
@@ -1975,6 +2201,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         approved_head=args.approved_head,
         target_successor_epoch_id=args.target_successor_epoch_id,
         target_successor_definition_sha256=(args.target_successor_definition_sha256),
+        multi_universe_authority_path=args.multi_universe_authority_path,
     )
     try:
         status = run_day1_launch(config, _default_dependencies())

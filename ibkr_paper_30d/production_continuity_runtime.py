@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 import threading
 import time
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from decimal import Decimal
@@ -21,7 +22,6 @@ from .canonical import sha256_json
 from .continuity_store import ContinuityStore
 from .ibkr_readonly import expected_identity_hash
 
-
 WRITER_CLIENT_ID = 19761
 OBSERVER_CLIENT_ID = 19762
 DEFAULT_SMTP_CONFIG = Path("Secrets/email_alerts.env")
@@ -29,6 +29,117 @@ DEFAULT_SMTP_CONFIG = Path("Secrets/email_alerts.env")
 
 class ProductionRuntimeConfigurationError(RuntimeError):
     pass
+
+
+@dataclass(frozen=True)
+class MultiUniverseRuntimeStores:
+    """The V4 authorities injected into the existing single runtime graph."""
+
+    ledger: Any
+    ownership: Any
+    capability: Any
+    reconciliation: Any
+    transition: Any
+
+
+def build_multi_universe_runtime_stores(
+    db: Any, *, current_adapter_sha256: str
+) -> MultiUniverseRuntimeStores:
+    from .contract_ownership import ContractOwnershipStore
+    from .multi_universe_transition import MultiUniverseTransitionCoordinator
+    from .product_capability import ProductFamilyCertificationStore
+    from .sleeve_ledger import SleeveLedgerStore
+    from .sleeve_reconciliation import SleeveReconciler
+
+    return MultiUniverseRuntimeStores(
+        ledger=SleeveLedgerStore(db),
+        ownership=ContractOwnershipStore(db),
+        capability=ProductFamilyCertificationStore(
+            db, current_adapter_sha256=current_adapter_sha256
+        ),
+        reconciliation=SleeveReconciler(),
+        transition=MultiUniverseTransitionCoordinator(db),
+    )
+
+
+def validate_multi_universe_runtime_topology(
+    *,
+    providers: tuple[Any, ...],
+    service_loops: tuple[Any, ...],
+    coordinators: tuple[Any, ...],
+    writers: tuple[Any, ...],
+    write_capable_client_ids: tuple[int, ...],
+    execution_locks: tuple[Any, ...],
+    stores: MultiUniverseRuntimeStores,
+    direct_executor_selected: bool,
+) -> dict[str, Any]:
+    counts = {
+        "providers": len(providers),
+        "service_loops": len(service_loops),
+        "coordinators": len(coordinators),
+        "writers": len(writers),
+        "write_capable_clients": len(write_capable_client_ids),
+        "execution_locks": len(execution_locks),
+    }
+    reasons: list[str] = []
+    checks = (
+        (counts["providers"] == 1, "PROVIDER_COUNT_INVALID"),
+        (counts["service_loops"] == 1, "SERVICE_LOOP_COUNT_INVALID"),
+        (counts["coordinators"] == 1, "COORDINATOR_COUNT_INVALID"),
+        (counts["writers"] == 1, "WRITER_COUNT_INVALID"),
+        (counts["write_capable_clients"] == 1, "WRITE_CLIENT_COUNT_INVALID"),
+        (counts["execution_locks"] == 1, "EXECUTION_LOCK_COUNT_INVALID"),
+        (not direct_executor_selected, "DIRECT_EXECUTOR_FORBIDDEN"),
+    )
+    reasons.extend(reason for valid, reason in checks if not valid)
+    if write_capable_client_ids and write_capable_client_ids != (WRITER_CLIENT_ID,):
+        reasons.append("WRITE_CLIENT_IDENTITY_INVALID")
+    if (
+        writers
+        and int(getattr(writers[0], "execution_client_id", -1)) != WRITER_CLIENT_ID
+    ):
+        reasons.append("WRITER_CLIENT_IDENTITY_INVALID")
+    store_names = tuple(
+        name
+        for name in (
+            "ledger",
+            "ownership",
+            "capability",
+            "reconciliation",
+            "transition",
+        )
+        if getattr(stores, name, None) is not None
+    )
+    if len(store_names) != 5:
+        reasons.append("MULTI_UNIVERSE_STORE_INJECTION_INCOMPLETE")
+    return {
+        "schema": "MULTI_UNIVERSE_RUNTIME_TOPOLOGY_V1",
+        "status": "PASS" if not reasons else "BLOCK",
+        "reason_codes": list(dict.fromkeys(reasons)),
+        "authority_counts": counts,
+        "injected_stores": store_names,
+        "writer_client_id": WRITER_CLIENT_ID,
+        "observer_client_id": OBSERVER_CLIENT_ID,
+        "legacy_direct_executor_selected": direct_executor_selected,
+    }
+
+
+def inject_multi_universe_runtime_stores(
+    stores: MultiUniverseRuntimeStores, *components: Any
+) -> None:
+    """Bind the same V4 authority graph to every component in the one runtime."""
+
+    for component in components:
+        if component is None:
+            raise ProductionRuntimeConfigurationError(
+                "MULTI_UNIVERSE_COMPONENT_MISSING"
+            )
+        existing = getattr(component, "multi_universe_stores", None)
+        if existing is not None and existing is not stores:
+            raise ProductionRuntimeConfigurationError(
+                "MULTI_UNIVERSE_STORE_BINDING_CONFLICT"
+            )
+        setattr(component, "multi_universe_stores", stores)
 
 
 def validate_production_runtime_configuration(config: Any) -> dict[str, Path]:
@@ -255,9 +366,7 @@ class ProductionCriticalAlertReporter:
                 if self.event_log_factory is None
                 else self.event_log_factory()
             )
-            service = AlertService(
-                repository, authority, smtp, event_log
-            )
+            service = AlertService(repository, authority, smtp, event_log)
             result = service.raise_critical(
                 AlertEvent(
                     event_type=event_type,
@@ -289,9 +398,7 @@ def _canonical_contract(contract: Any) -> dict[str, Any]:
         "secType": str(getattr(contract, "secType", "") or ""),
         "exchange": str(getattr(contract, "exchange", "") or ""),
         "currency": str(getattr(contract, "currency", "") or ""),
-        "expiry": str(
-            getattr(contract, "lastTradeDateOrContractMonth", "") or ""
-        ),
+        "expiry": str(getattr(contract, "lastTradeDateOrContractMonth", "") or ""),
         "strike": str(getattr(contract, "strike", 0) or 0),
         "right": str(getattr(contract, "right", "") or ""),
         "multiplier": str(getattr(contract, "multiplier", "") or "1"),
@@ -453,9 +560,7 @@ class ReadOnlyContinuityBroker:
             account = str(getattr(position, "account", "") or "")
             from .open_order_management import canonical_contract_identity
 
-            contract = canonical_contract_identity(
-                getattr(position, "contract", None)
-            )
+            contract = canonical_contract_identity(getattr(position, "contract", None))
             if (
                 expected_identity_hash(account) == binding.account_identity_sha256
                 and sha256_json(contract) == binding.contract_identity_sha256
@@ -473,10 +578,14 @@ def _latest_broker_observation(db: Any) -> dict[str, Any]:
         "ORDER BY sequence DESC LIMIT 1"
     ).fetchone()
     if row is None:
-        raise ProductionRuntimeConfigurationError("BROKER_AUTHORITY_OBSERVATION_MISSING")
+        raise ProductionRuntimeConfigurationError(
+            "BROKER_AUTHORITY_OBSERVATION_MISSING"
+        )
     payload = json.loads(str(row[0]))
     if sha256_json(payload) != str(row[1]):
-        raise ProductionRuntimeConfigurationError("BROKER_AUTHORITY_OBSERVATION_CORRUPT")
+        raise ProductionRuntimeConfigurationError(
+            "BROKER_AUTHORITY_OBSERVATION_CORRUPT"
+        )
     return payload
 
 
@@ -565,9 +674,7 @@ class _ProductionSnapshotReader:
                 active = store.active_plan(request.order_ref)
                 active_plan_sha256 = None if active is None else active.sha256
                 binding = (
-                    None
-                    if active is None
-                    else _verified_registry_binding(db, active)
+                    None if active is None else _verified_registry_binding(db, active)
                 )
                 if binding is not None:
                     if any(
@@ -639,11 +746,15 @@ class _ProductionSnapshotReader:
                 runtime_provenance_valid = False
 
             auditor_ok = (
-                hashlib.sha256(Path(self.config.auditor_receipt_path).read_bytes()).hexdigest()
+                hashlib.sha256(
+                    Path(self.config.auditor_receipt_path).read_bytes()
+                ).hexdigest()
                 == self.preflight.auditor_receipt_sha256
             )
             market_ok = (
-                hashlib.sha256(Path(self.config.market_policy_path).read_bytes()).hexdigest()
+                hashlib.sha256(
+                    Path(self.config.market_policy_path).read_bytes()
+                ).hexdigest()
                 == self.preflight.market_policy_sha256
                 and hashlib.sha256(
                     Path(self.config.market_validation_path).read_bytes()
@@ -713,8 +824,7 @@ def _broker_evidence_collector(
             and last_broker_time is not None
             and last_broker_time_collected_at is not None
             and last_broker_time_collected_at <= collected
-            and collected - last_broker_time_collected_at
-            < broker_time_pacing_window
+            and collected - last_broker_time_collected_at < broker_time_pacing_window
         )
         if reuse_broker_time:
             broker_time = last_broker_time
@@ -813,7 +923,9 @@ def _request_id(request: Any) -> str:
     return str(getattr(request, "request_id", None) or request.command_id)
 
 
-def _production_persistence(db_path: Path) -> tuple[Callable[..., None], Callable[..., None]]:
+def _production_persistence(
+    db_path: Path,
+) -> tuple[Callable[..., None], Callable[..., None]]:
     from .persistence import Database
 
     def persist_attempt(request: Any, evidence: dict[str, Any]) -> None:
@@ -823,13 +935,9 @@ def _production_persistence(db_path: Path) -> tuple[Callable[..., None], Callabl
                 request_id=_request_id(request),
                 request_sha256=request.sha256,
                 execution_key=request.execution_key,
-                authority_snapshot_sha256=str(
-                    authority["authority_snapshot_sha256"]
-                ),
+                authority_snapshot_sha256=str(authority["authority_snapshot_sha256"]),
                 broker_evidence_sha256=str(authority["broker_evidence_sha256"]),
-                liability_evidence_sha256=authority.get(
-                    "liability_evidence_sha256"
-                ),
+                liability_evidence_sha256=authority.get("liability_evidence_sha256"),
             )
 
     def persist_result(request: Any, result: Any, evidence: dict[str, Any]) -> None:
@@ -933,9 +1041,7 @@ def _exact_continuity_maximum_loss(
         strike = Decimal(str(term["strike"]))
         ratio = Decimal(str(leg["ratio"]))
         leg_direction = (
-            Decimal("1")
-            if str(leg["action"]).upper() == "BUY"
-            else Decimal("-1")
+            Decimal("1") if str(leg["action"]).upper() == "BUY" else Decimal("-1")
         )
         signed_ratio = direction * leg_direction * ratio
         signed_legs.append((signed_ratio, strike, right))
@@ -986,14 +1092,11 @@ def _collect_continuity_liability_evidence(
             and snapshot["clientId"] == command.execution_client_id
             and expected_identity_hash(snapshot["account"])
             == command.account_identity_sha256
-            and sha256_json(snapshot["contract"])
-            == command.contract_identity_sha256
+            and sha256_json(snapshot["contract"]) == command.contract_identity_sha256
         ):
             matches.append((trade, snapshot))
     if len(matches) != 1:
-        raise ProductionRuntimeConfigurationError(
-            "LIABILITY_ORDER_IDENTITY_UNCERTAIN"
-        )
+        raise ProductionRuntimeConfigurationError("LIABILITY_ORDER_IDENTITY_UNCERTAIN")
     trade, snapshot = matches[0]
     proposed_order = copy.deepcopy(trade.order)
     proposed_order.totalQuantity = float(command.resolved_total_quantity)
@@ -1102,10 +1205,12 @@ def create_authoritative_writer(
     effective_session_factory = validation_broker_factory or session_factory
     return AuthoritativeBrokerWriter(
         coordinator,
-        broker_factory=lambda client_id: effective_session_factory()
-        if client_id == WRITER_CLIENT_ID
-        else (_ for _ in ()).throw(
-            ProductionRuntimeConfigurationError("WRITER_CLIENT_ID_MISMATCH")
+        broker_factory=lambda client_id: (
+            effective_session_factory()
+            if client_id == WRITER_CLIENT_ID
+            else (_ for _ in ()).throw(
+                ProductionRuntimeConfigurationError("WRITER_CLIENT_ID_MISMATCH")
+            )
         ),
         execution_client_id=WRITER_CLIENT_ID,
         execution_lock_verifier=execution_lock_verifier,
@@ -1115,9 +1220,7 @@ def create_authoritative_writer(
         model_execution_engine=lazy_engine,
         production_validation_sha256=production_validation_sha256,
         production_authority_validator=validator,
-        production_broker_evidence_collector=_broker_evidence_collector(
-            Path(db_path)
-        ),
+        production_broker_evidence_collector=_broker_evidence_collector(Path(db_path)),
         liability_evidence_collector=_collect_continuity_liability_evidence,
         resource_closer=lazy_engine.close,
         uncertainty_reporter=uncertainty_reporter,
@@ -1169,10 +1272,8 @@ def _verified_registry_binding(db: Any, plan: Any) -> dict[str, Any] | None:
         str(payload.get("order_ref") or "") == binding.order_ref,
         binding.ibkr_order_id is None
         or int(payload.get("ibkr_order_id") or 0) == binding.ibkr_order_id,
-        binding.perm_id is None
-        or int(payload.get("perm_id") or 0) == binding.perm_id,
-        int(payload.get("execution_client_id") or -1)
-        == binding.execution_client_id,
+        binding.perm_id is None or int(payload.get("perm_id") or 0) == binding.perm_id,
+        int(payload.get("execution_client_id") or -1) == binding.execution_client_id,
         expected_identity_hash(account) == binding.account_identity_sha256,
         sha256_json(contract) == binding.contract_identity_sha256,
         str(payload.get("action") or "").upper() == binding.action,
@@ -1525,7 +1626,9 @@ def validate_production_composition(
                 try:
                     coordinator.attach_writer()
                 except RuntimeError as exc:
-                    writer_sole_capability = str(exc) == "AUTHORITATIVE_WRITER_ALREADY_ATTACHED"
+                    writer_sole_capability = (
+                        str(exc) == "AUTHORITATIVE_WRITER_ALREADY_ATTACHED"
+                    )
             watchdog.start(2.0)
             watchdog_started = True
 

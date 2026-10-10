@@ -35,6 +35,15 @@ class SchedulerExpectation:
 
 
 @dataclass(frozen=True)
+class SuccessorSchedulerExpectation:
+    task_name: str
+    repo_root: str
+    approved_head: str
+    owner_sid: str
+    retirement_tombstone_sha256: str
+
+
+@dataclass(frozen=True)
 class SchedulerTaskSnapshot:
     task_name: str
     exists: bool
@@ -152,10 +161,7 @@ def validate_scheduler_startup(
     if _has_flag(task.arguments, "-InspectStatus"):
         reasons.append("ACTION_INSPECTION_MODE_FORBIDDEN")
 
-    if (
-        not task.user_sid
-        or task.user_sid.casefold() != expected.owner_sid.casefold()
-    ):
+    if not task.user_sid or task.user_sid.casefold() != expected.owner_sid.casefold():
         reasons.append("PRINCIPAL_USER_MISMATCH")
     if task.logon_type.casefold() != "interactive":
         reasons.append("INTERACTIVE_TOKEN_REQUIRED")
@@ -203,6 +209,81 @@ def validate_scheduler_startup(
         "mutations_performed": 0,
         "broker_write_calls": 0,
     }
+
+
+def validate_successor_scheduler_startup(
+    task: SchedulerTaskSnapshot,
+    runtime: RuntimeGateSnapshot,
+    expected: SuccessorSchedulerExpectation,
+) -> dict[str, object]:
+    reasons: list[str] = []
+    script = _argument_value(task.arguments, "-File") or ""
+    expected_script = ntpath.join(
+        expected.repo_root, "RUN_IBKR_MULTI_UNIVERSE_SERVICE.ps1"
+    )
+    legacy_selected = ntpath.basename(script).casefold() in {
+        "run_ibkr_market_data_gate.ps1",
+        "run_ibkr_day1_service.ps1",
+    }
+    if legacy_selected:
+        reasons.append("RETIRED_PREDECESSOR_LAUNCH_FORBIDDEN")
+    if task.task_name.casefold() != expected.task_name.casefold():
+        reasons.append("SCHEDULER_TASK_NAME_MISMATCH")
+    if not task.exists:
+        reasons.append("SCHEDULER_TASK_MISSING")
+    if not task.enabled:
+        reasons.append("SCHEDULER_TASK_NOT_ENABLED")
+    if ntpath.basename(task.execute).casefold() != "powershell.exe":
+        reasons.append("ACTION_EXECUTABLE_MISMATCH")
+    if not _same_path(script, expected_script):
+        reasons.append("ACTION_SCRIPT_MISMATCH")
+    if not _same_path(
+        _argument_value(task.arguments, "-RepoRoot") or "", expected.repo_root
+    ):
+        reasons.append("ACTION_REPO_ROOT_MISMATCH")
+    if _argument_value(task.arguments, "-ApprovedHead") != expected.approved_head:
+        reasons.append("ACTION_APPROVED_HEAD_MISMATCH")
+    if _argument_value(task.arguments, "-PythonExe") is None:
+        reasons.append("ACTION_PYTHON_EXE_MISSING")
+    if _argument_value(task.arguments, "-TransitionAuthorityPath") is None:
+        reasons.append("TRANSITION_AUTHORITY_PATH_MISSING")
+    if not re_full_sha256(expected.retirement_tombstone_sha256):
+        reasons.append("RETIREMENT_TOMBSTONE_INVALID")
+    if task.user_sid.casefold() != expected.owner_sid.casefold():
+        reasons.append("PRINCIPAL_USER_MISMATCH")
+    if task.logon_type.casefold() != "interactive":
+        reasons.append("INTERACTIVE_TOKEN_REQUIRED")
+    if task.run_level.casefold() != "highest":
+        reasons.append("HIGHEST_RUNLEVEL_REQUIRED")
+    if task.multiple_instances.casefold() != "ignorenew":
+        reasons.append("MULTIPLE_INSTANCES_NOT_IGNORE_NEW")
+    if not _same_path(task.working_directory, expected.repo_root):
+        reasons.append("WORKING_DIRECTORY_MISMATCH")
+    if not _same_path(runtime.repo_root, expected.repo_root):
+        reasons.append("REPOSITORY_ROOT_MISMATCH")
+    if runtime.current_head != expected.approved_head:
+        reasons.append("APPROVED_HEAD_MISMATCH")
+    if not runtime.gateway_available:
+        reasons.append("GATEWAY_UNAVAILABLE")
+    if not runtime.kernel_verified:
+        reasons.append("KERNEL_VERIFICATION_FAILED")
+    if runtime.provenance_gate != "PASS":
+        reasons.append("RUNTIME_PROVENANCE_FAILED")
+    if runtime.lock_diagnostic != "PASS":
+        reasons.append("LOCK_DIAGNOSTIC_FAILED")
+    return {
+        "schema": "SUCCESSOR_SCHEDULER_STARTUP_VALIDATION_V1",
+        "status": "PASS" if not reasons else "BLOCK",
+        "reason_codes": list(dict.fromkeys(reasons)),
+        "legacy_market_gate_selected": legacy_selected,
+        "lock_acquisition_allowed": not reasons,
+        "broker_write_calls": 0,
+        "mutations_performed": 0,
+    }
+
+
+def re_full_sha256(value: str) -> bool:
+    return len(value) == 64 and all(char in "0123456789abcdef" for char in value)
 
 
 def _split_windows_command_line(command: str) -> list[str]:

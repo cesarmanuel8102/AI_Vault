@@ -34,9 +34,107 @@ from ibkr_paper_30d.production_continuity_runtime import (
     _broker_evidence_collector,
     validate_production_composition,
 )
+
+
+def test_multi_universe_composition_has_one_of_each_authority(tmp_path) -> None:
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+    from ibkr_paper_30d.production_continuity_runtime import (
+        build_multi_universe_runtime_stores,
+        inject_multi_universe_runtime_stores,
+        validate_multi_universe_runtime_topology,
+    )
+
+    with Database.open(tmp_path / "runtime.sqlite3") as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+        stores = build_multi_universe_runtime_stores(
+            db, current_adapter_sha256="a" * 64
+        )
+
+    provider = SimpleNamespace()
+    service = SimpleNamespace()
+    coordinator = SimpleNamespace()
+    writer = SimpleNamespace(execution_client_id=WRITER_CLIENT_ID)
+    lock = object()
+    inject_multi_universe_runtime_stores(stores, provider, service, coordinator, writer)
+    report = validate_multi_universe_runtime_topology(
+        providers=(provider,),
+        service_loops=(service,),
+        coordinators=(coordinator,),
+        writers=(writer,),
+        write_capable_client_ids=(WRITER_CLIENT_ID,),
+        execution_locks=(lock,),
+        stores=stores,
+        direct_executor_selected=False,
+    )
+
+    assert report["status"] == "PASS"
+    assert report["authority_counts"] == {
+        "providers": 1,
+        "service_loops": 1,
+        "coordinators": 1,
+        "writers": 1,
+        "write_capable_clients": 1,
+        "execution_locks": 1,
+    }
+    assert set(report["injected_stores"]) == {
+        "capability",
+        "ledger",
+        "ownership",
+        "reconciliation",
+        "transition",
+    }
+    assert provider.multi_universe_stores is stores
+    assert service.multi_universe_stores is stores
+    assert coordinator.multi_universe_stores is stores
+    assert writer.multi_universe_stores is stores
+
+
+@pytest.mark.parametrize(
+    ("update", "reason"),
+    [
+        ({"providers": (object(), object())}, "PROVIDER_COUNT_INVALID"),
+        ({"service_loops": ()}, "SERVICE_LOOP_COUNT_INVALID"),
+        ({"coordinators": (object(), object())}, "COORDINATOR_COUNT_INVALID"),
+        ({"writers": (object(), object())}, "WRITER_COUNT_INVALID"),
+        ({"write_capable_client_ids": (19761, 19763)}, "WRITE_CLIENT_COUNT_INVALID"),
+        ({"execution_locks": ()}, "EXECUTION_LOCK_COUNT_INVALID"),
+        ({"direct_executor_selected": True}, "DIRECT_EXECUTOR_FORBIDDEN"),
+    ],
+)
+def test_multi_universe_composition_rejects_parallel_authority(update, reason) -> None:
+    from ibkr_paper_30d.production_continuity_runtime import (
+        MultiUniverseRuntimeStores,
+        validate_multi_universe_runtime_topology,
+    )
+
+    values = {
+        "providers": (object(),),
+        "service_loops": (object(),),
+        "coordinators": (object(),),
+        "writers": (SimpleNamespace(execution_client_id=WRITER_CLIENT_ID),),
+        "write_capable_client_ids": (WRITER_CLIENT_ID,),
+        "execution_locks": (object(),),
+        "stores": MultiUniverseRuntimeStores(
+            ledger=object(),
+            ownership=object(),
+            capability=object(),
+            reconciliation=object(),
+            transition=object(),
+        ),
+        "direct_executor_selected": False,
+    }
+    values.update(update)
+
+    report = validate_multi_universe_runtime_topology(**values)
+
+    assert report["status"] == "BLOCK"
+    assert reason in report["reason_codes"]
+
+
 from ibkr_paper_30d.production_authority import ProductionBrokerEvidence
 from production_epoch_v1_fixture import build_production_epoch_v1_fixture
-
 
 NOW = datetime(2026, 10, 1, 14, tzinfo=timezone.utc)
 
@@ -271,7 +369,9 @@ def test_missing_external_alert_configuration_fails_with_exact_reason(tmp_path) 
         validate_production_runtime_configuration(config)
 
 
-def test_readonly_observer_returns_only_canonical_facts(continuity_plan_factory) -> None:
+def test_readonly_observer_returns_only_canonical_facts(
+    continuity_plan_factory,
+) -> None:
     contract = SimpleNamespace(
         conId=756733,
         symbol="UTHR",
@@ -416,9 +516,7 @@ def test_production_poller_submits_at_most_one_exact_command(
         positions=lambda: [],
         disconnect=lambda: None,
     )
-    broker = ReadOnlyContinuityBroker(
-        raw, account_identity_sha256=account_hash
-    )
+    broker = ReadOnlyContinuityBroker(raw, account_identity_sha256=account_hash)
 
     path = tmp_path / "runtime.sqlite3"
     with Database.open(path) as db:
@@ -502,17 +600,16 @@ def test_production_poller_submits_at_most_one_exact_command(
         assert len(submitted) == 1
         assert submitted[0].source == "WATCHDOG"
         assert submitted[0].execution_client_id == WRITER_CLIENT_ID
-        assert db.execute(
-            "SELECT COUNT(*) FROM continuity_execution_events"
-        ).fetchone()[0] == 1
+        assert (
+            db.execute("SELECT COUNT(*) FROM continuity_execution_events").fetchone()[0]
+            == 1
+        )
 
 
 def test_production_alert_freezes_first_and_deduplicates_across_time(tmp_path) -> None:
     path = tmp_path / "alerts.sqlite3"
     with Database.open(path) as db:
-        KillSwitchStore(db).set(
-            "KILL_SWITCH_CLEAR", reason="test setup", actor="TEST"
-        )
+        KillSwitchStore(db).set("KILL_SWITCH_CLEAR", reason="test setup", actor="TEST")
     trace = []
     times = iter(
         (
@@ -729,9 +826,7 @@ def test_production_liability_collector_proves_exact_vertical_maximum_loss() -> 
         orderStatus=SimpleNamespace(status="PreSubmitted", filled=0, remaining=1),
     )
     canonical_contract = canonical_contract_identity(contract)
-    leg_hashes = tuple(
-        sha256_json(value) for value in canonical_contract["comboLegs"]
-    )
+    leg_hashes = tuple(sha256_json(value) for value in canonical_contract["comboLegs"])
     requirement = SimpleNamespace(
         required_leg_identity_sha256=leg_hashes,
         maximum_evidence_age_seconds=Decimal("30"),
@@ -792,9 +887,7 @@ def test_production_liability_collector_proves_exact_vertical_maximum_loss() -> 
                 warningText="",
             )
 
-    evidence = _collect_continuity_liability_evidence(
-        Broker(), command, {}
-    )
+    evidence = _collect_continuity_liability_evidence(Broker(), command, {})
 
     assert evidence.bounded is True
     assert evidence.maximum_loss == Decimal("350.00")
@@ -971,7 +1064,9 @@ def test_validate_only_shuts_down_partial_startup_and_reports_exact_stage(
 
     class Writer:
         execution_client_id = WRITER_CLIENT_ID
-        production_authority_validator = SimpleNamespace(validate_before_write=lambda: None)
+        production_authority_validator = SimpleNamespace(
+            validate_before_write=lambda: None
+        )
         execution_lock_verifier = lambda self: False
 
         def start(self):

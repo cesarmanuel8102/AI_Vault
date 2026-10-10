@@ -6,12 +6,12 @@ import os
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from decimal import Decimal
 from typing import Callable, Mapping, Sequence
 from uuid import uuid4
 
 from .canonical import canonical_bytes
 from .redaction import redact_text
-
 
 FAULT_SCENARIO_TEST_MATRIX = {
     "crash_before_commit": "tests/ibkr_paper_30d/test_evidence.py::test_crash_before_commit_rolls_back",
@@ -261,6 +261,65 @@ def build_fault_report(
     }
 
 
+def build_multi_universe_performance_report(
+    *,
+    regular_principal_usd: Decimal,
+    regular_opening_equity_usd: Decimal,
+    regular_current_equity_usd: Decimal,
+    extended_principal_usd: Decimal,
+    extended_opening_equity_usd: Decimal,
+    extended_current_equity_usd: Decimal,
+    regular_currency_balances: Mapping[str, Decimal],
+    extended_currency_balances: Mapping[str, Decimal],
+    canary_adjustment_usd: Decimal,
+    ownership: Mapping[str, Sequence[str]],
+    certified_families: Sequence[str],
+    paper_limitations: Sequence[str],
+) -> dict[str, object]:
+    def money(value: Decimal) -> str:
+        return str(Decimal(value).quantize(Decimal("0.01")))
+
+    regular_historical = regular_opening_equity_usd - regular_principal_usd
+    regular_successor = regular_current_equity_usd - regular_opening_equity_usd
+    extended_successor = extended_current_equity_usd - extended_opening_equity_usd
+    successor_opening = regular_opening_equity_usd + extended_opening_equity_usd
+    current_combined = regular_current_equity_usd + extended_current_equity_usd
+    aggregate: dict[str, Decimal] = {}
+    for balances in (regular_currency_balances, extended_currency_balances):
+        for currency, amount in balances.items():
+            code = str(currency).upper()
+            aggregate[code] = aggregate.get(code, Decimal("0")) + Decimal(amount)
+    return {
+        "schema": "MULTI_UNIVERSE_PERFORMANCE_REPORT_V1",
+        "regular_historical_pnl_usd": money(regular_historical),
+        "regular_successor_pnl_usd": money(regular_successor),
+        "extended_successor_pnl_usd": money(extended_successor),
+        "combined_successor_pnl_usd": money(current_combined - successor_opening),
+        "combined_lifetime_pnl_usd": money(
+            current_combined - regular_principal_usd - extended_principal_usd
+        ),
+        "canary_adjustment_usd": money(canary_adjustment_usd),
+        "currency_balances": {
+            "REGULAR_SLEEVE": {
+                str(key).upper(): money(value)
+                for key, value in regular_currency_balances.items()
+            },
+            "EXTENDED_SLEEVE": {
+                str(key).upper(): money(value)
+                for key, value in extended_currency_balances.items()
+            },
+        },
+        "aggregate_currency_balances": {
+            key: money(value) for key, value in sorted(aggregate.items())
+        },
+        "ownership": {key: list(value) for key, value in ownership.items()},
+        "certified_families": list(certified_families),
+        "paper_limitations": list(paper_limitations),
+        "capital_rebased": False,
+        "cross_sleeve_netting": False,
+    }
+
+
 def write_local_reports(
     report_dir: str | Path,
     *,
@@ -274,9 +333,7 @@ def write_local_reports(
     evidence = Path(test_evidence_path)
     evidence_sha256 = hashlib.sha256(evidence.read_bytes()).hexdigest()
 
-    fault_report = build_fault_report(
-        fault_results, generated_at_utc=generated_at_utc
-    )
+    fault_report = build_fault_report(fault_results, generated_at_utc=generated_at_utc)
     fault_report["test_evidence_path"] = str(evidence)
     fault_report["test_evidence_sha256"] = evidence_sha256
     security_report = {

@@ -161,9 +161,7 @@ def test_scheduler_accepts_windows_normalized_local_account_name_with_same_sid()
     ],
 )
 def test_scheduler_fails_closed_when_required_identity_sid_is_unavailable(task_updates):
-    report = validate_scheduler_startup(
-        task(**task_updates), runtime(), expectation()
-    )
+    report = validate_scheduler_startup(task(**task_updates), runtime(), expectation())
 
     assert report["status"] == "BLOCK"
 
@@ -204,3 +202,65 @@ def test_runtime_collection_verifies_checked_in_kernel_manifest():
     snapshot = collect_runtime_snapshot(REPO, approved_head)
 
     assert snapshot.kernel_verified is True
+
+
+def test_successor_scheduler_uses_direct_launcher_without_legacy_gate():
+    from ibkr_paper_30d.scheduler_validation import (
+        SuccessorSchedulerExpectation,
+        validate_successor_scheduler_startup,
+    )
+
+    successor_task = task(
+        task_name="CodexIBKRMultiUniverse",
+        enabled=True,
+        arguments=(
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            rf"{ROOT}\RUN_IBKR_MULTI_UNIVERSE_SERVICE.ps1",
+            "-RepoRoot",
+            ROOT,
+            "-PythonExe",
+            r"C:\Python311\python.exe",
+            "-ApprovedHead",
+            HEAD,
+            "-TransitionAuthorityPath",
+            rf"{ROOT}\state\transition.json",
+        ),
+    )
+    expected = SuccessorSchedulerExpectation(
+        task_name="CodexIBKRMultiUniverse",
+        repo_root=ROOT,
+        approved_head=HEAD,
+        owner_sid=USER_SID,
+        retirement_tombstone_sha256="b" * 64,
+    )
+
+    report = validate_successor_scheduler_startup(successor_task, runtime(), expected)
+
+    assert report["status"] == "PASS"
+    assert report["legacy_market_gate_selected"] is False
+
+
+def test_retired_predecessor_arguments_cannot_acquire_startup_authority():
+    from ibkr_paper_30d.scheduler_validation import (
+        SuccessorSchedulerExpectation,
+        validate_successor_scheduler_startup,
+    )
+
+    expected = SuccessorSchedulerExpectation(
+        task_name="CodexIBKRMultiUniverse",
+        repo_root=ROOT,
+        approved_head=HEAD,
+        owner_sid=USER_SID,
+        retirement_tombstone_sha256="b" * 64,
+    )
+
+    report = validate_successor_scheduler_startup(
+        task(enabled=True), runtime(), expected
+    )
+
+    assert report["status"] == "BLOCK"
+    assert "RETIRED_PREDECESSOR_LAUNCH_FORBIDDEN" in report["reason_codes"]
+    assert report["lock_acquisition_allowed"] is False

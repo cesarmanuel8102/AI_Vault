@@ -39,6 +39,129 @@ from ibkr_paper_30d.day1_launch import (
     validate_launch_controls,
     write_launch_evidence,
 )
+
+
+def _multi_universe_launch_evidence(**updates):
+    from ibkr_paper_30d.day1_launch import MultiUniverseLaunchEvidence
+
+    values = {
+        "schema_v4_valid": True,
+        "transition_phase": "PREDECESSOR_RETIRED",
+        "approved_head": "a" * 40,
+        "expected_approved_head": "a" * 40,
+        "account_identity_sha256": "b" * 64,
+        "expected_account_identity_sha256": "b" * 64,
+        "owner_authorization_sha256": "c" * 64,
+        "expected_owner_authorization_sha256": "c" * 64,
+        "clock_authority_sha256": "d" * 64,
+        "expected_clock_authority_sha256": "d" * 64,
+        "regular_sleeve_authority_sha256": "e" * 64,
+        "expected_regular_sleeve_authority_sha256": "e" * 64,
+        "extended_sleeve_authority_sha256": "f" * 64,
+        "expected_extended_sleeve_authority_sha256": "f" * 64,
+        "economic_risk_authorization_sha256": "1" * 64,
+        "expected_economic_risk_authorization_sha256": "1" * 64,
+        "certified_family_set_sha256": "2" * 64,
+        "expected_certified_family_set_sha256": "2" * 64,
+        "successor_definition_sha256": "3" * 64,
+        "expected_successor_definition_sha256": "3" * 64,
+        "retirement_tombstone_sha256": "4" * 64,
+        "predecessor_path_active": False,
+        "extended_family_available_within_24h": True,
+        "extended_family_tradable_now": True,
+        "continuity_gap": False,
+        "continuity_action_due": False,
+        "same_committed_successor": False,
+    }
+    values.update(updates)
+    return MultiUniverseLaunchEvidence(**values)
+
+
+@pytest.mark.parametrize(
+    ("update", "reason"),
+    [
+        ({"schema_v4_valid": False}, "MULTI_UNIVERSE_SCHEMA_V4_REQUIRED"),
+        ({"transition_phase": "CANARY_PASS"}, "SUCCESSOR_TRANSITION_NOT_ELIGIBLE"),
+        ({"approved_head": "9" * 40}, "SUCCESSOR_APPROVED_HEAD_MISMATCH"),
+        ({"account_identity_sha256": "9" * 64}, "SUCCESSOR_ACCOUNT_MISMATCH"),
+        (
+            {"owner_authorization_sha256": "9" * 64},
+            "SUCCESSOR_OWNER_AUTHORIZATION_MISMATCH",
+        ),
+        ({"clock_authority_sha256": "9" * 64}, "SUCCESSOR_CLOCK_AUTHORITY_MISMATCH"),
+        (
+            {"regular_sleeve_authority_sha256": "9" * 64},
+            "REGULAR_SLEEVE_AUTHORITY_MISMATCH",
+        ),
+        (
+            {"extended_sleeve_authority_sha256": "9" * 64},
+            "EXTENDED_SLEEVE_AUTHORITY_MISMATCH",
+        ),
+        (
+            {"economic_risk_authorization_sha256": "9" * 64},
+            "ECONOMIC_RISK_AUTHORIZATION_MISMATCH",
+        ),
+        ({"certified_family_set_sha256": "9" * 64}, "CERTIFIED_FAMILY_SET_MISMATCH"),
+        (
+            {"successor_definition_sha256": "9" * 64},
+            "SUCCESSOR_DEFINITION_HASH_MISMATCH",
+        ),
+        ({"retirement_tombstone_sha256": None}, "PREDECESSOR_RETIREMENT_REQUIRED"),
+        ({"predecessor_path_active": True}, "PREDECESSOR_PATH_STILL_ACTIVE"),
+        (
+            {"extended_family_available_within_24h": False},
+            "NO_EXTENDED_FAMILY_AVAILABLE_WITHIN_24H",
+        ),
+        ({"continuity_gap": True}, "SUCCESSOR_CONTINUITY_GAP"),
+    ],
+)
+def test_initial_multi_universe_activation_blocks_before_writer(update, reason) -> None:
+    from ibkr_paper_30d.day1_launch import evaluate_multi_universe_successor_launch
+
+    with pytest.raises(LaunchError, match=reason):
+        evaluate_multi_universe_successor_launch(
+            _multi_universe_launch_evidence(**update), initial_activation=True
+        )
+
+
+def test_successor_restart_skips_24h_predicate_and_enters_idle() -> None:
+    from ibkr_paper_30d.day1_launch import evaluate_multi_universe_successor_launch
+
+    result = evaluate_multi_universe_successor_launch(
+        _multi_universe_launch_evidence(
+            transition_phase="ACTIVE",
+            same_committed_successor=True,
+            extended_family_available_within_24h=False,
+            extended_family_tradable_now=False,
+        ),
+        initial_activation=False,
+    )
+
+    assert result["status"] == "MARKET_CLOSED_IDLE"
+    assert result["writer_start_allowed"] is True
+    assert result["new_extended_entries_allowed"] is False
+    assert result["reconciliation_required"] is True
+
+
+def test_successor_restart_prioritizes_due_continuity_when_market_closed() -> None:
+    from ibkr_paper_30d.day1_launch import evaluate_multi_universe_successor_launch
+
+    result = evaluate_multi_universe_successor_launch(
+        _multi_universe_launch_evidence(
+            transition_phase="SUCCESSOR_COMMITTED",
+            same_committed_successor=True,
+            extended_family_available_within_24h=False,
+            extended_family_tradable_now=False,
+            continuity_action_due=True,
+        ),
+        initial_activation=False,
+    )
+
+    assert result["status"] == "CONTINUITY_ACTION_DUE"
+    assert result["continuity_actions_allowed"] is True
+    assert result["new_extended_entries_allowed"] is False
+
+
 from ibkr_paper_30d.execution_lock import ExecutionLock, LockIntegrityError, LockOwner
 from ibkr_paper_30d.experiment_control import (
     ExperimentClockStore,
@@ -536,12 +659,14 @@ def passing_context(tmp_path: Path) -> LaunchTestContext:
     writer = Mock()
     writer.wait_until_ready.return_value = True
     dependencies.continuity_schema_verifier = lambda db: {"status": "PASS"}
-    dependencies.provider_abandonment_recoverer = (
-        lambda db, owner, config, preflight: {"status": "PASS", "recovered": []}
-    )
-    dependencies.pending_binding_reconciler = (
-        lambda db, config, preflight: {"status": "PASS", "reconciled": []}
-    )
+    dependencies.provider_abandonment_recoverer = lambda db, owner, config, preflight: {
+        "status": "PASS",
+        "recovered": [],
+    }
+    dependencies.pending_binding_reconciler = lambda db, config, preflight: {
+        "status": "PASS",
+        "reconciled": [],
+    }
     dependencies.continuity_uncertainty_reader = lambda db: ()
     dependencies.broker_write_coordinator_factory = Mock(return_value=object())
     dependencies.model_executor_factory = Mock(return_value=object())
@@ -1149,30 +1274,45 @@ def test_started_successor_resumes_with_fresh_attempt_without_duplicate_transiti
     assert collector.call_count == 1
     assert manifest_path.read_bytes() == original_manifest
     with Database.open(config.db_path) as db:
-        assert db.execute(
-            "SELECT COUNT(*) FROM experiment_epoch_clock_events_v2 "
-            "WHERE epoch_id='AUTONOMY_EPOCH_2'"
-        ).fetchone()[0] == 1
-        assert db.execute(
-            "SELECT COUNT(*) FROM state_events "
-            "WHERE event_type='EXPERIMENT_EPOCH_ACTIVATED' "
-            "AND json_extract(payload_json,'$.epoch_id')='AUTONOMY_EPOCH_2'"
-        ).fetchone()[0] == 1
-        assert db.execute(
-            "SELECT COUNT(*) FROM state_events "
-            "WHERE event_type='EPOCH_MANIFEST_CREATED' "
-            "AND json_extract(payload_json,'$.epoch_id')='AUTONOMY_EPOCH_2'"
-        ).fetchone()[0] == 1
-        assert db.execute(
-            "SELECT COUNT(*) FROM state_events WHERE event_type='EPOCH_STARTED' "
-            "AND json_extract(payload_json,'$.epoch_id')='AUTONOMY_EPOCH_2'"
-        ).fetchone()[0] == 1
-        assert db.execute(
-            "SELECT COUNT(*) FROM state_events "
-            "WHERE event_type='DAY1_LAUNCH_ATTEMPT_ACCEPTED' "
-            "AND json_extract(payload_json,'$.target_successor_epoch_id')="
-            "'AUTONOMY_EPOCH_2'"
-        ).fetchone()[0] == 2
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM experiment_epoch_clock_events_v2 "
+                "WHERE epoch_id='AUTONOMY_EPOCH_2'"
+            ).fetchone()[0]
+            == 1
+        )
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM state_events "
+                "WHERE event_type='EXPERIMENT_EPOCH_ACTIVATED' "
+                "AND json_extract(payload_json,'$.epoch_id')='AUTONOMY_EPOCH_2'"
+            ).fetchone()[0]
+            == 1
+        )
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM state_events "
+                "WHERE event_type='EPOCH_MANIFEST_CREATED' "
+                "AND json_extract(payload_json,'$.epoch_id')='AUTONOMY_EPOCH_2'"
+            ).fetchone()[0]
+            == 1
+        )
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM state_events WHERE event_type='EPOCH_STARTED' "
+                "AND json_extract(payload_json,'$.epoch_id')='AUTONOMY_EPOCH_2'"
+            ).fetchone()[0]
+            == 1
+        )
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM state_events "
+                "WHERE event_type='DAY1_LAUNCH_ATTEMPT_ACCEPTED' "
+                "AND json_extract(payload_json,'$.target_successor_epoch_id')="
+                "'AUTONOMY_EPOCH_2'"
+            ).fetchone()[0]
+            == 2
+        )
 
 
 def test_validate_launch_controls_rejects_clock_mismatch_without_writes(
@@ -1225,7 +1365,9 @@ def test_validate_launch_controls_rejects_any_triggered_kill_history(
     )
 
 
-def test_validate_launch_controls_accepts_exact_verified_recovery(tmp_path: Path) -> None:
+def test_validate_launch_controls_accepts_exact_verified_recovery(
+    tmp_path: Path,
+) -> None:
     ctx = passing_context(tmp_path)
     preflight = evaluate_launch_preflight(ctx.config, ctx.dependencies)
     with Database.open(ctx.config.db_path) as db:
@@ -1253,9 +1395,9 @@ def test_validate_launch_controls_accepts_exact_verified_recovery(tmp_path: Path
             "broker_evidence_sha256": "d" * 64,
             "broker_server_time_utc": NOW.isoformat().replace("+00:00", "Z"),
             "collected_at_utc": NOW.isoformat().replace("+00:00", "Z"),
-            "expires_at_utc": (NOW + timedelta(seconds=30)).isoformat().replace(
-                "+00:00", "Z"
-            ),
+            "expires_at_utc": (NOW + timedelta(seconds=30))
+            .isoformat()
+            .replace("+00:00", "Z"),
             "positions_count": 1,
             "open_orders_count": 0,
             "executions_count": 1,
@@ -1415,12 +1557,8 @@ def test_continuity_recovery_gates_precede_writer_watchdog_and_codex(
     ctx.dependencies.broker_write_coordinator_factory = lambda: (
         trace.append("coordinator") or object()
     )
-    ctx.dependencies.authoritative_writer_factory = (
-        lambda *args, **kwargs: Writer()
-    )
-    ctx.dependencies.continuity_watchdog_factory = (
-        lambda *args, **kwargs: watchdog
-    )
+    ctx.dependencies.authoritative_writer_factory = lambda *args, **kwargs: Writer()
+    ctx.dependencies.continuity_watchdog_factory = lambda *args, **kwargs: watchdog
     ctx.dependencies.service_factory = lambda *args, **kwargs: Service()
 
     status = run_day1_launch(ctx.config, ctx.dependencies)
@@ -1491,9 +1629,7 @@ def test_launch_passes_only_writer_command_interface_to_model_service(
     coordinator = object()
     model_executor = object()
     captured = {}
-    ctx.dependencies.broker_write_coordinator_factory = Mock(
-        return_value=coordinator
-    )
+    ctx.dependencies.broker_write_coordinator_factory = Mock(return_value=coordinator)
     ctx.dependencies.model_executor_factory = Mock(return_value=model_executor)
 
     class Service:
@@ -1531,9 +1667,7 @@ def test_launch_shares_external_critical_alert_reporter_with_runtime_components(
     install_fake_lock(ctx)
     reporter = Mock()
     captured = {}
-    ctx.dependencies.critical_alert_reporter_factory = Mock(
-        return_value=reporter
-    )
+    ctx.dependencies.critical_alert_reporter_factory = Mock(return_value=reporter)
 
     class Service:
         def run_forever(self):
@@ -1573,16 +1707,17 @@ def test_continuity_recovery_failure_blocks_before_writer_or_service(
             RuntimeError("missing schema")
         )
     elif gate == "provider":
-        ctx.dependencies.provider_abandonment_recoverer = (
-            lambda *args: {"status": "BLOCK"}
-        )
+        ctx.dependencies.provider_abandonment_recoverer = lambda *args: {
+            "status": "BLOCK"
+        }
     elif gate == "binding":
-        ctx.dependencies.pending_binding_reconciler = (
-            lambda *args: {"status": "BLOCK", "reason_codes": ["ORDER_IDENTITY_AMBIGUOUS"]}
-        )
+        ctx.dependencies.pending_binding_reconciler = lambda *args: {
+            "status": "BLOCK",
+            "reason_codes": ["ORDER_IDENTITY_AMBIGUOUS"],
+        }
     else:
-        ctx.dependencies.continuity_uncertainty_reader = (
-            lambda db: ("CONTINUITY_ORDER_STATE_UNCERTAIN",)
+        ctx.dependencies.continuity_uncertainty_reader = lambda db: (
+            "CONTINUITY_ORDER_STATE_UNCERTAIN",
         )
 
     with pytest.raises(LaunchError, match=expected):
@@ -2141,9 +2276,7 @@ def test_complete_fake_launch_persists_running_without_broker_write(
         return service
 
     ctx.dependencies.service_factory = real_service_factory
-    ctx.dependencies.model_executor_factory = Mock(
-        return_value=ctx.executor_tripwire
-    )
+    ctx.dependencies.model_executor_factory = Mock(return_value=ctx.executor_tripwire)
     ctx.dependencies.research_toolbox_factory = (
         lambda workspace, _preflight: launch_module.AutonomyToolbox(toolbox, workspace)
     )
