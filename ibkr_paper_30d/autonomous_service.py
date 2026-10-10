@@ -174,6 +174,7 @@ class AutonomousExperimentService:
         contract_ownership_store: Any | None = None,
         product_certification_store: Any | None = None,
         multi_universe_runtime_authority: Any | None = None,
+        canary_pilot_orchestrator: Any | None = None,
         sleep: Callable[[float], None] = time.sleep,
         monotonic: Callable[[], float] = time.monotonic,
     ) -> None:
@@ -264,6 +265,7 @@ class AutonomousExperimentService:
         self.contract_ownership_store = contract_ownership_store
         self.product_certification_store = product_certification_store
         self.multi_universe_runtime_authority = multi_universe_runtime_authority
+        self.canary_pilot_orchestrator = canary_pilot_orchestrator
         self._last_orchestration_action: OrchestrationAction | None = None
         self._watchdog_started = False
         self._watchdog_alert_active = False
@@ -548,6 +550,55 @@ class AutonomousExperimentService:
                 "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
                 "status": "EXPERIMENT_EXPIRED",
                 "bundle": bundle.model_dump(mode="json"),
+            }
+        canary_phase = str(
+            getattr(self.multi_universe_runtime_authority, "transition_phase", "")
+        )
+        if (
+            self.canary_pilot_orchestrator is not None
+            and canary_phase in {"SUPERVISION_BOUND", "CANARY_EXCLUSIVE"}
+        ):
+            if bundle.reconciliation_receipt.get("status") != "PASS":
+                return {
+                    "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
+                    "status": "STATE_GATE_BLOCK",
+                    "gate": "CANARY",
+                    "reason_codes": ["BROKER_RECONCILIATION_REQUIRED"],
+                    "bundle": bundle.model_dump(mode="json"),
+                    "auditor": auditor,
+                }
+            if bundle.kill_switch_state != "KILL_SWITCH_CLEAR":
+                return {
+                    "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
+                    "status": "STATE_GATE_BLOCK",
+                    "gate": "CANARY",
+                    "reason_codes": ["KILL_SWITCH_TRIGGERED"],
+                    "bundle": bundle.model_dump(mode="json"),
+                    "auditor": auditor,
+                }
+            canary = (
+                self.canary_pilot_orchestrator.discover(bundle)
+                if canary_phase == "SUPERVISION_BOUND"
+                else self.canary_pilot_orchestrator.execute(bundle)
+            )
+            canary_status = str(canary.get("status") or "BLOCK")
+            terminal_success = canary_status in {
+                "PASS",
+                "TERMINAL_NO_FILL",
+            }
+            return {
+                "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
+                "status": "PASS" if terminal_success else canary_status,
+                "gate": "CANARY",
+                "reason_codes": list(canary.get("reason_codes") or []),
+                "outcome": {
+                    "validation": "PASS" if terminal_success else "BLOCK",
+                    "decision": str(canary.get("decision") or "CANARY_BLOCKED"),
+                    "reason_codes": list(canary.get("reason_codes") or []),
+                },
+                "canary": canary,
+                "bundle": bundle.model_dump(mode="json"),
+                "auditor_gate": auditor,
             }
         state_reasons: list[str] = []
         if bundle.reconciliation_receipt.get("status") != "PASS":

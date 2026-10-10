@@ -756,6 +756,94 @@ def _sequence_allocator(coordinator: BrokerWriteCoordinator) -> Callable[[], int
     return allocate
 
 
+def create_canary_pilot_orchestrator(
+    *,
+    coordinator: BrokerWriteCoordinator,
+    db_path: Path,
+    provider: Any,
+    toolbox: Any,
+    owner_pilot_authorization: Any,
+    writer_binding_sha256: str,
+    model: str,
+    reasoning_effort: str,
+    timeout_seconds: int,
+    product_certification_store: Any,
+) -> Any:
+    from .autonomous_research import CanaryCandidateDiscoveryLoop
+    from .autonomous_runtime import build_request
+    from .canary_pilot import (
+        CanaryPilotOrchestrator,
+        collect_canary_capability_evidence,
+    )
+
+    store = _ProductionCanaryStore(Path(db_path))
+    store.persist_owner_pilot_authorization(owner_pilot_authorization)
+
+    def discover(bundle: Any, persister: Any) -> Any:
+        request = build_request(
+            bundle,
+            model=model,
+            reasoning_effort=reasoning_effort,
+            experiment_id="ibkr-paper-30d-multi-universe-canary",
+            timeout_seconds=timeout_seconds,
+            trigger="CANARY_DISCOVERY",
+        )
+        return CanaryCandidateDiscoveryLoop(
+            provider,
+            toolbox,
+            event_persister=persister,
+        ).run(request, bundle)
+
+    def capability(bundle: Any, proposal: Any) -> dict[str, Any]:
+        now = datetime.now(timezone.utc)
+        return collect_canary_capability_evidence(
+            toolbox,
+            bundle,
+            proposal,
+            now_utc=now,
+        )
+
+    def finalize_candidate(
+        proposal: Any, evidence: Mapping[str, Any], validation: Any
+    ) -> None:
+        product_certification_store.record_read_only_candidate_evidence(
+            proposal.product_family,
+            evidence_sha256=validation.capability_evidence_sha256,
+            account_sha256=proposal.account_identity_sha256,
+            adapter_sha256=product_certification_store.current_adapter_sha256,
+            observed_at_utc=evidence["observed_at_utc"],
+            expires_at_utc=evidence["expires_at_utc"],
+            paper_limitations=("PAPER_SIMULATION_ONLY",),
+        )
+
+    def finalize_lifecycle(proposal: Any, result: Any) -> None:
+        if result.projection is None:
+            return
+        observed = datetime.now(timezone.utc)
+        product_certification_store.record_canary_lifecycle(
+            proposal.product_family,
+            result.projection,
+            account_sha256=proposal.account_identity_sha256,
+            adapter_sha256=product_certification_store.current_adapter_sha256,
+            observed_at_utc=observed,
+            expires_at_utc=observed + timedelta(days=1),
+            paper_limitations=("PAPER_SIMULATION_ONLY",),
+        )
+
+    return CanaryPilotOrchestrator(
+        discovery_runner=discover,
+        capability_evidence_collector=capability,
+        store=store,
+        coordinator=coordinator,
+        owner_pilot_authorization=owner_pilot_authorization,
+        writer_binding_sha256=writer_binding_sha256,
+        durable_sequence_allocator=_sequence_allocator(coordinator),
+        now_utc=lambda: datetime.now(timezone.utc),
+        candidate_finalizer=finalize_candidate,
+        lifecycle_finalizer=finalize_lifecycle,
+    )
+
+
 def create_model_executor(
     *,
     coordinator: BrokerWriteCoordinator,
@@ -1883,6 +1971,230 @@ class _ProductionCanaryStore:
                     "authorization": payload,
                 },
             )
+
+    def load_authorization(self, candidate_sha256: str) -> Any | None:
+        from .multi_universe_models import CanaryAuthorization
+
+        with Database.open(self.db_path) as db:
+            authorized = next(
+                (
+                    event
+                    for event in reversed(self._verified_events(db))
+                    if event.get("event_type") == "AUTHORIZED"
+                    and event.get("candidate_sha256") == candidate_sha256
+                ),
+                None,
+            )
+        if authorized is None:
+            return None
+        authorization = CanaryAuthorization.model_validate(
+            authorized.get("authorization")
+        )
+        if authorization.sha256 != authorized.get("authorization_sha256"):
+            raise ProductionRuntimeConfigurationError(
+                "CANARY_AUTHORIZATION_HASH_MISMATCH"
+            )
+        return authorization
+
+    def persist_request(self, candidate_sha256: str, request: Any) -> str:
+        with Database.open(self.db_path) as db, db.transaction():
+            existing = next(
+                (
+                    event
+                    for event in reversed(self._verified_events(db))
+                    if event.get("event_type") == "EXECUTION_REQUEST"
+                    and event.get("candidate_sha256") == candidate_sha256
+                ),
+                None,
+            )
+            if existing is not None:
+                if existing.get("request_sha256") != request.sha256:
+                    raise ProductionRuntimeConfigurationError(
+                        "CANARY_EXECUTION_REQUEST_CONFLICT"
+                    )
+                return str(existing["event_sha256"])
+            return self._append_in_transaction(
+                db,
+                authorization_id=request.canary_id,
+                event_type="EXECUTION_REQUEST",
+                body={
+                    "candidate_sha256": candidate_sha256,
+                    "request_sha256": request.sha256,
+                    "request": request.model_dump(mode="json"),
+                },
+            )
+
+    def load_request(self, candidate_sha256: str) -> Any | None:
+        from .canary_execution import CanaryExecutionRequest
+
+        with Database.open(self.db_path) as db:
+            requested = next(
+                (
+                    event
+                    for event in reversed(self._verified_events(db))
+                    if event.get("event_type") == "EXECUTION_REQUEST"
+                    and event.get("candidate_sha256") == candidate_sha256
+                ),
+                None,
+            )
+        if requested is None:
+            return None
+        request = CanaryExecutionRequest.model_validate(requested.get("request"))
+        if request.sha256 != requested.get("request_sha256"):
+            raise ProductionRuntimeConfigurationError(
+                "CANARY_EXECUTION_REQUEST_HASH_MISMATCH"
+            )
+        return request
+
+    def execution_claimed(self, execution_key: str) -> bool:
+        with Database.open(self.db_path) as db:
+            return any(
+                event.get("event_type") == "EXECUTION_CLAIMED"
+                and event.get("execution_key") == execution_key
+                for event in self._verified_events(db)
+            )
+
+    def persist_owner_pilot_authorization(self, authorization: Any) -> str:
+        payload = authorization.model_dump(mode="json")
+        with Database.open(self.db_path) as db, db.transaction():
+            existing = next(
+                (
+                    event
+                    for event in reversed(self._verified_events(db))
+                    if event.get("event_type") == "OWNER_PILOT_AUTHORIZED"
+                    and event.get("owner_pilot_authorization_sha256")
+                    == authorization.sha256
+                ),
+                None,
+            )
+            if existing is not None:
+                return str(existing["event_sha256"])
+            return self._append_in_transaction(
+                db,
+                authorization_id=authorization.authorization_id,
+                event_type="OWNER_PILOT_AUTHORIZED",
+                body={
+                    "owner_pilot_authorization_sha256": authorization.sha256,
+                    "owner_pilot_authorization": payload,
+                },
+            )
+
+    def persist_discovery_event(
+        self, event_type: str, payload: Mapping[str, Any]
+    ) -> str:
+        with Database.open(self.db_path) as db, db.transaction():
+            return self._append_in_transaction(
+                db,
+                authorization_id="CANARY_DISCOVERY",
+                event_type=str(event_type),
+                body={"discovery": dict(payload)},
+            )
+
+    def persist_candidate(
+        self, outcome: Any, evidence: Mapping[str, Any], validation: Any
+    ) -> str:
+        proposal = outcome.proposal
+        if proposal is None:
+            raise ProductionRuntimeConfigurationError(
+                "CANARY_CANDIDATE_REQUIRED"
+            )
+        with Database.open(self.db_path) as db, db.transaction():
+            existing = next(
+                (
+                    event
+                    for event in reversed(self._verified_events(db))
+                    if event.get("event_type") == "CANDIDATE_SELECTED"
+                ),
+                None,
+            )
+            if existing is not None:
+                if existing.get("candidate_sha256") != proposal.sha256:
+                    raise ProductionRuntimeConfigurationError(
+                        "CANARY_CANDIDATE_CONFLICT"
+                    )
+                return str(existing["event_sha256"])
+            return self._append_in_transaction(
+                db,
+                authorization_id=proposal.candidate_id,
+                event_type="CANDIDATE_SELECTED",
+                body={
+                    "candidate_sha256": proposal.sha256,
+                    "outcome": outcome.model_dump(mode="json"),
+                    "capability_evidence": dict(evidence),
+                    "validation": validation.model_dump(mode="json"),
+                },
+            )
+
+    def load_candidate(self) -> tuple[Any, dict[str, Any], Any] | None:
+        from .canary_candidate import (
+            CanaryCandidateValidationReceipt,
+            CanaryDiscoveryOutcome,
+        )
+
+        with Database.open(self.db_path) as db:
+            selected = next(
+                (
+                    event
+                    for event in reversed(self._verified_events(db))
+                    if event.get("event_type") == "CANDIDATE_SELECTED"
+                ),
+                None,
+            )
+        if selected is None:
+            return None
+        outcome = CanaryDiscoveryOutcome.model_validate(selected.get("outcome"))
+        if outcome.proposal is None or outcome.proposal.sha256 != selected.get(
+            "candidate_sha256"
+        ):
+            raise ProductionRuntimeConfigurationError(
+                "CANARY_CANDIDATE_HASH_MISMATCH"
+            )
+        validation = CanaryCandidateValidationReceipt.model_validate(
+            selected.get("validation")
+        )
+        return outcome, dict(selected.get("capability_evidence") or {}), validation
+
+    def persist_result(
+        self, candidate_sha256: str, result: Mapping[str, Any]
+    ) -> str:
+        with Database.open(self.db_path) as db, db.transaction():
+            existing = next(
+                (
+                    event
+                    for event in reversed(self._verified_events(db))
+                    if event.get("event_type") == "CANARY_RESULT"
+                    and event.get("candidate_sha256") == candidate_sha256
+                ),
+                None,
+            )
+            if existing is not None:
+                if existing.get("result") != dict(result):
+                    raise ProductionRuntimeConfigurationError(
+                        "CANARY_RESULT_CONFLICT"
+                    )
+                return str(existing["event_sha256"])
+            return self._append_in_transaction(
+                db,
+                authorization_id=candidate_sha256,
+                event_type="CANARY_RESULT",
+                body={
+                    "candidate_sha256": candidate_sha256,
+                    "result": dict(result),
+                },
+            )
+
+    def load_result(self, candidate_sha256: str) -> dict[str, Any] | None:
+        with Database.open(self.db_path) as db:
+            result = next(
+                (
+                    event
+                    for event in reversed(self._verified_events(db))
+                    if event.get("event_type") == "CANARY_RESULT"
+                    and event.get("candidate_sha256") == candidate_sha256
+                ),
+                None,
+            )
+        return None if result is None else dict(result.get("result") or {})
 
     def begin_write(self, execution_key: str) -> bool:
         with Database.open(self.db_path) as db, db.transaction():

@@ -398,6 +398,11 @@ def _load_multi_universe_launch_authority(
         )
         if not _SHA256_RE.fullmatch(owner_receipt_sha256):
             raise ValueError("owner authorization receipt binding missing")
+        owner_pilot_authorization = payload.get("owner_pilot_authorization")
+        if owner_pilot_authorization is not None and not isinstance(
+            owner_pilot_authorization, dict
+        ):
+            raise ValueError("owner pilot authorization invalid")
         initial_activation = bool(payload["initial_activation"])
     except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
         raise LaunchError("MULTI_UNIVERSE_LAUNCH_AUTHORITY_INVALID") from exc
@@ -408,6 +413,7 @@ def _load_multi_universe_launch_authority(
             config.target_successor_definition_sha256
         ),
         "owner_authorization_receipt_sha256": owner_receipt_sha256,
+        "owner_pilot_authorization": owner_pilot_authorization,
         "initial_activation": initial_activation,
     }
 
@@ -567,10 +573,44 @@ def _validate_multi_universe_launch_from_db(
         ),
         inherited_position_present=ownership_count > 0,
     )
-    return evaluate_multi_universe_successor_launch(
+    decision = evaluate_multi_universe_successor_launch(
         evidence,
         initial_activation=bool(envelope["initial_activation"]),
     )
+    owner_pilot_raw = envelope.get("owner_pilot_authorization")
+    if phase in {
+        TransitionPhase.SUPERVISION_BOUND,
+        TransitionPhase.CANARY_EXCLUSIVE,
+    }:
+        owner_pilot = _validate_owner_pilot_authorization(
+            owner_pilot_raw, target
+        )
+        decision["owner_pilot_authorization"] = owner_pilot
+    decision["writer_binding_sha256"] = target.writer_binding_sha256
+    return decision
+
+
+def _validate_owner_pilot_authorization(
+    raw: Any, target: Any
+) -> Any:
+    """Validate the exact Owner pilot authority before a canary runtime starts."""
+
+    try:
+        from .canary_candidate import OwnerPilotAuthorization
+
+        authorization = OwnerPilotAuthorization.model_validate(raw)
+    except Exception as exc:
+        raise LaunchError("OWNER_PILOT_AUTHORIZATION_REQUIRED") from exc
+    if authorization.sha256 != target.canary_authorization_sha256:
+        raise LaunchError("CANARY_AUTHORIZATION_MISMATCH")
+    if (
+        authorization.account_identity_sha256 != target.account_identity_sha256
+        or authorization.successor_definition_sha256
+        != target.successor_definition_sha256
+        or authorization.approved_head != target.approved_git_head
+    ):
+        raise LaunchError("CANARY_AUTHORIZATION_BINDING_MISMATCH")
+    return authorization
 
 
 @dataclass(frozen=True)
@@ -1983,6 +2023,36 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 production_validation_sha256=prepared.manifest["epoch_manifest_sha256"],
                 current_adapter_sha256=prepared.manifest["epoch_manifest_sha256"],
             )
+            canary_pilot_orchestrator = None
+            if (
+                multi_universe_launch is not None
+                and str(multi_universe_launch.get("transition_phase") or "")
+                in {"SUPERVISION_BOUND", "CANARY_EXCLUSIVE"}
+            ):
+                owner_pilot_authorization = multi_universe_launch.get(
+                    "owner_pilot_authorization"
+                )
+                writer_binding_sha256 = str(
+                    multi_universe_launch.get("writer_binding_sha256") or ""
+                )
+                if owner_pilot_authorization is None:
+                    raise LaunchError("OWNER_PILOT_AUTHORIZATION_REQUIRED")
+                from .production_continuity_runtime import (
+                    create_canary_pilot_orchestrator,
+                )
+
+                canary_pilot_orchestrator = create_canary_pilot_orchestrator(
+                    coordinator=coordinator,
+                    db_path=config.db_path,
+                    provider=prepared.provider,
+                    toolbox=prepared.toolbox,
+                    owner_pilot_authorization=owner_pilot_authorization,
+                    writer_binding_sha256=writer_binding_sha256,
+                    model=config.model,
+                    reasoning_effort=config.reasoning_effort,
+                    timeout_seconds=config.model_turn_timeout_seconds,
+                    product_certification_store=multi_universe_stores.capability,
+                )
             watchdog = dependencies.continuity_watchdog_factory(
                 coordinator=coordinator,
                 db_path=config.db_path,
@@ -2095,6 +2165,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                         multi_universe_runtime_authority=(
                             multi_universe_runtime_authority
                         ),
+                        canary_pilot_orchestrator=canary_pilot_orchestrator,
                     )
                 except AutonomousServiceError as exc:
                     reason_codes = [

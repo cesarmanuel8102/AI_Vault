@@ -301,9 +301,17 @@ class AuthoritativeBrokerWriter:
             authority_evidence = self.canary_evidence_collector(
                 broker, request, base_evidence
             )
+            flat_return_limit_price = dict(authority_evidence).get(
+                "flat_return_limit_price"
+            )
+            if flat_return_limit_price is None:
+                flat_return_limit_price = self._canary_flat_return_limit_price(
+                    request, broker
+                )
             evidence = {
                 **base_evidence,
                 **dict(authority_evidence),
+                "flat_return_limit_price": flat_return_limit_price,
                 "writer_thread_id": threading.get_ident(),
                 "execution_client_id": self.execution_client_id,
             }
@@ -323,6 +331,38 @@ class AuthoritativeBrokerWriter:
         if getattr(result, "status", None) == "UNCERTAIN":
             self._report_uncertainty("CANARY_STATE_UNCERTAIN")
         return result
+
+    def _canary_flat_return_limit_price(
+        self, request: CanaryExecutionRequest, broker: Any
+    ) -> Decimal | None:
+        if request.flat_return_plan.order_type != "LMT":
+            return None
+        from ib_insync import Contract
+
+        identity = request.canonical_contract
+        contract = Contract(
+            conId=identity.con_id,
+            secType=identity.security_type,
+            exchange=identity.exchange,
+            currency=identity.currency,
+            localSymbol=identity.local_symbol,
+            tradingClass=identity.trading_class,
+            multiplier=identity.multiplier,
+        )
+        qualified = list(broker.qualifyContracts(contract))
+        if len(qualified) != 1 or int(qualified[0].conId or 0) != identity.con_id:
+            return None
+        ticker = broker.reqMktData(qualified[0], snapshot=True)
+        if hasattr(broker, "sleep"):
+            broker.sleep(min(2.0, self.broker_request_timeout_seconds))
+        field = (
+            "bid" if request.flat_return_plan.action == "SELL" else "ask"
+        )
+        try:
+            price = Decimal(str(getattr(ticker, field, None)))
+        except Exception:
+            return None
+        return price if price.is_finite() and price > 0 else None
 
     def _execute_canary_lifecycle_through_writer(
         self,
@@ -434,6 +474,14 @@ class AuthoritativeBrokerWriter:
                 ("MANAGEMENT_OBSERVED", 0, 1, False),
             ]
         )
+
+        refreshed_exit_price = self._canary_flat_return_limit_price(
+            request, broker
+        )
+        if request.flat_return_plan.order_type == "LMT":
+            if refreshed_exit_price is None:
+                raise RuntimeError("CANARY_FLAT_RETURN_PRICE_UNRESOLVED")
+            evidence["flat_return_limit_price"] = refreshed_exit_price
 
         exit_order = make_order(
             action=request.flat_return_plan.action,

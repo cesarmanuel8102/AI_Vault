@@ -448,12 +448,14 @@ def test_real_writer_port_completes_exact_entry_and_flat_return() -> None:
         def __init__(self):
             self.client = SimpleNamespace(getReqId=iter((101, 102)).__next__)
             self.refs = []
+            self.orders = []
 
         def qualifyContracts(self, contract):
             return [contract]
 
         def placeOrder(self, contract, order):
             self.refs.append(order.orderRef)
+            self.orders.append(order)
             order.permId = 9000 + len(self.refs)
             order.clientId = 19761
             return SimpleNamespace(
@@ -477,6 +479,13 @@ def test_real_writer_port_completes_exact_entry_and_flat_return() -> None:
         def positions(self):
             return []
 
+        def reqMktData(self, contract, snapshot=True):
+            assert snapshot is True
+            return SimpleNamespace(bid=Decimal("9.75"), ask=Decimal("10.25"))
+
+        def sleep(self, seconds):
+            return None
+
     broker = ImmediateFillBroker()
     adapter = CanaryExecutionAdapter(
         begin_write=coordinator.begin_write,
@@ -490,8 +499,9 @@ def test_real_writer_port_completes_exact_entry_and_flat_return() -> None:
         authority_validator=lambda _command, _evidence: (),
         canary_execution_adapter=adapter,
         canary_evidence_collector=lambda _broker, _request, _base: {
-            **_evidence(request),
-            "flat_return_limit_price": "9.50",
+            key: value
+            for key, value in _evidence(request).items()
+            if key != "flat_return_limit_price"
         },
     )
 
@@ -501,3 +511,59 @@ def test_real_writer_port_completes_exact_entry_and_flat_return() -> None:
     assert result.projection.flat is True
     assert len(broker.refs) == 2
     assert broker.refs[0] != broker.refs[1]
+    assert Decimal(str(broker.orders[1].lmtPrice)) == Decimal("9.75")
+
+
+def test_canary_invalid_flat_return_quote_blocks_before_entry_write() -> None:
+    request = _request()
+    writes = []
+
+    class NoQuoteBroker:
+        all_order_visibility = True
+        client = SimpleNamespace(getReqId=lambda: 101)
+
+        def reqAllOpenOrders(self):
+            return []
+
+        def reqExecutions(self):
+            return []
+
+        def positions(self):
+            return []
+
+        def qualifyContracts(self, contract):
+            return [contract]
+
+        def reqMktData(self, contract, snapshot=True):
+            return SimpleNamespace(bid=float("nan"), ask=float("nan"))
+
+        def sleep(self, seconds):
+            return None
+
+        def placeOrder(self, contract, order):
+            writes.append(order)
+            raise AssertionError("entry write must remain unreachable")
+
+    broker = NoQuoteBroker()
+    writer = AuthoritativeBrokerWriter(
+        BrokerWriteCoordinator(),
+        broker_factory=lambda _client_id: broker,
+        execution_client_id=19761,
+        execution_lock_verifier=lambda: True,
+        authority_validator=lambda _command, _evidence: (),
+        canary_execution_adapter=CanaryExecutionAdapter(
+            begin_write=lambda _key: True,
+            now_utc=lambda: NOW,
+        ),
+        canary_evidence_collector=lambda _broker, _request, _base: {
+            key: value
+            for key, value in _evidence(request).items()
+            if key != "flat_return_limit_price"
+        },
+    )
+
+    result = writer._execute(request, broker)
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("CANARY_FLAT_RETURN_PRICE_UNRESOLVED",)
+    assert writes == []

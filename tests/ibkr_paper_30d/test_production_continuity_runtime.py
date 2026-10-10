@@ -137,6 +137,51 @@ def test_production_canary_store_rejects_tampered_authority_chain(tmp_path) -> N
         store.begin_write("second")
 
 
+def test_production_canary_store_round_trips_selected_candidate_and_result(
+    tmp_path,
+) -> None:
+    from ibkr_paper_30d.canary_candidate import (
+        CanaryCandidateValidationReceipt,
+        CanaryDiscoveryOutcome,
+    )
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+    from test_canary_pilot import _evidence, _proposal
+
+    db_path = tmp_path / "canary-candidate.sqlite3"
+    with Database.open(db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+    proposal = _proposal()
+    outcome = CanaryDiscoveryOutcome(
+        decision="CANDIDATE",
+        invocation_sha256=proposal.invocation_sha256,
+        result_sha256=proposal.result_sha256,
+        transcript_sha256=sha256_json([]),
+        proposal=proposal,
+    )
+    evidence = _evidence(proposal)
+    validation = CanaryCandidateValidationReceipt(
+        status="PASS",
+        reason_codes=(),
+        proposal_sha256=proposal.sha256,
+        capability_evidence_sha256=sha256_json(evidence),
+    )
+    store = _ProductionCanaryStore(db_path)
+
+    first = store.persist_candidate(outcome, evidence, validation)
+    duplicate = store.persist_candidate(outcome, evidence, validation)
+    loaded = store.load_candidate()
+    payload = {"status": "TERMINAL_NO_FILL", "candidate": proposal.sha256}
+    store.persist_result(proposal.sha256, payload)
+
+    assert duplicate == first
+    assert loaded[0] == outcome
+    assert sha256_json(loaded[1]) == sha256_json(evidence)
+    assert loaded[2] == validation
+    assert store.load_result(proposal.sha256) == payload
+
+
 def test_v4_writer_factory_wires_path_scoped_sleeve_authority(tmp_path, monkeypatch) -> None:
     from ibkr_paper_30d.broker_write_coordinator import BrokerWriteCoordinator
     from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4

@@ -542,6 +542,50 @@ def _authorized_production_topology(db, *, market_gate=None, auditor_gate=None):
     )
 
 
+@pytest.mark.parametrize(
+    ("phase", "expected_method", "decision"),
+    [
+        ("SUPERVISION_BOUND", "discover", "CANDIDATE_READY"),
+        ("CANARY_EXCLUSIVE", "execute", "CANARY_EXECUTED"),
+    ],
+)
+def test_supervision_canary_phases_route_to_dedicated_orchestrator(
+    tmp_path, phase, expected_method, decision
+):
+    calls = []
+
+    class Pilot:
+        def discover(self, bundle):
+            calls.append(("discover", bundle))
+            return {"status": "PASS", "decision": decision, "reason_codes": []}
+
+        def execute(self, bundle):
+            calls.append(("execute", bundle))
+            return {"status": "PASS", "decision": decision, "reason_codes": []}
+
+    class Bundle:
+        experiment_clock = {"not_started": False, "expired": False}
+        reconciliation_receipt = {"status": "PASS"}
+        kill_switch_state = "KILL_SWITCH_CLEAR"
+
+        def model_dump(self, mode="json"):
+            return {"decision_cycle_id": "canary-cycle"}
+
+    with Database.open(tmp_path / f"{phase}.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        service.multi_universe_runtime_authority = SimpleNamespace(
+            transition_phase=phase
+        )
+        service.canary_pilot_orchestrator = Pilot()
+        service._builder = lambda: SimpleNamespace(build=lambda trigger: Bundle())
+
+        result = service._run_cycle("SCHEDULED_SCAN")
+
+    assert calls[0][0] == expected_method
+    assert result["status"] == "PASS"
+    assert result["outcome"]["decision"] == decision
+
+
 @pytest.mark.parametrize("executor", [None, DirectShapedExecutor()])
 def test_paper_service_rejects_missing_or_noncoordinated_executor(
     tmp_path, executor
