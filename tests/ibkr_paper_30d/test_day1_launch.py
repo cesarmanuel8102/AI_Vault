@@ -46,7 +46,7 @@ def _multi_universe_launch_evidence(**updates):
 
     values = {
         "schema_v4_valid": True,
-        "transition_phase": "PREDECESSOR_RETIRED",
+        "transition_phase": "SUCCESSOR_COMMITTED",
         "approved_head": "a" * 40,
         "expected_approved_head": "a" * 40,
         "account_identity_sha256": "b" * 64,
@@ -57,8 +57,8 @@ def _multi_universe_launch_evidence(**updates):
         "expected_clock_authority_sha256": "d" * 64,
         "regular_sleeve_authority_sha256": "e" * 64,
         "expected_regular_sleeve_authority_sha256": "e" * 64,
-        "extended_sleeve_authority_sha256": "f" * 64,
-        "expected_extended_sleeve_authority_sha256": "f" * 64,
+        "continuous_sleeve_authority_sha256": "f" * 64,
+        "expected_continuous_sleeve_authority_sha256": "f" * 64,
         "economic_risk_authorization_sha256": "1" * 64,
         "expected_economic_risk_authorization_sha256": "1" * 64,
         "certified_family_set_sha256": "2" * 64,
@@ -81,7 +81,7 @@ def _multi_universe_launch_evidence(**updates):
     ("update", "reason"),
     [
         ({"schema_v4_valid": False}, "MULTI_UNIVERSE_SCHEMA_V4_REQUIRED"),
-        ({"transition_phase": "CANARY_PASS"}, "SUCCESSOR_TRANSITION_NOT_ELIGIBLE"),
+        ({"transition_phase": "PREDECESSOR_RETIRED"}, "SUCCESSOR_TRANSITION_NOT_ELIGIBLE"),
         ({"approved_head": "9" * 40}, "SUCCESSOR_APPROVED_HEAD_MISMATCH"),
         ({"account_identity_sha256": "9" * 64}, "SUCCESSOR_ACCOUNT_MISMATCH"),
         (
@@ -94,8 +94,8 @@ def _multi_universe_launch_evidence(**updates):
             "REGULAR_SLEEVE_AUTHORITY_MISMATCH",
         ),
         (
-            {"extended_sleeve_authority_sha256": "9" * 64},
-            "EXTENDED_SLEEVE_AUTHORITY_MISMATCH",
+            {"continuous_sleeve_authority_sha256": "9" * 64},
+            "CONTINUOUS_SLEEVE_AUTHORITY_MISMATCH",
         ),
         (
             {"economic_risk_authorization_sha256": "9" * 64},
@@ -108,10 +108,6 @@ def _multi_universe_launch_evidence(**updates):
         ),
         ({"retirement_tombstone_sha256": None}, "PREDECESSOR_RETIREMENT_REQUIRED"),
         ({"predecessor_path_active": True}, "PREDECESSOR_PATH_STILL_ACTIVE"),
-        (
-            {"extended_family_available_within_24h": False},
-            "NO_EXTENDED_FAMILY_AVAILABLE_WITHIN_24H",
-        ),
         ({"continuity_gap": True}, "SUCCESSOR_CONTINUITY_GAP"),
     ],
 )
@@ -139,7 +135,7 @@ def test_successor_restart_skips_24h_predicate_and_enters_idle() -> None:
 
     assert result["status"] == "MARKET_CLOSED_IDLE"
     assert result["writer_start_allowed"] is True
-    assert result["new_extended_entries_allowed"] is False
+    assert result["new_continuous_entries_allowed"] is False
     assert result["reconciliation_required"] is True
 
 
@@ -159,7 +155,26 @@ def test_successor_restart_prioritizes_due_continuity_when_market_closed() -> No
 
     assert result["status"] == "CONTINUITY_ACTION_DUE"
     assert result["continuity_actions_allowed"] is True
-    assert result["new_extended_entries_allowed"] is False
+    assert result["new_continuous_entries_allowed"] is False
+
+
+def test_initial_successor_supervision_does_not_require_available_family() -> None:
+    from ibkr_paper_30d.day1_launch import evaluate_multi_universe_successor_launch
+
+    result = evaluate_multi_universe_successor_launch(
+        _multi_universe_launch_evidence(
+            transition_phase="SUPERVISION_BOUND",
+            extended_family_available_within_24h=False,
+            extended_family_tradable_now=False,
+        ),
+        initial_activation=True,
+    )
+
+    assert result["status"] == "SUPERVISION_ONLY"
+    assert result["writer_start_allowed"] is True
+    assert result["management_actions_allowed"] is True
+    assert result["new_regular_entries_allowed"] is False
+    assert result["new_continuous_entries_allowed"] is False
 
 
 def test_schema_mode_accepts_v4_only_for_explicit_successor(tmp_path) -> None:
@@ -207,7 +222,11 @@ def test_legacy_launcher_rejects_committed_successor_before_schema_gate(tmp_path
         install_multi_universe_schema_v4(db)
         coordinator = MultiUniverseTransitionCoordinator(db)
         coordinator.prepare(target)
-        for phase in tuple(TransitionPhase)[1:6]:
+        for phase in (
+            TransitionPhase.PREDECESSOR_QUIESCED,
+            TransitionPhase.PREDECESSOR_RETIRED,
+            TransitionPhase.SUCCESSOR_COMMITTED,
+        ):
             evidence = {
                 "phase_evidence_sha256": phase.value.encode().hex().ljust(64, "0")[:64],
                 "canary_flat": True,

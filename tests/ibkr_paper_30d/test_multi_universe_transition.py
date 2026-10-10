@@ -33,7 +33,7 @@ def _target(**overrides) -> TransitionTarget:
         "account_identity_sha256": "4" * 64,
         "clock_authority_sha256": "5" * 64,
         "regular_sleeve_authority_sha256": "6" * 64,
-        "extended_sleeve_authority_sha256": "7" * 64,
+        "continuous_sleeve_authority_sha256": "7" * 64,
         "economic_risk_authorization_sha256": "8" * 64,
         "certified_family_set_sha256": "9" * 64,
         "canary_authorization_sha256": "a" * 64,
@@ -69,6 +69,16 @@ def _evidence(phase: TransitionPhase) -> dict[str, object]:
         )
     if phase is TransitionPhase.SUCCESSOR_COMMITTED:
         evidence["successor_commit_sha256"] = "d" * 64
+    if phase is TransitionPhase.SUPERVISION_BOUND:
+        evidence.update(
+            {
+                "reconciliation_status": "PASS",
+                "inherited_position_projection_sha256": "1" * 64,
+                "ownership_projection_sha256": "2" * 64,
+                "writer_binding_sha256": "b" * 64,
+                "new_entry_authority": False,
+            }
+        )
     if phase is TransitionPhase.RUNTIME_BOUND:
         evidence["writer_binding_sha256"] = "b" * 64
     if phase is TransitionPhase.ACTIVE:
@@ -129,14 +139,17 @@ def test_active_phase_requires_hash_bound_external_cash_classification(tmp_path)
 
 
 @pytest.mark.parametrize(
-    "skipped_phase",
+    "skipped_phase_name",
     (
-        TransitionPhase.PREDECESSOR_QUIESCED,
-        TransitionPhase.CANARY_PASS,
-        TransitionPhase.PREDECESSOR_RETIRED,
+        "PREDECESSOR_QUIESCED",
+        "PREDECESSOR_RETIRED",
+        "SUCCESSOR_COMMITTED",
+        "SUPERVISION_BOUND",
+        "CANARY_PASS",
     ),
 )
-def test_transition_cannot_skip_required_phase(tmp_path, skipped_phase):
+def test_transition_cannot_skip_required_phase(tmp_path, skipped_phase_name):
+    skipped_phase = getattr(TransitionPhase, skipped_phase_name)
     with _open(tmp_path / f"skip-{skipped_phase.value}.sqlite3") as db:
         coordinator = MultiUniverseTransitionCoordinator(db)
         coordinator.prepare(_target())
@@ -161,13 +174,33 @@ def test_different_target_or_changed_evidence_blocks(tmp_path):
             coordinator.advance(TransitionPhase.PREDECESSOR_QUIESCED, changed)
 
 
-def test_canary_and_retirement_require_positive_hash_bound_evidence(tmp_path):
+def test_retirement_and_canary_require_positive_hash_bound_evidence(tmp_path):
     with _open(tmp_path / "evidence.sqlite3") as db:
         coordinator = MultiUniverseTransitionCoordinator(db)
         coordinator.prepare(_target())
         coordinator.advance(
             TransitionPhase.PREDECESSOR_QUIESCED,
             _evidence(TransitionPhase.PREDECESSOR_QUIESCED),
+        )
+        invalid_retirement = _evidence(TransitionPhase.PREDECESSOR_RETIRED)
+        invalid_retirement.pop("retirement_tombstone_sha256")
+        with pytest.raises(MultiUniverseTransitionError, match="RETIREMENT_EVIDENCE"):
+            coordinator.advance(TransitionPhase.PREDECESSOR_RETIRED, invalid_retirement)
+        coordinator.advance(
+            TransitionPhase.PREDECESSOR_RETIRED,
+            _evidence(TransitionPhase.PREDECESSOR_RETIRED),
+        )
+        invalid_commit = _evidence(TransitionPhase.SUCCESSOR_COMMITTED)
+        invalid_commit.pop("successor_commit_sha256")
+        with pytest.raises(MultiUniverseTransitionError, match="SUCCESSOR_COMMIT_EVIDENCE"):
+            coordinator.advance(TransitionPhase.SUCCESSOR_COMMITTED, invalid_commit)
+        coordinator.advance(
+            TransitionPhase.SUCCESSOR_COMMITTED,
+            _evidence(TransitionPhase.SUCCESSOR_COMMITTED),
+        )
+        coordinator.advance(
+            TransitionPhase.SUPERVISION_BOUND,
+            _evidence(TransitionPhase.SUPERVISION_BOUND),
         )
         coordinator.advance(
             TransitionPhase.CANARY_EXCLUSIVE,
@@ -176,21 +209,50 @@ def test_canary_and_retirement_require_positive_hash_bound_evidence(tmp_path):
         invalid_canary = _evidence(TransitionPhase.CANARY_PASS)
         invalid_canary.pop("canary_status")
         with pytest.raises(MultiUniverseTransitionError, match="CANARY_EVIDENCE"):
+            coordinator.advance(TransitionPhase.CANARY_PASS, invalid_canary)
+
+
+def test_successor_supervision_precedes_canary(tmp_path):
+    with _open(tmp_path / "supervision-first.sqlite3") as db:
+        coordinator = MultiUniverseTransitionCoordinator(db)
+        coordinator.prepare(_target())
+        for phase in (
+            TransitionPhase.PREDECESSOR_QUIESCED,
+            TransitionPhase.PREDECESSOR_RETIRED,
+            TransitionPhase.SUCCESSOR_COMMITTED,
+        ):
+            coordinator.advance(phase, _evidence(phase))
+
+        with pytest.raises(MultiUniverseTransitionError, match="PHASE_ORDER"):
             coordinator.advance(
-                TransitionPhase.CANARY_PASS,
-                invalid_canary,
+                TransitionPhase.CANARY_EXCLUSIVE,
+                _evidence(TransitionPhase.CANARY_EXCLUSIVE),
             )
-        coordinator.advance(
-            TransitionPhase.CANARY_PASS,
-            _evidence(TransitionPhase.CANARY_PASS),
+        bound = coordinator.advance(
+            TransitionPhase.SUPERVISION_BOUND,
+            _evidence(TransitionPhase.SUPERVISION_BOUND),
         )
-        invalid_retirement = _evidence(TransitionPhase.PREDECESSOR_RETIRED)
-        invalid_retirement.pop("retirement_tombstone_sha256")
-        with pytest.raises(MultiUniverseTransitionError, match="RETIREMENT_EVIDENCE"):
-            coordinator.advance(
-                TransitionPhase.PREDECESSOR_RETIRED,
-                invalid_retirement,
-            )
+        assert bound.next_phase is TransitionPhase.CANARY_EXCLUSIVE
+
+
+def test_supervision_binding_requires_exact_reconciliation_and_projection(tmp_path):
+    with _open(tmp_path / "supervision-evidence.sqlite3") as db:
+        coordinator = MultiUniverseTransitionCoordinator(db)
+        coordinator.prepare(_target())
+        for phase in (
+            TransitionPhase.PREDECESSOR_QUIESCED,
+            TransitionPhase.PREDECESSOR_RETIRED,
+            TransitionPhase.SUCCESSOR_COMMITTED,
+        ):
+            coordinator.advance(phase, _evidence(phase))
+
+        invalid = _evidence(TransitionPhase.SUPERVISION_BOUND)
+        invalid.pop("inherited_position_projection_sha256")
+        with pytest.raises(
+            MultiUniverseTransitionError,
+            match="SUPERVISION_BINDING_EVIDENCE_INVALID",
+        ):
+            coordinator.advance(TransitionPhase.SUPERVISION_BOUND, invalid)
 
 
 def test_successor_commit_guard_requires_exact_retired_target(tmp_path):
@@ -215,6 +277,16 @@ def test_successor_commit_guard_requires_exact_retired_target(tmp_path):
             transition_id=target.transition_id,
             target_sha256=target.sha256,
         )
+
+        coordinator.advance(
+            TransitionPhase.SUCCESSOR_COMMITTED,
+            _evidence(TransitionPhase.SUCCESSOR_COMMITTED),
+        )
+        assert require_predecessor_retired(
+            db,
+            transition_id=target.transition_id,
+            target_sha256=target.sha256,
+        ) == event_sha
 
     assert len(event_sha) == 64
 
@@ -259,8 +331,27 @@ def test_recovery_after_every_durable_phase_never_duplicates_or_reauthorizes(
     assert after == before
     assert recovered.phase is crash_phase
     assert recovered.resume_successor is (
-        PHASES.index(crash_phase) >= PHASES.index(TransitionPhase.SUCCESSOR_COMMITTED)
+        PHASES.index(crash_phase) >= PHASES.index(TransitionPhase.PREDECESSOR_RETIRED)
     )
     assert recovered.predecessor_may_resume is (
-        PHASES.index(crash_phase) < PHASES.index(TransitionPhase.SUCCESSOR_COMMITTED)
+        PHASES.index(crash_phase) < PHASES.index(TransitionPhase.PREDECESSOR_RETIRED)
     )
+
+
+def test_post_retirement_recovery_never_resumes_predecessor(tmp_path):
+    with _open(tmp_path / "irreversible-retirement.sqlite3") as db:
+        coordinator = MultiUniverseTransitionCoordinator(db)
+        coordinator.prepare(_target())
+        coordinator.advance(
+            TransitionPhase.PREDECESSOR_QUIESCED,
+            _evidence(TransitionPhase.PREDECESSOR_QUIESCED),
+        )
+        coordinator.advance(
+            TransitionPhase.PREDECESSOR_RETIRED,
+            _evidence(TransitionPhase.PREDECESSOR_RETIRED),
+        )
+
+        recovered = MultiUniverseTransitionCoordinator(db).recover(_target())
+
+    assert recovered.resume_successor is True
+    assert recovered.predecessor_may_resume is False

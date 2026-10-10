@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal, Mapping
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -18,16 +18,24 @@ GIT_HEAD_PATTERN = r"^[0-9a-f]{40}$"
 
 class CapitalSleeve(str, Enum):
     REGULAR_SLEEVE = "REGULAR_SLEEVE"
-    EXTENDED_SLEEVE = "EXTENDED_SLEEVE"
+    CONTINUOUS_SLEEVE = "CONTINUOUS_SLEEVE"
+    EXTENDED_SLEEVE = "CONTINUOUS_SLEEVE"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "CapitalSleeve | None":
+        if value == "EXTENDED_SLEEVE":
+            return cls.CONTINUOUS_SLEEVE
+        return None
 
 
 class TransitionPhase(str, Enum):
     PREPARED = "PREPARED"
     PREDECESSOR_QUIESCED = "PREDECESSOR_QUIESCED"
-    CANARY_EXCLUSIVE = "CANARY_EXCLUSIVE"
-    CANARY_PASS = "CANARY_PASS"
     PREDECESSOR_RETIRED = "PREDECESSOR_RETIRED"
     SUCCESSOR_COMMITTED = "SUCCESSOR_COMMITTED"
+    SUPERVISION_BOUND = "SUPERVISION_BOUND"
+    CANARY_EXCLUSIVE = "CANARY_EXCLUSIVE"
+    CANARY_PASS = "CANARY_PASS"
     RUNTIME_BOUND = "RUNTIME_BOUND"
     ACTIVE = "ACTIVE"
 
@@ -156,7 +164,7 @@ class SleeveAuthorityDefinition(AuthorityModel):
     def _validate_opening_economics(self) -> "SleeveAuthorityDefinition":
         if self.authorized_principal_usd != Decimal("500"):
             raise ValueError("sleeve principal must equal USD 500")
-        if self.sleeve is CapitalSleeve.EXTENDED_SLEEVE and (
+        if self.sleeve is CapitalSleeve.CONTINUOUS_SLEEVE and (
             self.opening_equity_usd != Decimal("500")
             or self.opening_pnl_usd != Decimal("0")
         ):
@@ -247,14 +255,32 @@ class TransitionTarget(AuthorityModel):
     account_identity_sha256: str = Field(pattern=SHA256_PATTERN)
     clock_authority_sha256: str = Field(pattern=SHA256_PATTERN)
     regular_sleeve_authority_sha256: str = Field(pattern=SHA256_PATTERN)
-    extended_sleeve_authority_sha256: str = Field(pattern=SHA256_PATTERN)
+    continuous_sleeve_authority_sha256: str = Field(pattern=SHA256_PATTERN)
     economic_risk_authorization_sha256: str = Field(pattern=SHA256_PATTERN)
     certified_family_set_sha256: str = Field(pattern=SHA256_PATTERN)
     canary_authorization_sha256: str = Field(pattern=SHA256_PATTERN)
     writer_binding_sha256: str = Field(pattern=SHA256_PATTERN)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_legacy_continuous_binding(cls, value: Any) -> Any:
+        if not isinstance(value, Mapping):
+            return value
+        data = dict(value)
+        legacy = data.pop("extended_sleeve_authority_sha256", None)
+        current = data.get("continuous_sleeve_authority_sha256")
+        if current is None and legacy is not None:
+            data["continuous_sleeve_authority_sha256"] = legacy
+        elif legacy is not None and legacy != current:
+            raise ValueError("continuous sleeve authority binding conflict")
+        return data
 
     @model_validator(mode="after")
     def _validate_epoch_edge(self) -> "TransitionTarget":
         if self.predecessor_epoch_id == self.successor_epoch_id:
             raise ValueError("successor epoch must differ from predecessor")
         return self
+
+    @property
+    def extended_sleeve_authority_sha256(self) -> str:
+        return self.continuous_sleeve_authority_sha256

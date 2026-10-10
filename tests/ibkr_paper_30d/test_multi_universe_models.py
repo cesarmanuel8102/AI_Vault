@@ -73,8 +73,10 @@ def _risk_authorization(**changes) -> OwnerEconomicRiskAuthorization:
 def test_only_two_economic_sleeves_exist() -> None:
     assert {item.value for item in CapitalSleeve} == {
         "REGULAR_SLEEVE",
-        "EXTENDED_SLEEVE",
+        "CONTINUOUS_SLEEVE",
     }
+    assert CapitalSleeve("EXTENDED_SLEEVE") is CapitalSleeve.CONTINUOUS_SLEEVE
+    assert CapitalSleeve.EXTENDED_SLEEVE is CapitalSleeve.CONTINUOUS_SLEEVE
 
     with pytest.raises(ValueError):
         CapitalSleeve("CANARY_SLEEVE")
@@ -181,7 +183,7 @@ def test_transition_target_hash_binds_all_authority() -> None:
         source_state_sha256=SHA_A,
     )
     extended = SleeveAuthorityDefinition(
-        sleeve=CapitalSleeve.EXTENDED_SLEEVE,
+        sleeve=CapitalSleeve.CONTINUOUS_SLEEVE,
         authorized_principal_usd=Decimal("500"),
         opening_equity_usd=Decimal("500"),
         opening_pnl_usd=Decimal("0"),
@@ -220,7 +222,7 @@ def test_transition_target_hash_binds_all_authority() -> None:
         account_identity_sha256=SHA_C,
         clock_authority_sha256=SHA_D,
         regular_sleeve_authority_sha256=regular.sha256,
-        extended_sleeve_authority_sha256=extended.sha256,
+        continuous_sleeve_authority_sha256=extended.sha256,
         economic_risk_authorization_sha256=_risk_authorization().sha256,
         certified_family_set_sha256=SHA_E,
         canary_authorization_sha256=canary.sha256,
@@ -230,10 +232,11 @@ def test_transition_target_hash_binds_all_authority() -> None:
     assert set(TransitionPhase) == {
         TransitionPhase.PREPARED,
         TransitionPhase.PREDECESSOR_QUIESCED,
-        TransitionPhase.CANARY_EXCLUSIVE,
-        TransitionPhase.CANARY_PASS,
         TransitionPhase.PREDECESSOR_RETIRED,
         TransitionPhase.SUCCESSOR_COMMITTED,
+        TransitionPhase.SUPERVISION_BOUND,
+        TransitionPhase.CANARY_EXCLUSIVE,
+        TransitionPhase.CANARY_PASS,
         TransitionPhase.RUNTIME_BOUND,
         TransitionPhase.ACTIVE,
     }
@@ -241,6 +244,32 @@ def test_transition_target_hash_binds_all_authority() -> None:
     assert target.sha256 != target.model_copy(
         update={"certified_family_set_sha256": SHA_F}
     ).sha256
+
+
+def test_transition_target_emits_continuous_authority_binding() -> None:
+    values = {
+        "transition_id": "transition-canonical",
+        "predecessor_epoch_id": "epoch-1",
+        "successor_epoch_id": "epoch-2",
+        "successor_definition_sha256": SHA_A,
+        "owner_authorization_sha256": SHA_B,
+        "approved_git_head": HEAD,
+        "account_identity_sha256": SHA_C,
+        "clock_authority_sha256": SHA_D,
+        "regular_sleeve_authority_sha256": SHA_E,
+        "extended_sleeve_authority_sha256": SHA_F,
+        "economic_risk_authorization_sha256": "1" * 64,
+        "certified_family_set_sha256": "2" * 64,
+        "canary_authorization_sha256": "3" * 64,
+        "writer_binding_sha256": "4" * 64,
+    }
+
+    target = TransitionTarget.model_validate(values)
+    dumped = target.model_dump(mode="json")
+
+    assert target.continuous_sleeve_authority_sha256 == SHA_F
+    assert dumped["continuous_sleeve_authority_sha256"] == SHA_F
+    assert "extended_sleeve_authority_sha256" not in dumped
 
 
 def test_ownership_group_rejects_duplicate_contracts() -> None:

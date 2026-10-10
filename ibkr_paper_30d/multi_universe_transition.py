@@ -214,6 +214,19 @@ class MultiUniverseTransitionCoordinator:
             evidence.get("successor_commit_sha256")
         ):
             raise MultiUniverseTransitionError("SUCCESSOR_COMMIT_EVIDENCE_INVALID")
+        if phase is TransitionPhase.SUPERVISION_BOUND and (
+            evidence.get("reconciliation_status") != "PASS"
+            or not self._sha256_value(
+                evidence.get("inherited_position_projection_sha256")
+            )
+            or not self._sha256_value(evidence.get("ownership_projection_sha256"))
+            or evidence.get("writer_binding_sha256")
+            != target.writer_binding_sha256
+            or evidence.get("new_entry_authority") is not False
+        ):
+            raise MultiUniverseTransitionError(
+                "SUPERVISION_BINDING_EVIDENCE_INVALID"
+            )
         if phase is TransitionPhase.RUNTIME_BOUND and (
             evidence.get("writer_binding_sha256") != target.writer_binding_sha256
         ):
@@ -234,7 +247,7 @@ class MultiUniverseTransitionCoordinator:
     ) -> TransitionRecoveryResult:
         phase = TransitionPhase(str(event["phase"]))
         index = _PHASES.index(phase)
-        committed = index >= _PHASES.index(TransitionPhase.SUCCESSOR_COMMITTED)
+        retired = index >= _PHASES.index(TransitionPhase.PREDECESSOR_RETIRED)
         evidence = dict(event.get("evidence") or {})
         rollback_proven = phase is TransitionPhase.PREPARED or (
             evidence.get("canary_flat") is True
@@ -247,8 +260,8 @@ class MultiUniverseTransitionCoordinator:
             phase=phase,
             phase_event_sha256=str(event["event_sha256"]),
             next_phase=(None if index + 1 == len(_PHASES) else _PHASES[index + 1]),
-            resume_successor=committed,
-            predecessor_may_resume=(not committed and rollback_proven),
+            resume_successor=retired,
+            predecessor_may_resume=(not retired and rollback_proven),
             freeze_new_order_authority=phase is not TransitionPhase.ACTIVE,
             idempotent=idempotent,
         )
@@ -359,15 +372,14 @@ def require_predecessor_retired(
 ) -> str:
     row = db.execute(
         "SELECT phase,payload_json,event_sha256 FROM successor_transition_events "
-        "WHERE transition_id=? ORDER BY sequence DESC LIMIT 1",
-        (transition_id,),
+        "WHERE transition_id=? AND phase=? ORDER BY sequence DESC LIMIT 1",
+        (transition_id, TransitionPhase.PREDECESSOR_RETIRED.value),
     ).fetchone()
     if row is None:
         raise MultiUniverseTransitionError("PREDECESSOR_RETIREMENT_NOT_PROVEN")
     payload = json.loads(str(row[1]))
     if (
-        str(row[0]) != TransitionPhase.PREDECESSOR_RETIRED.value
-        or payload.get("target_sha256") != target_sha256
+        payload.get("target_sha256") != target_sha256
     ):
         raise MultiUniverseTransitionError("PREDECESSOR_RETIREMENT_NOT_PROVEN")
     return str(row[2])

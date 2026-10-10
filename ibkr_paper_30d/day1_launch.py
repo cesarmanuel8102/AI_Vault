@@ -201,8 +201,8 @@ class MultiUniverseLaunchEvidence:
     expected_clock_authority_sha256: str
     regular_sleeve_authority_sha256: str
     expected_regular_sleeve_authority_sha256: str
-    extended_sleeve_authority_sha256: str
-    expected_extended_sleeve_authority_sha256: str
+    continuous_sleeve_authority_sha256: str
+    expected_continuous_sleeve_authority_sha256: str
     economic_risk_authorization_sha256: str
     expected_economic_risk_authorization_sha256: str
     certified_family_set_sha256: str
@@ -250,9 +250,9 @@ def evaluate_multi_universe_successor_launch(
             "REGULAR_SLEEVE_AUTHORITY_MISMATCH",
         ),
         (
-            evidence.extended_sleeve_authority_sha256,
-            evidence.expected_extended_sleeve_authority_sha256,
-            "EXTENDED_SLEEVE_AUTHORITY_MISMATCH",
+            evidence.continuous_sleeve_authority_sha256,
+            evidence.expected_continuous_sleeve_authority_sha256,
+            "CONTINUOUS_SLEEVE_AUTHORITY_MISMATCH",
         ),
         (
             evidence.economic_risk_authorization_sha256,
@@ -283,18 +283,23 @@ def evaluate_multi_universe_successor_launch(
 
     if initial_activation:
         if evidence.transition_phase not in {
-            "PREDECESSOR_RETIRED",
             "SUCCESSOR_COMMITTED",
+            "SUPERVISION_BOUND",
+            "CANARY_EXCLUSIVE",
+            "CANARY_PASS",
             "RUNTIME_BOUND",
             "ACTIVE",
         }:
             raise LaunchError("SUCCESSOR_TRANSITION_NOT_ELIGIBLE")
-        if not evidence.extended_family_available_within_24h:
-            raise LaunchError("NO_EXTENDED_FAMILY_AVAILABLE_WITHIN_24H")
-        status = "PASS"
+        status = (
+            "PASS" if evidence.transition_phase == "ACTIVE" else "SUPERVISION_ONLY"
+        )
     else:
         if not evidence.same_committed_successor or evidence.transition_phase not in {
             "SUCCESSOR_COMMITTED",
+            "SUPERVISION_BOUND",
+            "CANARY_EXCLUSIVE",
+            "CANARY_PASS",
             "RUNTIME_BOUND",
             "ACTIVE",
         }:
@@ -314,10 +319,12 @@ def evaluate_multi_universe_successor_launch(
         "reason_codes": [],
         "writer_start_allowed": True,
         "reconciliation_required": True,
+        "management_actions_allowed": True,
         "continuity_actions_allowed": True,
-        "new_extended_entries_allowed": bool(
-            evidence.extended_family_tradable_now
-            or (initial_activation and evidence.extended_family_available_within_24h)
+        "new_regular_entries_allowed": evidence.transition_phase == "ACTIVE",
+        "new_continuous_entries_allowed": bool(
+            evidence.transition_phase == "ACTIVE"
+            and evidence.extended_family_tradable_now
         ),
         "legacy_predecessor_allowed": False,
     }
@@ -470,10 +477,12 @@ def _validate_multi_universe_launch_from_db(
             CapitalSleeve.REGULAR_SLEEVE
         ),
         expected_regular_sleeve_authority_sha256=target.regular_sleeve_authority_sha256,
-        extended_sleeve_authority_sha256=bootstrap_authority(
-            CapitalSleeve.EXTENDED_SLEEVE
+        continuous_sleeve_authority_sha256=bootstrap_authority(
+            CapitalSleeve.CONTINUOUS_SLEEVE
         ),
-        expected_extended_sleeve_authority_sha256=target.extended_sleeve_authority_sha256,
+        expected_continuous_sleeve_authority_sha256=(
+            target.continuous_sleeve_authority_sha256
+        ),
         economic_risk_authorization_sha256=economic_hash,
         expected_economic_risk_authorization_sha256=target.economic_risk_authorization_sha256,
         certified_family_set_sha256=certified_set_sha256,
@@ -488,7 +497,7 @@ def _validate_multi_universe_launch_from_db(
         extended_family_tradable_now=False,
         continuity_gap=(
             not bootstrap_authority(CapitalSleeve.REGULAR_SLEEVE)
-            or not bootstrap_authority(CapitalSleeve.EXTENDED_SLEEVE)
+            or not bootstrap_authority(CapitalSleeve.CONTINUOUS_SLEEVE)
         ),
         continuity_action_due=False,
         same_committed_successor=phase_index >= committed_index,
