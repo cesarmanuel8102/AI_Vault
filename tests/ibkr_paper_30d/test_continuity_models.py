@@ -7,6 +7,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
+from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.continuity_models import (
     CodexOrderContinuityPlan,
     ContinuityActionType,
@@ -141,6 +142,29 @@ def test_accepts_distinct_retain_cancel_and_modify_plans() -> None:
         modify.sha256,
     }
     assert len({retain.sha256, cancel.sha256, modify.sha256}) == 3
+
+
+def test_v1_hash_survives_loading_after_optional_v4_fields_are_added() -> None:
+    original = CodexOrderContinuityPlan.model_validate(_valid_plan())
+    historical_payload = original.model_dump(
+        mode="json",
+        exclude={
+            "capital_sleeve",
+            "canonical_contract_sha256",
+            "ownership_group_sha256",
+            "product_family_sha256",
+            "position_identity_sha256",
+            "next_decision_deadline_utc",
+            "sleeve_authority_sha256",
+            "ownership_projection_sha256",
+        },
+    )
+    expected_sha256 = sha256_json(historical_payload)
+
+    loaded = CodexOrderContinuityPlan.model_validate(historical_payload)
+
+    assert loaded.capital_sleeve is None
+    assert loaded.sha256 == expected_sha256
 
 
 def test_accepts_provider_failure_decision_age_and_in_flight_activation_conditions() -> None:

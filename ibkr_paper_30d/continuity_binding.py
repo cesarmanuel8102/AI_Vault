@@ -69,7 +69,7 @@ class ContinuityBindingService:
     @staticmethod
     def _plan_payload(plan: CodexOrderContinuityPlan, bindings: dict[str, Any]) -> dict[str, Any]:
         return {
-            "plan": plan.model_dump(mode="json"),
+            "plan": plan.model_dump(mode="json", exclude_unset=True),
             "plan_sha256": plan.sha256,
             "bindings": bindings,
         }

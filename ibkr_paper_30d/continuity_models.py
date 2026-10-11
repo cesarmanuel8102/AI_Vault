@@ -517,7 +517,7 @@ class CodexOrderContinuityPlan(BaseModel, frozen=True):
 
     @property
     def sha256(self) -> str:
-        return sha256_json(self)
+        return sha256_json(self.model_dump(mode="json", exclude_unset=True))
 
     @model_validator(mode="after")
     def validate_plan(self) -> "CodexOrderContinuityPlan":

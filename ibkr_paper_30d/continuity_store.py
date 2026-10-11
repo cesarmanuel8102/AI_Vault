@@ -141,8 +141,9 @@ class ContinuityStore:
     ) -> str:
         order_ref = plan.order_binding.order_ref
         event_id = event_id or str(new_uuid7())
+        plan_payload = plan.model_dump(mode="json", exclude_unset=True)
         payload = {
-            "plan": plan.model_dump(mode="json"),
+            "plan": plan_payload,
             "plan_sha256": plan.sha256,
             "bindings": dict(bindings or {}),
         }
