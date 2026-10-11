@@ -137,6 +137,24 @@ def test_contract_builder_accepts_canonical_nested_contract_arguments():
     assert contract.currency == "USD"
 
 
+def test_contract_builder_accepts_model_security_type_alias():
+    subject = IBKRResearchToolbox(expected_account_hash="unused")
+
+    contract = subject._contract_from_spec(
+        {
+            "symbol": "BTC",
+            "security_type": "CRYPTO",
+            "exchange": "PAXOS",
+            "currency": "USD",
+        }
+    )
+
+    assert contract.symbol == "BTC"
+    assert contract.secType == "CRYPTO"
+    assert contract.exchange == "PAXOS"
+    assert contract.currency == "USD"
+
+
 def test_contract_builder_rejects_conflicting_nested_and_flat_identity():
     subject = IBKRResearchToolbox(expected_account_hash="unused")
 

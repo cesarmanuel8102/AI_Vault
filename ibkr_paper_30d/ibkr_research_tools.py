@@ -1006,7 +1006,7 @@ class IBKRResearchToolbox:
 
     _CONTRACT_ARGUMENT_ALIASES = (
         ("symbol",),
-        ("sec_type", "secType"),
+        ("sec_type", "secType", "security_type"),
         ("exchange",),
         ("currency",),
         ("primary_exchange", "primaryExchange"),
@@ -1051,7 +1051,12 @@ class IBKRResearchToolbox:
         from ib_insync import Contract
 
         spec = cls._normalized_contract_spec(spec)
-        sec_type = str(spec.get("sec_type") or spec.get("secType") or "STK").upper()
+        sec_type = str(
+            spec.get("sec_type")
+            or spec.get("secType")
+            or spec.get("security_type")
+            or "STK"
+        ).upper()
         contract = Contract(
             symbol=str(spec.get("symbol", "")).upper(),
             secType=sec_type,
