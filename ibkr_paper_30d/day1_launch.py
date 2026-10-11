@@ -928,6 +928,39 @@ def _validate_market_artifacts(config: Day1LaunchConfig) -> tuple[str, str]:
     return _sha256(policy_raw), _sha256(validation_raw)
 
 
+def _is_multi_universe_supervisor(
+    config: Day1LaunchConfig, *, successor_mode: bool
+) -> bool:
+    return bool(successor_mode and config.multi_universe_authority_path is not None)
+
+
+def _validate_post_lock_runtime_gates(
+    config: Day1LaunchConfig,
+    dependencies: LaunchDependencies,
+    preflight: LaunchPreflight,
+) -> None:
+    fresh_auditor = dependencies.auditor_gate_factory(config).evaluate()
+    if (
+        not isinstance(fresh_auditor, dict)
+        or fresh_auditor.get("gate_status") != "PASS"
+        or fresh_auditor.get("receipt_sha256")
+        != preflight.auditor_receipt_sha256
+    ):
+        raise LaunchError("AUDITOR_GATE_CHANGED_AFTER_LOCK")
+
+    if _is_multi_universe_supervisor(config, successor_mode=True):
+        return
+
+    fresh_market = dependencies.market_gate_factory(
+        config, preflight.expected_account_hash
+    ).evaluate(DecisionClass.NEW_TRADE)
+    if (
+        not isinstance(fresh_market, dict)
+        or fresh_market.get("gate_status") != "PASS"
+    ):
+        raise LaunchError("MARKET_DATA_GATE_CHANGED_AFTER_LOCK")
+
+
 def evaluate_launch_preflight(
     config: Day1LaunchConfig, dependencies: LaunchDependencies
 ) -> LaunchPreflight:
@@ -1015,8 +1048,8 @@ def evaluate_launch_preflight(
         raise LaunchError("AUDITOR_RECEIPT_BINDING_INVALID")
 
     policy_hash, market_validation_hash = _validate_market_artifacts(config)
-    multi_universe_supervisor = bool(
-        successor_mode and config.multi_universe_authority_path is not None
+    multi_universe_supervisor = _is_multi_universe_supervisor(
+        config, successor_mode=successor_mode
     )
     if not multi_universe_supervisor:
         market_result = dependencies.market_gate_factory(config, expected_hash).evaluate(
@@ -1975,22 +2008,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                     details={"reason_codes": list(unresolved)},
                 )
             if config.target_successor_epoch_id is not None:
-                fresh_auditor = dependencies.auditor_gate_factory(config).evaluate()
-                if (
-                    not isinstance(fresh_auditor, dict)
-                    or fresh_auditor.get("gate_status") != "PASS"
-                    or fresh_auditor.get("receipt_sha256")
-                    != preflight.auditor_receipt_sha256
-                ):
-                    raise LaunchError("AUDITOR_GATE_CHANGED_AFTER_LOCK")
-                fresh_market = dependencies.market_gate_factory(
-                    config, preflight.expected_account_hash
-                ).evaluate(DecisionClass.NEW_TRADE)
-                if (
-                    not isinstance(fresh_market, dict)
-                    or fresh_market.get("gate_status") != "PASS"
-                ):
-                    raise LaunchError("MARKET_DATA_GATE_CHANGED_AFTER_LOCK")
+                _validate_post_lock_runtime_gates(config, dependencies, preflight)
                 if not controls.resume_started_epoch:
                     collector = dependencies.successor_broker_evidence_collector
                     if collector is None:

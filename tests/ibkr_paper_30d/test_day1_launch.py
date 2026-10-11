@@ -1271,6 +1271,65 @@ def test_multi_universe_supervisor_preflight_does_not_require_regular_live_quote
     assert_no_write_authority(ctx)
 
 
+def test_multi_universe_supervisor_post_lock_does_not_require_regular_live_quote(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    authority_path = ctx.config.owner_authorization_path.parent / "multi-universe.json"
+    authority_path.write_text("{}", encoding="utf-8")
+    config = replace(
+        ctx.config,
+        target_successor_epoch_id="AUTONOMY_EPOCH_3",
+        target_successor_definition_sha256="d" * 64,
+        multi_universe_authority_path=authority_path,
+    )
+    preflight = SimpleNamespace(
+        auditor_receipt_sha256=hashlib.sha256(
+            config.auditor_receipt_path.read_bytes()
+        ).hexdigest(),
+        expected_account_hash=ACCOUNT_HASH,
+    )
+    ctx.market_gate.evaluate.return_value = {
+        "gate_status": "BLOCK",
+        "reason_codes": ["REGULAR_MARKET_CLOSED"],
+    }
+
+    launch_module._validate_post_lock_runtime_gates(
+        config, ctx.dependencies, preflight
+    )
+
+    ctx.auditor_gate.evaluate.assert_called_once_with()
+    ctx.market_gate.evaluate.assert_not_called()
+
+
+def test_legacy_successor_post_lock_still_requires_regular_live_quote(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    config = replace(
+        ctx.config,
+        target_successor_epoch_id="AUTONOMY_EPOCH_2",
+        target_successor_definition_sha256="d" * 64,
+    )
+    preflight = SimpleNamespace(
+        auditor_receipt_sha256=hashlib.sha256(
+            config.auditor_receipt_path.read_bytes()
+        ).hexdigest(),
+        expected_account_hash=ACCOUNT_HASH,
+    )
+    ctx.market_gate.evaluate.return_value = {
+        "gate_status": "BLOCK",
+        "reason_codes": ["DELAYED_DATA"],
+    }
+
+    with pytest.raises(LaunchError, match="MARKET_DATA_GATE_CHANGED_AFTER_LOCK"):
+        launch_module._validate_post_lock_runtime_gates(
+            config, ctx.dependencies, preflight
+        )
+
+    ctx.market_gate.evaluate.assert_called_once_with(DecisionClass.NEW_TRADE)
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [
