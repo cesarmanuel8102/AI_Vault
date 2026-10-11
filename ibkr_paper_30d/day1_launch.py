@@ -418,6 +418,15 @@ def _load_multi_universe_launch_authority(
     }
 
 
+def _multi_universe_owner_authorization_sha256(preflight: LaunchPreflight) -> str:
+    receipt_sha256 = preflight.owner_authorization_receipt.get("receipt_sha256")
+    if not isinstance(receipt_sha256, str) or not _SHA256_RE.fullmatch(
+        receipt_sha256
+    ):
+        raise LaunchError("SUCCESSOR_OWNER_AUTHORIZATION_MISMATCH")
+    return receipt_sha256
+
+
 def _multi_universe_authority_bindings(
     db: Database,
     target: object,
@@ -519,9 +528,12 @@ def _validate_multi_universe_launch_from_db(
     from .multi_universe_transition import MultiUniverseTransitionCoordinator
 
     verify_multi_universe_schema_v4(db)
+    owner_authorization_sha256 = _multi_universe_owner_authorization_sha256(
+        preflight
+    )
     if (
         envelope.get("owner_authorization_receipt_sha256")
-        != preflight.owner_authorization_receipt_sha256
+        != owner_authorization_sha256
     ):
         raise LaunchError("SUCCESSOR_OWNER_AUTHORIZATION_MISMATCH")
     row = db.execute(
@@ -588,7 +600,7 @@ def _validate_multi_universe_launch_from_db(
         expected_approved_head=effective_approved_head,
         account_identity_sha256=preflight.expected_account_hash,
         expected_account_identity_sha256=target.account_identity_sha256,
-        owner_authorization_sha256=preflight.owner_authorization_receipt_sha256,
+        owner_authorization_sha256=owner_authorization_sha256,
         expected_owner_authorization_sha256=target.owner_authorization_sha256,
         clock_authority_sha256=clock.event_sha256,
         expected_clock_authority_sha256=target.clock_authority_sha256,

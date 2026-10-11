@@ -457,6 +457,18 @@ def test_launch_authority_file_cannot_self_attest_runtime_decision(tmp_path) -> 
     assert envelope["owner_authorization_receipt_sha256"] == "2" * 64
 
 
+def test_multi_universe_uses_semantic_owner_authorization_hash() -> None:
+    preflight = SimpleNamespace(
+        owner_authorization_receipt_sha256="f" * 64,
+        owner_authorization_receipt={"receipt_sha256": "2" * 64},
+    )
+
+    result = launch_module._multi_universe_owner_authorization_sha256(preflight)
+
+    assert result == "2" * 64
+    assert result != preflight.owner_authorization_receipt_sha256
+
+
 from ibkr_paper_30d.execution_lock import ExecutionLock, LockIntegrityError, LockOwner
 from ibkr_paper_30d.experiment_control import (
     ExperimentClockStore,
