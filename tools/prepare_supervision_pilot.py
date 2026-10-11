@@ -298,11 +298,15 @@ def _build_snapshots(
 
 
 def _host_evidence(
-    *, target: TransitionTarget, phase_evidence: dict[str, Any], now: datetime
+    *,
+    target: TransitionTarget,
+    phase_evidence: dict[str, Any],
+    now: datetime,
+    current_head: str,
 ) -> MaintenanceEvidence:
     return MaintenanceEvidence(
         observed_at_utc=now,
-        current_head=target.approved_git_head,
+        current_head=current_head,
         tracked_tree_clean=True,
         paper_port_4002_listening=_port_open(4002),
         live_port_4001_listening=_port_open(4001),
@@ -318,6 +322,20 @@ def _host_evidence(
         ),
         phase_evidence=phase_evidence,
     )
+
+
+def _refresh_config_payload(
+    payload: dict[str, Any],
+    *,
+    phase: TransitionPhase,
+    now: datetime,
+    current_head: str,
+) -> dict[str, Any]:
+    refreshed = dict(payload)
+    refreshed["approved_head"] = current_head
+    refreshed["requested_phase"] = phase.value
+    refreshed["now_utc"] = now.isoformat().replace("+00:00", "Z")
+    return refreshed
 
 
 def prepare(args: argparse.Namespace) -> None:
@@ -446,7 +464,12 @@ def prepare(args: argparse.Namespace) -> None:
         source_ledger_sha256=source_ledger_sha,
     )
     phase_evidence = {"target_sha256": target.sha256}
-    evidence = _host_evidence(target=target, phase_evidence=phase_evidence, now=now)
+    evidence = _host_evidence(
+        target=target,
+        phase_evidence=phase_evidence,
+        now=now,
+        current_head=args.approved_head,
+    )
     config = MaintenanceConfig(
         repo_root=repo,
         database_path=db_path,
@@ -509,6 +532,9 @@ def refresh(args: argparse.Namespace) -> None:
     repo = args.repo_root.resolve()
     target = TransitionTarget.model_validate(_read(output / "transition_target.json"))
     now = _utc_now()
+    current_head = _git(repo, "rev-parse", "HEAD")
+    if _git(repo, "status", "--porcelain", "--untracked-files=no"):
+        raise RuntimeError("TRACKED_TREE_DIRTY")
     receipt = _read(args.readonly_receipt)
     _validate_receipt(receipt, now)
     phase = TransitionPhase(args.phase)
@@ -575,10 +601,18 @@ def refresh(args: argparse.Namespace) -> None:
             "supervision_binding_plan": plan.model_dump(mode="json"),
             "fresh_broker_snapshot": broker_snapshot,
         }
-    evidence = _host_evidence(target=target, phase_evidence=evidence_payload, now=now)
-    config_raw = _read(output / "maintenance_config.json")
-    config_raw["requested_phase"] = phase.value
-    config_raw["now_utc"] = now.isoformat().replace("+00:00", "Z")
+    evidence = _host_evidence(
+        target=target,
+        phase_evidence=evidence_payload,
+        now=now,
+        current_head=current_head,
+    )
+    config_raw = _refresh_config_payload(
+        _read(output / "maintenance_config.json"),
+        phase=phase,
+        now=now,
+        current_head=current_head,
+    )
     _write(output / "maintenance_config.json", config_raw)
     _write(output / "maintenance_evidence.json", evidence.model_dump(mode="json"))
     print(evidence.model_dump_json())
