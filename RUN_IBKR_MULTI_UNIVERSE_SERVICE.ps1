@@ -46,11 +46,25 @@ $Arguments = @(
     "--target-successor-definition-sha256", $SuccessorDefinitionSha256.ToLowerInvariant(),
     "--multi-universe-authority-path", $ResolvedAuthorityPath
 )
+$ReceiptFinalizerArguments = @(
+    "-NoProfile", "-ExecutionPolicy", "Bypass",
+    "-File", (Join-Path $ResolvedRepoRoot "FINALIZE_IBKR_PREREQUISITES.ps1"),
+    "-RepoRoot", $ResolvedRepoRoot,
+    "-PythonExe", $PythonExe,
+    "-Stage", "Receipts",
+    "-ConfirmStage",
+    "-SkipTaskRegistration",
+    "-LaunchAttemptId", $LaunchAttemptId,
+    "-TargetSuccessorEpochId", $SuccessorEpochId,
+    "-TargetSuccessorDefinitionSha256", $SuccessorDefinitionSha256.ToLowerInvariant()
+)
 
 if ($ValidateOnly) {
     [ordered]@{
         status = "VALIDATED_ONLY"
         launch_attempt_id = $LaunchAttemptId
+        receipt_finalizer_required = $true
+        receipt_finalizer_arguments = $ReceiptFinalizerArguments
         python_arguments = $Arguments
         legacy_market_gate_invoked = $false
         broker_write_calls = 0
@@ -60,5 +74,9 @@ if ($ValidateOnly) {
 }
 
 Set-Location -LiteralPath $ResolvedRepoRoot
+& powershell.exe @ReceiptFinalizerArguments
+if ($LASTEXITCODE -ne 0) {
+    throw "SUCCESSOR_RECEIPT_FINALIZER_FAILED:$LASTEXITCODE"
+}
 & $PythonExe @Arguments
 exit $LASTEXITCODE

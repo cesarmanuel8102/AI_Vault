@@ -12,6 +12,8 @@ from ibkr_paper_30d.multi_universe_maintenance import (
     validate_maintenance,
 )
 from ibkr_paper_30d.multi_universe_models import TransitionPhase, TransitionTarget
+from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+from ibkr_paper_30d.multi_universe_transition import MultiUniverseTransitionCoordinator
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 
@@ -190,3 +192,60 @@ def test_apply_advances_only_the_requested_next_phase(tmp_path: Path) -> None:
             )
         ]
     assert phases == ["PREPARED", "PREDECESSOR_QUIESCED"]
+
+
+def test_validate_accepts_authorized_runtime_release_head(tmp_path: Path) -> None:
+    config, evidence = _setup(tmp_path)
+    released_head = "d" * 40
+    release_evidence = {
+        "owner_authorized": True,
+        "owner_sid": "S-1-5-21-test",
+        "account_identity_sha256": config.target.account_identity_sha256,
+        "current_head": released_head,
+        "live_port_4001_listening": False,
+        "paper_port_4002_listening": True,
+        "authenticated_paper": True,
+        "broker_reconciliation_status": "PASS",
+        "broker_state_certain": True,
+        "tracked_tree_clean": True,
+        "writer_count": 0,
+        "open_order_count": 0,
+        "new_execution_count": 0,
+        "broker_write_count": 0,
+        "release_artifact_sha256": "e" * 64,
+    }
+    with Database.open(config.database_path) as db:
+        install_multi_universe_schema_v4(db)
+        coordinator = MultiUniverseTransitionCoordinator(db)
+        coordinator.prepare(config.target)
+        for phase in (
+            TransitionPhase.PREDECESSOR_QUIESCED,
+            TransitionPhase.PREDECESSOR_RETIRED,
+            TransitionPhase.SUCCESSOR_COMMITTED,
+        ):
+            phase_evidence = {"phase_evidence_sha256": "c" * 64}
+            if phase is TransitionPhase.PREDECESSOR_RETIRED:
+                phase_evidence.update(
+                    retirement_status="PASS",
+                    retirement_tombstone_sha256="f" * 64,
+                )
+            if phase is TransitionPhase.SUCCESSOR_COMMITTED:
+                phase_evidence["successor_commit_sha256"] = "a" * 64
+            coordinator.advance(phase, phase_evidence)
+        coordinator.authorize_runtime_release(
+            config.target,
+            approved_git_head=released_head,
+            evidence=release_evidence,
+        )
+    released_config = config.model_copy(
+        update={
+            "approved_head": released_head,
+            "requested_phase": TransitionPhase.SUCCESSOR_COMMITTED,
+        }
+    )
+    released_evidence = evidence.model_copy(update={"current_head": released_head})
+
+    result = validate_maintenance(released_config, released_evidence)
+
+    assert result.status == "PASS"
+    assert "TRANSITION_HEAD_MISMATCH" not in result.reason_codes

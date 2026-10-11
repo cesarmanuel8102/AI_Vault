@@ -21,6 +21,7 @@ from .broker_write_coordinator import BrokerWriteCoordinator
 from .canonical import canonical_bytes, sha256_json
 from .continuity_store import ContinuityStore
 from .ibkr_readonly import expected_identity_hash
+from .multi_universe_transition import MultiUniverseTransitionCoordinator
 from .persistence import Database
 from .repositories import utc_now
 from .types import new_uuid7
@@ -285,6 +286,9 @@ class _ProductionSleeveAuthoritySnapshotReader:
                 raise ProductionRuntimeConfigurationError("SUCCESSOR_TRANSITION_REQUIRED")
             transition_payload = json.loads(str(row[1]))
             target = TransitionTarget.model_validate(transition_payload.get("target"))
+            effective_approved_head = MultiUniverseTransitionCoordinator(
+                db
+            ).effective_approved_git_head(target)
             if (
                 target.successor_epoch_id != request.epoch_id
                 or target.successor_definition_sha256
@@ -374,7 +378,7 @@ class _ProductionSleeveAuthoritySnapshotReader:
                 transition_target_sha256=target.sha256,
                 writer_binding_sha256=target.writer_binding_sha256,
                 epoch_id=target.successor_epoch_id,
-                approved_head=target.approved_git_head,
+                approved_head=effective_approved_head,
                 account_identity_sha256=target.account_identity_sha256,
                 transition_phase=str(row[0]),
                 supervision_bound=supervision_bound,

@@ -1211,6 +1211,54 @@ def test_runtime_market_block_is_fail_closed(tmp_path: Path) -> None:
     assert_no_write_authority(ctx)
 
 
+def test_multi_universe_supervisor_preflight_does_not_require_regular_live_quote(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    successor_receipt_path = (
+        ctx.config.owner_authorization_path.parent
+        / "owner_successor_authorization_v2.json"
+    )
+    definition, _ = build_authorized_successor(
+        ctx.config.db_path, successor_receipt_path
+    )
+    authority_path = ctx.config.owner_authorization_path.parent / "multi-universe.json"
+    authority_path.write_text("{}", encoding="utf-8")
+    config = replace(
+        ctx.config,
+        owner_authorization_path=successor_receipt_path,
+        model_attestation_exception_path=(
+            successor_receipt_path.parent / "model_attestation_owner_exception_v2.json"
+        ),
+        launch_attempt_binding_path=(
+            successor_receipt_path.parent / "launch_attempt_binding_v2.json"
+        ),
+        target_successor_epoch_id=str(definition["epoch_id"]),
+        target_successor_definition_sha256=str(definition["definition_sha256"]),
+        multi_universe_authority_path=authority_path,
+    )
+    _write_successor_model_attestation_exception(config)
+    bind_launch_attempt(
+        config.launch_attempt_id,
+        config.identity_receipt_path,
+        config.auditor_receipt_path,
+        config.launch_attempt_binding_path,
+        target_successor_epoch_id=config.target_successor_epoch_id,
+        target_successor_definition_sha256=config.target_successor_definition_sha256,
+    )
+    ctx.market_gate.evaluate.return_value = {
+        "gate_status": "BLOCK",
+        "reason_codes": ["RUNTIME_MARKET_DATA_EVALUATION_FAILED"],
+        "error": "ObservationAborted:INITIAL_REALTIME_QUOTE_TIMEOUT",
+    }
+
+    result = evaluate_launch_preflight(config, ctx.dependencies)
+
+    assert result.target_successor_epoch_id == definition["epoch_id"]
+    ctx.market_gate.evaluate.assert_not_called()
+    assert_no_write_authority(ctx)
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [

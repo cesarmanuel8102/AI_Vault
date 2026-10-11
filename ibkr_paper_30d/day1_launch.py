@@ -533,7 +533,11 @@ def _validate_multi_universe_launch_from_db(
     try:
         payload = json.loads(str(row[1]))
         target = TransitionTarget.model_validate(payload.get("target"))
-        recovered = MultiUniverseTransitionCoordinator(db).recover(target)
+        transition_coordinator = MultiUniverseTransitionCoordinator(db)
+        recovered = transition_coordinator.recover(target)
+        effective_approved_head = (
+            transition_coordinator.effective_approved_git_head(target)
+        )
     except Exception as exc:
         raise LaunchError("SUCCESSOR_TRANSITION_AUTHORITY_INVALID") from exc
     if (
@@ -581,7 +585,7 @@ def _validate_multi_universe_launch_from_db(
         schema_v4_valid=True,
         transition_phase=phase.value,
         approved_head=_current_git_commit(config.repo_root),
-        expected_approved_head=target.approved_git_head,
+        expected_approved_head=effective_approved_head,
         account_identity_sha256=preflight.expected_account_hash,
         expected_account_identity_sha256=target.account_identity_sha256,
         owner_authorization_sha256=preflight.owner_authorization_receipt_sha256,
@@ -999,35 +1003,41 @@ def evaluate_launch_preflight(
         raise LaunchError("AUDITOR_RECEIPT_BINDING_INVALID")
 
     policy_hash, market_validation_hash = _validate_market_artifacts(config)
-    market_result = dependencies.market_gate_factory(config, expected_hash).evaluate(
-        DecisionClass.NEW_TRADE
+    multi_universe_supervisor = bool(
+        successor_mode and config.multi_universe_authority_path is not None
     )
-    if (
-        not isinstance(market_result, dict)
-        or market_result.get("gate_status") != "PASS"
-    ):
-        raw_reasons = (
-            market_result.get("reason_codes", [])
-            if isinstance(market_result, dict)
-            else []
+    if not multi_universe_supervisor:
+        market_result = dependencies.market_gate_factory(config, expected_hash).evaluate(
+            DecisionClass.NEW_TRADE
         )
-        market_reasons = [
-            reason
-            for reason in raw_reasons
-            if isinstance(reason, str) and _REASON_CODE_RE.fullmatch(reason)
-        ][:10]
-        details: dict[str, object] = {"market_data_reason_codes": market_reasons}
-        market_error = (
-            market_result.get("error") if isinstance(market_result, dict) else None
-        )
-        if isinstance(market_error, str) and _MARKET_ERROR_CODE_RE.fullmatch(
-            market_error
+        if (
+            not isinstance(market_result, dict)
+            or market_result.get("gate_status") != "PASS"
         ):
-            details["market_data_error_code"] = market_error
-        raise LaunchError(
-            "MARKET_DATA_GATE_BLOCKED",
-            details=details,
-        )
+            raw_reasons = (
+                market_result.get("reason_codes", [])
+                if isinstance(market_result, dict)
+                else []
+            )
+            market_reasons = [
+                reason
+                for reason in raw_reasons
+                if isinstance(reason, str) and _REASON_CODE_RE.fullmatch(reason)
+            ][:10]
+            details: dict[str, object] = {"market_data_reason_codes": market_reasons}
+            market_error = (
+                market_result.get("error")
+                if isinstance(market_result, dict)
+                else None
+            )
+            if isinstance(market_error, str) and _MARKET_ERROR_CODE_RE.fullmatch(
+                market_error
+            ):
+                details["market_data_error_code"] = market_error
+            raise LaunchError(
+                "MARKET_DATA_GATE_BLOCKED",
+                details=details,
+            )
 
     authorization_event_id = authorization.get("authorization_event_id")
     if not isinstance(authorization_event_id, str) or not authorization_event_id:

@@ -77,9 +77,11 @@ class MaintenanceResult(_MaintenanceModel):
     backup_manifest_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
 
 
-def _readonly_state(path: Path) -> tuple[bool, str | None, str | None]:
+def _readonly_state(
+    path: Path,
+) -> tuple[bool, str | None, str | None, str | None]:
     if not path.is_file():
-        return False, None, None
+        return False, None, None, None
     uri = path.resolve().as_uri() + "?mode=ro&immutable=1"
     connection = sqlite3.connect(uri, uri=True)
     try:
@@ -90,7 +92,7 @@ def _readonly_state(path: Path) -> tuple[bool, str | None, str | None]:
             ).fetchall()
         }
         if "successor_transition_events" not in tables:
-            return False, None, None
+            return False, None, None, None
         version = connection.execute(
             "SELECT COUNT(*) FROM schema_versions WHERE version=4"
         ).fetchone()
@@ -100,9 +102,25 @@ def _readonly_state(path: Path) -> tuple[bool, str | None, str | None]:
             "ORDER BY sequence DESC LIMIT 1"
         ).fetchone()
         if row is None:
-            return v4, None, None
+            return v4, None, None, None
         payload = json.loads(str(row[2]))
-        return v4, str(row[1]), str(payload.get("target_sha256") or "")
+        target = payload.get("target") or {}
+        effective_head = str(target.get("approved_git_head") or "")
+        release = connection.execute(
+            "SELECT payload_json FROM successor_transition_events "
+            "WHERE transition_id=? AND event_type='RUNTIME_RELEASE_AUTHORIZED' "
+            "ORDER BY sequence DESC LIMIT 1",
+            (str(row[0]),),
+        ).fetchone()
+        if release is not None:
+            release_payload = json.loads(str(release[0]))
+            effective_head = str(release_payload.get("approved_git_head") or "")
+        return (
+            v4,
+            str(row[1]),
+            str(payload.get("target_sha256") or ""),
+            effective_head,
+        )
     finally:
         connection.close()
 
@@ -116,8 +134,6 @@ def validate_maintenance(
         reasons.append("MAINTENANCE_EVIDENCE_STALE")
     if evidence.current_head != config.approved_head:
         reasons.append("APPROVED_HEAD_MISMATCH")
-    if config.target.approved_git_head != config.approved_head:
-        reasons.append("TRANSITION_HEAD_MISMATCH")
     if not evidence.tracked_tree_clean:
         reasons.append("TRACKED_TREE_DIRTY")
     if not evidence.paper_port_4002_listening or not evidence.authenticated_paper:
@@ -140,7 +156,12 @@ def validate_maintenance(
     if not required_receipts.issubset(set(evidence.receipt_sha256)):
         reasons.append("MAINTENANCE_RECEIPTS_INCOMPLETE")
 
-    v4, phase_text, target_sha = _readonly_state(config.database_path)
+    v4, phase_text, target_sha, effective_head = _readonly_state(
+        config.database_path
+    )
+    expected_head = effective_head or config.target.approved_git_head
+    if expected_head != config.approved_head:
+        reasons.append("TRANSITION_HEAD_MISMATCH")
     if target_sha and target_sha != config.target.sha256:
         reasons.append("TRANSITION_TARGET_CONFLICT")
     if not v4 and config.requested_phase is not TransitionPhase.PREPARED:
@@ -216,7 +237,9 @@ def apply_next_phase(
     validation = validate_maintenance(config, evidence)
     if validation.status != "PASS":
         return validation
-    v4, phase_text, _target_sha = _readonly_state(config.database_path)
+    v4, phase_text, _target_sha, _effective_head = _readonly_state(
+        config.database_path
+    )
     backup_sha: str | None = None
     if not v4:
         try:

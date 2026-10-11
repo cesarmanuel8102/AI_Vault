@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import shutil
 import subprocess
 
@@ -40,3 +41,54 @@ def test_multi_universe_launcher_is_direct_and_fail_closed() -> None:
     assert "--entry-authority-mode" not in lowered
     assert "--new-regular-entries-allowed" not in lowered
     assert "--new-continuous-entries-allowed" not in lowered
+
+
+def test_validate_only_binds_receipt_finalizer_and_runtime_to_same_attempt(
+    tmp_path: Path,
+) -> None:
+    shell = shutil.which("pwsh.exe") or shutil.which("powershell.exe")
+    if shell is None:
+        pytest.skip("PowerShell unavailable")
+    head = subprocess.run(
+        ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    authority = tmp_path / "authority.json"
+    authority.write_text(
+        json.dumps(
+            {
+                "schema": "MULTI_UNIVERSE_LAUNCH_AUTHORITY_V1",
+                "successor_epoch_id": "AUTONOMY_EPOCH_2",
+                "successor_definition_sha256": "1" * 64,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        [
+            shell,
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(SCRIPT),
+            "-RepoRoot",
+            str(ROOT),
+            "-ApprovedHead",
+            head,
+            "-TransitionAuthorityPath",
+            str(authority),
+            "-ValidateOnly",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(completed.stdout.strip().splitlines()[-1])
+
+    assert payload["receipt_finalizer_required"] is True
+    assert payload["launch_attempt_id"] in payload["receipt_finalizer_arguments"]
+    assert payload["launch_attempt_id"] in payload["python_arguments"]

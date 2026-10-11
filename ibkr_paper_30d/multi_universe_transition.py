@@ -41,6 +41,7 @@ class TransitionRecoveryResult(BaseModel, frozen=True):
 
 class MultiUniverseTransitionCoordinator:
     SCHEMA = "MULTI_UNIVERSE_TRANSITION_EVENT_V1"
+    RUNTIME_RELEASE_SCHEMA = "MULTI_UNIVERSE_RUNTIME_RELEASE_V1"
 
     def __init__(
         self,
@@ -55,7 +56,7 @@ class MultiUniverseTransitionCoordinator:
 
     def _rows(self, transition_id: str) -> list[tuple[Any, ...]]:
         return self.db.execute(
-            "SELECT phase,payload_json,payload_sha256,previous_event_sha256,"
+            "SELECT phase,event_type,payload_json,payload_sha256,previous_event_sha256,"
             "event_sha256 FROM successor_transition_events "
             "WHERE transition_id=? ORDER BY sequence",
             (transition_id,),
@@ -64,16 +65,20 @@ class MultiUniverseTransitionCoordinator:
     def _events(self, target: TransitionTarget) -> list[dict[str, Any]]:
         events: list[dict[str, Any]] = []
         previous: str | None = None
-        for phase, payload_json, payload_sha, stored_previous, event_sha in self._rows(
-            target.transition_id
-        ):
+        for (
+            phase,
+            event_type,
+            payload_json,
+            payload_sha,
+            stored_previous,
+            event_sha,
+        ) in self._rows(target.transition_id):
             try:
                 payload = json.loads(str(payload_json))
             except (TypeError, json.JSONDecodeError) as exc:
                 raise MultiUniverseTransitionError("TRANSITION_PROJECTION_AMBIGUOUS") from exc
             if (
-                payload.get("schema") != self.SCHEMA
-                or payload.get("target_sha256") != target.sha256
+                payload.get("target_sha256") != target.sha256
                 or sha256_json(payload) != str(payload_sha)
                 or (None if stored_previous is None else str(stored_previous)) != previous
                 or sha256_json(
@@ -83,7 +88,27 @@ class MultiUniverseTransitionCoordinator:
                 or payload.get("phase") != str(phase)
             ):
                 raise MultiUniverseTransitionError("TRANSITION_PROJECTION_AMBIGUOUS")
-            events.append({**payload, "event_sha256": str(event_sha)})
+            if event_type == "PHASE_COMMITTED":
+                if payload.get("schema") != self.SCHEMA:
+                    raise MultiUniverseTransitionError(
+                        "TRANSITION_PROJECTION_AMBIGUOUS"
+                    )
+                events.append({**payload, "event_sha256": str(event_sha)})
+            elif event_type == "RUNTIME_RELEASE_AUTHORIZED":
+                if (
+                    payload.get("schema") != self.RUNTIME_RELEASE_SCHEMA
+                    or payload.get("target") != target.model_dump(mode="json")
+                    or payload.get("previous_approved_git_head")
+                    != target.approved_git_head
+                    or not self._git_head_value(payload.get("approved_git_head"))
+                    or payload.get("evidence_sha256")
+                    != sha256_json(payload.get("evidence") or {})
+                ):
+                    raise MultiUniverseTransitionError(
+                        "TRANSITION_PROJECTION_AMBIGUOUS"
+                    )
+            else:
+                raise MultiUniverseTransitionError("TRANSITION_PROJECTION_AMBIGUOUS")
             previous = str(event_sha)
         if events:
             actual = tuple(TransitionPhase(item["phase"]) for item in events)
@@ -138,6 +163,168 @@ class MultiUniverseTransitionCoordinator:
     def _sha256_value(value: Any) -> bool:
         text = str(value or "")
         return len(text) == 64 and all(char in "0123456789abcdef" for char in text)
+
+    @staticmethod
+    def _git_head_value(value: Any) -> bool:
+        text = str(value or "")
+        return len(text) == 40 and all(char in "0123456789abcdef" for char in text)
+
+    @staticmethod
+    def _validate_runtime_release_evidence(
+        target: TransitionTarget,
+        approved_git_head: str,
+        evidence: Mapping[str, Any],
+    ) -> None:
+        checks = (
+            (evidence.get("owner_authorized") is True, "OWNER_AUTHORIZATION_REQUIRED"),
+            (bool(str(evidence.get("owner_sid") or "").strip()), "OWNER_AUTHORIZATION_REQUIRED"),
+            (
+                evidence.get("account_identity_sha256")
+                == target.account_identity_sha256,
+                "PAPER_ACCOUNT_MISMATCH",
+            ),
+            (
+                evidence.get("current_head") == approved_git_head,
+                "RUNTIME_RELEASE_HEAD_MISMATCH",
+            ),
+            (
+                evidence.get("live_port_4001_listening") is False,
+                "POSSIBLE_LIVE_CONNECTION",
+            ),
+            (
+                evidence.get("paper_port_4002_listening") is True
+                and evidence.get("authenticated_paper") is True,
+                "PAPER_PORT_UNAVAILABLE",
+            ),
+            (
+                evidence.get("broker_reconciliation_status") == "PASS"
+                and evidence.get("broker_state_certain") is True,
+                "BROKER_STATE_UNCERTAIN",
+            ),
+            (evidence.get("tracked_tree_clean") is True, "TRACKED_TREE_DIRTY"),
+            (evidence.get("writer_count") == 0, "RUNTIME_RELEASE_WRITER_ACTIVE"),
+            (
+                evidence.get("open_order_count") == 0
+                and evidence.get("new_execution_count") == 0
+                and evidence.get("broker_write_count") == 0,
+                "RUNTIME_RELEASE_BROKER_NOT_FLAT",
+            ),
+            (
+                MultiUniverseTransitionCoordinator._sha256_value(
+                    evidence.get("release_artifact_sha256")
+                ),
+                "RUNTIME_RELEASE_EVIDENCE_INVALID",
+            ),
+        )
+        for valid, reason in checks:
+            if not valid:
+                raise MultiUniverseTransitionError(reason)
+
+    def _runtime_release_rows(self, target: TransitionTarget) -> list[dict[str, Any]]:
+        rows = self.db.execute(
+            "SELECT payload_json,event_sha256 FROM successor_transition_events "
+            "WHERE transition_id=? AND event_type='RUNTIME_RELEASE_AUTHORIZED' "
+            "ORDER BY sequence",
+            (target.transition_id,),
+        ).fetchall()
+        releases: list[dict[str, Any]] = []
+        for payload_json, event_sha256 in rows:
+            try:
+                payload = json.loads(str(payload_json))
+            except (TypeError, json.JSONDecodeError) as exc:
+                raise MultiUniverseTransitionError(
+                    "TRANSITION_PROJECTION_AMBIGUOUS"
+                ) from exc
+            releases.append({**payload, "event_sha256": str(event_sha256)})
+        return releases
+
+    def effective_approved_git_head(self, target: TransitionTarget) -> str:
+        self._events(target)
+        releases = self._runtime_release_rows(target)
+        return (
+            target.approved_git_head
+            if not releases
+            else str(releases[-1]["approved_git_head"])
+        )
+
+    def authorize_runtime_release(
+        self,
+        target: TransitionTarget,
+        *,
+        approved_git_head: str,
+        evidence: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        if not self._git_head_value(approved_git_head):
+            raise MultiUniverseTransitionError("RUNTIME_RELEASE_HEAD_INVALID")
+        self._validate_runtime_release_evidence(
+            target, approved_git_head, evidence
+        )
+        with self.db.transaction():
+            events = self._events(target)
+            if not events or TransitionPhase(events[-1]["phase"]) is not TransitionPhase.SUCCESSOR_COMMITTED:
+                raise MultiUniverseTransitionError("RUNTIME_RELEASE_PHASE_INVALID")
+            releases = self._runtime_release_rows(target)
+            if releases:
+                existing = releases[-1]
+                if (
+                    existing.get("approved_git_head") != approved_git_head
+                    or existing.get("evidence_sha256")
+                    != sha256_json(dict(evidence))
+                ):
+                    raise MultiUniverseTransitionError("RUNTIME_RELEASE_CONFLICT")
+                return {
+                    "status": "PASS",
+                    "previous_approved_git_head": target.approved_git_head,
+                    "approved_git_head": approved_git_head,
+                    "event_sha256": existing["event_sha256"],
+                    "idempotent": True,
+                }
+            if approved_git_head == target.approved_git_head:
+                raise MultiUniverseTransitionError("RUNTIME_RELEASE_HEAD_UNCHANGED")
+            row = self.db.execute(
+                "SELECT event_sha256 FROM successor_transition_events "
+                "WHERE transition_id=? ORDER BY sequence DESC LIMIT 1",
+                (target.transition_id,),
+            ).fetchone()
+            previous = None if row is None else str(row[0])
+            payload = {
+                "schema": self.RUNTIME_RELEASE_SCHEMA,
+                "transition_id": target.transition_id,
+                "phase": TransitionPhase.SUCCESSOR_COMMITTED.value,
+                "target": target.model_dump(mode="json"),
+                "target_sha256": target.sha256,
+                "previous_approved_git_head": target.approved_git_head,
+                "approved_git_head": approved_git_head,
+                "evidence": dict(evidence),
+                "evidence_sha256": sha256_json(dict(evidence)),
+            }
+            event_sha = sha256_json(
+                {"previous_event_sha256": previous, "payload": payload}
+            )
+            self.db.execute(
+                "INSERT INTO successor_transition_events("
+                "event_id,transition_id,phase,event_type,payload_json,payload_sha256,"
+                "previous_event_sha256,event_sha256,created_at_utc) "
+                "VALUES(?,?,?,?,?,?,?,?,?)",
+                (
+                    str(new_uuid7()),
+                    target.transition_id,
+                    TransitionPhase.SUCCESSOR_COMMITTED.value,
+                    "RUNTIME_RELEASE_AUTHORIZED",
+                    canonical_bytes(payload).decode("utf-8"),
+                    sha256_json(payload),
+                    previous,
+                    event_sha,
+                    utc_now(),
+                ),
+            )
+        return {
+            "status": "PASS",
+            "previous_approved_git_head": target.approved_git_head,
+            "approved_git_head": approved_git_head,
+            "event_sha256": event_sha,
+            "idempotent": False,
+        }
 
     @classmethod
     def _cash_classifications(
@@ -285,7 +472,7 @@ class MultiUniverseTransitionCoordinator:
                 raise MultiUniverseTransitionError("TRANSITION_TARGET_CONFLICT")
             rows = self._rows(target.transition_id)
             if rows:
-                first_payload = json.loads(str(rows[0][1]))
+                first_payload = json.loads(str(rows[0][2]))
                 if first_payload.get("target_sha256") != target.sha256:
                     raise MultiUniverseTransitionError(
                         "TRANSITION_TARGET_CONFLICT"
