@@ -65,6 +65,7 @@ class MultiUniverseTransitionCoordinator:
     def _events(self, target: TransitionTarget) -> list[dict[str, Any]]:
         events: list[dict[str, Any]] = []
         previous: str | None = None
+        effective_approved_git_head = target.approved_git_head
         for (
             phase,
             event_type,
@@ -99,7 +100,7 @@ class MultiUniverseTransitionCoordinator:
                     payload.get("schema") != self.RUNTIME_RELEASE_SCHEMA
                     or payload.get("target") != target.model_dump(mode="json")
                     or payload.get("previous_approved_git_head")
-                    != target.approved_git_head
+                    != effective_approved_git_head
                     or not self._git_head_value(payload.get("approved_git_head"))
                     or payload.get("evidence_sha256")
                     != sha256_json(payload.get("evidence") or {})
@@ -107,6 +108,7 @@ class MultiUniverseTransitionCoordinator:
                     raise MultiUniverseTransitionError(
                         "TRANSITION_PROJECTION_AMBIGUOUS"
                     )
+                effective_approved_git_head = str(payload["approved_git_head"])
             else:
                 raise MultiUniverseTransitionError("TRANSITION_PROJECTION_AMBIGUOUS")
             previous = str(event_sha)
@@ -264,22 +266,26 @@ class MultiUniverseTransitionCoordinator:
             if not events or TransitionPhase(events[-1]["phase"]) is not TransitionPhase.SUCCESSOR_COMMITTED:
                 raise MultiUniverseTransitionError("RUNTIME_RELEASE_PHASE_INVALID")
             releases = self._runtime_release_rows(target)
+            previous_approved_git_head = (
+                target.approved_git_head
+                if not releases
+                else str(releases[-1]["approved_git_head"])
+            )
             if releases:
                 existing = releases[-1]
-                if (
-                    existing.get("approved_git_head") != approved_git_head
-                    or existing.get("evidence_sha256")
-                    != sha256_json(dict(evidence))
-                ):
-                    raise MultiUniverseTransitionError("RUNTIME_RELEASE_CONFLICT")
-                return {
-                    "status": "PASS",
-                    "previous_approved_git_head": target.approved_git_head,
-                    "approved_git_head": approved_git_head,
-                    "event_sha256": existing["event_sha256"],
-                    "idempotent": True,
-                }
-            if approved_git_head == target.approved_git_head:
+                if existing.get("approved_git_head") == approved_git_head:
+                    if existing.get("evidence_sha256") != sha256_json(dict(evidence)):
+                        raise MultiUniverseTransitionError("RUNTIME_RELEASE_CONFLICT")
+                    return {
+                        "status": "PASS",
+                        "previous_approved_git_head": existing[
+                            "previous_approved_git_head"
+                        ],
+                        "approved_git_head": approved_git_head,
+                        "event_sha256": existing["event_sha256"],
+                        "idempotent": True,
+                    }
+            if approved_git_head == previous_approved_git_head:
                 raise MultiUniverseTransitionError("RUNTIME_RELEASE_HEAD_UNCHANGED")
             row = self.db.execute(
                 "SELECT event_sha256 FROM successor_transition_events "
@@ -293,7 +299,7 @@ class MultiUniverseTransitionCoordinator:
                 "phase": TransitionPhase.SUCCESSOR_COMMITTED.value,
                 "target": target.model_dump(mode="json"),
                 "target_sha256": target.sha256,
-                "previous_approved_git_head": target.approved_git_head,
+                "previous_approved_git_head": previous_approved_git_head,
                 "approved_git_head": approved_git_head,
                 "evidence": dict(evidence),
                 "evidence_sha256": sha256_json(dict(evidence)),
@@ -320,7 +326,7 @@ class MultiUniverseTransitionCoordinator:
             )
         return {
             "status": "PASS",
-            "previous_approved_git_head": target.approved_git_head,
+            "previous_approved_git_head": previous_approved_git_head,
             "approved_git_head": approved_git_head,
             "event_sha256": event_sha,
             "idempotent": False,

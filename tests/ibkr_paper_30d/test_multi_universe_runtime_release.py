@@ -13,6 +13,7 @@ from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 
 OLD_HEAD = "1" * 40
 NEW_HEAD = "2" * 40
+SECOND_HEAD = "4" * 40
 
 
 def _target() -> TransitionTarget:
@@ -149,6 +150,43 @@ def test_runtime_release_is_idempotent_only_for_exact_same_release(tmp_path) -> 
                 "WHERE event_type='RUNTIME_RELEASE_AUTHORIZED'"
             ).fetchone()[0]
             == 1
+        )
+    finally:
+        db.close()
+
+
+def test_runtime_release_appends_a_verified_head_chain(tmp_path) -> None:
+    db, coordinator, target = _coordinator(tmp_path)
+    try:
+        first = coordinator.authorize_runtime_release(
+            target,
+            approved_git_head=NEW_HEAD,
+            evidence=_release_evidence(),
+        )
+        second_evidence = _release_evidence(current_head=SECOND_HEAD)
+        second = coordinator.authorize_runtime_release(
+            target,
+            approved_git_head=SECOND_HEAD,
+            evidence=second_evidence,
+        )
+        retry = coordinator.authorize_runtime_release(
+            target,
+            approved_git_head=SECOND_HEAD,
+            evidence=second_evidence,
+        )
+
+        assert first["previous_approved_git_head"] == OLD_HEAD
+        assert second["previous_approved_git_head"] == NEW_HEAD
+        assert second["idempotent"] is False
+        assert retry["event_sha256"] == second["event_sha256"]
+        assert retry["idempotent"] is True
+        assert coordinator.effective_approved_git_head(target) == SECOND_HEAD
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM successor_transition_events "
+                "WHERE event_type='RUNTIME_RELEASE_AUTHORIZED'"
+            ).fetchone()[0]
+            == 2
         )
     finally:
         db.close()
