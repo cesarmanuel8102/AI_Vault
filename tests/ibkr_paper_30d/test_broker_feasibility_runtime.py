@@ -941,6 +941,133 @@ def test_research_what_if_accepts_explicit_zero_margin_and_commission(monkeypatc
     assert result.data["commission"] == "0"
 
 
+def test_crypto_cash_buy_uses_bounded_debit_when_margin_is_not_applicable(
+    monkeypatch,
+):
+    broker = WhatIfOnlyBroker(
+        state=_order_state(
+            commission="0.251373",
+            minCommission=float("inf"),
+            maxCommission=float("inf"),
+            initMarginChange=float("inf"),
+            maintMarginChange=float("inf"),
+            equityWithLoanChange=float("inf"),
+        )
+    )
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id="crypto-cash-debit",
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "action": "BUY",
+            "con_id": 479624278,
+            "symbol": "BTC",
+            "security_type": "CRYPTO",
+            "exchange": "PAXOS",
+            "currency": "USD",
+            "quantity": "0.0003",
+            "order_type": "LMT",
+            "limit_price": "83791.00",
+            "time_in_force": "IOC",
+        },
+        purpose="bound a fully paid PAPER crypto purchase",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.success is True
+    assert result.error is None
+    assert result.data["what_if_status"] == "BROKER_CASH_DEBIT_COMPUTED"
+    assert result.data["economic_basis"] == "BROKER_COMMISSION_PLUS_LIMIT_CASH_DEBIT"
+    assert result.data["cash_notional_usd"] == "25.137300"
+    assert result.data["estimated_commission_usd"] == "0.251373"
+    assert result.data["maximum_cash_debit_usd"] == "25.388673"
+    assert result.data["broker_economics_computed"] is True
+    assert result.data["initMarginChange"] is None
+    assert result.data["maintMarginChange"] is None
+
+
+def test_crypto_cash_buy_rejects_unsupported_tif_before_broker(monkeypatch):
+    broker = WhatIfOnlyBroker(state=_order_state(commission="0.25"))
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id="crypto-buy-day-is-not-supported",
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "action": "BUY",
+            "con_id": 479624278,
+            "symbol": "BTC",
+            "security_type": "CRYPTO",
+            "exchange": "PAXOS",
+            "currency": "USD",
+            "quantity": "0.0003",
+            "order_type": "LMT",
+            "limit_price": "83791.00",
+            "time_in_force": "DAY",
+        },
+        purpose="return the exact broker constraint to the autonomous model",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.success is False
+    assert result.error == "BROKER_FEASIBILITY_ARGUMENTS_INVALID"
+    assert result.data["error_code"] == "BROKER_CRYPTO_BUY_IOC_REQUIRED"
+    assert result.data["stage"] == "REQUEST_VALIDATION"
+    assert broker.what_if_calls == []
+
+
+@pytest.mark.parametrize(
+    ("security_type", "action", "order_type", "limit_price", "time_in_force"),
+    (
+        ("STK", "BUY", "LMT", "10.00", "IOC"),
+        ("CRYPTO", "SELL", "LMT", "83791.00", "IOC"),
+        ("CRYPTO", "BUY", "MKT", None, "IOC"),
+    ),
+)
+def test_margin_sentinel_cash_debit_path_is_strictly_scoped(
+    monkeypatch, security_type, action, order_type, limit_price, time_in_force
+):
+    broker = WhatIfOnlyBroker(
+        state=_order_state(
+            commission="0.25",
+            minCommission=float("inf"),
+            maxCommission=float("inf"),
+            initMarginChange=float("inf"),
+            maintMarginChange=float("inf"),
+        )
+    )
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id=(
+            f"strict-cash-debit-{security_type}-{action}-{order_type}-{time_in_force}"
+        ),
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "action": action,
+            "con_id": 479624278,
+            "symbol": "BTC" if security_type == "CRYPTO" else "GENI",
+            "security_type": security_type,
+            "exchange": "PAXOS" if security_type == "CRYPTO" else "SMART",
+            "currency": "USD",
+            "quantity": "0.0003" if security_type == "CRYPTO" else "1",
+            "order_type": order_type,
+            "limit_price": limit_price,
+            "time_in_force": time_in_force,
+        },
+        purpose="prove the cash-debit exception cannot broaden",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.success is False
+    assert result.data["error_code"] == "BROKER_ECONOMICS_SENTINEL_DETECTED"
+    assert result.data["broker_economics_computed"] is False
+
+
 @pytest.mark.parametrize(
     "state_updates",
     (

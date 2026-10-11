@@ -458,3 +458,103 @@ def test_capability_collector_rechecks_exact_contract_quote_and_whatif() -> None
         ResearchTool.BROKER_FEASIBILITY,
     ]
     assert all(item[1] is bundle for item in observed)
+
+
+def test_capability_collector_accepts_cash_debit_only_within_candidate_bounds() -> None:
+    proposal = _proposal().model_copy(
+        update={
+            "maximum_debit_usd": Decimal("10"),
+            "maximum_loss_usd": Decimal("10"),
+            "fee_allowance_usd": Decimal("1"),
+        }
+    )
+
+    class Toolbox:
+        def execute(self, request, bundle):
+            del bundle
+            if request.tool is ResearchTool.RESOLVE_CONTRACT:
+                data = {
+                    "contracts": [
+                        {
+                            "conId": proposal.canonical_contract.con_id,
+                            "secType": "CRYPTO",
+                        }
+                    ]
+                }
+            elif request.tool is ResearchTool.QUOTE:
+                data = {
+                    "contract": {"conId": proposal.canonical_contract.con_id},
+                    "bid": "9990",
+                    "ask": "10000",
+                }
+            else:
+                data = {
+                    "paper_only": True,
+                    "whatIf": True,
+                    "what_if_status": "BROKER_CASH_DEBIT_COMPUTED",
+                    "broker_economics_computed": True,
+                    "cash_notional_usd": "10.00",
+                    "estimated_commission_usd": "0.25",
+                    "maximum_cash_debit_usd": "10.25",
+                }
+            return ResearchResult(
+                request_id=request.request_id,
+                tool=request.tool,
+                success=True,
+                data=data,
+            )
+
+    evidence = collect_canary_capability_evidence(
+        Toolbox(), object(), proposal, now_utc=NOW + timedelta(seconds=1)
+    )
+
+    assert evidence["broker_feasibility_verified"] is True
+    assert evidence["broker_economics_within_candidate_bounds"] is True
+    assert evidence["fresh"] is True
+
+
+def test_capability_collector_rejects_underdeclared_cash_economics() -> None:
+    proposal = _proposal()
+
+    class Toolbox:
+        def execute(self, request, bundle):
+            del bundle
+            if request.tool is ResearchTool.RESOLVE_CONTRACT:
+                data = {
+                    "contracts": [
+                        {
+                            "conId": proposal.canonical_contract.con_id,
+                            "secType": "CRYPTO",
+                        }
+                    ]
+                }
+            elif request.tool is ResearchTool.QUOTE:
+                data = {
+                    "contract": {"conId": proposal.canonical_contract.con_id},
+                    "bid": "9990",
+                    "ask": "10000",
+                }
+            else:
+                data = {
+                    "paper_only": True,
+                    "whatIf": True,
+                    "what_if_status": "BROKER_CASH_DEBIT_COMPUTED",
+                    "broker_economics_computed": True,
+                    "cash_notional_usd": "10.01",
+                    "estimated_commission_usd": "1.01",
+                    "maximum_cash_debit_usd": "11.02",
+                }
+            return ResearchResult(
+                request_id=request.request_id,
+                tool=request.tool,
+                success=True,
+                data=data,
+            )
+
+    evidence = collect_canary_capability_evidence(
+        Toolbox(), object(), proposal, now_utc=NOW + timedelta(seconds=1)
+    )
+
+    assert evidence["broker_feasibility_verified"] is False
+    assert evidence["broker_economics_within_candidate_bounds"] is False
+    assert evidence["fresh"] is False

@@ -270,6 +270,10 @@ class IBKRResearchToolbox:
             "what_if_status",
             "broker_whatif_reached",
             "broker_economics_computed",
+            "economic_basis",
+            "cash_notional_usd",
+            "estimated_commission_usd",
+            "maximum_cash_debit_usd",
             "continuity_host_bindings",
         }
     )
@@ -290,21 +294,48 @@ class IBKRResearchToolbox:
         if not feasibility.get("success"):
             return safe
 
-        init_margin = cls._decimal_or_none(feasibility.get("initMarginChange"))
-        maint_margin = cls._decimal_or_none(feasibility.get("maintMarginChange"))
-        if init_margin is None or maint_margin is None:
-            error_code = "BROKER_MARGIN_EVIDENCE_MISSING"
+        cash_debit_status = (
+            feasibility.get("what_if_status") == "BROKER_CASH_DEBIT_COMPUTED"
+        )
+        if cash_debit_status:
+            cash_notional = cls._decimal_or_none(
+                feasibility.get("cash_notional_usd")
+            )
+            estimated_commission = cls._decimal_or_none(
+                feasibility.get("estimated_commission_usd")
+            )
+            maximum_cash_debit = cls._decimal_or_none(
+                feasibility.get("maximum_cash_debit_usd")
+            )
+            error_code = (
+                "BROKER_CASH_DEBIT_EVIDENCE_MISSING"
+                if cash_notional is None
+                or estimated_commission is None
+                or maximum_cash_debit is None
+                or cash_notional < 0
+                or estimated_commission < 0
+                or maximum_cash_debit != cash_notional + estimated_commission
+                else None
+            )
         else:
+            init_margin = cls._decimal_or_none(feasibility.get("initMarginChange"))
+            maint_margin = cls._decimal_or_none(feasibility.get("maintMarginChange"))
+            if init_margin is None or maint_margin is None:
+                error_code = "BROKER_MARGIN_EVIDENCE_MISSING"
+            else:
+                error_code = None
+        if error_code is None:
             commissions = (
                 cls._decimal_or_none(feasibility.get("commission")),
                 cls._decimal_or_none(feasibility.get("minCommission")),
                 cls._decimal_or_none(feasibility.get("maxCommission")),
             )
-            error_code = (
+            commission_error = (
                 "BROKER_COMMISSION_EVIDENCE_MISSING"
                 if all(value is None for value in commissions)
                 else None
             )
+            error_code = commission_error
         if error_code is None:
             return safe
         return {
@@ -327,6 +358,29 @@ class IBKRResearchToolbox:
         warning = str(feasibility.get("warningText") or "").lower()
         if any(token in warning for token in self.WARNING_BLOCK_TOKENS):
             return False, ("BROKER_FEASIBILITY_WARNING_BLOCK",)
+
+        if feasibility.get("what_if_status") == "BROKER_CASH_DEBIT_COMPUTED":
+            cash_notional = self._decimal_or_none(
+                feasibility.get("cash_notional_usd")
+            )
+            estimated_commission = self._decimal_or_none(
+                feasibility.get("estimated_commission_usd")
+            )
+            maximum_cash_debit = self._decimal_or_none(
+                feasibility.get("maximum_cash_debit_usd")
+            )
+            if (
+                cash_notional is None
+                or estimated_commission is None
+                or maximum_cash_debit is None
+                or cash_notional < 0
+                or estimated_commission < 0
+                or maximum_cash_debit != cash_notional + estimated_commission
+            ):
+                return False, ("BROKER_CASH_DEBIT_EVIDENCE_MISSING",)
+            if maximum_cash_debit > equity:
+                return False, ("BROKER_CASH_DEBIT_EXCEEDS_EXPERIMENT_EQUITY",)
+            return True, ()
 
         init_margin = self._decimal_or_none(feasibility.get("initMarginChange"))
         maint_margin = self._decimal_or_none(feasibility.get("maintMarginChange"))
@@ -1666,7 +1720,10 @@ class IBKRResearchToolbox:
         if not has_contract_id and not str(args.get("symbol") or "").strip():
             return invalid("BROKER_FEASIBILITY_CONTRACT_REQUIRED")
         sec_type = str(
-            args.get("sec_type") or args.get("secType") or ""
+            args.get("sec_type")
+            or args.get("secType")
+            or args.get("security_type")
+            or ""
         ).upper()
         legs = args.get("legs")
         if sec_type == "BAG":
@@ -1720,6 +1777,17 @@ class IBKRResearchToolbox:
             limit_price = cls._decimal_or_none(args.get("limit_price"))
             if limit_price is None or limit_price <= 0:
                 return invalid("BROKER_FEASIBILITY_LIMIT_PRICE_INVALID")
+        if (
+            sec_type == "CRYPTO"
+            and str(args.get("exchange") or "").upper() == "PAXOS"
+            and str(args.get("action") or "").upper() == "BUY"
+            and order_type == "LMT"
+            and str(
+                args.get("time_in_force") or args.get("tif") or "DAY"
+            ).upper()
+            != "IOC"
+        ):
+            return invalid("BROKER_CRYPTO_BUY_IOC_REQUIRED")
         return None
 
     def _qualified_contract_error(
@@ -1938,6 +2006,62 @@ class IBKRResearchToolbox:
         )
         if not usable_commission:
             required_sentinel_fields.update(unusable_fields.intersection(commission_fields))
+        warning_text = str(getattr(state, "warningText", None) or "")
+        cash_commissions = tuple(
+            value
+            for value in (
+                self._decimal_or_none(sanitized_economics[key])
+                for key in commission_fields
+            )
+            if value is not None and value >= 0
+        )
+        cash_debit_applicable = bool(
+            str(getattr(contract, "secType", "") or "").upper() == "CRYPTO"
+            and str(getattr(contract, "exchange", "") or "").upper() == "PAXOS"
+            and str(getattr(contract, "currency", "") or "").upper() == "USD"
+            and action.upper() == "BUY"
+            and order_type.upper() == "LMT"
+            and time_in_force.upper() == "IOC"
+            and quantity.is_finite()
+            and quantity > 0
+            and limit_price is not None
+            and limit_price.is_finite()
+            and limit_price > 0
+            and sanitized_economics["initMarginChange"] is None
+            and sanitized_economics["maintMarginChange"] is None
+            and cash_commissions
+            and not any(
+                token in warning_text.lower() for token in self.WARNING_BLOCK_TOKENS
+            )
+        )
+        if cash_debit_applicable:
+            estimated_commission = max(cash_commissions)
+            cash_notional = quantity * limit_price
+            maximum_cash_debit = cash_notional + estimated_commission
+            result = {
+                "success": True,
+                "contract": self._serialize_contract(contract),
+                **sanitized_economics,
+                "warningText": warning_text,
+                "whatIf": True,
+                "paper_only": True,
+                "what_if_status": "BROKER_CASH_DEBIT_COMPUTED",
+                "broker_whatif_reached": True,
+                "broker_economics_computed": True,
+                "economic_basis": "BROKER_COMMISSION_PLUS_LIMIT_CASH_DEBIT",
+                "cash_notional_usd": str(cash_notional),
+                "estimated_commission_usd": str(estimated_commission),
+                "maximum_cash_debit_usd": str(maximum_cash_debit),
+            }
+            if self.expected_account_hash is not None:
+                result["continuity_host_bindings"] = {
+                    "account_identity_sha256": self.expected_account_hash,
+                    "contract_identity_sha256": sha256_json(
+                        canonical_contract_identity(contract)
+                    ),
+                    "execution_client_id": EXECUTION_CLIENT_ID,
+                }
+            return result
         if required_sentinel_fields:
             return {
                 "success": False,
@@ -1951,13 +2075,14 @@ class IBKRResearchToolbox:
                 "broker_whatif_reached": True,
                 "broker_economics_computed": False,
                 "stage": "WHAT_IF_NORMALIZATION",
+                "warningText": warning_text,
                 **sanitized_economics,
             }
         result = {
             "success": True,
             "contract": self._serialize_contract(contract),
             **sanitized_economics,
-            "warningText": getattr(state, "warningText", None),
+            "warningText": warning_text,
             "whatIf": True,
             "paper_only": True,
             "what_if_status": "BROKER_ECONOMICS_COMPUTED",

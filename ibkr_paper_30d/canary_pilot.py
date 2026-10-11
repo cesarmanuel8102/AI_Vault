@@ -39,6 +39,16 @@ def _positive_finite(value: Any) -> bool:
     return normalized.is_finite() and normalized > 0
 
 
+def _nonnegative_decimal(value: Any) -> Decimal | None:
+    try:
+        normalized = Decimal(str(value))
+    except (InvalidOperation, ValueError, TypeError):
+        return None
+    if not normalized.is_finite() or normalized < 0:
+        return None
+    return normalized
+
+
 def collect_canary_capability_evidence(
     toolbox: Any,
     bundle: Any,
@@ -111,11 +121,32 @@ def collect_canary_capability_evidence(
             for field in ("bid", "ask", "last", "marketPrice")
         )
     )
+    broker_economics_within_candidate_bounds = True
+    if feasibility.data.get("what_if_status") == "BROKER_CASH_DEBIT_COMPUTED":
+        cash_notional = _nonnegative_decimal(
+            feasibility.data.get("cash_notional_usd")
+        )
+        estimated_commission = _nonnegative_decimal(
+            feasibility.data.get("estimated_commission_usd")
+        )
+        maximum_cash_debit = _nonnegative_decimal(
+            feasibility.data.get("maximum_cash_debit_usd")
+        )
+        broker_economics_within_candidate_bounds = bool(
+            cash_notional is not None
+            and estimated_commission is not None
+            and maximum_cash_debit is not None
+            and maximum_cash_debit == cash_notional + estimated_commission
+            and cash_notional <= proposal.maximum_debit_usd
+            and cash_notional <= proposal.maximum_loss_usd
+            and estimated_commission <= proposal.fee_allowance_usd
+        )
     broker_feasibility_verified = bool(
         feasibility.success
         and feasibility.data.get("paper_only") is True
         and feasibility.data.get("whatIf") is True
         and feasibility.data.get("broker_economics_computed", True) is not False
+        and broker_economics_within_candidate_bounds
     )
     expires_at = now_utc + timedelta(minutes=2)
     return {
@@ -144,6 +175,9 @@ def collect_canary_capability_evidence(
         "contract_qualified": contract_qualified,
         "market_data_verified": market_data_verified,
         "broker_feasibility_verified": broker_feasibility_verified,
+        "broker_economics_within_candidate_bounds": (
+            broker_economics_within_candidate_bounds
+        ),
         "observed_at_utc": now_utc,
         "expires_at_utc": expires_at,
         "resolve_result_sha256": sha256_json(resolve),
