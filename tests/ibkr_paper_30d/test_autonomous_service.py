@@ -1440,12 +1440,12 @@ def test_successor_service_never_invokes_legacy_three_window_collector():
 def test_v4_service_can_arm_with_legacy_regular_market_gate_closed(
     tmp_path, monkeypatch
 ):
+    gate_calls = []
+
     class ClosedRegularGate:
         def evaluate(self, *_args, **_kwargs):
-            return {
-                "gate_status": "BLOCK",
-                "reason_codes": ["REGULAR_SESSION_CLOSED"],
-            }
+            gate_calls.append("evaluate")
+            raise AssertionError("legacy regular market gate must not run for V4 arm")
 
     class ArmedExecutor:
         armed = True
@@ -1485,6 +1485,7 @@ def test_v4_service_can_arm_with_legacy_regular_market_gate_closed(
         )
 
     assert service.multi_universe_runtime_authority is authority
+    assert gate_calls == []
 
 
 class _IdleStoppingClock(Clock):
@@ -1509,6 +1510,53 @@ def _idle_events(db):
             ("MARKET_CLOSED_IDLE",),
         ).fetchall()
     ]
+
+
+def test_successor_committed_waits_without_building_v4_cycles(tmp_path, monkeypatch):
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = _IdleStoppingClock(stop_after_sleeps=3)
+    with Database.open(tmp_path / "successor-committed.sqlite3") as db:
+        service = make_service(db, clock)
+        service.multi_universe_runtime_authority = SimpleNamespace(
+            transition_phase="SUCCESSOR_COMMITTED"
+        )
+        service._current_successor_transition_phase = lambda: "SUCCESSOR_COMMITTED"
+        clock.service = service
+
+        service.run_forever()
+
+        pending_events = db.execute(
+            "SELECT COUNT(*) FROM state_events WHERE event_type=?",
+            ("SUCCESSOR_SUPERVISION_PENDING",),
+        ).fetchone()[0]
+
+    assert service.triggers == []
+    assert len(clock.sleeps) == 3
+    assert pending_events == 1
+
+
+def test_successor_service_exits_cleanly_when_transition_phase_advances(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    with Database.open(tmp_path / "successor-phase-advance.sqlite3") as db:
+        service = make_service(db, clock)
+        service.multi_universe_runtime_authority = SimpleNamespace(
+            transition_phase="SUCCESSOR_COMMITTED"
+        )
+        service._current_successor_transition_phase = lambda: "SUPERVISION_BOUND"
+
+        service.run_forever()
+
+        restart_events = db.execute(
+            "SELECT COUNT(*) FROM state_events WHERE event_type=?",
+            ("SUCCESSOR_PHASE_RESTART_REQUIRED",),
+        ).fetchone()[0]
+
+    assert service.triggers == []
+    assert clock.sleeps == []
+    assert restart_events == 1
 
 
 def _closed_session_service(db, clock, *, positions=(), open_orders=False):

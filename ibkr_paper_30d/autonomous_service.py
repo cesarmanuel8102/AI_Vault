@@ -267,6 +267,7 @@ class AutonomousExperimentService:
         self.multi_universe_runtime_authority = multi_universe_runtime_authority
         self.canary_pilot_orchestrator = canary_pilot_orchestrator
         self._last_orchestration_action: OrchestrationAction | None = None
+        self._successor_supervision_pending_emitted = False
         self._watchdog_started = False
         self._watchdog_alert_active = False
         self._running_event_emitted = False
@@ -384,7 +385,9 @@ class AutonomousExperimentService:
             raise AutonomousServiceError("broker server time invalid")
         return parsed.astimezone(timezone.utc)
 
-    def _fresh_execution_safety(self, scope: str) -> tuple[str, ...]:
+    def _fresh_execution_safety(
+        self, scope: str, *, include_market_gate: bool = True
+    ) -> tuple[str, ...]:
         reasons: list[str] = []
         try:
             broker_now = self.broker_now()
@@ -408,9 +411,9 @@ class AutonomousExperimentService:
         if auditor.get("gate_status") != "PASS":
             reasons.append("AUDITOR_GATE_BLOCK_FRESH")
             reasons.extend(str(x) for x in auditor.get("reason_codes", []) or [])
-        if self.runtime_market_gate is None:
+        if include_market_gate and self.runtime_market_gate is None:
             reasons.append("MARKET_DATA_GATE_UNAVAILABLE_FRESH")
-        else:
+        elif include_market_gate:
             decision_class = (
                 DecisionClass.OPEN_POSITION_MANAGEMENT
                 if scope == "POSITION_MANAGEMENT"
@@ -469,7 +472,6 @@ class AutonomousExperimentService:
                 "paper execution requires explicit owner authorization bound to this experiment clock",
                 reason_codes=("OWNER_AUTHORIZATION_REQUIRED_FRESH",),
             )
-        reasons = self._fresh_execution_safety("NEW_TRADE")
         if self.multi_universe_runtime_authority is not None:
             authority = self.multi_universe_runtime_authority
             if (
@@ -482,13 +484,10 @@ class AutonomousExperimentService:
                     "MULTI_UNIVERSE_RUNTIME_AUTHORITY_INVALID",
                     reason_codes=("MULTI_UNIVERSE_RUNTIME_AUTHORITY_INVALID",),
                 )
-            market_reasons = {"MARKET_DATA_GATE_BLOCK_FRESH"}
-            if self.runtime_market_gate is not None:
-                market = self.runtime_market_gate.evaluate(DecisionClass.NEW_TRADE)
-                market_reasons.update(
-                    str(code) for code in market.get("reason_codes", []) or []
-                )
-            reasons = tuple(reason for reason in reasons if reason not in market_reasons)
+        reasons = self._fresh_execution_safety(
+            "NEW_TRADE",
+            include_market_gate=self.multi_universe_runtime_authority is None,
+        )
         if reasons:
             raise AutonomousServiceError(
                 "paper execution prerequisites are not PASS: " + ",".join(reasons),
@@ -972,6 +971,58 @@ class AutonomousExperimentService:
         )
         self._last_orchestration_action = OrchestrationAction.MARKET_CLOSED_IDLE
 
+    def _wait_for_successor_supervision_binding(self) -> bool:
+        phase = str(
+            getattr(self.multi_universe_runtime_authority, "transition_phase", "")
+        )
+        if phase != "SUCCESSOR_COMMITTED":
+            return False
+        if not self._successor_supervision_pending_emitted:
+            _append_state_event(
+                self.db,
+                "SUCCESSOR_SUPERVISION_PENDING",
+                {"transition_phase": phase},
+            )
+            self._successor_supervision_pending_emitted = True
+        self.sleep(
+            min(
+                self.position_interval_seconds,
+                self.scan_interval_seconds,
+            )
+        )
+        return True
+
+    def _current_successor_transition_phase(self) -> str:
+        row = self.db.execute(
+            "SELECT phase FROM successor_transition_events "
+            "ORDER BY sequence DESC LIMIT 1"
+        ).fetchone()
+        if row is None:
+            raise AutonomousServiceError(
+                "SUCCESSOR_TRANSITION_PHASE_REQUIRED",
+                reason_codes=("SUCCESSOR_TRANSITION_PHASE_REQUIRED",),
+            )
+        return str(row[0])
+
+    def _successor_phase_restart_required(self) -> bool:
+        bound_phase = str(
+            getattr(self.multi_universe_runtime_authority, "transition_phase", "")
+        )
+        if not bound_phase:
+            return False
+        current_phase = self._current_successor_transition_phase()
+        if current_phase == bound_phase:
+            return False
+        _append_state_event(
+            self.db,
+            "SUCCESSOR_PHASE_RESTART_REQUIRED",
+            {
+                "bound_transition_phase": bound_phase,
+                "current_transition_phase": current_phase,
+            },
+        )
+        return True
+
     def _run_forever_loop(self) -> None:
         self._service_started_at_utc = datetime.now(timezone.utc)
         _append_state_event(
@@ -1009,6 +1060,11 @@ class AutonomousExperimentService:
                 if projected.equity <= 0:
                     self._terminal_event("EQUITY_DEPLETED")
                     return
+
+                if self._successor_phase_restart_required():
+                    return
+                if self._wait_for_successor_supervision_binding():
+                    continue
 
                 now = self.monotonic()
                 has_positions = bool(projected.positions)
