@@ -586,19 +586,71 @@ def test_supervision_canary_phases_route_to_dedicated_orchestrator(
     assert result["outcome"]["decision"] == decision
 
 
-@pytest.mark.parametrize("executor", [None, DirectShapedExecutor()])
-def test_paper_service_rejects_missing_or_noncoordinated_executor(
-    tmp_path, executor
+def test_supervision_routes_open_regular_session_to_day1_while_canary_waits(
+    tmp_path, monkeypatch
 ):
+    calls = []
+
+    class Pilot:
+        def discover(self, bundle):
+            raise AssertionError("canary discovery must yield to an open Day1 session")
+
+        def execute(self, bundle):
+            raise AssertionError("canary execution is not authorized in supervision")
+
+    class Bundle:
+        experiment_clock = {"not_started": False, "expired": False}
+        reconciliation_receipt = {"status": "PASS"}
+        kill_switch_state = "KILL_SWITCH_CLEAR"
+        market_data_snapshot = {"gate_status": "PASS"}
+        multi_sleeve_portfolio = {
+            "entry_eligibility": {
+                "REGULAR_SLEEVE": {"status": "PASS", "reason_codes": []},
+                "CONTINUOUS_SLEEVE": {
+                    "status": "BLOCK",
+                    "reason_codes": ["SUCCESSOR_NOT_ACTIVE"],
+                },
+            },
+            "management_eligibility": {},
+        }
+
+        def model_dump(self, mode="json"):
+            return {"decision_cycle_id": "regular-cycle"}
+
+    def run_regular(bundle, **kwargs):
+        calls.append((bundle, kwargs))
+        return {
+            "status": "PASS",
+            "outcome": {"validation": "PASS", "decision": "NO_TRADE"},
+            "execution": None,
+        }
+
+    with Database.open(tmp_path / "regular-during-supervision.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        service.multi_universe_runtime_authority = SimpleNamespace(
+            transition_phase="SUPERVISION_BOUND",
+            new_regular_entries_allowed=True,
+        )
+        service.canary_pilot_orchestrator = Pilot()
+        service._builder = lambda: SimpleNamespace(build=lambda trigger: Bundle())
+        monkeypatch.setattr(service_module, "run_autonomous_cycle", run_regular)
+
+        result = service._run_cycle("SCHEDULED_SCAN")
+
+    assert len(calls) == 1
+    assert result["status"] == "PASS"
+    assert result["outcome"]["decision"] == "NO_TRADE"
+
+
+@pytest.mark.parametrize("executor", [None, DirectShapedExecutor()])
+def test_paper_service_rejects_missing_or_noncoordinated_executor(tmp_path, executor):
     with Database.open(tmp_path / "executor-contract.sqlite3") as db:
         with pytest.raises(
             AutonomousServiceError, match="COORDINATED_MODEL_EXECUTOR_REQUIRED"
         ):
             AutonomousExperimentService(
                 db,
-                experiment_start_utc=datetime(
-                    2026, 9, 28, 13, 30, tzinfo=timezone.utc
-                ),
+                experiment_start_utc=datetime(2026, 9, 28, 13, 30, tzinfo=timezone.utc),
                 execute_paper=True,
                 toolbox=StubToolbox(),
                 provider=StubProvider(),
@@ -941,9 +993,7 @@ def test_execution_block_is_not_reported_as_pass(tmp_path, monkeypatch):
     assert completed["status"] == "EXECUTION_BLOCKED"
     assert completed["gate"] == "EXECUTION"
     assert completed["gate_status"] == "BLOCK"
-    assert completed["reason_codes"] == [
-        "OPEN_ORDER_CONTRACT_IDENTITY_MISMATCH"
-    ]
+    assert completed["reason_codes"] == ["OPEN_ORDER_CONTRACT_IDENTITY_MISMATCH"]
 
 
 def test_service_passes_provider_lifecycle_and_bound_broker_time_to_runtime(
@@ -1056,9 +1106,7 @@ def test_gate_block_completion_is_observable_and_alert_is_transition_deduplicate
 
     assert completions[0]["gate"] == "AUDITOR"
     assert completions[0]["gate_status"] == "BLOCK"
-    assert completions[0]["reason_codes"] == [
-        "PAPER_IDENTITY_RECEIPT_MISMATCH"
-    ]
+    assert completions[0]["reason_codes"] == ["PAPER_IDENTITY_RECEIPT_MISMATCH"]
     assert completions[3]["gate_status"] == "PASS"
     assert completions[3]["reason_codes"] == []
     assert len(alerts) == 3
@@ -1311,9 +1359,7 @@ def test_stale_provider_failure_code_cannot_make_structural_error_recoverable(
         service = make_service(db, clock, stop_after=2)
         service.provider = FailingProvider()
         service._run_cycle = Mock(
-            side_effect=AutonomousStateBuildError(
-                "SUCCESSOR_CLOCK_BINDING_MISMATCH"
-            )
+            side_effect=AutonomousStateBuildError("SUCCESSOR_CLOCK_BINDING_MISMATCH")
         )
         service.sleep = Mock(side_effect=AssertionError("unexpected retry"))
 
@@ -1326,9 +1372,7 @@ def test_stale_provider_failure_code_cannot_make_structural_error_recoverable(
     service.sleep.assert_not_called()
 
 
-def test_transient_failure_does_not_hide_alert_persistence_error(
-    tmp_path, monkeypatch
-):
+def test_transient_failure_does_not_hide_alert_persistence_error(tmp_path, monkeypatch):
     FakeLedger.positions = ()
     monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
     clock = Clock()
@@ -1716,7 +1760,9 @@ def test_orchestration_uses_broker_time_from_evidence_not_second_connection(
         idle = _idle_events(db)
 
     assert len(idle) == 1
-    assert len(broker_now_calls) == 0, "broker_now must not be called when evidence has broker_time_utc"
+    assert (
+        len(broker_now_calls) == 0
+    ), "broker_now must not be called when evidence has broker_time_utc"
 
 
 def test_orchestration_falls_back_to_broker_now_when_evidence_lacks_time(

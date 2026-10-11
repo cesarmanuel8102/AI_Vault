@@ -21,6 +21,12 @@ from .broker_write_coordinator import BrokerWriteCoordinator
 from .canonical import canonical_bytes, sha256_json
 from .continuity_store import ContinuityStore
 from .ibkr_readonly import expected_identity_hash
+from .multi_universe_models import (
+    CapitalSleeve,
+    TransitionPhase,
+    continuous_new_entries_allowed,
+    regular_new_entries_allowed,
+)
 from .multi_universe_transition import MultiUniverseTransitionCoordinator
 from .persistence import Database
 from .repositories import utc_now
@@ -77,9 +83,7 @@ def normalize_multi_universe_launch_authority(
             "CONTINUOUS_ENTRY_AUTHORITY_AMBIGUOUS"
         )
     if payload.get("legacy_predecessor_allowed") is not False:
-        raise ProductionRuntimeConfigurationError(
-            "PREDECESSOR_REACTIVATION_ATTEMPT"
-        )
+        raise ProductionRuntimeConfigurationError("PREDECESSOR_REACTIVATION_ATTEMPT")
     if payload.get("writer_start_allowed") is not True:
         raise ProductionRuntimeConfigurationError("SUCCESSOR_WRITER_AUTHORITY_REQUIRED")
     boolean_fields = (
@@ -105,12 +109,16 @@ def normalize_multi_universe_launch_authority(
     }
     if phase not in phases:
         raise ProductionRuntimeConfigurationError("SUCCESSOR_TRANSITION_NOT_ELIGIBLE")
+    regular_entries = regular_new_entries_allowed(phase)
+    continuous_entries = continuous_new_entries_allowed(phase)
     expected_mode = (
         "CANARY_EXCLUSIVE"
         if phase == "CANARY_EXCLUSIVE"
-        else "NORMAL"
-        if phase == "ACTIVE"
-        else "FROZEN"
+        else (
+            "NORMAL"
+            if phase == "ACTIVE"
+            else "REGULAR_ONLY" if regular_entries else "FROZEN"
+        )
     )
     if mode != expected_mode and mode != "UNCERTAIN_FREEZE":
         raise ProductionRuntimeConfigurationError("ENTRY_AUTHORITY_PHASE_MISMATCH")
@@ -121,10 +129,12 @@ def normalize_multi_universe_launch_authority(
         "ACTIVE",
     }:
         raise ProductionRuntimeConfigurationError("ENTRY_AUTHORITY_PHASE_MISMATCH")
-    normal_entries = mode == "NORMAL"
-    if bool(payload.get("new_regular_entries_allowed")) is not normal_entries:
+    if mode == "UNCERTAIN_FREEZE":
+        regular_entries = False
+        continuous_entries = False
+    if bool(payload.get("new_regular_entries_allowed")) is not regular_entries:
         raise ProductionRuntimeConfigurationError("ENTRY_AUTHORITY_PHASE_MISMATCH")
-    if mode != "NORMAL" and bool(payload.get("new_continuous_entries_allowed")):
+    if bool(payload.get("new_continuous_entries_allowed")) and not continuous_entries:
         raise ProductionRuntimeConfigurationError("ENTRY_AUTHORITY_PHASE_MISMATCH")
     phase_order = (
         "SUCCESSOR_COMMITTED",
@@ -134,8 +144,8 @@ def normalize_multi_universe_launch_authority(
         "RUNTIME_BOUND",
         "ACTIVE",
     )
-    management_expected = (
-        phase_order.index(phase) >= phase_order.index("SUPERVISION_BOUND")
+    management_expected = phase_order.index(phase) >= phase_order.index(
+        "SUPERVISION_BOUND"
     )
     if (
         payload.get("management_actions_allowed") is not management_expected
@@ -152,7 +162,7 @@ def normalize_multi_universe_launch_authority(
         writer_start_allowed=True,
         management_actions_allowed=management_expected,
         continuity_actions_allowed=management_expected,
-        new_regular_entries_allowed=normal_entries,
+        new_regular_entries_allowed=regular_entries,
         new_continuous_entries_allowed=bool(
             payload.get("new_continuous_entries_allowed")
         ),
@@ -210,9 +220,7 @@ def _database_sleeve_authority_sha256(db: Any, sleeve: Any) -> str:
 
     authority = MultiUniverseAuthorityStore(db).sleeve_authority(sleeve)
     if authority is None:
-        raise ProductionRuntimeConfigurationError(
-            "SLEEVE_DATABASE_AUTHORITY_REQUIRED"
-        )
+        raise ProductionRuntimeConfigurationError("SLEEVE_DATABASE_AUTHORITY_REQUIRED")
     return authority.sha256
 
 
@@ -223,16 +231,10 @@ class _ProductionSleeveAuthoritySnapshotReader:
         config: Any,
         current_adapter_sha256: str,
     ) -> None:
-        if (
-            len(str(current_adapter_sha256)) != 64
-            or any(
-                char not in "0123456789abcdef"
-                for char in str(current_adapter_sha256)
-            )
+        if len(str(current_adapter_sha256)) != 64 or any(
+            char not in "0123456789abcdef" for char in str(current_adapter_sha256)
         ):
-            raise ProductionRuntimeConfigurationError(
-                "CURRENT_ADAPTER_SHA256_REQUIRED"
-            )
+            raise ProductionRuntimeConfigurationError("CURRENT_ADAPTER_SHA256_REQUIRED")
         self.db_path = Path(db_path)
         self.config = config
         self.current_adapter_sha256 = str(current_adapter_sha256)
@@ -283,7 +285,9 @@ class _ProductionSleeveAuthoritySnapshotReader:
                 "ORDER BY sequence DESC LIMIT 1"
             ).fetchone()
             if row is None:
-                raise ProductionRuntimeConfigurationError("SUCCESSOR_TRANSITION_REQUIRED")
+                raise ProductionRuntimeConfigurationError(
+                    "SUCCESSOR_TRANSITION_REQUIRED"
+                )
             transition_payload = json.loads(str(row[1]))
             target = TransitionTarget.model_validate(transition_payload.get("target"))
             effective_approved_head = MultiUniverseTransitionCoordinator(
@@ -318,9 +322,17 @@ class _ProductionSleeveAuthoritySnapshotReader:
             supervision_bound = phase_index >= tuple(TransitionPhase).index(
                 TransitionPhase.SUPERVISION_BOUND
             )
+            regular_entry = bool(
+                request.capital_sleeve is CapitalSleeve.REGULAR_SLEEVE
+                and regular_new_entries_allowed(phase)
+            )
+            continuous_entry = bool(
+                request.capital_sleeve is CapitalSleeve.CONTINUOUS_SLEEVE
+                and continuous_new_entries_allowed(phase)
+            )
             entry_authority = (
                 "ACTIVE"
-                if phase is TransitionPhase.ACTIVE
+                if regular_entry or continuous_entry
                 else (
                     "CANARY_ONLY"
                     if phase is TransitionPhase.CANARY_EXCLUSIVE
@@ -396,8 +408,7 @@ class _ProductionSleeveAuthoritySnapshotReader:
                     and capability.expires_at_utc > datetime.now(timezone.utc)
                 ),
                 ownership_conflict=(
-                    ownership.projection_sha256
-                    != request.ownership_projection_sha256
+                    ownership.projection_sha256 != request.ownership_projection_sha256
                 ),
                 economic_authorization_valid=economic_valid,
                 equity_usd=equity,
@@ -437,22 +448,14 @@ def _sleeve_broker_evidence_collector(
                         _broker.reqContractDetails(Contract(conId=leg.con_id))
                     )
                     if len(details) != 1:
-                        raise RuntimeError(
-                            "BAG_LEG_CONTRACT_IDENTITY_UNCERTAIN"
-                        )
+                        raise RuntimeError("BAG_LEG_CONTRACT_IDENTITY_UNCERTAIN")
                     resolved = details[0].contract
                     identity = canonical_contract_identity(
                         {
                             "conId": int(getattr(resolved, "conId", 0) or 0),
-                            "secType": str(
-                                getattr(resolved, "secType", "") or ""
-                            ),
-                            "currency": str(
-                                getattr(resolved, "currency", "") or ""
-                            ),
-                            "exchange": str(
-                                getattr(resolved, "exchange", "") or ""
-                            ),
+                            "secType": str(getattr(resolved, "secType", "") or ""),
+                            "currency": str(getattr(resolved, "currency", "") or ""),
+                            "exchange": str(getattr(resolved, "exchange", "") or ""),
                             "primaryExchange": str(
                                 getattr(resolved, "primaryExchange", "") or ""
                             )
@@ -465,19 +468,13 @@ def _sleeve_broker_evidence_collector(
                                 getattr(resolved, "tradingClass", "") or ""
                             )
                             or None,
-                            "multiplier": str(
-                                getattr(resolved, "multiplier", "") or ""
-                            )
+                            "multiplier": str(getattr(resolved, "multiplier", "") or "")
                             or None,
                         }
                     )
                     if identity.con_id != leg.con_id:
-                        raise RuntimeError(
-                            "BAG_LEG_CONTRACT_IDENTITY_MISMATCH"
-                        )
-                    ownership_contracts.append(
-                        identity.model_dump(mode="json")
-                    )
+                        raise RuntimeError("BAG_LEG_CONTRACT_IDENTITY_MISMATCH")
+                    ownership_contracts.append(identity.model_dump(mode="json"))
         bundle = getattr(request, "input_bundle", None)
         portfolio = (
             dict(getattr(bundle, "multi_sleeve_portfolio", None) or {})
@@ -496,9 +493,7 @@ def _sleeve_broker_evidence_collector(
         )
         owned_sleeve = None
         if contract_sha is not None:
-            owned_sleeve = (ownership.get("contract_sleeves") or {}).get(
-                contract_sha
-            )
+            owned_sleeve = (ownership.get("contract_sleeves") or {}).get(contract_sha)
             if owned_sleeve is None:
                 owned_sleeve = next(
                     (
@@ -523,9 +518,7 @@ def _sleeve_broker_evidence_collector(
             "paper_only": True,
             "fresh": True,
             "account_identity_sha256": expected_account_sha256,
-            "transition_target_sha256": portfolio.get(
-                "transition_target_sha256"
-            ),
+            "transition_target_sha256": portfolio.get("transition_target_sha256"),
             "writer_binding_sha256": portfolio.get("writer_binding_sha256"),
             "reconciliation_status": reconciliation.get("status"),
             "owned_contract_sleeve": owned_sleeve,
@@ -1483,9 +1476,7 @@ class _LazyProductionModelEngine:
     ) -> None:
         self.db_path = Path(db_path)
         self.toolbox = toolbox
-        self.final_write_authority_required = bool(
-            final_write_authority_required
-        )
+        self.final_write_authority_required = bool(final_write_authority_required)
         self.db = None
         self.engine = None
 
@@ -1505,9 +1496,7 @@ class _LazyProductionModelEngine:
                 fresh_safety_check=lambda scope: (),
                 operator_control_check=lambda: (),
                 continuity_binding_service=ContinuityBindingService(self.db, store),
-                final_write_authority_required=(
-                    self.final_write_authority_required
-                ),
+                final_write_authority_required=(self.final_write_authority_required),
             )
             self.engine = ModelExecutionEngine(mechanics=mechanics)
         return self.engine
@@ -2108,9 +2097,7 @@ class _ProductionCanaryStore:
     ) -> str:
         proposal = outcome.proposal
         if proposal is None:
-            raise ProductionRuntimeConfigurationError(
-                "CANARY_CANDIDATE_REQUIRED"
-            )
+            raise ProductionRuntimeConfigurationError("CANARY_CANDIDATE_REQUIRED")
         with Database.open(self.db_path) as db, db.transaction():
             existing = next(
                 (
@@ -2159,17 +2146,13 @@ class _ProductionCanaryStore:
         if outcome.proposal is None or outcome.proposal.sha256 != selected.get(
             "candidate_sha256"
         ):
-            raise ProductionRuntimeConfigurationError(
-                "CANARY_CANDIDATE_HASH_MISMATCH"
-            )
+            raise ProductionRuntimeConfigurationError("CANARY_CANDIDATE_HASH_MISMATCH")
         validation = CanaryCandidateValidationReceipt.model_validate(
             selected.get("validation")
         )
         return outcome, dict(selected.get("capability_evidence") or {}), validation
 
-    def persist_result(
-        self, candidate_sha256: str, result: Mapping[str, Any]
-    ) -> str:
+    def persist_result(self, candidate_sha256: str, result: Mapping[str, Any]) -> str:
         with Database.open(self.db_path) as db, db.transaction():
             existing = next(
                 (
@@ -2182,9 +2165,7 @@ class _ProductionCanaryStore:
             )
             if existing is not None:
                 if existing.get("result") != dict(result):
-                    raise ProductionRuntimeConfigurationError(
-                        "CANARY_RESULT_CONFLICT"
-                    )
+                    raise ProductionRuntimeConfigurationError("CANARY_RESULT_CONFLICT")
                 return str(existing["event_sha256"])
             return self._append_in_transaction(
                 db,
@@ -2286,9 +2267,7 @@ class _ProductionCanaryStore:
             ),
             "authorization": authorization,
             "account_identity_sha256": target.get("account_identity_sha256"),
-            "successor_definition_sha256": target.get(
-                "successor_definition_sha256"
-            ),
+            "successor_definition_sha256": target.get("successor_definition_sha256"),
             "writer_binding_sha256": target.get("writer_binding_sha256"),
             "request_sha256": request.sha256,
         }
@@ -2705,8 +2684,7 @@ def validate_production_composition(
             watchdog_started = True
 
             v4_active = (
-                getattr(config, "target_successor_definition_sha256", None)
-                is not None
+                getattr(config, "target_successor_definition_sha256", None) is not None
             )
             production_gates_callable = all(
                 (

@@ -299,9 +299,7 @@ def evaluate_multi_universe_successor_launch(
             "ACTIVE",
         }:
             raise LaunchError("SUCCESSOR_TRANSITION_NOT_ELIGIBLE")
-        status = (
-            "PASS" if evidence.transition_phase == "ACTIVE" else "SUPERVISION_ONLY"
-        )
+        status = "PASS" if evidence.transition_phase == "ACTIVE" else "SUPERVISION_ONLY"
     else:
         if not evidence.same_committed_successor or evidence.transition_phase not in {
             "SUCCESSOR_COMMITTED",
@@ -335,21 +333,37 @@ def evaluate_multi_universe_successor_launch(
     phase_index = phase_order.index(evidence.transition_phase)
     supervision_index = phase_order.index("SUPERVISION_BOUND")
     canary_uncertain = evidence.canary_status in {"PARTIAL", "UNCERTAIN"}
+    from .multi_universe_models import (
+        continuous_new_entries_allowed,
+        regular_new_entries_allowed,
+    )
+
+    regular_entries = bool(
+        not canary_uncertain and regular_new_entries_allowed(evidence.transition_phase)
+    )
+    continuous_entries = bool(
+        not canary_uncertain
+        and continuous_new_entries_allowed(evidence.transition_phase)
+        and evidence.extended_family_tradable_now
+    )
     entry_authority_mode = (
         "UNCERTAIN_FREEZE"
         if canary_uncertain
-        else "CANARY_EXCLUSIVE"
-        if evidence.transition_phase == "CANARY_EXCLUSIVE"
-        else "NORMAL"
-        if evidence.transition_phase == "ACTIVE"
-        else "FROZEN"
+        else (
+            "CANARY_EXCLUSIVE"
+            if evidence.transition_phase == "CANARY_EXCLUSIVE"
+            else (
+                "NORMAL"
+                if evidence.transition_phase == "ACTIVE"
+                else "REGULAR_ONLY" if regular_entries else "FROZEN"
+            )
+        )
     )
     management_allowed = bool(
         phase_index >= supervision_index
         or evidence.continuity_action_due
         or canary_uncertain
     )
-    normal_entries = entry_authority_mode == "NORMAL"
     return {
         "schema": "MULTI_UNIVERSE_LAUNCH_DECISION_V1",
         "status": status,
@@ -362,11 +376,8 @@ def evaluate_multi_universe_successor_launch(
         "reconciliation_required": True,
         "management_actions_allowed": management_allowed,
         "continuity_actions_allowed": management_allowed,
-        "new_regular_entries_allowed": normal_entries,
-        "new_continuous_entries_allowed": bool(
-            normal_entries
-            and evidence.extended_family_tradable_now
-        ),
+        "new_regular_entries_allowed": regular_entries,
+        "new_continuous_entries_allowed": continuous_entries,
         "legacy_predecessor_allowed": False,
     }
 
@@ -409,9 +420,7 @@ def _load_multi_universe_launch_authority(
     return {
         "schema": "MULTI_UNIVERSE_LAUNCH_ENVELOPE_V1",
         "successor_epoch_id": str(config.target_successor_epoch_id),
-        "successor_definition_sha256": str(
-            config.target_successor_definition_sha256
-        ),
+        "successor_definition_sha256": str(config.target_successor_definition_sha256),
         "owner_authorization_receipt_sha256": owner_receipt_sha256,
         "owner_pilot_authorization": owner_pilot_authorization,
         "initial_activation": initial_activation,
@@ -420,9 +429,7 @@ def _load_multi_universe_launch_authority(
 
 def _multi_universe_owner_authorization_sha256(preflight: LaunchPreflight) -> str:
     receipt_sha256 = preflight.owner_authorization_receipt.get("receipt_sha256")
-    if not isinstance(receipt_sha256, str) or not _SHA256_RE.fullmatch(
-        receipt_sha256
-    ):
+    if not isinstance(receipt_sha256, str) or not _SHA256_RE.fullmatch(receipt_sha256):
         raise LaunchError("SUCCESSOR_OWNER_AUTHORIZATION_MISMATCH")
     return receipt_sha256
 
@@ -442,9 +449,7 @@ def _multi_universe_authority_bindings(
     ):
         raise LaunchError("SUCCESSOR_TRANSITION_AUTHORITY_INVALID")
     phase_index = tuple(TransitionPhase).index(phase)
-    supervision_index = tuple(TransitionPhase).index(
-        TransitionPhase.SUPERVISION_BOUND
-    )
+    supervision_index = tuple(TransitionPhase).index(TransitionPhase.SUPERVISION_BOUND)
     if phase_index < supervision_index:
         regular_hash = target.regular_sleeve_authority_sha256
         continuous_hash = target.continuous_sleeve_authority_sha256
@@ -454,18 +459,14 @@ def _multi_universe_authority_bindings(
         try:
             store = MultiUniverseAuthorityStore(db)
             regular = store.sleeve_authority(CapitalSleeve.REGULAR_SLEEVE)
-            continuous = store.sleeve_authority(
-                CapitalSleeve.CONTINUOUS_SLEEVE
-            )
+            continuous = store.sleeve_authority(CapitalSleeve.CONTINUOUS_SLEEVE)
             economic = store.economic_authorization()
         except Exception as exc:
             raise LaunchError("SUCCESSOR_TRANSITION_AUTHORITY_INVALID") from exc
         regular_hash = "" if regular is None else regular.sha256
         continuous_hash = "" if continuous is None else continuous.sha256
         economic_hash = "" if economic is None else economic.sha256
-        continuity_gap = not all(
-            (regular_hash, continuous_hash, economic_hash)
-        )
+        continuity_gap = not all((regular_hash, continuous_hash, economic_hash))
 
     family_rows = db.execute(
         "SELECT product_family_sha256,event_type FROM "
@@ -499,9 +500,7 @@ def _multi_universe_authority_bindings(
             try:
                 body = json.loads(str(row[0]))
                 expected_certified_set_sha256 = str(
-                    (body.get("evidence") or {}).get(
-                        "certified_family_set_sha256"
-                    )
+                    (body.get("evidence") or {}).get("certified_family_set_sha256")
                     or ""
                 )
             except (TypeError, json.JSONDecodeError):
@@ -511,9 +510,7 @@ def _multi_universe_authority_bindings(
         "continuous_sleeve_authority_sha256": continuous_hash,
         "economic_risk_authorization_sha256": economic_hash,
         "certified_family_set_sha256": certified_set_sha256,
-        "expected_certified_family_set_sha256": (
-            expected_certified_set_sha256
-        ),
+        "expected_certified_family_set_sha256": (expected_certified_set_sha256),
         "continuity_gap": continuity_gap,
     }
 
@@ -528,13 +525,8 @@ def _validate_multi_universe_launch_from_db(
     from .multi_universe_transition import MultiUniverseTransitionCoordinator
 
     verify_multi_universe_schema_v4(db)
-    owner_authorization_sha256 = _multi_universe_owner_authorization_sha256(
-        preflight
-    )
-    if (
-        envelope.get("owner_authorization_receipt_sha256")
-        != owner_authorization_sha256
-    ):
+    owner_authorization_sha256 = _multi_universe_owner_authorization_sha256(preflight)
+    if envelope.get("owner_authorization_receipt_sha256") != owner_authorization_sha256:
         raise LaunchError("SUCCESSOR_OWNER_AUTHORIZATION_MISMATCH")
     row = db.execute(
         "SELECT phase,payload_json FROM successor_transition_events "
@@ -547,8 +539,8 @@ def _validate_multi_universe_launch_from_db(
         target = TransitionTarget.model_validate(payload.get("target"))
         transition_coordinator = MultiUniverseTransitionCoordinator(db)
         recovered = transition_coordinator.recover(target)
-        effective_approved_head = (
-            transition_coordinator.effective_approved_git_head(target)
+        effective_approved_head = transition_coordinator.effective_approved_git_head(
+            target
         )
     except Exception as exc:
         raise LaunchError("SUCCESSOR_TRANSITION_AUTHORITY_INVALID") from exc
@@ -568,9 +560,9 @@ def _validate_multi_universe_launch_from_db(
     retirement_sha = None
     if retirement_row is not None:
         retirement_payload = json.loads(str(retirement_row[0]))
-        retirement_sha = (
-            retirement_payload.get("evidence") or {}
-        ).get("retirement_tombstone_sha256")
+        retirement_sha = (retirement_payload.get("evidence") or {}).get(
+            "retirement_tombstone_sha256"
+        )
     supervision_row = db.execute(
         "SELECT event_sha256 FROM successor_transition_events "
         "WHERE transition_id=? AND phase='SUPERVISION_BOUND' "
@@ -583,9 +575,7 @@ def _validate_multi_universe_launch_from_db(
         else target.writer_binding_sha256
     )
     ownership_count = int(
-        db.execute(
-            "SELECT COUNT(*) FROM contract_ownership_events"
-        ).fetchone()[0]
+        db.execute("SELECT COUNT(*) FROM contract_ownership_events").fetchone()[0]
     )
     clock = clock_for_epoch(db, target.successor_epoch_id)
     phase = recovered.phase
@@ -618,9 +608,7 @@ def _validate_multi_universe_launch_from_db(
             bindings["economic_risk_authorization_sha256"]
         ),
         expected_economic_risk_authorization_sha256=target.economic_risk_authorization_sha256,
-        certified_family_set_sha256=str(
-            bindings["certified_family_set_sha256"]
-        ),
+        certified_family_set_sha256=str(bindings["certified_family_set_sha256"]),
         expected_certified_family_set_sha256=str(
             bindings["expected_certified_family_set_sha256"]
         ),
@@ -655,17 +643,13 @@ def _validate_multi_universe_launch_from_db(
         TransitionPhase.SUPERVISION_BOUND,
         TransitionPhase.CANARY_EXCLUSIVE,
     }:
-        owner_pilot = _validate_owner_pilot_authorization(
-            owner_pilot_raw, target
-        )
+        owner_pilot = _validate_owner_pilot_authorization(owner_pilot_raw, target)
         decision["owner_pilot_authorization"] = owner_pilot
     decision["writer_binding_sha256"] = target.writer_binding_sha256
     return decision
 
 
-def _validate_owner_pilot_authorization(
-    raw: Any, target: Any
-) -> Any:
+def _validate_owner_pilot_authorization(raw: Any, target: Any) -> Any:
     """Validate the exact Owner pilot authority before a canary runtime starts."""
 
     try:
@@ -943,8 +927,7 @@ def _validate_post_lock_runtime_gates(
     if (
         not isinstance(fresh_auditor, dict)
         or fresh_auditor.get("gate_status") != "PASS"
-        or fresh_auditor.get("receipt_sha256")
-        != preflight.auditor_receipt_sha256
+        or fresh_auditor.get("receipt_sha256") != preflight.auditor_receipt_sha256
     ):
         raise LaunchError("AUDITOR_GATE_CHANGED_AFTER_LOCK")
 
@@ -954,10 +937,7 @@ def _validate_post_lock_runtime_gates(
     fresh_market = dependencies.market_gate_factory(
         config, preflight.expected_account_hash
     ).evaluate(DecisionClass.NEW_TRADE)
-    if (
-        not isinstance(fresh_market, dict)
-        or fresh_market.get("gate_status") != "PASS"
-    ):
+    if not isinstance(fresh_market, dict) or fresh_market.get("gate_status") != "PASS":
         raise LaunchError("MARKET_DATA_GATE_CHANGED_AFTER_LOCK")
 
 
@@ -1052,9 +1032,9 @@ def evaluate_launch_preflight(
         config, successor_mode=successor_mode
     )
     if not multi_universe_supervisor:
-        market_result = dependencies.market_gate_factory(config, expected_hash).evaluate(
-            DecisionClass.NEW_TRADE
-        )
+        market_result = dependencies.market_gate_factory(
+            config, expected_hash
+        ).evaluate(DecisionClass.NEW_TRADE)
         if (
             not isinstance(market_result, dict)
             or market_result.get("gate_status") != "PASS"
@@ -1071,9 +1051,7 @@ def evaluate_launch_preflight(
             ][:10]
             details: dict[str, object] = {"market_data_reason_codes": market_reasons}
             market_error = (
-                market_result.get("error")
-                if isinstance(market_result, dict)
-                else None
+                market_result.get("error") if isinstance(market_result, dict) else None
             )
             if isinstance(market_error, str) and _MARKET_ERROR_CODE_RE.fullmatch(
                 market_error
@@ -1191,9 +1169,7 @@ def _latest_authorization_event_id(db: Database) -> str:
     return str(row[0])
 
 
-def _validate_launch_database_mode(
-    db: Database, *, successor_mode: bool
-) -> None:
+def _validate_launch_database_mode(db: Database, *, successor_mode: bool) -> None:
     versions = [
         int(row[0])
         for row in db.execute(
@@ -1240,9 +1216,7 @@ def validate_launch_controls(
     multi_universe_successor_mode = bool(
         successor_mode and config.multi_universe_authority_path is not None
     )
-    _validate_launch_database_mode(
-        db, successor_mode=multi_universe_successor_mode
-    )
+    _validate_launch_database_mode(db, successor_mode=multi_universe_successor_mode)
     clock: ExperimentClock | None = None
     if successor_mode:
         failed = db.execute(
@@ -1927,9 +1901,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
 
             try:
                 multi_universe_runtime_authority = (
-                    normalize_multi_universe_launch_authority(
-                        multi_universe_launch
-                    )
+                    normalize_multi_universe_launch_authority(multi_universe_launch)
                 )
             except Exception as exc:
                 raise LaunchError("MULTI_UNIVERSE_LAUNCH_AUTHORITY_INVALID") from exc
@@ -2121,11 +2093,9 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 current_adapter_sha256=prepared.manifest["epoch_manifest_sha256"],
             )
             canary_pilot_orchestrator = None
-            if (
-                multi_universe_launch is not None
-                and str(multi_universe_launch.get("transition_phase") or "")
-                in {"SUPERVISION_BOUND", "CANARY_EXCLUSIVE"}
-            ):
+            if multi_universe_launch is not None and str(
+                multi_universe_launch.get("transition_phase") or ""
+            ) in {"SUPERVISION_BOUND", "CANARY_EXCLUSIVE"}:
                 owner_pilot_authorization = multi_universe_launch.get(
                     "owner_pilot_authorization"
                 )

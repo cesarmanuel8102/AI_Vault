@@ -1,6 +1,6 @@
 # Supervision-First Continuous Multi-Universe Pilot Design
 
-**Status:** Owner-approved design clarification, pending implementation plan
+**Status:** Owner-approved design with 2026-10-11 independent-sleeve authority amendment
 
 **Date:** 2026-10-10
 
@@ -75,6 +75,10 @@ Market availability filters executable actions; it does not hide positions or
 partition the agent's reasoning:
 
 - `REGULAR_SLEEVE` new entries require an authenticated open daytime session.
+- The existing Day1 `STK`/`OPT`/`BAG` execution path is exposed as one
+  deterministic inherited regular product family. It reuses Day1's market
+  gate, qualification, what-if, risk, and order-lifecycle controls and cannot
+  authorize `CONTINUOUS_SLEEVE`.
 - `CONTINUOUS_SLEEVE` new entries require an authenticated open session for a
   fully certified continuous-market product family.
 - Exits, reductions, cancellations, exact continuity actions, and monitoring
@@ -114,7 +118,10 @@ reconciles the account again, and binds all inherited positions to
 
 In `SUPERVISION_BOUND`:
 
-- both sleeves have new-entry authority frozen;
+- `REGULAR_SLEEVE` may open new positions when its authenticated daytime
+  session, reconciliation, market data, and ordinary risk gates pass;
+- `CONTINUOUS_SLEEVE` ordinary new-entry authority remains frozen pending the
+  complete canary lifecycle;
 - Codex and the watchdog continue evaluating inherited positions;
 - exact model-authored reduce, close, cancel, and continuity actions remain
   available through the authoritative writer;
@@ -129,6 +136,12 @@ to be flat or covered by a predecessor-only maintenance plan.
 
 The canary uses the already-bound successor writer. It must never create a
 second broker session with write authority.
+
+Entering `CANARY_EXCLUSIVE` temporarily freezes ordinary new entries in both
+sleeves so that the bounded canary is the only possible entry. A failed or
+terminally flat canary returns to successor supervision; it does not revoke
+otherwise valid regular-sleeve authority. Any uncertain canary state freezes
+all new entries until reconciliation resolves it.
 
 Codex performs autonomous read-only discovery and selects a candidate
 continuous-market product family and exact contract for capability testing.
@@ -148,6 +161,10 @@ After `CANARY_PASS`, the runtime binds the exact certified family, both sleeve
 authorities, ownership projection, risk authorization, writer identity, and
 successor clock. `ACTIVE` is reached only after a fresh account reconciliation.
 
+Before `ACTIVE`, `REGULAR_SLEEVE` authority is independent of continuous-family
+certification in `SUPERVISION_BOUND`, `CANARY_PASS`, and `RUNTIME_BOUND`.
+`CONTINUOUS_SLEEVE` ordinary entry authority remains disabled until `ACTIVE`.
+
 At `ACTIVE`:
 
 - `REGULAR_SLEEVE` receives new-entry authority whenever its authenticated
@@ -162,8 +179,9 @@ At `ACTIVE`:
   return to the predecessor using the verified rollback snapshot.
 - After predecessor retirement, rollback never revives Day1. The successor
   remains the sole supervisor in `SUPERVISION_BOUND` or a later phase.
-- A flat canary failure leaves inherited-position management active while
-  keeping all continuous-sleeve entries disabled.
+- A flat canary failure leaves inherited-position management and otherwise
+  valid regular-sleeve entry authority active while keeping all
+  continuous-sleeve entries disabled.
 - An uncertain canary freezes all new entries but preserves exact risk-reducing
   or closing actions for inherited and canary exposure.
 - A provider outage cannot authorize a new trade. Only an exact, unexpired,
@@ -181,8 +199,9 @@ or connect to port `4001`.
 The pilot sequence is:
 
 1. reconcile PAPER and bind current Day1 positions to `REGULAR_SLEEVE`;
-2. retire the predecessor and start successor supervision with all new entries
-   frozen;
+2. retire the predecessor and start successor supervision with continuous
+   entries frozen and regular entries governed by their existing session and
+   risk gates;
 3. let Codex discover a currently available continuous-market candidate;
 4. run one exact bounded canary through the successor writer;
 5. enable `CONTINUOUS_SLEEVE` only after full lifecycle certification;
@@ -203,7 +222,10 @@ Tests must prove at minimum:
 - inherited positions no longer block supervision-first activation;
 - ambiguous or unattributed positions still block before retirement;
 - predecessor retirement is irreversible and old launch paths cannot connect;
-- no entry can occur before full family certification;
+- no continuous-sleeve ordinary entry can occur before full family
+  certification;
+- regular-sleeve entry authority is not contingent on continuous canary
+  completion and is temporarily frozen during `CANARY_EXCLUSIVE`;
 - the same writer manages inherited positions and canary lifecycle;
 - regular-market closure does not idle an available continuous family;
 - continuous-market availability during daytime does not disable that sleeve;

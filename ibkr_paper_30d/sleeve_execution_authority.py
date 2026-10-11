@@ -17,6 +17,8 @@ from .multi_universe_models import (
     GIT_HEAD_PATTERN,
     SHA256_PATTERN,
     TransitionPhase,
+    continuous_new_entries_allowed,
+    regular_new_entries_allowed,
 )
 from .multi_universe_schema import verify_multi_universe_schema_v4
 from .contract_ownership import (
@@ -121,7 +123,10 @@ class SleeveExecutionAuthorityValidator:
             reasons.append("CAPITAL_SLEEVE_MISMATCH")
         if request.sleeve_authority_sha256 != db_snapshot.sleeve_authority_sha256:
             reasons.append("SLEEVE_AUTHORITY_MISMATCH")
-        if request.ownership_projection_sha256 != db_snapshot.ownership_projection_sha256:
+        if (
+            request.ownership_projection_sha256
+            != db_snapshot.ownership_projection_sha256
+        ):
             reasons.append("OWNERSHIP_PROJECTION_MISMATCH")
         if request.product_family_sha256 != db_snapshot.product_family_sha256:
             reasons.append("PRODUCT_FAMILY_MISMATCH")
@@ -146,11 +151,18 @@ class SleeveExecutionAuthorityValidator:
             reasons.append("SUPERVISION_AUTHORITY_MISMATCH")
         if management and not phase_supervision_bound:
             reasons.append("SUCCESSOR_NOT_ACTIVE")
-        if request.operation is ModelExecutionOperation.NEW_TRADE and (
-            phase is not TransitionPhase.ACTIVE
-            or db_snapshot.entry_authority != "ACTIVE"
-        ):
-            reasons.append("SUCCESSOR_NOT_ACTIVE")
+        if request.operation is ModelExecutionOperation.NEW_TRADE:
+            phase_entry_allowed = bool(
+                phase is not None
+                and (
+                    request.capital_sleeve is CapitalSleeve.REGULAR_SLEEVE
+                    and regular_new_entries_allowed(phase)
+                    or request.capital_sleeve is CapitalSleeve.CONTINUOUS_SLEEVE
+                    and continuous_new_entries_allowed(phase)
+                )
+            )
+            if not phase_entry_allowed or db_snapshot.entry_authority != "ACTIVE":
+                reasons.append("SUCCESSOR_NOT_ACTIVE")
         if management and not db_snapshot.instrument_management_tradable:
             reasons.append("INSTRUMENT_NOT_CURRENTLY_MANAGEABLE")
         if (
@@ -234,8 +246,7 @@ class SleeveExecutionAuthorityValidator:
                 reasons.append("SLEEVE_AGGREGATE_LIABILITY_EXCEEDED")
         if db_snapshot.continuity_required and (
             request.continuity_plan_sha256 is None
-            or request.continuity_plan_sha256
-            != db_snapshot.continuity_plan_sha256
+            or request.continuity_plan_sha256 != db_snapshot.continuity_plan_sha256
         ):
             reasons.append("CONTINUITY_PLAN_REQUIRED")
 
@@ -304,8 +315,7 @@ class SleeveAuthorityReservationStore:
                 latest = prior[-1]
                 exact = (
                     latest.get("request_sha256") == request.sha256
-                    and latest.get("broker_evidence_sha256")
-                    == broker_evidence_sha256
+                    and latest.get("broker_evidence_sha256") == broker_evidence_sha256
                 )
                 if exact:
                     return SleeveExecutionAuthorityReceipt(
@@ -323,9 +333,7 @@ class SleeveAuthorityReservationStore:
                     status="BLOCK",
                     reason_codes=("EXECUTION_RESERVATION_CONFLICT",),
                     request_sha256=request.sha256,
-                    authority_snapshot_sha256=str(
-                        latest["authority_snapshot_sha256"]
-                    ),
+                    authority_snapshot_sha256=str(latest["authority_snapshot_sha256"]),
                     broker_evidence_sha256=broker_evidence_sha256,
                 )
             snapshot = snapshot_reader()
@@ -344,8 +352,7 @@ class SleeveAuthorityReservationStore:
                     }
                 )
             if (
-                ledger_state.reserved_liability_usd
-                + snapshot.proposed_maximum_loss_usd
+                ledger_state.reserved_liability_usd + snapshot.proposed_maximum_loss_usd
                 > ledger_state.allocation_usd
             ):
                 return receipt.model_copy(
@@ -377,16 +384,12 @@ class SleeveAuthorityReservationStore:
                     if contract.security_type == "BAG":
                         raw_members = broker_evidence.get("ownership_contracts")
                         if not isinstance(raw_members, list):
-                            raise OwnershipError(
-                                "BAG_OWNERSHIP_EVIDENCE_INCOMPLETE"
-                            )
+                            raise OwnershipError("BAG_OWNERSHIP_EVIDENCE_INCOMPLETE")
                         members = tuple(
                             CanonicalContractIdentity.model_validate(item)
                             for item in raw_members
                         )
-                        member_by_con_id = {
-                            item.con_id: item for item in members
-                        }
+                        member_by_con_id = {item.con_id: item for item in members}
                         required_ids = {
                             contract.con_id,
                             *(leg.con_id for leg in contract.bag_legs),
@@ -396,9 +399,7 @@ class SleeveAuthorityReservationStore:
                             or len(members) != len(required_ids)
                             or member_by_con_id.get(contract.con_id) != contract
                         ):
-                            raise OwnershipError(
-                                "BAG_OWNERSHIP_EVIDENCE_INCOMPLETE"
-                            )
+                            raise OwnershipError("BAG_OWNERSHIP_EVIDENCE_INCOMPLETE")
                         ownership.reserve_group_in_transaction(
                             ContractOwnershipGroup(
                                 group_id=f"execution:{request.execution_key}",
@@ -415,9 +416,7 @@ class SleeveAuthorityReservationStore:
                         ownership.claim_in_transaction(
                             snapshot.capital_sleeve,
                             contract,
-                            side=str(
-                                getattr(request.payload, "action", "") or ""
-                            ),
+                            side=str(getattr(request.payload, "action", "") or ""),
                             group_id=f"execution:{request.execution_key}",
                         )
                 except OwnershipError as exc:
@@ -445,9 +444,7 @@ class SleeveAuthorityReservationStore:
                     return receipt.model_copy(
                         update={
                             "status": "BLOCK",
-                            "reason_codes": (
-                                "CONTRACT_OWNED_BY_OTHER_SLEEVE",
-                            ),
+                            "reason_codes": ("CONTRACT_OWNED_BY_OTHER_SLEEVE",),
                         }
                     )
             events = self._events()
@@ -465,9 +462,7 @@ class SleeveAuthorityReservationStore:
                 ),
                 "request_sha256": request.sha256,
                 "capital_sleeve": snapshot.capital_sleeve.value,
-                "reserved_liability_usd": str(
-                    snapshot.proposed_maximum_loss_usd
-                ),
+                "reserved_liability_usd": str(snapshot.proposed_maximum_loss_usd),
                 "contract_identity_sha256": broker_evidence.get(
                     "contract_identity_sha256"
                 ),
@@ -498,9 +493,7 @@ class SleeveAuthorityReservationStore:
                     utc_now(),
                 ),
             )
-            return receipt.model_copy(
-                update={"reservation_event_sha256": event_sha}
-            )
+            return receipt.model_copy(update={"reservation_event_sha256": event_sha})
 
     def _append_terminal_event(
         self,
@@ -516,16 +509,12 @@ class SleeveAuthorityReservationStore:
             "schema": self.SCHEMA,
             "execution_key": reservation["execution_key"],
             "capital_sleeve": reservation["capital_sleeve"],
-            "contract_identity_sha256": reservation[
-                "contract_identity_sha256"
-            ],
+            "contract_identity_sha256": reservation["contract_identity_sha256"],
             "reservation_event_sha256": reservation["event_sha256"],
             "observation_id": observation_id,
             "broker_snapshot_sha256": broker_snapshot_sha256,
         }
-        event_sha = sha256_json(
-            {"previous_event_sha256": previous, "payload": payload}
-        )
+        event_sha = sha256_json({"previous_event_sha256": previous, "payload": payload})
         self.db.execute(
             "INSERT INTO sleeve_authority_events("
             "event_id,sleeve,event_type,payload_json,payload_sha256,"
@@ -577,9 +566,7 @@ class SleeveAuthorityReservationStore:
         visible = visible_hashes("positions") | visible_hashes("open_orders")
         pending = {
             str(value)
-            for value in broker_snapshot.get(
-                "pending_execution_contract_sha256", ()
-            )
+            for value in broker_snapshot.get("pending_execution_contract_sha256", ())
         }
         if any(len(value) != 64 for value in pending):
             raise RuntimeError("BROKER_CONTRACT_IDENTITY_REQUIRED")
@@ -613,8 +600,7 @@ class SleeveAuthorityReservationStore:
                     item.contract_identity_sha256,
                 )
             active_hashes = {
-                item.contract_identity_sha256
-                for item in projection.active_contracts
+                item.contract_identity_sha256 for item in projection.active_contracts
             }
             confirmed: list[tuple[dict[str, Any], str]] = []
             for reservation in reservations:
@@ -685,9 +671,7 @@ class SleeveAuthorityReservationStore:
                 key = str(reservation["execution_key"])
                 ledger.release_liability_in_transaction(
                     CapitalSleeve(str(reservation["capital_sleeve"])),
-                    amount_usd=Decimal(
-                        str(reservation["reserved_liability_usd"])
-                    ),
+                    amount_usd=Decimal(str(reservation["reserved_liability_usd"])),
                     reservation_key=key,
                     broker_snapshot_sha256=broker_snapshot_sha256,
                 )

@@ -85,7 +85,10 @@ def _multi_universe_launch_evidence(**updates):
     ("update", "reason"),
     [
         ({"schema_v4_valid": False}, "MULTI_UNIVERSE_SCHEMA_V4_REQUIRED"),
-        ({"transition_phase": "PREDECESSOR_RETIRED"}, "SUCCESSOR_TRANSITION_NOT_ELIGIBLE"),
+        (
+            {"transition_phase": "PREDECESSOR_RETIRED"},
+            "SUCCESSOR_TRANSITION_NOT_ELIGIBLE",
+        ),
         ({"approved_head": "9" * 40}, "SUCCESSOR_APPROVED_HEAD_MISMATCH"),
         ({"account_identity_sha256": "9" * 64}, "SUCCESSOR_ACCOUNT_MISMATCH"),
         (
@@ -177,7 +180,7 @@ def test_initial_successor_supervision_does_not_require_available_family() -> No
     assert result["status"] == "SUPERVISION_ONLY"
     assert result["writer_start_allowed"] is True
     assert result["management_actions_allowed"] is True
-    assert result["new_regular_entries_allowed"] is False
+    assert result["new_regular_entries_allowed"] is True
     assert result["new_continuous_entries_allowed"] is False
 
 
@@ -185,10 +188,10 @@ def test_initial_successor_supervision_does_not_require_available_family() -> No
     ("phase", "mode", "management", "regular", "continuous"),
     [
         ("SUCCESSOR_COMMITTED", "FROZEN", False, False, False),
-        ("SUPERVISION_BOUND", "FROZEN", True, False, False),
+        ("SUPERVISION_BOUND", "REGULAR_ONLY", True, True, False),
         ("CANARY_EXCLUSIVE", "CANARY_EXCLUSIVE", True, False, False),
-        ("CANARY_PASS", "FROZEN", True, False, False),
-        ("RUNTIME_BOUND", "FROZEN", True, False, False),
+        ("CANARY_PASS", "REGULAR_ONLY", True, True, False),
+        ("RUNTIME_BOUND", "REGULAR_ONLY", True, True, False),
         ("ACTIVE", "NORMAL", True, True, True),
     ],
 )
@@ -294,9 +297,7 @@ def _launch_phase_evidence(phase):
         "continuity_exact": True,
     }
     if phase is TransitionPhase.PREDECESSOR_RETIRED:
-        evidence.update(
-            retirement_status="PASS", retirement_tombstone_sha256="c" * 64
-        )
+        evidence.update(retirement_status="PASS", retirement_tombstone_sha256="c" * 64)
     if phase is TransitionPhase.SUCCESSOR_COMMITTED:
         evidence["successor_commit_sha256"] = "d" * 64
     if phase is TransitionPhase.SUPERVISION_BOUND:
@@ -308,16 +309,16 @@ def _launch_phase_evidence(phase):
             new_entry_authority=False,
         )
     if phase is TransitionPhase.CANARY_PASS:
-        evidence.update(
-            canary_status="PASS", certified_family_set_sha256="f" * 64
-        )
+        evidence.update(canary_status="PASS", certified_family_set_sha256="f" * 64)
     return evidence
 
 
 def test_pre_supervision_launch_uses_immutable_target_authorities(tmp_path) -> None:
     from ibkr_paper_30d.multi_universe_models import TransitionPhase
     from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
-    from ibkr_paper_30d.multi_universe_transition import MultiUniverseTransitionCoordinator
+    from ibkr_paper_30d.multi_universe_transition import (
+        MultiUniverseTransitionCoordinator,
+    )
     from ibkr_paper_30d.persistence import Database
     from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 
@@ -339,16 +340,27 @@ def test_pre_supervision_launch_uses_immutable_target_authorities(tmp_path) -> N
             db, target, TransitionPhase.SUCCESSOR_COMMITTED
         )
 
-    assert bindings["regular_sleeve_authority_sha256"] == target.regular_sleeve_authority_sha256
-    assert bindings["continuous_sleeve_authority_sha256"] == target.continuous_sleeve_authority_sha256
-    assert bindings["economic_risk_authorization_sha256"] == target.economic_risk_authorization_sha256
+    assert (
+        bindings["regular_sleeve_authority_sha256"]
+        == target.regular_sleeve_authority_sha256
+    )
+    assert (
+        bindings["continuous_sleeve_authority_sha256"]
+        == target.continuous_sleeve_authority_sha256
+    )
+    assert (
+        bindings["economic_risk_authorization_sha256"]
+        == target.economic_risk_authorization_sha256
+    )
     assert bindings["continuity_gap"] is False
 
 
 def test_post_canary_launch_uses_phase_bound_dynamic_family_set(tmp_path) -> None:
     from ibkr_paper_30d.multi_universe_models import TransitionPhase
     from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
-    from ibkr_paper_30d.multi_universe_transition import MultiUniverseTransitionCoordinator
+    from ibkr_paper_30d.multi_universe_transition import (
+        MultiUniverseTransitionCoordinator,
+    )
     from ibkr_paper_30d.persistence import Database
     from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 
@@ -359,7 +371,9 @@ def test_post_canary_launch_uses_phase_bound_dynamic_family_set(tmp_path) -> Non
         install_multi_universe_schema_v4(db)
         coordinator = MultiUniverseTransitionCoordinator(db)
         coordinator.prepare(target)
-        for phase in tuple(TransitionPhase)[1 : tuple(TransitionPhase).index(TransitionPhase.CANARY_PASS) + 1]:
+        for phase in tuple(TransitionPhase)[
+            1 : tuple(TransitionPhase).index(TransitionPhase.CANARY_PASS) + 1
+        ]:
             coordinator.advance(phase, _launch_phase_evidence(phase))
 
         bindings = launch_module._multi_universe_authority_bindings(
@@ -370,10 +384,14 @@ def test_post_canary_launch_uses_phase_bound_dynamic_family_set(tmp_path) -> Non
     assert bindings["continuity_gap"] is True
 
 
-def test_legacy_launcher_rejects_committed_successor_before_schema_gate(tmp_path) -> None:
+def test_legacy_launcher_rejects_committed_successor_before_schema_gate(
+    tmp_path,
+) -> None:
     from ibkr_paper_30d.multi_universe_models import TransitionPhase, TransitionTarget
     from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
-    from ibkr_paper_30d.multi_universe_transition import MultiUniverseTransitionCoordinator
+    from ibkr_paper_30d.multi_universe_transition import (
+        MultiUniverseTransitionCoordinator,
+    )
     from ibkr_paper_30d.persistence import Database
     from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 
@@ -435,11 +453,13 @@ def test_launch_authority_file_cannot_self_attest_runtime_decision(tmp_path) -> 
                 "successor_definition_sha256": "1" * 64,
                 "initial_activation": False,
                 "owner_authorization_receipt_sha256": "2" * 64,
-                "evidence": asdict(_multi_universe_launch_evidence(
-                    transition_phase="ACTIVE",
-                    predecessor_path_active=False,
-                    same_committed_successor=True,
-                )),
+                "evidence": asdict(
+                    _multi_universe_launch_evidence(
+                        transition_phase="ACTIVE",
+                        predecessor_path_active=False,
+                        same_committed_successor=True,
+                    )
+                ),
             }
         ),
         encoding="utf-8",
@@ -1294,9 +1314,7 @@ def test_multi_universe_supervisor_post_lock_does_not_require_regular_live_quote
         "reason_codes": ["REGULAR_MARKET_CLOSED"],
     }
 
-    launch_module._validate_post_lock_runtime_gates(
-        config, ctx.dependencies, preflight
-    )
+    launch_module._validate_post_lock_runtime_gates(config, ctx.dependencies, preflight)
 
     ctx.auditor_gate.evaluate.assert_called_once_with()
     ctx.market_gate.evaluate.assert_not_called()

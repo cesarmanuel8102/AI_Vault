@@ -330,9 +330,7 @@ class AutonomousExperimentService:
     def _stop_continuity_watchdog(self) -> None:
         if self.continuity_watchdog is None or not self._watchdog_started:
             return
-        result = self.continuity_watchdog.stop(
-            self.watchdog_shutdown_timeout_seconds
-        )
+        result = self.continuity_watchdog.stop(self.watchdog_shutdown_timeout_seconds)
         self._watchdog_started = False
         if getattr(result, "timed_out", False):
             _append_alert(
@@ -341,9 +339,7 @@ class AutonomousExperimentService:
                 {"continuity_state": "UNCERTAIN"},
             )
             if self.critical_alert_reporter is not None:
-                self.critical_alert_reporter(
-                    "CONTINUITY_WATCHDOG_SHUTDOWN_TIMEOUT"
-                )
+                self.critical_alert_reporter("CONTINUITY_WATCHDOG_SHUTDOWN_TIMEOUT")
 
     def _owner_authorization_is_current(self) -> bool:
         if self.clock.epoch_id is None:
@@ -439,9 +435,7 @@ class AutonomousExperimentService:
                         {"reason_codes": ["CONTINUITY_WATCHDOG_UNHEALTHY"]},
                     )
                     if self.critical_alert_reporter is not None:
-                        self.critical_alert_reporter(
-                            "CONTINUITY_WATCHDOG_STALE"
-                        )
+                        self.critical_alert_reporter("CONTINUITY_WATCHDOG_STALE")
                     self._watchdog_alert_active = True
             elif self._watchdog_alert_active:
                 _append_alert(
@@ -553,10 +547,10 @@ class AutonomousExperimentService:
         canary_phase = str(
             getattr(self.multi_universe_runtime_authority, "transition_phase", "")
         )
-        if (
-            self.canary_pilot_orchestrator is not None
-            and canary_phase in {"SUPERVISION_BOUND", "CANARY_EXCLUSIVE"}
-        ):
+        if self.canary_pilot_orchestrator is not None and canary_phase in {
+            "SUPERVISION_BOUND",
+            "CANARY_EXCLUSIVE",
+        }:
             if bundle.reconciliation_receipt.get("status") != "PASS":
                 return {
                     "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
@@ -575,30 +569,48 @@ class AutonomousExperimentService:
                     "bundle": bundle.model_dump(mode="json"),
                     "auditor": auditor,
                 }
-            canary = (
-                self.canary_pilot_orchestrator.discover(bundle)
-                if canary_phase == "SUPERVISION_BOUND"
-                else self.canary_pilot_orchestrator.execute(bundle)
+            portfolio = getattr(bundle, "multi_sleeve_portfolio", None) or {}
+            regular_entry = (portfolio.get("entry_eligibility") or {}).get(
+                "REGULAR_SLEEVE", {}
+            ).get("status") == "PASS"
+            regular_management = any(
+                item.get("status") == "PASS"
+                and item.get("capital_sleeve") == "REGULAR_SLEEVE"
+                for item in (portfolio.get("management_eligibility") or {}).values()
+                if isinstance(item, dict)
             )
-            canary_status = str(canary.get("status") or "BLOCK")
-            terminal_success = canary_status in {
-                "PASS",
-                "TERMINAL_NO_FILL",
-            }
-            return {
-                "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
-                "status": "PASS" if terminal_success else canary_status,
-                "gate": "CANARY",
-                "reason_codes": list(canary.get("reason_codes") or []),
-                "outcome": {
-                    "validation": "PASS" if terminal_success else "BLOCK",
-                    "decision": str(canary.get("decision") or "CANARY_BLOCKED"),
+            run_canary = bool(
+                canary_phase == "CANARY_EXCLUSIVE"
+                or not (regular_entry or regular_management)
+            )
+            if run_canary:
+                canary = (
+                    self.canary_pilot_orchestrator.discover(bundle)
+                    if canary_phase == "SUPERVISION_BOUND"
+                    else self.canary_pilot_orchestrator.execute(bundle)
+                )
+            else:
+                canary = None
+            if canary is not None:
+                canary_status = str(canary.get("status") or "BLOCK")
+                terminal_success = canary_status in {
+                    "PASS",
+                    "TERMINAL_NO_FILL",
+                }
+                return {
+                    "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
+                    "status": "PASS" if terminal_success else canary_status,
+                    "gate": "CANARY",
                     "reason_codes": list(canary.get("reason_codes") or []),
-                },
-                "canary": canary,
-                "bundle": bundle.model_dump(mode="json"),
-                "auditor_gate": auditor,
-            }
+                    "outcome": {
+                        "validation": "PASS" if terminal_success else "BLOCK",
+                        "decision": str(canary.get("decision") or "CANARY_BLOCKED"),
+                        "reason_codes": list(canary.get("reason_codes") or []),
+                    },
+                    "canary": canary,
+                    "bundle": bundle.model_dump(mode="json"),
+                    "auditor_gate": auditor,
+                }
         state_reasons: list[str] = []
         if bundle.reconciliation_receipt.get("status") != "PASS":
             state_reasons.append("BROKER_RECONCILIATION_REQUIRED")
@@ -960,15 +972,11 @@ class AutonomousExperimentService:
             has_open_orders=bool(evidence.get("has_open_orders")),
         )
 
-    def _enter_market_closed_idle(
-        self, decision: SessionOrchestrationDecision
-    ) -> None:
+    def _enter_market_closed_idle(self, decision: SessionOrchestrationDecision) -> None:
         """Record the idle transition exactly once, not on every poll."""
         if self._last_orchestration_action is OrchestrationAction.MARKET_CLOSED_IDLE:
             return
-        _append_state_event(
-            self.db, "MARKET_CLOSED_IDLE", decision.as_event_payload()
-        )
+        _append_state_event(self.db, "MARKET_CLOSED_IDLE", decision.as_event_payload())
         self._last_orchestration_action = OrchestrationAction.MARKET_CLOSED_IDLE
 
     def _wait_for_successor_supervision_binding(self) -> bool:

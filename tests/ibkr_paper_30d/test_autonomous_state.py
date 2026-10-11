@@ -16,6 +16,7 @@ from ibkr_paper_30d.autonomous_state import (
 from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.continuity_store import ContinuityStore
 from ibkr_paper_30d.experiment_control import KillSwitchStore
+from ibkr_paper_30d.multi_universe_models import REGULAR_DAY1_PRODUCT_FAMILY
 from ibkr_paper_30d.open_order_management import canonical_open_order
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.successor_clock import BrokerTimeObservation, clock_for_epoch
@@ -133,13 +134,22 @@ def test_v4_state_context_contains_both_sleeves_ownership_and_capabilities() -> 
     assert portfolio["entry_eligibility"]["REGULAR_SLEEVE"] == {
         "status": "BLOCK",
         "reason_codes": ["BROKER_RECONCILIATION_REQUIRED"],
-        "eligible_family_sha256": [family_sha256],
+        "eligible_family_sha256": [
+            REGULAR_DAY1_PRODUCT_FAMILY.sha256,
+            family_sha256,
+        ],
     }
     assert portfolio["management_eligibility"]["756733"]["status"] == "PASS"
     assert portfolio["account_observation"]["position_count"] == 1
     assert ownership["contract_sleeves"] == {"756733": "REGULAR_SLEEVE"}
     assert capabilities["families"][0]["family_sha256"] == "f" * 64
     assert capabilities["authenticated_sessions"] == {
+        REGULAR_DAY1_PRODUCT_FAMILY.sha256: {
+            "authenticated": True,
+            "tradable_now": True,
+            "session": "REGULAR",
+            "eligible_sleeves": ["REGULAR_SLEEVE"],
+        },
         family_sha256: {
             "authenticated": True,
             "tradable_now": True,
@@ -148,8 +158,62 @@ def test_v4_state_context_contains_both_sleeves_ownership_and_capabilities() -> 
                 "REGULAR_SLEEVE",
                 "CONTINUOUS_SLEEVE",
             ],
-        }
+        },
     }
+
+
+def test_supervision_exposes_only_regular_entry_eligibility() -> None:
+    subject = object.__new__(AutonomousStateBuilder)
+    subject.sleeve_ledger_store = SimpleNamespace(
+        project_all=lambda: _Dumpable(
+            {
+                "regular": {
+                    "initialized": True,
+                    "allocation_usd": "500",
+                    "realized_pnl_usd": "0",
+                    "unrealized_pnl_usd": "0",
+                    "fees_usd": "0",
+                },
+                "continuous": {
+                    "initialized": True,
+                    "allocation_usd": "500",
+                    "realized_pnl_usd": "0",
+                    "unrealized_pnl_usd": "0",
+                    "fees_usd": "0",
+                },
+                "aggregate_currency_balances": [],
+            }
+        )
+    )
+    subject.contract_ownership_store = SimpleNamespace(
+        projection=lambda: _Dumpable(
+            {"active_contracts": [], "projection_sha256": "o" * 64}
+        )
+    )
+    subject.product_certification_store = SimpleNamespace(projections=lambda: ())
+    family_sha256 = REGULAR_DAY1_PRODUCT_FAMILY.sha256
+
+    portfolio, _, _ = subject._multi_sleeve_context(
+        reconciliation={"status": "PASS", "reason_codes": []},
+        account={},
+        broker_positions={"positions": []},
+        open_orders={"open_orders": []},
+        transition_phase="SUPERVISION_BOUND",
+        regular_entry_open=True,
+        family_sessions={},
+    )
+
+    assert portfolio["entry_eligibility"]["REGULAR_SLEEVE"] == {
+        "status": "PASS",
+        "reason_codes": [],
+        "eligible_family_sha256": [family_sha256],
+    }
+    assert portfolio["entry_eligibility"]["CONTINUOUS_SLEEVE"] == {
+        "status": "BLOCK",
+        "reason_codes": ["SUCCESSOR_NOT_ACTIVE", "FAMILY_SESSION_CLOSED"],
+        "eligible_family_sha256": [],
+    }
+    assert portfolio["new_entries_enabled"] is True
 
 
 def test_v4_state_blocks_until_both_sleeves_are_bootstrapped() -> None:
@@ -275,9 +339,7 @@ def test_v4_reconciliation_uses_independent_broker_cash_not_ledger_copy() -> Non
     )
     subject = object.__new__(AutonomousStateBuilder)
     subject.sleeve_ledger_store = ledger_store
-    subject.contract_ownership_store = SimpleNamespace(
-        projection=lambda: Ownership()
-    )
+    subject.contract_ownership_store = SimpleNamespace(projection=lambda: Ownership())
     subject.toolbox = SimpleNamespace(
         account_reconciliation_snapshot=lambda: {
             "paper_only": True,
@@ -401,9 +463,7 @@ def test_state_builder_keeps_identity_failure_non_transient():
     with pytest.raises(AutonomousStateBuildError) as exc_info:
         subject._tool(ResearchTool.POSITIONS)
 
-    assert not isinstance(
-        exc_info.value, state_module.TransientBrokerStateBuildError
-    )
+    assert not isinstance(exc_info.value, state_module.TransientBrokerStateBuildError)
 
 
 class FakeToolbox:
@@ -421,7 +481,8 @@ class FakeToolbox:
     def execute(self, request, bundle):
         self.calls.append(request.tool)
         if request.tool == ResearchTool.EXECUTIONS:
-            executions = [{
+            executions = [
+                {
                     "execution_id_hash": "exec-1",
                     "orderRef": "codex-ibkr-paper-30d-autonomous",
                     "orderId": 44,
@@ -440,7 +501,8 @@ class FakeToolbox:
                         "multiplier": "100",
                     },
                     **self.fill_updates,
-                }]
+                }
+            ]
             if self.include_spoofed_fill:
                 executions.append(
                     {
@@ -457,15 +519,19 @@ class FakeToolbox:
                 "paper_account": True,
                 "declared_options_level": 4,
                 "summary": {"BuyingPower": "10000", "NetLiquidation": "10000"},
-                "server_time_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "server_time_utc": datetime.now(timezone.utc)
+                .isoformat()
+                .replace("+00:00", "Z"),
             }
         elif request.tool == ResearchTool.POSITIONS:
             data = {
-                "positions": [{
-                    "contract": {"conId": 101, "symbol": "XYZ", "secType": "OPT"},
-                    "position": self.broker_quantity,
-                    "avgCost": 200.0,
-                }]
+                "positions": [
+                    {
+                        "contract": {"conId": 101, "symbol": "XYZ", "secType": "OPT"},
+                        "position": self.broker_quantity,
+                        "avgCost": 200.0,
+                    }
+                ]
             }
         elif request.tool == ResearchTool.OPEN_ORDERS:
             owned = canonical_open_order(open_order_trade())
@@ -656,7 +722,9 @@ def test_state_builder_refreshes_equity_and_keeps_discovery_unconstrained(tmp_pa
         assert len(open_order["state_sha256"]) == 64
 
 
-def test_state_builder_exposes_v3_continuity_context_without_strategy_guidance(tmp_path):
+def test_state_builder_exposes_v3_continuity_context_without_strategy_guidance(
+    tmp_path,
+):
     from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
     from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 
@@ -826,7 +894,10 @@ def test_expired_filled_plan_is_summarized_but_not_model_active(
         install_successor_schema_v2(db)
         install_continuity_schema_v3(db)
         plan = continuity_plan_factory(
-            order_binding={"order_ref": "filled-order", "client_order_id": "filled-order"}
+            order_binding={
+                "order_ref": "filled-order",
+                "client_order_id": "filled-order",
+            }
         )
         ContinuityStore(db).append_plan_event("ACTIVATED", plan)
         registry_payload = {
@@ -1076,9 +1147,7 @@ def test_state_builder_accepts_late_perm_id_when_v2_anchor_has_zero(tmp_path):
         {"quantity": "1", "cumQty": "2"},
     ],
 )
-def test_state_builder_rejects_fill_quantity_exceeding_issuance(
-    tmp_path, fill_updates
-):
+def test_state_builder_rejects_fill_quantity_exceeding_issuance(tmp_path, fill_updates):
     with Database.open(tmp_path / "oversized-fill.sqlite3") as db:
         subject = builder(db, FakeToolbox(fill_updates=fill_updates))
         value = subject.build(trigger="SCHEDULED_SCAN")

@@ -123,9 +123,7 @@ def test_production_canary_store_rejects_tampered_authority_chain(tmp_path) -> N
     connection = sqlite3.connect(db_path)
     try:
         connection.execute("DROP TRIGGER canary_authorization_events_no_update")
-        connection.execute(
-            "UPDATE canary_authorization_events SET payload_json='{}'"
-        )
+        connection.execute("UPDATE canary_authorization_events SET payload_json='{}'")
         connection.commit()
     finally:
         connection.close()
@@ -182,7 +180,9 @@ def test_production_canary_store_round_trips_selected_candidate_and_result(
     assert store.load_result(proposal.sha256) == payload
 
 
-def test_v4_writer_factory_wires_path_scoped_sleeve_authority(tmp_path, monkeypatch) -> None:
+def test_v4_writer_factory_wires_path_scoped_sleeve_authority(
+    tmp_path, monkeypatch
+) -> None:
     from ibkr_paper_30d.broker_write_coordinator import BrokerWriteCoordinator
     from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
 
@@ -231,8 +231,7 @@ def test_v4_writer_factory_wires_path_scoped_sleeve_authority(tmp_path, monkeypa
     assert callable(writer.canary_evidence_collector)
     assert writer.model_execution_engine.final_write_authority_required is True
     assert (
-        writer.model_execution_engine._load().mechanics
-        ._runtime_final_write_authority_required
+        writer.model_execution_engine._load().mechanics._runtime_final_write_authority_required
         is True
     )
 
@@ -283,9 +282,7 @@ def test_bag_sleeve_evidence_resolves_every_leg_from_broker() -> None:
                 "canonical_contract": parent.model_dump(mode="json"),
                 "order_ref": "codex-order-1",
             },
-            "production_authority": {
-                "authority_snapshot_sha256": "b" * 64
-            },
+            "production_authority": {"authority_snapshot_sha256": "b" * 64},
         },
     )
 
@@ -427,11 +424,11 @@ def test_multi_universe_runtime_authority_is_exact_and_shared() -> None:
         "transition_phase": "SUPERVISION_BOUND",
         "supervision_binding_sha256": "1" * 64,
         "continuous_authority_sha256": "2" * 64,
-        "entry_authority_mode": "FROZEN",
+        "entry_authority_mode": "REGULAR_ONLY",
         "writer_start_allowed": True,
         "management_actions_allowed": True,
         "continuity_actions_allowed": True,
-        "new_regular_entries_allowed": False,
+        "new_regular_entries_allowed": True,
         "new_continuous_entries_allowed": False,
         "legacy_predecessor_allowed": False,
     }
@@ -443,21 +440,52 @@ def test_multi_universe_runtime_authority_is_exact_and_shared() -> None:
     inject_multi_universe_runtime_authority(authority, provider, service, writer)
 
     assert authority.transition_phase == "SUPERVISION_BOUND"
-    assert authority.entry_authority_mode == "FROZEN"
+    assert authority.entry_authority_mode == "REGULAR_ONLY"
     assert provider.multi_universe_runtime_authority is authority
     assert service.multi_universe_runtime_authority is authority
     assert writer.multi_universe_runtime_authority is authority
+
+
+def test_active_runtime_may_idle_continuous_entries_when_family_is_closed() -> None:
+    from ibkr_paper_30d.production_continuity_runtime import (
+        normalize_multi_universe_launch_authority,
+    )
+
+    authority = normalize_multi_universe_launch_authority(
+        {
+            "schema": "MULTI_UNIVERSE_LAUNCH_DECISION_V1",
+            "transition_phase": "ACTIVE",
+            "supervision_binding_sha256": "1" * 64,
+            "continuous_authority_sha256": "2" * 64,
+            "entry_authority_mode": "NORMAL",
+            "writer_start_allowed": True,
+            "management_actions_allowed": True,
+            "continuity_actions_allowed": True,
+            "new_regular_entries_allowed": True,
+            "new_continuous_entries_allowed": False,
+            "legacy_predecessor_allowed": False,
+        }
+    )
+
+    assert authority.new_regular_entries_allowed is True
+    assert authority.new_continuous_entries_allowed is False
 
 
 @pytest.mark.parametrize(
     ("update", "reason"),
     [
         ({"supervision_binding_sha256": "bad"}, "SUPERVISION_BINDING_AMBIGUOUS"),
-        ({"continuous_authority_sha256": "bad"}, "CONTINUOUS_ENTRY_AUTHORITY_AMBIGUOUS"),
+        (
+            {"continuous_authority_sha256": "bad"},
+            "CONTINUOUS_ENTRY_AUTHORITY_AMBIGUOUS",
+        ),
         ({"entry_authority_mode": "NORMAL"}, "ENTRY_AUTHORITY_PHASE_MISMATCH"),
         ({"legacy_predecessor_allowed": True}, "PREDECESSOR_REACTIVATION_ATTEMPT"),
         ({"management_actions_allowed": False}, "MANAGEMENT_AUTHORITY_PHASE_MISMATCH"),
-        ({"new_regular_entries_allowed": "false"}, "MULTI_UNIVERSE_LAUNCH_AUTHORITY_INVALID"),
+        (
+            {"new_regular_entries_allowed": "false"},
+            "MULTI_UNIVERSE_LAUNCH_AUTHORITY_INVALID",
+        ),
     ],
 )
 def test_multi_universe_runtime_authority_rejects_ambiguous_claims(update, reason):
@@ -471,11 +499,11 @@ def test_multi_universe_runtime_authority_rejects_ambiguous_claims(update, reaso
         "transition_phase": "SUPERVISION_BOUND",
         "supervision_binding_sha256": "1" * 64,
         "continuous_authority_sha256": "2" * 64,
-        "entry_authority_mode": "FROZEN",
+        "entry_authority_mode": "REGULAR_ONLY",
         "writer_start_allowed": True,
         "management_actions_allowed": True,
         "continuity_actions_allowed": True,
-        "new_regular_entries_allowed": False,
+        "new_regular_entries_allowed": True,
         "new_continuous_entries_allowed": False,
         "legacy_predecessor_allowed": False,
     }
@@ -1135,7 +1163,9 @@ def test_validate_only_constructs_composition_without_broker_io(
     with Database.open(config.db_path) as db:
         install_successor_schema_v2(db)
         install_continuity_schema_v3(db)
-        from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+        from ibkr_paper_30d.multi_universe_schema import (
+            install_multi_universe_schema_v4,
+        )
 
         install_multi_universe_schema_v4(db)
 

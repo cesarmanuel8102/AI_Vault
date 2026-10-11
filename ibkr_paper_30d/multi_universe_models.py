@@ -11,7 +11,6 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from .canonical import sha256_json
 
-
 SHA256_PATTERN = r"^[0-9a-f]{64}$"
 GIT_HEAD_PATTERN = r"^[0-9a-f]{40}$"
 
@@ -38,6 +37,30 @@ class TransitionPhase(str, Enum):
     CANARY_PASS = "CANARY_PASS"
     RUNTIME_BOUND = "RUNTIME_BOUND"
     ACTIVE = "ACTIVE"
+
+
+_REGULAR_ENTRY_PHASES = frozenset(
+    {
+        TransitionPhase.SUPERVISION_BOUND,
+        TransitionPhase.CANARY_PASS,
+        TransitionPhase.RUNTIME_BOUND,
+        TransitionPhase.ACTIVE,
+    }
+)
+
+
+def regular_new_entries_allowed(phase: TransitionPhase | str) -> bool:
+    try:
+        return TransitionPhase(phase) in _REGULAR_ENTRY_PHASES
+    except ValueError:
+        return False
+
+
+def continuous_new_entries_allowed(phase: TransitionPhase | str) -> bool:
+    try:
+        return TransitionPhase(phase) is TransitionPhase.ACTIVE
+    except ValueError:
+        return False
 
 
 class AuthorityModel(BaseModel):
@@ -153,6 +176,15 @@ class ProductFamilyKey(AuthorityModel):
         return value.upper()
 
 
+REGULAR_DAY1_PRODUCT_FAMILY = ProductFamilyKey(
+    security_type="STK_OPT_BAG",
+    venue_or_routing="SMART",
+    quantity_semantics="SHARES_CONTRACTS_COMBO_UNITS",
+    order_representation="DAY1_DIRECT_OR_COMBO",
+    lifecycle_behavior="DAY1_EXISTING_PRODUCTION_PATH",
+)
+
+
 class SleeveAuthorityDefinition(AuthorityModel):
     sleeve: CapitalSleeve
     authorized_principal_usd: Decimal = Field(gt=0)
@@ -203,10 +235,9 @@ class OwnerEconomicRiskAuthorization(AuthorityModel):
         _require_utc(self.expires_at_utc, "expires_at_utc")
         if self.expires_at_utc <= self.issued_at_utc:
             raise ValueError("economic authorization must expire after issuance")
-        if (
-            self.regular_allocation_usd != Decimal("500")
-            or self.extended_allocation_usd != Decimal("500")
-        ):
+        if self.regular_allocation_usd != Decimal(
+            "500"
+        ) or self.extended_allocation_usd != Decimal("500"):
             raise ValueError("economic authorization must bind USD 500 per sleeve")
         if self.maximum_liability_ratio != Decimal("1.00"):
             raise ValueError("maximum liability ratio must equal 1.00")
@@ -232,7 +263,10 @@ class CanaryAuthorization(AuthorityModel):
     def _validate_scope(cls, value: tuple[str, ...]) -> tuple[str, ...]:
         if len(value) != len(set(value)):
             raise ValueError("duplicate canary contract scope")
-        if any(len(item) != 64 or any(c not in "0123456789abcdef" for c in item) for item in value):
+        if any(
+            len(item) != 64 or any(c not in "0123456789abcdef" for c in item)
+            for item in value
+        ):
             raise ValueError("invalid canary contract scope sha256")
         return value
 

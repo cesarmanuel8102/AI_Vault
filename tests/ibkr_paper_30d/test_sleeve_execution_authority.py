@@ -20,7 +20,6 @@ from ibkr_paper_30d.sleeve_execution_authority import (
 from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 from test_model_execution_engine import _request
 
-
 NOW = datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc)
 
 
@@ -88,6 +87,15 @@ def _snapshot(request, **changes):
     entry_authority = (
         "ACTIVE"
         if phase == TransitionPhase.ACTIVE.value
+        or (
+            request.capital_sleeve is CapitalSleeve.REGULAR_SLEEVE
+            and phase
+            in {
+                TransitionPhase.SUPERVISION_BOUND.value,
+                TransitionPhase.CANARY_PASS.value,
+                TransitionPhase.RUNTIME_BOUND.value,
+            }
+        )
         else (
             "CANARY_ONLY"
             if phase == TransitionPhase.CANARY_EXCLUSIVE.value
@@ -107,7 +115,8 @@ def _snapshot(request, **changes):
         "account_identity_sha256": request.account_identity_sha256,
         "transition_phase": "ACTIVE",
         "supervision_bound": supervision_bound,
-        "inherited_position": request.operation is not ModelExecutionOperation.NEW_TRADE,
+        "inherited_position": request.operation
+        is not ModelExecutionOperation.NEW_TRADE,
         "entry_authority": entry_authority,
         "instrument_management_tradable": True,
         "reconciliation_fresh": True,
@@ -166,12 +175,26 @@ def test_every_operation_has_explicit_authority_in_every_phase(
         ModelExecutionOperation.OPEN_ORDER_ACTION,
         ModelExecutionOperation.POSITION_ACTION,
     }
+    regular_entry_phase = phase in {
+        TransitionPhase.SUPERVISION_BOUND,
+        TransitionPhase.CANARY_PASS,
+        TransitionPhase.RUNTIME_BOUND,
+        TransitionPhase.ACTIVE,
+    }
     allowed = (
         management
         and tuple(TransitionPhase).index(phase)
         >= tuple(TransitionPhase).index(TransitionPhase.SUPERVISION_BOUND)
-    ) or (operation is ModelExecutionOperation.NEW_TRADE and phase is TransitionPhase.ACTIVE)
-    proposed = Decimal("1") if operation is ModelExecutionOperation.NEW_TRADE else Decimal("0")
+    ) or (
+        operation is ModelExecutionOperation.NEW_TRADE
+        and (
+            phase is TransitionPhase.ACTIVE
+            or (sleeve is CapitalSleeve.REGULAR_SLEEVE and regular_entry_phase)
+        )
+    )
+    proposed = (
+        Decimal("1") if operation is ModelExecutionOperation.NEW_TRADE else Decimal("0")
+    )
 
     receipt = SleeveExecutionAuthorityValidator.validate_operation(
         request,
@@ -186,7 +209,9 @@ def test_every_operation_has_explicit_authority_in_every_phase(
     assert (receipt.status == "PASS") is allowed
 
 
-def test_management_ignores_entry_family_and_capacity_but_requires_manageability() -> None:
+def test_management_ignores_entry_family_and_capacity_but_requires_manageability() -> (
+    None
+):
     request = _v4_request(ModelExecutionOperation.POSITION_ACTION)
     snapshot = _snapshot(
         request,
@@ -197,9 +222,12 @@ def test_management_ignores_entry_family_and_capacity_but_requires_manageability
         economic_authorization_valid=False,
         reserved_liability_usd=Decimal("500"),
     )
-    assert SleeveExecutionAuthorityValidator.validate_operation(
-        request, _broker(request), snapshot
-    ).status == "PASS"
+    assert (
+        SleeveExecutionAuthorityValidator.validate_operation(
+            request, _broker(request), snapshot
+        ).status
+        == "PASS"
+    )
 
     blocked = SleeveExecutionAuthorityValidator.validate_operation(
         request,
@@ -217,7 +245,11 @@ def test_management_ignores_entry_family_and_capacity_but_requires_manageability
         ({"reconciliation_status": "BLOCK"}, {}, "BROKER_RECONCILIATION_STALE"),
         ({"writer_binding_sha256": "c" * 64}, {}, "WRITER_BINDING_MISMATCH"),
         ({"transition_target_sha256": "c" * 64}, {}, "TRANSITION_TARGET_MISMATCH"),
-        ({"owned_contract_sleeve": "REGULAR_SLEEVE"}, {}, "CONTRACT_OWNED_BY_OTHER_SLEEVE"),
+        (
+            {"owned_contract_sleeve": "REGULAR_SLEEVE"},
+            {},
+            "CONTRACT_OWNED_BY_OTHER_SLEEVE",
+        ),
         ({"management_identity_match": False}, {}, "MANAGEMENT_IDENTITY_MISMATCH"),
         ({}, {"reconciliation_fresh": False}, "BROKER_RECONCILIATION_STALE"),
         ({}, {"inherited_position": False}, "INHERITED_POSITION_AUTHORITY_REQUIRED"),
@@ -296,15 +328,27 @@ def _bag_broker(request, **changes):
         ({"family_executable": False}, "PRODUCT_FAMILY_NOT_EXECUTABLE"),
         ({"capability_fresh": False}, "PRODUCT_CAPABILITY_STALE"),
         ({"ownership_conflict": True}, "CONTRACT_OWNERSHIP_CONFLICT"),
-        ({"external_capital_offset_detected": True}, "CROSS_SLEEVE_OR_EXTERNAL_OFFSET_FORBIDDEN"),
+        (
+            {"external_capital_offset_detected": True},
+            "CROSS_SLEEVE_OR_EXTERNAL_OFFSET_FORBIDDEN",
+        ),
         ({"unbounded_liability": True}, "MAXIMUM_LOSS_UNBOUNDED"),
-        ({"economic_authorization_valid": False}, "OWNER_ECONOMIC_RISK_AUTHORIZATION_INVALID"),
+        (
+            {"economic_authorization_valid": False},
+            "OWNER_ECONOMIC_RISK_AUTHORIZATION_INVALID",
+        ),
         ({"paper_only": False}, "NON_PAPER_AUTHORITY"),
         ({"approved_head": "9" * 40}, "APPROVED_HEAD_MISMATCH"),
         ({"epoch_id": "wrong"}, "EPOCH_MISMATCH"),
         ({"transition_phase": "CANARY_PASS"}, "SUCCESSOR_NOT_ACTIVE"),
-        ({"proposed_maximum_loss_usd": Decimal("501")}, "SLEEVE_AVAILABLE_CAPITAL_EXCEEDED"),
-        ({"reserved_liability_usd": Decimal("500")}, "SLEEVE_AVAILABLE_CAPITAL_EXCEEDED"),
+        (
+            {"proposed_maximum_loss_usd": Decimal("501")},
+            "SLEEVE_AVAILABLE_CAPITAL_EXCEEDED",
+        ),
+        (
+            {"reserved_liability_usd": Decimal("500")},
+            "SLEEVE_AVAILABLE_CAPITAL_EXCEEDED",
+        ),
     ],
 )
 def test_gate_matrix_blocks_each_independent_authority_failure(changes, reason):
@@ -339,7 +383,9 @@ def test_missing_continuity_plan_blocks_when_snapshot_requires_it() -> None:
     assert "CONTINUITY_PLAN_REQUIRED" in receipt.reason_codes
 
 
-def test_reservation_rereads_inside_transaction_and_is_exactly_idempotent(tmp_path) -> None:
+def test_reservation_rereads_inside_transaction_and_is_exactly_idempotent(
+    tmp_path,
+) -> None:
     request = _v4_request()
     db = Database.open(tmp_path / "authority.sqlite3")
     install_successor_schema_v2(db)
@@ -347,6 +393,7 @@ def test_reservation_rereads_inside_transaction_and_is_exactly_idempotent(tmp_pa
     install_multi_universe_schema_v4(db)
     store = SleeveAuthorityReservationStore(db)
     from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+
     SleeveLedgerStore(db).bootstrap_extended()
     calls = []
 
@@ -360,14 +407,27 @@ def test_reservation_rereads_inside_transaction_and_is_exactly_idempotent(tmp_pa
         assert first.status == second.status == "PASS"
         assert second.idempotent is True
         assert calls == [True]
-        assert db.execute("SELECT COUNT(*) FROM sleeve_authority_events").fetchone()[0] == 1
-        assert db.execute("SELECT COUNT(*) FROM sleeve_ledger_events WHERE event_type='LIABILITY_RESERVED'").fetchone()[0] == 1
-        assert db.execute("SELECT COUNT(*) FROM contract_ownership_events").fetchone()[0] == 1
+        assert (
+            db.execute("SELECT COUNT(*) FROM sleeve_authority_events").fetchone()[0]
+            == 1
+        )
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM sleeve_ledger_events WHERE event_type='LIABILITY_RESERVED'"
+            ).fetchone()[0]
+            == 1
+        )
+        assert (
+            db.execute("SELECT COUNT(*) FROM contract_ownership_events").fetchone()[0]
+            == 1
+        )
     finally:
         db.close()
 
 
-def test_db_state_change_after_broker_collection_blocks_without_reservation(tmp_path) -> None:
+def test_db_state_change_after_broker_collection_blocks_without_reservation(
+    tmp_path,
+) -> None:
     request = _v4_request()
     db = Database.open(tmp_path / "race.sqlite3")
     install_successor_schema_v2(db)
@@ -375,6 +435,7 @@ def test_db_state_change_after_broker_collection_blocks_without_reservation(tmp_
     install_multi_universe_schema_v4(db)
     store = SleeveAuthorityReservationStore(db)
     from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+
     SleeveLedgerStore(db).bootstrap_extended()
     try:
         receipt = store.reserve(
@@ -384,7 +445,10 @@ def test_db_state_change_after_broker_collection_blocks_without_reservation(tmp_
         )
         assert receipt.status == "BLOCK"
         assert "OWNERSHIP_PROJECTION_MISMATCH" in receipt.reason_codes
-        assert db.execute("SELECT COUNT(*) FROM sleeve_authority_events").fetchone()[0] == 0
+        assert (
+            db.execute("SELECT COUNT(*) FROM sleeve_authority_events").fetchone()[0]
+            == 0
+        )
     finally:
         db.close()
 
@@ -403,15 +467,27 @@ def test_distinct_request_cannot_reuse_stale_sleeve_capacity(tmp_path) -> None:
     install_continuity_schema_v3(db)
     install_multi_universe_schema_v4(db)
     from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+
     SleeveLedgerStore(db).bootstrap_extended()
     store = SleeveAuthorityReservationStore(db)
     try:
-        assert store.reserve(first, _broker(first), lambda: _snapshot(first)).status == "PASS"
+        assert (
+            store.reserve(first, _broker(first), lambda: _snapshot(first)).status
+            == "PASS"
+        )
         blocked = store.reserve(second, _broker(second), lambda: _snapshot(second))
         assert blocked.status == "BLOCK"
         assert "SLEEVE_LEDGER_RESERVATION_MISMATCH" in blocked.reason_codes
-        assert db.execute("SELECT COUNT(*) FROM sleeve_authority_events").fetchone()[0] == 1
-        assert db.execute("SELECT COUNT(*) FROM sleeve_ledger_events WHERE event_type='LIABILITY_RESERVED'").fetchone()[0] == 1
+        assert (
+            db.execute("SELECT COUNT(*) FROM sleeve_authority_events").fetchone()[0]
+            == 1
+        )
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM sleeve_ledger_events WHERE event_type='LIABILITY_RESERVED'"
+            ).fetchone()[0]
+            == 1
+        )
     finally:
         db.close()
 
@@ -447,16 +523,21 @@ def test_existing_exposure_action_does_not_reclaim_or_reserve_liability(
         )
 
         assert receipt.status == "PASS"
-        assert db.execute(
-            "SELECT COUNT(*) FROM contract_ownership_events"
-        ).fetchone()[0] == 1
-        assert db.execute(
-            "SELECT COUNT(*) FROM sleeve_ledger_events "
-            "WHERE event_type='LIABILITY_RESERVED'"
-        ).fetchone()[0] == 0
-        assert db.execute(
-            "SELECT COUNT(*) FROM sleeve_authority_events"
-        ).fetchone()[0] == 1
+        assert (
+            db.execute("SELECT COUNT(*) FROM contract_ownership_events").fetchone()[0]
+            == 1
+        )
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM sleeve_ledger_events "
+                "WHERE event_type='LIABILITY_RESERVED'"
+            ).fetchone()[0]
+            == 0
+        )
+        assert (
+            db.execute("SELECT COUNT(*) FROM sleeve_authority_events").fetchone()[0]
+            == 1
+        )
     finally:
         db.close()
 
@@ -492,9 +573,10 @@ def test_existing_exposure_action_requires_same_sleeve_ownership(
 
         assert receipt.status == "BLOCK"
         assert receipt.reason_codes == ("CONTRACT_OWNERSHIP_REQUIRED",)
-        assert db.execute(
-            "SELECT COUNT(*) FROM sleeve_authority_events"
-        ).fetchone()[0] == 0
+        assert (
+            db.execute("SELECT COUNT(*) FROM sleeve_authority_events").fetchone()[0]
+            == 0
+        )
     finally:
         db.close()
 
@@ -520,15 +602,19 @@ def test_terminal_reconciliation_requires_two_observations_then_releases(
         "fresh": True,
     }
     try:
-        assert store.reserve(
-            request, _broker(request), lambda: _snapshot(request)
-        ).status == "PASS"
+        assert (
+            store.reserve(request, _broker(request), lambda: _snapshot(request)).status
+            == "PASS"
+        )
 
         first = store.finalize_terminal_reservations(
             flat,
             observation_id="1" * 64,
         )
-        assert first == {"released": (), "pending_confirmation": (request.execution_key,)}
+        assert first == {
+            "released": (),
+            "pending_confirmation": (request.execution_key,),
+        }
         assert SleeveLedgerStore(db).project(
             CapitalSleeve.EXTENDED_SLEEVE
         ).reserved_liability_usd == Decimal("1")
@@ -537,7 +623,10 @@ def test_terminal_reconciliation_requires_two_observations_then_releases(
             flat,
             observation_id="2" * 64,
         )
-        assert second == {"released": (request.execution_key,), "pending_confirmation": ()}
+        assert second == {
+            "released": (request.execution_key,),
+            "pending_confirmation": (),
+        }
         assert SleeveLedgerStore(db).project(
             CapitalSleeve.EXTENDED_SLEEVE
         ).reserved_liability_usd == Decimal("0")
@@ -550,10 +639,13 @@ def test_terminal_reconciliation_requires_two_observations_then_releases(
             observation_id="3" * 64,
         )
         assert retry == {"released": (), "pending_confirmation": ()}
-        assert db.execute(
-            "SELECT COUNT(*) FROM sleeve_ledger_events "
-            "WHERE event_type='LIABILITY_RELEASED'"
-        ).fetchone()[0] == 1
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM sleeve_ledger_events "
+                "WHERE event_type='LIABILITY_RELEASED'"
+            ).fetchone()[0]
+            == 1
+        )
     finally:
         db.close()
 
@@ -587,19 +679,25 @@ def test_terminal_reconciliation_releases_every_reservation_for_same_contract(
         "fresh": True,
     }
     try:
-        assert store.reserve(
-            first_request,
-            _broker(first_request),
-            lambda: _snapshot(first_request),
-        ).status == "PASS"
-        assert store.reserve(
-            second_request,
-            _broker(second_request),
-            lambda: _snapshot(
+        assert (
+            store.reserve(
+                first_request,
+                _broker(first_request),
+                lambda: _snapshot(first_request),
+            ).status
+            == "PASS"
+        )
+        assert (
+            store.reserve(
                 second_request,
-                reserved_liability_usd=Decimal("1"),
-            ),
-        ).status == "PASS"
+                _broker(second_request),
+                lambda: _snapshot(
+                    second_request,
+                    reserved_liability_usd=Decimal("1"),
+                ),
+            ).status
+            == "PASS"
+        )
         assert ledger.project(
             CapitalSleeve.EXTENDED_SLEEVE
         ).reserved_liability_usd == Decimal("2")
@@ -633,10 +731,13 @@ def test_terminal_reconciliation_releases_every_reservation_for_same_contract(
         ownership = ContractOwnershipStore(db).projection()
         assert ownership.active_contracts == ()
         assert len(ownership.released_contracts) == 1
-        assert db.execute(
-            "SELECT COUNT(*) FROM sleeve_ledger_events "
-            "WHERE event_type='LIABILITY_RELEASED'"
-        ).fetchone()[0] == 2
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM sleeve_ledger_events "
+                "WHERE event_type='LIABILITY_RELEASED'"
+            ).fetchone()[0]
+            == 2
+        )
 
         retry = store.finalize_terminal_reservations(
             flat,
@@ -659,9 +760,7 @@ def test_terminal_reconciliation_never_releases_visible_exposure(tmp_path) -> No
     store = SleeveAuthorityReservationStore(db)
     contract_hash = _broker(request)["contract_identity_sha256"]
     active = {
-        "positions": [
-            {"contract_identity_sha256": contract_hash, "quantity": "1"}
-        ],
+        "positions": [{"contract_identity_sha256": contract_hash, "quantity": "1"}],
         "open_orders": [],
         "pending_execution_contract_sha256": [],
         "fill_ambiguity": False,
@@ -745,8 +844,9 @@ def test_bag_entry_blocks_if_any_leg_identity_is_missing(tmp_path) -> None:
         )
         assert receipt.status == "BLOCK"
         assert receipt.reason_codes == ("BAG_OWNERSHIP_EVIDENCE_INCOMPLETE",)
-        assert db.execute(
-            "SELECT COUNT(*) FROM contract_ownership_events"
-        ).fetchone()[0] == 0
+        assert (
+            db.execute("SELECT COUNT(*) FROM contract_ownership_events").fetchone()[0]
+            == 0
+        )
     finally:
         db.close()

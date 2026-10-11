@@ -9,7 +9,13 @@ from .autonomous_research import ResearchRequest, ResearchTool
 from .canonical import sha256_json
 from .continuity_store import ContinuityStore
 from .contract_ownership import ContractOwnershipStore
-from .multi_universe_models import CapitalSleeve, TransitionPhase
+from .multi_universe_models import (
+    CapitalSleeve,
+    REGULAR_DAY1_PRODUCT_FAMILY,
+    TransitionPhase,
+    continuous_new_entries_allowed,
+    regular_new_entries_allowed,
+)
 from .multi_universe_transition import (
     MultiUniverseTransitionError,
     current_cash_classifications,
@@ -75,9 +81,9 @@ class AutonomousStateBuilder:
         product_certification_store: ProductFamilyCertificationStore | None = None,
         session_evidence_reader: Callable[[], dict[str, Any] | None] | None = None,
     ) -> None:
-        if (
-            experiment_start_utc is not None
-            and (experiment_start_utc.tzinfo is None or experiment_start_utc.utcoffset() is None)
+        if experiment_start_utc is not None and (
+            experiment_start_utc.tzinfo is None
+            or experiment_start_utc.utcoffset() is None
         ):
             raise ValueError("experiment_start_utc must be timezone-aware")
         if duration_days <= 0:
@@ -130,7 +136,9 @@ class AutonomousStateBuilder:
         self.session_evidence_reader = session_evidence_reader
         self._latest_executions: list[dict[str, Any]] = []
 
-    def _tool(self, tool: ResearchTool, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
+    def _tool(
+        self, tool: ResearchTool, arguments: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         request = ResearchRequest(
             request_id=f"state-{new_uuid7()}",
             tool=tool,
@@ -230,21 +238,17 @@ class AutonomousStateBuilder:
             required_keys = set(V2_OWNERSHIP_ANCHOR_KEYS)
             if payload.get("schema") == "EXPERIMENT_ORDER_REGISTRY_V3":
                 required_keys.add("contract")
-            if (
-                not required_keys.issubset(payload)
-                or sha256_json(payload) != str(row[7] or "")
+            if not required_keys.issubset(payload) or sha256_json(payload) != str(
+                row[7] or ""
             ):
                 return False
             try:
                 coherent = (
                     str(payload.get("order_ref") or "") == order_ref
-                    and int(payload.get("client_order_id") or 0)
-                    == int(row[0] or 0)
+                    and int(payload.get("client_order_id") or 0) == int(row[0] or 0)
                     and int(payload.get("perm_id") or 0) == int(row[1] or 0)
-                    and int(payload.get("ibkr_order_id") or 0)
-                    == int(row[2] or 0)
-                    and int(payload.get("contract_id") or 0)
-                    == int(row[3] or 0)
+                    and int(payload.get("ibkr_order_id") or 0) == int(row[2] or 0)
+                    and int(payload.get("contract_id") or 0) == int(row[3] or 0)
                     and str(payload.get("action") or "").upper()
                     == str(row[4] or "").upper()
                     and Decimal(str(payload.get("quantity") or 0))
@@ -277,27 +281,20 @@ class AutonomousStateBuilder:
         if any(
             int(row[0] or 0) != order_id
             or int(row[2] or 0) != order_id
-            or int(payload.get("execution_client_id") or 0)
-            != EXECUTION_CLIENT_ID
+            or int(payload.get("execution_client_id") or 0) != EXECUTION_CLIENT_ID
             or not str(payload.get("account") or "")
             for row, payload in anchors
         ):
             return False
-        positive_perm_ids = {
-            int(row[1]) for row, _ in anchors if int(row[1] or 0) > 0
-        }
+        positive_perm_ids = {int(row[1]) for row, _ in anchors if int(row[1] or 0) > 0}
         if positive_perm_ids and positive_perm_ids != {perm_id}:
             return False
         try:
-            issued_quantities = {
-                Decimal(str(row[5] or 0)) for row, _ in anchors
-            }
+            issued_quantities = {Decimal(str(row[5] or 0)) for row, _ in anchors}
             fill_quantity = Decimal(
                 str(fill.get("quantity") or fill.get("shares") or 0)
             )
-            cumulative_quantity = Decimal(
-                str(fill.get("cumQty") or fill_quantity)
-            )
+            cumulative_quantity = Decimal(str(fill.get("cumQty") or fill_quantity))
         except (TypeError, ValueError):
             return False
         if (
@@ -334,7 +331,10 @@ class AutonomousStateBuilder:
             canonical_legs = bag_contracts[-1].get("comboLegs")
             if not isinstance(canonical_legs, list) or not canonical_legs:
                 return False
-            if any(contract.get("comboLegs") != canonical_legs for contract in bag_contracts):
+            if any(
+                contract.get("comboLegs") != canonical_legs
+                for contract in bag_contracts
+            ):
                 return False
             expected_accounts = {
                 str(payload.get("account") or "") for _, payload in anchors
@@ -421,8 +421,12 @@ class AutonomousStateBuilder:
             quantity = Decimal(str(raw.get("position") or raw.get("quantity") or "0"))
             if quantity == 0:
                 continue
-            multiplier = Decimal(str((raw.get("contract") or {}).get("multiplier") or "1"))
-            average_cost = Decimal(str(raw.get("avgCost") or raw.get("average_cost") or "0"))
+            multiplier = Decimal(
+                str((raw.get("contract") or {}).get("multiplier") or "1")
+            )
+            average_cost = Decimal(
+                str(raw.get("avgCost") or raw.get("average_cost") or "0")
+            )
             positions.append(
                 {
                     "contract_identity_sha256": contract_hash(raw),
@@ -436,9 +440,7 @@ class AutonomousStateBuilder:
         orders = [
             {"contract_identity_sha256": contract_hash(raw)}
             for raw in open_orders.get("open_orders", ()) or ()
-            if str(raw.get("orderRef") or "").startswith(
-                f"{EXPERIMENT_ORDER_PREFIX}-"
-            )
+            if str(raw.get("orderRef") or "").startswith(f"{EXPERIMENT_ORDER_PREFIX}-")
         ]
         executions = [
             {
@@ -447,43 +449,37 @@ class AutonomousStateBuilder:
                 "commission": raw.get("commission"),
             }
             for raw in self._latest_executions
-            if str(raw.get("orderRef") or "").startswith(
-                f"{EXPERIMENT_ORDER_PREFIX}-"
-            )
+            if str(raw.get("orderRef") or "").startswith(f"{EXPERIMENT_ORDER_PREFIX}-")
         ]
         broker_snapshot = {
             "positions": positions,
             "open_orders": orders,
             "executions": executions,
         }
-        self.sleeve_ledger_store.reconcile_broker_snapshot(
-            broker_snapshot, ownership
-        )
+        self.sleeve_ledger_store.reconcile_broker_snapshot(broker_snapshot, ownership)
         ledgers = self.sleeve_ledger_store.project_all()
         ledger_payload = self._dump(ledgers)
         try:
-            account_snapshot = dict(
-                self.toolbox.account_reconciliation_snapshot()
-            )
+            account_snapshot = dict(self.toolbox.account_reconciliation_snapshot())
         except Exception as exc:
-            raise AutonomousStateBuildError(
-                "V4_BROKER_CASH_EVIDENCE_REQUIRED"
-            ) from exc
+            raise AutonomousStateBuildError("V4_BROKER_CASH_EVIDENCE_REQUIRED") from exc
         account_snapshot.update(self._transition_cash_classifications())
-        account_snapshot.update({
-            "positions": positions,
-            "open_orders": orders,
-            "executions": executions,
-            "fees": [
-                {
-                    "contract_identity_sha256": item["contract_identity_sha256"],
-                    "amount": item["commission"],
-                }
-                for item in executions
-                if item.get("commission") not in {None, ""}
-            ],
-            "financing": [],
-        })
+        account_snapshot.update(
+            {
+                "positions": positions,
+                "open_orders": orders,
+                "executions": executions,
+                "fees": [
+                    {
+                        "contract_identity_sha256": item["contract_identity_sha256"],
+                        "amount": item["commission"],
+                    }
+                    for item in executions
+                    if item.get("commission") not in {None, ""}
+                ],
+                "financing": [],
+            }
+        )
         receipt = SleeveReconciler.reconcile(
             account_snapshot, ledger_payload, self._dump(ownership)
         )
@@ -608,17 +604,19 @@ class AutonomousStateBuilder:
             "status": "PASS" if not reasons else "BLOCK",
             "reason_codes": reasons,
             "ledger_event_count": ledger_state.event_count,
-            "ledger_sha256": sha256_json({
-                "equity": str(ledger_state.equity),
-                "positions": [
-                    {
-                        "contract_id": item.contract_id,
-                        "quantity": str(item.quantity),
-                        "mark": str(item.mark),
-                    }
-                    for item in ledger_state.positions
-                ],
-            }),
+            "ledger_sha256": sha256_json(
+                {
+                    "equity": str(ledger_state.equity),
+                    "positions": [
+                        {
+                            "contract_id": item.contract_id,
+                            "quantity": str(item.quantity),
+                            "mark": str(item.mark),
+                        }
+                        for item in ledger_state.positions
+                    ],
+                }
+            ),
         }
 
     def _previous_decisions(self, limit: int = 20) -> list[dict[str, Any]]:
@@ -697,14 +695,11 @@ class AutonomousStateBuilder:
             invocation = None
             if invocation_row is not None:
                 candidate = self._json_mapping(invocation_row[0])
-                if (
-                    candidate is not None
-                    and sha256_json(candidate) == str(invocation_row[1])
+                if candidate is not None and sha256_json(candidate) == str(
+                    invocation_row[1]
                 ):
                     invocation = candidate
-            trigger = str(
-                (invocation or {}).get("invocation_trigger") or "UNKNOWN"
-            )
+            trigger = str((invocation or {}).get("invocation_trigger") or "UNKNOWN")
             trigger_counts[trigger] = trigger_counts.get(trigger, 0) + 1
 
             telemetry_row = self.db.execute(
@@ -718,9 +713,8 @@ class AutonomousStateBuilder:
             telemetry_wrapper = None
             if telemetry_row is not None:
                 candidate = self._json_mapping(telemetry_row[0])
-                if (
-                    candidate is not None
-                    and sha256_json(candidate) == str(telemetry_row[1])
+                if candidate is not None and sha256_json(candidate) == str(
+                    telemetry_row[1]
                 ):
                     telemetry_wrapper = candidate
             telemetry = (telemetry_wrapper or {}).get("event")
@@ -809,9 +803,7 @@ class AutonomousStateBuilder:
                 "epoch_id": epoch["epoch_id"],
                 "epoch_activation_required": epoch["activation_required"],
                 "historical_cycle_count": epoch["historical_cycle_count"],
-                "historical_ledger_event_count": epoch[
-                    "historical_ledger_event_count"
-                ],
+                "historical_ledger_event_count": epoch["historical_ledger_event_count"],
                 "previous_history_classification": epoch[
                     "previous_history_classification"
                 ],
@@ -929,9 +921,7 @@ class AutonomousStateBuilder:
             try:
                 authority = current_epoch_authority_bindings(self.db)
             except SuccessorEpochError as exc:
-                raise AutonomousStateBuildError(
-                    "CONTINUITY_AUTHORITY_INVALID"
-                ) from exc
+                raise AutonomousStateBuildError("CONTINUITY_AUTHORITY_INVALID") from exc
             if authority is None or any(
                 clock.get(key) != authority[key]
                 for key in (
@@ -940,9 +930,7 @@ class AutonomousStateBuilder:
                     "clock_event_sha256",
                 )
             ):
-                raise AutonomousStateBuildError(
-                    "CONTINUITY_AUTHORITY_BINDING_MISMATCH"
-                )
+                raise AutonomousStateBuildError("CONTINUITY_AUTHORITY_BINDING_MISMATCH")
         store = ContinuityStore(self.db)
         order_refs = [
             str(row[0])
@@ -991,8 +979,7 @@ class AutonomousStateBuilder:
             ).fetchall()
         ]
         all_provider_states = [
-            store.provider_projection(invocation_id)
-            for invocation_id in provider_ids
+            store.provider_projection(invocation_id) for invocation_id in provider_ids
         ]
         provider_state_counts: dict[str, int] = {}
         for state in all_provider_states:
@@ -1104,13 +1091,29 @@ class AutonomousStateBuilder:
             for name in ("regular", "continuous")
         ):
             raise AutonomousStateBuildError("V4_SLEEVE_BOOTSTRAP_REQUIRED")
-        ownership_projection = self._dump(
-            self.contract_ownership_store.projection()
-        )
+        ownership_projection = self._dump(self.contract_ownership_store.projection())
         capabilities = [
-            self._dump(item)
-            for item in self.product_certification_store.projections()
+            self._dump(item) for item in self.product_certification_store.projections()
         ]
+        regular_family_sha256 = REGULAR_DAY1_PRODUCT_FAMILY.sha256
+        if not any(
+            item.get("family_sha256") == regular_family_sha256 for item in capabilities
+        ):
+            capabilities.append(
+                {
+                    "family": REGULAR_DAY1_PRODUCT_FAMILY.model_dump(mode="json"),
+                    "family_sha256": regular_family_sha256,
+                    "status": "FULL_LIFECYCLE_VERIFIED",
+                    "completed_steps": ["INHERITED_DAY1_PRODUCTION_PATH"],
+                    "account_sha256": None,
+                    "adapter_sha256": None,
+                    "observed_at_utc": None,
+                    "expires_at_utc": None,
+                    "paper_limitations": ["PAPER_SIMULATION_ONLY"],
+                    "executable": True,
+                    "revoked_reason": None,
+                }
+            )
         capability_by_sha = {
             str(item.get("family_sha256") or ""): item
             for item in capabilities
@@ -1119,8 +1122,13 @@ class AutonomousStateBuilder:
         authenticated_sessions = {
             family_sha: dict(evidence)
             for family_sha, evidence in sorted((family_sessions or {}).items())
-            if family_sha in capability_by_sha
-            and isinstance(evidence, Mapping)
+            if family_sha in capability_by_sha and isinstance(evidence, Mapping)
+        }
+        authenticated_sessions[regular_family_sha256] = {
+            "authenticated": bool(regular_entry_open),
+            "tradable_now": bool(regular_entry_open),
+            "session": "REGULAR" if regular_entry_open else "CLOSED",
+            "eligible_sleeves": [CapitalSleeve.REGULAR_SLEEVE.value],
         }
         executable_family_sha256 = sorted(
             family_sha
@@ -1136,8 +1144,7 @@ class AutonomousStateBuilder:
                 (authenticated_sessions.get(family_sha) or {}).get("tradable_now")
                 is True
                 or str(
-                    (authenticated_sessions.get(family_sha) or {}).get("session")
-                    or ""
+                    (authenticated_sessions.get(family_sha) or {}).get("session") or ""
                 ).upper()
                 == "REGULAR"
             )
@@ -1163,15 +1170,16 @@ class AutonomousStateBuilder:
         continuous_eligible_families = eligible_families_by_sleeve[
             CapitalSleeve.CONTINUOUS_SLEEVE.value
         ]
-        phase_active = transition_phase == TransitionPhase.ACTIVE.value
+        regular_phase_active = regular_new_entries_allowed(transition_phase)
+        continuous_phase_active = continuous_new_entries_allowed(transition_phase)
         reconciliation_pass = reconciliation.get("status") == "PASS"
         unmarked = set(unmarked_contract_ids or ())
 
         def entry_eligibility(
-            *, available: bool, eligible_families: list[str]
+            *, phase_allowed: bool, available: bool, eligible_families: list[str]
         ) -> dict[str, Any]:
             reasons: list[str] = []
-            if not phase_active:
+            if not phase_allowed:
                 reasons.append("SUCCESSOR_NOT_ACTIVE")
             if not reconciliation_pass:
                 reasons.append("BROKER_RECONCILIATION_REQUIRED")
@@ -1182,6 +1190,17 @@ class AutonomousStateBuilder:
                 "reason_codes": reasons,
                 "eligible_family_sha256": eligible_families,
             }
+
+        regular_entry_eligibility = entry_eligibility(
+            phase_allowed=regular_phase_active,
+            available=regular_entry_open and bool(regular_eligible_families),
+            eligible_families=regular_eligible_families,
+        )
+        continuous_entry_eligibility = entry_eligibility(
+            phase_allowed=continuous_phase_active,
+            available=bool(continuous_eligible_families),
+            eligible_families=continuous_eligible_families,
+        )
 
         contract_sleeves: dict[str, str] = {}
         management_eligibility: dict[str, dict[str, Any]] = {}
@@ -1200,9 +1219,7 @@ class AutonomousStateBuilder:
 
         for item in ownership_projection.get("active_contracts", []):
             contract = item.get("contract") or {}
-            contract_id = int(
-                contract.get("con_id") or contract.get("conId") or 0
-            )
+            contract_id = int(contract.get("con_id") or contract.get("conId") or 0)
             if contract_id > 0:
                 contract_sleeves[str(contract_id)] = str(item.get("sleeve") or "")
                 observations = [
@@ -1228,9 +1245,7 @@ class AutonomousStateBuilder:
                             owner_sleeve == CapitalSleeve.REGULAR_SLEEVE.value
                             and regular_entry_open
                         )
-                        or observed_families.intersection(
-                            continuous_eligible_families
-                        )
+                        or observed_families.intersection(continuous_eligible_families)
                     )
                 )
                 management_eligibility[str(contract_id)] = {
@@ -1245,9 +1260,7 @@ class AutonomousStateBuilder:
                         )
                     ),
                     "capital_sleeve": owner_sleeve,
-                    "contract_identity_sha256": item.get(
-                        "contract_identity_sha256"
-                    ),
+                    "contract_identity_sha256": item.get("contract_identity_sha256"),
                 }
         redacted_account = {
             key: value
@@ -1260,10 +1273,34 @@ class AutonomousStateBuilder:
                 name: {
                     **dict(canonical_ledger.get(name) or {}),
                     "equity_usd": str(
-                        Decimal(str((canonical_ledger.get(name) or {}).get("allocation_usd") or "0"))
-                        + Decimal(str((canonical_ledger.get(name) or {}).get("realized_pnl_usd") or "0"))
-                        + Decimal(str((canonical_ledger.get(name) or {}).get("unrealized_pnl_usd") or "0"))
-                        - Decimal(str((canonical_ledger.get(name) or {}).get("fees_usd") or "0"))
+                        Decimal(
+                            str(
+                                (canonical_ledger.get(name) or {}).get("allocation_usd")
+                                or "0"
+                            )
+                        )
+                        + Decimal(
+                            str(
+                                (canonical_ledger.get(name) or {}).get(
+                                    "realized_pnl_usd"
+                                )
+                                or "0"
+                            )
+                        )
+                        + Decimal(
+                            str(
+                                (canonical_ledger.get(name) or {}).get(
+                                    "unrealized_pnl_usd"
+                                )
+                                or "0"
+                            )
+                        )
+                        - Decimal(
+                            str(
+                                (canonical_ledger.get(name) or {}).get("fees_usd")
+                                or "0"
+                            )
+                        )
                     ),
                 }
                 for name in ("regular", "continuous")
@@ -1272,16 +1309,8 @@ class AutonomousStateBuilder:
             "transition_target_sha256": transition_target_sha256,
             "writer_binding_sha256": writer_binding_sha256,
             "entry_eligibility": {
-                CapitalSleeve.REGULAR_SLEEVE.value: entry_eligibility(
-                    available=(
-                        regular_entry_open and bool(regular_eligible_families)
-                    ),
-                    eligible_families=regular_eligible_families,
-                ),
-                CapitalSleeve.CONTINUOUS_SLEEVE.value: entry_eligibility(
-                    available=bool(continuous_eligible_families),
-                    eligible_families=continuous_eligible_families,
-                ),
+                CapitalSleeve.REGULAR_SLEEVE.value: regular_entry_eligibility,
+                CapitalSleeve.CONTINUOUS_SLEEVE.value: continuous_entry_eligibility,
             },
             "management_eligibility": management_eligibility,
             "aggregate_currency_balances": ledger.get(
@@ -1296,7 +1325,13 @@ class AutonomousStateBuilder:
                 "open_order_count": len(account_orders),
             },
             "reconciliation": dict(reconciliation),
-            "new_entries_enabled": reconciliation_pass and phase_active,
+            "new_entries_enabled": any(
+                item["status"] == "PASS"
+                for item in (
+                    regular_entry_eligibility,
+                    continuous_entry_eligibility,
+                )
+            ),
             "market_data_advisories": list(mark_reason_codes),
         }
         ownership = {
@@ -1326,9 +1361,7 @@ class AutonomousStateBuilder:
             target = dict(payload.get("target") or {})
             phase = TransitionPhase(str(row[0])).value
         except (TypeError, ValueError, json.JSONDecodeError) as exc:
-            raise AutonomousStateBuildError(
-                "TRANSITION_PROJECTION_AMBIGUOUS"
-            ) from exc
+            raise AutonomousStateBuildError("TRANSITION_PROJECTION_AMBIGUOUS") from exc
         return {
             "phase": phase,
             "target_sha256": payload.get("target_sha256"),
@@ -1373,9 +1406,7 @@ class AutonomousStateBuilder:
         isolated_orders = [
             item
             for item in open_orders.get("open_orders", []) or []
-            if str(item.get("orderRef") or "").startswith(
-                "codex-ibkr-paper-30d-"
-            )
+            if str(item.get("orderRef") or "").startswith("codex-ibkr-paper-30d-")
         ]
         isolated_positions = [
             {
@@ -1467,14 +1498,14 @@ class AutonomousStateBuilder:
                 "valid": ledger_state.valid,
                 "reason_codes": list(ledger_state.reason_codes),
             },
-            broker_account_snapshot=self._broker_snapshot(
-                account, ledger_state.equity
-            ),
+            broker_account_snapshot=self._broker_snapshot(account, ledger_state.equity),
             positions_snapshot=isolated_positions,
             open_orders_snapshot=isolated_orders,
             risk_snapshot={
                 "policy": "AGGRESSIVE_CAPITAL_BOUNDARY_V1",
-                "maximum_experiment_liability": str(max(ledger_state.equity, Decimal("0"))),
+                "maximum_experiment_liability": str(
+                    max(ledger_state.equity, Decimal("0"))
+                ),
                 "fixed_percent_limits": False,
             },
             kill_switch_state=kill_switch_state,

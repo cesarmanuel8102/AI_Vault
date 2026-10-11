@@ -76,14 +76,19 @@ execution lock, sleeve ledgers, ownership, and alert delivery. Never batch phase
 - `SUCCESSOR_COMMITTED` is the rollback boundary. After it, do not restore an old
   executor or edit receipts/SQLite manually; recover the same successor forward.
 - `SUPERVISION_BOUND` requires every inherited position to be owned by
-  `REGULAR_SLEEVE`, exact risk-reducing management authority, and both sleeves'
-  new-entry authority frozen.
+  `REGULAR_SLEEVE` and exact risk-reducing management authority. Regular
+  new-entry authority follows its authenticated daytime session and ordinary
+  reconciliation/risk gates through the deterministic inherited Day1 product
+  family; continuous ordinary entries remain frozen.
 - `CANARY_EXCLUSIVE` permits only the exact Codex-selected, Owner-authorized
-  candidate through the sole writer. Ordinary entry authority remains frozen.
+  candidate through the sole writer. Ordinary entry authority for both sleeves
+  remains frozen for the duration of this phase.
 - `CANARY_PASS` requires an ordered broker lifecycle, matching receipt chain,
   exact flat-state proof, and reconciled economics. No fill is not a pass.
 - `RUNTIME_BOUND` requires the same writer, lock generation, account, successor,
   supervision binding, and authority projection used by every component.
+- `CANARY_PASS` and `RUNTIME_BOUND` restore otherwise valid regular-sleeve
+  entries while continuous ordinary entries remain frozen.
 - `ACTIVE` requires fresh DB and broker receipts. Regular entry remains session
   gated; continuous entry remains family-certification and tradability gated.
 
