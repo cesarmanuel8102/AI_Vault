@@ -90,6 +90,8 @@ class AuthoritativeBrokerWriter:
             [Any, CanaryExecutionRequest, dict[str, Any]], dict[str, Any]
         ]
         | None = None,
+        startup_connect_attempts: int = 3,
+        startup_retry_delay_seconds: float = 1.0,
     ) -> None:
         self.coordinator = coordinator
         self.broker_factory = broker_factory
@@ -127,6 +129,12 @@ class AuthoritativeBrokerWriter:
         if broker_request_timeout_seconds <= 0 or broker_request_timeout_seconds > 60:
             raise ValueError("broker_request_timeout_seconds must be in (0, 60]")
         self.broker_request_timeout_seconds = float(broker_request_timeout_seconds)
+        if not 1 <= startup_connect_attempts <= 5:
+            raise ValueError("startup_connect_attempts must be in [1, 5]")
+        if not 0 <= startup_retry_delay_seconds <= 10:
+            raise ValueError("startup_retry_delay_seconds must be in [0, 10]")
+        self.startup_connect_attempts = int(startup_connect_attempts)
+        self.startup_retry_delay_seconds = float(startup_retry_delay_seconds)
         self._capability = None
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
@@ -166,6 +174,7 @@ class AuthoritativeBrokerWriter:
         self._capability = self.coordinator.attach_writer()
         self._stop.clear()
         self._ready.clear()
+        self._startup_error = None
         self._thread = threading.Thread(
             target=self._run,
             name="ibkr-authoritative-broker-writer",
@@ -188,14 +197,26 @@ class AuthoritativeBrokerWriter:
         broker = None
         assert self._capability is not None
         try:
-            try:
-                broker = self.broker_factory(self.execution_client_id)
-                if hasattr(broker, "RequestTimeout"):
-                    broker.RequestTimeout = self.broker_request_timeout_seconds
-            except BaseException as exc:
-                self._startup_error = exc
-                self._ready.set()
-                return
+            for attempt in range(1, self.startup_connect_attempts + 1):
+                try:
+                    broker = self.broker_factory(self.execution_client_id)
+                    if hasattr(broker, "RequestTimeout"):
+                        broker.RequestTimeout = self.broker_request_timeout_seconds
+                    break
+                except BaseException as exc:
+                    retryable = not isinstance(exc, PermissionError) and isinstance(
+                        exc, (ConnectionError, TimeoutError, OSError)
+                    )
+                    if not retryable or attempt == self.startup_connect_attempts:
+                        self._startup_error = exc
+                        self._ready.set()
+                        return
+                    if self._stop.wait(self.startup_retry_delay_seconds):
+                        self._startup_error = RuntimeError(
+                            "AUTHORITATIVE_WRITER_STARTUP_STOPPED"
+                        )
+                        self._ready.set()
+                        return
             self._ready.set()
             while not self._stop.is_set():
                 claimed = self.coordinator.claim(self._capability, timeout=0.05)

@@ -2187,7 +2187,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 try:
                     writer.start()
                     wait_until_ready = getattr(writer, "wait_until_ready", None)
-                    if callable(wait_until_ready) and not wait_until_ready(5.0):
+                    if callable(wait_until_ready) and not wait_until_ready(20.0):
                         raise LaunchError("CONTINUITY_WRITER_START_FAILURE")
                 except LaunchError:
                     raise

@@ -349,6 +349,62 @@ def test_writer_applies_bounded_timeout_to_broker_session():
         assert writer.stop(2)
 
 
+def test_writer_retries_transient_startup_connection_failures():
+    attempts = []
+
+    def broker_factory(client_id):
+        attempts.append(client_id)
+        if len(attempts) < 3:
+            raise ConnectionError("transient IBKR synchronization failure")
+        return FakeGateway(client_id)
+
+    coordinator = BrokerWriteCoordinator()
+    writer = AuthoritativeBrokerWriter(
+        coordinator,
+        broker_factory=broker_factory,
+        execution_client_id=19761,
+        execution_lock_verifier=lambda: True,
+        authority_validator=lambda command, evidence: (),
+        startup_connect_attempts=3,
+        startup_retry_delay_seconds=0,
+    )
+
+    writer.start()
+    try:
+        assert writer.wait_until_ready(2)
+    finally:
+        assert writer.stop(2)
+
+    assert attempts == [19761, 19761, 19761]
+
+
+def test_writer_does_not_retry_non_transient_startup_failure():
+    attempts = []
+
+    def broker_factory(client_id):
+        attempts.append(client_id)
+        raise PermissionError("paper identity mismatch")
+
+    coordinator = BrokerWriteCoordinator()
+    writer = AuthoritativeBrokerWriter(
+        coordinator,
+        broker_factory=broker_factory,
+        execution_client_id=19761,
+        execution_lock_verifier=lambda: True,
+        authority_validator=lambda command, evidence: (),
+        startup_connect_attempts=3,
+        startup_retry_delay_seconds=0,
+    )
+
+    writer.start()
+    try:
+        assert writer.wait_until_ready(2) is False
+    finally:
+        assert writer.stop(2)
+
+    assert attempts == [19761]
+
+
 def test_open_orders_timeout_has_deterministic_reason_code():
     coordinator = BrokerWriteCoordinator()
     writer = AuthoritativeBrokerWriter(
