@@ -12,7 +12,7 @@ from .contract_ownership import ContractOwnershipStore
 from .multi_universe_models import CapitalSleeve, TransitionPhase
 from .multi_universe_transition import (
     MultiUniverseTransitionError,
-    active_cash_classifications,
+    current_cash_classifications,
 )
 from .experiment_control import ExperimentClock, ExperimentClockStore, KillSwitchStore
 from .experiment_epoch import ExperimentEpochStore
@@ -527,10 +527,10 @@ class AutonomousStateBuilder:
         self,
     ) -> dict[str, list[dict[str, str]]]:
         try:
-            return active_cash_classifications(self.db)
+            return current_cash_classifications(self.db)
         except MultiUniverseTransitionError as exc:
             raise AutonomousStateBuildError(
-                "V4_ACTIVE_CASH_CLASSIFICATION_REQUIRED"
+                "V4_CURRENT_CASH_CLASSIFICATION_REQUIRED"
             ) from exc
 
     def _mark_open_positions(self) -> list[str]:
@@ -1084,6 +1084,8 @@ class AutonomousStateBuilder:
         writer_binding_sha256: str | None = None,
         family_sessions: Mapping[str, Mapping[str, Any]] | None = None,
         regular_entry_open: bool = False,
+        unmarked_contract_ids: set[int] | None = None,
+        mark_reason_codes: tuple[str, ...] = (),
     ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
         if (
             self.sleeve_ledger_store is None
@@ -1163,6 +1165,7 @@ class AutonomousStateBuilder:
         ]
         phase_active = transition_phase == TransitionPhase.ACTIVE.value
         reconciliation_pass = reconciliation.get("status") == "PASS"
+        unmarked = set(unmarked_contract_ids or ())
 
         def entry_eligibility(
             *, available: bool, eligible_families: list[str]
@@ -1216,14 +1219,18 @@ class AutonomousStateBuilder:
                     for raw in observations
                     if raw.get("product_family_sha256")
                 }
+                fresh_mark_available = contract_id not in unmarked
                 manageable = bool(
-                    explicitly_manageable
-                    or (
-                        owner_sleeve == CapitalSleeve.REGULAR_SLEEVE.value
-                        and regular_entry_open
-                    )
-                    or observed_families.intersection(
-                        continuous_eligible_families
+                    fresh_mark_available
+                    and (
+                        explicitly_manageable
+                        or (
+                            owner_sleeve == CapitalSleeve.REGULAR_SLEEVE.value
+                            and regular_entry_open
+                        )
+                        or observed_families.intersection(
+                            continuous_eligible_families
+                        )
                     )
                 )
                 management_eligibility[str(contract_id)] = {
@@ -1231,7 +1238,11 @@ class AutonomousStateBuilder:
                     "reason_codes": (
                         []
                         if manageable
-                        else ["INSTRUMENT_NOT_CURRENTLY_MANAGEABLE"]
+                        else (
+                            ["FRESH_MARK_REQUIRED"]
+                            if not fresh_mark_available
+                            else ["INSTRUMENT_NOT_CURRENTLY_MANAGEABLE"]
+                        )
                     ),
                     "capital_sleeve": owner_sleeve,
                     "contract_identity_sha256": item.get(
@@ -1285,7 +1296,8 @@ class AutonomousStateBuilder:
                 "open_order_count": len(account_orders),
             },
             "reconciliation": dict(reconciliation),
-            "new_entries_enabled": reconciliation.get("status") == "PASS",
+            "new_entries_enabled": reconciliation_pass and phase_active,
+            "market_data_advisories": list(mark_reason_codes),
         }
         ownership = {
             **ownership_projection,
@@ -1343,7 +1355,11 @@ class AutonomousStateBuilder:
                 broker_positions=broker_positions,
                 open_orders=open_orders,
             )
-        state_reasons = execution_reasons + mark_reasons
+        state_reasons = list(execution_reasons)
+        if self.sleeve_ledger_store is None:
+            state_reasons.extend(mark_reasons)
+        elif mark_reasons:
+            reconciliation["advisory_reason_codes"] = list(mark_reasons)
         if state_reasons:
             reconciliation["status"] = "BLOCK"
             reconciliation["reason_codes"] = list(
@@ -1427,6 +1443,13 @@ class AutonomousStateBuilder:
                         == "REGULAR"
                     )
                 ),
+                unmarked_contract_ids={
+                    int(reason.rsplit(":", 1)[-1])
+                    for reason in mark_reasons
+                    if reason.startswith(("MARK_QUOTE_FAILED:", "MARK_QUOTE_INVALID:"))
+                    and reason.rsplit(":", 1)[-1].isdigit()
+                },
+                mark_reason_codes=tuple(mark_reasons),
             )
         return TraderInputBundle(
             decision_cycle_id=f"cycle-{new_uuid7()}",

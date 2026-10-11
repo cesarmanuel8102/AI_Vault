@@ -279,6 +279,13 @@ class MultiUniverseTransitionCoordinator:
                 raise MultiUniverseTransitionError(
                     "RUNTIME_RELEASE_SUPERVISION_BINDING_REQUIRED"
                 )
+            if current_phase is TransitionPhase.SUPERVISION_BOUND:
+                try:
+                    self._cash_classifications(evidence)
+                except MultiUniverseTransitionError as exc:
+                    raise MultiUniverseTransitionError(
+                        "SUPERVISION_CASH_CLASSIFICATION_REQUIRED"
+                    ) from exc
             releases = self._runtime_release_rows(target)
             previous_approved_git_head = (
                 target.approved_git_head
@@ -597,6 +604,52 @@ def active_cash_classifications(db: Database) -> dict[str, list[dict[str, str]]]
     if not isinstance(evidence, Mapping):
         raise MultiUniverseTransitionError("ACTIVE_CASH_CLASSIFICATION_REQUIRED")
     return MultiUniverseTransitionCoordinator._cash_classifications(evidence)
+
+
+def current_cash_classifications(db: Database) -> dict[str, list[dict[str, str]]]:
+    """Recover classifications authorized for the current transition phase."""
+
+    row = db.execute(
+        "SELECT event_type,payload_json FROM successor_transition_events "
+        "ORDER BY sequence DESC LIMIT 1"
+    ).fetchone()
+    if row is None:
+        raise MultiUniverseTransitionError("ACTIVE_TRANSITION_REQUIRED")
+    try:
+        event_type = str(row[0])
+        payload = json.loads(str(row[1]))
+        target = TransitionTarget.model_validate(payload.get("target"))
+    except Exception as exc:
+        raise MultiUniverseTransitionError(
+            "TRANSITION_PROJECTION_AMBIGUOUS"
+        ) from exc
+    recovered = MultiUniverseTransitionCoordinator(db).recover(target)
+    if recovered.phase is TransitionPhase.ACTIVE:
+        return active_cash_classifications(db)
+    if (
+        recovered.phase is not TransitionPhase.SUPERVISION_BOUND
+        or event_type != "RUNTIME_RELEASE_AUTHORIZED"
+        or payload.get("phase") != TransitionPhase.SUPERVISION_BOUND.value
+    ):
+        raise MultiUniverseTransitionError(
+            "SUPERVISION_CASH_CLASSIFICATION_REQUIRED"
+        )
+    evidence = payload.get("evidence")
+    if (
+        not isinstance(evidence, Mapping)
+        or evidence.get("transition_phase") != recovered.phase.value
+        or evidence.get("supervision_phase_event_sha256")
+        != recovered.phase_event_sha256
+    ):
+        raise MultiUniverseTransitionError(
+            "SUPERVISION_CASH_CLASSIFICATION_REQUIRED"
+        )
+    try:
+        return MultiUniverseTransitionCoordinator._cash_classifications(evidence)
+    except MultiUniverseTransitionError as exc:
+        raise MultiUniverseTransitionError(
+            "SUPERVISION_CASH_CLASSIFICATION_REQUIRED"
+        ) from exc
 
 
 def require_predecessor_retired(

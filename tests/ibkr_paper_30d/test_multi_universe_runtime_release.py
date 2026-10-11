@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
 from ibkr_paper_30d.multi_universe_models import TransitionPhase, TransitionTarget
 from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
@@ -16,6 +17,23 @@ from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 OLD_HEAD = "1" * 40
 NEW_HEAD = "2" * 40
 SECOND_HEAD = "4" * 40
+
+
+def _cash_classification_evidence() -> dict[str, object]:
+    classifications = {
+        "classified_canary_currency_balances": [],
+        "classified_non_experiment_currency_balances": [
+            {
+                "currency": "USD",
+                "amount": "252404.80",
+                "provenance_sha256": "c" * 64,
+            }
+        ],
+    }
+    return {
+        **classifications,
+        "cash_classification_sha256": sha256_json(classifications),
+    }
 
 
 def _target() -> TransitionTarget:
@@ -208,12 +226,39 @@ def test_runtime_release_allows_exact_supervision_bound_hotfix(tmp_path) -> None
             evidence=_release_evidence(
                 transition_phase=TransitionPhase.SUPERVISION_BOUND.value,
                 supervision_phase_event_sha256=bound.phase_event_sha256,
+                **_cash_classification_evidence(),
             ),
         )
 
         assert receipt["status"] == "PASS"
         assert coordinator.effective_approved_git_head(target) == NEW_HEAD
         assert coordinator.recover(target).phase is TransitionPhase.SUPERVISION_BOUND
+    finally:
+        db.close()
+
+
+def test_runtime_release_blocks_supervision_without_cash_classification(
+    tmp_path,
+) -> None:
+    db, coordinator, target = _coordinator(tmp_path)
+    try:
+        bound = coordinator.advance(
+            TransitionPhase.SUPERVISION_BOUND,
+            _phase_evidence(TransitionPhase.SUPERVISION_BOUND),
+        )
+
+        with pytest.raises(
+            MultiUniverseTransitionError,
+            match="SUPERVISION_CASH_CLASSIFICATION_REQUIRED",
+        ):
+            coordinator.authorize_runtime_release(
+                target,
+                approved_git_head=NEW_HEAD,
+                evidence=_release_evidence(
+                    transition_phase=TransitionPhase.SUPERVISION_BOUND.value,
+                    supervision_phase_event_sha256=bound.phase_event_sha256,
+                ),
+            )
     finally:
         db.close()
 

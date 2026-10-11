@@ -182,6 +182,69 @@ def test_v4_state_blocks_until_both_sleeves_are_bootstrapped() -> None:
         )
 
 
+def test_supervision_missing_regular_mark_blocks_only_that_contract() -> None:
+    subject = object.__new__(AutonomousStateBuilder)
+    subject.sleeve_ledger_store = SimpleNamespace(
+        project_all=lambda: _Dumpable(
+            {
+                "regular": {
+                    "initialized": True,
+                    "allocation_usd": "500",
+                    "currency_balances": [{"currency": "USD", "amount": "0"}],
+                    "positions": [],
+                    "realized_pnl_usd": "0",
+                    "unrealized_pnl_usd": "0",
+                    "fees_usd": "0",
+                },
+                "continuous": {
+                    "initialized": True,
+                    "allocation_usd": "500",
+                    "currency_balances": [{"currency": "USD", "amount": "500"}],
+                    "positions": [],
+                    "realized_pnl_usd": "0",
+                    "unrealized_pnl_usd": "0",
+                    "fees_usd": "0",
+                },
+                "aggregate_currency_balances": [{"currency": "USD", "amount": "500"}],
+            }
+        )
+    )
+    subject.contract_ownership_store = SimpleNamespace(
+        projection=lambda: _Dumpable(
+            {
+                "active_contracts": [
+                    {
+                        "contract_identity_sha256": "c" * 64,
+                        "contract": {"con_id": 7884},
+                        "sleeve": "REGULAR_SLEEVE",
+                    }
+                ],
+                "projection_sha256": "o" * 64,
+            }
+        )
+    )
+    subject.product_certification_store = SimpleNamespace(projections=lambda: ())
+
+    portfolio, _, _ = subject._multi_sleeve_context(
+        reconciliation={"status": "PASS", "reason_codes": []},
+        account={},
+        broker_positions={"positions": [{"contract_id": 7884}]},
+        open_orders={"open_orders": []},
+        transition_phase="SUPERVISION_BOUND",
+        unmarked_contract_ids={7884},
+        mark_reason_codes=("MARK_QUOTE_INVALID:7884",),
+    )
+
+    assert portfolio["new_entries_enabled"] is False
+    assert portfolio["management_eligibility"]["7884"] == {
+        "status": "BLOCK",
+        "reason_codes": ["FRESH_MARK_REQUIRED"],
+        "capital_sleeve": "REGULAR_SLEEVE",
+        "contract_identity_sha256": "c" * 64,
+    }
+    assert portfolio["market_data_advisories"] == ["MARK_QUOTE_INVALID:7884"]
+
+
 def test_v4_reconciliation_uses_independent_broker_cash_not_ledger_copy() -> None:
     class Ownership:
         active_contracts = ()
