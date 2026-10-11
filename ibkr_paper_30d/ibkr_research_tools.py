@@ -1175,19 +1175,19 @@ class IBKRResearchToolbox:
 
         ib = self._connect()
         try:
-            balances: dict[str, Decimal] = {}
+            usd_cash_balance: Decimal | None = None
             for item in ib.accountSummary():
-                if str(getattr(item, "tag", "")) != "TotalCashValue":
-                    continue
-                currency = str(getattr(item, "currency", "") or "").upper()
-                if not currency or currency == "BASE":
+                if (
+                    str(getattr(item, "tag", "")) != "$LEDGER-CashBalance"
+                    or str(getattr(item, "currency", "") or "").upper() != "USD"
+                ):
                     continue
                 value = Decimal(str(getattr(item, "value", "")))
                 if not value.is_finite():
                     raise ValueError("BROKER_CASH_BALANCE_INVALID")
-                balances[currency] = balances.get(currency, Decimal("0")) + value
-            if not balances:
-                raise ValueError("BROKER_CASH_BALANCES_REQUIRED")
+                usd_cash_balance = value
+            if usd_cash_balance is None:
+                raise ValueError("BROKER_RAW_USD_CASH_BALANCE_REQUIRED")
             server_time = ib.reqCurrentTime()
             observed_at = (
                 server_time.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -1198,9 +1198,9 @@ class IBKRResearchToolbox:
                 "paper_only": True,
                 "account_identity_sha256": self.expected_account_hash,
                 "observed_at_utc": observed_at,
+                "cash_balance_basis": "IBKR_LEDGER_CASH_BALANCE_USD_V1",
                 "currency_balances": [
-                    {"currency": currency, "amount": str(amount)}
-                    for currency, amount in sorted(balances.items())
+                    {"currency": "USD", "amount": str(usd_cash_balance)}
                 ],
             }
             return {**body, "broker_snapshot_sha256": sha256_json(body)}

@@ -70,6 +70,10 @@ class FakeAccountSummaryIB:
             SimpleNamespace(tag="TotalCashValue", currency="BASE", value="999999"),
             SimpleNamespace(tag="TotalCashValue", currency="USD", value="1000000"),
             SimpleNamespace(tag="TotalCashValue", currency="EUR", value="125.50"),
+            SimpleNamespace(
+                tag="$LEDGER-CashBalance", currency="USD", value="1000500.31"
+            ),
+            SimpleNamespace(tag="$LEDGER-CashBalance", currency="EUR", value="125.50"),
             SimpleNamespace(tag="BuyingPower", currency="USD", value="9999999"),
         ]
 
@@ -97,7 +101,7 @@ def test_open_orders_are_global_canonical_snapshots():
     assert fake.disconnected is True
 
 
-def test_account_reconciliation_snapshot_reads_independent_broker_cash():
+def test_account_reconciliation_snapshot_reads_raw_usd_cash_without_fx_translation():
     subject = IBKRResearchToolbox(expected_account_hash="a" * 64)
     fake = FakeAccountSummaryIB()
     subject._connect = lambda: fake
@@ -107,10 +111,24 @@ def test_account_reconciliation_snapshot_reads_independent_broker_cash():
     assert snapshot["paper_only"] is True
     assert snapshot["account_identity_sha256"] == "a" * 64
     assert snapshot["currency_balances"] == [
-        {"currency": "EUR", "amount": "125.50"},
-        {"currency": "USD", "amount": "1000000"},
+        {"currency": "USD", "amount": "1000500.31"},
     ]
+    assert snapshot["cash_balance_basis"] == "IBKR_LEDGER_CASH_BALANCE_USD_V1"
     assert len(snapshot["broker_snapshot_sha256"]) == 64
+    assert fake.disconnected is True
+
+
+def test_account_reconciliation_snapshot_requires_raw_usd_cash():
+    subject = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    fake = FakeAccountSummaryIB()
+    fake.accountSummary = lambda: [
+        SimpleNamespace(tag="TotalCashValue", currency="USD", value="1000000"),
+    ]
+    subject._connect = lambda: fake
+
+    with pytest.raises(ValueError, match="BROKER_RAW_USD_CASH_BALANCE_REQUIRED"):
+        subject.account_reconciliation_snapshot()
+
     assert fake.disconnected is True
 
 
