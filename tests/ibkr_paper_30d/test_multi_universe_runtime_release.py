@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
 from ibkr_paper_30d.multi_universe_models import TransitionPhase, TransitionTarget
 from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
@@ -192,7 +194,31 @@ def test_runtime_release_appends_a_verified_head_chain(tmp_path) -> None:
         db.close()
 
 
-def test_runtime_release_blocks_after_supervision_binding(tmp_path) -> None:
+def test_runtime_release_allows_exact_supervision_bound_hotfix(tmp_path) -> None:
+    db, coordinator, target = _coordinator(tmp_path)
+    try:
+        bound = coordinator.advance(
+            TransitionPhase.SUPERVISION_BOUND,
+            _phase_evidence(TransitionPhase.SUPERVISION_BOUND),
+        )
+
+        receipt = coordinator.authorize_runtime_release(
+            target,
+            approved_git_head=NEW_HEAD,
+            evidence=_release_evidence(
+                transition_phase=TransitionPhase.SUPERVISION_BOUND.value,
+                supervision_phase_event_sha256=bound.phase_event_sha256,
+            ),
+        )
+
+        assert receipt["status"] == "PASS"
+        assert coordinator.effective_approved_git_head(target) == NEW_HEAD
+        assert coordinator.recover(target).phase is TransitionPhase.SUPERVISION_BOUND
+    finally:
+        db.close()
+
+
+def test_runtime_release_blocks_unbound_supervision_hotfix(tmp_path) -> None:
     db, coordinator, target = _coordinator(tmp_path)
     try:
         coordinator.advance(
@@ -200,16 +226,15 @@ def test_runtime_release_blocks_after_supervision_binding(tmp_path) -> None:
             _phase_evidence(TransitionPhase.SUPERVISION_BOUND),
         )
 
-        try:
+        with pytest.raises(
+            MultiUniverseTransitionError,
+            match="RUNTIME_RELEASE_SUPERVISION_BINDING_REQUIRED",
+        ):
             coordinator.authorize_runtime_release(
                 target,
                 approved_git_head=NEW_HEAD,
                 evidence=_release_evidence(),
             )
-        except MultiUniverseTransitionError as exc:
-            assert str(exc) == "RUNTIME_RELEASE_PHASE_INVALID"
-        else:
-            raise AssertionError("release must block after supervision binding")
     finally:
         db.close()
 

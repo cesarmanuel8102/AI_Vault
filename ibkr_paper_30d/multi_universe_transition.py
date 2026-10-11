@@ -263,8 +263,22 @@ class MultiUniverseTransitionCoordinator:
         )
         with self.db.transaction():
             events = self._events(target)
-            if not events or TransitionPhase(events[-1]["phase"]) is not TransitionPhase.SUCCESSOR_COMMITTED:
+            if not events:
                 raise MultiUniverseTransitionError("RUNTIME_RELEASE_PHASE_INVALID")
+            current_phase = TransitionPhase(events[-1]["phase"])
+            if current_phase not in {
+                TransitionPhase.SUCCESSOR_COMMITTED,
+                TransitionPhase.SUPERVISION_BOUND,
+            }:
+                raise MultiUniverseTransitionError("RUNTIME_RELEASE_PHASE_INVALID")
+            if current_phase is TransitionPhase.SUPERVISION_BOUND and (
+                evidence.get("transition_phase") != current_phase.value
+                or evidence.get("supervision_phase_event_sha256")
+                != events[-1]["event_sha256"]
+            ):
+                raise MultiUniverseTransitionError(
+                    "RUNTIME_RELEASE_SUPERVISION_BINDING_REQUIRED"
+                )
             releases = self._runtime_release_rows(target)
             previous_approved_git_head = (
                 target.approved_git_head
@@ -296,7 +310,7 @@ class MultiUniverseTransitionCoordinator:
             payload = {
                 "schema": self.RUNTIME_RELEASE_SCHEMA,
                 "transition_id": target.transition_id,
-                "phase": TransitionPhase.SUCCESSOR_COMMITTED.value,
+                "phase": current_phase.value,
                 "target": target.model_dump(mode="json"),
                 "target_sha256": target.sha256,
                 "previous_approved_git_head": previous_approved_git_head,
@@ -315,7 +329,7 @@ class MultiUniverseTransitionCoordinator:
                 (
                     str(new_uuid7()),
                     target.transition_id,
-                    TransitionPhase.SUCCESSOR_COMMITTED.value,
+                    current_phase.value,
                     "RUNTIME_RELEASE_AUTHORIZED",
                     canonical_bytes(payload).decode("utf-8"),
                     sha256_json(payload),
