@@ -33,12 +33,15 @@ class ContinuityWatchdog:
         broker_time_reader: Callable[[Any], datetime],
         poll_interval_seconds: float,
         heartbeat_max_age_seconds: float,
+        max_consecutive_transient_failures: int = 3,
         uncertainty_reporter: Callable[[str], None] | None = None,
     ) -> None:
         if poll_interval_seconds <= 0:
             raise ValueError("poll_interval_seconds must be positive")
         if heartbeat_max_age_seconds <= 0:
             raise ValueError("heartbeat_max_age_seconds must be positive")
+        if max_consecutive_transient_failures <= 0:
+            raise ValueError("max_consecutive_transient_failures must be positive")
         self.db_factory = db_factory
         self.broker_factory = broker_factory
         self.poll_once = poll_once
@@ -46,6 +49,7 @@ class ContinuityWatchdog:
         self.broker_time_reader = broker_time_reader
         self.poll_interval_seconds = poll_interval_seconds
         self.heartbeat_max_age_seconds = heartbeat_max_age_seconds
+        self.max_consecutive_transient_failures = max_consecutive_transient_failures
         self.uncertainty_reporter = uncertainty_reporter or (lambda code: None)
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
@@ -53,6 +57,7 @@ class ContinuityWatchdog:
         self._state_lock = threading.Lock()
         self._last_heartbeat_utc: datetime | None = None
         self._failure: BaseException | None = None
+        self._transient_failure: BaseException | None = None
         self._reported: set[str] = set()
 
     def _report_once(self, code: str) -> bool:
@@ -91,6 +96,7 @@ class ContinuityWatchdog:
         with self._state_lock:
             self._last_heartbeat_utc = None
             self._failure = None
+            self._transient_failure = None
             self._reported.clear()
         self._thread = threading.Thread(
             target=self._run,
@@ -120,10 +126,12 @@ class ContinuityWatchdog:
         with self._state_lock:
             heartbeat = self._last_heartbeat_utc
             failure = self._failure
+            transient_failure = self._transient_failure
         thread = self._thread
         if (
             heartbeat is None
             or failure is not None
+            or transient_failure is not None
             or thread is None
             or not thread.is_alive()
         ):
@@ -144,6 +152,7 @@ class ContinuityWatchdog:
         broker = None
         store = None
         started = False
+        consecutive_transient_failures = 0
         try:
             db = self.db_factory()
             broker = self.broker_factory()
@@ -161,16 +170,55 @@ class ContinuityWatchdog:
             started = True
             self._ready.set()
             while not self._stop.is_set():
-                broker_now = self._as_utc(self.broker_time_reader(broker))
-                with self._state_lock:
-                    self._last_heartbeat_utc = broker_now
-                self._append(
-                    store,
-                    "HEARTBEAT",
-                    {"broker_time_utc": broker_now.isoformat()},
-                )
-                poll_result = self.poll_once(db, broker, self.coordinator)
-                self._observe_poll_result(store, poll_result)
+                try:
+                    if broker is None:
+                        broker = self.broker_factory()
+                        if getattr(broker, "read_only", None) is not True:
+                            raise PermissionError("WATCHDOG_BROKER_MUST_BE_READ_ONLY")
+                    broker_now = self._as_utc(self.broker_time_reader(broker))
+                    with self._state_lock:
+                        self._last_heartbeat_utc = broker_now
+                    self._append(
+                        store,
+                        "HEARTBEAT",
+                        {"broker_time_utc": broker_now.isoformat()},
+                    )
+                    poll_result = self.poll_once(db, broker, self.coordinator)
+                    self._observe_poll_result(store, poll_result)
+                except (ConnectionError, TimeoutError, OSError) as exc:
+                    consecutive_transient_failures += 1
+                    with self._state_lock:
+                        self._transient_failure = exc
+                    self._append(
+                        store,
+                        "TRANSIENT_FAILURE",
+                        {
+                            "error_type": type(exc).__name__,
+                            "consecutive_failures": consecutive_transient_failures,
+                        },
+                    )
+                    if broker is not None:
+                        try:
+                            broker.disconnect()
+                        except Exception:
+                            pass
+                        broker = None
+                    if (
+                        consecutive_transient_failures
+                        >= self.max_consecutive_transient_failures
+                    ):
+                        raise
+                    self._stop.wait(self.poll_interval_seconds)
+                    continue
+                if consecutive_transient_failures:
+                    self._append(
+                        store,
+                        "RECOVERED",
+                        {"consecutive_failures": consecutive_transient_failures},
+                    )
+                    consecutive_transient_failures = 0
+                    with self._state_lock:
+                        self._transient_failure = None
                 self._stop.wait(self.poll_interval_seconds)
         except BaseException as exc:
             with self._state_lock:
