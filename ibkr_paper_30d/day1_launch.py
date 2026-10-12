@@ -296,10 +296,11 @@ def evaluate_multi_universe_successor_launch(
             "CANARY_EXCLUSIVE",
             "CANARY_PASS",
             "RUNTIME_BOUND",
+            "DUAL_SLEEVE_ACTIVE",
             "ACTIVE",
         }:
             raise LaunchError("SUCCESSOR_TRANSITION_NOT_ELIGIBLE")
-        status = "PASS" if evidence.transition_phase == "ACTIVE" else "SUPERVISION_ONLY"
+        status = "PASS" if evidence.transition_phase in {"ACTIVE", "DUAL_SLEEVE_ACTIVE"} else "SUPERVISION_ONLY"
     else:
         if not evidence.same_committed_successor or evidence.transition_phase not in {
             "SUCCESSOR_COMMITTED",
@@ -307,6 +308,7 @@ def evaluate_multi_universe_successor_launch(
             "CANARY_EXCLUSIVE",
             "CANARY_PASS",
             "RUNTIME_BOUND",
+            "DUAL_SLEEVE_ACTIVE",
             "ACTIVE",
         }:
             raise LaunchError("SUCCESSOR_RESTART_BINDING_MISMATCH")
@@ -328,6 +330,7 @@ def evaluate_multi_universe_successor_launch(
         "CANARY_EXCLUSIVE",
         "CANARY_PASS",
         "RUNTIME_BOUND",
+        "DUAL_SLEEVE_ACTIVE",
         "ACTIVE",
     )
     phase_index = phase_order.index(evidence.transition_phase)
@@ -354,7 +357,7 @@ def evaluate_multi_universe_successor_launch(
             if evidence.transition_phase == "CANARY_EXCLUSIVE"
             else (
                 "NORMAL"
-                if evidence.transition_phase == "ACTIVE"
+                if evidence.transition_phase in {"ACTIVE", "DUAL_SLEEVE_ACTIVE"}
                 else "REGULAR_ONLY" if regular_entries else "FROZEN"
             )
         )
@@ -2095,7 +2098,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
             canary_pilot_orchestrator = None
             if multi_universe_launch is not None and str(
                 multi_universe_launch.get("transition_phase") or ""
-            ) in {"SUPERVISION_BOUND", "CANARY_EXCLUSIVE"}:
+            ) in {"SUPERVISION_BOUND", "CANARY_EXCLUSIVE", "DUAL_SLEEVE_ACTIVE"}:
                 owner_pilot_authorization = multi_universe_launch.get(
                     "owner_pilot_authorization"
                 )

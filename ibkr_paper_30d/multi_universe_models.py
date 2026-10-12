@@ -36,6 +36,7 @@ class TransitionPhase(str, Enum):
     CANARY_EXCLUSIVE = "CANARY_EXCLUSIVE"
     CANARY_PASS = "CANARY_PASS"
     RUNTIME_BOUND = "RUNTIME_BOUND"
+    DUAL_SLEEVE_ACTIVE = "DUAL_SLEEVE_ACTIVE"
     ACTIVE = "ACTIVE"
 
 
@@ -44,6 +45,7 @@ _REGULAR_ENTRY_PHASES = frozenset(
         TransitionPhase.SUPERVISION_BOUND,
         TransitionPhase.CANARY_PASS,
         TransitionPhase.RUNTIME_BOUND,
+        TransitionPhase.DUAL_SLEEVE_ACTIVE,
         TransitionPhase.ACTIVE,
     }
 )
@@ -58,7 +60,10 @@ def regular_new_entries_allowed(phase: TransitionPhase | str) -> bool:
 
 def continuous_new_entries_allowed(phase: TransitionPhase | str) -> bool:
     try:
-        return TransitionPhase(phase) is TransitionPhase.ACTIVE
+        return TransitionPhase(phase) in {
+            TransitionPhase.DUAL_SLEEVE_ACTIVE,
+            TransitionPhase.ACTIVE,
+        }
     except ValueError:
         return False
 

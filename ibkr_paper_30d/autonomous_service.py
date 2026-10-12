@@ -547,9 +547,11 @@ class AutonomousExperimentService:
         canary_phase = str(
             getattr(self.multi_universe_runtime_authority, "transition_phase", "")
         )
+        canary_result = None
         if self.canary_pilot_orchestrator is not None and canary_phase in {
             "SUPERVISION_BOUND",
             "CANARY_EXCLUSIVE",
+            "DUAL_SLEEVE_ACTIVE",
         }:
             if bundle.reconciliation_receipt.get("status") != "PASS":
                 return {
@@ -579,8 +581,10 @@ class AutonomousExperimentService:
                 for item in (portfolio.get("management_eligibility") or {}).values()
                 if isinstance(item, dict)
             )
+            # In DUAL_SLEEVE_ACTIVE, canary always runs (continuous sleeve)
+            # and regular sleeve also runs later in the same cycle.
             run_canary = bool(
-                canary_phase == "CANARY_EXCLUSIVE"
+                canary_phase in {"CANARY_EXCLUSIVE", "DUAL_SLEEVE_ACTIVE"}
                 or not (regular_entry or regular_management)
             )
             if run_canary:
@@ -597,7 +601,7 @@ class AutonomousExperimentService:
                     "PASS",
                     "TERMINAL_NO_FILL",
                 }
-                return {
+                canary_result = {
                     "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
                     "status": "PASS" if terminal_success else canary_status,
                     "gate": "CANARY",
@@ -611,6 +615,10 @@ class AutonomousExperimentService:
                     "bundle": bundle.model_dump(mode="json"),
                     "auditor_gate": auditor,
                 }
+                # Legacy phases return immediately; DUAL_SLEEVE_ACTIVE continues
+                # to run_autonomous_cycle for REGULAR_SLEEVE management.
+                if canary_phase != "DUAL_SLEEVE_ACTIVE":
+                    return canary_result
         state_reasons: list[str] = []
         if bundle.reconciliation_receipt.get("status") != "PASS":
             state_reasons.append("BROKER_RECONCILIATION_REQUIRED")
@@ -710,6 +718,19 @@ class AutonomousExperimentService:
                 else "BLOCK"
             )
         result["auditor_gate"] = auditor
+        # Merge canary result when in DUAL_SLEEVE_ACTIVE so both sleeves
+        # are visible in the final cycle response.
+        if canary_result is not None:
+            result["canary"] = canary_result["canary"]
+            result["canary_outcome"] = canary_result["outcome"]
+            if result.get("status") == "PASS" and canary_result.get("status") != "PASS":
+                result["status"] = canary_result["status"]
+                result["reason_codes"] = list(
+                    dict.fromkeys(
+                        (result.get("reason_codes") or [])
+                        + (canary_result.get("reason_codes") or [])
+                    )
+                )
         return result
 
     def _handle_pause(self, result: dict[str, Any]) -> bool:

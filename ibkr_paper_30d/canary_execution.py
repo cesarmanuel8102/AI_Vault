@@ -111,7 +111,7 @@ class CanaryExecutionAdapter:
     ) -> tuple[str, ...]:
         reasons: list[str] = []
         checks = (
-            (evidence.get("transition_phase") == "CANARY_EXCLUSIVE", "CANARY_EXCLUSIVE_REQUIRED"),
+            (evidence.get("transition_phase") in {"CANARY_EXCLUSIVE", "DUAL_SLEEVE_ACTIVE"}, "CANARY_EXCLUSIVE_REQUIRED"),
             (evidence.get("ordinary_entry_authority") is False, "ORDINARY_ENTRY_AUTHORITY_MUST_BE_FROZEN"),
             (evidence.get("paper_only") is True, "POSSIBLE_LIVE_CONNECTION"),
             (evidence.get("fresh") is True, "CANARY_EVIDENCE_STALE"),

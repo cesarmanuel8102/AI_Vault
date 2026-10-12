@@ -105,6 +105,7 @@ def normalize_multi_universe_launch_authority(
         "CANARY_EXCLUSIVE",
         "CANARY_PASS",
         "RUNTIME_BOUND",
+        "DUAL_SLEEVE_ACTIVE",
         "ACTIVE",
     }
     if phase not in phases:
@@ -116,7 +117,7 @@ def normalize_multi_universe_launch_authority(
         if phase == "CANARY_EXCLUSIVE"
         else (
             "NORMAL"
-            if phase == "ACTIVE"
+            if phase in {"ACTIVE", "DUAL_SLEEVE_ACTIVE"}
             else "REGULAR_ONLY" if regular_entries else "FROZEN"
         )
     )
@@ -126,6 +127,7 @@ def normalize_multi_universe_launch_authority(
         "CANARY_EXCLUSIVE",
         "CANARY_PASS",
         "RUNTIME_BOUND",
+        "DUAL_SLEEVE_ACTIVE",
         "ACTIVE",
     }:
         raise ProductionRuntimeConfigurationError("ENTRY_AUTHORITY_PHASE_MISMATCH")
@@ -142,6 +144,7 @@ def normalize_multi_universe_launch_authority(
         "CANARY_EXCLUSIVE",
         "CANARY_PASS",
         "RUNTIME_BOUND",
+        "DUAL_SLEEVE_ACTIVE",
         "ACTIVE",
     )
     management_expected = phase_order.index(phase) >= phase_order.index(
@@ -2135,6 +2138,87 @@ class _ProductionCanaryStore:
                 event_type=str(event_type),
                 body={"discovery": dict(payload)},
             )
+
+    def last_discovery_attempt_utc(self) -> datetime | None:
+        with Database.open(self.db_path) as db:
+            row = db.execute(
+                "SELECT created_at_utc FROM canary_authorization_events "
+                "WHERE authorization_id = ? ORDER BY sequence DESC LIMIT 1",
+                ("CANARY_DISCOVERY",),
+            ).fetchone()
+        if row is None:
+            return None
+        created = row[0]
+        if isinstance(created, str):
+            return datetime.fromisoformat(created)
+        return None
+
+    def has_orphaned_durable_state(self) -> bool:
+        """Return True if any non-active candidate has pending or ambiguous
+        protected events that indicate in-flight work.
+
+        Completed history (CANARY_RESULT + LIFECYCLE_RECEIPT for the same
+        candidate) is NOT considered orphaned. Everything else for a
+        non-active candidate is treated as pending/ambiguous and blocks
+        recovery. Fail-closed on chain verification errors."""
+        with Database.open(self.db_path) as db:
+            try:
+                events = self._verified_events(db)
+            except ProductionRuntimeConfigurationError:
+                return True
+            active = self._active_candidate_event(events)
+            active_sha256 = (
+                str(active.get("candidate_sha256") or "") if active else ""
+            )
+
+            # Build candidate_id -> candidate_sha256 map from CANDIDATE_SELECTED
+            candidate_id_to_sha: dict[str, str] = {}
+            for event in events:
+                if event.get("event_type") == "CANDIDATE_SELECTED":
+                    body = event.get("outcome") or {}
+                    proposal = body.get("proposal") or {}
+                    cid = str(proposal.get("candidate_id") or "")
+                    csha = str(event.get("candidate_sha256") or "")
+                    if cid and csha:
+                        candidate_id_to_sha[cid] = csha
+
+            # Group protected events by candidate_sha256
+            by_candidate: dict[str, set[str]] = {}
+            for event in events:
+                event_type = str(event.get("event_type") or "")
+                if event_type not in {
+                    "AUTHORIZED",
+                    "EXECUTION_REQUEST",
+                    "CANARY_RESULT",
+                    "LIFECYCLE_RECEIPT",
+                }:
+                    continue
+
+                candidate_sha256 = str(event.get("candidate_sha256") or "")
+                if event_type == "LIFECYCLE_RECEIPT" and not candidate_sha256:
+                    # LIFECYCLE_RECEIPT stores canary_id in authorization_id
+                    # and inside body.receipt.canary_id
+                    receipt = (event.get("receipt") or {})
+                    canary_id = str(receipt.get("canary_id") or "")
+                    candidate_sha256 = candidate_id_to_sha.get(canary_id, "")
+
+                if not candidate_sha256:
+                    # Ambiguous attribution → fail-closed
+                    return True
+                by_candidate.setdefault(candidate_sha256, set()).add(event_type)
+
+            for candidate_sha256, event_types in by_candidate.items():
+                if candidate_sha256 == active_sha256:
+                    continue
+                # Fully completed lifecycle: both result and receipt present
+                if (
+                    "CANARY_RESULT" in event_types
+                    and "LIFECYCLE_RECEIPT" in event_types
+                ):
+                    continue
+                # Anything else for a non-active candidate is pending or ambiguous
+                return True
+        return False
 
     def persist_candidate(
         self, outcome: Any, evidence: Mapping[str, Any], validation: Any

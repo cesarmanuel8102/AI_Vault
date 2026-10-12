@@ -395,12 +395,12 @@ def build_supervision_first_pilot_report(
 
     phase = str(transition.get("phase") or "")
     phase_event = transition.get("phase_event_sha256")
-    if phase == "ACTIVE" and (
-        db_receipts.get("phase") != "ACTIVE"
+    if phase in {"ACTIVE", "DUAL_SLEEVE_ACTIVE"} and (
+        db_receipts.get("phase") not in {"ACTIVE", "DUAL_SLEEVE_ACTIVE"}
         or db_receipts.get("phase_event_sha256") != phase_event
     ):
         reasons.append("ACTIVE_PHASE_RECEIPT_MISMATCH")
-    if phase == "ACTIVE" and not snapshot.get("accepted_model_cycles"):
+    if phase in {"ACTIVE", "DUAL_SLEEVE_ACTIVE"} and not snapshot.get("accepted_model_cycles"):
         reasons.append("ACTIVE_ACCEPTED_CYCLE_REQUIRED")
 
     if (

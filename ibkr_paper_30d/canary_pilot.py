@@ -214,9 +214,12 @@ class CanaryPilotOrchestrator:
         lifecycle_finalizer: Callable[[Any, CanaryExecutionResult], None]
         | None = None,
         result_timeout_seconds: float = 300.0,
+        recovery_cooldown_seconds: float = 300.0,
     ) -> None:
         if result_timeout_seconds <= 0 or result_timeout_seconds > 300:
             raise ValueError("result_timeout_seconds must be in (0, 300]")
+        if recovery_cooldown_seconds < 0:
+            raise ValueError("recovery_cooldown_seconds must be non-negative")
         self.discovery_runner = discovery_runner
         self.capability_evidence_collector = capability_evidence_collector
         self.store = store
@@ -233,6 +236,7 @@ class CanaryPilotOrchestrator:
             lambda _proposal, _result: None
         )
         self.result_timeout_seconds = result_timeout_seconds
+        self.recovery_cooldown_seconds = recovery_cooldown_seconds
 
     @staticmethod
     def _block(*reason_codes: str) -> dict[str, Any]:
@@ -254,6 +258,12 @@ class CanaryPilotOrchestrator:
                 "candidate_sha256": outcome.proposal.sha256,
                 "reason_codes": [],
             }
+        # Atomic reservation before invoking Codex: if the process crashes
+        # after this point, the reservation enforces cooldown on restart.
+        self.store.persist_discovery_event(
+            "CANARY_DISCOVERY_ATTEMPT_RESERVED",
+            {"observed_at_utc": self.now_utc().isoformat()},
+        )
         outcome = self.discovery_runner(
             bundle, self.store.persist_discovery_event
         )
@@ -304,10 +314,105 @@ class CanaryPilotOrchestrator:
             "reason_codes": [],
         }
 
+    @staticmethod
+    def _extract_contract_id(item: dict[str, Any]) -> int | None:
+        """Extract a positive contract identifier from real IBKR position
+        or order structures, which may nest the id inside a 'contract' object.
+        Reuses the normalisation pattern from autonomous_state.py."""
+        contract = item.get("contract") or {}
+        cid = int(
+            contract.get("conId")
+            or contract.get("con_id")
+            or item.get("contract_id")
+            or item.get("con_id")
+            or 0
+        )
+        return cid if cid > 0 else None
+
+    def _canary_scope_pending(self, bundle: Any) -> bool:
+        """Return True if the bundle shows unresolved positions or orders
+        already attributed to the continuous (canary) sleeve, OR if the
+        observation data is incomplete and we cannot prove safety."""
+        portfolio = getattr(bundle, "multi_sleeve_portfolio", None)
+        if portfolio is None:
+            return True
+        observation = portfolio.get("account_observation")
+        if observation is None:
+            return True
+        positions = observation.get("positions")
+        orders = observation.get("open_orders")
+        if positions is None or orders is None:
+            return True
+        ownership = getattr(bundle, "contract_ownership_snapshot", None)
+        if ownership is None:
+            return True
+        contract_sleeves = ownership.get("contract_sleeves")
+        if contract_sleeves is None:
+            return True
+        for item in (*positions, *orders):
+            cid = self._extract_contract_id(item)
+            if cid is None:
+                return True
+            sleeve = contract_sleeves.get(str(cid))
+            if sleeve is None:
+                return True
+            if sleeve == "CONTINUOUS_SLEEVE":
+                return True
+        return False
+
+    def _durable_state_inconsistent(self) -> bool:
+        """Defense-in-depth: delegate to the store's event-chain integrity
+        check. If the store does not expose has_orphaned_durable_state,
+        we fall back to inspecting raw attributes for fake stores."""
+        check = getattr(self.store, "has_orphaned_durable_state", None)
+        if callable(check):
+            try:
+                return bool(check())
+            except Exception:
+                # Verification failure is itself a reason to block
+                return True
+        # Fallback for fake stores that don't implement the full interface
+        if getattr(self.store, "request", None) is not None:
+            return True
+        if getattr(self.store, "authorizations", None):
+            return True
+        return False
+
+    def _recovery_backoff_expired(self) -> bool:
+        """Return True if enough time has passed since the last discovery
+        attempt to allow a new recovery-driven discovery."""
+        if self.recovery_cooldown_seconds <= 0:
+            return True
+        last_discovery = getattr(self.store, "last_discovery_attempt_utc", None)
+        if not callable(last_discovery):
+            return True
+        last = last_discovery()
+        if last is None:
+            return True
+        return (self.now_utc() - last).total_seconds() >= self.recovery_cooldown_seconds
+
+    def _execute_without_candidate(self, bundle: Any) -> dict[str, Any]:
+        """CANARY_EXCLUSIVE recovery: exactly one controlled rediscovery,
+        only when the account observation shows no unresolved canary work
+        and no orphaned durable state exists."""
+        if self._canary_scope_pending(bundle):
+            return self._block("CANARY_CANDIDATE_RECOVERY_UNSAFE")
+        if self._durable_state_inconsistent():
+            return self._block("CANARY_CANDIDATE_RECOVERY_UNSAFE")
+        if not self._recovery_backoff_expired():
+            return self._block("CANARY_RECOVERY_BACKOFF")
+        discovery = self.discover(bundle)
+        if (
+            discovery.get("status") == "PASS"
+            and discovery.get("decision") == "CANDIDATE_READY"
+        ):
+            return self.execute(bundle)
+        return discovery
+
     def execute(self, bundle: Any) -> dict[str, Any]:
         stored = self.store.load_candidate()
         if stored is None:
-            return self._block("CANARY_CANDIDATE_REQUIRED")
+            return self._execute_without_candidate(bundle)
         outcome = stored[0]
         proposal = outcome.proposal
         if proposal is None:

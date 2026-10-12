@@ -270,6 +270,7 @@ class MultiUniverseTransitionCoordinator:
                 TransitionPhase.SUCCESSOR_COMMITTED,
                 TransitionPhase.SUPERVISION_BOUND,
                 TransitionPhase.CANARY_EXCLUSIVE,
+                TransitionPhase.DUAL_SLEEVE_ACTIVE,
             }:
                 raise MultiUniverseTransitionError("RUNTIME_RELEASE_PHASE_INVALID")
             if current_phase is TransitionPhase.SUPERVISION_BOUND and (
@@ -639,6 +640,7 @@ def current_cash_classifications(db: Database) -> dict[str, list[dict[str, str]]
         TransitionPhase.CANARY_EXCLUSIVE,
         TransitionPhase.CANARY_PASS,
         TransitionPhase.RUNTIME_BOUND,
+        TransitionPhase.DUAL_SLEEVE_ACTIVE,
     }:
         raise MultiUniverseTransitionError(
             "SUPERVISION_CASH_CLASSIFICATION_REQUIRED"
