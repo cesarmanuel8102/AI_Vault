@@ -193,6 +193,58 @@ def test_supervision_cash_classification_is_recovered_from_bound_release(tmp_pat
         assert current_cash_classifications(db) == classifications
 
 
+def test_supervision_cash_classification_survives_canary_exclusive(tmp_path):
+    with _open(tmp_path / "canary-exclusive-cash-classification.sqlite3") as db:
+        coordinator = MultiUniverseTransitionCoordinator(db)
+        target = _target()
+        coordinator.prepare(target)
+        for phase in PHASES[1 : PHASES.index(TransitionPhase.SUPERVISION_BOUND) + 1]:
+            coordinator.advance(phase, _evidence(phase))
+        bound = coordinator.recover(target)
+        classifications = {
+            "classified_canary_currency_balances": [],
+            "classified_non_experiment_currency_balances": [
+                {
+                    "currency": "USD",
+                    "amount": "252404.80",
+                    "provenance_sha256": "e" * 64,
+                }
+            ],
+        }
+        release_evidence = {
+            "owner_authorized": True,
+            "owner_sid": "S-1-5-21-1001",
+            "current_head": "f" * 40,
+            "account_identity_sha256": target.account_identity_sha256,
+            "paper_port_4002_listening": True,
+            "live_port_4001_listening": False,
+            "authenticated_paper": True,
+            "broker_reconciliation_status": "PASS",
+            "broker_state_certain": True,
+            "tracked_tree_clean": True,
+            "writer_count": 0,
+            "open_order_count": 0,
+            "new_execution_count": 0,
+            "broker_write_count": 0,
+            "release_artifact_sha256": "0" * 64,
+            "transition_phase": TransitionPhase.SUPERVISION_BOUND.value,
+            "supervision_phase_event_sha256": bound.phase_event_sha256,
+            **classifications,
+            "cash_classification_sha256": sha256_json(classifications),
+        }
+        coordinator.authorize_runtime_release(
+            target,
+            approved_git_head="f" * 40,
+            evidence=release_evidence,
+        )
+        coordinator.advance(
+            TransitionPhase.CANARY_EXCLUSIVE,
+            _evidence(TransitionPhase.CANARY_EXCLUSIVE),
+        )
+
+        assert current_cash_classifications(db) == classifications
+
+
 @pytest.mark.parametrize(
     "skipped_phase_name",
     (

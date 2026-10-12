@@ -269,6 +269,7 @@ class MultiUniverseTransitionCoordinator:
             if current_phase not in {
                 TransitionPhase.SUCCESSOR_COMMITTED,
                 TransitionPhase.SUPERVISION_BOUND,
+                TransitionPhase.CANARY_EXCLUSIVE,
             }:
                 raise MultiUniverseTransitionError("RUNTIME_RELEASE_PHASE_INVALID")
             if current_phase is TransitionPhase.SUPERVISION_BOUND and (
@@ -286,6 +287,14 @@ class MultiUniverseTransitionCoordinator:
                     raise MultiUniverseTransitionError(
                         "SUPERVISION_CASH_CLASSIFICATION_REQUIRED"
                     ) from exc
+            if current_phase is TransitionPhase.CANARY_EXCLUSIVE and (
+                evidence.get("transition_phase") != current_phase.value
+                or evidence.get("phase_event_sha256")
+                != events[-1]["event_sha256"]
+            ):
+                raise MultiUniverseTransitionError(
+                    "RUNTIME_RELEASE_PHASE_BINDING_REQUIRED"
+                )
             releases = self._runtime_release_rows(target)
             previous_approved_git_head = (
                 target.approved_git_head
@@ -616,7 +625,6 @@ def current_cash_classifications(db: Database) -> dict[str, list[dict[str, str]]
     if row is None:
         raise MultiUniverseTransitionError("ACTIVE_TRANSITION_REQUIRED")
     try:
-        event_type = str(row[0])
         payload = json.loads(str(row[1]))
         target = TransitionTarget.model_validate(payload.get("target"))
     except Exception as exc:
@@ -626,20 +634,44 @@ def current_cash_classifications(db: Database) -> dict[str, list[dict[str, str]]
     recovered = MultiUniverseTransitionCoordinator(db).recover(target)
     if recovered.phase is TransitionPhase.ACTIVE:
         return active_cash_classifications(db)
-    if (
-        recovered.phase is not TransitionPhase.SUPERVISION_BOUND
-        or event_type != "RUNTIME_RELEASE_AUTHORIZED"
-        or payload.get("phase") != TransitionPhase.SUPERVISION_BOUND.value
-    ):
+    if recovered.phase not in {
+        TransitionPhase.SUPERVISION_BOUND,
+        TransitionPhase.CANARY_EXCLUSIVE,
+        TransitionPhase.CANARY_PASS,
+        TransitionPhase.RUNTIME_BOUND,
+    }:
         raise MultiUniverseTransitionError(
             "SUPERVISION_CASH_CLASSIFICATION_REQUIRED"
         )
-    evidence = payload.get("evidence")
+    supervision_row = db.execute(
+        "SELECT event_sha256 FROM successor_transition_events "
+        "WHERE transition_id=? AND phase=? AND event_type='PHASE_COMMITTED'",
+        (target.transition_id, TransitionPhase.SUPERVISION_BOUND.value),
+    ).fetchall()
+    release_rows = db.execute(
+        "SELECT payload_json FROM successor_transition_events "
+        "WHERE transition_id=? AND phase=? "
+        "AND event_type='RUNTIME_RELEASE_AUTHORIZED' ORDER BY sequence DESC",
+        (target.transition_id, TransitionPhase.SUPERVISION_BOUND.value),
+    ).fetchall()
+    if len(supervision_row) != 1 or not release_rows:
+        raise MultiUniverseTransitionError(
+            "SUPERVISION_CASH_CLASSIFICATION_REQUIRED"
+        )
+    try:
+        release = json.loads(str(release_rows[0][0]))
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise MultiUniverseTransitionError(
+            "TRANSITION_PROJECTION_AMBIGUOUS"
+        ) from exc
+    evidence = release.get("evidence")
     if (
         not isinstance(evidence, Mapping)
-        or evidence.get("transition_phase") != recovered.phase.value
+        or release.get("phase") != TransitionPhase.SUPERVISION_BOUND.value
+        or evidence.get("transition_phase")
+        != TransitionPhase.SUPERVISION_BOUND.value
         or evidence.get("supervision_phase_event_sha256")
-        != recovered.phase_event_sha256
+        != str(supervision_row[0][0])
     ):
         raise MultiUniverseTransitionError(
             "SUPERVISION_CASH_CLASSIFICATION_REQUIRED"

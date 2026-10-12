@@ -180,6 +180,139 @@ def test_production_canary_store_round_trips_selected_candidate_and_result(
     assert store.load_result(proposal.sha256) == payload
 
 
+def test_production_canary_store_replaces_only_expired_unused_candidate(
+    tmp_path,
+) -> None:
+    from ibkr_paper_30d.canary_candidate import (
+        CanaryCandidateValidationReceipt,
+        CanaryDiscoveryOutcome,
+    )
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+    from test_canary_pilot import _evidence, _proposal
+
+    db_path = tmp_path / "expired-canary-candidate.sqlite3"
+    with Database.open(db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+    expired = _proposal()
+    expired_outcome = CanaryDiscoveryOutcome(
+        decision="CANDIDATE",
+        invocation_sha256=expired.invocation_sha256,
+        result_sha256=expired.result_sha256,
+        transcript_sha256=sha256_json([]),
+        proposal=expired,
+    )
+    expired_evidence = _evidence(expired)
+    expired_validation = CanaryCandidateValidationReceipt(
+        status="PASS",
+        reason_codes=(),
+        proposal_sha256=expired.sha256,
+        capability_evidence_sha256=sha256_json(expired_evidence),
+    )
+    replacement = expired.model_copy(
+        update={
+            "candidate_id": "candidate-2",
+            "invocation_id": "invocation-2",
+            "invocation_sha256": "3" * 64,
+            "result_sha256": "4" * 64,
+            "created_at_utc": expired.created_at_utc + timedelta(hours=1),
+            "expires_at_utc": expired.expires_at_utc + timedelta(hours=1),
+            "flat_return_plan": expired.flat_return_plan.model_copy(
+                update={
+                    "deadline_utc": expired.flat_return_plan.deadline_utc
+                    + timedelta(hours=1)
+                }
+            ),
+        }
+    )
+    replacement_outcome = CanaryDiscoveryOutcome(
+        decision="CANDIDATE",
+        invocation_sha256=replacement.invocation_sha256,
+        result_sha256=replacement.result_sha256,
+        transcript_sha256=sha256_json([]),
+        proposal=replacement,
+    )
+    replacement_evidence = _evidence(replacement)
+    replacement_validation = CanaryCandidateValidationReceipt(
+        status="PASS",
+        reason_codes=(),
+        proposal_sha256=replacement.sha256,
+        capability_evidence_sha256=sha256_json(replacement_evidence),
+    )
+    store = _ProductionCanaryStore(db_path)
+    store.persist_candidate(expired_outcome, expired_evidence, expired_validation)
+
+    assert store.expire_unused_candidate(
+        expired.sha256, expired.expires_at_utc
+    ) is True
+    assert store.load_candidate() is None
+    store.persist_candidate(
+        replacement_outcome,
+        replacement_evidence,
+        replacement_validation,
+    )
+
+    assert store.load_candidate()[0].proposal == replacement
+
+
+def test_production_canary_store_does_not_expire_authorized_candidate(
+    tmp_path,
+) -> None:
+    from ibkr_paper_30d.canary_candidate import (
+        CanaryCandidateValidationReceipt,
+        CanaryDiscoveryOutcome,
+    )
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+    from test_canary_pilot import _evidence, _proposal
+
+    db_path = tmp_path / "authorized-canary-candidate.sqlite3"
+    with Database.open(db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+    proposal = _proposal()
+    outcome = CanaryDiscoveryOutcome(
+        decision="CANDIDATE",
+        invocation_sha256=proposal.invocation_sha256,
+        result_sha256=proposal.result_sha256,
+        transcript_sha256=sha256_json([]),
+        proposal=proposal,
+    )
+    evidence = _evidence(proposal)
+    validation = CanaryCandidateValidationReceipt(
+        status="PASS",
+        reason_codes=(),
+        proposal_sha256=proposal.sha256,
+        capability_evidence_sha256=sha256_json(evidence),
+    )
+    authorization = CanaryAuthorization(
+        authorization_id="canary-auth-2",
+        owner_id="owner",
+        account_identity_sha256=proposal.account_identity_sha256,
+        successor_definition_sha256=proposal.successor_definition_sha256,
+        product_family_sha256=proposal.product_family.sha256,
+        contract_scope_sha256=(proposal.canonical_contract.sha256,),
+        maximum_debit_usd=proposal.maximum_debit_usd,
+        maximum_loss_usd=proposal.maximum_loss_usd,
+        fee_allowance_usd=proposal.fee_allowance_usd,
+        maximum_order_count=2,
+        issued_at_utc=proposal.created_at_utc,
+        expires_at_utc=proposal.expires_at_utc,
+    )
+    store = _ProductionCanaryStore(db_path)
+    store.persist_candidate(outcome, evidence, validation)
+    store.persist_authorization(
+        candidate_sha256=proposal.sha256,
+        authorization=authorization,
+    )
+
+    assert store.expire_unused_candidate(
+        proposal.sha256, proposal.expires_at_utc
+    ) is False
+    assert store.load_candidate()[0].proposal == proposal
+
+
 def test_v4_writer_factory_wires_path_scoped_sleeve_authority(
     tmp_path, monkeypatch
 ) -> None:

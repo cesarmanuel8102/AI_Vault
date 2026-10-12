@@ -2143,14 +2143,7 @@ class _ProductionCanaryStore:
         if proposal is None:
             raise ProductionRuntimeConfigurationError("CANARY_CANDIDATE_REQUIRED")
         with Database.open(self.db_path) as db, db.transaction():
-            existing = next(
-                (
-                    event
-                    for event in reversed(self._verified_events(db))
-                    if event.get("event_type") == "CANDIDATE_SELECTED"
-                ),
-                None,
-            )
+            existing = self._active_candidate_event(self._verified_events(db))
             if existing is not None:
                 if existing.get("candidate_sha256") != proposal.sha256:
                     raise ProductionRuntimeConfigurationError(
@@ -2169,6 +2162,62 @@ class _ProductionCanaryStore:
                 },
             )
 
+    @staticmethod
+    def _active_candidate_event(
+        events: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        expired: set[str] = set()
+        for event in reversed(events):
+            candidate_sha256 = str(event.get("candidate_sha256") or "")
+            if event.get("event_type") == "CANDIDATE_EXPIRED_UNUSED":
+                expired.add(candidate_sha256)
+            elif (
+                event.get("event_type") == "CANDIDATE_SELECTED"
+                and candidate_sha256 not in expired
+            ):
+                return event
+        return None
+
+    def expire_unused_candidate(
+        self, candidate_sha256: str, now_utc: datetime
+    ) -> bool:
+        with Database.open(self.db_path) as db, db.transaction():
+            events = self._verified_events(db)
+            selected = self._active_candidate_event(events)
+            if selected is None or selected.get("candidate_sha256") != candidate_sha256:
+                return False
+            protected_types = {
+                "AUTHORIZED",
+                "EXECUTION_REQUEST",
+                "CANARY_RESULT",
+                "LIFECYCLE_RECEIPT",
+            }
+            if any(
+                event.get("event_type") in protected_types
+                and event.get("candidate_sha256") == candidate_sha256
+                for event in events
+            ):
+                return False
+            from .canary_candidate import CanaryDiscoveryOutcome
+
+            outcome = CanaryDiscoveryOutcome.model_validate(selected.get("outcome"))
+            if (
+                outcome.proposal is None
+                or outcome.proposal.sha256 != candidate_sha256
+                or now_utc < outcome.proposal.expires_at_utc
+            ):
+                return False
+            self._append_in_transaction(
+                db,
+                authorization_id=outcome.proposal.candidate_id,
+                event_type="CANDIDATE_EXPIRED_UNUSED",
+                body={
+                    "candidate_sha256": candidate_sha256,
+                    "expired_at_utc": now_utc.isoformat(),
+                },
+            )
+            return True
+
     def load_candidate(self) -> tuple[Any, dict[str, Any], Any] | None:
         from .canary_candidate import (
             CanaryCandidateValidationReceipt,
@@ -2176,14 +2225,7 @@ class _ProductionCanaryStore:
         )
 
         with Database.open(self.db_path) as db:
-            selected = next(
-                (
-                    event
-                    for event in reversed(self._verified_events(db))
-                    if event.get("event_type") == "CANDIDATE_SELECTED"
-                ),
-                None,
-            )
+            selected = self._active_candidate_event(self._verified_events(db))
         if selected is None:
             return None
         outcome = CanaryDiscoveryOutcome.model_validate(selected.get("outcome"))

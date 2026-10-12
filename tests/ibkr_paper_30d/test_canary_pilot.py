@@ -164,6 +164,17 @@ class Store:
     def execution_claimed(self, execution_key):
         return execution_key in self.claimed_execution_keys
 
+    def expire_unused_candidate(self, candidate_sha256, now_utc):
+        del now_utc
+        if self.candidate is None:
+            return False
+        if self.candidate[0].proposal.sha256 != candidate_sha256:
+            return False
+        if self.authorizations or self.request is not None:
+            return False
+        self.candidate = None
+        return True
+
 
 class Coordinator:
     def __init__(self, result):
@@ -268,6 +279,65 @@ def test_execution_revalidates_then_submits_exact_request_once() -> None:
     assert request.authorization_sha256 == store.authorizations[0][1].sha256
     assert request.writer_binding_sha256 == WRITER
     assert request.durable_sequence == 7
+
+
+def test_execution_retires_expired_unused_candidate_and_rediscovers() -> None:
+    expired = _proposal()
+    expired_outcome = CanaryDiscoveryOutcome(
+        decision="CANDIDATE",
+        invocation_sha256=expired.invocation_sha256,
+        result_sha256=expired.result_sha256,
+        transcript_sha256=sha256_json([]),
+        proposal=expired,
+    )
+    replacement = expired.model_copy(
+        update={
+            "candidate_id": "candidate-2",
+            "invocation_id": "invocation-2",
+            "invocation_sha256": "3" * 64,
+            "result_sha256": "4" * 64,
+            "created_at_utc": NOW + timedelta(minutes=31),
+            "expires_at_utc": NOW + timedelta(minutes=61),
+            "flat_return_plan": expired.flat_return_plan.model_copy(
+                update={"deadline_utc": NOW + timedelta(minutes=51)}
+            ),
+        }
+    )
+    replacement_outcome = CanaryDiscoveryOutcome(
+        decision="CANDIDATE",
+        invocation_sha256=replacement.invocation_sha256,
+        result_sha256=replacement.result_sha256,
+        transcript_sha256=sha256_json([]),
+        proposal=replacement,
+    )
+    store = Store()
+    store.candidate = (expired_outcome, _evidence(expired), object())
+    coordinator = Coordinator(None)
+    controller = CanaryPilotOrchestrator(
+        discovery_runner=lambda *_args: replacement_outcome,
+        capability_evidence_collector=lambda _bundle, actual: {
+            **_evidence(actual),
+            "observed_at_utc": NOW + timedelta(minutes=31),
+            "expires_at_utc": NOW + timedelta(minutes=36),
+        },
+        store=store,
+        coordinator=coordinator,
+        owner_pilot_authorization=_owner().model_copy(
+            update={"expires_at_utc": NOW + timedelta(hours=2)}
+        ),
+        writer_binding_sha256=WRITER,
+        durable_sequence_allocator=lambda: 1,
+        now_utc=lambda: NOW + timedelta(minutes=31),
+    )
+
+    result = controller.execute(object())
+
+    assert result["status"] == "PASS"
+    assert result["decision"] == "CANDIDATE_READY"
+    assert result["candidate_sha256"] == replacement.sha256
+    assert store.candidate[0].proposal == replacement
+    assert store.authorizations == []
+    assert coordinator.requests == []
 
 
 def test_execution_rejects_result_for_a_different_request() -> None:

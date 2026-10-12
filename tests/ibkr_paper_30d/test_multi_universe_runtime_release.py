@@ -237,6 +237,62 @@ def test_runtime_release_allows_exact_supervision_bound_hotfix(tmp_path) -> None
         db.close()
 
 
+def test_runtime_release_allows_exact_canary_exclusive_hotfix(tmp_path) -> None:
+    db, coordinator, target = _coordinator(tmp_path)
+    try:
+        coordinator.advance(
+            TransitionPhase.SUPERVISION_BOUND,
+            _phase_evidence(TransitionPhase.SUPERVISION_BOUND),
+        )
+        canary = coordinator.advance(
+            TransitionPhase.CANARY_EXCLUSIVE,
+            _phase_evidence(TransitionPhase.CANARY_EXCLUSIVE),
+        )
+
+        receipt = coordinator.authorize_runtime_release(
+            target,
+            approved_git_head=NEW_HEAD,
+            evidence=_release_evidence(
+                transition_phase=TransitionPhase.CANARY_EXCLUSIVE.value,
+                phase_event_sha256=canary.phase_event_sha256,
+            ),
+        )
+
+        assert receipt["status"] == "PASS"
+        assert coordinator.effective_approved_git_head(target) == NEW_HEAD
+        assert coordinator.recover(target).phase is TransitionPhase.CANARY_EXCLUSIVE
+    finally:
+        db.close()
+
+
+def test_runtime_release_blocks_unbound_canary_exclusive_hotfix(tmp_path) -> None:
+    db, coordinator, target = _coordinator(tmp_path)
+    try:
+        coordinator.advance(
+            TransitionPhase.SUPERVISION_BOUND,
+            _phase_evidence(TransitionPhase.SUPERVISION_BOUND),
+        )
+        coordinator.advance(
+            TransitionPhase.CANARY_EXCLUSIVE,
+            _phase_evidence(TransitionPhase.CANARY_EXCLUSIVE),
+        )
+
+        with pytest.raises(
+            MultiUniverseTransitionError,
+            match="RUNTIME_RELEASE_PHASE_BINDING_REQUIRED",
+        ):
+            coordinator.authorize_runtime_release(
+                target,
+                approved_git_head=NEW_HEAD,
+                evidence=_release_evidence(
+                    transition_phase=TransitionPhase.CANARY_EXCLUSIVE.value,
+                    phase_event_sha256="f" * 64,
+                ),
+            )
+    finally:
+        db.close()
+
+
 def test_runtime_release_blocks_supervision_without_cash_classification(
     tmp_path,
 ) -> None:
