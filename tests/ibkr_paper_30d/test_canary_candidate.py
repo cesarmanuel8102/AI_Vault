@@ -321,6 +321,14 @@ def test_canary_prompt_exposes_host_issued_candidate_bindings() -> None:
     assert expected["approved_head"] == HEAD
     assert len(expected["result_sha256"]) == 64
     assert "host_candidate_bindings" in payload["output_contract"]["candidate_binding"]
+    assert payload["lifecycle_semantics"]["entry_what_if_required"] is True
+    assert (
+        payload["lifecycle_semantics"]["pre_entry_exit_what_if_required"]
+        is False
+    )
+    assert "position does not yet exist" in payload["lifecycle_semantics"][
+        "pre_entry_exit_what_if_interpretation"
+    ]
 
 
 def test_no_candidate_is_valid_and_host_has_no_fallback_universe() -> None:

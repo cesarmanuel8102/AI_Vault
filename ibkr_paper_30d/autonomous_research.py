@@ -816,6 +816,22 @@ class CodexAutonomousCLIProvider:
             "request": request.model_dump(mode="json"),
             "request_sha256": sha256_json(request),
             "host_candidate_bindings": host_candidate_bindings,
+            "lifecycle_semantics": {
+                "entry_what_if_required": True,
+                "pre_entry_exit_what_if_required": False,
+                "pre_entry_exit_what_if_interpretation": (
+                    "A SELL what-if before a long BUY fills can be rejected or return "
+                    "unavailable economics because the position does not yet exist. That "
+                    "result alone does not prove that the exact filled quantity cannot be "
+                    "returned to flat."
+                ),
+                "flat_return_execution": (
+                    "For a long canary, author an exact opposing SELL LMT plan using "
+                    "MODEL_REFRESHED_MARKETABLE_LIMIT. After an entry fill, the sole writer "
+                    "refreshes the executable bid, submits exactly the filled candidate "
+                    "quantity, and fails closed unless broker reconciliation proves FLAT."
+                ),
+            },
             "bundle": bundle.model_dump(mode="json"),
             "toolbox": toolbox_manifest,
             "research_history": history,
