@@ -221,6 +221,68 @@ def test_family_scope_account_adapter_staleness_and_revocation_are_local(tmp_pat
         db.close()
 
 
+def test_research_only_certification_restarts_on_adapter_change(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    family = _family("CRYPTO", "PAXOS")
+    try:
+        for step in CERTIFICATION_SEQUENCE[:5]:
+            _record(store, family, step)
+        replacement_adapter = "d" * 64
+        changed = ProductFamilyCertificationStore(
+            db, current_adapter_sha256=replacement_adapter
+        )
+
+        projection = changed.record_read_only_candidate_evidence(
+            family,
+            evidence_sha256="e" * 64,
+            account_sha256=ACCOUNT,
+            adapter_sha256=replacement_adapter,
+            observed_at_utc=NOW + timedelta(minutes=1),
+            expires_at_utc=NOW + timedelta(days=1),
+            paper_limitations=("PAPER_SIMULATION_ONLY",),
+        )
+
+        assert projection.status is ProductFamilyCertificationStatus.RESEARCH_ONLY
+        assert projection.completed_steps == CERTIFICATION_SEQUENCE[:5]
+        assert projection.adapter_sha256 == replacement_adapter
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM product_family_certification_events "
+                "WHERE event_type='CERTIFICATION_RESTARTED'"
+            ).fetchone()[0]
+            == 1
+        )
+    finally:
+        db.close()
+
+
+def test_transmitted_certification_cannot_restart_on_adapter_change(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    family = _family("CRYPTO", "PAXOS")
+    try:
+        for step in CERTIFICATION_SEQUENCE[:6]:
+            _record(store, family, step)
+        changed = ProductFamilyCertificationStore(
+            db, current_adapter_sha256="d" * 64
+        )
+
+        with pytest.raises(
+            ProductCapabilityError,
+            match="CERTIFICATION_ADAPTER_DRIFT",
+        ):
+            changed.record_read_only_candidate_evidence(
+                family,
+                evidence_sha256="e" * 64,
+                account_sha256=ACCOUNT,
+                adapter_sha256="d" * 64,
+                observed_at_utc=NOW + timedelta(minutes=1),
+                expires_at_utc=NOW + timedelta(days=1),
+                paper_limitations=("PAPER_SIMULATION_ONLY",),
+            )
+    finally:
+        db.close()
+
+
 def test_store_enumerates_each_durable_family_once(tmp_path) -> None:
     db, store = _store(tmp_path)
     stock = _family()

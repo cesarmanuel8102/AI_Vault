@@ -310,7 +310,22 @@ class ProductFamilyCertificationStore:
             if projection.account_sha256 not in {None, account_sha256}:
                 raise ProductCapabilityError("CERTIFICATION_ACCOUNT_DRIFT")
             if projection.adapter_sha256 not in {None, adapter_sha256}:
-                raise ProductCapabilityError("CERTIFICATION_ADAPTER_DRIFT")
+                if projection.status is not ProductFamilyCertificationStatus.RESEARCH_ONLY:
+                    raise ProductCapabilityError("CERTIFICATION_ADAPTER_DRIFT")
+                self._append(
+                    family,
+                    "CERTIFICATION_RESTARTED",
+                    {
+                        "previous_adapter_sha256": projection.adapter_sha256,
+                        "adapter_sha256": adapter_sha256,
+                        "account_sha256": account_sha256,
+                        "observed_at_utc": observed_at_utc,
+                        "paper_limitations": list(paper_limitations),
+                        "reason": "ADAPTER_CHANGED_BEFORE_TRANSMISSION",
+                    },
+                )
+                projection = self.projection(family)
+                completed = list(projection.completed_steps)
             if step == "ORDER_TERMINAL_NO_FILL":
                 if "ORDER_TRANSMIT_VERIFIED" not in completed:
                     raise ProductCapabilityError("CERTIFICATION_STEP_OUT_OF_ORDER")
@@ -374,6 +389,14 @@ class ProductFamilyCertificationStore:
 
     def projection(self, family: ProductFamilyKey) -> ProductExecutionCapability:
         events = self._events(family)
+        restart_indexes = [
+            index
+            for index, event in enumerate(events)
+            if event["event_type"] == "CERTIFICATION_RESTARTED"
+        ]
+        active_events = (
+            events[restart_indexes[-1] + 1 :] if restart_indexes else events
+        )
         completed: list[str] = []
         latest: dict[str, Any] = {}
         account_hashes: set[str] = set()
@@ -382,7 +405,7 @@ class ProductFamilyCertificationStore:
         expiry_values: list[datetime] = []
         limitations: set[str] = set()
         revoked_reason: str | None = None
-        for event in events:
+        for event in active_events:
             step = event["event_type"]
             if step in CERTIFICATION_SEQUENCE and step not in completed:
                 completed.append(step)
