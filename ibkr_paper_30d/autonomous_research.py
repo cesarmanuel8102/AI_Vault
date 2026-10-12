@@ -7,7 +7,7 @@ import shutil
 import subprocess
 import tempfile
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum
 from pathlib import Path
@@ -836,6 +836,21 @@ class CodexAutonomousCLIProvider:
         host_candidate_bindings = build_canary_candidate_bindings(request)
         return {
             "schema": "CODEX_CANARY_CANDIDATE_DISCOVERY_V1",
+            "host_clock": {
+                "utc_at_prompt_build": datetime.now(timezone.utc).isoformat().replace(
+                    "+00:00", "Z"
+                ),
+                "candidate_temporal_instruction": (
+                    "This is the fresh UTC clock at the start of THIS model turn, "
+                    "not the older invocation time. For a CANDIDATE, author "
+                    "created_at_utc at or after this instant, and choose a "
+                    "justified expires_at_utc that allows time for host capability "
+                    "checks, broker feasibility, authorization, execution, and "
+                    "safe flat return. Do not backdate candidate creation or "
+                    "reuse prior-round expiry timestamps. If that bounded window "
+                    "cannot be justified, choose NO_CANDIDATE."
+                ),
+            },
             "mandate": {
                 "objective": (
                     "Select an exact PAPER continuous-market canary candidate only "
