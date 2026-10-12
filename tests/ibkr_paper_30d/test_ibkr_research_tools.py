@@ -84,6 +84,37 @@ class FakeAccountSummaryIB:
         self.disconnected = True
 
 
+class FakeHistoricalIB:
+    def __init__(self):
+        self.requests = []
+        self.disconnected = False
+
+    def qualifyContracts(self, contract):
+        contract.conId = contract.conId or 479624278
+        contract.localSymbol = contract.localSymbol or contract.symbol
+        return [contract]
+
+    def reqHistoricalData(self, contract, **kwargs):
+        self.requests.append((contract, kwargs))
+        if kwargs["whatToShow"] != "AGGTRADES":
+            return []
+        return [
+            SimpleNamespace(
+                date="2026-10-11 19:00:00",
+                open=84000,
+                high=84100,
+                low=83900,
+                close=84050,
+                volume=1.25,
+                average=84025,
+                barCount=8,
+            )
+        ]
+
+    def disconnect(self):
+        self.disconnected = True
+
+
 def test_open_orders_are_global_canonical_snapshots():
     subject = IBKRResearchToolbox(expected_account_hash="unused")
     fake = FakeIB()
@@ -204,6 +235,55 @@ def test_contract_builder_rejects_conflicting_aliases_within_one_level():
                 },
             }
         )
+
+
+def test_crypto_historical_trades_is_normalized_to_aggregate_trades():
+    subject = IBKRResearchToolbox(expected_account_hash="unused")
+    fake = FakeHistoricalIB()
+    subject._connect = lambda: fake
+
+    result = subject._historical_bars(
+        {
+            "symbol": "BTC",
+            "security_type": "CRYPTO",
+            "exchange": "PAXOS",
+            "currency": "USD",
+            "duration": "1 D",
+            "bar_size": "5 mins",
+            "what_to_show": "TRADES",
+            "use_rth": False,
+        }
+    )
+
+    assert result["success"] is True
+    assert result["whatToShow"] == "AGGTRADES"
+    assert len(result["bars"]) == 1
+    assert [item[1]["whatToShow"] for item in fake.requests] == ["AGGTRADES"]
+    assert fake.disconnected is True
+
+
+def test_empty_historical_response_is_explicitly_unavailable():
+    subject = IBKRResearchToolbox(expected_account_hash="unused")
+    fake = FakeHistoricalIB()
+    fake.reqHistoricalData = lambda contract, **kwargs: []
+    subject._connect = lambda: fake
+
+    result = subject._historical_bars(
+        {
+            "symbol": "MES",
+            "security_type": "FUT",
+            "exchange": "CME",
+            "currency": "USD",
+            "expiry": "202612",
+            "what_to_show": "TRADES",
+        }
+    )
+
+    assert result["success"] is False
+    assert result["error"] == "HISTORICAL_BARS_EMPTY"
+    assert result["error_code"] == "HISTORICAL_BARS_EMPTY"
+    assert result["bars"] == []
+    assert fake.disconnected is True
 
 
 def test_position_execution_contract_fails_closed_when_qualification_is_absent():

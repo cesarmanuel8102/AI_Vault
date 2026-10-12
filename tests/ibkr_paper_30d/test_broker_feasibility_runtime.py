@@ -142,6 +142,77 @@ def test_flat_runtime_request_reaches_authoritative_what_if(
     assert broker.disconnected is True
 
 
+def test_nested_contract_and_order_request_reaches_authoritative_what_if(
+    monkeypatch,
+):
+    broker = WhatIfOnlyBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id="feasibility-nested-crypto-order",
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "contract": {
+                "conId": 479624278,
+                "symbol": "BTC",
+                "secType": "CRYPTO",
+                "exchange": "PAXOS",
+                "currency": "USD",
+            },
+            "order": {
+                "action": "BUY",
+                "orderType": "LMT",
+                "totalQuantity": "0.001",
+                "lmtPrice": "84000",
+                "tif": "IOC",
+            },
+        },
+        purpose="authoritative nested PAPER what-if",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.success is True
+    assert result.error is None
+    assert len(broker.what_if_calls) == 1
+    contract, order = broker.what_if_calls[0]
+    assert contract.conId == 479624278
+    assert contract.secType == "CRYPTO"
+    assert order.action == "BUY"
+    assert order.orderType == "LMT"
+    assert Decimal(str(order.totalQuantity)) == Decimal("0.001")
+    assert Decimal(str(order.lmtPrice)) == Decimal("84000")
+    assert order.tif == "IOC"
+
+
+def test_nested_order_conflict_fails_before_broker(monkeypatch):
+    broker = WhatIfOnlyBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+    request = ResearchRequest(
+        request_id="feasibility-nested-order-conflict",
+        tool=ResearchTool.BROKER_FEASIBILITY,
+        arguments={
+            "con_id": 479624278,
+            "action": "SELL",
+            "order": {
+                "action": "BUY",
+                "order_type": "LMT",
+                "quantity": "0.001",
+                "limit_price": "84000",
+                "time_in_force": "IOC",
+            },
+        },
+        purpose="reject contradictory nested order authority",
+    )
+
+    result = toolbox.execute(request, _bundle())
+
+    assert result.success is False
+    assert result.data["error_code"] == "ORDER_ARGUMENT_IDENTITY_CONFLICT"
+    assert broker.what_if_calls == []
+
+
 def test_flat_combo_request_builds_qualified_bag_for_authoritative_what_if(
     monkeypatch,
 ):

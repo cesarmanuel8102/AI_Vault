@@ -190,10 +190,10 @@ class IBKRResearchToolbox:
             {"tool": ResearchTool.MARKET_SCANNER.value, "purpose": "IBKR scanner; Codex chooses instrument/location/scan code and filters."},
             {"tool": ResearchTool.RESOLVE_CONTRACT.value, "purpose": "Resolve any IBKR contract supported by the account."},
             {"tool": ResearchTool.QUOTE.value, "purpose": "Snapshot quote for a requested stock, ETF, option or other resolvable contract."},
-            {"tool": ResearchTool.HISTORICAL_BARS.value, "purpose": "Historical bars with model-selected duration, bar size, data type and RTH policy."},
+            {"tool": ResearchTool.HISTORICAL_BARS.value, "purpose": "Historical bars with model-selected duration, bar size, data type and RTH policy. CRYPTO TRADES is adapted to the broker-required AGGTRADES representation."},
             {"tool": ResearchTool.OPTION_CHAIN.value, "purpose": "Discover option expirations, strikes, exchanges and multipliers."},
             {"tool": ResearchTool.NEWS_SEARCH.value, "purpose": "IBKR subscribed news providers and historical headlines for a resolved contract."},
-            {"tool": ResearchTool.BROKER_FEASIBILITY.value, "purpose": "IBKR what-if feasibility, margin and commission check for a single or combo order."},
+            {"tool": ResearchTool.BROKER_FEASIBILITY.value, "purpose": "IBKR what-if feasibility, margin and commission check for a single or combo order. Contract and order fields may be flat or canonical nested objects; contradictory duplicates fail closed."},
         ]
 
     def execute(self, request: ResearchRequest, bundle: TraderInputBundle) -> ResearchResult:
@@ -1071,6 +1071,14 @@ class IBKRResearchToolbox:
         ("conId", "con_id", "contract_id"),
     )
 
+    _ORDER_ARGUMENT_ALIASES = (
+        ("action",),
+        ("order_type", "orderType"),
+        ("quantity", "totalQuantity"),
+        ("limit_price", "lmtPrice"),
+        ("time_in_force", "tif"),
+    )
+
     @classmethod
     def _normalized_contract_spec(cls, spec: dict[str, Any]) -> dict[str, Any]:
         nested = spec.get("contract")
@@ -1099,6 +1107,44 @@ class IBKRResearchToolbox:
             if key in nested
         }
         return {**outer, **nested_contract}
+
+    @staticmethod
+    def _normalized_order_argument(canonical_key: str, value: Any) -> str:
+        if canonical_key in {"quantity", "limit_price"}:
+            try:
+                return str(Decimal(str(value)).normalize())
+            except Exception:
+                return str(value).strip()
+        return str(value).strip().upper()
+
+    @classmethod
+    def _normalized_feasibility_args(
+        cls, spec: dict[str, Any]
+    ) -> dict[str, Any]:
+        normalized = cls._normalized_contract_spec(spec)
+        nested = normalized.pop("order", None)
+        if nested is None:
+            return normalized
+        if not isinstance(nested, dict):
+            raise ValueError("ORDER_ARGUMENT_OBJECT_REQUIRED")
+
+        for aliases in cls._ORDER_ARGUMENT_ALIASES:
+            canonical_key = aliases[0]
+            values = [
+                mapping[key]
+                for mapping in (normalized, nested)
+                for key in aliases
+                if key in mapping and mapping[key] not in (None, "")
+            ]
+            comparable = {
+                cls._normalized_order_argument(canonical_key, value)
+                for value in values
+            }
+            if len(comparable) > 1:
+                raise ValueError("ORDER_ARGUMENT_IDENTITY_CONFLICT")
+            if values:
+                normalized[canonical_key] = values[-1]
+        return normalized
 
     @classmethod
     def _contract_from_spec(cls, spec: dict[str, Any]):
@@ -1316,27 +1362,50 @@ class IBKRResearchToolbox:
         ib = self._connect()
         try:
             contract = self._qualify(ib, args)
+            requested_what_to_show = str(
+                args.get("what_to_show", "TRADES")
+            ).upper()
+            what_to_show = (
+                "AGGTRADES"
+                if str(getattr(contract, "secType", "") or "").upper()
+                == "CRYPTO"
+                and requested_what_to_show == "TRADES"
+                else requested_what_to_show
+            )
             bars = ib.reqHistoricalData(
                 contract,
                 endDateTime=str(args.get("end", "")),
                 durationStr=str(args.get("duration", "5 D")),
                 barSizeSetting=str(args.get("bar_size", "5 mins")),
-                whatToShow=str(args.get("what_to_show", "TRADES")),
+                whatToShow=what_to_show,
                 useRTH=bool(args.get("use_rth", True)),
                 formatDate=1,
                 keepUpToDate=False,
             )
+            serialized = [
+                {
+                    "date": str(bar.date), "open": bar.open, "high": bar.high,
+                    "low": bar.low, "close": bar.close, "volume": bar.volume,
+                    "average": bar.average, "barCount": bar.barCount,
+                }
+                for bar in bars
+            ]
+            if not serialized:
+                return {
+                    "success": False,
+                    "error": "HISTORICAL_BARS_EMPTY",
+                    "error_code": "HISTORICAL_BARS_EMPTY",
+                    "contract": self._serialize_contract(contract),
+                    "requestedWhatToShow": requested_what_to_show,
+                    "whatToShow": what_to_show,
+                    "bars": [],
+                }
             return {
                 "success": True,
                 "contract": self._serialize_contract(contract),
-                "bars": [
-                    {
-                        "date": str(bar.date), "open": bar.open, "high": bar.high,
-                        "low": bar.low, "close": bar.close, "volume": bar.volume,
-                        "average": bar.average, "barCount": bar.barCount,
-                    }
-                    for bar in bars
-                ],
+                "requestedWhatToShow": requested_what_to_show,
+                "whatToShow": what_to_show,
+                "bars": serialized,
             }
         finally:
             ib.disconnect()
@@ -1547,7 +1616,7 @@ class IBKRResearchToolbox:
             )
 
         try:
-            args = self._normalized_contract_spec(args)
+            args = self._normalized_feasibility_args(args)
         except ValueError as exc:
             return self._model_research_feasibility(
                 {
