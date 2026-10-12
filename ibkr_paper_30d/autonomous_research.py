@@ -736,52 +736,95 @@ class CodexAutonomousCLIProvider:
                 str(output_path),
                 "-",
             ]
-            payload = self._canary_prompt_payload(
+            base_payload = self._canary_prompt_payload(
                 request, bundle, history, toolbox_manifest
             )
-            try:
-                completed = self.runner(
-                    command,
-                    input=canonical_bytes(payload).decode("utf-8"),
-                    text=True,
-                    capture_output=True,
-                    timeout=request.timeout_seconds,
-                    cwd=workdir,
-                    env=self._sanitized_environment(),
-                    check=False,
+            repair_context: dict[str, Any] | None = None
+            maximum_repairs = 1
+            for semantic_attempt in range(maximum_repairs + 1):
+                payload = copy.deepcopy(base_payload)
+                if repair_context is not None:
+                    payload["semantic_repair"] = repair_context
+                try:
+                    completed = self.runner(
+                        command,
+                        input=canonical_bytes(payload).decode("utf-8"),
+                        text=True,
+                        capture_output=True,
+                        timeout=request.timeout_seconds,
+                        cwd=workdir,
+                        env=self._sanitized_environment(),
+                        check=False,
+                    )
+                except subprocess.TimeoutExpired as exc:
+                    self.last_failure_code = "TIMEOUT"
+                    raise TimeoutError(
+                        "canary discovery Codex provider timed out"
+                    ) from exc
+                if completed.returncode != 0:
+                    self.last_failure_code = f"RETURN_CODE_{completed.returncode}"
+                    raise RuntimeError("CANARY_DISCOVERY_CODEX_PROVIDER_FAILED")
+                if self.owner_model_attestation_exception_sha256 is None:
+                    self._assert_effective_model(
+                        completed.stdout, request.requested_model
+                    )
+                    self.last_model_attestation_mode = "SERVER_REPORTED"
+                else:
+                    self._assert_effective_model_with_owner_exception(
+                        completed.stdout, request.requested_model
+                    )
+                    self.last_model_attestation_mode = (
+                        "OWNER_EXCEPTION_REQUEST_PIN"
+                    )
+                self.last_native_tool_events = self._native_tool_events(
+                    completed.stdout
                 )
-            except subprocess.TimeoutExpired as exc:
-                self.last_failure_code = "TIMEOUT"
-                raise TimeoutError("canary discovery Codex provider timed out") from exc
-            if completed.returncode != 0:
-                self.last_failure_code = f"RETURN_CODE_{completed.returncode}"
-                raise RuntimeError("CANARY_DISCOVERY_CODEX_PROVIDER_FAILED")
-            if self.owner_model_attestation_exception_sha256 is None:
-                self._assert_effective_model(completed.stdout, request.requested_model)
-                self.last_model_attestation_mode = "SERVER_REPORTED"
-            else:
-                self._assert_effective_model_with_owner_exception(
-                    completed.stdout, request.requested_model
-                )
-                self.last_model_attestation_mode = "OWNER_EXCEPTION_REQUEST_PIN"
-            self.last_native_tool_events = self._native_tool_events(completed.stdout)
-            try:
-                raw = json.loads(output_path.read_text(encoding="utf-8"))
-                for item in raw.get("research_requests", []):
-                    if isinstance(item, dict) and isinstance(item.get("arguments"), str):
-                        decoded = json.loads(item["arguments"])
-                        if not isinstance(decoded, dict):
-                            raise ValueError(
-                                "research request arguments must decode to an object"
-                            )
-                        item["arguments"] = decoded
-                turn = CanaryDiscoveryTurn.model_validate(raw)
-            except (OSError, json.JSONDecodeError, ValidationError, ValueError) as exc:
-                self.last_failure_code = "OUTPUT_INVALID"
-                raise RuntimeError("CANARY_DISCOVERY_CODEX_OUTPUT_INVALID") from exc
-            self.last_failure_code = None
-            self.last_failure_detail = None
-            return turn
+                raw: Any = None
+                try:
+                    raw = json.loads(output_path.read_text(encoding="utf-8"))
+                    for item in raw.get("research_requests", []):
+                        if isinstance(item, dict) and isinstance(
+                            item.get("arguments"), str
+                        ):
+                            decoded = json.loads(item["arguments"])
+                            if not isinstance(decoded, dict):
+                                raise ValueError(
+                                    "research request arguments must decode to an object"
+                                )
+                            item["arguments"] = decoded
+                    turn = CanaryDiscoveryTurn.model_validate(raw)
+                except (
+                    OSError,
+                    json.JSONDecodeError,
+                    ValidationError,
+                    ValueError,
+                ) as exc:
+                    errors = self._semantic_validation_errors(exc)
+                    self.last_failure_code = "OUTPUT_INVALID"
+                    self.last_failure_detail = "; ".join(
+                        error["message"] for error in errors
+                    )[:2000]
+                    if semantic_attempt == maximum_repairs:
+                        raise RuntimeError(
+                            "CANARY_DISCOVERY_CODEX_OUTPUT_INVALID"
+                        ) from exc
+                    repair_context = {
+                        "attempt": semantic_attempt + 1,
+                        "maximum_attempts": maximum_repairs,
+                        "instruction": (
+                            "Correct only the structural or semantic validation errors "
+                            "below. Preserve your independent candidate judgment and "
+                            "all supported economics. Return a complete replacement "
+                            "object satisfying the output contract; do not restart research."
+                        ),
+                        "invalid_output": raw,
+                        "validation_errors": errors,
+                    }
+                    continue
+                self.last_failure_code = None
+                self.last_failure_detail = None
+                return turn
+            raise AssertionError("canary semantic repair loop exhausted unexpectedly")
 
     @staticmethod
     def _canary_prompt_payload(

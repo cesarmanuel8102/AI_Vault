@@ -476,3 +476,118 @@ def test_real_codex_provider_has_attested_read_only_canary_mode() -> None:
     assert captured["command"][captured["command"].index("--sandbox") + 1] == "read-only"
     assert captured["payload"]["mandate"]["predefined_symbol_universe"] is False
     assert captured["payload"]["mandate"]["broker_writes_prohibited"] is True
+
+
+def test_canary_provider_repairs_one_semantically_invalid_final_without_research_restart() -> None:
+    from test_autonomous_research import bundle, request
+    from ibkr_paper_30d.autonomous_research import CodexAutonomousCLIProvider
+
+    value = bundle().model_copy(
+        update={"market_data_snapshot": {"gate_status": "BLOCK"}}
+    )
+    invocation = request(value).model_copy(
+        update={
+            "model_configuration": {
+                "canary_authority_context": {
+                    "account_identity_sha256": ACCOUNT,
+                    "successor_definition_sha256": SUCCESSOR,
+                    "approved_head": HEAD,
+                }
+            }
+        }
+    )
+    payloads = []
+
+    def runner(command, **kwargs):
+        payloads.append(json.loads(kwargs["input"]))
+        output_path = command[command.index("--output-last-message") + 1]
+        output = {
+            "mode": "FINAL",
+            "research_requests": [],
+            "decision": "CANDIDATE" if len(payloads) == 1 else "NO_CANDIDATE",
+            "proposal": None,
+            "reasoning_summary": "Preserve the decision; repair only the contract.",
+        }
+        with open(output_path, "w", encoding="utf-8") as handle:
+            json.dump(output, handle)
+        stdout = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "thread.started",
+                        "thread_id": "t",
+                        "actual_model": invocation.requested_model,
+                    }
+                ),
+                json.dumps({"type": "turn.completed"}),
+            ]
+        )
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    provider = CodexAutonomousCLIProvider(runner=runner)
+    turn = provider.next_canary_candidate(invocation, value, [], [])
+
+    assert turn.decision == "NO_CANDIDATE"
+    assert len(payloads) == 2
+    assert "semantic_repair" not in payloads[0]
+    repair = payloads[1]["semantic_repair"]
+    assert repair["attempt"] == 1
+    assert repair["maximum_attempts"] == 1
+    assert repair["invalid_output"]["decision"] == "CANDIDATE"
+    assert "canary decision/proposal mismatch" in repair["validation_errors"][0]["message"]
+    assert provider.last_failure_code is None
+    assert provider.last_failure_detail is None
+
+
+def test_canary_provider_exhaustion_preserves_precise_validation_detail() -> None:
+    from test_autonomous_research import bundle, request
+    from ibkr_paper_30d.autonomous_research import CodexAutonomousCLIProvider
+
+    value = bundle().model_copy(
+        update={"market_data_snapshot": {"gate_status": "BLOCK"}}
+    )
+    invocation = request(value).model_copy(
+        update={
+            "model_configuration": {
+                "canary_authority_context": {
+                    "account_identity_sha256": ACCOUNT,
+                    "successor_definition_sha256": SUCCESSOR,
+                    "approved_head": HEAD,
+                }
+            }
+        }
+    )
+
+    def runner(command, **kwargs):
+        output_path = command[command.index("--output-last-message") + 1]
+        with open(output_path, "w", encoding="utf-8") as handle:
+            json.dump(
+                {
+                    "mode": "FINAL",
+                    "research_requests": [],
+                    "decision": "CANDIDATE",
+                    "proposal": None,
+                    "reasoning_summary": "Still structurally inconsistent.",
+                },
+                handle,
+            )
+        stdout = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "thread.started",
+                        "thread_id": "t",
+                        "actual_model": invocation.requested_model,
+                    }
+                ),
+                json.dumps({"type": "turn.completed"}),
+            ]
+        )
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    provider = CodexAutonomousCLIProvider(runner=runner)
+    with pytest.raises(RuntimeError, match="CANARY_DISCOVERY_CODEX_OUTPUT_INVALID"):
+        provider.next_canary_candidate(invocation, value, [], [])
+
+    assert provider.last_failure_code == "OUTPUT_INVALID"
+    assert "canary decision/proposal mismatch" in provider.last_failure_detail
