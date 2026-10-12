@@ -270,6 +270,8 @@ def bind_canary_authorization(
     proposal: CanaryCandidateProposal,
     owner_pilot_authorization: OwnerPilotAuthorization,
     now_utc: datetime,
+    *,
+    effective_approved_head: str | None = None,
 ) -> CanaryAuthorization:
     _require_utc(now_utc, "now_utc")
     owner = owner_pilot_authorization
@@ -282,7 +284,8 @@ def bind_canary_authorization(
         reasons.append("CANARY_ACCOUNT_MISMATCH")
     if proposal.successor_definition_sha256 != owner.successor_definition_sha256:
         reasons.append("CANARY_SUCCESSOR_MISMATCH")
-    if proposal.approved_head != owner.approved_head:
+    expected_head = effective_approved_head or owner.approved_head
+    if proposal.approved_head != expected_head:
         reasons.append("CANARY_HEAD_MISMATCH")
     if proposal.maximum_debit_usd > owner.maximum_debit_usd:
         reasons.append("CANARY_DEBIT_EXCEEDED")

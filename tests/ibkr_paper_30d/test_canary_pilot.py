@@ -460,6 +460,56 @@ def test_capability_collector_rechecks_exact_contract_quote_and_whatif() -> None
     assert all(item[1] is bundle for item in observed)
 
 
+def test_capability_collector_uses_host_bindings_not_proposal_claims() -> None:
+    proposal = _proposal()
+    host_bindings = {
+        "invocation_id": "host-invocation",
+        "invocation_sha256": "3" * 64,
+        "result_sha256": "4" * 64,
+        "account_identity_sha256": "5" * 64,
+        "successor_definition_sha256": "6" * 64,
+        "approved_head": "7" * 40,
+    }
+
+    class Toolbox:
+        def execute(self, request, bundle):
+            del bundle
+            if request.tool is ResearchTool.RESOLVE_CONTRACT:
+                data = {
+                    "contracts": [
+                        {
+                            "conId": proposal.canonical_contract.con_id,
+                            "secType": proposal.canonical_contract.security_type,
+                        }
+                    ]
+                }
+            elif request.tool is ResearchTool.QUOTE:
+                data = {
+                    "contract": {"conId": proposal.canonical_contract.con_id},
+                    "bid": "9.90",
+                    "ask": "10.10",
+                }
+            else:
+                data = {"paper_only": True, "whatIf": True}
+            return ResearchResult(
+                request_id=request.request_id,
+                tool=request.tool,
+                success=True,
+                data=data,
+            )
+
+    evidence = collect_canary_capability_evidence(
+        Toolbox(),
+        object(),
+        proposal,
+        now_utc=NOW + timedelta(seconds=1),
+        expected_candidate_bindings=host_bindings,
+    )
+
+    for field, expected in host_bindings.items():
+        assert evidence[field] == expected
+
+
 def test_capability_collector_accepts_cash_debit_only_within_candidate_bounds() -> None:
     proposal = _proposal().model_copy(
         update={

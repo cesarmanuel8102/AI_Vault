@@ -2119,6 +2119,10 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                     reasoning_effort=config.reasoning_effort,
                     timeout_seconds=config.model_turn_timeout_seconds,
                     product_certification_store=multi_universe_stores.capability,
+                    effective_approved_head=(
+                        config.approved_head
+                        or _current_git_commit(config.repo_root)
+                    ),
                 )
             watchdog = dependencies.continuity_watchdog_factory(
                 coordinator=coordinator,

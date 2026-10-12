@@ -55,6 +55,7 @@ def collect_canary_capability_evidence(
     proposal: CanaryCandidateProposal,
     *,
     now_utc: datetime,
+    expected_candidate_bindings: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Recheck the exact proposal using only read-only/what-if broker tools."""
 
@@ -149,13 +150,18 @@ def collect_canary_capability_evidence(
         and broker_economics_within_candidate_bounds
     )
     expires_at = now_utc + timedelta(minutes=2)
-    return {
+    bindings = {
         "invocation_id": proposal.invocation_id,
         "invocation_sha256": proposal.invocation_sha256,
         "result_sha256": proposal.result_sha256,
         "account_identity_sha256": proposal.account_identity_sha256,
         "successor_definition_sha256": proposal.successor_definition_sha256,
         "approved_head": proposal.approved_head,
+    }
+    if expected_candidate_bindings is not None:
+        bindings.update(expected_candidate_bindings)
+    return {
+        **bindings,
         "product_family_sha256": proposal.product_family.sha256,
         "contract_identity_sha256": proposal.canonical_contract.sha256,
         "contract_group_sha256": proposal.contract_group.sha256,
@@ -200,6 +206,7 @@ class CanaryPilotOrchestrator:
         coordinator: Any,
         owner_pilot_authorization: OwnerPilotAuthorization,
         writer_binding_sha256: str,
+        effective_approved_head: str | None = None,
         durable_sequence_allocator: Callable[[], int],
         now_utc: Callable[[], datetime],
         candidate_finalizer: Callable[[Any, Mapping[str, Any], Any], None]
@@ -216,6 +223,7 @@ class CanaryPilotOrchestrator:
         self.coordinator = coordinator
         self.owner_pilot_authorization = owner_pilot_authorization
         self.writer_binding_sha256 = writer_binding_sha256
+        self.effective_approved_head = effective_approved_head
         self.durable_sequence_allocator = durable_sequence_allocator
         self.now_utc = now_utc
         self.candidate_finalizer = candidate_finalizer or (
@@ -324,7 +332,10 @@ class CanaryPilotOrchestrator:
         if authorization is None:
             try:
                 authorization = bind_canary_authorization(
-                    proposal, self.owner_pilot_authorization, self.now_utc()
+                    proposal,
+                    self.owner_pilot_authorization,
+                    self.now_utc(),
+                    effective_approved_head=self.effective_approved_head,
                 )
             except ValueError as exc:
                 reasons = tuple(

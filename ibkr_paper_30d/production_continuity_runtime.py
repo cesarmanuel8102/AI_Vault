@@ -774,8 +774,12 @@ def create_canary_pilot_orchestrator(
     reasoning_effort: str,
     timeout_seconds: int,
     product_certification_store: Any,
+    effective_approved_head: str,
 ) -> Any:
-    from .autonomous_research import CanaryCandidateDiscoveryLoop
+    from .autonomous_research import (
+        CanaryCandidateDiscoveryLoop,
+        build_canary_candidate_bindings,
+    )
     from .autonomous_runtime import build_request
     from .canary_pilot import (
         CanaryPilotOrchestrator,
@@ -784,6 +788,7 @@ def create_canary_pilot_orchestrator(
 
     store = _ProductionCanaryStore(Path(db_path))
     store.persist_owner_pilot_authorization(owner_pilot_authorization)
+    candidate_bindings_by_invocation: dict[str, dict[str, str]] = {}
 
     def discover(bundle: Any, persister: Any) -> Any:
         request = build_request(
@@ -794,6 +799,25 @@ def create_canary_pilot_orchestrator(
             timeout_seconds=timeout_seconds,
             trigger="CANARY_DISCOVERY",
         )
+        request = request.model_copy(
+            update={
+                "model_configuration": {
+                    **request.model_configuration,
+                    "canary_authority_context": {
+                        "account_identity_sha256": (
+                            owner_pilot_authorization.account_identity_sha256
+                        ),
+                        "successor_definition_sha256": (
+                            owner_pilot_authorization.successor_definition_sha256
+                        ),
+                        "approved_head": effective_approved_head,
+                    },
+                }
+            }
+        )
+        candidate_bindings_by_invocation[request.invocation_id] = (
+            build_canary_candidate_bindings(request)
+        )
         return CanaryCandidateDiscoveryLoop(
             provider,
             toolbox,
@@ -802,11 +826,30 @@ def create_canary_pilot_orchestrator(
 
     def capability(bundle: Any, proposal: Any) -> dict[str, Any]:
         now = datetime.now(timezone.utc)
+        expected_bindings = candidate_bindings_by_invocation.get(
+            proposal.invocation_id
+        )
+        if expected_bindings is None:
+            stored = store.load_candidate()
+            if stored is not None and stored[0].proposal == proposal:
+                prior_evidence = stored[1]
+                binding_fields = (
+                    "invocation_id",
+                    "invocation_sha256",
+                    "result_sha256",
+                    "account_identity_sha256",
+                    "successor_definition_sha256",
+                    "approved_head",
+                )
+                expected_bindings = {
+                    field: str(prior_evidence[field]) for field in binding_fields
+                }
         return collect_canary_capability_evidence(
             toolbox,
             bundle,
             proposal,
             now_utc=now,
+            expected_candidate_bindings=expected_bindings,
         )
 
     def finalize_candidate(
@@ -843,6 +886,7 @@ def create_canary_pilot_orchestrator(
         coordinator=coordinator,
         owner_pilot_authorization=owner_pilot_authorization,
         writer_binding_sha256=writer_binding_sha256,
+        effective_approved_head=effective_approved_head,
         durable_sequence_allocator=_sequence_allocator(coordinator),
         now_utc=lambda: datetime.now(timezone.utc),
         candidate_finalizer=finalize_candidate,

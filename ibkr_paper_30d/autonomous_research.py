@@ -73,6 +73,40 @@ class ResearchTool(str, Enum):
     QUANTCONNECT = "QUANTCONNECT"
 
 
+def build_canary_candidate_bindings(
+    request: InvocationRequest,
+) -> dict[str, str]:
+    """Issue non-circular host bindings for one canary discovery invocation."""
+
+    context = request.model_configuration.get("canary_authority_context")
+    if not isinstance(context, dict):
+        raise ValueError("CANARY_AUTHORITY_CONTEXT_REQUIRED")
+    required = (
+        "account_identity_sha256",
+        "successor_definition_sha256",
+        "approved_head",
+    )
+    if any(not isinstance(context.get(field), str) for field in required):
+        raise ValueError("CANARY_AUTHORITY_CONTEXT_INCOMPLETE")
+    invocation_sha256 = sha256_json(request)
+    return {
+        "invocation_id": request.invocation_id,
+        "invocation_sha256": invocation_sha256,
+        "result_sha256": sha256_json(
+            {
+                "schema": "CANARY_RESULT_BINDING_V1",
+                "invocation_id": request.invocation_id,
+                "invocation_sha256": invocation_sha256,
+            }
+        ),
+        "account_identity_sha256": context["account_identity_sha256"],
+        "successor_definition_sha256": context[
+            "successor_definition_sha256"
+        ],
+        "approved_head": context["approved_head"],
+    }
+
+
 class ResearchRequest(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
@@ -756,6 +790,7 @@ class CodexAutonomousCLIProvider:
         history: list[dict[str, Any]],
         toolbox_manifest: list[dict[str, Any]],
     ) -> dict[str, Any]:
+        host_candidate_bindings = build_canary_candidate_bindings(request)
         return {
             "schema": "CODEX_CANARY_CANDIDATE_DISCOVERY_V1",
             "mandate": {
@@ -780,6 +815,7 @@ class CodexAutonomousCLIProvider:
             },
             "request": request.model_dump(mode="json"),
             "request_sha256": sha256_json(request),
+            "host_candidate_bindings": host_candidate_bindings,
             "bundle": bundle.model_dump(mode="json"),
             "toolbox": toolbox_manifest,
             "research_history": history,
@@ -788,9 +824,11 @@ class CodexAutonomousCLIProvider:
                     "Encode each research_requests[].arguments value as a JSON object string."
                 ),
                 "candidate_binding": (
-                    "Copy all account, successor, approved-HEAD, invocation, family, contract, "
-                    "economics, expiry, and flat-return bindings exactly from authenticated "
-                    "evidence. The host validates every field and may reject the proposal."
+                    "Copy invocation_id, invocation_sha256, result_sha256, account identity, "
+                    "successor definition, and approved HEAD exactly from "
+                    "host_candidate_bindings. Copy family, contract, economics, expiry, and "
+                    "flat-return bindings exactly from authenticated broker evidence. The "
+                    "host validates every field and may reject the proposal."
                 ),
             },
         }

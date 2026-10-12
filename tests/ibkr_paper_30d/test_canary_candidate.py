@@ -24,6 +24,7 @@ from ibkr_paper_30d.autonomous_research import (
     ResearchRequest,
     ResearchResult,
     ResearchTool,
+    build_canary_candidate_bindings,
 )
 from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.multi_universe_models import (
@@ -236,6 +237,92 @@ def test_owner_authorization_is_reduced_to_exact_candidate() -> None:
     assert authorization.expires_at_utc == proposal.expires_at_utc
 
 
+def test_runtime_release_head_can_supersede_immutable_owner_head() -> None:
+    proposal = _proposal().model_copy(update={"approved_head": "d" * 40})
+    owner = OwnerPilotAuthorization(
+        authorization_id="owner-pilot-1",
+        owner_id="owner",
+        account_identity_sha256=ACCOUNT,
+        successor_definition_sha256=SUCCESSOR,
+        approved_head=HEAD,
+        maximum_debit_usd=Decimal("20"),
+        maximum_loss_usd=Decimal("20"),
+        fee_allowance_usd=Decimal("2"),
+        maximum_order_count=2,
+        issued_at_utc=NOW - timedelta(minutes=1),
+        expires_at_utc=NOW + timedelta(hours=1),
+    )
+
+    authorization = bind_canary_authorization(
+        proposal,
+        owner,
+        NOW + timedelta(seconds=1),
+        effective_approved_head="d" * 40,
+    )
+
+    assert authorization.account_identity_sha256 == ACCOUNT
+
+
+def test_runtime_release_head_mismatch_blocks_authorization() -> None:
+    proposal = _proposal().model_copy(update={"approved_head": "d" * 40})
+    owner = OwnerPilotAuthorization(
+        authorization_id="owner-pilot-1",
+        owner_id="owner",
+        account_identity_sha256=ACCOUNT,
+        successor_definition_sha256=SUCCESSOR,
+        approved_head=HEAD,
+        maximum_debit_usd=Decimal("20"),
+        maximum_loss_usd=Decimal("20"),
+        fee_allowance_usd=Decimal("2"),
+        maximum_order_count=2,
+        issued_at_utc=NOW - timedelta(minutes=1),
+        expires_at_utc=NOW + timedelta(hours=1),
+    )
+
+    with pytest.raises(ValueError, match="CANARY_HEAD_MISMATCH"):
+        bind_canary_authorization(
+            proposal,
+            owner,
+            NOW + timedelta(seconds=1),
+            effective_approved_head="e" * 40,
+        )
+
+
+def test_canary_prompt_exposes_host_issued_candidate_bindings() -> None:
+    from test_autonomous_research import bundle, request
+    from ibkr_paper_30d.autonomous_research import CodexAutonomousCLIProvider
+
+    value = bundle().model_copy(
+        update={"market_data_snapshot": {"gate_status": "BLOCK"}}
+    )
+    invocation = request(value).model_copy(
+        update={
+            "model_configuration": {
+                "mode": "host-mediated-autonomous-research",
+                "canary_authority_context": {
+                    "account_identity_sha256": ACCOUNT,
+                    "successor_definition_sha256": SUCCESSOR,
+                    "approved_head": HEAD,
+                },
+            }
+        }
+    )
+
+    payload = CodexAutonomousCLIProvider._canary_prompt_payload(
+        invocation, value, [], []
+    )
+    expected = build_canary_candidate_bindings(invocation)
+
+    assert payload["host_candidate_bindings"] == expected
+    assert expected["invocation_id"] == invocation.invocation_id
+    assert expected["invocation_sha256"] == sha256_json(invocation)
+    assert expected["account_identity_sha256"] == ACCOUNT
+    assert expected["successor_definition_sha256"] == SUCCESSOR
+    assert expected["approved_head"] == HEAD
+    assert len(expected["result_sha256"]) == 64
+    assert "host_candidate_bindings" in payload["output_contract"]["candidate_binding"]
+
+
 def test_no_candidate_is_valid_and_host_has_no_fallback_universe() -> None:
     outcome = CanaryDiscoveryOutcome(
         decision="NO_CANDIDATE",
@@ -331,7 +418,18 @@ def test_real_codex_provider_has_attested_read_only_canary_mode() -> None:
     value = bundle().model_copy(
         update={"market_data_snapshot": {"gate_status": "BLOCK"}}
     )
-    invocation = request(value)
+    invocation = request(value).model_copy(
+        update={
+            "model_configuration": {
+                "mode": "host-mediated-autonomous-research",
+                "canary_authority_context": {
+                    "account_identity_sha256": ACCOUNT,
+                    "successor_definition_sha256": SUCCESSOR,
+                    "approved_head": HEAD,
+                },
+            }
+        }
+    )
 
     def runner(command, **kwargs):
         captured["command"] = command
