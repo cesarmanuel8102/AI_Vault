@@ -281,7 +281,7 @@ def test_execution_revalidates_then_submits_exact_request_once() -> None:
     assert request.durable_sequence == 7
 
 
-def test_execution_retires_expired_unused_candidate_and_rediscovers() -> None:
+def test_execution_retires_expired_candidate_and_executes_replacement_same_cycle() -> None:
     expired = _proposal()
     expired_outcome = CanaryDiscoveryOutcome(
         decision="CANDIDATE",
@@ -312,7 +312,13 @@ def test_execution_retires_expired_unused_candidate_and_rediscovers() -> None:
     )
     store = Store()
     store.candidate = (expired_outcome, _evidence(expired), object())
-    coordinator = Coordinator(None)
+    coordinator = Coordinator(
+        lambda request: CanaryExecutionResult(
+            status="TERMINAL_NO_FILL",
+            request_sha256=request.sha256,
+            broker_write_boundary_crossed=True,
+        )
+    )
     controller = CanaryPilotOrchestrator(
         discovery_runner=lambda *_args: replacement_outcome,
         capability_evidence_collector=lambda _bundle, actual: {
@@ -332,12 +338,12 @@ def test_execution_retires_expired_unused_candidate_and_rediscovers() -> None:
 
     result = controller.execute(object())
 
-    assert result["status"] == "PASS"
-    assert result["decision"] == "CANDIDATE_READY"
+    assert result["status"] == "TERMINAL_NO_FILL"
+    assert result["decision"] == "CANARY_EXECUTED"
     assert result["candidate_sha256"] == replacement.sha256
     assert store.candidate[0].proposal == replacement
-    assert store.authorizations == []
-    assert coordinator.requests == []
+    assert len(store.authorizations) == 1
+    assert len(coordinator.requests) == 1
 
 
 def test_execution_rejects_result_for_a_different_request() -> None:

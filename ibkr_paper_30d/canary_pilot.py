@@ -319,7 +319,13 @@ class CanaryPilotOrchestrator:
         if now >= proposal.expires_at_utc:
             expire_unused = getattr(self.store, "expire_unused_candidate", None)
             if callable(expire_unused) and expire_unused(proposal.sha256, now):
-                return self.discover(bundle)
+                discovery = self.discover(bundle)
+                if (
+                    discovery.get("status") == "PASS"
+                    and discovery.get("decision") == "CANDIDATE_READY"
+                ):
+                    return self.execute(bundle)
+                return discovery
             return self._block("CANARY_CANDIDATE_EXPIRED")
         evidence = dict(self.capability_evidence_collector(bundle, proposal))
         validation = validate_canary_candidate(
