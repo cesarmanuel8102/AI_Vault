@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from decimal import Decimal
 from typing import Any, Mapping
 
 from .canonical import canonical_bytes, sha256_json
@@ -12,7 +13,7 @@ from .continuity_models import (
     ContinuityEvaluation,
     ContinuityReview,
 )
-from .continuity_schema import verify_continuity_schema_v3
+from .continuity_schema import verify_continuity_schema_v3, verify_continuity_schema_v4
 from .persistence import Database
 from .repositories import EventRepository, utc_now
 from .types import new_uuid7
@@ -27,7 +28,13 @@ class ContinuityStoreError(RuntimeError):
 
 class ContinuityStore:
     def __init__(self, db: Database):
-        verify_continuity_schema_v3(db)
+        try:
+            verify_continuity_schema_v3(db)
+        except Exception:
+            try:
+                verify_continuity_schema_v4(db)
+            except Exception as exc:
+                raise ContinuityStoreError("CONTINUITY_SCHEMA_V3_OR_V4_REQUIRED") from exc
         self.db = db
 
     @staticmethod
@@ -301,6 +308,19 @@ class ContinuityStore:
     def append_evaluation(self, evaluation: ContinuityEvaluation, order_ref: str) -> str:
         payload = evaluation.model_dump(mode="json")
         with self.db.transaction():
+            existing = self.db.execute(
+                "SELECT payload_json, plan_id, order_ref, event_sha256 "
+                "FROM continuity_evaluation_events WHERE evaluation_id=?",
+                (evaluation.evaluation_id,),
+            ).fetchone()
+            if existing is not None:
+                if str(existing[0]) != canonical_bytes(payload).decode("utf-8"):
+                    raise ContinuityStoreError("EVALUATION_IDENTITY_COLLISION")
+                if str(existing[1]) != evaluation.plan_id:
+                    raise ContinuityStoreError("EVALUATION_PLAN_ID_MISMATCH")
+                if str(existing[2]) != order_ref:
+                    raise ContinuityStoreError("EVALUATION_ORDER_REF_MISMATCH")
+                return str(existing[3])
             return self._append(
                 table="continuity_evaluation_events", event_id=str(new_uuid7()),
                 stream_column="order_ref", stream_id=order_ref, event_type="EVALUATED",
@@ -467,3 +487,214 @@ class ContinuityStore:
                     "reflection_id": reflection_id, "review_id": review_id
                 },
             )
+
+    _TERMINAL_INTENT_STATES = frozenset({"BROKER_CONFIRMED"})
+
+    _INTENT_TRANSITIONS: dict[str, frozenset[str]] = {
+        "INTENT_RECORDED": frozenset({"SUBMISSION_ATTEMPTED"}),
+        "SUBMISSION_ATTEMPTED": frozenset({"BROKER_CONFIRMED", "RESULT_UNKNOWN"}),
+        "RESULT_UNKNOWN": frozenset(),
+    }
+
+    def _latest_intent_row(self, intent_id: str) -> tuple | None:
+        return self.db.execute(
+            "SELECT intent_id, plan_id, order_ref, evaluation_id, execution_key, "
+            "command_type, command_sha256, intent_state, payload_json "
+            "FROM continuity_execution_intents "
+            "WHERE intent_id=? "
+            "ORDER BY sequence DESC LIMIT 1",
+            (intent_id,),
+        ).fetchone()
+
+    def reserve_execution_intent(
+        self,
+        *,
+        plan_id: str,
+        order_ref: str,
+        evaluation_id: str | None,
+        execution_key: str | None,
+        command_type: str | None,
+        command_sha256: str | None,
+        payload: Mapping[str, Any],
+    ) -> str:
+        """Atomically reserve a new intent if no active intent exists.
+
+        Returns the stable intent_id. Raises ContinuityStoreError if an active
+        intent already blocks this operational scope.
+        """
+        verify_continuity_schema_v4(self.db)
+        body = dict(payload)
+        body["intent_state"] = "INTENT_RECORDED"
+        with self.db.transaction():
+            # Any unresolved writer outcome can affect aggregate account
+            # exposure, so it blocks every new execution intent.
+            row = self.db.execute(
+                "SELECT plan_id,order_ref,intent_state "
+                "FROM continuity_execution_intents current "
+                "WHERE sequence=("
+                "SELECT MAX(sequence) FROM continuity_execution_intents "
+                "WHERE intent_id=current.intent_id"
+                ") AND intent_state NOT IN ('BROKER_CONFIRMED') "
+                "ORDER BY sequence DESC LIMIT 1"
+            ).fetchone()
+            if row is not None:
+                reason = (
+                    "ACTIVE_INTENT_BARRIER"
+                    if str(row[0]) == plan_id and str(row[1]) == order_ref
+                    else "GLOBAL_ACTIVE_INTENT_BARRIER"
+                )
+                raise ContinuityStoreError(reason)
+            intent_id = str(new_uuid7())
+            return self._append(
+                table="continuity_execution_intents",
+                event_id=str(new_uuid7()),
+                stream_column="order_ref",
+                stream_id=order_ref,
+                event_type="INTENT_RECORDED",
+                payload=body,
+                identity_columns={
+                    "intent_id": intent_id,
+                    "plan_id": plan_id,
+                    "order_ref": order_ref,
+                    "evaluation_id": evaluation_id or "",
+                    "execution_key": execution_key or "",
+                    "intent_state": "INTENT_RECORDED",
+                    "command_type": command_type or "",
+                    "command_sha256": command_sha256 or "",
+                },
+            ), intent_id
+
+    def transition_execution_intent(
+        self,
+        *,
+        intent_id: str,
+        plan_id: str,
+        order_ref: str,
+        evaluation_id: str | None,
+        execution_key: str | None,
+        intent_state: str,
+        command_type: str | None,
+        command_sha256: str | None,
+        payload: Mapping[str, Any],
+    ) -> str:
+        """Append a state transition for an existing intent.
+
+        Validates intent identity, state machine, and reconciliation evidence.
+        All transitions for the same logical intent share the same intent_id.
+        """
+        verify_continuity_schema_v4(self.db)
+
+        body = dict(payload)
+        body["intent_state"] = intent_state
+
+        with self.db.transaction():
+            latest = self._latest_intent_row(intent_id)
+            if latest is None:
+                raise ContinuityStoreError("INTENT_NOT_FOUND")
+
+            # A. Identity immutability validation
+            # Column indices: 0=intent_id, 1=plan_id, 2=order_ref, 3=evaluation_id,
+            # 4=execution_key, 5=command_type, 6=command_sha256, 7=intent_state
+            identity_checks = [
+                (1, plan_id, "plan_id"),
+                (2, order_ref, "order_ref"),
+                (3, evaluation_id or "", "evaluation_id"),
+                (4, execution_key or "", "execution_key"),
+                (5, command_type or "", "command_type"),
+                (6, command_sha256 or "", "command_sha256"),
+            ]
+            for idx, expected, name in identity_checks:
+                actual = str(latest[idx])
+                if actual != expected:
+                    raise ContinuityStoreError(
+                        f"INTENT_IDENTITY_MISMATCH:{name}"
+                    )
+
+            current_state = str(latest[7])
+
+            # B. State machine enforcement
+            if current_state in self._TERMINAL_INTENT_STATES:
+                raise ContinuityStoreError("INTENT_ALREADY_TERMINAL")
+            allowed = self._INTENT_TRANSITIONS.get(current_state, frozenset())
+            if intent_state not in allowed:
+                raise ContinuityStoreError(
+                    f"INTENT_TRANSITION_INVALID:{current_state}->{intent_state}"
+                )
+
+            return self._append(
+                table="continuity_execution_intents",
+                event_id=str(new_uuid7()),
+                stream_column="order_ref",
+                stream_id=order_ref,
+                event_type=intent_state,
+                payload=body,
+                identity_columns={
+                    "intent_id": intent_id,
+                    "plan_id": plan_id,
+                    "order_ref": order_ref,
+                    "evaluation_id": evaluation_id or "",
+                    "execution_key": execution_key or "",
+                    "intent_state": intent_state,
+                    "command_type": command_type or "",
+                    "command_sha256": command_sha256 or "",
+                },
+            )
+
+    def reconcile_execution_intent(
+        self,
+        *,
+        intent_id: str,
+        broker_evidence: Mapping[str, Any],
+    ) -> str:
+        """Attempt to reconcile an intent using verifiable broker evidence.
+
+        Authentic reconciliation requires evidence from a controlled broker
+        read path bound to the original intent identity. Since no authenticated
+        reconciliation path is implementable with current components,
+        RESULT_UNKNOWN remains permanently blocked.
+        """
+        verify_continuity_schema_v4(self.db)
+        raise ContinuityStoreError("RECONCILIATION_NOT_AUTHENTICATED")
+
+    def latest_execution_intent(
+        self, plan_id: str, order_ref: str
+    ) -> dict[str, Any] | None:
+        row = self.db.execute(
+            "SELECT intent_id, intent_state, execution_key, command_sha256, event_sha256 "
+            "FROM continuity_execution_intents "
+            "WHERE plan_id=? AND order_ref=? "
+            "ORDER BY sequence DESC LIMIT 1",
+            (plan_id, order_ref),
+        ).fetchone()
+        if row is None:
+            return None
+        return {
+            "intent_id": str(row[0]),
+            "intent_state": str(row[1]),
+            "execution_key": str(row[2]),
+            "command_sha256": str(row[3]),
+            "event_sha256": str(row[4]),
+        }
+
+    def has_active_execution_intent(self, plan_id: str, order_ref: str) -> bool:
+        latest = self.latest_execution_intent(plan_id, order_ref)
+        return latest is not None and latest["intent_state"] not in self._TERMINAL_INTENT_STATES
+
+    def active_execution_intent(self) -> dict[str, str] | None:
+        row = self.db.execute(
+            "SELECT intent_id,plan_id,order_ref,intent_state "
+            "FROM continuity_execution_intents current "
+            "WHERE sequence=("
+            "SELECT MAX(sequence) FROM continuity_execution_intents "
+            "WHERE intent_id=current.intent_id"
+            ") AND intent_state NOT IN ('BROKER_CONFIRMED') "
+            "ORDER BY sequence DESC LIMIT 1"
+        ).fetchone()
+        if row is None:
+            return None
+        return {
+            "intent_id": str(row[0]),
+            "plan_id": str(row[1]),
+            "order_ref": str(row[2]),
+            "intent_state": str(row[3]),
+        }

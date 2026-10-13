@@ -234,8 +234,12 @@ class AuthoritativeBrokerWriter:
                         status="UNCERTAIN",
                         reasons=(f"WRITER_INTERNAL_FAILURE:{type(exc).__name__}",),
                     )
-                if not future.done():
-                    future.set_result(result)
+                self.coordinator.complete(
+                    self._capability,
+                    command,
+                    future,
+                    result,
+                )
                 self.coordinator.task_done(self._capability)
         finally:
             pending = self._result(

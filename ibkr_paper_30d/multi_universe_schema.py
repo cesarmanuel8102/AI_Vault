@@ -139,7 +139,12 @@ def _validate_prerequisites(db: Database) -> None:
         verify_continuity_schema_v3(db)
     except (SuccessorSchemaError, ContinuitySchemaError) as exc:
         raise MultiUniverseSchemaError("MULTI_UNIVERSE_SCHEMA_V2_V3_REQUIRED") from exc
-    if _versions(db) not in ([1, 2, 3], [1, 2, 3, 4]):
+    if _versions(db) not in (
+        [1, 2, 3],
+        [1, 2, 3, 4],
+        [1, 2, 3, 5],
+        [1, 2, 3, 4, 5],
+    ):
         raise MultiUniverseSchemaError("MULTI_UNIVERSE_SCHEMA_V2_V3_REQUIRED")
 
 

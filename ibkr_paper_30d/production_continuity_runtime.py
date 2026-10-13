@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 import threading
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
@@ -17,9 +18,9 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
-from .broker_write_coordinator import BrokerWriteCoordinator
+from .broker_write_coordinator import BrokerCommandType, BrokerWriteCoordinator
 from .canonical import canonical_bytes, sha256_json
-from .continuity_store import ContinuityStore
+from .continuity_store import ContinuityStore, ContinuityStoreError
 from .ibkr_readonly import expected_identity_hash
 from .multi_universe_models import (
     CapitalSleeve,
@@ -1095,6 +1096,19 @@ class ReadOnlyContinuityBroker:
         self._monotonic = monotonic
         self._last_server_time: datetime | None = None
         self._last_server_time_observed_at: float | None = None
+        self._instrument: Callable[[str, float, BaseException | None], None] | None = None
+
+    def _instrumented_call(self, name: str, fn: Callable, *args: Any, **kwargs: Any) -> Any:
+        if self._instrument is None:
+            return fn(*args, **kwargs)
+        start = self._monotonic()
+        try:
+            result = fn(*args, **kwargs)
+            self._instrument(name, self._monotonic() - start, None)
+            return result
+        except BaseException as exc:
+            self._instrument(name, self._monotonic() - start, exc)
+            raise
 
     def reqCurrentTime(self) -> datetime:
         observed_at = self._monotonic()
@@ -1139,7 +1153,7 @@ class ReadOnlyContinuityBroker:
     def collect_continuity_facts(
         self, binding: Any, now: datetime
     ) -> dict[str, dict[str, Any]]:
-        snapshot = self._matching_order(binding)
+        snapshot = self._instrumented_call("REQ_ALL_OPEN_ORDERS", self._matching_order, binding)
         source = "IBKR_PAPER_READ_ONLY_CLIENT_19762"
 
         def fact(value: Any, max_age_seconds: int = 15) -> dict[str, Any]:
@@ -1187,7 +1201,7 @@ class ReadOnlyContinuityBroker:
             )
 
         quantity = Decimal("0")
-        for position in self._broker.positions():
+        for position in self._instrumented_call("POSITIONS", lambda: list(self._broker.positions())):
             account = str(getattr(position, "account", "") or "")
             from .open_order_management import canonical_contract_identity
 
@@ -2527,6 +2541,7 @@ class ProductionContinuityPoller:
         self.config = config
         self.preflight = preflight
         self.allocate_sequence = _sequence_allocator(coordinator)
+        self.poll_results: list[dict[str, Any]] = []
 
     @staticmethod
     def _execution_counts(db: Any, plan_id: str) -> dict[str, int]:
@@ -2539,7 +2554,36 @@ class ProductionContinuityPoller:
         ).fetchall()
         return {str(key): int(count) for key, count in rows if key is not None}
 
-    def __call__(self, db: Any, broker: ReadOnlyContinuityBroker, _: Any) -> None:
+    @contextmanager
+    def _poll_phase(
+        self, store: ContinuityStore, correlation_id: str, phase: str
+    ):
+        """Structured instrumentation for poll_once operations.
+        Logs phase start/end to the continuity watchdog event stream
+        without exposing account identifiers or secrets."""
+        start = time.monotonic()
+        exc_info: BaseException | None = None
+        try:
+            yield
+        except BaseException as exc:
+            exc_info = exc
+            raise
+        finally:
+            try:
+                store.append_watchdog_event(
+                    "__continuity_watchdog__",
+                    "POLL_PHASE",
+                    {
+                        "correlation_id": correlation_id,
+                        "phase": phase,
+                        "duration_seconds": round(time.monotonic() - start, 3),
+                        "error_type": type(exc_info).__name__ if exc_info else None,
+                    },
+                )
+            except Exception:
+                pass
+
+    def __call__(self, db: Any, broker: ReadOnlyContinuityBroker, _: Any) -> Any:
         from concurrent.futures import TimeoutError as FutureTimeout
         from types import SimpleNamespace
 
@@ -2548,99 +2592,279 @@ class ProductionContinuityPoller:
         from .experiment_ledger import AutonomousExperimentLedger
         from .provider_lifecycle import BrokerTimeEvidence
 
+        correlation_id = str(new_uuid7())
         store = ContinuityStore(db)
-        for plan in store.active_plans():
-            binding = _verified_registry_binding(db, plan)
-            if binding is None:
-                continue
-            identity = SimpleNamespace(
-                order_ref=binding["order_ref"],
-                ibkr_order_id=binding["order_id"],
-                perm_id=binding["perm_id"],
-                execution_client_id=binding["execution_client_id"],
-                account_identity_sha256=binding["account_identity_sha256"],
-                contract_identity_sha256=binding["contract_identity_sha256"],
-            )
-            observed_at = datetime.now(timezone.utc)
-            broker_time = broker.reqCurrentTime()
-            if broker_time.tzinfo is None or broker_time.utcoffset() is None:
-                broker_time = broker_time.replace(tzinfo=timezone.utc)
-            time_evidence = BrokerTimeEvidence.create_authenticated_paper(
-                time_utc=broker_time,
-                observed_at_utc=observed_at,
-                account_identity_sha256=str(self.preflight.expected_account_hash),
-            )
-            collector = ContinuityFactCollector(
-                store,
-                broker,
-                AutonomousExperimentLedger(
-                    db, allocation=Decimal(str(self.config.initial_allocation))
-                ),
-                _ProductionClock(db, self.config.target_successor_epoch_id),
-            )
-            facts = collector.collect(
-                SimpleNamespace(order_binding=identity),
-                broker_time_utc=time_evidence,
-            )
-            evaluation = ContinuityEvaluator(
-                execution_counts=self._execution_counts(db, plan.plan_id)
-            ).evaluate(plan, facts)
-            store.append_evaluation(evaluation, plan.order_binding.order_ref)
-            if (
-                evaluation.authority_active is not True
-                or evaluation.selected_action is None
-                or evaluation.execution_ordinal is None
-            ):
-                continue
-            snapshot = broker.current_order_snapshot(identity)
-            if snapshot is None:
-                continue
-            active_binding = {
-                **binding,
-                "observed_state_sha256": snapshot["state_sha256"],
-                "current_total_quantity": snapshot["totalQuantity"],
-                "current_limit_price": snapshot["limitPrice"],
-                "current_tif": snapshot["tif"],
-                "current_good_till_date_utc": snapshot["orderAttributes"].get(
-                    "goodTillDate"
-                ),
-                "current_maximum_liability": str(
-                    plan.order_binding.original_maximum_liability
-                    or plan.maximum_authorized_liability
-                ),
-            }
-            fact_values = {
-                item.fact.value: item.canonical_value for item in facts.facts
-            }
-            executor = ContinuityExecutor(
-                plan_reader=lambda plan_id, value=plan: value,
-                active_binding_reader=lambda plan_id, value=active_binding: value,
-                fact_values_reader=lambda digest, value=fact_values: value,
-                fresh_gate_checker=lambda authority_class: (),
-                durable_sequence_allocator=self.allocate_sequence,
-            )
-            command = executor.build_command(evaluation)
-            future = self.coordinator.submit(command)
-            try:
-                result = future.result(timeout=30.0)
-            except FutureTimeout as exc:
-                raise RuntimeError("CONTINUITY_WRITER_RESULT_TIMEOUT") from exc
-            store.append_execution_event(
-                execution_id=command.execution_key,
-                evaluation_id=evaluation.evaluation_id,
-                plan_id=plan.plan_id,
-                order_ref=plan.order_binding.order_ref,
-                execution_ordinal=evaluation.execution_ordinal,
-                event_type=str(result.status),
-                payload={
-                    "schema": "CONTINUITY_EXECUTION_RESULT_V1",
-                    "command_sha256": command.sha256,
-                    "success": bool(result.success),
-                    "status": str(result.status),
-                    "reason_codes": list(result.reason_codes),
-                },
-            )
-            break
+        self.poll_results = []
+        with self._poll_phase(store, correlation_id, "POLL_ENTER"):
+            for plan in store.active_plans():
+                binding = _verified_registry_binding(db, plan)
+                if binding is None:
+                    continue
+                identity = SimpleNamespace(
+                    order_ref=binding["order_ref"],
+                    ibkr_order_id=binding["order_id"],
+                    perm_id=binding["perm_id"],
+                    execution_client_id=binding["execution_client_id"],
+                    account_identity_sha256=binding["account_identity_sha256"],
+                    contract_identity_sha256=binding["contract_identity_sha256"],
+                )
+                observed_at = datetime.now(timezone.utc)
+                with self._poll_phase(store, correlation_id, "BROKER_TIME"):
+                    broker_time = broker.reqCurrentTime()
+                if broker_time.tzinfo is None or broker_time.utcoffset() is None:
+                    broker_time = broker_time.replace(tzinfo=timezone.utc)
+                time_evidence = BrokerTimeEvidence.create_authenticated_paper(
+                    time_utc=broker_time,
+                    observed_at_utc=observed_at,
+                    account_identity_sha256=str(self.preflight.expected_account_hash),
+                )
+                collector = ContinuityFactCollector(
+                    store,
+                    broker,
+                    AutonomousExperimentLedger(
+                        db, allocation=Decimal(str(self.config.initial_allocation))
+                    ),
+                    _ProductionClock(db, self.config.target_successor_epoch_id),
+                )
+                def _log_broker_phase(name: str, duration: float, exc: BaseException | None) -> None:
+                    try:
+                        store.append_watchdog_event(
+                            "__continuity_watchdog__",
+                            "POLL_PHASE",
+                            {
+                                "correlation_id": correlation_id,
+                                "phase": f"BROKER_{name}",
+                                "duration_seconds": round(duration, 3),
+                                "error_type": type(exc).__name__ if exc else None,
+                            },
+                        )
+                    except Exception:
+                        pass
+
+                broker._instrument = _log_broker_phase
+                try:
+                    with self._poll_phase(store, correlation_id, "COLLECT_FACTS"):
+                        facts = collector.collect(
+                            SimpleNamespace(order_binding=identity),
+                            broker_time_utc=time_evidence,
+                        )
+                finally:
+                    broker._instrument = None
+                evaluation = ContinuityEvaluator(
+                    execution_counts=self._execution_counts(db, plan.plan_id)
+                ).evaluate(plan, facts)
+                store.append_evaluation(evaluation, plan.order_binding.order_ref)
+                if (
+                    evaluation.authority_active is not True
+                    or evaluation.selected_action is None
+                    or evaluation.execution_ordinal is None
+                ):
+                    continue
+                with self._poll_phase(store, correlation_id, "ORDER_SNAPSHOT"):
+                    snapshot = broker.current_order_snapshot(identity)
+                if snapshot is None:
+                    self.poll_results.append({
+                        "plan_id": plan.plan_id,
+                        "order_ref": plan.order_binding.order_ref,
+                        "action": "NO_ACTION",
+                        "reason": "ORDER_SNAPSHOT_ABSENT",
+                    })
+                    continue
+                active_binding = {
+                    **binding,
+                    "observed_state_sha256": snapshot["state_sha256"],
+                    "current_total_quantity": snapshot["totalQuantity"],
+                    "current_limit_price": snapshot["limitPrice"],
+                    "current_tif": snapshot["tif"],
+                    "current_good_till_date_utc": snapshot["orderAttributes"].get(
+                        "goodTillDate"
+                    ),
+                    "current_maximum_liability": str(
+                        plan.order_binding.original_maximum_liability
+                        or plan.maximum_authorized_liability
+                    ),
+                }
+                fact_values = {
+                    item.fact.value: item.canonical_value for item in facts.facts
+                }
+                executor = ContinuityExecutor(
+                    plan_reader=lambda plan_id, value=plan: value,
+                    active_binding_reader=lambda plan_id, value=active_binding: value,
+                    fact_values_reader=lambda digest, value=fact_values: value,
+                    fresh_gate_checker=lambda authority_class: (),
+                    durable_sequence_allocator=self.allocate_sequence,
+                )
+                command = executor.build_command(evaluation)
+
+                active_intent = store.active_execution_intent()
+                if active_intent is not None:
+                    same_scope = (
+                        active_intent["plan_id"] == plan.plan_id
+                        and active_intent["order_ref"]
+                        == plan.order_binding.order_ref
+                    )
+                    reason = (
+                        "ACTIVE_INTENT_BARRIER"
+                        if same_scope
+                        else "GLOBAL_ACTIVE_INTENT_BARRIER"
+                    )
+                    store.append_watchdog_event(
+                        "__continuity_watchdog__",
+                        "RECONCILIATION_REQUIRED",
+                        {
+                            "correlation_id": correlation_id,
+                            "plan_id": plan.plan_id,
+                            "order_ref": plan.order_binding.order_ref,
+                            "reason": reason,
+                            "blocking_intent_id": active_intent["intent_id"],
+                        },
+                    )
+                    self.poll_results.append(
+                        {
+                            "plan_id": plan.plan_id,
+                            "order_ref": plan.order_binding.order_ref,
+                            "action": "BLOCKED",
+                            "reason": reason,
+                        }
+                    )
+                    continue
+
+                # Durable idempotency barrier: atomically reserve intent.
+                # If an active intent already blocks this scope, skip.
+                try:
+                    _, intent_id = store.reserve_execution_intent(
+                        plan_id=plan.plan_id,
+                        order_ref=plan.order_binding.order_ref,
+                        evaluation_id=evaluation.evaluation_id,
+                        execution_key=command.execution_key,
+                        command_type=command.command_type.value,
+                        command_sha256=command.sha256,
+                        payload={
+                            "correlation_id": correlation_id,
+                            "evaluation_sha256": evaluation.sha256,
+                            "fact_snapshot_sha256": evaluation.fact_snapshot_sha256,
+                        },
+                    )
+                except ContinuityStoreError as exc:
+                    if "ACTIVE_INTENT_BARRIER" in str(exc):
+                        store.append_watchdog_event(
+                            "__continuity_watchdog__",
+                            "RECONCILIATION_REQUIRED",
+                            {
+                                "correlation_id": correlation_id,
+                                "plan_id": plan.plan_id,
+                                "order_ref": plan.order_binding.order_ref,
+                                "reason": "ACTIVE_INTENT_BARRIER",
+                            },
+                        )
+                        self.poll_results.append({
+                            "plan_id": plan.plan_id,
+                            "order_ref": plan.order_binding.order_ref,
+                            "action": "BLOCKED",
+                            "reason": "ACTIVE_INTENT_BARRIER",
+                        })
+                        continue
+                    raise
+                with self._poll_phase(store, correlation_id, "COORDINATOR_SUBMIT"):
+                    future = self.coordinator.submit(command)
+                # Update intent to reflect that submission was attempted.
+                store.transition_execution_intent(
+                    intent_id=intent_id,
+                    plan_id=plan.plan_id,
+                    order_ref=plan.order_binding.order_ref,
+                    evaluation_id=evaluation.evaluation_id,
+                    execution_key=command.execution_key,
+                    intent_state="SUBMISSION_ATTEMPTED",
+                    command_type=command.command_type.value,
+                    command_sha256=command.sha256,
+                    payload={"correlation_id": correlation_id},
+                )
+                with self._poll_phase(store, correlation_id, "COORDINATOR_RESULT"):
+                    try:
+                        result = future.result(timeout=30.0)
+                    except FutureTimeout as exc:
+                        # Record uncertain outcome before propagating failure.
+                        store.transition_execution_intent(
+                            intent_id=intent_id,
+                            plan_id=plan.plan_id,
+                            order_ref=plan.order_binding.order_ref,
+                            evaluation_id=evaluation.evaluation_id,
+                            execution_key=command.execution_key,
+                            intent_state="RESULT_UNKNOWN",
+                            command_type=command.command_type.value,
+                            command_sha256=command.sha256,
+                            payload={
+                                "correlation_id": correlation_id,
+                                "error": "CONTINUITY_WRITER_RESULT_TIMEOUT",
+                            },
+                        )
+                        raise RuntimeError("CONTINUITY_WRITER_RESULT_TIMEOUT") from exc
+                # Record confirmed outcome in execution events (canonical).
+                store.append_execution_event(
+                    execution_id=command.execution_key,
+                    evaluation_id=evaluation.evaluation_id,
+                    plan_id=plan.plan_id,
+                    order_ref=plan.order_binding.order_ref,
+                    execution_ordinal=evaluation.execution_ordinal,
+                    event_type=str(result.status),
+                    payload={
+                        "schema": "CONTINUITY_EXECUTION_RESULT_V1",
+                        "command_sha256": command.sha256,
+                        "success": bool(result.success),
+                        "status": str(result.status),
+                        "reason_codes": list(result.reason_codes),
+                    },
+                )
+                # Only liberate the barrier when the broker has confirmed
+                # a successful, authorized outcome backed by non-empty broker
+                # validation evidence. A bare success=True without broker
+                # evidence is treated as unauthenticated and blocked.
+                allowed_statuses = {
+                    BrokerCommandType.RETAIN: {"RETAINED"},
+                    BrokerCommandType.MODIFY: {"MODIFY_CONFIRMED"},
+                    BrokerCommandType.CANCEL: {"CANCEL_CONFIRMED"},
+                    BrokerCommandType.REDUCE_POSITION: {"BROKER_BOUND", "FILLED"},
+                    BrokerCommandType.CLOSE_POSITION: {"BROKER_BOUND", "FILLED"},
+                }
+                broker_validation = getattr(result, "broker_validation", {}) or {}
+                trusted_completion = bool(
+                    getattr(self.coordinator, "is_writer_completion", lambda *_: False)(
+                        command, result
+                    )
+                )
+                if (
+                    getattr(result, "success", False)
+                    and trusted_completion
+                    and str(result.status) in allowed_statuses[command.command_type]
+                    and bool(broker_validation)
+                ):
+                    intent_final_state = "BROKER_CONFIRMED"
+                else:
+                    intent_final_state = "RESULT_UNKNOWN"
+                store.transition_execution_intent(
+                    intent_id=intent_id,
+                    plan_id=plan.plan_id,
+                    order_ref=plan.order_binding.order_ref,
+                    evaluation_id=evaluation.evaluation_id,
+                    execution_key=command.execution_key,
+                    intent_state=intent_final_state,
+                    command_type=command.command_type.value,
+                    command_sha256=command.sha256,
+                    payload={
+                        "correlation_id": correlation_id,
+                        "result_status": str(result.status),
+                        "result_success": bool(getattr(result, "success", False)),
+                    },
+                )
+                self.poll_results.append({
+                    "plan_id": plan.plan_id,
+                    "order_ref": plan.order_binding.order_ref,
+                    "action": "SUBMITTED" if intent_final_state == "BROKER_CONFIRMED" else "TIMEOUT",
+                    "intent_final_state": intent_final_state,
+                    "result_status": str(result.status),
+                    "result_success": bool(getattr(result, "success", False)),
+                })
+                break
 
 
 def create_continuity_watchdog(
@@ -2656,6 +2880,13 @@ def create_continuity_watchdog(
     from .persistence import Database
 
     validate_production_runtime_configuration(config)
+    from .continuity_schema import verify_continuity_schema_v4
+
+    db_check = Database.open(Path(db_path))
+    try:
+        verify_continuity_schema_v4(db_check)
+    finally:
+        db_check.close()
     raw_factory = build_ibkr_session_factory(
         host=str(config.paper_host),
         port=int(config.paper_port),
@@ -2725,19 +2956,19 @@ def _validation_block(reason_code: str) -> dict[str, Any]:
 
 
 def _verify_installed_continuity_schema(db_path: Path) -> None:
-    from .continuity_schema import verify_continuity_schema_v3
+    from .continuity_schema import verify_continuity_schema_v4
     from .persistence import Database
 
     target = Path(db_path).resolve()
     if not target.is_file():
-        raise ProductionRuntimeConfigurationError("CONTINUITY_SCHEMA_V3_INVALID")
+        raise ProductionRuntimeConfigurationError("CONTINUITY_SCHEMA_V4_INVALID")
     connection = sqlite3.connect(f"file:{target.as_posix()}?mode=ro", uri=True)
     try:
-        verify_continuity_schema_v3(Database(connection))
+        verify_continuity_schema_v4(Database(connection))
     except Exception as exc:
         reason = str(exc)
-        if reason != "CONTINUITY_SCHEMA_V3_INVALID":
-            reason = "CONTINUITY_SCHEMA_V3_INVALID"
+        if "CONTINUITY_SCHEMA_V4_INVALID" not in reason:
+            reason = "CONTINUITY_SCHEMA_V4_INVALID"
         raise ProductionRuntimeConfigurationError(reason) from exc
     finally:
         connection.close()
@@ -2772,15 +3003,15 @@ def validate_production_composition(
             return _validation_block("PRODUCTION_VALIDATION_SHA256_INVALID")
         _verify_installed_continuity_schema(Path(config.db_path))
 
-        with tempfile.TemporaryDirectory(prefix="ibkr-continuity-v3-validate-") as root:
-            from .continuity_schema import install_continuity_schema_v3
+        with tempfile.TemporaryDirectory(prefix="ibkr-continuity-v4-validate-") as root:
+            from .continuity_schema import install_continuity_schema_v4
             from .persistence import Database
             from .successor_schema import install_successor_schema_v2
 
             validation_db_path = Path(root) / "validation.sqlite3"
             with Database.open(validation_db_path) as db:
                 install_successor_schema_v2(db)
-                install_continuity_schema_v3(db)
+                install_continuity_schema_v4(db)
                 if getattr(config, "target_successor_definition_sha256", None):
                     from .multi_universe_schema import install_multi_universe_schema_v4
 

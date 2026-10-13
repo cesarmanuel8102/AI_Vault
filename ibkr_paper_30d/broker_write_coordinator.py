@@ -167,6 +167,7 @@ class BrokerWriteCoordinator:
         self._last_durable_sequence = 0
         self._expired_execution_keys: set[str] = set()
         self._write_started_execution_keys: set[str] = set()
+        self._writer_completions: dict[str, tuple[str, object]] = {}
 
     def attach_writer(self) -> _WriterCapability:
         with self._lock:
@@ -268,6 +269,43 @@ class BrokerWriteCoordinator:
         if capability is not self._capability:
             raise PermissionError("WRITER_CAPABILITY_REQUIRED")
         self._queue.task_done()
+
+    def complete(
+        self,
+        capability: _WriterCapability,
+        command: AuthorizedBrokerCommand | ModelExecutionRequest | CanaryExecutionRequest,
+        future: Future,
+        result: object,
+    ) -> None:
+        """Complete a command and attest that the attached writer produced it."""
+        if capability is not self._capability:
+            raise PermissionError("WRITER_CAPABILITY_REQUIRED")
+        with self._lock:
+            registered = self._execution_keys.get(command.execution_key)
+            if registered is None:
+                raise RuntimeError("EXECUTION_KEY_NOT_REGISTERED")
+            registered_sha256, registered_future = registered
+            if registered_sha256 != command.sha256 or registered_future is not future:
+                raise RuntimeError("WRITER_COMPLETION_IDENTITY_MISMATCH")
+            self._writer_completions[command.execution_key] = (
+                command.sha256,
+                result,
+            )
+        if not future.done():
+            future.set_result(result)
+
+    def is_writer_completion(
+        self,
+        command: AuthorizedBrokerCommand | ModelExecutionRequest | CanaryExecutionRequest,
+        result: object,
+    ) -> bool:
+        with self._lock:
+            completion = self._writer_completions.get(command.execution_key)
+            return bool(
+                completion is not None
+                and completion[0] == command.sha256
+                and completion[1] is result
+            )
 
     def fail_pending(self, capability: _WriterCapability, result: object) -> int:
         if capability is not self._capability:

@@ -79,6 +79,7 @@ CONTINUITY_CANONICAL_TABLES = frozenset({
     "continuity_watchdog_events",
     "continuity_evaluation_events",
     "continuity_execution_events",
+    "continuity_execution_intents",
     "continuity_report_events",
     "continuity_review_events",
     "continuity_reflection_events",

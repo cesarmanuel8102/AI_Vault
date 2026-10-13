@@ -239,6 +239,7 @@ def test_transition_target_hash_binds_all_authority() -> None:
         TransitionPhase.CANARY_PASS,
         TransitionPhase.RUNTIME_BOUND,
         TransitionPhase.ACTIVE,
+        TransitionPhase.DUAL_SLEEVE_ACTIVE,
     }
     assert len(target.sha256) == 64
     assert target.sha256 != target.model_copy(

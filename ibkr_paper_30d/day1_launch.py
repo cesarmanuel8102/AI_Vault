@@ -23,7 +23,7 @@ from .autonomy_bootstrap import AutonomyBootstrapBuilder
 from .autonomy_toolbox import AutonomyToolbox
 from .autonomy_workspace import AutonomyWorkspace
 from .canonical import canonical_bytes, sha256_json
-from .continuity_schema import verify_continuity_schema_v3
+from .continuity_schema import verify_continuity_schema_v4
 from .continuity_store import ContinuityStore, ContinuityStoreError
 from .multi_universe_schema import verify_multi_universe_schema_v4
 from .provider_lifecycle import BrokerTimeEvidence, ProviderLifecycleRecorder
@@ -1180,13 +1180,17 @@ def _validate_launch_database_mode(db: Database, *, successor_mode: bool) -> Non
         ).fetchall()
     ]
     if successor_mode:
-        if versions != [1, 2, 3, 4]:
+        if versions != [1, 2, 3, 4, 5]:
             raise LaunchError("DATABASE_SCHEMA_INVALID")
         verify_multi_universe_schema_v4(db)
+        verify_continuity_schema_v4(db)
         return
     if versions == [1, 2, 3]:
         return
-    if versions == [1, 2, 3, 4]:
+    if versions == [1, 2, 3, 5]:
+        verify_continuity_schema_v4(db)
+        return
+    if versions in ([1, 2, 3, 4], [1, 2, 3, 4, 5]):
         table = db.execute(
             "SELECT 1 FROM sqlite_master WHERE type='table' "
             "AND name='successor_transition_events'"
@@ -1205,6 +1209,9 @@ def _validate_launch_database_mode(db: Database, *, successor_mode: bool) -> Non
                 "ACTIVE",
             }:
                 raise LaunchError("PREDECESSOR_RETIRED")
+            # multi-universe present but successor_mode is False -> invalid
+            raise LaunchError("DATABASE_SCHEMA_INVALID")
+        raise LaunchError("DATABASE_SCHEMA_INVALID")
     raise LaunchError("DATABASE_SCHEMA_INVALID")
 
 
@@ -1926,16 +1933,16 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
         try:
             verifier = dependencies.continuity_schema_verifier
             if verifier is None:
-                raise LaunchError("CONTINUITY_SCHEMA_V3_REQUIRED")
+                raise LaunchError("CONTINUITY_SCHEMA_V4_REQUIRED")
             try:
                 schema_result = verifier(db)
             except Exception as exc:
-                raise LaunchError("CONTINUITY_SCHEMA_V3_REQUIRED") from exc
+                raise LaunchError("CONTINUITY_SCHEMA_V4_REQUIRED") from exc
             if (
                 not isinstance(schema_result, dict)
                 or schema_result.get("status") != "PASS"
             ):
-                raise LaunchError("CONTINUITY_SCHEMA_V3_REQUIRED")
+                raise LaunchError("CONTINUITY_SCHEMA_V4_REQUIRED")
 
             controls = validate_launch_controls(db, config, preflight=preflight)
             if controls.authorization_event_id != preflight.authorization_event_id:
@@ -2599,7 +2606,7 @@ def _default_dependencies() -> LaunchDependencies:
         current_sid=current_process_sid,
         runtime_provenance_validator=_verify_current_runtime_provenance,
         successor_broker_evidence_collector=_collect_successor_broker_evidence,
-        continuity_schema_verifier=verify_continuity_schema_v3,
+        continuity_schema_verifier=verify_continuity_schema_v4,
         provider_abandonment_recoverer=_default_provider_recovery,
         pending_binding_reconciler=_default_pending_binding_recovery,
         continuity_uncertainty_reader=_default_continuity_uncertainty,

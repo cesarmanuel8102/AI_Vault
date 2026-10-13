@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import threading
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable
@@ -56,9 +57,11 @@ class ContinuityWatchdog:
         self._ready = threading.Event()
         self._state_lock = threading.Lock()
         self._last_heartbeat_utc: datetime | None = None
+        self._last_successful_poll_utc: datetime | None = None
         self._failure: BaseException | None = None
         self._transient_failure: BaseException | None = None
         self._reported: set[str] = set()
+        self._poll_in_progress: bool = False
 
     def _report_once(self, code: str) -> bool:
         with self._state_lock:
@@ -95,6 +98,7 @@ class ContinuityWatchdog:
         self._ready.clear()
         with self._state_lock:
             self._last_heartbeat_utc = None
+            self._last_successful_poll_utc = None
             self._failure = None
             self._transient_failure = None
             self._reported.clear()
@@ -125,11 +129,14 @@ class ContinuityWatchdog:
     def is_healthy(self, broker_time_utc: datetime) -> bool:
         with self._state_lock:
             heartbeat = self._last_heartbeat_utc
+            last_poll = self._last_successful_poll_utc
             failure = self._failure
             transient_failure = self._transient_failure
+            poll_in_progress = self._poll_in_progress
         thread = self._thread
         if (
             heartbeat is None
+            or last_poll is None
             or failure is not None
             or transient_failure is not None
             or thread is None
@@ -137,13 +144,22 @@ class ContinuityWatchdog:
         ):
             return False
         now = self._as_utc(broker_time_utc)
-        age = (now - heartbeat).total_seconds()
-        return 0 <= age <= self.heartbeat_max_age_seconds
+        heartbeat_age = (now - heartbeat).total_seconds()
+        poll_age = (now - last_poll).total_seconds()
+        return (
+            0 <= heartbeat_age <= self.heartbeat_max_age_seconds
+            and 0 <= poll_age <= self.heartbeat_max_age_seconds
+            and not poll_in_progress
+        )
 
     def _append(
         self, store: ContinuityStore, event_type: str, payload: dict[str, Any]
     ) -> None:
         store.append_watchdog_event(_WATCHDOG_STREAM, event_type, payload)
+
+    @staticmethod
+    def _backoff_seconds(failure_count: int, base: float = 1.0, max_seconds: float = 30.0) -> float:
+        return min(base * (2 ** (failure_count - 1)), max_seconds)
 
     def _run(self) -> None:
         event_loop = asyncio.new_event_loop()
@@ -183,18 +199,29 @@ class ContinuityWatchdog:
                         "HEARTBEAT",
                         {"broker_time_utc": broker_now.isoformat()},
                     )
-                    poll_result = self.poll_once(db, broker, self.coordinator)
-                    self._observe_poll_result(store, poll_result)
-                except (ConnectionError, TimeoutError, OSError) as exc:
+                    with self._state_lock:
+                        self._poll_in_progress = True
+                    try:
+                        poll_result = self.poll_once(db, broker, self.coordinator)
+                        self._observe_poll_result(store, poll_result)
+                    finally:
+                        with self._state_lock:
+                            self._poll_in_progress = False
+                    with self._state_lock:
+                        self._last_successful_poll_utc = broker_now
+                except TimeoutError as exc:
+                    # Timeout during broker_time_reader or poll_once.
                     consecutive_transient_failures += 1
                     with self._state_lock:
                         self._transient_failure = exc
+                        self._last_successful_poll_utc = None
                     self._append(
                         store,
                         "TRANSIENT_FAILURE",
                         {
                             "error_type": type(exc).__name__,
                             "consecutive_failures": consecutive_transient_failures,
+                            "phase": "REQUEST",
                         },
                     )
                     if broker is not None:
@@ -208,7 +235,39 @@ class ContinuityWatchdog:
                         >= self.max_consecutive_transient_failures
                     ):
                         raise
-                    self._stop.wait(self.poll_interval_seconds)
+                    self._stop.wait(
+                        self._backoff_seconds(consecutive_transient_failures)
+                    )
+                    continue
+                except (ConnectionError, OSError) as exc:
+                    # Connection-level errors: disconnect immediately and backoff.
+                    consecutive_transient_failures += 1
+                    with self._state_lock:
+                        self._transient_failure = exc
+                        self._last_successful_poll_utc = None
+                    self._append(
+                        store,
+                        "TRANSIENT_FAILURE",
+                        {
+                            "error_type": type(exc).__name__,
+                            "consecutive_failures": consecutive_transient_failures,
+                            "phase": "CONNECTION",
+                        },
+                    )
+                    if broker is not None:
+                        try:
+                            broker.disconnect()
+                        except Exception:
+                            pass
+                        broker = None
+                    if (
+                        consecutive_transient_failures
+                        >= self.max_consecutive_transient_failures
+                    ):
+                        raise
+                    self._stop.wait(
+                        self._backoff_seconds(consecutive_transient_failures)
+                    )
                     continue
                 if consecutive_transient_failures:
                     self._append(

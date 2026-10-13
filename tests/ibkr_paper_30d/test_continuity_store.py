@@ -10,7 +10,10 @@ import pytest
 
 from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.continuity_models import CodexOrderContinuityPlan, ContinuityReview
-from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+from ibkr_paper_30d.continuity_schema import (
+    install_continuity_schema_v3,
+    install_continuity_schema_v4,
+)
 from ibkr_paper_30d.continuity_store import ContinuityStore, ContinuityStoreError
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.successor_schema import install_successor_schema_v2
@@ -261,6 +264,194 @@ def test_latest_provider_projection_tracks_newest_invocation(tmp_path) -> None:
         assert projection["payload"] == {"attempt": 2}
 
 
+def test_transition_execution_intent_validates_identity_and_state_machine(tmp_path) -> None:
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v4
+
+    path = tmp_path / "state.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v4(db)
+        store = ContinuityStore(db)
+        _, intent_id = store.reserve_execution_intent(
+            plan_id="plan-1",
+            order_ref="order-78",
+            evaluation_id="eval-1",
+            execution_key="key-1",
+            command_type="MODIFY",
+            command_sha256="a" * 64,
+            payload={},
+        )
+        # Valid transition
+        store.transition_execution_intent(
+            intent_id=intent_id,
+            plan_id="plan-1",
+            order_ref="order-78",
+            evaluation_id="eval-1",
+            execution_key="key-1",
+            intent_state="SUBMISSION_ATTEMPTED",
+            command_type="MODIFY",
+            command_sha256="a" * 64,
+            payload={},
+        )
+        # Invalid: identity mismatch
+        with pytest.raises(ContinuityStoreError, match="INTENT_IDENTITY_MISMATCH"):
+            store.transition_execution_intent(
+                intent_id=intent_id,
+                plan_id="plan-1",
+                order_ref="order-78",
+                evaluation_id="eval-2",
+                execution_key="key-1",
+                intent_state="BROKER_CONFIRMED",
+                command_type="MODIFY",
+                command_sha256="a" * 64,
+                payload={},
+            )
+        # Transition to RESULT_UNKNOWN first
+        store.transition_execution_intent(
+            intent_id=intent_id,
+            plan_id="plan-1",
+                order_ref="order-78",
+                evaluation_id="eval-1",
+                execution_key="key-1",
+                intent_state="RESULT_UNKNOWN",
+                command_type="MODIFY",
+                command_sha256="a" * 64,
+                payload={"reason": "timeout"},
+            )
+        # Invalid: transition_execution_intent no longer accepts RECONCILED
+        with pytest.raises(ContinuityStoreError, match="INTENT_TRANSITION_INVALID"):
+            store.transition_execution_intent(
+                intent_id=intent_id,
+                plan_id="plan-1",
+                order_ref="order-78",
+                evaluation_id="eval-1",
+                execution_key="key-1",
+                intent_state="RECONCILED",
+                command_type="MODIFY",
+                command_sha256="a" * 64,
+                payload={},
+            )
+        # Invalid: state machine violation from RESULT_UNKNOWN
+        with pytest.raises(ContinuityStoreError, match="INTENT_TRANSITION_INVALID"):
+            store.transition_execution_intent(
+                intent_id=intent_id,
+                plan_id="plan-1",
+                order_ref="order-78",
+                evaluation_id="eval-1",
+                execution_key="key-1",
+                intent_state="INTENT_RECORDED",
+                    command_type="MODIFY",
+                    command_sha256="a" * 64,
+                    payload={},
+                )
+
+
+def test_reconciliation_blocks_all_attempts(tmp_path) -> None:
+    """Authentic reconciliation requires a controlled broker read path.
+    Since no authenticated path exists with current components,
+    even perfectly constructed manual evidence must BLOCK.
+    """
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v4
+
+    path = tmp_path / "state.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v4(db)
+        store = ContinuityStore(db)
+        _, intent_id = store.reserve_execution_intent(
+            plan_id="plan-1",
+            order_ref="order-78",
+            evaluation_id="eval-1",
+            execution_key="key-1",
+            command_type="MODIFY",
+            command_sha256="a" * 64,
+            payload={},
+        )
+        store.transition_execution_intent(
+            intent_id=intent_id,
+            plan_id="plan-1",
+            order_ref="order-78",
+            evaluation_id="eval-1",
+            execution_key="key-1",
+            intent_state="SUBMISSION_ATTEMPTED",
+            command_type="MODIFY",
+            command_sha256="a" * 64,
+            payload={},
+        )
+        store.transition_execution_intent(
+            intent_id=intent_id,
+            plan_id="plan-1",
+            order_ref="order-78",
+            evaluation_id="eval-1",
+            execution_key="key-1",
+            intent_state="RESULT_UNKNOWN",
+            command_type="MODIFY",
+            command_sha256="a" * 64,
+            payload={"reason": "timeout"},
+        )
+
+        # Exact broker_evidence that previously achieved PASS must now BLOCK.
+        with pytest.raises(ContinuityStoreError, match="RECONCILIATION_NOT_AUTHENTICATED"):
+            store.reconcile_execution_intent(
+                intent_id=intent_id,
+                broker_evidence={
+                    "order_snapshot": {
+                        "status": "Filled",
+                        "filled": "1",
+                        "remaining": "0",
+                        "order_id": 78,
+                        "perm_id": 225256222,
+                    },
+                    "observed_at_utc": datetime.now(timezone.utc).isoformat(),
+                    "command_sha256": "a" * 64,
+                    "order_ref": "order-78",
+                    "account_identity_sha256": "a" * 64,
+                    "contract_identity_sha256": "b" * 64,
+                    "executions": [{"shares": "1", "price": "4.90"}],
+                },
+            )
+        # RESULT_UNKNOWN remains blocked.
+        latest = store.latest_execution_intent("plan-1", "order-78")
+        assert latest is not None
+        assert latest["intent_state"] == "RESULT_UNKNOWN"
+
+
+def test_append_evaluation_rejects_collision(tmp_path) -> None:
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v4
+
+    path = tmp_path / "state.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v4(db)
+        store = ContinuityStore(db)
+        from ibkr_paper_30d.continuity_models import ContinuityEvaluation, ContinuityExecutableAction
+
+        evaluation = ContinuityEvaluation(
+            evaluation_id="eval-1",
+            evaluated_at_utc=datetime.now(timezone.utc),
+            plan_id="plan-1",
+            plan_sha256="a" * 64,
+            authority_active=True,
+            selected_action=ContinuityExecutableAction(action_type="CANCEL"),
+            execution_ordinal=1,
+            fact_snapshot_sha256="b" * 64,
+        )
+        store.append_evaluation(evaluation, "order-78")
+        # Same id, different content (different fact_snapshot_sha256)
+        collision = ContinuityEvaluation(
+            evaluation_id="eval-1",
+            evaluated_at_utc=datetime.now(timezone.utc),
+            plan_id="plan-1",
+            plan_sha256="a" * 64,
+            authority_active=True,
+            selected_action=ContinuityExecutableAction(action_type="CANCEL"),
+            execution_ordinal=1,
+            fact_snapshot_sha256="d" * 64,
+        )
+        with pytest.raises(ContinuityStoreError, match="EVALUATION_IDENTITY_COLLISION"):
+            store.append_evaluation(collision, "order-78")
+
+
 def test_concurrent_contenders_allow_exactly_one_active_transition(tmp_path) -> None:
     path = tmp_path / "state.sqlite3"
     with _open(path):
@@ -286,3 +477,97 @@ def test_concurrent_contenders_allow_exactly_one_active_transition(tmp_path) -> 
 
     assert outcomes.count("COMMITTED") == 1
     assert sum("ACTIVE_PLAN_CONFLICT" in item for item in outcomes) == 1
+
+
+def test_event_hash_collision_across_streams_allows_identical_payloads(tmp_path) -> None:
+    """Two independent plans with identical payloads must both persist.
+    The event_sha256 must be scoped to the stream (order_ref), not global."""
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v4
+
+    path = tmp_path / "state.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v4(db)
+        store = ContinuityStore(db)
+
+        # Plan A
+        _, intent_id_a = store.reserve_execution_intent(
+            plan_id="plan-a",
+            order_ref="order-1",
+            evaluation_id="eval-a",
+            execution_key="key-a",
+            command_type="MODIFY",
+            command_sha256="c" * 64,
+            payload={"identical": True},
+        )
+        store.transition_execution_intent(
+            intent_id=intent_id_a,
+            plan_id="plan-a",
+            order_ref="order-1",
+            evaluation_id="eval-a",
+            execution_key="key-a",
+            intent_state="SUBMISSION_ATTEMPTED",
+            command_type="MODIFY",
+            command_sha256="c" * 64,
+            payload={"identical": True},
+        )
+        store.transition_execution_intent(
+            intent_id=intent_id_a,
+            plan_id="plan-a",
+            order_ref="order-1",
+            evaluation_id="eval-a",
+            execution_key="key-a",
+            intent_state="BROKER_CONFIRMED",
+            command_type="MODIFY",
+            command_sha256="c" * 64,
+            payload={"identical": True},
+        )
+        # Plan B with identical payload
+        _, intent_id_b = store.reserve_execution_intent(
+            plan_id="plan-b",
+            order_ref="order-2",
+            evaluation_id="eval-b",
+            execution_key="key-b",
+            command_type="MODIFY",
+            command_sha256="d" * 64,
+            payload={"identical": True},
+        )
+
+        assert intent_id_a is not None
+        assert intent_id_b is not None
+        assert intent_id_a != intent_id_b
+
+        latest_a = store.latest_execution_intent("plan-a", "order-1")
+        latest_b = store.latest_execution_intent("plan-b", "order-2")
+        assert latest_a is not None
+        assert latest_b is not None
+        assert latest_a["intent_state"] == "BROKER_CONFIRMED"
+        assert latest_b["intent_state"] == "INTENT_RECORDED"
+
+
+def test_active_intent_blocks_reservation_for_another_plan_and_order(tmp_path) -> None:
+    path = tmp_path / "state.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v4(db)
+        store = ContinuityStore(db)
+        store.reserve_execution_intent(
+            plan_id="plan-a",
+            order_ref="order-1",
+            evaluation_id="eval-a",
+            execution_key="key-a",
+            command_type="MODIFY",
+            command_sha256="a" * 64,
+            payload={},
+        )
+
+        with pytest.raises(ContinuityStoreError, match="GLOBAL_ACTIVE_INTENT_BARRIER"):
+            store.reserve_execution_intent(
+                plan_id="plan-b",
+                order_ref="order-2",
+                evaluation_id="eval-b",
+                execution_key="key-b",
+                command_type="CANCEL",
+                command_sha256="b" * 64,
+                payload={},
+            )

@@ -253,6 +253,7 @@ def test_restart_requires_fresh_reconciliation() -> None:
 
 
 def test_schema_mode_accepts_v4_only_for_explicit_successor(tmp_path) -> None:
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v4
     from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
     from ibkr_paper_30d.persistence import Database
     from ibkr_paper_30d.successor_schema import install_successor_schema_v2
@@ -260,7 +261,7 @@ def test_schema_mode_accepts_v4_only_for_explicit_successor(tmp_path) -> None:
     path = tmp_path / "schema-mode.sqlite3"
     with Database.open(path) as db:
         install_successor_schema_v2(db)
-        install_continuity_schema_v3(db)
+        install_continuity_schema_v4(db)
         install_multi_universe_schema_v4(db)
         launch_module._validate_launch_database_mode(db, successor_mode=True)
         with pytest.raises(LaunchError, match="DATABASE_SCHEMA_INVALID"):
@@ -440,6 +441,141 @@ def test_legacy_launcher_rejects_committed_successor_before_schema_gate(
             coordinator.advance(phase, evidence)
 
         with pytest.raises(LaunchError, match="PREDECESSOR_RETIRED"):
+            launch_module._validate_launch_database_mode(db, successor_mode=False)
+
+
+def test_schema_mode_blocks_v4_without_continuity_v4_for_successor(tmp_path) -> None:
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+    from ibkr_paper_30d.persistence import Database
+    from ibkr_paper_30d.successor_schema import install_successor_schema_v2
+
+    path = tmp_path / "schema-v4-no-continuity.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+        with pytest.raises(LaunchError, match="DATABASE_SCHEMA_INVALID"):
+            launch_module._validate_launch_database_mode(db, successor_mode=True)
+
+
+def test_schema_mode_blocks_v5_without_multi_universe_for_successor(tmp_path) -> None:
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v4
+    from ibkr_paper_30d.persistence import Database
+    from ibkr_paper_30d.successor_schema import install_successor_schema_v2
+
+    path = tmp_path / "schema-v5-no-multi.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v4(db)
+        with pytest.raises(LaunchError, match="DATABASE_SCHEMA_INVALID"):
+            launch_module._validate_launch_database_mode(db, successor_mode=True)
+
+
+def test_schema_mode_accepts_v5_for_predecessor(tmp_path) -> None:
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v4
+    from ibkr_paper_30d.persistence import Database
+    from ibkr_paper_30d.successor_schema import install_successor_schema_v2
+
+    path = tmp_path / "schema-v5-predecessor.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v4(db)
+        launch_module._validate_launch_database_mode(db, successor_mode=False)
+
+
+def test_schema_mode_blocks_v4_and_v5_predecessor_when_multi_universe_active(
+    tmp_path,
+) -> None:
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v4
+    from ibkr_paper_30d.multi_universe_models import TransitionPhase, TransitionTarget
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+    from ibkr_paper_30d.multi_universe_transition import (
+        MultiUniverseTransitionCoordinator,
+    )
+    from ibkr_paper_30d.persistence import Database
+    from ibkr_paper_30d.successor_schema import install_successor_schema_v2
+
+    target = TransitionTarget(
+        transition_id="transition-active-v4v5",
+        predecessor_epoch_id="AUTONOMY_EPOCH_2",
+        successor_epoch_id="AUTONOMY_EPOCH_3",
+        successor_definition_sha256="1" * 64,
+        owner_authorization_sha256="2" * 64,
+        approved_git_head="3" * 40,
+        account_identity_sha256="4" * 64,
+        clock_authority_sha256="5" * 64,
+        regular_sleeve_authority_sha256="6" * 64,
+        extended_sleeve_authority_sha256="7" * 64,
+        economic_risk_authorization_sha256="8" * 64,
+        certified_family_set_sha256="9" * 64,
+        canary_authorization_sha256="a" * 64,
+        writer_binding_sha256="b" * 64,
+    )
+    path = tmp_path / "schema-v4v5-active.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v4(db)
+        install_multi_universe_schema_v4(db)
+        coordinator = MultiUniverseTransitionCoordinator(db)
+        coordinator.prepare(target)
+        for phase in (
+            TransitionPhase.PREDECESSOR_QUIESCED,
+            TransitionPhase.PREDECESSOR_RETIRED,
+            TransitionPhase.SUCCESSOR_COMMITTED,
+        ):
+            evidence = {
+                "phase_evidence_sha256": "e" * 64,
+                "canary_flat": True,
+                "continuity_exact": True,
+            }
+            if phase is TransitionPhase.PREDECESSOR_RETIRED:
+                evidence.update(
+                    retirement_status="PASS",
+                    retirement_tombstone_sha256="c" * 64,
+                )
+            if phase is TransitionPhase.SUCCESSOR_COMMITTED:
+                evidence["successor_commit_sha256"] = "d" * 64
+            coordinator.advance(phase, evidence)
+        with pytest.raises(LaunchError, match="PREDECESSOR_RETIRED"):
+            launch_module._validate_launch_database_mode(db, successor_mode=False)
+
+
+def test_schema_mode_blocks_v4_and_v5_predecessor_when_multi_universe_inactive(
+    tmp_path,
+) -> None:
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v4
+    from ibkr_paper_30d.multi_universe_models import TransitionPhase, TransitionTarget
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+    from ibkr_paper_30d.multi_universe_transition import (
+        MultiUniverseTransitionCoordinator,
+    )
+    from ibkr_paper_30d.persistence import Database
+    from ibkr_paper_30d.successor_schema import install_successor_schema_v2
+
+    target = TransitionTarget(
+        transition_id="transition-inactive-v4v5",
+        predecessor_epoch_id="AUTONOMY_EPOCH_2",
+        successor_epoch_id="AUTONOMY_EPOCH_3",
+        successor_definition_sha256="1" * 64,
+        owner_authorization_sha256="2" * 64,
+        approved_git_head="3" * 40,
+        account_identity_sha256="4" * 64,
+        clock_authority_sha256="5" * 64,
+        regular_sleeve_authority_sha256="6" * 64,
+        extended_sleeve_authority_sha256="7" * 64,
+        economic_risk_authorization_sha256="8" * 64,
+        certified_family_set_sha256="9" * 64,
+        canary_authorization_sha256="a" * 64,
+        writer_binding_sha256="b" * 64,
+    )
+    path = tmp_path / "schema-v4v5-inactive.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v4(db)
+        install_multi_universe_schema_v4(db)
+        coordinator = MultiUniverseTransitionCoordinator(db)
+        coordinator.prepare(target)
+        with pytest.raises(LaunchError, match="DATABASE_SCHEMA_INVALID"):
             launch_module._validate_launch_database_mode(db, successor_mode=False)
 
 
@@ -2126,7 +2262,7 @@ def test_launch_shares_external_critical_alert_reporter_with_runtime_components(
 @pytest.mark.parametrize(
     ("gate", "expected"),
     [
-        ("schema", "CONTINUITY_SCHEMA_V3_REQUIRED"),
+        ("schema", "CONTINUITY_SCHEMA_V4_REQUIRED"),
         ("provider", "CONTINUITY_PROVIDER_RECOVERY_BLOCK"),
         ("binding", "CONTINUITY_PENDING_BINDING_AMBIGUOUS"),
         ("uncertainty", "CONTINUITY_UNCERTAINTY_UNRESOLVED"),
@@ -2925,3 +3061,115 @@ def test_service_prerequisite_failure_is_sanitized_into_launch_reason_codes(
             ).fetchall()
         ]
     assert epoch_events == ["EPOCH_MANIFEST_CREATED"]
+
+
+# ---- v3→v4 migration integration tests ----
+
+
+def test_day1_launch_blocks_on_v3_database_with_real_verifier(tmp_path: Path) -> None:
+    """A v3-only DB must block launch when the real v4 verifier is used."""
+    from ibkr_paper_30d.continuity_schema import verify_continuity_schema_v4
+
+    ctx = passing_context(tmp_path)
+    install_fake_lock(ctx)
+    # passing_context already installed v3; replace verifier with real v4
+    ctx.dependencies.continuity_schema_verifier = verify_continuity_schema_v4
+
+    with pytest.raises(LaunchError, match="CONTINUITY_SCHEMA_V4_REQUIRED"):
+        run_day1_launch(ctx.config, ctx.dependencies)
+
+
+def test_day1_launch_passes_after_v3_migrated_to_v4(tmp_path: Path) -> None:
+    """After offline migration v3→v4, launch must proceed normally."""
+    from ibkr_paper_30d.continuity_schema import (
+        install_continuity_schema_v4,
+        verify_continuity_schema_v4,
+    )
+
+    ctx = passing_context(tmp_path)
+    install_fake_lock(ctx)
+    # Simulate an offline DB that was v3 and is now migrated
+    with Database.open(ctx.config.db_path) as db:
+        # Ensure it's v3
+        assert db.execute(
+            "SELECT COUNT(*) FROM schema_versions WHERE version=3"
+        ).fetchone()[0] == 1
+        # Migrate to v4
+        install_continuity_schema_v4(db)
+        verify_continuity_schema_v4(db)
+
+    ctx.dependencies.continuity_schema_verifier = verify_continuity_schema_v4
+    # Use a mock service that exits immediately so the test doesn't hang
+    service = Mock()
+    service.run_forever.side_effect = StopTestService
+    ctx.dependencies.service_factory = lambda *a, **k: service
+
+    with pytest.raises(StopTestService):
+        run_day1_launch(ctx.config, ctx.dependencies)
+
+
+def test_day1_launch_blocks_on_corrupt_v4_migration(tmp_path: Path) -> None:
+    """A partially-migrated v4 table must block launch safely."""
+    from ibkr_paper_30d.continuity_schema import (
+        install_continuity_schema_v3,
+        verify_continuity_schema_v4,
+    )
+
+    ctx = passing_context(tmp_path)
+    install_fake_lock(ctx)
+    with Database.open(ctx.config.db_path) as db:
+        install_continuity_schema_v3(db)
+        # Manually create a malformed intents table (missing columns)
+        db.execute(
+            "CREATE TABLE continuity_execution_intents(sequence INTEGER PRIMARY KEY)"
+        )
+        db.execute(
+            "INSERT INTO schema_versions(version,applied_at_utc) "
+            "VALUES(4,'2026-10-01T00:00:00Z')"
+        )
+
+    ctx.dependencies.continuity_schema_verifier = verify_continuity_schema_v4
+    with pytest.raises(LaunchError, match="CONTINUITY_SCHEMA_V4_REQUIRED"):
+        run_day1_launch(ctx.config, ctx.dependencies)
+
+
+def test_validate_production_composition_rejects_v3_db(
+    tmp_path: Path,
+) -> None:
+    """Socket-free validation must reject a v3 DB before any broker IO."""
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+    from ibkr_paper_30d.production_continuity_runtime import (
+        ProductionRuntimeConfigurationError,
+        _verify_installed_continuity_schema,
+    )
+
+    db_path = tmp_path / "v3_only.sqlite3"
+    with Database.open(db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+
+    with pytest.raises(
+        ProductionRuntimeConfigurationError, match="CONTINUITY_SCHEMA_V4_INVALID"
+    ):
+        _verify_installed_continuity_schema(db_path)
+
+
+def test_validate_production_composition_accepts_v4_db(
+    tmp_path: Path,
+) -> None:
+    """Socket-free validation must accept a correct v4 DB."""
+    from ibkr_paper_30d.continuity_schema import (
+        install_continuity_schema_v4,
+        verify_continuity_schema_v4,
+    )
+    from ibkr_paper_30d.production_continuity_runtime import (
+        _verify_installed_continuity_schema,
+    )
+
+    db_path = tmp_path / "v4_valid.sqlite3"
+    with Database.open(db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v4(db)
+
+    # Must not raise
+    _verify_installed_continuity_schema(db_path)

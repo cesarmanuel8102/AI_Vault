@@ -14,8 +14,8 @@ from ibkr_paper_30d.day1_launch import _default_dependencies
 from ibkr_paper_30d.ibkr_readonly import expected_identity_hash
 from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.canonical import canonical_bytes
-from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
-from ibkr_paper_30d.continuity_store import ContinuityStore
+from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3, install_continuity_schema_v4
+from ibkr_paper_30d.continuity_store import ContinuityStore, ContinuityStoreError
 from ibkr_paper_30d.canary_authority import CanaryBrokerLifecycleReceipt
 from ibkr_paper_30d.multi_universe_models import CanaryAuthorization
 from ibkr_paper_30d.open_order_management import canonical_contract_identity
@@ -40,6 +40,8 @@ from ibkr_paper_30d.production_continuity_runtime import (
     create_authoritative_writer,
     validate_production_composition,
 )
+from ibkr_paper_30d.broker_write_coordinator import BrokerWriteCoordinator
+from ibkr_paper_30d.broker_write_coordinator import AuthorizedBrokerCommand
 
 
 def test_production_canary_store_persists_authority_claim_and_receipt_once(
@@ -1076,7 +1078,7 @@ def test_production_poller_submits_at_most_one_exact_command(
     path = tmp_path / "runtime.sqlite3"
     with Database.open(path) as db:
         install_successor_schema_v2(db)
-        install_continuity_schema_v3(db)
+        install_continuity_schema_v4(db)
         store = ContinuityStore(db)
         store.append_plan_event("ACTIVATED", plan)
         store.append_provider_event(
@@ -1129,6 +1131,14 @@ def test_production_poller_submits_at_most_one_exact_command(
                         success=True,
                         status="RETAINED",
                         reason_codes=(),
+                        broker_validation={
+                            "post_write_order": {
+                                "orderRef": getattr(command, "order_ref", "mock"),
+                                "orderId": getattr(command, "order_id", 0),
+                                "permId": getattr(command, "perm_id", 0),
+                                "status": "PreSubmitted",
+                            },
+                        },
                     )
                 )
                 return future
@@ -1159,6 +1169,1242 @@ def test_production_poller_submits_at_most_one_exact_command(
             db.execute("SELECT COUNT(*) FROM continuity_execution_events").fetchone()[0]
             == 1
         )
+        # Durable intent barrier: one RETAINED result, three intent events
+        assert (
+            db.execute("SELECT COUNT(*) FROM continuity_execution_intents").fetchone()[0]
+            == 3
+        )
+
+
+def test_poller_does_not_retransmit_after_uncertain_result(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    """If coordinator.submit succeeds but future.result() times out,
+    the COMMAND_SUBMITTED execution event must prevent a second poll
+    from submitting an equivalent command without reconciliation."""
+    from ibkr_paper_30d.open_order_management import canonical_contract_identity
+
+    account_hash = expected_identity_hash("DU123456")
+    contract = SimpleNamespace(
+        conId=123,
+        symbol="AAPL",
+        secType="STK",
+        exchange="SMART",
+        currency="USD",
+        multiplier="100",
+        comboLegs=[],
+    )
+    contract_identity = canonical_contract_identity(contract)
+    plan = continuity_plan_factory(
+        order_binding={
+            "execution_client_id": WRITER_CLIENT_ID,
+            "account_identity_sha256": account_hash,
+            "contract_identity_sha256": sha256_json(contract_identity),
+        }
+    )
+    order = SimpleNamespace(
+        orderRef=plan.order_binding.order_ref,
+        orderId=plan.order_binding.ibkr_order_id,
+        permId=plan.order_binding.perm_id,
+        clientId=WRITER_CLIENT_ID,
+        account="DU123456",
+        action="BUY",
+        orderType="LMT",
+        totalQuantity=Decimal("1"),
+        lmtPrice=Decimal("4.90"),
+        auxPrice=0,
+        tif="DAY",
+        outsideRth=False,
+    )
+    trade = SimpleNamespace(
+        contract=contract,
+        order=order,
+        orderStatus=SimpleNamespace(status="PreSubmitted", filled=0, remaining=1),
+    )
+    raw = SimpleNamespace(
+        reqCurrentTime=lambda: NOW,
+        reqAllOpenOrders=lambda: [trade],
+        positions=lambda: [],
+        disconnect=lambda: None,
+    )
+    broker = ReadOnlyContinuityBroker(raw, account_identity_sha256=account_hash)
+
+    path = tmp_path / "uncertain.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v4(db)
+        store = ContinuityStore(db)
+        store.append_plan_event("ACTIVATED", plan)
+        store.append_provider_event(
+            plan.invocation_id,
+            "TIMEOUT_CONFIRMED",
+            {"failure_code": "MODEL_TIMEOUT"},
+        )
+        registry = {
+            "schema": "EXPERIMENT_ORDER_REGISTRY_V3",
+            "lifecycle_event": "BROKER_BOUND",
+            "continuity_state": "ACTIVE",
+            "plan_id": plan.plan_id,
+            "plan_sha256": plan.sha256,
+            "order_ref": plan.order_binding.order_ref,
+            "ibkr_order_id": plan.order_binding.ibkr_order_id,
+            "perm_id": plan.order_binding.perm_id,
+            "execution_client_id": WRITER_CLIENT_ID,
+            "account": "DU123456",
+            "action": "BUY",
+            "contract": contract_identity,
+        }
+        db.execute(
+            "INSERT INTO experiment_order_registry("
+            "registry_id,order_ref,client_order_id,perm_id,ibkr_order_id,"
+            "contract_id,action,quantity,payload_json,payload_sha256,created_at_utc"
+            ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                "registry-1",
+                plan.order_binding.order_ref,
+                plan.order_binding.ibkr_order_id,
+                plan.order_binding.perm_id,
+                plan.order_binding.ibkr_order_id,
+                contract.conId,
+                "BUY",
+                "1",
+                canonical_bytes(registry).decode("utf-8"),
+                sha256_json(registry),
+                NOW.isoformat(),
+            ),
+        )
+
+        submitted = []
+
+        class UncertainCoordinator:
+            def submit(self, command):
+                submitted.append(command)
+                future = Future()
+                # Simulate timeout: never set result
+                return future
+
+        coordinator = UncertainCoordinator()
+        config = SimpleNamespace(
+            initial_allocation=Decimal("500"),
+            target_successor_epoch_id=None,
+        )
+        preflight = SimpleNamespace(expected_account_hash=account_hash)
+        monkeypatch.setattr(
+            "ibkr_paper_30d.production_continuity_runtime._ProductionClock.state",
+            lambda self: "ACTIVE",
+        )
+        poller = ProductionContinuityPoller(
+            coordinator=coordinator,
+            config=config,
+            preflight=preflight,
+        )
+
+        # First poll: submits command, intent transitions to RESULT_UNKNOWN, then times out
+        with pytest.raises(RuntimeError, match="CONTINUITY_WRITER_RESULT_TIMEOUT"):
+            poller(db, broker, coordinator)
+
+        assert len(submitted) == 1
+        # No confirmed execution event because result is unknown
+        assert (
+            db.execute("SELECT COUNT(*) FROM continuity_execution_events").fetchone()[0]
+            == 0
+        )
+        # Durable intent barrier: INTENT_RECORDED → SUBMISSION_ATTEMPTED → RESULT_UNKNOWN
+        intent_states = [
+            str(r[0]) for r in
+            db.execute(
+                "SELECT intent_state FROM continuity_execution_intents ORDER BY sequence"
+            ).fetchall()
+        ]
+        assert intent_states == ["INTENT_RECORDED", "SUBMISSION_ATTEMPTED", "RESULT_UNKNOWN"]
+
+        # Second poll with a fresh coordinator (simulating restart):
+        # The active intent barrier must block retransmission.
+        class FreshCoordinator:
+            def submit(self, command):
+                submitted.append(command)
+                future = Future()
+                future.set_result(
+                    SimpleNamespace(
+                        success=True,
+                        status="RETAINED",
+                        reason_codes=(),
+                        broker_validation={
+                            "post_write_order": {
+                                "orderRef": getattr(command, "order_ref", "mock"),
+                                "orderId": getattr(command, "order_id", 0),
+                                "permId": getattr(command, "perm_id", 0),
+                                "status": "PreSubmitted",
+                            },
+                        },
+                    )
+                )
+                return future
+
+        poller2 = ProductionContinuityPoller(
+            coordinator=FreshCoordinator(),
+            config=config,
+            preflight=preflight,
+        )
+        poller2(db, broker, FreshCoordinator())
+
+        # No additional command should have been submitted
+        assert len(submitted) == 1
+
+
+# ---- 10 crash / idempotency / restart cases ----
+
+
+def _make_test_context(tmp_path, continuity_plan_factory, intent_state_after_reserve=None):
+    """Build a minimal real poller + real coordinator context for crash tests."""
+    from types import SimpleNamespace
+    from decimal import Decimal
+    from ibkr_paper_30d.open_order_management import canonical_contract_identity
+
+    account_hash = expected_identity_hash("DU123456")
+    contract = SimpleNamespace(
+        conId=123,
+        symbol="AAPL",
+        secType="STK",
+        exchange="SMART",
+        currency="USD",
+        multiplier="100",
+        comboLegs=[],
+    )
+    contract_identity = canonical_contract_identity(contract)
+    plan = continuity_plan_factory(
+        order_binding={
+            "execution_client_id": WRITER_CLIENT_ID,
+            "account_identity_sha256": account_hash,
+            "contract_identity_sha256": sha256_json(contract_identity),
+        }
+    )
+    order = SimpleNamespace(
+        orderRef=plan.order_binding.order_ref,
+        orderId=plan.order_binding.ibkr_order_id,
+        permId=plan.order_binding.perm_id,
+        clientId=WRITER_CLIENT_ID,
+        account="DU123456",
+        action="BUY",
+        orderType="LMT",
+        totalQuantity=Decimal("1"),
+        lmtPrice=Decimal("4.90"),
+        auxPrice=0,
+        tif="DAY",
+        outsideRth=False,
+    )
+    trade = SimpleNamespace(
+        contract=contract,
+        order=order,
+        orderStatus=SimpleNamespace(status="PreSubmitted", filled=0, remaining=1),
+    )
+    raw = SimpleNamespace(
+        reqCurrentTime=lambda: NOW,
+        reqAllOpenOrders=lambda: [trade],
+        positions=lambda: [],
+        disconnect=lambda: None,
+    )
+    broker = ReadOnlyContinuityBroker(raw, account_identity_sha256=account_hash)
+
+    path = tmp_path / "crash.sqlite3"
+    db = Database.open(path)
+    install_successor_schema_v2(db)
+    install_continuity_schema_v4(db)
+    store = ContinuityStore(db)
+    store.append_plan_event("ACTIVATED", plan)
+    store.append_provider_event(
+        plan.invocation_id,
+        "TIMEOUT_CONFIRMED",
+        {"failure_code": "MODEL_TIMEOUT"},
+    )
+    registry = {
+        "schema": "EXPERIMENT_ORDER_REGISTRY_V3",
+        "lifecycle_event": "BROKER_BOUND",
+        "continuity_state": "ACTIVE",
+        "plan_id": plan.plan_id,
+        "plan_sha256": plan.sha256,
+        "order_ref": plan.order_binding.order_ref,
+        "ibkr_order_id": plan.order_binding.ibkr_order_id,
+        "perm_id": plan.order_binding.perm_id,
+        "execution_client_id": WRITER_CLIENT_ID,
+        "account": "DU123456",
+        "action": "BUY",
+        "contract": contract_identity,
+    }
+    db.execute(
+        "INSERT INTO experiment_order_registry("
+        "registry_id,order_ref,client_order_id,perm_id,ibkr_order_id,"
+        "contract_id,action,quantity,payload_json,payload_sha256,created_at_utc"
+        ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            "registry-1",
+            plan.order_binding.order_ref,
+            plan.order_binding.ibkr_order_id,
+            plan.order_binding.perm_id,
+            plan.order_binding.ibkr_order_id,
+            contract.conId,
+            "BUY",
+            "1",
+            canonical_bytes(registry).decode("utf-8"),
+            sha256_json(registry),
+            NOW.isoformat(),
+        ),
+    )
+    if intent_state_after_reserve:
+        store.reserve_execution_intent(
+            plan_id=plan.plan_id,
+            order_ref=plan.order_binding.order_ref,
+            evaluation_id="eval-pre",
+            execution_key="key-pre",
+            command_type="MODIFY",
+            command_sha256="a" * 64,
+            payload={"pre": True},
+        )
+
+    config = SimpleNamespace(
+        initial_allocation=Decimal("500"),
+        target_successor_epoch_id=None,
+    )
+    preflight = SimpleNamespace(expected_account_hash=account_hash)
+    return db, broker, plan, config, preflight
+
+
+def test_crash_01_before_intent_persisted_no_command_sent(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    """CASO 1: Crash before intent persisted. No command sent."""
+    db, broker, plan, config, preflight = _make_test_context(
+        tmp_path, continuity_plan_factory
+    )
+    submitted = []
+
+    class FailingStore:
+        def __getattr__(self, name):
+            return getattr(ContinuityStore(db), name)
+
+        def reserve_execution_intent(self, **kw):
+            raise RuntimeError("CRASH_BEFORE_PERSIST")
+
+    poller = ProductionContinuityPoller(
+        coordinator=_MockCoordinator(submitted),
+        config=config,
+        preflight=preflight,
+    )
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._ProductionClock.state",
+        lambda self: "ACTIVE",
+    )
+    # Patch ContinuityStore inside poller to use our failing store
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime.ContinuityStore",
+        lambda db: FailingStore(),
+    )
+    with pytest.raises(RuntimeError, match="CRASH_BEFORE_PERSIST"):
+        poller(db, broker, _MockCoordinator(submitted))
+    assert len(submitted) == 0
+
+
+def test_crash_02_intent_persisted_but_not_submitted(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    """CASO 2: Intent persisted but crash before submit. Intent remains. No auto-transmit."""
+    db, broker, plan, config, preflight = _make_test_context(
+        tmp_path, continuity_plan_factory
+    )
+    submitted = []
+
+    class SubmitCrashCoordinator:
+        def submit(self, command):
+            raise RuntimeError("CRASH_AT_SUBMIT")
+
+    poller = ProductionContinuityPoller(
+        coordinator=SubmitCrashCoordinator(),
+        config=config,
+        preflight=preflight,
+    )
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._ProductionClock.state",
+        lambda self: "ACTIVE",
+    )
+    with pytest.raises(RuntimeError, match="CRASH_AT_SUBMIT"):
+        poller(db, broker, SubmitCrashCoordinator())
+    assert len(submitted) == 0
+    # Intent was recorded before the crash
+    intent_states = [
+        str(r[0]) for r in
+        db.execute(
+            "SELECT intent_state FROM continuity_execution_intents ORDER BY sequence"
+        ).fetchall()
+    ]
+    assert intent_states == ["INTENT_RECORDED"]
+    # Next evaluation must NOT submit because barrier is active
+    poller2 = ProductionContinuityPoller(
+        coordinator=_MockCoordinator(submitted),
+        config=config,
+        preflight=preflight,
+    )
+    poller2(db, broker, _MockCoordinator(submitted))
+    assert len(submitted) == 0
+
+
+def test_crash_03_submitted_but_result_unknown_blocks_retransmission(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    """CASO 3: Submit accepted, crash before result known. Next eval must block."""
+    db, broker, plan, config, preflight = _make_test_context(
+        tmp_path, continuity_plan_factory
+    )
+    submitted = []
+
+    class NeverSetFuture:
+        def submit(self, command):
+            submitted.append(command)
+            from concurrent.futures import Future
+            return Future()  # never completes
+
+    poller = ProductionContinuityPoller(
+        coordinator=NeverSetFuture(),
+        config=config,
+        preflight=preflight,
+    )
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._ProductionClock.state",
+        lambda self: "ACTIVE",
+    )
+    with pytest.raises(RuntimeError, match="CONTINUITY_WRITER_RESULT_TIMEOUT"):
+        poller(db, broker, NeverSetFuture())
+    assert len(submitted) == 1
+    intent_states = [
+        str(r[0]) for r in
+        db.execute(
+            "SELECT intent_state FROM continuity_execution_intents ORDER BY sequence"
+        ).fetchall()
+    ]
+    assert intent_states == ["INTENT_RECORDED", "SUBMISSION_ATTEMPTED", "RESULT_UNKNOWN"]
+    # Fresh coordinator restart
+    poller2 = ProductionContinuityPoller(
+        coordinator=_MockCoordinator(submitted),
+        config=config,
+        preflight=preflight,
+    )
+    poller2(db, broker, _MockCoordinator(submitted))
+    assert len(submitted) == 1
+
+
+def test_crash_04_different_evaluation_same_logical_operation_blocked(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    """CASO 4: Different eval_id / execution_key but same scope. Barrier must catch it."""
+    db, broker, plan, config, preflight = _make_test_context(
+        tmp_path, continuity_plan_factory
+    )
+    submitted = []
+
+    class FirstCoordinator:
+        def submit(self, command):
+            submitted.append(command)
+            from concurrent.futures import Future
+            f = Future()
+            f.set_result(SimpleNamespace(
+                success=True,
+                status="RETAINED",
+                reason_codes=(),
+                broker_validation={
+                    "post_write_order": {
+                        "orderRef": getattr(command, "order_ref", "mock"),
+                        "orderId": getattr(command, "order_id", 0),
+                        "permId": getattr(command, "perm_id", 0),
+                        "status": "PreSubmitted",
+                    },
+                },
+            ))
+            return f
+
+    poller = ProductionContinuityPoller(
+        coordinator=FirstCoordinator(),
+        config=config,
+        preflight=preflight,
+    )
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._ProductionClock.state",
+        lambda self: "ACTIVE",
+    )
+    poller(db, broker, FirstCoordinator())
+    assert len(submitted) == 1
+
+    # The fabricated coordinator result is not writer-attested, so the first
+    # attempt becomes uncertain and the durable barrier blocks a later poll.
+    latest = ContinuityStore(db).latest_execution_intent(plan.plan_id, plan.order_binding.order_ref)
+    assert latest is not None
+    assert latest["intent_state"] == "RESULT_UNKNOWN"
+
+    poller(db, broker, FirstCoordinator())
+    assert len(submitted) == 1
+
+
+def test_crash_05_coordinator_restart_barrier_survives(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    """CASO 5: Restart BrokerWriteCoordinator. Barrier must be reconstructed from DB."""
+    db, broker, plan, config, preflight = _make_test_context(
+        tmp_path, continuity_plan_factory
+    )
+    submitted = []
+
+    class UncertainCoordinator:
+        def submit(self, command):
+            submitted.append(command)
+            from concurrent.futures import Future
+            return Future()  # never completes
+
+    poller = ProductionContinuityPoller(
+        coordinator=UncertainCoordinator(),
+        config=config,
+        preflight=preflight,
+    )
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._ProductionClock.state",
+        lambda self: "ACTIVE",
+    )
+    with pytest.raises(RuntimeError, match="CONTINUITY_WRITER_RESULT_TIMEOUT"):
+        poller(db, broker, UncertainCoordinator())
+
+    # Simulate coordinator restart: brand-new coordinator instance
+    fresh_coordinator = _MockCoordinator(submitted)
+    poller2 = ProductionContinuityPoller(
+        coordinator=fresh_coordinator,
+        config=config,
+        preflight=preflight,
+    )
+    poller2(db, broker, fresh_coordinator)
+    assert len(submitted) == 1
+
+
+def test_crash_06_partial_fill_must_not_duplicate(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    """CASO 6: Broker shows partial fill. Must not emit equivalent order based on stale info."""
+    # Covered by the broader barrier logic; here we assert the store rejects
+    # an equivalent reservation when an active intent exists.
+    db, broker, plan, config, preflight = _make_test_context(
+        tmp_path, continuity_plan_factory, intent_state_after_reserve="INTENT_RECORDED"
+    )
+    store = ContinuityStore(db)
+    with pytest.raises(ContinuityStoreError, match="ACTIVE_INTENT_BARRIER"):
+        store.reserve_execution_intent(
+            plan_id=plan.plan_id,
+            order_ref=plan.order_binding.order_ref,
+            evaluation_id="eval-2",
+            execution_key="key-2",
+            command_type="MODIFY",
+            command_sha256="b" * 64,
+            payload={},
+        )
+
+
+def test_crash_07_broker_unconfirmed_state_remains_blocked(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    """CASO 7: Broker cannot confirm. RESULT_UNKNOWN persists and blocks indefinitely."""
+    db, broker, plan, config, preflight = _make_test_context(
+        tmp_path, continuity_plan_factory
+    )
+    submitted = []
+
+    class UncertainCoordinator:
+        def submit(self, command):
+            submitted.append(command)
+            from concurrent.futures import Future
+            return Future()
+
+    poller = ProductionContinuityPoller(
+        coordinator=UncertainCoordinator(),
+        config=config,
+        preflight=preflight,
+    )
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._ProductionClock.state",
+        lambda self: "ACTIVE",
+    )
+    with pytest.raises(RuntimeError, match="CONTINUITY_WRITER_RESULT_TIMEOUT"):
+        poller(db, broker, UncertainCoordinator())
+
+    latest = ContinuityStore(db).latest_execution_intent(plan.plan_id, plan.order_binding.order_ref)
+    assert latest is not None
+    assert latest["intent_state"] == "RESULT_UNKNOWN"
+
+
+def test_crash_08_reconciliation_blocked_without_authentic_evidence(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    """CASO 8: reconcile_execution_intent must BLOCK all attempts because
+    no authenticated broker read path is available with current components."""
+    from datetime import datetime, timezone
+
+    db, broker, plan, config, preflight = _make_test_context(
+        tmp_path, continuity_plan_factory
+    )
+    store = ContinuityStore(db)
+    _, intent_id = store.reserve_execution_intent(
+        plan_id=plan.plan_id,
+        order_ref=plan.order_binding.order_ref,
+        evaluation_id="eval-1",
+        execution_key="key-1",
+        command_type="MODIFY",
+        command_sha256="c" * 64,
+        payload={},
+    )
+    store.transition_execution_intent(
+        intent_id=intent_id,
+        plan_id=plan.plan_id,
+        order_ref=plan.order_binding.order_ref,
+        evaluation_id="eval-1",
+        execution_key="key-1",
+        intent_state="SUBMISSION_ATTEMPTED",
+        command_type="MODIFY",
+        command_sha256="c" * 64,
+        payload={},
+    )
+    store.transition_execution_intent(
+        intent_id=intent_id,
+        plan_id=plan.plan_id,
+        order_ref=plan.order_binding.order_ref,
+        evaluation_id="eval-1",
+        execution_key="key-1",
+        intent_state="RESULT_UNKNOWN",
+        command_type="MODIFY",
+        command_sha256="c" * 64,
+        payload={"reason": "timeout"},
+    )
+    # Even WITH valid evidence, reconciliation must BLOCK.
+    with pytest.raises(ContinuityStoreError, match="RECONCILIATION_NOT_AUTHENTICATED"):
+        store.reconcile_execution_intent(
+            intent_id=intent_id,
+            broker_evidence={
+                "order_snapshot": {
+                    "status": "Filled",
+                    "filled": "1",
+                    "remaining": "0",
+                    "order_id": int(plan.order_binding.ibkr_order_id),
+                    "perm_id": int(plan.order_binding.perm_id),
+                },
+                "observed_at_utc": datetime.now(timezone.utc).isoformat(),
+                "command_sha256": "c" * 64,
+                "order_ref": plan.order_binding.order_ref,
+                "account_identity_sha256": plan.order_binding.account_identity_sha256,
+                "contract_identity_sha256": plan.order_binding.contract_identity_sha256,
+                "executions": [{"shares": "1", "price": "4.90"}],
+            },
+        )
+    # RESULT_UNKNOWN remains blocked.
+    latest = store.latest_execution_intent(plan.plan_id, plan.order_binding.order_ref)
+    assert latest is not None
+    assert latest["intent_state"] == "RESULT_UNKNOWN"
+
+
+def test_reconciliation_rejects_all_evidence_authenticity_required(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    """Any call to reconcile_execution_intent must be blocked because
+    authentic broker evidence cannot be verified with current components."""
+    from datetime import datetime, timezone
+
+    db, broker, plan, config, preflight = _make_test_context(
+        tmp_path, continuity_plan_factory
+    )
+    store = ContinuityStore(db)
+    _, intent_id = store.reserve_execution_intent(
+        plan_id=plan.plan_id,
+        order_ref=plan.order_binding.order_ref,
+        evaluation_id="eval-1",
+        execution_key="key-1",
+        command_type="MODIFY",
+        command_sha256="c" * 64,
+        payload={},
+    )
+    store.transition_execution_intent(
+        intent_id=intent_id,
+        plan_id=plan.plan_id,
+        order_ref=plan.order_binding.order_ref,
+        evaluation_id="eval-1",
+        execution_key="key-1",
+        intent_state="SUBMISSION_ATTEMPTED",
+        command_type="MODIFY",
+        command_sha256="c" * 64,
+        payload={},
+    )
+    store.transition_execution_intent(
+        intent_id=intent_id,
+        plan_id=plan.plan_id,
+        order_ref=plan.order_binding.order_ref,
+        evaluation_id="eval-1",
+        execution_key="key-1",
+        intent_state="RESULT_UNKNOWN",
+        command_type="MODIFY",
+        command_sha256="c" * 64,
+        payload={},
+    )
+    # Even invalid evidence is blocked at the authenticity gate.
+    with pytest.raises(ContinuityStoreError, match="RECONCILIATION_NOT_AUTHENTICATED"):
+        store.reconcile_execution_intent(
+            intent_id=intent_id,
+            broker_evidence={
+                "order_snapshot": {
+                    "status": "Filled",
+                    "filled": "1",
+                    "remaining": "0",
+                    "order_id": int(plan.order_binding.ibkr_order_id),
+                    "perm_id": int(plan.order_binding.perm_id),
+                },
+                "observed_at_utc": datetime.now(timezone.utc).isoformat(),
+                "command_sha256": "c" * 64,
+                "order_ref": plan.order_binding.order_ref,
+                "account_identity_sha256": "bad",
+                "contract_identity_sha256": plan.order_binding.contract_identity_sha256,
+            },
+        )
+
+
+def test_broker_confirmed_rejects_fabricated_non_empty_broker_validation(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    """Untrusted callers cannot fabricate broker evidence to release the barrier."""
+    db, broker, plan, config, preflight = _make_test_context(
+        tmp_path, continuity_plan_factory
+    )
+    submitted = []
+
+    class FabricatedCoordinator:
+        def submit(self, command):
+            submitted.append(command)
+            from concurrent.futures import Future
+            f = Future()
+            f.set_result(SimpleNamespace(
+                success=True,
+                status="RETAINED",
+                reason_codes=(),
+                broker_validation={
+                    "post_write_order": {
+                        "orderRef": command.order_ref,
+                        "orderId": command.order_id,
+                        "permId": command.perm_id,
+                        "status": "PreSubmitted",
+                    },
+                    "production_authority": {
+                        "authority_snapshot_sha256": "a" * 64,
+                        "broker_evidence_sha256": "b" * 64,
+                    },
+                },
+            ))
+            return f
+
+    poller = ProductionContinuityPoller(
+        coordinator=FabricatedCoordinator(),
+        config=config,
+        preflight=preflight,
+    )
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._ProductionClock.state",
+        lambda self: "ACTIVE",
+    )
+    poller(db, broker, FabricatedCoordinator())
+
+    # The intent remains blocked because the result did not originate from the
+    # coordinator's attached writer capability.
+    latest = ContinuityStore(db).latest_execution_intent(plan.plan_id, plan.order_binding.order_ref)
+    assert latest is not None
+    assert latest["intent_state"] == "RESULT_UNKNOWN"
+
+
+def test_crash_09_sqlite_write_failure_before_submit_no_command_sent(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    """CASO 9: SQLite write fails before submit. Zero commands sent."""
+    db, broker, plan, config, preflight = _make_test_context(
+        tmp_path, continuity_plan_factory
+    )
+    submitted = []
+
+    class FailingTransaction:
+        def __enter__(self):
+            return self
+        def __exit__(self, *exc):
+            return False
+
+    class FailingStore(ContinuityStore):
+        def reserve_execution_intent(self, **kw):
+            # Simulate SQLite failure during transaction
+            raise RuntimeError("SQLITE_IOERR")
+
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._ProductionClock.state",
+        lambda self: "ACTIVE",
+    )
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime.ContinuityStore",
+        lambda db: FailingStore(db),
+    )
+    poller = ProductionContinuityPoller(
+        coordinator=_MockCoordinator(submitted),
+        config=config,
+        preflight=preflight,
+    )
+    with pytest.raises(RuntimeError, match="SQLITE_IOERR"):
+        poller(db, broker, _MockCoordinator(submitted))
+    assert len(submitted) == 0
+
+
+def test_crash_10_concurrent_reservation_only_one_succeeds(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    """CASO 10: Two concurrent attempts to reserve same scope. Only one accepted."""
+    db, broker, plan, config, preflight = _make_test_context(
+        tmp_path, continuity_plan_factory
+    )
+    # Capture the DB file path so each thread opens its own connection
+    db_path = db.connection.execute("PRAGMA database_list").fetchone()[2]
+    successes = []
+    failures = []
+
+    def attempt(label):
+        try:
+            # Each thread uses its own connection to demonstrate file-level locking
+            thread_db = Database.open(db_path)
+            thread_store = ContinuityStore(thread_db)
+            thread_store.reserve_execution_intent(
+                plan_id=plan.plan_id,
+                order_ref=plan.order_binding.order_ref,
+                evaluation_id=f"eval-{label}",
+                execution_key=f"key-{label}",
+                command_type="MODIFY",
+                command_sha256="d" * 64,
+                payload={"attempt": label},
+            )
+            successes.append(label)
+        except ContinuityStoreError as exc:
+            if "ACTIVE_INTENT_BARRIER" in str(exc):
+                failures.append(label)
+            else:
+                raise
+
+    import threading
+    t1 = threading.Thread(target=attempt, args=("first",))
+    t2 = threading.Thread(target=attempt, args=("second",))
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+    assert len(successes) == 1
+    assert len(failures) == 1
+
+
+def test_result_unknown_blocks_new_orders_at_writer_boundary(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    """RESULT_UNKNOWN barrier must prevent new incompatible orders from reaching
+    the BrokerWriteCoordinator even with a healthy broker connection."""
+    db, broker, plan, config, preflight = _make_test_context(
+        tmp_path, continuity_plan_factory
+    )
+    store = ContinuityStore(db)
+    _, intent_id = store.reserve_execution_intent(
+        plan_id=plan.plan_id,
+        order_ref=plan.order_binding.order_ref,
+        evaluation_id="eval-1",
+        execution_key="key-1",
+        command_type="MODIFY",
+        command_sha256="c" * 64,
+        payload={},
+    )
+    store.transition_execution_intent(
+        intent_id=intent_id,
+        plan_id=plan.plan_id,
+        order_ref=plan.order_binding.order_ref,
+        evaluation_id="eval-1",
+        execution_key="key-1",
+        intent_state="SUBMISSION_ATTEMPTED",
+        command_type="MODIFY",
+        command_sha256="c" * 64,
+        payload={},
+    )
+    store.transition_execution_intent(
+        intent_id=intent_id,
+        plan_id=plan.plan_id,
+        order_ref=plan.order_binding.order_ref,
+        evaluation_id="eval-1",
+        execution_key="key-1",
+        intent_state="RESULT_UNKNOWN",
+        command_type="MODIFY",
+        command_sha256="c" * 64,
+        payload={"reason": "timeout"},
+    )
+
+    # Simulate a new poller cycle with a fresh coordinator
+    submitted = []
+    coordinator = _MockCoordinator(submitted)
+    poller = ProductionContinuityPoller(
+        coordinator=coordinator,
+        config=config,
+        preflight=preflight,
+    )
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._ProductionClock.state",
+        lambda self: "ACTIVE",
+    )
+    poller(db, broker, coordinator)
+    # No commands should be submitted because RESULT_UNKNOWN blocks
+    assert len(submitted) == 0
+
+    # The barrier remains active
+    latest = store.latest_execution_intent(plan.plan_id, plan.order_binding.order_ref)
+    assert latest is not None
+    assert latest["intent_state"] == "RESULT_UNKNOWN"
+
+
+def test_unknown_barrier_supervises_other_plans_without_submitting(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    """All plans remain visible, but account-wide uncertainty blocks writes."""
+    from decimal import Decimal
+    from ibkr_paper_30d.open_order_management import canonical_contract_identity
+
+    db, broker, plan, config, preflight = _make_test_context(
+        tmp_path, continuity_plan_factory
+    )
+    store = ContinuityStore(db)
+
+    # Create Plan B with different order_ref
+    from ibkr_paper_30d.continuity_models import CodexOrderContinuityPlan
+    second_plan = CodexOrderContinuityPlan.model_validate(
+        {
+            **plan.model_dump(mode="json"),
+            "plan_id": "plan-2",
+            "order_binding": {
+                **plan.order_binding.model_dump(mode="json"),
+                "order_ref": "order-79",
+            },
+        }
+    )
+    store.append_plan_event("ACTIVATED", second_plan)
+
+    # Add registry entry for Plan B
+    contract = SimpleNamespace(
+        conId=123,
+        symbol="AAPL",
+        secType="STK",
+        exchange="SMART",
+        currency="USD",
+        multiplier="100",
+        comboLegs=[],
+    )
+    contract_identity = canonical_contract_identity(contract)
+    registry_b = {
+        "schema": "EXPERIMENT_ORDER_REGISTRY_V3",
+        "lifecycle_event": "BROKER_BOUND",
+        "continuity_state": "ACTIVE",
+        "plan_id": second_plan.plan_id,
+        "plan_sha256": second_plan.sha256,
+        "order_ref": second_plan.order_binding.order_ref,
+        "ibkr_order_id": second_plan.order_binding.ibkr_order_id,
+        "perm_id": second_plan.order_binding.perm_id,
+        "execution_client_id": WRITER_CLIENT_ID,
+        "account": "DU123456",
+        "action": "BUY",
+        "contract": contract_identity,
+    }
+    db.execute(
+        "INSERT INTO experiment_order_registry("
+        "registry_id,order_ref,client_order_id,perm_id,ibkr_order_id,"
+        "contract_id,action,quantity,payload_json,payload_sha256,created_at_utc"
+        ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            "registry-2",
+            second_plan.order_binding.order_ref,
+            second_plan.order_binding.ibkr_order_id,
+            second_plan.order_binding.perm_id,
+            second_plan.order_binding.ibkr_order_id,
+            contract.conId,
+            "BUY",
+            "1",
+            canonical_bytes(registry_b).decode("utf-8"),
+            sha256_json(registry_b),
+            NOW.isoformat(),
+        ),
+    )
+
+    # Add broker trade for Plan B
+    order_b = SimpleNamespace(
+        orderRef=second_plan.order_binding.order_ref,
+        orderId=second_plan.order_binding.ibkr_order_id,
+        permId=second_plan.order_binding.perm_id,
+        clientId=WRITER_CLIENT_ID,
+        account="DU123456",
+        action="BUY",
+        orderType="LMT",
+        totalQuantity=Decimal("1"),
+        lmtPrice=Decimal("4.90"),
+        auxPrice=0,
+        tif="DAY",
+        outsideRth=False,
+    )
+    trade_b = SimpleNamespace(
+        contract=contract,
+        order=order_b,
+        orderStatus=SimpleNamespace(status="PreSubmitted", filled=0, remaining=1),
+    )
+    original_orders = broker._broker.reqAllOpenOrders
+    broker._broker.reqAllOpenOrders = lambda: [*original_orders(), trade_b]
+
+    # Block plan-1
+    _, intent_id = store.reserve_execution_intent(
+        plan_id=plan.plan_id,
+        order_ref=plan.order_binding.order_ref,
+        evaluation_id="eval-1",
+        execution_key="key-1",
+        command_type="MODIFY",
+        command_sha256="c" * 64,
+        payload={"plan": "plan-1"},
+    )
+    store.transition_execution_intent(
+        intent_id=intent_id,
+        plan_id=plan.plan_id,
+        order_ref=plan.order_binding.order_ref,
+        evaluation_id="eval-1",
+        execution_key="key-1",
+        intent_state="SUBMISSION_ATTEMPTED",
+        command_type="MODIFY",
+        command_sha256="c" * 64,
+        payload={},
+    )
+    store.transition_execution_intent(
+        intent_id=intent_id,
+        plan_id=plan.plan_id,
+        order_ref=plan.order_binding.order_ref,
+        evaluation_id="eval-1",
+        execution_key="key-1",
+        intent_state="RESULT_UNKNOWN",
+        command_type="MODIFY",
+        command_sha256="c" * 64,
+        payload={"reason": "timeout"},
+    )
+
+    submitted = []
+    coordinator = _MockCoordinator(submitted)
+    poller = ProductionContinuityPoller(
+        coordinator=coordinator,
+        config=config,
+        preflight=preflight,
+    )
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._ProductionClock.state",
+        lambda self: "ACTIVE",
+    )
+    poller(db, broker, coordinator)
+
+    # Plan A maintains its barrier
+    latest_a = store.latest_execution_intent(plan.plan_id, plan.order_binding.order_ref)
+    assert latest_a is not None
+    assert latest_a["intent_state"] == "RESULT_UNKNOWN"
+
+    # Plan B received explicit supervision without reaching the writer because
+    # both plans share the same PAPER account and aggregate exposure.
+    assert submitted == []
+    latest_b = store.latest_execution_intent(second_plan.plan_id, second_plan.order_binding.order_ref)
+    assert latest_b is None
+
+    # Poll results must report supervision for BOTH plans explicitly
+    assert len(poller.poll_results) == 2
+    result_a = next(r for r in poller.poll_results if r["plan_id"] == plan.plan_id)
+    result_b = next(r for r in poller.poll_results if r["plan_id"] == second_plan.plan_id)
+    assert result_a["action"] == "BLOCKED"
+    assert result_a["reason"] == "ACTIVE_INTENT_BARRIER"
+    assert result_b["action"] == "BLOCKED"
+    assert result_b["reason"] == "GLOBAL_ACTIVE_INTENT_BARRIER"
+
+
+def test_coordinator_completion_is_bound_to_attached_writer_capability() -> None:
+    coordinator = BrokerWriteCoordinator()
+    command = SimpleNamespace(
+        durable_sequence=1,
+        execution_key="trusted-key",
+        sha256="a" * 64,
+    )
+    future = coordinator.submit(command)
+    capability = coordinator.attach_writer()
+    claimed_command, claimed_future = coordinator.claim(capability, timeout=0.1)
+    result = SimpleNamespace(success=True, status="RETAINED")
+
+    assert coordinator.is_writer_completion(command, result) is False
+    coordinator.complete(capability, claimed_command, claimed_future, result)
+
+    assert future.result(timeout=0.1) is result
+    assert coordinator.is_writer_completion(command, result) is True
+
+
+class _MockCoordinator:
+    """Mock coordinator that returns authenticated broker results."""
+
+    def __init__(self, submitted):
+        self.submitted = submitted
+        self._trusted_result = None
+
+    def submit(self, command):
+        self.submitted.append(command)
+        from concurrent.futures import Future
+        f = Future()
+        self._trusted_result = SimpleNamespace(
+            success=True,
+            status="RETAINED",
+            reason_codes=(),
+            broker_validation={
+                "post_write_order": {
+                    "orderRef": getattr(command, "order_ref", "mock"),
+                    "orderId": getattr(command, "order_id", 0),
+                    "permId": getattr(command, "perm_id", 0),
+                    "status": "PreSubmitted",
+                },
+                "trades": [],
+                "open_orders": [],
+            },
+        )
+        f.set_result(self._trusted_result)
+        return f
+
+    def is_writer_completion(self, command, result):
+        del command
+        return result is self._trusted_result
+
+
+def _hex64(n: str) -> str:
+    return hashlib.sha256(n.encode()).hexdigest()
+
+
+def test_coordinator_rejects_duplicate_execution_key_with_different_hash(
+    tmp_path,
+) -> None:
+    """If two commands share the same execution_key but different sha256,
+    the coordinator must reject the second with DUPLICATE_EXECUTION_KEY.
+    This prevents ambiguous retransmissions."""
+    coordinator = BrokerWriteCoordinator()
+
+    from ibkr_paper_30d.continuity_models import ContinuityAuthorityClass
+    from ibkr_paper_30d.continuity_liability import MaximumLiabilityRequirement
+
+    liability = MaximumLiabilityRequirement(
+        plan_id="plan-1",
+        plan_sha256=_hex64("b"),
+        maximum_authorized_liability=Decimal("500"),
+        account_identity_sha256=_hex64("d"),
+        contract_identity_sha256=_hex64("e"),
+        proposed_order_sha256=_hex64("k"),
+        required_leg_identity_sha256=(_hex64("leg"),),
+        maximum_evidence_age_seconds=Decimal("30"),
+    )
+    cmd1 = AuthorizedBrokerCommand(
+        command_id="cmd-1",
+        durable_sequence=1,
+        execution_key="key-1",
+        source="WATCHDOG",
+        command_type="MODIFY",
+        evaluation_id="eval-1",
+        evaluation_sha256=_hex64("a"),
+        plan_id="plan-1",
+        plan_sha256=_hex64("b"),
+        fact_snapshot_sha256=_hex64("c"),
+        order_ref="ref-1",
+        order_id=1,
+        perm_id=1,
+        execution_client_id=WRITER_CLIENT_ID,
+        account_identity_sha256=_hex64("d"),
+        contract_identity_sha256=_hex64("e"),
+        observed_state_sha256=_hex64("f"),
+        epoch_id="epoch-1",
+        definition_sha256=_hex64("g"),
+        owner_authorization_sha256=_hex64("h"),
+        authority_class=ContinuityAuthorityClass.NONEXPANDING_EXISTING_AUTHORITY,
+        new_total_quantity=Decimal("1"),
+        new_limit_price=Decimal("100"),
+        new_tif="DAY",
+        new_good_till_date_utc=None,
+        canonical_contract_sha256=None,
+        resolved_total_quantity=Decimal("1"),
+        resolved_limit_price=Decimal("100"),
+        proposed_order_sha256=_hex64("k"),
+        maximum_authorized_liability=Decimal("500"),
+        liability_requirement=liability,
+        created_at_utc=datetime.now(timezone.utc),
+    )
+    cmd2 = cmd1.model_copy(update={"evaluation_sha256": _hex64("x")})
+
+    future1 = coordinator.submit(cmd1)
+    future2 = coordinator.submit(cmd2)
+
+    assert future1 is not future2
+    result = future2.result()
+    assert result.status == "BLOCKED"
+    assert "DUPLICATE_EXECUTION_KEY" in result.reason_codes
+
+
+def test_coordinator_returns_same_future_for_identical_resubmission(
+    tmp_path,
+) -> None:
+    """If the exact same command (same execution_key and sha256) is resubmitted,
+    the coordinator must return the original Future, providing natural
+    idempotency without creating duplicate queue entries."""
+    coordinator = BrokerWriteCoordinator()
+
+    from ibkr_paper_30d.continuity_models import ContinuityAuthorityClass
+    from ibkr_paper_30d.continuity_liability import MaximumLiabilityRequirement
+
+    liability = MaximumLiabilityRequirement(
+        plan_id="plan-1",
+        plan_sha256=_hex64("b"),
+        maximum_authorized_liability=Decimal("500"),
+        account_identity_sha256=_hex64("d"),
+        contract_identity_sha256=_hex64("e"),
+        proposed_order_sha256=_hex64("k"),
+        required_leg_identity_sha256=(_hex64("leg"),),
+        maximum_evidence_age_seconds=Decimal("30"),
+    )
+    cmd = AuthorizedBrokerCommand(
+        command_id="cmd-1",
+        durable_sequence=1,
+        execution_key="key-1",
+        source="WATCHDOG",
+        command_type="MODIFY",
+        evaluation_id="eval-1",
+        evaluation_sha256=_hex64("a"),
+        plan_id="plan-1",
+        plan_sha256=_hex64("b"),
+        fact_snapshot_sha256=_hex64("c"),
+        order_ref="ref-1",
+        order_id=1,
+        perm_id=1,
+        execution_client_id=WRITER_CLIENT_ID,
+        account_identity_sha256=_hex64("d"),
+        contract_identity_sha256=_hex64("e"),
+        observed_state_sha256=_hex64("f"),
+        epoch_id="epoch-1",
+        definition_sha256=_hex64("g"),
+        owner_authorization_sha256=_hex64("h"),
+        authority_class=ContinuityAuthorityClass.NONEXPANDING_EXISTING_AUTHORITY,
+        new_total_quantity=Decimal("1"),
+        new_limit_price=Decimal("100"),
+        new_tif="DAY",
+        new_good_till_date_utc=None,
+        canonical_contract_sha256=None,
+        resolved_total_quantity=Decimal("1"),
+        resolved_limit_price=Decimal("100"),
+        proposed_order_sha256=_hex64("k"),
+        maximum_authorized_liability=Decimal("500"),
+        liability_requirement=liability,
+        created_at_utc=datetime.now(timezone.utc),
+    )
+
+    future1 = coordinator.submit(cmd)
+    future2 = coordinator.submit(cmd)
+
+    assert future1 is future2
 
 
 def test_production_alert_freezes_first_and_deduplicates_across_time(tmp_path) -> None:
@@ -1295,7 +2541,7 @@ def test_validate_only_constructs_composition_without_broker_io(
 
     with Database.open(config.db_path) as db:
         install_successor_schema_v2(db)
-        install_continuity_schema_v3(db)
+        install_continuity_schema_v4(db)
         from ibkr_paper_30d.multi_universe_schema import (
             install_multi_universe_schema_v4,
         )
@@ -1346,6 +2592,90 @@ def test_validate_only_constructs_composition_without_broker_io(
         ("configured", WRITER_CLIENT_ID, False),
         ("configured", OBSERVER_CLIENT_ID, True),
     ]
+
+
+def test_validate_only_accepts_v5_predecessor(tmp_path, monkeypatch) -> None:
+    """Validate-only with continuity v4 and no multi-universe must pass."""
+    smtp = tmp_path / "Secrets" / "email_alerts.env"
+    smtp.parent.mkdir(parents=True)
+    smtp.write_text("synthetic", encoding="utf-8")
+    config = SimpleNamespace(
+        repo_root=tmp_path,
+        db_path=tmp_path / "runtime.sqlite3",
+        launch_attempt_id="validate-only-v5",
+        target_successor_epoch_id=None,
+        target_successor_definition_sha256=None,
+        initial_allocation=Decimal("500"),
+        paper_host="127.0.0.1",
+        paper_port=4002,
+    )
+    preflight = SimpleNamespace(expected_account_hash="a" * 64)
+
+    with Database.open(config.db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v4(db)
+
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._current_head",
+        lambda _root: "c" * 40,
+    )
+
+    def session_factory(**kwargs):
+        def forbidden_connect():
+            raise AssertionError("validate_only must not connect")
+        return forbidden_connect
+
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime.build_ibkr_session_factory",
+        session_factory,
+    )
+
+    result = validate_production_composition(
+        config=config,
+        preflight=preflight,
+        toolbox=object(),
+        production_validation_sha256="b" * 64,
+    )
+
+    assert result["status"] == "PASS"
+    assert result["broker_connections"] == 0
+    assert result["broker_writes"] == 0
+
+
+def test_validate_only_blocks_v4_without_continuity_v4(tmp_path) -> None:
+    """Validate-only must block when multi-universe v4 exists but continuity v4 is missing."""
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+
+    smtp = tmp_path / "Secrets" / "email_alerts.env"
+    smtp.parent.mkdir(parents=True)
+    smtp.write_text("synthetic", encoding="utf-8")
+
+    db_path = tmp_path / "runtime.sqlite3"
+    with Database.open(db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+
+    config = SimpleNamespace(
+        repo_root=tmp_path,
+        db_path=db_path,
+        launch_attempt_id="validate-only-v4-no-continuity",
+        target_successor_epoch_id="AUTONOMY_EPOCH_2",
+        target_successor_definition_sha256="1" * 64,
+        initial_allocation=Decimal("500"),
+        paper_host="127.0.0.1",
+        paper_port=4002,
+    )
+    preflight = SimpleNamespace(expected_account_hash="a" * 64)
+
+    result = validate_production_composition(
+        config=config,
+        preflight=preflight,
+        toolbox=object(),
+        production_validation_sha256="b" * 64,
+    )
+    assert result["status"] == "BLOCK"
+    assert "CONTINUITY_SCHEMA_V4_INVALID" in result["reason_codes"]
 
 
 def test_production_liability_collector_proves_exact_vertical_maximum_loss() -> None:
@@ -1542,7 +2872,7 @@ def test_validate_only_blocks_an_armed_or_uncoordinated_model_executor(
     )
     with Database.open(config.db_path) as db:
         install_successor_schema_v2(db)
-        install_continuity_schema_v3(db)
+        install_continuity_schema_v4(db)
     monkeypatch.setattr(
         "ibkr_paper_30d.production_continuity_runtime._current_head",
         lambda _root: "c" * 40,
@@ -1595,7 +2925,7 @@ def test_validate_only_reports_missing_schema_without_broker_io(tmp_path) -> Non
 
     assert result == {
         "status": "BLOCK",
-        "reason_codes": ["CONTINUITY_SCHEMA_V3_INVALID"],
+        "reason_codes": ["CONTINUITY_SCHEMA_V4_INVALID"],
         "broker_connections": 0,
         "broker_writes": 0,
     }
@@ -1618,7 +2948,7 @@ def test_validate_only_shuts_down_partial_startup_and_reports_exact_stage(
     )
     with Database.open(config.db_path) as db:
         install_successor_schema_v2(db)
-        install_continuity_schema_v3(db)
+        install_continuity_schema_v4(db)
     monkeypatch.setattr(
         "ibkr_paper_30d.production_continuity_runtime._current_head",
         lambda _root: "c" * 40,
