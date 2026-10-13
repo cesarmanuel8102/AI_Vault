@@ -239,23 +239,21 @@ def test_late_position_direction_inversion_blocks_before_send(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "output",
+    ("output", "expected_error"),
     [
-        json.dumps({"type": "thread.started", "model": "gpt-5.6-sol"}),
-        "",
-        None,
-        '{"actual_model":"gpt-5.6-sol"',
-        json.dumps({"actual_model": 56}),
-        json.dumps({"actual_model": ""}),
-        '{"actual_model":"gpt-5.5-codex","actual_model":"gpt-5.6-sol"}',
-        json.dumps({"chosen_model": "gpt-5.6-sol"}),
-        json.dumps({"model": {"actual": "gpt-5.6-sol"}}),
+        (json.dumps({"type": "thread.started", "model": "gpt-5.6-sol"}), "AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED"),
+        ("", "AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED"),
+        (None, "AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED"),
+        ('{"actual_model":"gpt-5.6-sol"', "CODEX_PROVIDER_INVALID_JSONL"),
+        (json.dumps({"actual_model": 56}), "AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED"),
+        (json.dumps({"actual_model": ""}), "AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED"),
+        ('{"actual_model":"gpt-5.5-codex","actual_model":"gpt-5.6-sol"}', "CODEX_PROVIDER_INVALID_JSONL"),
+        (json.dumps({"chosen_model": "gpt-5.6-sol"}), "AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED"),
+        (json.dumps({"model": {"actual": "gpt-5.6-sol"}}), "AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED"),
     ],
 )
-def test_actual_model_attestation_fails_closed_without_valid_authoritative_evidence(output):
-    with pytest.raises(
-        RuntimeError, match="AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED"
-    ):
+def test_actual_model_attestation_fails_closed_without_valid_authoritative_evidence(output, expected_error):
+    with pytest.raises(RuntimeError, match=expected_error):
         CodexAutonomousCLIProvider._assert_effective_model(
             output, "gpt-5.6-sol"
         )

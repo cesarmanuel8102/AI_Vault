@@ -785,6 +785,35 @@ def test_owner_exception_rejects_incomplete_invocation():
         )
 
 
+@pytest.mark.parametrize(
+    "output",
+    [
+        '{"actual_model":"gpt-5.6-sol"',
+        '{"actual_model":"gpt-5.6-sol",}',
+        "{not-json}",
+        '{"actual_model":"gpt-5.6-sol","actual_model":"gpt-5.6-sol"}',
+    ],
+)
+def test_truncated_or_malformed_jsonl_is_recoverable_protocol_error(output):
+    with pytest.raises(RuntimeError, match="CODEX_PROVIDER_INVALID_JSONL"):
+        CodexAutonomousCLIProvider._assert_effective_model(output, "gpt-5.6-sol")
+
+
+@pytest.mark.parametrize(
+    "output",
+    [
+        '{"type":"thread.started","thread_id":"t","model":"gpt-5.6-sol"}',
+        json.dumps({"actual_model": 56}),
+        json.dumps({"actual_model": ""}),
+        json.dumps({"chosen_model": "gpt-5.6-sol"}),
+        json.dumps({"model": {"actual": "gpt-5.6-sol"}}),
+    ],
+)
+def test_structurally_valid_but_unauthoritative_model_evidence_fails_closed(output):
+    with pytest.raises(RuntimeError, match="AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED"):
+        CodexAutonomousCLIProvider._assert_effective_model(output, "gpt-5.6-sol")
+
+
 def test_transient_codex_exit_one_is_retried_before_any_turn_is_accepted():
     value = bundle()
     attempts = []
@@ -835,6 +864,37 @@ def test_transient_codex_exit_one_is_retried_before_any_turn_is_accepted():
     assert len(attempts) == 3
     assert delays == [1.0, 3.0]
     assert provider.last_failure_code is None
+
+
+def test_invalid_jsonl_is_reported_as_provider_protocol_error_not_substitution():
+    value = bundle()
+
+    def runner(command, **kwargs):
+        output_path = command[command.index("--output-last-message") + 1]
+        Path(output_path).write_text(
+            json.dumps(
+                {
+                    "mode": "FINAL",
+                    "research_requests": [],
+                    "decision": "NO_TRADE",
+                    "proposal": None,
+                    "position_action": None,
+                    "open_order_action": None,
+                    "confidence": "0.75",
+                    "reasoning_summary": "No trade.",
+                    "reason_codes": ["NO_EDGE_FOUND"],
+                }
+            ),
+            encoding="utf-8",
+        )
+        stdout = "not-json\n"
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    provider = CodexAutonomousCLIProvider(runner=runner)
+    with pytest.raises(RuntimeError, match="CODEX_PROVIDER_INVALID_JSONL"):
+        provider.next_turn(request(value), value, [], [{"tool": "MARKET_SCANNER"}])
+
+    assert provider.last_failure_code == "CODEX_PROVIDER_INVALID_JSONL"
 
 
 def test_owner_exception_retries_transient_invalid_jsonl_before_accepting_turn():

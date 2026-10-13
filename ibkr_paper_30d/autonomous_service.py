@@ -83,7 +83,7 @@ def _is_recoverable_provider_failure(
             isinstance(exc, RuntimeError)
             and str(exc) == "AUTONOMOUS_CODEX_OUTPUT_INVALID"
         )
-    if code == "ATTESTATION_INVALID_JSONL":
+    if code in ("ATTESTATION_INVALID_JSONL", "CODEX_PROVIDER_INVALID_JSONL"):
         return isinstance(exc, RuntimeError) and str(exc).endswith(":invalid_jsonl")
     return False
 
@@ -177,11 +177,14 @@ class AutonomousExperimentService:
         canary_pilot_orchestrator: Any | None = None,
         sleep: Callable[[float], None] = time.sleep,
         monotonic: Callable[[], float] = time.monotonic,
+        canary_fair_cycle_limit: int | None = None,
     ) -> None:
         if scan_interval_seconds < 60:
             raise ValueError("scan cadence below 60 seconds is unsupported")
         if position_interval_seconds < 60:
             raise ValueError("position cadence below 60 seconds is unsupported")
+        if canary_fair_cycle_limit is not None and canary_fair_cycle_limit < 1:
+            raise ValueError("canary_fair_cycle_limit must be at least 1")
         if model != "gpt-5.6-sol":
             raise ValueError("autonomous experiment requires gpt-5.6-sol")
         if reasoning_effort.lower() != "max":
@@ -274,6 +277,7 @@ class AutonomousExperimentService:
         self._last_recovery_gate_failure_fingerprint: (
             tuple[str, tuple[str, ...]] | None
         ) = None
+        self._last_recoverable_provider_failure_code: str | None = None
         self._service_started_at_utc: datetime | None = None
         expected_hash = getattr(self.toolbox, "expected_account_hash", None)
         self.runtime_market_gate = runtime_market_gate or (
@@ -294,6 +298,12 @@ class AutonomousExperimentService:
         self.sleep = sleep
         self.monotonic = monotonic
         self.stop_event = threading.Event()
+        self.canary_fair_cycle_limit = (
+            canary_fair_cycle_limit
+            if canary_fair_cycle_limit is not None
+            else max(1, int(scan_interval_seconds / position_interval_seconds))
+        )
+        self._regular_cycles_since_canary = self._reconstruct_regular_cycles_since_canary()
 
         if execute_paper:
             self._assert_arm_prerequisites()
@@ -455,6 +465,44 @@ class AutonomousExperimentService:
             reasons.append("OWNER_AUTHORIZATION_REQUIRED_IMMEDIATE")
         return tuple(reasons)
 
+    def _reconstruct_regular_cycles_since_canary(self) -> int:
+        """Recover the deferred-cycle counter from durable state events.
+
+        Counts non-CANARY cycles completed since the most recent CANARY cycle.
+        This keeps fair scheduling deterministic across restarts without
+        opening new SQLite transactions during broker/model I/O.
+        """
+        try:
+            rows = self.db.execute(
+                "SELECT payload_json FROM state_events "
+                "WHERE event_type = 'AUTONOMOUS_CYCLE_COMPLETED' "
+                "AND created_at_utc > datetime('now', '-2 days') "
+                "ORDER BY sequence DESC"
+            ).fetchall()
+        except Exception:
+            return 0
+        count = 0
+        for (payload_json,) in rows:
+            try:
+                payload = json.loads(payload_json)
+            except Exception:
+                continue
+            if payload.get("gate") == "CANARY":
+                break
+            count += 1
+        return count
+
+    def _regular_urgent_obligation(self, bundle: TraderInputBundle) -> bool:
+        """Return True when the regular sleeve has an open order or unresolved continuity obligation.
+
+        Canary fair scheduling always yields to these obligations.
+        """
+        portfolio = getattr(bundle, "multi_sleeve_portfolio", None) or {}
+        observation = portfolio.get("account_observation") or {}
+        if observation.get("open_order_count", 0) > 0:
+            return True
+        return False
+
     def _assert_arm_prerequisites(self) -> None:
         if not getattr(self.executor, "armed", False):
             raise AutonomousServiceError(
@@ -583,17 +631,35 @@ class AutonomousExperimentService:
             )
             # In DUAL_SLEEVE_ACTIVE, canary always runs (continuous sleeve)
             # and regular sleeve also runs later in the same cycle.
-            run_canary = bool(
-                canary_phase == "DUAL_SLEEVE_ACTIVE"
-                or not (regular_entry or regular_management)
-            )
+            # In CANARY_EXCLUSIVE with active regular management, fair scheduling
+            # gives the canary a bounded opportunity while preserving regular
+            # position supervision and yielding to urgent obligations.
+            if canary_phase == "DUAL_SLEEVE_ACTIVE":
+                run_canary = True
+            elif canary_phase == "SUPERVISION_BOUND":
+                run_canary = not (regular_entry or regular_management)
+            elif canary_phase == "CANARY_EXCLUSIVE":
+                if regular_entry or self._regular_urgent_obligation(bundle):
+                    run_canary = False
+                elif not regular_management:
+                    run_canary = True
+                else:
+                    run_canary = (
+                        self._regular_cycles_since_canary
+                        >= self.canary_fair_cycle_limit
+                    )
+            else:
+                run_canary = False
             if run_canary:
+                self._regular_cycles_since_canary = 0
                 canary = (
                     self.canary_pilot_orchestrator.discover(bundle)
                     if canary_phase == "SUPERVISION_BOUND"
                     else self.canary_pilot_orchestrator.execute(bundle)
                 )
             else:
+                if canary_phase == "CANARY_EXCLUSIVE" and regular_management:
+                    self._regular_cycles_since_canary += 1
                 canary = None
             if canary is not None:
                 canary_status = str(canary.get("status") or "BLOCK")
@@ -680,21 +746,23 @@ class AutonomousExperimentService:
                 provider_failure_detail = getattr(
                     self.provider, "last_failure_detail", None
                 )
-                _append_alert(
-                    self.db,
-                    "AUTONOMOUS_PROVIDER_FAILURE_OBSERVATION",
-                    {
-                        "provider_failure_code": str(provider_failure_code),
-                        "provider_failure_detail": (
-                            str(provider_failure_detail)[:2000]
-                            if provider_failure_detail
-                            else None
-                        ),
-                        "error_type": type(exc).__name__,
-                        "provider_policy_attribution": "UNDETERMINED",
-                        "provider_policy_visibility": "NOT_DIRECTLY_OBSERVABLE",
-                    },
-                )
+                if provider_failure_code != self._last_recoverable_provider_failure_code:
+                    _append_alert(
+                        self.db,
+                        "AUTONOMOUS_PROVIDER_FAILURE_OBSERVATION",
+                        {
+                            "provider_failure_code": str(provider_failure_code),
+                            "provider_failure_detail": (
+                                str(provider_failure_detail)[:2000]
+                                if provider_failure_detail
+                                else None
+                            ),
+                            "error_type": type(exc).__name__,
+                            "provider_policy_attribution": "UNDETERMINED",
+                            "provider_policy_visibility": "NOT_DIRECTLY_OBSERVABLE",
+                        },
+                    )
+                    self._last_recoverable_provider_failure_code = provider_failure_code
                 raise RecoverableProviderInvocationError(str(exc)) from exc
             raise
         outcome = result.get("outcome") or {}
@@ -920,6 +988,7 @@ class AutonomousExperimentService:
                 },
             )
             self._running_event_emitted = True
+        self._last_recoverable_provider_failure_code = None
         return result
 
     def run_once(self, trigger: str = "SCHEDULED_SCAN") -> dict[str, Any]:

@@ -9,12 +9,15 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import Mock
+from uuid import uuid4
 
 import pytest
 import ibkr_paper_30d.autonomous_service as service_module
 from ibkr_paper_30d.autonomous_service import (
     AutonomousExperimentService,
     AutonomousServiceError,
+    RecoverableProviderInvocationError,
+    _is_recoverable_provider_failure,
 )
 from ibkr_paper_30d.autonomous_state import AutonomousStateBuildError
 from ibkr_paper_30d.autonomy_toolbox import AutonomyToolbox
@@ -1817,6 +1820,363 @@ def test_orchestration_uses_broker_time_from_evidence_not_second_connection(
     assert (
         len(broker_now_calls) == 0
     ), "broker_now must not be called when evidence has broker_time_utc"
+
+
+def test_invalid_jsonl_failure_is_recoverable():
+    exc = RuntimeError("CODEX_PROVIDER_INVALID_JSONL:invalid_jsonl")
+    assert _is_recoverable_provider_failure(exc, "CODEX_PROVIDER_INVALID_JSONL") is True
+
+
+def test_model_substitution_failure_is_not_recoverable():
+    exc = RuntimeError("AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED:gpt-5.5-codex")
+    assert _is_recoverable_provider_failure(exc, "MODEL_ATTESTATION_FAILED") is False
+
+
+def _alert_count(db, event_type):
+    return db.execute(
+        "SELECT COUNT(*) FROM alerts WHERE event_type = ?", (event_type,)
+    ).fetchone()[0]
+
+
+def _make_failing_run_autonomous_cycle(failure_count_ref, stop_after_ref, service_ref):
+    def run_autonomous_cycle(bundle, *, provider, **kwargs):
+        stop_after_ref[0] += 1
+        if stop_after_ref[0] >= stop_after_ref[1]:
+            service_ref[0].stop()
+        if failure_count_ref[0] > 0:
+            failure_count_ref[0] -= 1
+            provider.last_failure_code = "CODEX_PROVIDER_INVALID_JSONL"
+            raise RuntimeError("CODEX_PROVIDER_INVALID_JSONL:invalid_jsonl")
+        return {
+            "status": "PASS",
+            "outcome": {"validation": "PASS", "decision": "NO_TRADE"},
+            "execution": None,
+        }
+
+    return run_autonomous_cycle
+
+
+def _make_passing_bundle():
+    class Bundle:
+        experiment_clock = {"not_started": False, "expired": False}
+        reconciliation_receipt = {"status": "PASS"}
+        kill_switch_state = "KILL_SWITCH_CLEAR"
+        market_data_snapshot = {"gate_status": "PASS"}
+        multi_sleeve_portfolio = {
+            "entry_eligibility": {
+                "REGULAR_SLEEVE": {"status": "BLOCK", "reason_codes": []},
+                "CONTINUOUS_SLEEVE": {"status": "BLOCK", "reason_codes": []},
+            },
+            "management_eligibility": {},
+            "account_observation": {"open_order_count": 0, "positions": []},
+        }
+
+        def model_dump(self, mode="json"):
+            return {"decision_cycle_id": "recoverable-cycle"}
+
+    return Bundle
+
+
+def test_run_forever_survives_recoverable_provider_failure(tmp_path, monkeypatch):
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    failure_count = [1]
+    cycle_counter = [0, 4]
+    service_ref = [None]
+
+    monkeypatch.setattr(
+        service_module,
+        "run_autonomous_cycle",
+        _make_failing_run_autonomous_cycle(failure_count, cycle_counter, service_ref),
+    )
+
+    with Database.open(tmp_path / "recoverable.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        service._builder = lambda: SimpleNamespace(
+            build=lambda trigger: _make_passing_bundle()
+        )
+        service_ref[0] = service
+        service.sleep = clock.sleep
+        service.monotonic = clock.monotonic
+        service.run_forever()
+
+        completed = db.execute(
+            "SELECT COUNT(*) FROM state_events WHERE event_type = 'AUTONOMOUS_CYCLE_COMPLETED'"
+        ).fetchone()[0]
+
+    assert completed == 3
+    assert failure_count[0] == 0
+
+
+def test_run_forever_deduplicates_recoverable_provider_failure_alerts(
+    tmp_path, monkeypatch
+):
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    failure_count = [2]
+    cycle_counter = [0, 4]
+    service_ref = [None]
+
+    monkeypatch.setattr(
+        service_module,
+        "run_autonomous_cycle",
+        _make_failing_run_autonomous_cycle(failure_count, cycle_counter, service_ref),
+    )
+
+    with Database.open(tmp_path / "dedupe.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        service._builder = lambda: SimpleNamespace(
+            build=lambda trigger: _make_passing_bundle()
+        )
+        service_ref[0] = service
+        service.sleep = clock.sleep
+        service.monotonic = clock.monotonic
+        service.run_forever()
+
+        assert cycle_counter[0] == 4
+        assert _alert_count(db, "AUTONOMOUS_PROVIDER_FAILURE_OBSERVATION") == 1
+        assert failure_count[0] == 0
+
+
+def test_canary_exclusive_fair_scheduling_allows_canary_after_regular_cycles(
+    tmp_path, monkeypatch
+):
+    calls = []
+
+    class Pilot:
+        def discover(self, bundle):
+            calls.append("discover")
+            return {"status": "PASS", "decision": "NO_CANDIDATE", "reason_codes": []}
+
+        def execute(self, bundle):
+            calls.append("execute")
+            return {
+                "status": "PASS",
+                "decision": "CANARY_EXECUTED",
+                "reason_codes": [],
+            }
+
+    class Bundle:
+        experiment_clock = {"not_started": False, "expired": False}
+        reconciliation_receipt = {"status": "PASS"}
+        kill_switch_state = "KILL_SWITCH_CLEAR"
+        market_data_snapshot = {"gate_status": "PASS"}
+        multi_sleeve_portfolio = {
+            "entry_eligibility": {
+                "REGULAR_SLEEVE": {
+                    "status": "BLOCK",
+                    "reason_codes": ["SUCCESSOR_NOT_ACTIVE"],
+                },
+                "CONTINUOUS_SLEEVE": {
+                    "status": "BLOCK",
+                    "reason_codes": ["CANARY_EXCLUSIVE"],
+                },
+            },
+            "management_eligibility": {
+                "123": {
+                    "status": "PASS",
+                    "capital_sleeve": "REGULAR_SLEEVE",
+                    "reason_codes": [],
+                },
+            },
+            "account_observation": {"open_order_count": 0, "positions": []},
+        }
+
+        def model_dump(self, mode="json"):
+            return {"decision_cycle_id": "fair-cycle"}
+
+    def run_regular(bundle, **kwargs):
+        return {
+            "status": "PASS",
+            "outcome": {
+                "validation": "PASS",
+                "decision": "MONITOR_POSITION",
+            },
+            "execution": None,
+        }
+
+    monkeypatch.setattr(service_module, "run_autonomous_cycle", run_regular)
+
+    with Database.open(tmp_path / "fair.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        service.multi_universe_runtime_authority = SimpleNamespace(
+            transition_phase="CANARY_EXCLUSIVE"
+        )
+        service.canary_pilot_orchestrator = Pilot()
+        service._builder = lambda: SimpleNamespace(build=lambda trigger: Bundle())
+        service.canary_fair_cycle_limit = 3
+
+        for _ in range(3):
+            result = service._run_cycle("SCHEDULED_SCAN")
+            assert result["outcome"]["decision"] == "MONITOR_POSITION"
+            assert "canary" not in result
+
+        result = service._run_cycle("SCHEDULED_SCAN")
+        assert result["outcome"]["decision"] == "CANARY_EXECUTED"
+        assert calls == ["execute"]
+
+
+def test_canary_exclusive_open_regular_order_defers_canary(tmp_path, monkeypatch):
+    calls = []
+
+    class Pilot:
+        def discover(self, bundle):
+            calls.append("discover")
+            return {"status": "PASS", "decision": "NO_CANDIDATE", "reason_codes": []}
+
+        def execute(self, bundle):
+            calls.append("execute")
+            return {
+                "status": "PASS",
+                "decision": "CANARY_EXECUTED",
+                "reason_codes": [],
+            }
+
+    class Bundle:
+        experiment_clock = {"not_started": False, "expired": False}
+        reconciliation_receipt = {"status": "PASS"}
+        kill_switch_state = "KILL_SWITCH_CLEAR"
+        market_data_snapshot = {"gate_status": "PASS"}
+        multi_sleeve_portfolio = {
+            "entry_eligibility": {
+                "REGULAR_SLEEVE": {
+                    "status": "BLOCK",
+                    "reason_codes": ["SUCCESSOR_NOT_ACTIVE"],
+                },
+                "CONTINUOUS_SLEEVE": {
+                    "status": "BLOCK",
+                    "reason_codes": ["CANARY_EXCLUSIVE"],
+                },
+            },
+            "management_eligibility": {
+                "123": {
+                    "status": "PASS",
+                    "capital_sleeve": "REGULAR_SLEEVE",
+                    "reason_codes": [],
+                },
+            },
+            "account_observation": {"open_order_count": 1, "positions": []},
+        }
+
+        def model_dump(self, mode="json"):
+            return {"decision_cycle_id": "urgent-cycle"}
+
+    def run_regular(bundle, **kwargs):
+        return {
+            "status": "PASS",
+            "outcome": {"validation": "PASS", "decision": "MONITOR_POSITION"},
+            "execution": None,
+        }
+
+    monkeypatch.setattr(service_module, "run_autonomous_cycle", run_regular)
+
+    with Database.open(tmp_path / "urgent.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        service.multi_universe_runtime_authority = SimpleNamespace(
+            transition_phase="CANARY_EXCLUSIVE"
+        )
+        service.canary_pilot_orchestrator = Pilot()
+        service._builder = lambda: SimpleNamespace(build=lambda trigger: Bundle())
+        service.canary_fair_cycle_limit = 3
+        service._regular_cycles_since_canary = 10
+
+        for _ in range(2):
+            result = service._run_cycle("SCHEDULED_SCAN")
+            assert result["outcome"]["decision"] == "MONITOR_POSITION"
+        assert calls == []
+
+        Bundle.multi_sleeve_portfolio["account_observation"]["open_order_count"] = 0
+        result = service._run_cycle("SCHEDULED_SCAN")
+        assert result["outcome"]["decision"] == "CANARY_EXECUTED"
+
+
+def test_canary_exclusive_reconstructs_deferred_cycle_count(tmp_path):
+    with Database.open(tmp_path / "reconstruct.sqlite3") as db:
+        for i in range(5):
+            db.execute(
+                "INSERT INTO state_events(event_id, event_type, payload_json, payload_sha256, event_sha256, created_at_utc) "
+                "VALUES(?, ?, ?, ?, ?, datetime('now'))",
+                (
+                    str(uuid4()),
+                    "AUTONOMOUS_CYCLE_COMPLETED",
+                    json.dumps({"gate": "EXECUTION", "status": "PASS", "seq": i}),
+                    "a" * 64,
+                    f"b{i:062d}",
+                ),
+            )
+        db.commit()
+        service = _authorized_production_topology(db)
+        assert service._regular_cycles_since_canary == 5
+
+
+def test_dual_sleeve_active_runs_canary_and_regular(tmp_path, monkeypatch):
+    calls = []
+
+    class Pilot:
+        def discover(self, bundle):
+            calls.append("discover")
+            return {"status": "PASS", "decision": "CANDIDATE_READY", "reason_codes": []}
+
+        def execute(self, bundle):
+            calls.append("execute")
+            return {
+                "status": "PASS",
+                "decision": "CANARY_EXECUTED",
+                "reason_codes": [],
+            }
+
+    class Bundle:
+        experiment_clock = {"not_started": False, "expired": False}
+        reconciliation_receipt = {"status": "PASS"}
+        kill_switch_state = "KILL_SWITCH_CLEAR"
+        market_data_snapshot = {"gate_status": "PASS"}
+        multi_sleeve_portfolio = {
+            "entry_eligibility": {
+                "REGULAR_SLEEVE": {
+                    "status": "BLOCK",
+                    "reason_codes": ["SUCCESSOR_NOT_ACTIVE"],
+                },
+                "CONTINUOUS_SLEEVE": {
+                    "status": "BLOCK",
+                    "reason_codes": ["CANARY_EXCLUSIVE"],
+                },
+            },
+            "management_eligibility": {
+                "123": {
+                    "status": "PASS",
+                    "capital_sleeve": "REGULAR_SLEEVE",
+                    "reason_codes": [],
+                },
+            },
+            "account_observation": {"open_order_count": 0, "positions": []},
+        }
+
+        def model_dump(self, mode="json"):
+            return {"decision_cycle_id": "dual-cycle"}
+
+    def run_regular(bundle, **kwargs):
+        return {
+            "status": "PASS",
+            "outcome": {"validation": "PASS", "decision": "MONITOR_POSITION"},
+            "execution": None,
+        }
+
+    monkeypatch.setattr(service_module, "run_autonomous_cycle", run_regular)
+
+    with Database.open(tmp_path / "dual.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        service.multi_universe_runtime_authority = SimpleNamespace(
+            transition_phase="DUAL_SLEEVE_ACTIVE"
+        )
+        service.canary_pilot_orchestrator = Pilot()
+        service._builder = lambda: SimpleNamespace(build=lambda trigger: Bundle())
+
+        result = service._run_cycle("SCHEDULED_SCAN")
+        assert "canary" in result
+        assert result["outcome"]["decision"] == "MONITOR_POSITION"
+        assert calls == ["execute"]
 
 
 def test_orchestration_falls_back_to_broker_now_when_evidence_lacks_time(

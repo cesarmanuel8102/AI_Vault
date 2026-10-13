@@ -607,17 +607,19 @@ class CodexAutonomousCLIProvider:
                                     "OWNER_EXCEPTION_REQUEST_PIN"
                                 )
                         except RuntimeError as exc:
-                            transient_jsonl = (
-                                self.owner_model_attestation_exception_sha256 is not None
-                                and str(exc).endswith(":invalid_jsonl")
-                            )
-                            if not transient_jsonl:
-                                raise
-                            self.last_failure_code = "ATTESTATION_INVALID_JSONL"
-                            if attempt == len(retry_delays):
-                                raise
-                            self.retry_sleep(retry_delays[attempt])
-                            continue
+                            if str(exc).endswith(":invalid_jsonl"):
+                                self.last_failure_code = (
+                                    "ATTESTATION_INVALID_JSONL"
+                                    if self.owner_model_attestation_exception_sha256 is not None
+                                    else "CODEX_PROVIDER_INVALID_JSONL"
+                                )
+                                if self.owner_model_attestation_exception_sha256 is None:
+                                    raise
+                                if attempt == len(retry_delays):
+                                    raise
+                                self.retry_sleep(retry_delays[attempt])
+                                continue
+                            raise
                         break
                     self.last_failure_code = f"RETURN_CODE_{completed.returncode}"
                     if completed.returncode != 1 or attempt == len(retry_delays):
@@ -764,18 +766,27 @@ class CodexAutonomousCLIProvider:
                 if completed.returncode != 0:
                     self.last_failure_code = f"RETURN_CODE_{completed.returncode}"
                     raise RuntimeError("CANARY_DISCOVERY_CODEX_PROVIDER_FAILED")
-                if self.owner_model_attestation_exception_sha256 is None:
-                    self._assert_effective_model(
-                        completed.stdout, request.requested_model
-                    )
-                    self.last_model_attestation_mode = "SERVER_REPORTED"
-                else:
-                    self._assert_effective_model_with_owner_exception(
-                        completed.stdout, request.requested_model
-                    )
-                    self.last_model_attestation_mode = (
-                        "OWNER_EXCEPTION_REQUEST_PIN"
-                    )
+                try:
+                    if self.owner_model_attestation_exception_sha256 is None:
+                        self._assert_effective_model(
+                            completed.stdout, request.requested_model
+                        )
+                        self.last_model_attestation_mode = "SERVER_REPORTED"
+                    else:
+                        self._assert_effective_model_with_owner_exception(
+                            completed.stdout, request.requested_model
+                        )
+                        self.last_model_attestation_mode = (
+                            "OWNER_EXCEPTION_REQUEST_PIN"
+                        )
+                except RuntimeError as exc:
+                    if str(exc).endswith(":invalid_jsonl"):
+                        self.last_failure_code = (
+                            "ATTESTATION_INVALID_JSONL"
+                            if self.owner_model_attestation_exception_sha256 is not None
+                            else "CODEX_PROVIDER_INVALID_JSONL"
+                        )
+                    raise
                 self.last_native_tool_events = self._native_tool_events(
                     completed.stdout
                 )
@@ -1150,27 +1161,41 @@ class CodexAutonomousCLIProvider:
                 "type": "string",
                 "description": "JSON object string containing read-only tool arguments",
             }
-        )
+)
         return schema
 
     @staticmethod
-    def _assert_effective_model(output: object, requested_model: str) -> None:
-        _assert_codex_actual_model(
-            output,
-            requested_model,
-            error_prefix="AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED",
-        )
+    def _map_jsonl_error_to_protocol_error(exc: RuntimeError) -> RuntimeError:
+        """Distinguish malformed JSONL from a real model substitution."""
+        message = str(exc)
+        if message.endswith(":invalid_jsonl"):
+            return RuntimeError("CODEX_PROVIDER_INVALID_JSONL:invalid_jsonl")
+        return exc
 
-    @staticmethod
+    @classmethod
+    def _assert_effective_model(cls, output: object, requested_model: str) -> None:
+        try:
+            _assert_codex_actual_model(
+                output,
+                requested_model,
+                error_prefix="AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED",
+            )
+        except RuntimeError as exc:
+            raise cls._map_jsonl_error_to_protocol_error(exc) from exc
+
+    @classmethod
     def _assert_effective_model_with_owner_exception(
-        output: object, requested_model: str
+        cls, output: object, requested_model: str
     ) -> None:
-        _assert_codex_actual_model(
-            output,
-            requested_model,
-            error_prefix="AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED",
-            allow_missing_actual_model=True,
-        )
+        try:
+            _assert_codex_actual_model(
+                output,
+                requested_model,
+                error_prefix="AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED",
+                allow_missing_actual_model=True,
+            )
+        except RuntimeError as exc:
+            raise cls._map_jsonl_error_to_protocol_error(exc) from exc
 
     @classmethod
     def _native_tool_events(cls, output: str) -> list[dict[str, Any]]:
