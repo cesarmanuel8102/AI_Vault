@@ -35,6 +35,7 @@ from .types import new_uuid7
 
 WRITER_CLIENT_ID = 19761
 OBSERVER_CLIENT_ID = 19762
+IBKR_CONNECT_TIMEOUT_SECONDS = 15.0
 DEFAULT_SMTP_CONFIG = Path("Secrets/email_alerts.env")
 
 
@@ -677,12 +678,12 @@ def build_ibkr_session_factory(
             broker = ib_factory()
         try:
             if hasattr(broker, "RequestTimeout"):
-                broker.RequestTimeout = 4.0
+                broker.RequestTimeout = IBKR_CONNECT_TIMEOUT_SECONDS
             broker.connect(
                 host,
                 int(port),
                 clientId=client_id,
-                timeout=4.0,
+                timeout=IBKR_CONNECT_TIMEOUT_SECONDS,
                 readonly=read_only,
             )
             if broker.isConnected() is not True:
