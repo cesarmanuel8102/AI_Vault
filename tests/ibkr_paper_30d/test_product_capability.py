@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -27,6 +28,8 @@ NOW = datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc)
 ACCOUNT = "a" * 64
 ADAPTER = "b" * 64
 CONTRACT = "c" * 64
+HEAD = "f" * 40
+SUCCESSOR = "e" * 64
 
 
 def _lifecycle_receipt(recorder, step, ordinal):
@@ -266,6 +269,92 @@ def test_research_only_certification_restarts_on_adapter_change(tmp_path) -> Non
         db.close()
 
 
+def test_transmit_certification_restarts_after_adapter_drift_with_explicit_generation(
+    tmp_path,
+) -> None:
+    """A family certified up to ORDER_TRANSMIT_VERIFIED with adapter A must be
+    allowed to start a new certification generation when adapter B is deployed,
+    instead of failing with CERTIFICATION_ADAPTER_DRIFT."""
+
+    db, store = _store(tmp_path)
+    family = _family("CRYPTO", "PAXOS")
+    try:
+        for step in CERTIFICATION_SEQUENCE[:6]:
+            _record(store, family, step)
+        recorder = CanaryLifecycleRecorder(
+            "canary-drift-1", ACCOUNT, family.sha256, CONTRACT
+        )
+        recorder.record(_lifecycle_receipt(recorder, "SUBMITTED", 1))
+        recorder.record(_lifecycle_receipt(recorder, "BROKER_BOUND", 2))
+        no_fill = recorder.record(
+            _lifecycle_receipt(recorder, "TERMINAL_NO_FILL", 3)
+        )
+        store.record_canary_lifecycle(
+            family,
+            no_fill,
+            account_sha256=ACCOUNT,
+            adapter_sha256=ADAPTER,
+            observed_at_utc=NOW,
+            expires_at_utc=NOW + timedelta(days=1),
+            paper_limitations=("PAPER_SIMULATION_ONLY",),
+        )
+        assert (
+            store.projection(family).status
+            is ProductFamilyCertificationStatus.ORDER_TRANSMIT_VERIFIED
+        )
+
+        new_adapter = "d" * 64
+        changed = ProductFamilyCertificationStore(
+            db, current_adapter_sha256=new_adapter
+        )
+
+        runtime_authorization = {
+            "allow_generation_restart": True,
+            "account_sha256": ACCOUNT,
+            "successor_definition_sha256": SUCCESSOR,
+            "approved_git_head": HEAD,
+            "transition_phase": "CANARY_EXCLUSIVE",
+            "reconciliation_status": "PASS",
+            "family_open_orders": 0,
+            "family_positions": 0,
+        }
+
+        projection = changed.record_read_only_candidate_evidence(
+            family,
+            evidence_sha256="e" * 64,
+            account_sha256=ACCOUNT,
+            adapter_sha256=new_adapter,
+            observed_at_utc=NOW + timedelta(minutes=1),
+            expires_at_utc=NOW + timedelta(days=1),
+            paper_limitations=("PAPER_SIMULATION_ONLY",),
+            runtime_authorization=runtime_authorization,
+        )
+
+        assert projection.status is ProductFamilyCertificationStatus.RESEARCH_ONLY
+        assert projection.completed_steps == CERTIFICATION_SEQUENCE[:5]
+        assert projection.adapter_sha256 == new_adapter
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM product_family_certification_events "
+                "WHERE event_type='CERTIFICATION_RESTARTED_AFTER_ADAPTER_CHANGE'"
+            ).fetchone()[0]
+            == 1
+        )
+        event = json.loads(
+            db.execute(
+                "SELECT payload_json FROM product_family_certification_events "
+                "WHERE event_type='CERTIFICATION_RESTARTED_AFTER_ADAPTER_CHANGE'"
+            ).fetchone()[0]
+        )
+        assert event["previous_adapter_sha256"] == ADAPTER
+        assert event["adapter_sha256"] == new_adapter
+        assert event["account_sha256"] == ACCOUNT
+        assert event["approved_git_head"] == HEAD
+        assert event["successor_definition_sha256"] == SUCCESSOR
+    finally:
+        db.close()
+
+
 def test_transmitted_certification_cannot_restart_on_adapter_change(tmp_path) -> None:
     db, store = _store(tmp_path)
     family = _family("CRYPTO", "PAXOS")
@@ -288,6 +377,194 @@ def test_transmitted_certification_cannot_restart_on_adapter_change(tmp_path) ->
                 observed_at_utc=NOW + timedelta(minutes=1),
                 expires_at_utc=NOW + timedelta(days=1),
                 paper_limitations=("PAPER_SIMULATION_ONLY",),
+            )
+    finally:
+        db.close()
+
+
+def _transmit_only_with_adapter_a(db, store, family) -> None:
+    for step in CERTIFICATION_SEQUENCE[:6]:
+        _record(store, family, step)
+    recorder = CanaryLifecycleRecorder(
+        "canary-drift-1", ACCOUNT, family.sha256, CONTRACT
+    )
+    recorder.record(_lifecycle_receipt(recorder, "SUBMITTED", 1))
+    recorder.record(_lifecycle_receipt(recorder, "BROKER_BOUND", 2))
+    no_fill = recorder.record(_lifecycle_receipt(recorder, "TERMINAL_NO_FILL", 3))
+    store.record_canary_lifecycle(
+        family,
+        no_fill,
+        account_sha256=ACCOUNT,
+        adapter_sha256=ADAPTER,
+        observed_at_utc=NOW,
+        expires_at_utc=NOW + timedelta(days=1),
+        paper_limitations=("PAPER_SIMULATION_ONLY",),
+    )
+
+
+def test_adapter_drift_without_runtime_authorization_fails_closed(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    family = _family("CRYPTO", "PAXOS")
+    try:
+        _transmit_only_with_adapter_a(db, store, family)
+        changed = ProductFamilyCertificationStore(
+            db, current_adapter_sha256="d" * 64
+        )
+        with pytest.raises(ProductCapabilityError, match="CERTIFICATION_ADAPTER_DRIFT"):
+            changed.record_read_only_candidate_evidence(
+                family,
+                evidence_sha256="e" * 64,
+                account_sha256=ACCOUNT,
+                adapter_sha256="d" * 64,
+                observed_at_utc=NOW + timedelta(minutes=1),
+                expires_at_utc=NOW + timedelta(days=1),
+                paper_limitations=("PAPER_SIMULATION_ONLY",),
+            )
+    finally:
+        db.close()
+
+
+def test_adapter_drift_with_family_open_order_blocks_recertification(
+    tmp_path,
+) -> None:
+    db, store = _store(tmp_path)
+    family = _family("CRYPTO", "PAXOS")
+    try:
+        _transmit_only_with_adapter_a(db, store, family)
+        changed = ProductFamilyCertificationStore(
+            db, current_adapter_sha256="d" * 64
+        )
+        auth = {
+            "allow_generation_restart": True,
+            "account_sha256": ACCOUNT,
+            "successor_definition_sha256": SUCCESSOR,
+            "approved_git_head": HEAD,
+            "transition_phase": "CANARY_EXCLUSIVE",
+            "reconciliation_status": "PASS",
+            "family_open_orders": 1,
+            "family_positions": 0,
+        }
+        with pytest.raises(
+            ProductCapabilityError, match="CANARY_RECERTIFICATION_UNSAFE"
+        ):
+            changed.record_read_only_candidate_evidence(
+                family,
+                evidence_sha256="e" * 64,
+                account_sha256=ACCOUNT,
+                adapter_sha256="d" * 64,
+                observed_at_utc=NOW + timedelta(minutes=1),
+                expires_at_utc=NOW + timedelta(days=1),
+                paper_limitations=("PAPER_SIMULATION_ONLY",),
+                runtime_authorization=auth,
+            )
+    finally:
+        db.close()
+
+
+def test_adapter_drift_with_family_position_blocks_recertification(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    family = _family("CRYPTO", "PAXOS")
+    try:
+        _transmit_only_with_adapter_a(db, store, family)
+        changed = ProductFamilyCertificationStore(
+            db, current_adapter_sha256="d" * 64
+        )
+        auth = {
+            "allow_generation_restart": True,
+            "account_sha256": ACCOUNT,
+            "successor_definition_sha256": SUCCESSOR,
+            "approved_git_head": HEAD,
+            "transition_phase": "CANARY_EXCLUSIVE",
+            "reconciliation_status": "PASS",
+            "family_open_orders": 0,
+            "family_positions": 1,
+        }
+        with pytest.raises(
+            ProductCapabilityError, match="CANARY_RECERTIFICATION_UNSAFE"
+        ):
+            changed.record_read_only_candidate_evidence(
+                family,
+                evidence_sha256="e" * 64,
+                account_sha256=ACCOUNT,
+                adapter_sha256="d" * 64,
+                observed_at_utc=NOW + timedelta(minutes=1),
+                expires_at_utc=NOW + timedelta(days=1),
+                paper_limitations=("PAPER_SIMULATION_ONLY",),
+                runtime_authorization=auth,
+            )
+    finally:
+        db.close()
+
+
+def test_adapter_drift_with_reconciliation_not_pass_blocks_recertification(
+    tmp_path,
+) -> None:
+    db, store = _store(tmp_path)
+    family = _family("CRYPTO", "PAXOS")
+    try:
+        _transmit_only_with_adapter_a(db, store, family)
+        changed = ProductFamilyCertificationStore(
+            db, current_adapter_sha256="d" * 64
+        )
+        auth = {
+            "allow_generation_restart": True,
+            "account_sha256": ACCOUNT,
+            "successor_definition_sha256": SUCCESSOR,
+            "approved_git_head": HEAD,
+            "transition_phase": "CANARY_EXCLUSIVE",
+            "reconciliation_status": "PENDING",
+            "family_open_orders": 0,
+            "family_positions": 0,
+        }
+        with pytest.raises(
+            ProductCapabilityError, match="CANARY_RECERTIFICATION_UNSAFE"
+        ):
+            changed.record_read_only_candidate_evidence(
+                family,
+                evidence_sha256="e" * 64,
+                account_sha256=ACCOUNT,
+                adapter_sha256="d" * 64,
+                observed_at_utc=NOW + timedelta(minutes=1),
+                expires_at_utc=NOW + timedelta(days=1),
+                paper_limitations=("PAPER_SIMULATION_ONLY",),
+                runtime_authorization=auth,
+            )
+    finally:
+        db.close()
+
+
+def test_adapter_drift_outside_canary_exclusive_blocks_recertification(
+    tmp_path,
+) -> None:
+    db, store = _store(tmp_path)
+    family = _family("CRYPTO", "PAXOS")
+    try:
+        _transmit_only_with_adapter_a(db, store, family)
+        changed = ProductFamilyCertificationStore(
+            db, current_adapter_sha256="d" * 64
+        )
+        auth = {
+            "allow_generation_restart": True,
+            "account_sha256": ACCOUNT,
+            "successor_definition_sha256": SUCCESSOR,
+            "approved_git_head": HEAD,
+            "transition_phase": "DUAL_SLEEVE_ACTIVE",
+            "reconciliation_status": "PASS",
+            "family_open_orders": 0,
+            "family_positions": 0,
+        }
+        with pytest.raises(
+            ProductCapabilityError, match="CANARY_RECERTIFICATION_UNSAFE"
+        ):
+            changed.record_read_only_candidate_evidence(
+                family,
+                evidence_sha256="e" * 64,
+                account_sha256=ACCOUNT,
+                adapter_sha256="d" * 64,
+                observed_at_utc=NOW + timedelta(minutes=1),
+                expires_at_utc=NOW + timedelta(days=1),
+                paper_limitations=("PAPER_SIMULATION_ONLY",),
+                runtime_authorization=auth,
             )
     finally:
         db.close()

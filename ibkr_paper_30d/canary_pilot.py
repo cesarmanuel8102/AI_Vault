@@ -230,7 +230,7 @@ class CanaryPilotOrchestrator:
         self.durable_sequence_allocator = durable_sequence_allocator
         self.now_utc = now_utc
         self.candidate_finalizer = candidate_finalizer or (
-            lambda _proposal, _evidence, _validation: None
+            lambda _proposal, _evidence, _validation, *, bundle=None: None
         )
         self.lifecycle_finalizer = lifecycle_finalizer or (
             lambda _proposal, _result: None
@@ -305,7 +305,22 @@ class CanaryPilotOrchestrator:
             )
             return self._block(*validation.reason_codes)
         self.store.persist_candidate(outcome, evidence, validation)
-        self.candidate_finalizer(proposal, evidence, validation)
+        try:
+            self.candidate_finalizer(
+                proposal, evidence, validation, bundle=bundle
+            )
+        except Exception as exc:
+            reason = self._map_certification_error(exc)
+            self.store.persist_discovery_event(
+                "CANARY_DISCOVERY_CERTIFICATION_BLOCK",
+                {
+                    "candidate_sha256": proposal.sha256,
+                    "error_type": type(exc).__name__,
+                    "reason_code": reason,
+                    "observed_at_utc": self.now_utc().isoformat(),
+                },
+            )
+            return self._block(reason)
         return {
             "schema": "CANARY_PILOT_ORCHESTRATION_RESULT_V1",
             "status": "PASS",
@@ -313,6 +328,18 @@ class CanaryPilotOrchestrator:
             "candidate_sha256": proposal.sha256,
             "reason_codes": [],
         }
+
+    @staticmethod
+    def _map_certification_error(exc: Exception) -> str:
+        if isinstance(exc, RuntimeError):
+            message = str(exc)
+            if message == "CERTIFICATION_ADAPTER_DRIFT":
+                return "CANARY_CERTIFICATION_ADAPTER_DRIFT"
+            if message == "CANARY_RECERTIFICATION_UNSAFE":
+                return "CANARY_RECERTIFICATION_UNSAFE"
+            if message == "CANARY_CERTIFICATION_FINALIZATION_FAILED":
+                return "CANARY_CERTIFICATION_FINALIZATION_FAILED"
+        return "CANARY_CERTIFICATION_FINALIZATION_FAILED"
 
     @staticmethod
     def _extract_contract_id(item: dict[str, Any]) -> int | None:

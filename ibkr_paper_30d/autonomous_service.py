@@ -492,15 +492,66 @@ class AutonomousExperimentService:
             count += 1
         return count
 
-    def _regular_urgent_obligation(self, bundle: TraderInputBundle) -> bool:
-        """Return True when the regular sleeve has an open order or unresolved continuity obligation.
+    @staticmethod
+    def _extract_contract_id(item: dict[str, Any]) -> int | None:
+        """Extract a positive contract id from broker position/order dicts."""
+        contract = item.get("contract") or {}
+        cid = int(
+            contract.get("conId")
+            or contract.get("con_id")
+            or item.get("contract_id")
+            or item.get("con_id")
+            or 0
+        )
+        return cid if cid > 0 else None
 
-        Canary fair scheduling always yields to these obligations.
+    def _regular_urgent_obligation(self, bundle: TraderInputBundle) -> bool:
+        """Return True when the regular sleeve has an open order or unresolved
+        continuity obligation.
+
+        Canary fair scheduling always yields to these obligations. A
+        continuous-only obligation must not be misclassified as regular.
         """
         portfolio = getattr(bundle, "multi_sleeve_portfolio", None) or {}
         observation = portfolio.get("account_observation") or {}
-        if observation.get("open_order_count", 0) > 0:
+        ownership = getattr(bundle, "contract_ownership_snapshot", None) or {}
+        continuity = getattr(bundle, "continuity_context", None) or {}
+        reconciliation = getattr(bundle, "reconciliation_receipt", None) or {}
+
+        if reconciliation.get("status") != "PASS":
             return True
+
+        if observation.get("order_state_uncertain") is True:
+            return True
+
+        contract_sleeves = ownership.get("contract_sleeves") or {}
+
+        for active in continuity.get("active_plans") or []:
+            plan = active.get("plan") or {}
+            if plan.get("capital_sleeve") == "REGULAR_SLEEVE":
+                return True
+
+        open_orders = observation.get("open_orders") or []
+        if observation.get("open_order_count", 0) > 0 and not open_orders:
+            return True
+        for order in open_orders:
+            cid = self._extract_contract_id(order)
+            if cid is None:
+                return True
+            sleeve = contract_sleeves.get(str(cid))
+            if sleeve in {"REGULAR_SLEEVE", None}:
+                return True
+
+        positions = observation.get("positions") or []
+        if observation.get("position_count", 0) > 0 and not positions:
+            return True
+        for position in positions:
+            cid = self._extract_contract_id(position)
+            if cid is None:
+                return True
+            if contract_sleeves.get(str(cid)) is None:
+                return True
+
         return False
 
     def _assert_arm_prerequisites(self) -> None:

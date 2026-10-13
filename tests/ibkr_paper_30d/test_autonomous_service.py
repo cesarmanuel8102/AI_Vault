@@ -2219,3 +2219,150 @@ def test_orchestration_falls_back_to_broker_now_when_evidence_lacks_time(
 
     assert len(idle) == 1
     assert len(broker_now_calls) >= 1
+
+
+def _make_bundle(
+    *,
+    open_orders=None,
+    positions=None,
+    active_plans=None,
+    contract_sleeves=None,
+    reconciliation_status="PASS",
+    order_state_uncertain=False,
+):
+    return SimpleNamespace(
+        reconciliation_receipt={"status": reconciliation_status},
+        multi_sleeve_portfolio={
+            "account_observation": {
+                "open_order_count": len(open_orders or []),
+                "open_orders": open_orders or [],
+                "positions": positions or [],
+                "order_state_uncertain": order_state_uncertain,
+            }
+        },
+        contract_ownership_snapshot={
+            "contract_sleeves": contract_sleeves or {}
+        },
+        continuity_context={"active_plans": active_plans or []},
+    )
+
+
+def test_regular_urgent_obligation_true_for_regular_open_order(tmp_path):
+    with Database.open(tmp_path / "urgent.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        bundle = _make_bundle(
+            open_orders=[{"contract": {"conId": 123}, "order_ref": "r1"}],
+            contract_sleeves={"123": "REGULAR_SLEEVE"},
+        )
+        assert service._regular_urgent_obligation(bundle) is True
+
+
+def test_regular_urgent_obligation_false_for_continuous_open_order(tmp_path):
+    with Database.open(tmp_path / "urgent.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        bundle = _make_bundle(
+            open_orders=[{"contract": {"conId": 123}, "order_ref": "c1"}],
+            contract_sleeves={"123": "CONTINUOUS_SLEEVE"},
+        )
+        assert service._regular_urgent_obligation(bundle) is False
+
+
+def test_regular_urgent_obligation_true_for_unknown_sleeve_open_order(tmp_path):
+    with Database.open(tmp_path / "urgent.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        bundle = _make_bundle(
+            open_orders=[{"contract": {"conId": 123}, "order_ref": "u1"}],
+            contract_sleeves={},
+        )
+        assert service._regular_urgent_obligation(bundle) is True
+
+
+def test_regular_urgent_obligation_true_for_active_regular_continuity_plan(
+    tmp_path,
+):
+    with Database.open(tmp_path / "urgent.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        bundle = _make_bundle(
+            active_plans=[{"plan": {"capital_sleeve": "REGULAR_SLEEVE"}}],
+        )
+        assert service._regular_urgent_obligation(bundle) is True
+
+
+def test_regular_urgent_obligation_false_for_active_continuous_continuity_plan(
+    tmp_path,
+):
+    with Database.open(tmp_path / "urgent.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        bundle = _make_bundle(
+            active_plans=[{"plan": {"capital_sleeve": "CONTINUOUS_SLEEVE"}}],
+        )
+        assert service._regular_urgent_obligation(bundle) is False
+
+
+def test_regular_urgent_obligation_true_when_reconciliation_not_pass(tmp_path):
+    with Database.open(tmp_path / "urgent.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        bundle = _make_bundle(reconciliation_status="PENDING")
+        assert service._regular_urgent_obligation(bundle) is True
+
+
+def test_regular_urgent_obligation_true_when_order_state_uncertain(tmp_path):
+    with Database.open(tmp_path / "urgent.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        bundle = _make_bundle(order_state_uncertain=True)
+        assert service._regular_urgent_obligation(bundle) is True
+
+
+def test_run_forever_recovers_from_multi_cycle_invalid_jsonl_without_orders(
+    tmp_path, monkeypatch
+):
+    """A burst of invalid_jsonl errors must be retried and not emit orders.
+
+    Once the provider returns a valid NO_TRADE cycle the service continues.
+    """
+    FakeLedger.positions = ()
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
+    clock = Clock()
+    failure_count = [2]
+    cycle_counter = [0, 4]
+    service_ref = [None]
+
+    def run_cycle(bundle, *, provider, **kwargs):
+        cycle_counter[0] += 1
+        if failure_count[0] > 0:
+            failure_count[0] -= 1
+            provider.last_failure_code = "CODEX_PROVIDER_INVALID_JSONL"
+            raise RuntimeError("CODEX_PROVIDER_INVALID_JSONL:invalid_jsonl")
+        if cycle_counter[0] >= cycle_counter[1]:
+            service_ref[0].stop()
+        return {
+            "status": "PASS",
+            "outcome": {"validation": "PASS", "decision": "NO_TRADE"},
+            "execution": None,
+        }
+
+    monkeypatch.setattr(service_module, "run_autonomous_cycle", run_cycle)
+
+    with Database.open(tmp_path / "invalid-jsonl-recovery.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        service._builder = lambda: SimpleNamespace(
+            build=lambda trigger: _make_passing_bundle()
+        )
+        service_ref[0] = service
+        service.sleep = clock.sleep
+        service.monotonic = clock.monotonic
+        service.run_forever()
+        completed = db.execute(
+            "SELECT COUNT(*) FROM state_events WHERE event_type = 'AUTONOMOUS_CYCLE_COMPLETED'"
+        ).fetchone()[0]
+        submitted = db.execute(
+            "SELECT COUNT(*) FROM state_events WHERE event_type = 'ORDER_SUBMITTED'"
+        ).fetchone()[0]
+        alerts = db.execute(
+            "SELECT COUNT(*) FROM alerts WHERE event_type = 'AUTONOMOUS_PROVIDER_FAILURE_OBSERVATION'"
+        ).fetchone()[0]
+
+    assert completed == 2
+    assert submitted == 0
+    assert alerts == 1
+    assert failure_count[0] == 0

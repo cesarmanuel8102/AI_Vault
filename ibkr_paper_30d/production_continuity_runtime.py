@@ -857,9 +857,64 @@ def create_canary_pilot_orchestrator(
             expected_candidate_bindings=expected_bindings,
         )
 
+    def _extract_contract_id(item: Mapping[str, Any]) -> int | None:
+        contract = item.get("contract") or {}
+        cid = int(
+            contract.get("conId")
+            or contract.get("con_id")
+            or item.get("contract_id")
+            or item.get("con_id")
+            or 0
+        )
+        return cid if cid > 0 else None
+
+    def _family_exposure(
+        bundle: Any, proposal: Any
+    ) -> tuple[int, int]:
+        portfolio = getattr(bundle, "multi_sleeve_portfolio", None) or {}
+        observation = portfolio.get("account_observation") or {}
+        positions = observation.get("positions") or []
+        orders = observation.get("open_orders") or []
+        target_con_id = proposal.canonical_contract.con_id
+        position_count = sum(
+            1
+            for position in positions
+            if _extract_contract_id(position) == target_con_id
+        )
+        order_count = sum(
+            1
+            for order in orders
+            if _extract_contract_id(order) == target_con_id
+        )
+        return order_count, position_count
+
     def finalize_candidate(
-        proposal: Any, evidence: Mapping[str, Any], validation: Any
+        proposal: Any,
+        evidence: Mapping[str, Any],
+        validation: Any,
+        *,
+        bundle: Any | None = None,
     ) -> None:
+        order_count, position_count = (
+            _family_exposure(bundle, proposal) if bundle is not None else (0, 0)
+        )
+        reconciliation = (
+            getattr(bundle, "reconciliation_receipt", None) or {}
+            if bundle is not None
+            else {}
+        )
+        runtime_authorization = {
+            "allow_generation_restart": True,
+            "account_sha256": proposal.account_identity_sha256,
+            "successor_definition_sha256": (
+                proposal.successor_definition_sha256
+            ),
+            "approved_git_head": effective_approved_head,
+            "transition_phase": "CANARY_EXCLUSIVE",
+            "reconciliation_status": reconciliation.get("status") or "PENDING",
+            "family_open_orders": order_count,
+            "family_positions": position_count,
+        }
         product_certification_store.record_read_only_candidate_evidence(
             proposal.product_family,
             evidence_sha256=validation.capability_evidence_sha256,
@@ -868,6 +923,7 @@ def create_canary_pilot_orchestrator(
             observed_at_utc=evidence["observed_at_utc"],
             expires_at_utc=evidence["expires_at_utc"],
             paper_limitations=("PAPER_SIMULATION_ONLY",),
+            runtime_authorization=runtime_authorization,
         )
 
     def finalize_lifecycle(proposal: Any, result: Any) -> None:

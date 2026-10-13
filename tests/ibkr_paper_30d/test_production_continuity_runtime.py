@@ -3224,3 +3224,191 @@ def test_validate_only_shuts_down_partial_startup_and_reports_exact_stage(
         "watchdog_stop",
         "writer_stop",
     ]
+
+
+def test_canary_pilot_restarts_certification_generation_after_adapter_drift(
+    tmp_path, monkeypatch
+) -> None:
+    """End-to-end: canary discovery with adapter B after adapter A certification
+    must append a generation-restart event and keep the service alive."""
+    from ibkr_paper_30d.canary_candidate import CanaryDiscoveryOutcome
+    from ibkr_paper_30d.canary_pilot import CanaryPilotOrchestrator
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+    from ibkr_paper_30d.product_capability import (
+        ProductFamilyCertificationStatus,
+        ProductFamilyCertificationStore,
+    )
+    import test_canary_pilot as tcp
+    from test_canary_pilot import _evidence, _owner, _proposal
+
+    now = datetime.now(timezone.utc)
+    monkeypatch.setattr(tcp, "NOW", now)
+
+    db_path = tmp_path / "canary-drift-integration.sqlite3"
+    with Database.open(db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+        proposal = _proposal()
+        adapter_a = "a" * 64
+        adapter_b = "b" * 64
+        account = proposal.account_identity_sha256
+
+        original_store = ProductFamilyCertificationStore(
+            db, current_adapter_sha256=adapter_a
+        )
+        cert_steps = (
+            "CONTRACT_QUALIFIED",
+            "PERMISSIONS_VERIFIED",
+            "MARKET_DATA_VERIFIED",
+            "ORDER_SEMANTICS_VERIFIED",
+            "BOUNDED_ECONOMICS_VERIFIED",
+            "ORDER_TRANSMIT_VERIFIED",
+        )
+        for step in cert_steps:
+            original_store.record_step(
+                proposal.product_family,
+                step,
+                sha256_json({"step": step}),
+                account_sha256=account,
+                adapter_sha256=adapter_a,
+                observed_at_utc=datetime.now(timezone.utc),
+                expires_at_utc=datetime.now(timezone.utc) + timedelta(days=1),
+                paper_limitations=("PAPER_SIMULATION_ONLY",),
+            )
+        recorder = CanaryLifecycleRecorder(
+            proposal.candidate_id,
+            account,
+            proposal.product_family.sha256,
+            proposal.canonical_contract.sha256,
+        )
+        for ordinal, step in enumerate(
+            ("SUBMITTED", "BROKER_BOUND", "TERMINAL_NO_FILL"), 1
+        ):
+            recorder.record(
+                CanaryBrokerLifecycleReceipt(
+                    canary_id=proposal.candidate_id,
+                    step=step,
+                    endpoint="PAPER",
+                    account_identity_sha256=account,
+                    product_family_sha256=proposal.product_family.sha256,
+                    contract_identity_sha256=proposal.canonical_contract.sha256,
+                    broker_event_id_sha256=f"{ordinal:064x}",
+                    broker_snapshot_sha256=f"{ordinal + 10:064x}",
+                    previous_receipt_sha256=recorder.last_receipt_sha256,
+                    observed_at_utc=datetime.now(timezone.utc)
+                    + timedelta(seconds=ordinal),
+                    open_orders=1 if step == "BROKER_BOUND" else 0,
+                    positions=0,
+                    economics_reconciled=False,
+                )
+            )
+        original_store.record_canary_lifecycle(
+            proposal.product_family,
+            recorder.projection(),
+            account_sha256=account,
+            adapter_sha256=adapter_a,
+            observed_at_utc=datetime.now(timezone.utc),
+            expires_at_utc=datetime.now(timezone.utc) + timedelta(days=1),
+            paper_limitations=("PAPER_SIMULATION_ONLY",),
+        )
+        assert (
+            original_store.projection(proposal.product_family).status
+            is ProductFamilyCertificationStatus.ORDER_TRANSMIT_VERIFIED
+        )
+
+        product_store = ProductFamilyCertificationStore(
+            db, current_adapter_sha256=adapter_b
+        )
+
+        class FakeCanaryStore:
+            def __init__(self):
+                self.candidate = None
+                self.discovery_events = []
+
+            def load_candidate(self):
+                return self.candidate
+
+            def persist_candidate(self, outcome, evidence, validation):
+                self.candidate = (outcome, evidence, validation)
+
+            def persist_discovery_event(self, kind, payload):
+                self.discovery_events.append((kind, payload))
+
+            def has_orphaned_durable_state(self):
+                return False
+
+            def last_discovery_attempt_utc(self):
+                return None
+
+        fake_store = FakeCanaryStore()
+        outcome = CanaryDiscoveryOutcome(
+            decision="CANDIDATE",
+            invocation_sha256=proposal.invocation_sha256,
+            result_sha256=proposal.result_sha256,
+            transcript_sha256=sha256_json([]),
+            proposal=proposal,
+        )
+        bundle = SimpleNamespace(
+            reconciliation_receipt={"status": "PASS"},
+            multi_sleeve_portfolio={
+                "account_observation": {
+                    "open_order_count": 0,
+                    "open_orders": [],
+                    "positions": [],
+                }
+            },
+            contract_ownership_snapshot={"contract_sleeves": {}},
+            continuity_context={"active_plans": []},
+        )
+
+        def finalizer(proposal, evidence, validation, *, bundle=None):
+            product_store.record_read_only_candidate_evidence(
+                proposal.product_family,
+                evidence_sha256=validation.capability_evidence_sha256,
+                account_sha256=proposal.account_identity_sha256,
+                adapter_sha256=adapter_b,
+                observed_at_utc=evidence["observed_at_utc"],
+                expires_at_utc=evidence["expires_at_utc"],
+                paper_limitations=("PAPER_SIMULATION_ONLY",),
+                runtime_authorization={
+                    "allow_generation_restart": True,
+                    "account_sha256": account,
+                    "successor_definition_sha256": (
+                        proposal.successor_definition_sha256
+                    ),
+                    "approved_git_head": proposal.approved_head,
+                    "transition_phase": "CANARY_EXCLUSIVE",
+                    "reconciliation_status": "PASS",
+                    "family_open_orders": 0,
+                    "family_positions": 0,
+                },
+            )
+
+        orchestrator = CanaryPilotOrchestrator(
+            discovery_runner=lambda _bundle, persister: outcome,
+            capability_evidence_collector=lambda _bundle, actual: _evidence(actual),
+            store=fake_store,
+            coordinator=SimpleNamespace(submit=lambda request: Future()),
+            owner_pilot_authorization=_owner(),
+            writer_binding_sha256="d" * 64,
+            effective_approved_head=proposal.approved_head,
+            durable_sequence_allocator=lambda: 1,
+            now_utc=lambda: datetime.now(timezone.utc),
+            candidate_finalizer=finalizer,
+        )
+
+        result = orchestrator.discover(bundle)
+
+        assert result["status"] == "PASS"
+        assert result["decision"] == "CANDIDATE_READY"
+        projection = product_store.projection(proposal.product_family)
+        assert projection.status is ProductFamilyCertificationStatus.RESEARCH_ONLY
+        assert projection.adapter_sha256 == adapter_b
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM product_family_certification_events "
+                "WHERE event_type='CERTIFICATION_RESTARTED_AFTER_ADAPTER_CHANGE'"
+            ).fetchone()[0]
+            == 1
+        )

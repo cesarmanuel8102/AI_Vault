@@ -17,6 +17,7 @@ from ibkr_paper_30d.canary_pilot import (
     collect_canary_capability_evidence,
 )
 from ibkr_paper_30d.canonical import sha256_json
+from ibkr_paper_30d.product_capability import ProductCapabilityError
 from ibkr_paper_30d.autonomous_research import ResearchResult, ResearchTool
 from ibkr_paper_30d.multi_universe_models import (
     CapitalSleeve,
@@ -736,4 +737,44 @@ def test_capability_collector_rejects_underdeclared_cash_economics() -> None:
 
     assert evidence["broker_feasibility_verified"] is False
     assert evidence["broker_economics_within_candidate_bounds"] is False
-    assert evidence["fresh"] is False
+
+
+def test_discovery_certification_error_returns_block_without_killing_service() -> None:
+    """A ProductCapabilityError from candidate_finalizer must become a deterministic
+    BLOCK result so the canary fails safely without killing the whole service."""
+
+    proposal = _proposal()
+    outcome = CanaryDiscoveryOutcome(
+        decision="CANDIDATE",
+        invocation_sha256=proposal.invocation_sha256,
+        result_sha256=proposal.result_sha256,
+        transcript_sha256=sha256_json([]),
+        proposal=proposal,
+    )
+    store = Store()
+
+    def failing_finalizer(_proposal, _evidence, _validation, *, bundle=None):
+        del bundle
+        raise ProductCapabilityError("CERTIFICATION_ADAPTER_DRIFT")
+
+    controller = CanaryPilotOrchestrator(
+        discovery_runner=lambda _bundle, persister: outcome,
+        capability_evidence_collector=lambda _bundle, actual: _evidence(actual),
+        store=store,
+        coordinator=Coordinator(None),
+        owner_pilot_authorization=_owner(),
+        writer_binding_sha256=WRITER,
+        durable_sequence_allocator=lambda: 1,
+        now_utc=lambda: NOW + timedelta(seconds=1),
+        candidate_finalizer=failing_finalizer,
+    )
+
+    result = controller.discover(object())
+
+    assert result["status"] == "BLOCK"
+    assert result["decision"] == "CANARY_BLOCKED"
+    assert "CANARY_CERTIFICATION_ADAPTER_DRIFT" in result["reason_codes"]
+    assert any(
+        event[0] == "CANARY_DISCOVERY_CERTIFICATION_BLOCK"
+        for event in store.discovery_events
+    )

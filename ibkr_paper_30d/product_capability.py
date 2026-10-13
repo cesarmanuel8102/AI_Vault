@@ -234,6 +234,7 @@ class ProductFamilyCertificationStore:
         observed_at_utc: datetime,
         expires_at_utc: datetime,
         paper_limitations: tuple[str, ...],
+        runtime_authorization: Mapping[str, Any] | None = None,
     ) -> str:
         if step in CERTIFICATION_SEQUENCE[6:]:
             raise ProductCapabilityError("AUTHORIZED_CANARY_FINALIZER_REQUIRED")
@@ -246,6 +247,7 @@ class ProductFamilyCertificationStore:
             observed_at_utc=observed_at_utc,
             expires_at_utc=expires_at_utc,
             paper_limitations=paper_limitations,
+            runtime_authorization=runtime_authorization,
         )
 
     def record_read_only_candidate_evidence(
@@ -258,8 +260,16 @@ class ProductFamilyCertificationStore:
         observed_at_utc: datetime,
         expires_at_utc: datetime,
         paper_limitations: tuple[str, ...],
+        runtime_authorization: Mapping[str, Any] | None = None,
     ) -> ProductExecutionCapability:
-        """Persist read-only capability steps without implying transmission."""
+        """Persist read-only capability steps without implying transmission.
+
+        If the runtime supplies ``runtime_authorization`` and the adapter has
+        drifted from a previously transmitted generation, the store appends an
+        explicit ``CERTIFICATION_RESTARTED_AFTER_ADAPTER_CHANGE`` event and
+        starts a new generation. Without authorization the legacy fail-closed
+        behavior is preserved.
+        """
 
         for step in CERTIFICATION_SEQUENCE[:5]:
             self.record_step(
@@ -276,11 +286,79 @@ class ProductFamilyCertificationStore:
                 observed_at_utc=observed_at_utc,
                 expires_at_utc=expires_at_utc,
                 paper_limitations=paper_limitations,
+                runtime_authorization=runtime_authorization,
             )
         projection = self.projection(family)
         if projection.status is not ProductFamilyCertificationStatus.RESEARCH_ONLY:
             raise ProductCapabilityError("READ_ONLY_EVIDENCE_CERTIFICATION_ESCALATION")
         return projection
+
+    @staticmethod
+    def _validate_runtime_authorization(
+        runtime_authorization: Mapping[str, Any],
+        projection: ProductExecutionCapability,
+        account_sha256: str,
+        adapter_sha256: str,
+    ) -> None:
+        required = (
+            "account_sha256",
+            "successor_definition_sha256",
+            "approved_git_head",
+            "transition_phase",
+            "reconciliation_status",
+            "family_open_orders",
+            "family_positions",
+        )
+        if not all(key in runtime_authorization for key in required):
+            raise ProductCapabilityError("CANARY_RECERTIFICATION_UNSAFE")
+        if runtime_authorization["account_sha256"] != account_sha256:
+            raise ProductCapabilityError("CANARY_RECERTIFICATION_UNSAFE")
+        if projection.account_sha256 not in {
+            None,
+            runtime_authorization["account_sha256"],
+        }:
+            raise ProductCapabilityError("CANARY_RECERTIFICATION_UNSAFE")
+        if runtime_authorization["reconciliation_status"] != "PASS":
+            raise ProductCapabilityError("CANARY_RECERTIFICATION_UNSAFE")
+        if runtime_authorization["family_open_orders"] != 0:
+            raise ProductCapabilityError("CANARY_RECERTIFICATION_UNSAFE")
+        if runtime_authorization["family_positions"] != 0:
+            raise ProductCapabilityError("CANARY_RECERTIFICATION_UNSAFE")
+        if runtime_authorization["transition_phase"] != "CANARY_EXCLUSIVE":
+            raise ProductCapabilityError("CANARY_RECERTIFICATION_UNSAFE")
+        if runtime_authorization.get("adapter_sha256", adapter_sha256) != adapter_sha256:
+            raise ProductCapabilityError("CANARY_RECERTIFICATION_UNSAFE")
+
+    def _append_generation_restart(
+        self,
+        family: ProductFamilyKey,
+        projection: ProductExecutionCapability,
+        adapter_sha256: str,
+        account_sha256: str,
+        observed_at_utc: datetime,
+        runtime_authorization: Mapping[str, Any],
+    ) -> None:
+        self._append(
+            family,
+            "CERTIFICATION_RESTARTED_AFTER_ADAPTER_CHANGE",
+            {
+                "previous_adapter_sha256": projection.adapter_sha256,
+                "adapter_sha256": adapter_sha256,
+                "account_sha256": account_sha256,
+                "approved_git_head": runtime_authorization.get(
+                    "approved_git_head"
+                ),
+                "successor_definition_sha256": runtime_authorization.get(
+                    "successor_definition_sha256"
+                ),
+                "transition_phase": runtime_authorization.get(
+                    "transition_phase"
+                ),
+                "observed_at_utc": observed_at_utc,
+                "paper_limitations": list(projection.paper_limitations),
+                "reason": "ADAPTER_CHANGED_AFTER_TRANSMISSION",
+            },
+        )
 
     def _record_step(
         self,
@@ -293,6 +371,7 @@ class ProductFamilyCertificationStore:
         observed_at_utc: datetime,
         expires_at_utc: datetime,
         paper_limitations: tuple[str, ...],
+        runtime_authorization: Mapping[str, Any] | None = None,
     ) -> str:
         if len(evidence_sha256) != 64 or any(c not in "0123456789abcdef" for c in evidence_sha256):
             raise ProductCapabilityError("INVALID_EVIDENCE_SHA256")
@@ -311,21 +390,41 @@ class ProductFamilyCertificationStore:
                 raise ProductCapabilityError("CERTIFICATION_ACCOUNT_DRIFT")
             if projection.adapter_sha256 not in {None, adapter_sha256}:
                 if projection.status is not ProductFamilyCertificationStatus.RESEARCH_ONLY:
-                    raise ProductCapabilityError("CERTIFICATION_ADAPTER_DRIFT")
-                self._append(
-                    family,
-                    "CERTIFICATION_RESTARTED",
-                    {
-                        "previous_adapter_sha256": projection.adapter_sha256,
-                        "adapter_sha256": adapter_sha256,
-                        "account_sha256": account_sha256,
-                        "observed_at_utc": observed_at_utc,
-                        "paper_limitations": list(paper_limitations),
-                        "reason": "ADAPTER_CHANGED_BEFORE_TRANSMISSION",
-                    },
-                )
-                projection = self.projection(family)
-                completed = list(projection.completed_steps)
+                    if runtime_authorization is None or not runtime_authorization.get(
+                        "allow_generation_restart"
+                    ):
+                        raise ProductCapabilityError("CERTIFICATION_ADAPTER_DRIFT")
+                    self._validate_runtime_authorization(
+                        runtime_authorization,
+                        projection,
+                        account_sha256,
+                        adapter_sha256,
+                    )
+                    self._append_generation_restart(
+                        family,
+                        projection,
+                        adapter_sha256,
+                        account_sha256,
+                        observed_at_utc,
+                        runtime_authorization,
+                    )
+                    projection = self.projection(family)
+                    completed = list(projection.completed_steps)
+                else:
+                    self._append(
+                        family,
+                        "CERTIFICATION_RESTARTED",
+                        {
+                            "previous_adapter_sha256": projection.adapter_sha256,
+                            "adapter_sha256": adapter_sha256,
+                            "account_sha256": account_sha256,
+                            "observed_at_utc": observed_at_utc,
+                            "paper_limitations": list(paper_limitations),
+                            "reason": "ADAPTER_CHANGED_BEFORE_TRANSMISSION",
+                        },
+                    )
+                    projection = self.projection(family)
+                    completed = list(projection.completed_steps)
             if step == "ORDER_TERMINAL_NO_FILL":
                 if "ORDER_TRANSMIT_VERIFIED" not in completed:
                     raise ProductCapabilityError("CERTIFICATION_STEP_OUT_OF_ORDER")
@@ -361,6 +460,7 @@ class ProductFamilyCertificationStore:
         observed_at_utc: datetime,
         expires_at_utc: datetime,
         paper_limitations: tuple[str, ...],
+        runtime_authorization: Mapping[str, Any] | None = None,
     ) -> ProductExecutionCapability:
         if (
             lifecycle.product_family_sha256 != family.sha256
@@ -386,6 +486,7 @@ class ProductFamilyCertificationStore:
                     observed_at_utc=observed_at_utc,
                     expires_at_utc=expires_at_utc,
                     paper_limitations=paper_limitations,
+                    runtime_authorization=runtime_authorization,
                 )
             return self.projection(family)
         if (
@@ -404,6 +505,7 @@ class ProductFamilyCertificationStore:
                 observed_at_utc=observed_at_utc,
                 expires_at_utc=expires_at_utc,
                 paper_limitations=paper_limitations,
+                runtime_authorization=runtime_authorization,
             )
         return self.projection(family)
 
@@ -416,7 +518,8 @@ class ProductFamilyCertificationStore:
         restart_indexes = [
             index
             for index, event in enumerate(events)
-            if event["event_type"] == "CERTIFICATION_RESTARTED"
+            if event["event_type"]
+            in {"CERTIFICATION_RESTARTED", "CERTIFICATION_RESTARTED_AFTER_ADAPTER_CHANGE"}
         ]
         active_events = (
             events[restart_indexes[-1] + 1 :] if restart_indexes else events
