@@ -157,7 +157,9 @@ def test_only_ordered_full_lifecycle_reaches_full_certification(tmp_path) -> Non
         db.close()
 
 
-def test_full_canary_projection_completes_family_but_no_fill_cannot(tmp_path) -> None:
+def test_full_canary_projection_completes_family_and_no_fill_stays_transmit_only(
+    tmp_path,
+) -> None:
     db, store = _store(tmp_path)
     family = _family("FUT", "GLOBEX")
     try:
@@ -169,16 +171,24 @@ def test_full_canary_projection_completes_family_but_no_fill_cannot(tmp_path) ->
         no_fill = recorder.record(
             _lifecycle_receipt(recorder, "TERMINAL_NO_FILL", 3)
         )
-        with pytest.raises(ProductCapabilityError, match="CANARY_FULL_LIFECYCLE_REQUIRED"):
-            store.record_canary_lifecycle(
-                family,
-                no_fill,
-                account_sha256=ACCOUNT,
-                adapter_sha256=ADAPTER,
-                observed_at_utc=NOW,
-                expires_at_utc=NOW + timedelta(days=1),
-                paper_limitations=("PAPER_SIMULATION_ONLY",),
-            )
+        transmit_only = store.record_canary_lifecycle(
+            family,
+            no_fill,
+            account_sha256=ACCOUNT,
+            adapter_sha256=ADAPTER,
+            observed_at_utc=NOW,
+            expires_at_utc=NOW + timedelta(days=1),
+            paper_limitations=("PAPER_SIMULATION_ONLY",),
+        )
+        assert (
+            transmit_only.status
+            is ProductFamilyCertificationStatus.ORDER_TRANSMIT_VERIFIED
+        )
+        terminal_events = db.execute(
+            "SELECT COUNT(*) FROM product_family_certification_events "
+            "WHERE event_type = 'ORDER_TERMINAL_NO_FILL'"
+        ).fetchone()[0]
+        assert terminal_events == 1
 
         projection = _complete_lifecycle("canary-2", family.sha256)
         certified = store.record_canary_lifecycle(

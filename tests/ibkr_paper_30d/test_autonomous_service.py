@@ -642,6 +642,60 @@ def test_supervision_routes_open_regular_session_to_day1_while_canary_waits(
     assert result["outcome"]["decision"] == "NO_TRADE"
 
 
+def test_canary_exclusive_routes_open_regular_session_to_day1(tmp_path, monkeypatch):
+    calls = []
+
+    class Pilot:
+        def discover(self, bundle):
+            raise AssertionError("canary discovery must wait for the regular session")
+
+        def execute(self, bundle):
+            raise AssertionError("canary execution must wait for the regular session")
+
+    class Bundle:
+        experiment_clock = {"not_started": False, "expired": False}
+        reconciliation_receipt = {"status": "PASS"}
+        kill_switch_state = "KILL_SWITCH_CLEAR"
+        market_data_snapshot = {"gate_status": "PASS"}
+        multi_sleeve_portfolio = {
+            "entry_eligibility": {
+                "REGULAR_SLEEVE": {"status": "PASS", "reason_codes": []},
+                "CONTINUOUS_SLEEVE": {
+                    "status": "BLOCK",
+                    "reason_codes": ["CANARY_EXCLUSIVE"],
+                },
+            },
+            "management_eligibility": {},
+        }
+
+        def model_dump(self, mode="json"):
+            return {"decision_cycle_id": "regular-canary-exclusive-cycle"}
+
+    def run_regular(bundle, **kwargs):
+        calls.append((bundle, kwargs))
+        return {
+            "status": "PASS",
+            "outcome": {"validation": "PASS", "decision": "NO_TRADE"},
+            "execution": None,
+        }
+
+    with Database.open(tmp_path / "regular-during-canary.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        service.multi_universe_runtime_authority = SimpleNamespace(
+            transition_phase="CANARY_EXCLUSIVE",
+            new_regular_entries_allowed=True,
+        )
+        service.canary_pilot_orchestrator = Pilot()
+        service._builder = lambda: SimpleNamespace(build=lambda trigger: Bundle())
+        monkeypatch.setattr(service_module, "run_autonomous_cycle", run_regular)
+
+        result = service._run_cycle("SCHEDULED_SCAN")
+
+    assert len(calls) == 1
+    assert result["status"] == "PASS"
+    assert result["outcome"]["decision"] == "NO_TRADE"
+
+
 @pytest.mark.parametrize("executor", [None, DirectShapedExecutor()])
 def test_paper_service_rejects_missing_or_noncoordinated_executor(tmp_path, executor):
     with Database.open(tmp_path / "executor-contract.sqlite3") as db:

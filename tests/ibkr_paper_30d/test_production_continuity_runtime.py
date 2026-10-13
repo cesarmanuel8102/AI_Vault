@@ -16,7 +16,11 @@ from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.canonical import canonical_bytes
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3, install_continuity_schema_v4
 from ibkr_paper_30d.continuity_store import ContinuityStore, ContinuityStoreError
-from ibkr_paper_30d.canary_authority import CanaryBrokerLifecycleReceipt
+from ibkr_paper_30d.canary_authority import (
+    CanaryBrokerLifecycleReceipt,
+    CanaryLifecycleRecorder,
+)
+from ibkr_paper_30d.canary_execution import CanaryExecutionRequest
 from ibkr_paper_30d.multi_universe_models import CanaryAuthorization
 from ibkr_paper_30d.open_order_management import canonical_contract_identity
 from ibkr_paper_30d.persistence import Database
@@ -180,6 +184,8 @@ def test_production_canary_store_round_trips_selected_candidate_and_result(
     assert sha256_json(loaded[1]) == sha256_json(evidence)
     assert loaded[2] == validation
     assert store.load_result(proposal.sha256) == payload
+    assert store.load_candidate() is None
+    assert store.has_orphaned_durable_state() is True
 
 
 def test_production_canary_store_replaces_only_expired_unused_candidate(
@@ -313,6 +319,121 @@ def test_production_canary_store_does_not_expire_authorized_candidate(
         proposal.sha256, proposal.expires_at_utc
     ) is False
     assert store.load_candidate()[0].proposal == proposal
+
+
+def test_production_canary_store_recovers_terminal_no_fill_without_resubmission(
+    tmp_path,
+) -> None:
+    from ibkr_paper_30d.canary_candidate import (
+        CanaryCandidateValidationReceipt,
+        CanaryDiscoveryOutcome,
+    )
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+    from test_canary_pilot import _evidence, _proposal
+
+    db_path = tmp_path / "recover-terminal-canary.sqlite3"
+    with Database.open(db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+    proposal = _proposal()
+    outcome = CanaryDiscoveryOutcome(
+        decision="CANDIDATE",
+        invocation_sha256=proposal.invocation_sha256,
+        result_sha256=proposal.result_sha256,
+        transcript_sha256=sha256_json([]),
+        proposal=proposal,
+    )
+    evidence = _evidence(proposal)
+    validation = CanaryCandidateValidationReceipt(
+        status="PASS",
+        reason_codes=(),
+        proposal_sha256=proposal.sha256,
+        capability_evidence_sha256=sha256_json(evidence),
+    )
+    authorization = CanaryAuthorization(
+        authorization_id="recover-auth",
+        owner_id="owner",
+        account_identity_sha256=proposal.account_identity_sha256,
+        successor_definition_sha256=proposal.successor_definition_sha256,
+        product_family_sha256=proposal.product_family.sha256,
+        contract_scope_sha256=(proposal.canonical_contract.sha256,),
+        maximum_debit_usd=proposal.maximum_debit_usd,
+        maximum_loss_usd=proposal.maximum_loss_usd,
+        fee_allowance_usd=proposal.fee_allowance_usd,
+        maximum_order_count=2,
+        issued_at_utc=proposal.created_at_utc,
+        expires_at_utc=proposal.expires_at_utc,
+    )
+    request = CanaryExecutionRequest(
+        canary_id=proposal.candidate_id,
+        durable_sequence=1,
+        execution_key=f"canary:{proposal.sha256}:{authorization.sha256}",
+        candidate_sha256=proposal.sha256,
+        authorization_sha256=authorization.sha256,
+        account_identity_sha256=proposal.account_identity_sha256,
+        successor_definition_sha256=proposal.successor_definition_sha256,
+        writer_binding_sha256="f" * 64,
+        product_family=proposal.product_family,
+        canonical_contract=proposal.canonical_contract,
+        entry_terms=proposal.entry_terms,
+        quantity=proposal.quantity,
+        maximum_debit_usd=proposal.maximum_debit_usd,
+        maximum_loss_usd=proposal.maximum_loss_usd,
+        fee_allowance_usd=proposal.fee_allowance_usd,
+        flat_return_plan=proposal.flat_return_plan,
+        created_at_utc=proposal.created_at_utc,
+    )
+    store = _ProductionCanaryStore(db_path)
+    store.persist_candidate(outcome, evidence, validation)
+    store.persist_authorization(
+        candidate_sha256=proposal.sha256, authorization=authorization
+    )
+    store.persist_request(proposal.sha256, request)
+    recorder = CanaryLifecycleRecorder(
+        request.canary_id,
+        request.account_identity_sha256,
+        request.product_family.sha256,
+        request.canonical_contract.sha256,
+    )
+    for ordinal, step in enumerate(
+        ("SUBMITTED", "BROKER_BOUND", "TERMINAL_NO_FILL"), 1
+    ):
+        receipt = CanaryBrokerLifecycleReceipt(
+            canary_id=request.canary_id,
+            step=step,
+            endpoint="PAPER",
+            account_identity_sha256=request.account_identity_sha256,
+            product_family_sha256=request.product_family.sha256,
+            contract_identity_sha256=request.canonical_contract.sha256,
+            broker_event_id_sha256=f"{ordinal:064x}",
+            broker_snapshot_sha256=f"{ordinal + 10:064x}",
+            previous_receipt_sha256=recorder.last_receipt_sha256,
+            observed_at_utc=proposal.created_at_utc + timedelta(seconds=ordinal),
+            open_orders=1 if step == "BROKER_BOUND" else 0,
+            positions=0,
+            economics_reconciled=False,
+        )
+        recorder.record(receipt)
+        store.persist_receipt(receipt)
+    assert store.begin_write(request.execution_key) is True
+
+    recovered = store.recover_terminal_result(proposal.sha256)
+
+    assert recovered is not None
+    assert recovered["authorization_sha256"] == authorization.sha256
+    assert recovered["result"].status == "TERMINAL_NO_FILL"
+    assert recovered["result"].request_sha256 == request.sha256
+    assert recovered["result"].projection.terminal_no_fill is True
+    store.persist_result(
+        proposal.sha256,
+        {
+            "status": recovered["result"].status,
+            "request_sha256": recovered["result"].request_sha256,
+        },
+    )
+    assert store.load_candidate() is None
+    assert store.has_orphaned_durable_state() is False
 
 
 def test_v4_writer_factory_wires_path_scoped_sleeve_authority(

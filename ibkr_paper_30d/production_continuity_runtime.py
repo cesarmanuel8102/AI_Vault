@@ -2110,6 +2110,71 @@ class _ProductionCanaryStore:
             )
         return request
 
+    def recover_terminal_result(self, candidate_sha256: str) -> dict[str, Any] | None:
+        """Recover a writer-completed canary whose certification step crashed.
+
+        Recovery is read-only with respect to the broker. It accepts only an
+        exact durable request, execution claim, and cryptographically chained
+        terminal lifecycle receipts for the same canary identity.
+        """
+
+        from .canary_authority import (
+            CanaryBrokerLifecycleReceipt,
+            CanaryLifecycleRecorder,
+        )
+        from .canary_execution import CanaryExecutionResult
+
+        request = self.load_request(candidate_sha256)
+        authorization = self.load_authorization(candidate_sha256)
+        if request is None or authorization is None:
+            return None
+        with Database.open(self.db_path) as db:
+            events = self._verified_events(db)
+        if not any(
+            event.get("event_type") == "EXECUTION_CLAIMED"
+            and event.get("execution_key") == request.execution_key
+            for event in events
+        ):
+            return None
+        receipts = []
+        for event in events:
+            if event.get("event_type") != "LIFECYCLE_RECEIPT":
+                continue
+            payload = event.get("receipt") or {}
+            if payload.get("canary_id") == request.canary_id:
+                receipts.append(CanaryBrokerLifecycleReceipt.model_validate(payload))
+        if not receipts:
+            return None
+        recorder = CanaryLifecycleRecorder(
+            request.canary_id,
+            request.account_identity_sha256,
+            request.product_family.sha256,
+            request.canonical_contract.sha256,
+        )
+        try:
+            for receipt in receipts:
+                recorder.record(receipt)
+        except Exception as exc:
+            raise ProductionRuntimeConfigurationError(
+                "CANARY_TERMINAL_RECOVERY_INVALID"
+            ) from exc
+        projection = recorder.projection()
+        if projection.status == "PASS":
+            status = "PASS"
+        elif projection.terminal_no_fill is True:
+            status = "TERMINAL_NO_FILL"
+        else:
+            return None
+        return {
+            "authorization_sha256": authorization.sha256,
+            "result": CanaryExecutionResult(
+                status=status,
+                request_sha256=request.sha256,
+                projection=projection,
+                broker_write_boundary_crossed=True,
+            ),
+        }
+
     def execution_claimed(self, execution_key: str) -> bool:
         with Database.open(self.db_path) as db:
             return any(
@@ -2265,14 +2330,17 @@ class _ProductionCanaryStore:
     def _active_candidate_event(
         events: list[dict[str, Any]],
     ) -> dict[str, Any] | None:
-        expired: set[str] = set()
+        retired: set[str] = set()
         for event in reversed(events):
             candidate_sha256 = str(event.get("candidate_sha256") or "")
-            if event.get("event_type") == "CANDIDATE_EXPIRED_UNUSED":
-                expired.add(candidate_sha256)
+            if event.get("event_type") in {
+                "CANDIDATE_EXPIRED_UNUSED",
+                "CANARY_RESULT",
+            }:
+                retired.add(candidate_sha256)
             elif (
                 event.get("event_type") == "CANDIDATE_SELECTED"
-                and candidate_sha256 not in expired
+                and candidate_sha256 not in retired
             ):
                 return event
         return None

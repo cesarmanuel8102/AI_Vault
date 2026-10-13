@@ -409,6 +409,35 @@ class CanaryPilotOrchestrator:
             return self.execute(bundle)
         return discovery
 
+    def _finalize_result(
+        self,
+        proposal: Any,
+        result: CanaryExecutionResult,
+        *,
+        authorization_sha256: str,
+    ) -> dict[str, Any]:
+        try:
+            self.lifecycle_finalizer(proposal, result)
+        except Exception:
+            return self._block("CANARY_CERTIFICATION_FINALIZATION_FAILED")
+        payload = {
+            "schema": "CANARY_PILOT_ORCHESTRATION_RESULT_V1",
+            "status": result.status,
+            "decision": "CANARY_EXECUTED",
+            "reason_codes": list(result.reason_codes),
+            "candidate_sha256": proposal.sha256,
+            "authorization_sha256": authorization_sha256,
+            "request_sha256": result.request_sha256,
+            "broker_write_boundary_crossed": result.broker_write_boundary_crossed,
+            "projection": (
+                None
+                if result.projection is None
+                else result.projection.model_dump(mode="json")
+            ),
+        }
+        self.store.persist_result(proposal.sha256, payload)
+        return payload
+
     def execute(self, bundle: Any) -> dict[str, Any]:
         stored = self.store.load_candidate()
         if stored is None:
@@ -420,6 +449,25 @@ class CanaryPilotOrchestrator:
         prior = self.store.load_result(proposal.sha256)
         if prior is not None:
             return dict(prior)
+        recover_terminal = getattr(self.store, "recover_terminal_result", None)
+        recovered = (
+            recover_terminal(proposal.sha256) if callable(recover_terminal) else None
+        )
+        if recovered is not None:
+            recovered_result = recovered.get("result")
+            recovered_authorization_sha256 = str(
+                recovered.get("authorization_sha256") or ""
+            )
+            if (
+                not isinstance(recovered_result, CanaryExecutionResult)
+                or len(recovered_authorization_sha256) != 64
+            ):
+                return self._block("CANARY_RECOVERED_RESULT_INVALID")
+            return self._finalize_result(
+                proposal,
+                recovered_result,
+                authorization_sha256=recovered_authorization_sha256,
+            )
         now = self.now_utc()
         if now >= proposal.expires_at_utc:
             expire_unused = getattr(self.store, "expire_unused_candidate", None)
@@ -512,24 +560,8 @@ class CanaryPilotOrchestrator:
             return self._block("CANARY_EXECUTION_RESULT_INVALID")
         if result.request_sha256 != request.sha256:
             return self._block("CANARY_EXECUTION_RESULT_MISMATCH")
-        try:
-            self.lifecycle_finalizer(proposal, result)
-        except Exception:
-            return self._block("CANARY_CERTIFICATION_FINALIZATION_FAILED")
-        payload = {
-            "schema": "CANARY_PILOT_ORCHESTRATION_RESULT_V1",
-            "status": result.status,
-            "decision": "CANARY_EXECUTED",
-            "reason_codes": list(result.reason_codes),
-            "candidate_sha256": proposal.sha256,
-            "authorization_sha256": authorization.sha256,
-            "request_sha256": request.sha256,
-            "broker_write_boundary_crossed": result.broker_write_boundary_crossed,
-            "projection": (
-                None
-                if result.projection is None
-                else result.projection.model_dump(mode="json")
-            ),
-        }
-        self.store.persist_result(proposal.sha256, payload)
-        return payload
+        return self._finalize_result(
+            proposal,
+            result,
+            authorization_sha256=authorization.sha256,
+        )

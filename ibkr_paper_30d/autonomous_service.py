@@ -584,7 +584,7 @@ class AutonomousExperimentService:
             # In DUAL_SLEEVE_ACTIVE, canary always runs (continuous sleeve)
             # and regular sleeve also runs later in the same cycle.
             run_canary = bool(
-                canary_phase in {"CANARY_EXCLUSIVE", "DUAL_SLEEVE_ACTIVE"}
+                canary_phase == "DUAL_SLEEVE_ACTIVE"
                 or not (regular_entry or regular_management)
             )
             if run_canary:

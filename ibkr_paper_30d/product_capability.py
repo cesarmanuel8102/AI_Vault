@@ -365,7 +365,31 @@ class ProductFamilyCertificationStore:
         if (
             lifecycle.product_family_sha256 != family.sha256
             or lifecycle.account_identity_sha256 != account_sha256
-            or lifecycle.status != "PASS"
+        ):
+            raise ProductCapabilityError("CANARY_FULL_LIFECYCLE_REQUIRED")
+        if lifecycle.terminal_no_fill is True:
+            if (
+                lifecycle.status != "TRANSMIT_ONLY"
+                or lifecycle.full_lifecycle_verified is True
+                or lifecycle.flat is True
+                or lifecycle.completed_steps
+                != ("SUBMITTED", "BROKER_BOUND", "TERMINAL_NO_FILL")
+            ):
+                raise ProductCapabilityError("CANARY_TERMINAL_NO_FILL_INVALID")
+            for step in ("ORDER_TRANSMIT_VERIFIED", "ORDER_TERMINAL_NO_FILL"):
+                self.record_step(
+                    family,
+                    step,
+                    lifecycle.sha256,
+                    account_sha256=account_sha256,
+                    adapter_sha256=adapter_sha256,
+                    observed_at_utc=observed_at_utc,
+                    expires_at_utc=expires_at_utc,
+                    paper_limitations=paper_limitations,
+                )
+            return self.projection(family)
+        if (
+            lifecycle.status != "PASS"
             or lifecycle.full_lifecycle_verified is not True
             or lifecycle.flat is not True
         ):

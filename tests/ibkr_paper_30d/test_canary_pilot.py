@@ -135,6 +135,7 @@ class Store:
         self.claimed_execution_keys = set()
         self.authorizations = []
         self.discovery_events = []
+        self.recovered_result = None
 
     def load_candidate(self):
         return self.candidate
@@ -151,6 +152,9 @@ class Store:
 
     def load_result(self, candidate_sha256):
         return self.result
+
+    def recover_terminal_result(self, candidate_sha256):
+        return self.recovered_result
 
     def persist_result(self, candidate_sha256, result):
         self.result = result
@@ -279,6 +283,55 @@ def test_execution_revalidates_then_submits_exact_request_once() -> None:
     assert request.authorization_sha256 == store.authorizations[0][1].sha256
     assert request.writer_binding_sha256 == WRITER
     assert request.durable_sequence == 7
+
+
+def test_execution_finalizes_and_persists_recovered_terminal_result() -> None:
+    proposal = _proposal()
+    outcome = CanaryDiscoveryOutcome(
+        decision="CANDIDATE",
+        invocation_sha256=proposal.invocation_sha256,
+        result_sha256=proposal.result_sha256,
+        transcript_sha256=sha256_json([]),
+        proposal=proposal,
+    )
+    store = Store()
+    store.candidate = (outcome, _evidence(proposal), object())
+    store.recovered_result = {
+        "authorization_sha256": "f" * 64,
+        "result": CanaryExecutionResult(
+            status="TERMINAL_NO_FILL",
+            request_sha256="e" * 64,
+            broker_write_boundary_crossed=True,
+        ),
+    }
+    finalized = []
+    coordinator = Coordinator(
+        lambda _request: (_ for _ in ()).throw(
+            AssertionError("recovered execution must not be resubmitted")
+        )
+    )
+    controller = CanaryPilotOrchestrator(
+        discovery_runner=lambda *_args: (_ for _ in ()).throw(
+            AssertionError("discovery must not rerun during recovery")
+        ),
+        capability_evidence_collector=lambda _bundle, actual: _evidence(actual),
+        store=store,
+        coordinator=coordinator,
+        owner_pilot_authorization=_owner(),
+        writer_binding_sha256=WRITER,
+        durable_sequence_allocator=lambda: 1,
+        now_utc=lambda: NOW + timedelta(hours=1),
+        lifecycle_finalizer=lambda *args: finalized.append(args),
+    )
+
+    result = controller.execute(object())
+
+    assert result["status"] == "TERMINAL_NO_FILL"
+    assert result["decision"] == "CANARY_EXECUTED"
+    assert result["candidate_sha256"] == proposal.sha256
+    assert store.result == result
+    assert len(finalized) == 1
+    assert coordinator.requests == []
 
 
 def test_execution_retires_expired_candidate_and_executes_replacement_same_cycle() -> None:
