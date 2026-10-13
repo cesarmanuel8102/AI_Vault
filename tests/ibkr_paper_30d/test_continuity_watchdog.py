@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import json
 import pytest
 import threading
@@ -15,6 +16,14 @@ from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 
 
 NOW = datetime(2026, 10, 1, 14, tzinfo=timezone.utc)
+
+
+def test_watchdog_default_start_window_allows_real_gateway_handshake():
+    parameter = inspect.signature(ContinuityWatchdog.start).parameters[
+        "timeout_seconds"
+    ]
+
+    assert parameter.default == 20.0
 
 
 def _initialize(path):

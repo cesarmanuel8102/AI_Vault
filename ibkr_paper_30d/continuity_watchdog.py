@@ -91,7 +91,7 @@ class ContinuityWatchdog:
             raise ValueError("broker time must be timezone-aware")
         return value.astimezone(timezone.utc)
 
-    def start(self, timeout_seconds: float = 5.0) -> None:
+    def start(self, timeout_seconds: float = 20.0) -> None:
         if self._thread is not None and self._thread.is_alive():
             raise RuntimeError("CONTINUITY_WATCHDOG_ALREADY_RUNNING")
         self._stop.clear()
