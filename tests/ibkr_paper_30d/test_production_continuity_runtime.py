@@ -41,6 +41,7 @@ from ibkr_paper_30d.production_continuity_runtime import (
     _collect_continuity_liability_evidence,
     _broker_evidence_collector,
     _ProductionCanaryStore,
+    create_canary_pilot_orchestrator,
     create_authoritative_writer,
     validate_production_composition,
 )
@@ -434,6 +435,99 @@ def test_production_canary_store_recovers_terminal_no_fill_without_resubmission(
     )
     assert store.load_candidate() is None
     assert store.has_orphaned_durable_state() is False
+
+
+def test_recovered_canary_finalizes_against_its_certified_adapter_after_release(
+    tmp_path,
+) -> None:
+    from ibkr_paper_30d.canary_execution import CanaryExecutionResult
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+    from ibkr_paper_30d.product_capability import (
+        ProductFamilyCertificationStatus,
+        ProductFamilyCertificationStore,
+    )
+    from test_canary_pilot import _owner, _proposal
+
+    db_path = tmp_path / "adapter-drift-canary.sqlite3"
+    with Database.open(db_path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+        proposal = _proposal()
+        certified_adapter = "a" * 64
+        deployed_adapter = "b" * 64
+        original_store = ProductFamilyCertificationStore(
+            db, current_adapter_sha256=certified_adapter
+        )
+        original_store.record_read_only_candidate_evidence(
+            proposal.product_family,
+            evidence_sha256="c" * 64,
+            account_sha256=proposal.account_identity_sha256,
+            adapter_sha256=certified_adapter,
+            observed_at_utc=proposal.created_at_utc,
+            expires_at_utc=proposal.expires_at_utc,
+            paper_limitations=("PAPER_SIMULATION_ONLY",),
+        )
+        recorder = CanaryLifecycleRecorder(
+            proposal.candidate_id,
+            proposal.account_identity_sha256,
+            proposal.product_family.sha256,
+            proposal.canonical_contract.sha256,
+        )
+        for ordinal, step in enumerate(
+            ("SUBMITTED", "BROKER_BOUND", "TERMINAL_NO_FILL"), 1
+        ):
+            recorder.record(
+                CanaryBrokerLifecycleReceipt(
+                    canary_id=proposal.candidate_id,
+                    step=step,
+                    endpoint="PAPER",
+                    account_identity_sha256=proposal.account_identity_sha256,
+                    product_family_sha256=proposal.product_family.sha256,
+                    contract_identity_sha256=proposal.canonical_contract.sha256,
+                    broker_event_id_sha256=f"{ordinal:064x}",
+                    broker_snapshot_sha256=f"{ordinal + 10:064x}",
+                    previous_receipt_sha256=recorder.last_receipt_sha256,
+                    observed_at_utc=proposal.created_at_utc
+                    + timedelta(seconds=ordinal),
+                    open_orders=1 if step == "BROKER_BOUND" else 0,
+                    positions=0,
+                    economics_reconciled=False,
+                )
+            )
+        changed_store = ProductFamilyCertificationStore(
+            db, current_adapter_sha256=deployed_adapter
+        )
+        orchestrator = create_canary_pilot_orchestrator(
+            coordinator=BrokerWriteCoordinator(),
+            db_path=db_path,
+            provider=None,
+            toolbox=None,
+            owner_pilot_authorization=_owner(),
+            writer_binding_sha256="d" * 64,
+            model="test-model",
+            reasoning_effort="low",
+            timeout_seconds=30,
+            product_certification_store=changed_store,
+            effective_approved_head=proposal.approved_head,
+        )
+
+        orchestrator.lifecycle_finalizer(
+            proposal,
+            CanaryExecutionResult(
+                status="TERMINAL_NO_FILL",
+                request_sha256="e" * 64,
+                projection=recorder.projection(),
+                broker_write_boundary_crossed=True,
+            ),
+        )
+
+        projection = changed_store.projection(proposal.product_family)
+        assert (
+            projection.status
+            is ProductFamilyCertificationStatus.ORDER_TRANSMIT_VERIFIED
+        )
+        assert projection.adapter_sha256 == certified_adapter
 
 
 def test_v4_writer_factory_wires_path_scoped_sleeve_authority(

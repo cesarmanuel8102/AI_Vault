@@ -873,12 +873,20 @@ def create_canary_pilot_orchestrator(
     def finalize_lifecycle(proposal: Any, result: Any) -> None:
         if result.projection is None:
             return
+        certification = product_certification_store.projection(
+            proposal.product_family
+        )
+        certified_adapter_sha256 = certification.adapter_sha256
+        if certified_adapter_sha256 is None:
+            raise ProductionRuntimeConfigurationError(
+                "CANARY_CERTIFICATION_ADAPTER_MISSING"
+            )
         observed = datetime.now(timezone.utc)
         product_certification_store.record_canary_lifecycle(
             proposal.product_family,
             result.projection,
             account_sha256=proposal.account_identity_sha256,
-            adapter_sha256=product_certification_store.current_adapter_sha256,
+            adapter_sha256=certified_adapter_sha256,
             observed_at_utc=observed,
             expires_at_utc=observed + timedelta(days=1),
             paper_limitations=("PAPER_SIMULATION_ONLY",),
