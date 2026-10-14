@@ -234,6 +234,9 @@ def validate_canary_candidate(
         reasons.append("CANARY_ECONOMICS_MISMATCH")
     if evidence.get("paper_only") is not True:
         reasons.append("POSSIBLE_LIVE_CONNECTION")
+    round_trip_fee = _decimal(evidence.get("estimated_round_trip_commission_usd"))
+    if round_trip_fee is not None and round_trip_fee > proposal.fee_allowance_usd:
+        reasons.append("CANARY_ROUND_TRIP_FEE_ALLOWANCE_INSUFFICIENT")
     if evidence.get("fresh") is not True:
         reasons.append("CANARY_CAPABILITY_EVIDENCE_STALE")
     if int(evidence.get("broker_write_count") or 0) != 0:

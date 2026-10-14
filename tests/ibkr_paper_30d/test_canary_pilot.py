@@ -3,6 +3,7 @@ from __future__ import annotations
 from concurrent.futures import Future
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+import pytest
 
 from ibkr_paper_30d.canary_candidate import (
     CanaryCandidateProposal,
@@ -640,12 +641,13 @@ def test_capability_collector_uses_host_bindings_not_proposal_claims() -> None:
         assert evidence[field] == expected
 
 
-def test_capability_collector_accepts_cash_debit_only_within_candidate_bounds() -> None:
+@pytest.mark.parametrize("fee_allowance,allowed", [("0.25", False), ("0.49", False), ("0.50", True), ("1", True)])
+def test_capability_collector_accepts_cash_debit_only_within_candidate_bounds(fee_allowance, allowed) -> None:
     proposal = _proposal().model_copy(
         update={
             "maximum_debit_usd": Decimal("10"),
             "maximum_loss_usd": Decimal("10"),
-            "fee_allowance_usd": Decimal("1"),
+            "fee_allowance_usd": Decimal(fee_allowance),
         }
     )
 
@@ -688,9 +690,11 @@ def test_capability_collector_accepts_cash_debit_only_within_candidate_bounds() 
         Toolbox(), object(), proposal, now_utc=NOW + timedelta(seconds=1)
     )
 
-    assert evidence["broker_feasibility_verified"] is True
-    assert evidence["broker_economics_within_candidate_bounds"] is True
-    assert evidence["fresh"] is True
+    assert evidence["broker_feasibility_verified"] is allowed
+    assert evidence["broker_economics_within_candidate_bounds"] is allowed
+    assert evidence["fresh"] is allowed
+    assert evidence["estimated_round_trip_commission_usd"] == "0.50"
+    assert evidence["round_trip_commission_is_estimate"] is True
 
 
 def test_capability_collector_rejects_underdeclared_cash_economics() -> None:

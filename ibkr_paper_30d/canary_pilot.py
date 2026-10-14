@@ -123,6 +123,7 @@ def collect_canary_capability_evidence(
         )
     )
     broker_economics_within_candidate_bounds = True
+    round_trip_commission = None
     if feasibility.data.get("what_if_status") == "BROKER_CASH_DEBIT_COMPUTED":
         cash_notional = _nonnegative_decimal(
             feasibility.data.get("cash_notional_usd")
@@ -133,6 +134,8 @@ def collect_canary_capability_evidence(
         maximum_cash_debit = _nonnegative_decimal(
             feasibility.data.get("maximum_cash_debit_usd")
         )
+        if estimated_commission is not None:
+            round_trip_commission = estimated_commission * 2
         broker_economics_within_candidate_bounds = bool(
             cash_notional is not None
             and estimated_commission is not None
@@ -140,7 +143,7 @@ def collect_canary_capability_evidence(
             and maximum_cash_debit == cash_notional + estimated_commission
             and cash_notional <= proposal.maximum_debit_usd
             and cash_notional <= proposal.maximum_loss_usd
-            and estimated_commission <= proposal.fee_allowance_usd
+            and round_trip_commission <= proposal.fee_allowance_usd
         )
     broker_feasibility_verified = bool(
         feasibility.success
@@ -171,6 +174,10 @@ def collect_canary_capability_evidence(
         "maximum_debit_usd": str(proposal.maximum_debit_usd),
         "maximum_loss_usd": str(proposal.maximum_loss_usd),
         "fee_allowance_usd": str(proposal.fee_allowance_usd),
+        "estimated_round_trip_commission_usd": (
+            str(round_trip_commission) if round_trip_commission is not None else None
+        ),
+        "round_trip_commission_is_estimate": True,
         "paper_only": True,
         "fresh": bool(
             contract_qualified

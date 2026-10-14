@@ -886,6 +886,15 @@ class CodexAutonomousCLIProvider:
             "request_sha256": sha256_json(request),
             "host_candidate_bindings": host_candidate_bindings,
             "lifecycle_semantics": {
+                "fee_allowance_scope": "TOTAL_ENTRY_AND_FLAT_RETURN_COSTS",
+                "commission_interpretation": (
+                    "An entry what-if commission is for ONE order, not the complete "
+                    "two-order canary. Independently budget both entry and flat-return "
+                    "commissions and justify uncertainty headroom within Owner limits. "
+                    "The host checks a minimum round-trip estimate of twice the entry "
+                    "commission; this estimate is not an authoritative exit fee. "
+                    "Do not copy a single-order commission as the total fee allowance."
+                ),
                 "entry_what_if_required": True,
                 "pre_entry_exit_what_if_required": False,
                 "pre_entry_exit_what_if_interpretation": (
