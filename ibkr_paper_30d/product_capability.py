@@ -499,7 +499,8 @@ class ProductFamilyCertificationStore:
             or lifecycle.flat is not True
         ):
             raise ProductCapabilityError("CANARY_FULL_LIFECYCLE_REQUIRED")
-        for step in CERTIFICATION_SEQUENCE[6:]:
+        transmit_index = CERTIFICATION_SEQUENCE.index("ORDER_TRANSMIT_VERIFIED")
+        for step in CERTIFICATION_SEQUENCE[transmit_index:]:
             self._record_step(
                 family,
                 step,

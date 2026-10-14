@@ -104,6 +104,53 @@ def _full(store, family):
     )
 
 
+def test_complete_canary_supplies_transmit_step_after_read_only_evidence(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    family = _family("CRYPTO", "PAXOS")
+    try:
+        for step in CERTIFICATION_SEQUENCE[:5]:
+            _record(store, family, step)
+        lifecycle = _complete_lifecycle("read-only-to-full", family.sha256)
+        projection = store.record_canary_lifecycle(
+            family,
+            lifecycle,
+            account_sha256=ACCOUNT,
+            adapter_sha256=ADAPTER,
+            observed_at_utc=NOW,
+            expires_at_utc=NOW + timedelta(days=1),
+            paper_limitations=("PAPER_SIMULATION_ONLY",),
+        )
+        assert projection.status is ProductFamilyCertificationStatus.FULL_LIFECYCLE_VERIFIED
+        assert projection.completed_steps == CERTIFICATION_SEQUENCE
+        assert store.assert_executable(family, NOW, ACCOUNT).executable is True
+    finally:
+        db.close()
+
+
+def test_incomplete_canary_cannot_supply_transmit_certification(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    family = _family("CRYPTO", "PAXOS")
+    try:
+        for step in CERTIFICATION_SEQUENCE[:5]:
+            _record(store, family, step)
+        recorder = CanaryLifecycleRecorder("incomplete", ACCOUNT, family.sha256, CONTRACT)
+        recorder.record(_lifecycle_receipt(recorder, "SUBMITTED", 1))
+        partial = recorder.record(_lifecycle_receipt(recorder, "BROKER_BOUND", 2))
+        with pytest.raises(ProductCapabilityError, match="CANARY_FULL_LIFECYCLE_REQUIRED"):
+            store.record_canary_lifecycle(
+                family,
+                partial,
+                account_sha256=ACCOUNT,
+                adapter_sha256=ADAPTER,
+                observed_at_utc=NOW,
+                expires_at_utc=NOW + timedelta(days=1),
+                paper_limitations=("PAPER_SIMULATION_ONLY",),
+            )
+        assert store.projection(family).completed_steps == CERTIFICATION_SEQUENCE[:5]
+    finally:
+        db.close()
+
+
 def test_research_discovery_does_not_imply_execution_authority() -> None:
     evidence = ProductCapabilityEvidence(
         candidate={"symbol": "ARBITRARY", "secType": "FUT", "exchange": "GLOBEX"},
