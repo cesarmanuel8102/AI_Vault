@@ -9,6 +9,7 @@ from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v
 from ibkr_paper_30d.multi_universe_transition import (
     MultiUniverseTransitionCoordinator,
     MultiUniverseTransitionError,
+    current_cash_classifications,
 )
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.successor_schema import install_successor_schema_v2
@@ -17,6 +18,53 @@ from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 OLD_HEAD = "1" * 40
 NEW_HEAD = "2" * 40
 SECOND_HEAD = "4" * 40
+
+
+@pytest.mark.parametrize("invalid_hash", [False, True])
+def test_current_cash_uses_phase_bound_release_not_old_supervision(tmp_path, invalid_hash):
+    db, coordinator, target = _coordinator(tmp_path)
+    try:
+        bound = coordinator.advance(
+            TransitionPhase.SUPERVISION_BOUND,
+            _phase_evidence(TransitionPhase.SUPERVISION_BOUND),
+        )
+        coordinator.authorize_runtime_release(
+            target, approved_git_head=NEW_HEAD,
+            evidence=_release_evidence(
+                transition_phase=TransitionPhase.SUPERVISION_BOUND.value,
+                supervision_phase_event_sha256=bound.phase_event_sha256,
+                **_cash_classification_evidence(),
+            ),
+        )
+        canary = coordinator.advance(
+            TransitionPhase.CANARY_EXCLUSIVE,
+            _phase_evidence(TransitionPhase.CANARY_EXCLUSIVE),
+        )
+        current = _cash_classification_evidence()
+        current["classified_non_experiment_currency_balances"][0]["amount"] = "253880.1802"
+        classifications = {
+            key: value for key, value in current.items()
+            if key != "cash_classification_sha256"
+        }
+        current["cash_classification_sha256"] = (
+            "0" * 64 if invalid_hash else sha256_json(classifications)
+        )
+        coordinator.authorize_runtime_release(
+            target, approved_git_head=SECOND_HEAD,
+            evidence=_release_evidence(
+                current_head=SECOND_HEAD,
+                transition_phase=TransitionPhase.CANARY_EXCLUSIVE.value,
+                phase_event_sha256=canary.phase_event_sha256,
+                **current,
+            ),
+        )
+        if invalid_hash:
+            with pytest.raises(MultiUniverseTransitionError, match="ACTIVE_CASH_CLASSIFICATION_REQUIRED"):
+                current_cash_classifications(db)
+        else:
+            assert current_cash_classifications(db) == classifications
+    finally:
+        db.close()
 
 
 def _cash_classification_evidence() -> dict[str, object]:

@@ -2320,6 +2320,7 @@ class _ProductionCanaryStore:
             except ProductionRuntimeConfigurationError:
                 return True
             active = self._active_candidate_event(events)
+            recovered_candidates = self._reconciled_recovery_candidates(events)
             active_sha256 = (
                 str(active.get("candidate_sha256") or "") if active else ""
             )
@@ -2377,6 +2378,8 @@ class _ProductionCanaryStore:
 
             for candidate_sha256, event_types in by_candidate.items():
                 if candidate_sha256 == active_sha256:
+                    continue
+                if candidate_sha256 in recovered_candidates:
                     continue
                 if candidate_sha256 in prewrite_blocked and "LIFECYCLE_RECEIPT" not in event_types:
                     continue
@@ -2482,10 +2485,58 @@ class _ProductionCanaryStore:
         )
 
     @staticmethod
+    def _reconciled_recovery_candidates(events: list[dict[str, Any]]) -> set[str]:
+        """Retire proven Owner recoveries without granting lifecycle certification."""
+        retired: set[str] = set()
+        for index, marker in enumerate(events):
+            if marker.get("event_type") != "CANARY_RECOVERY_RECONCILED":
+                continue
+            candidate = marker.get("candidate_sha256")
+            request_sha = marker.get("request_sha256")
+            evidence_sha = marker.get("evidence_sha256")
+            prior = events[:index]
+            requests = [e.get("request") for e in prior
+                        if e.get("event_type") == "EXECUTION_REQUEST"
+                        and e.get("candidate_sha256") == candidate
+                        and sha256_json(e.get("request")) == request_sha]
+            if len(requests) != 1 or not isinstance(requests[0], dict):
+                continue
+            request = requests[0]
+            net_reconciled = any(
+                e.get("event_type") == "BROKER_NET_PNL_RECONCILED"
+                and e.get("candidate_sha256") == candidate
+                and e.get("request_sha256") == request_sha
+                and e.get("evidence_sha256") == evidence_sha
+                for e in prior
+            )
+            if not net_reconciled:
+                continue
+            for event in prior:
+                if (event.get("event_type") != "CANARY_RECOVERY_RESULT"
+                        or event.get("candidate_sha256") != candidate
+                        or event.get("original_request_sha256") != request_sha):
+                    continue
+                result = event.get("result") or {}
+                facts = (result.get("broker_validation") or {}).get("broker_facts") or {}
+                try:
+                    flat = Decimal(str(facts.get("position_quantity"))) == 0
+                    orders_empty = int(facts.get("open_order_count")) == 0
+                except (ValueError, TypeError, ArithmeticError):
+                    continue
+                if (result.get("success") is True and result.get("status") == "FILLED"
+                        and facts.get("complete") is True and flat and orders_empty
+                        and facts.get("request_sha256") == request_sha
+                        and facts.get("account_identity_sha256") == request.get("account_identity_sha256")
+                        and sha256_json(facts) == marker.get("facts_sha256")
+                        and evidence_sha):
+                    retired.add(str(candidate))
+        return retired
+
+    @staticmethod
     def _active_candidate_event(
         events: list[dict[str, Any]],
     ) -> dict[str, Any] | None:
-        retired: set[str] = set()
+        retired = _ProductionCanaryStore._reconciled_recovery_candidates(events)
         for event in reversed(events):
             candidate_sha256 = str(event.get("candidate_sha256") or "")
             if event.get("event_type") == "CANDIDATE_EXPIRED_UNUSED" or (

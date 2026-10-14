@@ -9,6 +9,38 @@ from ibkr_paper_30d.multi_universe_models import CapitalSleeve
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.experiment_ledger import normalized_money
 from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+from ibkr_paper_30d.production_continuity_runtime import _ProductionCanaryStore
+
+
+@pytest.mark.parametrize("proof", ["complete", "missing", "nonflat", "wrong_hash"])
+def test_owner_recovery_retires_failed_candidate_only_with_bound_flat_proof(tmp_path, proof):
+    path, store, proposal, request = _setup(tmp_path)
+    store.begin_write(request.execution_key)
+    original = {"status": "UNCERTAIN", "broker_write_boundary_crossed": True}
+    store.persist_result(proposal.sha256, original)
+    fill_data = facts(request, flat=True, commission=None)
+    if proof != "missing":
+        recovered_facts = dict(fill_data)
+        if proof == "nonflat":
+            recovered_facts["position_quantity"] = "0.01"
+        if proof == "wrong_hash":
+            recovered_facts["request_sha256"] = "f" * 64
+        with Database.open(path) as db, db.transaction():
+            store._append_in_transaction(
+                db, authorization_id="owner-recovery", event_type="CANARY_RECOVERY_RESULT",
+                body={"candidate_sha256": proposal.sha256,
+                      "original_request_sha256": request.sha256,
+                      "result": {"success": True, "status": "FILLED",
+                                 "broker_validation": {"broker_facts": recovered_facts}}},
+            )
+    observation = _pnl_observation(request, fill_data["fills"], Decimal("-0.59977"))
+    CanaryBrokerAccounting(path).reconcile_terminal_recovery(request, fill_data, observation)
+    if proof == "complete":
+        assert store.load_candidate() is None
+        assert store.has_orphaned_durable_state() is False
+    else:
+        assert store.load_candidate() is not None
+    assert store.load_result(proposal.sha256) == original
 
 
 def facts(request, *, flat=False, commission="0.01"):

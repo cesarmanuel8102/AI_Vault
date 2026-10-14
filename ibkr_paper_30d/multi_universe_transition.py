@@ -645,6 +645,32 @@ def current_cash_classifications(db: Database) -> dict[str, list[dict[str, str]]
         raise MultiUniverseTransitionError(
             "SUPERVISION_CASH_CLASSIFICATION_REQUIRED"
         )
+    # A later phase-bound release may supersede the supervision cash evidence.
+    release_row = db.execute(
+        "SELECT payload_json FROM successor_transition_events "
+        "WHERE transition_id=? AND phase=? "
+        "AND event_type='RUNTIME_RELEASE_AUTHORIZED' ORDER BY sequence DESC LIMIT 1",
+        (target.transition_id, recovered.phase.value),
+    ).fetchone()
+    if release_row is not None and recovered.phase is not TransitionPhase.SUPERVISION_BOUND:
+        release = json.loads(str(release_row[0]))
+        evidence = release.get("evidence") or {}
+        cash_keys = {
+            "classified_canary_currency_balances",
+            "classified_non_experiment_currency_balances",
+            "cash_classification_sha256",
+        }
+        if cash_keys.intersection(evidence):
+            if (
+                release.get("phase") != recovered.phase.value
+                or evidence.get("transition_phase") != recovered.phase.value
+                or evidence.get("phase_event_sha256") != recovered.phase_event_sha256
+            ):
+                raise MultiUniverseTransitionError("RUNTIME_RELEASE_PHASE_BINDING_REQUIRED")
+            MultiUniverseTransitionCoordinator._validate_runtime_release_evidence(
+                target, str(release.get("approved_git_head") or ""), evidence
+            )
+            return MultiUniverseTransitionCoordinator._cash_classifications(evidence)
     supervision_row = db.execute(
         "SELECT event_sha256 FROM successor_transition_events "
         "WHERE transition_id=? AND phase=? AND event_type='PHASE_COMMITTED'",
