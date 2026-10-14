@@ -1940,8 +1940,10 @@ def test_run_forever_deduplicates_recoverable_provider_failure_alerts(
         assert failure_count[0] == 0
 
 
+@pytest.mark.parametrize("regular_enabled", [False, True])
+@pytest.mark.parametrize("regular_management", [False, True])
 def test_canary_exclusive_fair_scheduling_allows_canary_after_regular_cycles(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, regular_enabled, regular_management
 ):
     calls = []
 
@@ -1987,6 +1989,11 @@ def test_canary_exclusive_fair_scheduling_allows_canary_after_regular_cycles(
         def model_dump(self, mode="json"):
             return {"decision_cycle_id": "fair-cycle"}
 
+    if regular_enabled:
+        Bundle.multi_sleeve_portfolio["entry_eligibility"]["REGULAR_SLEEVE"] = {"status": "PASS", "reason_codes": []}
+    if not regular_management:
+        Bundle.multi_sleeve_portfolio["management_eligibility"] = {}
+
     def run_regular(bundle, **kwargs):
         return {
             "status": "PASS",
@@ -2008,7 +2015,7 @@ def test_canary_exclusive_fair_scheduling_allows_canary_after_regular_cycles(
         service._builder = lambda: SimpleNamespace(build=lambda trigger: Bundle())
         service.canary_fair_cycle_limit = 3
 
-        for _ in range(3):
+        for _ in range(3 if regular_enabled or regular_management else 0):
             result = service._run_cycle("SCHEDULED_SCAN")
             assert result["outcome"]["decision"] == "MONITOR_POSITION"
             assert "canary" not in result

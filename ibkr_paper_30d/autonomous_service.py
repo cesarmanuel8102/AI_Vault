@@ -692,9 +692,9 @@ class AutonomousExperimentService:
             elif canary_phase == "SUPERVISION_BOUND":
                 run_canary = not (regular_entry or regular_management)
             elif canary_phase == "CANARY_EXCLUSIVE":
-                if regular_entry or self._regular_urgent_obligation(bundle):
+                if self._regular_urgent_obligation(bundle):
                     run_canary = False
-                elif not regular_management:
+                elif not (regular_entry or regular_management):
                     run_canary = True
                 else:
                     run_canary = (
@@ -711,7 +711,7 @@ class AutonomousExperimentService:
                     else self.canary_pilot_orchestrator.execute(bundle)
                 )
             else:
-                if canary_phase == "CANARY_EXCLUSIVE" and regular_management:
+                if canary_phase == "CANARY_EXCLUSIVE" and (regular_entry or regular_management):
                     self._regular_cycles_since_canary += 1
                 canary = None
             if canary is not None:
