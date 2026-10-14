@@ -12,8 +12,244 @@ from .sleeve_ledger import SleeveLedgerStore
 
 
 class CanaryBrokerAccounting:
+    @staticmethod
+    def recognizes_fill(db: Database, observed: dict[str, Any]) -> bool:
+        """Recognize a journaled canary fill, without posting it to Day1 again."""
+        from .canary_execution import CanaryExecutionRequest
+        from .ibkr_readonly import expected_identity_hash
+        from .multi_universe_models import CanaryAuthorization
+        from .production_continuity_runtime import _ProductionCanaryStore
+
+        events = _ProductionCanaryStore._verified_events(db)
+        execution_hash = observed.get("execution_id_sha256")
+        if not execution_hash:
+            return False
+        for event in reversed(events):
+            if event.get("event_type") != "BROKER_FACTS_OBSERVED":
+                continue
+            facts = event.get("facts") or {}
+            if sha256_json(facts) != event.get("facts_sha256"):
+                raise ValueError("CANARY_BROKER_FACT_HASH_MISMATCH")
+            matches = [f for f in facts.get("fills", ())
+                       if f.get("execution_id_sha256") == execution_hash]
+            if len(matches) != 1:
+                continue
+            anchor = next((e for e in events if e.get("event_type") == "EXECUTION_REQUEST"
+                           and e.get("request_sha256") == facts.get("request_sha256")), None)
+            if anchor is None:
+                return False
+            request = CanaryExecutionRequest.model_validate(anchor["request"])
+            authorization_event = next((e for e in events if e.get("event_type") == "AUTHORIZED"
+                                        and e.get("authorization_sha256") == request.authorization_sha256), None)
+            if authorization_event is None:
+                return False
+            authorization = CanaryAuthorization.model_validate(authorization_event["authorization"])
+            if (request.sha256 != anchor["request_sha256"]
+                    or authorization.sha256 != request.authorization_sha256
+                    or authorization.account_identity_sha256 != request.account_identity_sha256
+                    or facts.get("account_identity_sha256") != request.account_identity_sha256
+                    or facts.get("contract_identity_sha256") != request.canonical_contract.sha256
+                    or facts.get("complete") is not True
+                    or not any(e.get("event_type") == "EXECUTION_CLAIMED"
+                               and e.get("execution_key") == request.execution_key
+                               and e.get("request_sha256") == request.sha256 for e in events)):
+                return False
+            fill = matches[0]
+            try:
+                quantity = Decimal(str(observed.get("quantity")))
+                cumulative = Decimal(str(observed.get("cumQty") or quantity))
+                return (
+                    expected_identity_hash(str(observed.get("account") or "")) == request.account_identity_sha256
+                    and int((observed.get("contract") or {}).get("conId", 0)) == request.canonical_contract.con_id
+                    and observed.get("orderRef") == fill.get("order_ref")
+                    and int(observed.get("orderId", 0)) == int(fill.get("order_id", 0)) > 0
+                    and int(observed.get("permId", 0)) == int(fill.get("perm_id", 0)) > 0
+                    and int(observed.get("clientId", -1)) == int(fill.get("client_id", -2)) == 19761
+                    and observed.get("side") == fill.get("action")
+                    and quantity == Decimal(str(fill.get("quantity"))) > 0
+                    and quantity <= cumulative <= request.quantity
+                    and Decimal(str(observed.get("price"))) == Decimal(str(fill.get("price"))) > 0
+                )
+            except (TypeError, ValueError, ArithmeticError):
+                return False
+        return False
+
     def __init__(self, db_path: Path):
         self.db_path = Path(db_path)
+
+    def recognizes_broker_fill(self, fill: Any) -> bool:
+        execution = fill.execution
+        observed = {'execution_id_sha256': sha256_json(execution.execId),
+                    'account': execution.acctNumber, 'contract': {'conId': fill.contract.conId},
+                    'orderRef': execution.orderRef, 'orderId': execution.orderId,
+                    'permId': execution.permId, 'clientId': execution.clientId,
+                    'side': 'BUY' if execution.side == 'BOT' else 'SELL' if execution.side == 'SLD' else 'UNKNOWN',
+                    'quantity': str(execution.shares), 'cumQty': str(execution.cumQty),
+                    'price': str(execution.price)}
+        with Database.open(self.db_path) as db:
+            return self.recognizes_fill(db, observed)
+
+    def record_verified_baseline(self, request: Any, snapshot: dict[str, Any]) -> None:
+        """Host collector boundary; never exposed to the model as a tool."""
+        from .production_continuity_runtime import _ProductionCanaryStore
+
+        if (snapshot.get('request_sha256') != request.sha256
+                or snapshot.get('account_identity_sha256') != request.account_identity_sha256
+                or snapshot.get('contract_id') != request.canonical_contract.con_id
+                or snapshot.get('source') != 'IBKR_PAPER'
+                or Decimal(snapshot['position_quantity']) != 0 or snapshot['open_order_count'] != 0):
+            raise ValueError('CANARY_NET_BASELINE_INVALID')
+        with Database.open(self.db_path) as db, db.transaction():
+            store = _ProductionCanaryStore(self.db_path)
+            events = store._verified_events(db)
+            store._reservation_binding(events, request.execution_key, recovery=True)
+            prior = next((e for e in events if e.get('event_type') == 'CANARY_ECONOMICS_BASELINE'
+                          and e.get('request_sha256') == request.sha256), None)
+            if prior is not None:
+                if prior.get('snapshot_sha256') != sha256_json(snapshot):
+                    raise ValueError('CANARY_NET_BASELINE_CONFLICT')
+                return
+            store._append_in_transaction(db, authorization_id=request.canary_id,
+                event_type='CANARY_ECONOMICS_BASELINE', body={
+                    'request_sha256': request.sha256, 'snapshot': snapshot,
+                    'snapshot_sha256': sha256_json(snapshot)})
+
+    def capture_baseline(self, request: Any, broker: Any) -> None:
+        from .canary_net_economics import collect_net_snapshot
+        self.record_verified_baseline(request, collect_net_snapshot(request, broker))
+
+    def pending_flat_request(self) -> Any | None:
+        from .canary_authority import CanaryBrokerLifecycleReceipt, CanaryLifecycleRecorder
+        from .canary_execution import CanaryExecutionRequest
+        from .production_continuity_runtime import _ProductionCanaryStore
+        with Database.open(self.db_path) as db:
+            events = _ProductionCanaryStore._verified_events(db)
+        for event in reversed(events):
+            if event.get('event_type') != 'EXECUTION_REQUEST':
+                continue
+            request = CanaryExecutionRequest.model_validate(event['request'])
+            if request.sha256 != event['request_sha256']:
+                raise ValueError('CANARY_EXECUTION_REQUEST_HASH_MISMATCH')
+            if not any(e.get('event_type') == 'CANARY_ECONOMICS_BASELINE'
+                       and e.get('request_sha256') == request.sha256 for e in events):
+                continue
+            recorder = CanaryLifecycleRecorder(request.canary_id, request.account_identity_sha256,
+                                               request.product_family.sha256, request.canonical_contract.sha256)
+            for e in events:
+                if e.get('event_type') == 'LIFECYCLE_RECEIPT' and e['receipt']['canary_id'] == request.canary_id:
+                    receipt = CanaryBrokerLifecycleReceipt.model_validate(e['receipt'])
+                    if receipt.sha256 != e['receipt_sha256']:
+                        raise ValueError('CANARY_RECEIPT_HASH_MISMATCH')
+                    recorder.record(receipt)
+            if recorder.projection().completed_steps == recorder.sequence[:-1]:
+                return request
+        return None
+
+    def complete_pending_with_broker(self, request: Any, broker: Any) -> bool:
+        from datetime import datetime, timezone
+        from ib_insync import ExecutionFilter
+        from .authoritative_broker_writer import AuthoritativeBrokerWriter
+        from .canary_net_economics import collect_net_snapshot
+
+        after = collect_net_snapshot(request, broker)
+        observer = object.__new__(AuthoritativeBrokerWriter)
+        observer.execution_client_id = 19761
+        observer.canary_broker_accounting = self
+        observer.now_utc = lambda: datetime.now(timezone.utc)
+        observer._collect_evidence = lambda b: {
+            'executions': b.reqExecutions(ExecutionFilter(acctCode=b.managedAccounts()[0])),
+            'positions': b.reqPositions(), 'trades': b.reqAllOpenOrders()}
+        facts = observer._canary_broker_facts(request, broker)
+        return self.complete_flat_lifecycle(request, facts, after)
+
+    def _net_observation(self, request: Any, facts: dict[str, Any], after: dict[str, Any]):
+        from .canary_net_economics import verified_net_observation
+        from .production_continuity_runtime import _ProductionCanaryStore
+        with Database.open(self.db_path) as db:
+            events = _ProductionCanaryStore._verified_events(db)
+        baseline = next((e for e in events if e.get('event_type') == 'CANARY_ECONOMICS_BASELINE'
+                         and e.get('request_sha256') == request.sha256), None)
+        if baseline is None or sha256_json(baseline['snapshot']) != baseline['snapshot_sha256']:
+            raise ValueError('CANARY_NET_BASELINE_REQUIRED')
+        return verified_net_observation(request, baseline['snapshot'], after, facts)
+
+    def reconcile_with_broker(self, request: Any, broker: Any, facts: dict[str, Any]) -> bool:
+        from .canary_net_economics import collect_net_snapshot
+        try:
+            observation = self._net_observation(request, facts, collect_net_snapshot(request, broker))
+        except (ValueError, TimeoutError):
+            # Physical flatness is already proven; leave economics pending.
+            return False
+        result = self.import_broker_net_pnl(request, observation)
+        return Decimal(observation['cost_difference_usd']) <= request.fee_allowance_usd
+
+    def complete_flat_lifecycle(self, request: Any, facts: dict[str, Any], after: dict[str, Any]) -> bool:
+        """Complete delayed economic evidence; never submits or replays an order."""
+        from datetime import datetime, timezone
+        from .canary_authority import CanaryBrokerLifecycleReceipt, CanaryLifecycleRecorder
+        from .contract_ownership import ReleaseEvidence
+        from .production_continuity_runtime import _ProductionCanaryStore
+
+        observed = datetime.fromisoformat(after['observed_at_utc'].replace('Z', '+00:00'))
+        if not 0 <= (datetime.now(timezone.utc)-observed).total_seconds() < 60:
+            raise ValueError('CANARY_TERMINAL_ECONOMICS_STALE')
+        observation = self._net_observation(request, facts, after)
+        if Decimal(observation['cost_difference_usd']) > request.fee_allowance_usd:
+            raise ValueError('CANARY_BROKER_FEE_ALLOWANCE_EXCEEDED')
+        store = _ProductionCanaryStore(self.db_path)
+        with Database.open(self.db_path) as db:
+            events = store._verified_events(db)
+            store._reservation_binding(events, request.execution_key, recovery=True)
+        recorder = CanaryLifecycleRecorder(request.canary_id, request.account_identity_sha256,
+                                           request.product_family.sha256, request.canonical_contract.sha256)
+        for event in events:
+            if event.get('event_type') == 'LIFECYCLE_RECEIPT' and event['receipt']['canary_id'] == request.canary_id:
+                receipt = CanaryBrokerLifecycleReceipt.model_validate(event['receipt'])
+                if receipt.sha256 != event.get('receipt_sha256'):
+                    raise ValueError('CANARY_RECEIPT_HASH_MISMATCH')
+                recorder.record(receipt)
+        if recorder.projection().status == 'PASS':
+            return True
+        if recorder.projection().completed_steps != recorder.sequence[:-1]:
+            raise ValueError('CANARY_TERMINAL_FLAT_RECEIPT_REQUIRED')
+        self(request, facts)
+        self.import_broker_net_pnl(request, observation)
+        snapshot_sha = sha256_json(facts)
+        receipt = CanaryBrokerLifecycleReceipt(
+            canary_id=request.canary_id, step='ECONOMICS_RECONCILED', endpoint='PAPER',
+            account_identity_sha256=request.account_identity_sha256,
+            product_family_sha256=request.product_family.sha256,
+            contract_identity_sha256=request.canonical_contract.sha256,
+            broker_event_id_sha256=observation['evidence_sha256'], broker_snapshot_sha256=snapshot_sha,
+            previous_receipt_sha256=recorder.last_receipt_sha256, observed_at_utc=observed,
+            open_orders=0, positions=0, economics_reconciled=True)
+        recorder.record(receipt)
+        with Database.open(self.db_path) as db, db.transaction():
+            current = store._verified_events(db)
+            store._reservation_binding(current, request.execution_key, recovery=True)
+            current_receipts = [e for e in current if e.get('event_type') == 'LIFECYCLE_RECEIPT'
+                                and e['receipt']['canary_id'] == request.canary_id]
+            if current_receipts[-1]['receipt_sha256'] != receipt.previous_receipt_sha256:
+                if current_receipts[-1]['receipt']['step'] == 'ECONOMICS_RECONCILED':
+                    return True
+                raise ValueError('CANARY_TERMINAL_RECEIPT_CHANGED')
+            store._append_in_transaction(db, authorization_id=request.canary_id,
+                event_type='LIFECYCLE_RECEIPT', body={'receipt_sha256': receipt.sha256,
+                                                    'receipt': receipt.model_dump(mode='json')})
+            ledger = SleeveLedgerStore(db)
+            if not any(e['event_type'] == 'LIABILITY_RELEASED' and e.get('reservation_key') == request.execution_key
+                       for e in ledger._events()):
+                ledger.release_liability_in_transaction(CapitalSleeve.CONTINUOUS_SLEEVE,
+                    amount_usd=request.maximum_loss_usd, reservation_key=request.execution_key,
+                    broker_snapshot_sha256=snapshot_sha)
+            ownership = ContractOwnershipStore(db)
+            if ownership.projection().owner_of(request.canonical_contract.sha256) is not None:
+                ownership.release_in_transaction(request.canonical_contract.sha256,
+                    ReleaseEvidence(position_quantity=Decimal(0), open_order_count=0,
+                                    pending_execution_count=0, child_position_count=0, fill_ambiguity=False,
+                                    broker_snapshot_sha256=snapshot_sha, expected_broker_snapshot_sha256=snapshot_sha,
+                                    broker_snapshot_fresh=True))
+        return True
 
     def __call__(self, request: Any, facts: dict[str, Any]) -> bool:
         from .production_continuity_runtime import _ProductionCanaryStore
@@ -71,6 +307,8 @@ class CanaryBrokerAccounting:
             events = store._verified_events(db)
             ledger = SleeveLedgerStore(db)
             prior = ledger._events()
+            net_imported = any(e['event_type'] == 'BROKER_NET_PNL_RECONCILED'
+                               and e.get('request_sha256') == request.sha256 for e in prior)
 
             def insert(event_type, payload):
                 ledger._insert(sleeve=sleeve, currency="USD", event_type=event_type, payload=payload)
@@ -92,13 +330,13 @@ class CanaryBrokerAccounting:
                     insert("FILL_RECORDED", {"execution_id_sha256": key})
                     insert("CANARY_FILL_IMPORTED", {"execution_id_sha256": key, "request_sha256": request.sha256, "fill": fill})
                 fee_imported = any(e["event_type"] == "CANARY_FEE_IMPORTED" and e.get("execution_id_sha256") == key for e in prior)
-                if not fee_imported and fill.get("commission") is not None and fill.get("commission_currency") == "USD":
+                if not net_imported and not fee_imported and fill.get("commission") is not None and fill.get("commission_currency") == "USD":
                     fee = Decimal(str(fill["commission"]))
                     if fee > 0:
                         insert("CURRENCY_DEBIT", {"amount": str(fee)})
                         insert("FEE_CHARGED", {"amount_usd": str(fee)})
                     insert("CANARY_FEE_IMPORTED", {"execution_id_sha256": key, "commission": str(fee)})
-            if reconciled and not any(e["event_type"] == "CANARY_ECONOMICS_IMPORTED" and e.get("request_sha256") == request.sha256 for e in prior):
+            if reconciled and not net_imported and not any(e["event_type"] == "CANARY_ECONOMICS_IMPORTED" and e.get("request_sha256") == request.sha256 for e in prior):
                 insert("REALIZED_PNL", {"amount_usd": str(costs["SELL"] - costs["BUY"] - fees)})
                 insert("CANARY_ECONOMICS_IMPORTED", {"request_sha256": request.sha256, "facts_sha256": sha256_json(facts)})
             if not any(e.get("event_type") == "BROKER_FACTS_OBSERVED" and e.get("facts_sha256") == sha256_json(facts) for e in events):
@@ -171,11 +409,13 @@ class CanaryBrokerAccounting:
         with Database.open(self.db_path) as db, db.transaction():
             store = _ProductionCanaryStore(self.db_path)
             events = store._verified_events(db)
-            if any(
-                e.get("event_type") == "BROKER_NET_PNL_RECONCILED"
-                and e.get("evidence_sha256") == evidence_sha256
-                for e in events
-            ):
+            previous = next((e for e in events
+                             if e.get("event_type") == "BROKER_NET_PNL_RECONCILED"
+                             and e.get("request_sha256") == request.sha256), None)
+            if previous is not None:
+                if (Decimal(previous["broker_realized_pnl_usd"]) != broker_net
+                        or Decimal(previous["cost_difference_usd"]) != cost_difference):
+                    raise ValueError("CANARY_BROKER_PNL_CONFLICT")
                 return {
                     "integrated": False,
                     "reason": "BROKER_NET_PNL_ALREADY_RECONCILED",
@@ -221,13 +461,17 @@ class CanaryBrokerAccounting:
                     payload=payload,
                 )
 
+            imported_fees = sum((Decimal(e['commission']) for e in prior
+                                 if e['event_type'] == 'CANARY_FEE_IMPORTED'
+                                 and e.get('execution_id_sha256') in imported_keys), Decimal(0))
+            remaining_cost = cost_difference - imported_fees
             insert("REALIZED_PNL", {"amount_usd": str(broker_net)})
-            if cost_difference > 0:
-                if state.balance("USD") < cost_difference:
+            if remaining_cost > 0:
+                if state.balance("USD") < remaining_cost:
                     raise ValueError("SLEEVE_CURRENCY_INSUFFICIENT_FOR_COST_DIFFERENCE")
-                insert("CURRENCY_DEBIT", {"amount": str(cost_difference)})
-            elif cost_difference < 0:
-                insert("CURRENCY_CREDIT", {"amount": str(-cost_difference)})
+                insert("CURRENCY_DEBIT", {"amount": str(remaining_cost)})
+            elif remaining_cost < 0:
+                insert("CURRENCY_CREDIT", {"amount": str(-remaining_cost)})
             insert(
                 "BROKER_NET_PNL_RECONCILED",
                 {
@@ -237,7 +481,9 @@ class CanaryBrokerAccounting:
                     "gross_execution_pnl_usd": str(gross_pnl),
                     "cost_difference_usd": str(cost_difference),
                     "candidate_fee_allowance_usd": str(fee_allowance),
+                    "already_imported_individual_fees_usd": str(imported_fees),
                     "cost_difference_exceeds_candidate_fee_allowance": exceeds_allowance,
+                    "observation": observation,
                     "cost_difference_is_inference": bool(
                         observation.get("cost_difference_is_inference")
                     ),
@@ -257,6 +503,7 @@ class CanaryBrokerAccounting:
                     "broker_realized_pnl_usd": str(broker_net),
                     "cost_difference_usd": str(cost_difference),
                     "cost_difference_exceeds_candidate_fee_allowance": exceeds_allowance,
+                    "observation": observation,
                 },
             )
 

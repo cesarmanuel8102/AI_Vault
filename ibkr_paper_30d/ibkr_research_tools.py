@@ -1245,6 +1245,7 @@ class IBKRResearchToolbox:
                 "account_identity_sha256": self.expected_account_hash,
                 "observed_at_utc": observed_at,
                 "cash_balance_basis": "IBKR_LEDGER_CASH_BALANCE_USD_V1",
+                "cash_reporting_quantum_usd": str(Decimal(1).scaleb(usd_cash_balance.as_tuple().exponent)),
                 "currency_balances": [
                     {"currency": "USD", "amount": str(usd_cash_balance)}
                 ],
@@ -1295,6 +1296,7 @@ class IBKRResearchToolbox:
                 exec_id = str(getattr(execution, "execId", "") or "")
                 items.append({
                     "execution_id_hash": hashlib.sha256(exec_id.encode("utf-8")).hexdigest() if exec_id else None,
+                    "execution_id_sha256": sha256_json(exec_id) if exec_id else None,
                     "orderRef": str(getattr(execution, "orderRef", "") or ""),
                     "permId": int(getattr(execution, "permId", 0) or 0),
                     "orderId": int(getattr(execution, "orderId", 0) or 0),

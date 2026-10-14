@@ -677,7 +677,7 @@ class SleeveLedgerStore:
                 fees = normalized_decimal(event.get("fees_usd") or "0")
 
         currency_balances = tuple(
-            CurrencyBalance(currency=currency, amount=normalized_money(amount))
+            CurrencyBalance(currency=currency, amount=normalized_decimal(amount))
             for currency, amount in balances.items()
         )
         return SleeveLedgerState(
@@ -710,7 +710,7 @@ class SleeveLedgerStore:
             regular=regular,
             extended=extended,
             aggregate_currency_balances=tuple(
-                CurrencyBalance(currency=currency, amount=normalized_money(amount))
+                CurrencyBalance(currency=currency, amount=normalized_decimal(amount))
                 for currency, amount in sorted(aggregate.items())
             ),
         )

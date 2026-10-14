@@ -591,6 +591,13 @@ class AuthoritativeBrokerWriter:
                 status="BLOCKED",
                 reasons=(f"CANARY_EVIDENCE_UNAVAILABLE:{type(exc).__name__}",),
             )
+        capture = getattr(self.canary_broker_accounting, 'capture_baseline', None)
+        if callable(capture):
+            try:
+                capture(request, broker)
+            except Exception as exc:
+                return self._result(success=False, status='BLOCKED',
+                                    reasons=(f'CANARY_NET_BASELINE_UNAVAILABLE:{type(exc).__name__}',))
         result = self.canary_execution_adapter.execute(request, broker, evidence)
         if getattr(result, "status", None) == "UNCERTAIN":
             self._report_uncertainty("CANARY_STATE_UNCERTAIN")
@@ -786,8 +793,12 @@ class AuthoritativeBrokerWriter:
         yield ("EXIT_FILL", 0, 0, False)
         yield ("FLAT_STATE", 0, 0, False)
         if self.canary_broker_accounting is not None:
+            facts = self._canary_broker_facts(request, broker)
             reconciled = self.canary_broker_accounting(
-                request, self._canary_broker_facts(request, broker))
+                request, facts)
+            reconcile_net = getattr(self.canary_broker_accounting, 'reconcile_with_broker', None)
+            if not reconciled and callable(reconcile_net):
+                reconciled = reconcile_net(request, broker, facts)
             if not reconciled:
                 return
         yield ("ECONOMICS_RECONCILED", 0, 0, True)
@@ -804,6 +815,10 @@ class AuthoritativeBrokerWriter:
             execution = fill.execution
             if int(fill.contract.conId) != identity.con_id:
                 continue
+            if execution.orderRef not in refs:
+                recognizes = getattr(self.canary_broker_accounting, 'recognizes_broker_fill', None)
+                if callable(recognizes) and recognizes(fill):
+                    continue
             if (execution.orderRef not in refs
                     or expected_identity_hash(execution.acctNumber) != request.account_identity_sha256
                     or int(execution.clientId) != self.execution_client_id

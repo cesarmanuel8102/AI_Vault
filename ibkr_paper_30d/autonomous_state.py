@@ -377,6 +377,11 @@ class AutonomousStateBuilder:
             order_ref = str(fill.get("orderRef") or "")
             if not order_ref.startswith("codex-ibkr-paper-30d-"):
                 continue
+            if getattr(self, "sleeve_ledger_store", None) is not None:
+                from .canary_broker_accounting import CanaryBrokerAccounting
+
+                if CanaryBrokerAccounting.recognizes_fill(self.db, fill):
+                    continue
             if not self._registered_fill(fill):
                 reasons.append(
                     f"UNREGISTERED_EXPERIMENT_FILL:{int(fill.get('orderId') or 0)}"
@@ -1368,6 +1373,28 @@ class AutonomousStateBuilder:
             "writer_binding_sha256": target.get("writer_binding_sha256"),
         }
 
+    def _complete_pending_canary_economics(self) -> None:
+        from .canary_broker_accounting import CanaryBrokerAccounting
+
+        if self.db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='canary_authorization_events'").fetchone() is None:
+            return
+        if self.db.execute("SELECT 1 FROM canary_authorization_events WHERE event_type='CANARY_ECONOMICS_BASELINE' LIMIT 1").fetchone() is None:
+            return
+        if self.db.connection.in_transaction:
+            raise AutonomousStateBuildError('CANARY_ECONOMICS_NETWORK_TRANSACTION_FORBIDDEN')
+        files = self.db.execute('PRAGMA database_list').fetchall()
+        path = next((row[2] for row in files if row[1] == 'main'), '')
+        if not path:
+            raise AutonomousStateBuildError('CANARY_ECONOMICS_DATABASE_PATH_REQUIRED')
+        accounting = CanaryBrokerAccounting(path)
+        pending = accounting.pending_flat_request()
+        if pending is not None:
+            broker = self.toolbox._connect()
+            try:
+                accounting.complete_pending_with_broker(pending, broker)
+            finally:
+                broker.disconnect()
+
     def build(
         self,
         *,
@@ -1375,6 +1402,8 @@ class AutonomousStateBuilder:
         market_session_state: str = "UNKNOWN",
         benchmark_state: dict[str, Any] | None = None,
     ) -> TraderInputBundle:
+        if self.sleeve_ledger_store is not None:
+            self._complete_pending_canary_economics()
         execution_reasons = self._sync_executions()
         mark_reasons = self._mark_open_positions()
         ledger_state = self.ledger.project()

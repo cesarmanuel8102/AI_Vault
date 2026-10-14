@@ -83,6 +83,25 @@ def test_missing_commission_never_claims_economics_reconciled(tmp_path):
     assert accounting(request, facts(request, flat=True, commission=None)) is False
 
 
+def test_partial_then_late_commission_reports_do_not_double_charge_net_cost(tmp_path):
+    path, store, _, request = _setup(tmp_path)
+    store.begin_write(request.execution_key)
+    accounting = CanaryBrokerAccounting(path)
+    data = facts(request, flat=True, commission=None)
+    data['fills'][0]['commission'] = '0.01'
+    accounting(request, data)
+    observation = _pnl_observation(request, data['fills'], Decimal('-0.03'))
+    accounting.import_broker_net_pnl(request, observation)
+    with Database.open(path) as db:
+        assert SleeveLedgerStore(db).project(CapitalSleeve.CONTINUOUS_SLEEVE).balance('USD') == Decimal('499.97')
+    data['fills'][1]['commission'] = '0.01'
+    assert accounting(request, data) is True
+    with Database.open(path) as db:
+        state = SleeveLedgerStore(db).project(CapitalSleeve.CONTINUOUS_SLEEVE)
+        assert state.balance('USD') == Decimal('499.97')
+        assert state.realized_pnl_usd == Decimal('-0.03')
+
+
 def test_forged_account_rejected_without_ledger_mutation(tmp_path):
     path, store, _, request = _setup(tmp_path)
     store.begin_write(request.execution_key)
@@ -166,7 +185,7 @@ def test_broker_net_pnl_imported_when_individual_commissions_missing(tmp_path):
     assert state.realized_pnl_usd == broker_net
     gross = Decimal(observation["gross_execution_pnl_usd"])
     cost_diff = gross - broker_net
-    assert state.balance("USD") == normalized_money(Decimal("500") + gross - cost_diff)
+    assert state.balance("USD") == Decimal("500") + gross - cost_diff
     assert state.fees_usd == Decimal("0")
 
 
@@ -179,13 +198,27 @@ def test_broker_net_pnl_import_is_idempotent(tmp_path):
     observation = _pnl_observation(request, fill_data["fills"], Decimal("-0.59977"))
     assert accounting.import_broker_net_pnl(request, observation)["integrated"] is True
     assert accounting.import_broker_net_pnl(request, observation)["integrated"] is False
+
+
+def test_new_observation_hash_cannot_charge_same_request_twice(tmp_path):
+    path, store, _, request = _setup(tmp_path)
+    store.begin_write(request.execution_key)
+    accounting = CanaryBrokerAccounting(path)
+    fill_data = facts(request, flat=True, commission=None)
+    accounting(request, fill_data)
+    observation = _pnl_observation(request, fill_data['fills'], Decimal('-0.59977'))
+    accounting.import_broker_net_pnl(request, observation)
+    with Database.open(path) as db:
+        before = SleeveLedgerStore(db).project(CapitalSleeve.CONTINUOUS_SLEEVE)
+    observation['evidence_sha256'] = 'f' * 64
+    assert accounting.import_broker_net_pnl(request, observation)['integrated'] is False
+    with Database.open(path) as db:
+        assert SleeveLedgerStore(db).project(CapitalSleeve.CONTINUOUS_SLEEVE) == before
     with Database.open(path) as db:
         state = SleeveLedgerStore(db).project(CapitalSleeve.CONTINUOUS_SLEEVE)
     assert state.realized_pnl_usd == Decimal("-0.59977")
     gross = Decimal(observation["gross_execution_pnl_usd"])
-    assert state.balance("USD") == normalized_money(
-        Decimal("500") + gross - (gross - Decimal("-0.59977"))
-    )
+    assert state.balance("USD") == Decimal("500") + gross - (gross - Decimal("-0.59977"))
 
 
 def test_broker_net_pnl_import_rejects_account_mismatch(tmp_path):

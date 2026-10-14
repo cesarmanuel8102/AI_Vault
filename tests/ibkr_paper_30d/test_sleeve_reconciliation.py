@@ -70,6 +70,20 @@ def test_exact_account_to_sleeve_reconciliation_passes() -> None:
     assert receipt.per_sleeve[EXTENDED]["open_order_count"] == 1
 
 
+@pytest.mark.parametrize('difference,provenance,status', [
+    ('0.000055', True, 'PASS'), ('0.000100', True, 'BLOCK'),
+    ('0.001000', True, 'BLOCK'), ('0.000055', False, 'BLOCK')])
+def test_reported_cash_rounding_requires_bound_reference_and_never_masks_costs(difference, provenance, status):
+    from decimal import Decimal
+    account, ledgers = _account(), _ledgers()
+    account['currency_balances'] = [{'currency': 'USD', 'amount': '830.0000'}]
+    ledgers['aggregate_currency_balances'] = [{'currency': 'USD', 'amount': str(Decimal('830')+Decimal(difference))}]
+    if provenance:
+        account['cash_balance_basis'] = 'IBKR_LEDGER_CASH_BALANCE_USD_V1'
+        account['cash_rounding_reference'] = {'quantum_usd': '0.0001', 'provenance_sha256': 'a'*64}
+    assert SleeveReconciler.reconcile(account, ledgers, _ownership()).status == status
+
+
 def test_unattributed_or_aggregate_mismatch_freezes_new_entries() -> None:
     account = _account()
     account["positions"].append(

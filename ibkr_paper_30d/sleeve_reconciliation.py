@@ -256,9 +256,21 @@ class SleeveReconciler:
                     currency, Decimal("0")
                 ) + amount
         for currency in sorted(set(broker_currency) | set(expected_currency)):
-            if broker_currency.get(currency, Decimal("0")) != expected_currency.get(
-                currency, Decimal("0")
-            ):
+            actual = broker_currency.get(currency, Decimal('0'))
+            expected = expected_currency.get(currency, Decimal('0'))
+            matches = actual == expected
+            reference = account.get('cash_rounding_reference') or {}
+            if (not matches and currency == 'USD'
+                    and account.get('cash_balance_basis') == 'IBKR_LEDGER_CASH_BALANCE_USD_V1'
+                    and len(str(reference.get('provenance_sha256', ''))) == 64):
+                try:
+                    baseline_quantum = _decimal(reference['quantum_usd'])
+                    observed_quantum = Decimal(1).scaleb(actual.as_tuple().exponent)
+                    if all(0 < q <= Decimal('.0001') for q in (baseline_quantum, observed_quantum)):
+                        matches = abs(actual-expected) < (baseline_quantum+observed_quantum)/2
+                except (KeyError, ValueError, ArithmeticError):
+                    pass
+            if not matches:
                 reasons.add(f"AGGREGATE_CURRENCY_MISMATCH:{currency}")
 
         reason_codes = tuple(sorted(reasons))
