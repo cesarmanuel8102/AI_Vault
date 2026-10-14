@@ -52,7 +52,7 @@ def verified_net_observation(request, before, after, facts):
             raise ValueError('CANARY_NET_ECONOMICS_FILL_INVALID')
         totals[action] += quantity
         gross += quantity * price * (1 if action == 'SELL' else -1)
-    if any(q != request.quantity for q in totals.values()):
+    if not Decimal(0) < totals['BUY'] == totals['SELL'] <= request.quantity:
         raise ValueError('CANARY_NET_ECONOMICS_QUANTITY_MISMATCH')
     prior_pnl = before.get('realized_pnl_usd')
     net = _number(after['realized_pnl_usd']) - (Decimal(0) if prior_pnl is None else _number(prior_pnl))

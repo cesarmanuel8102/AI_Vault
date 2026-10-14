@@ -521,6 +521,62 @@ def test_real_writer_port_completes_exact_entry_and_flat_return(entry_tif) -> No
     assert broker.orders[1].tif == "GTC"
 
 
+@pytest.mark.parametrize("reported_fill,position", [("0.0006", "0.0006"), ("0", "0.0006"), ("0.0006", "0.0005"), ("0.0011", "0.0011")])
+@pytest.mark.parametrize("late_commission", [False, True])
+@pytest.mark.parametrize("stale_positions", [False, True])
+def test_terminal_partial_entry_uses_authenticated_actual_quantity(monkeypatch, reported_fill, position, late_commission, stale_positions):
+    from ibkr_paper_30d.ibkr_readonly import expected_identity_hash
+    monkeypatch.setattr(__import__(__name__), "ACCOUNT", expected_identity_hash("DU12345"))
+    request = _request()
+    actual = Decimal("0.0006") if reported_fill == "0" else Decimal(reported_fill)
+
+    class Broker:
+        all_order_visibility = True
+        def __init__(self):
+            self.client = SimpleNamespace(getReqId=iter((101, 102)).__next__)
+            self.orders = []
+            self.fills = []
+            self.position = Decimal(0)
+            self.reads = 0
+        def qualifyContracts(self, contract): return [contract]
+        def reqAllOpenOrders(self): return []
+        def reqExecutions(self):
+            self.reads += 1
+            if late_commission and self.reads >= 3 and self.fills:
+                self.fills[0].commissionReport = SimpleNamespace(execId=self.fills[0].execution.execId, commission=.01, currency="USD")
+            return self.fills
+        def positions(self):
+            if stale_positions: return []
+            return self.reqPositions()
+        def reqPositions(self):
+            return [] if not self.position else [SimpleNamespace(contract=SimpleNamespace(conId=request.canonical_contract.con_id), account="DU12345", position=self.position, avgCost=10)]
+        def reqMktData(self, contract, snapshot=True): return SimpleNamespace(bid=Decimal("9.75"), ask=Decimal("10.25"))
+        def sleep(self, seconds): pass
+        def placeOrder(self, contract, order):
+            self.orders.append(order)
+            order.permId = 9000 + len(self.orders)
+            order.clientId = 19761
+            amount = actual if order.action == "BUY" else Decimal(str(order.totalQuantity))
+            self.position = Decimal(position) if order.action == "BUY" else self.position - amount
+            self.fills.append(SimpleNamespace(contract=contract, execution=SimpleNamespace(execId=str(order.permId), acctNumber="DU12345", clientId=19761, permId=order.permId, orderId=order.orderId, orderRef=order.orderRef, side="BOT" if order.action == "BUY" else "SLD", shares=amount, price=10), commissionReport=None))
+            return SimpleNamespace(contract=contract, order=order, orderStatus=SimpleNamespace(status="Cancelled" if order.action == "BUY" else "Filled", filled=Decimal(reported_fill) if order.action == "BUY" else amount, remaining=0))
+
+    broker = Broker()
+    writer = AuthoritativeBrokerWriter(BrokerWriteCoordinator(), broker_factory=lambda _: broker,
+        execution_client_id=19761, execution_lock_verifier=lambda: True,
+        authority_validator=lambda *_: (), canary_execution_adapter=CanaryExecutionAdapter(begin_write=lambda _: True, now_utc=lambda: NOW),
+        canary_evidence_collector=lambda *_: _evidence(request))
+    result = writer._execute(request, broker)
+    if Decimal(position) == actual and actual <= request.quantity:
+        assert result.status == "PASS"
+        assert len(broker.orders) == 2
+        assert Decimal(str(broker.orders[1].totalQuantity)) == actual
+        assert broker.position == 0
+    else:
+        assert result.status == "UNCERTAIN"
+        assert len(broker.orders) == 1
+
+
 def test_exit_failure_preserves_durable_entry_evidence() -> None:
     request = _request()
     persisted = []

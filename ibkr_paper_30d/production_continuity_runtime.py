@@ -894,6 +894,17 @@ def create_canary_pilot_orchestrator(
         *,
         bundle: Any | None = None,
     ) -> None:
+        observed = evidence["observed_at_utc"]
+        evidence_expiry = evidence["expires_at_utc"]
+        if isinstance(observed, str):
+            observed = datetime.fromisoformat(observed.replace("Z", "+00:00"))
+        if isinstance(evidence_expiry, str):
+            evidence_expiry = datetime.fromisoformat(evidence_expiry.replace("Z", "+00:00"))
+        if (observed.tzinfo is None or evidence_expiry.tzinfo is None
+                or not observed <= datetime.now(timezone.utc) < evidence_expiry):
+            raise ProductionRuntimeConfigurationError("CANARY_CAPABILITY_EVIDENCE_STALE")
+        if owner_pilot_authorization.expires_at_utc <= datetime.now(timezone.utc):
+            raise ProductionRuntimeConfigurationError("CANARY_CAPABILITY_OWNER_WINDOW_EXPIRED")
         order_count, position_count = _canary_family_exposure(bundle, proposal)
         reconciliation = (
             getattr(bundle, "reconciliation_receipt", None) or {}
@@ -919,8 +930,9 @@ def create_canary_pilot_orchestrator(
             evidence_sha256=validation.capability_evidence_sha256,
             account_sha256=proposal.account_identity_sha256,
             adapter_sha256=product_certification_store.current_adapter_sha256,
-            observed_at_utc=evidence["observed_at_utc"],
-            expires_at_utc=evidence["expires_at_utc"],
+            observed_at_utc=observed,
+            # Static capability is Owner-bounded; per-order evidence stays fresh.
+            expires_at_utc=owner_pilot_authorization.expires_at_utc,
             paper_limitations=("PAPER_SIMULATION_ONLY",),
             runtime_authorization=runtime_authorization,
         )
@@ -943,7 +955,7 @@ def create_canary_pilot_orchestrator(
             account_sha256=proposal.account_identity_sha256,
             adapter_sha256=certified_adapter_sha256,
             observed_at_utc=observed,
-            expires_at_utc=observed + timedelta(days=1),
+            expires_at_utc=owner_pilot_authorization.expires_at_utc,
             paper_limitations=("PAPER_SIMULATION_ONLY",),
         )
 

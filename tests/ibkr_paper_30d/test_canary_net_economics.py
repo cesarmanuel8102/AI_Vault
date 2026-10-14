@@ -44,6 +44,27 @@ def test_net_economics_requires_independent_cash_and_exact_executions(tmp_path, 
         assert result['evidence_sha256'] == sha256_json(result['evidence'])
 
 
+def test_net_economics_accepts_balanced_bounded_partial_round_trip(tmp_path):
+    from ibkr_paper_30d.canary_net_economics import verified_net_observation
+    _, _, _, request = _setup(tmp_path)
+    before, after, data = _observations(request)
+    for fill in data["fills"]:
+        fill["quantity"] = str(request.quantity / 2)
+    result = verified_net_observation(request, before, after, data)
+    assert Decimal(result["broker_realized_pnl_usd"]) == Decimal("-0.167555")
+
+
+@pytest.mark.parametrize("buy_factor,sell_factor", [("0", "0"), (".5", ".6"), ("1.1", "1.1")])
+def test_net_economics_rejects_empty_unbalanced_or_oversized_round_trip(tmp_path, buy_factor, sell_factor):
+    from ibkr_paper_30d.canary_net_economics import verified_net_observation
+    _, _, _, request = _setup(tmp_path)
+    before, after, data = _observations(request)
+    for fill, factor in zip(data["fills"], (buy_factor, sell_factor)):
+        fill["quantity"] = str(request.quantity * Decimal(factor))
+    with pytest.raises(ValueError):
+        verified_net_observation(request, before, after, data)
+
+
 def test_previous_realized_pnl_is_subtracted_not_attributed_to_new_trade(tmp_path):
     from ibkr_paper_30d.canary_net_economics import verified_net_observation
     _, _, _, request = _setup(tmp_path)

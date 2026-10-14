@@ -670,13 +670,13 @@ class AuthoritativeBrokerWriter:
         if entry_ref in existing_refs or exit_ref in existing_refs:
             raise RuntimeError("CANARY_DUPLICATE_ORDER_PRESENT")
 
-        def make_order(*, action: str, order_type: str, order_ref: str) -> Any:
+        def make_order(*, action: str, order_type: str, order_ref: str, quantity=None) -> Any:
             order = Order(
                 action=action,
                 orderType=order_type,
                 tif=(request.entry_terms.time_in_force if order_ref == entry_ref
                      else "GTC" if order_type == "LMT" else "IOC"),
-                totalQuantity=float(request.quantity),
+                totalQuantity=float(request.quantity if quantity is None else quantity),
                 transmit=True,
                 whatIf=False,
                 orderRef=order_ref,
@@ -746,11 +746,31 @@ class AuthoritativeBrokerWriter:
         entry_trade = broker.placeOrder(contract, entry_order)
         yield ("BROKER_BOUND", 1, 0, False)
         status, filled, _remaining = wait_terminal(entry_trade)
-        if filled == 0 and status in {"Cancelled", "ApiCancelled", "Inactive"}:
-            yield ("TERMINAL_NO_FILL", 0, 0, False)
-            return
-        if status != "Filled" or filled != request.quantity:
-            raise RuntimeError("CANARY_PARTIAL_FILL_UNCERTAIN")
+        actual_quantity = request.quantity
+        partial_entry = status != "Filled" or filled != request.quantity
+        if partial_entry:
+            # Terminal callbacks can precede execution/position updates.
+            deadline = time.monotonic() + 2.0
+            while True:
+                entry_facts = self._canary_broker_facts(request, broker)
+                entry_fills = entry_facts["fills"]
+                actual_quantity = sum((Decimal(str(f["quantity"])) for f in entry_fills), Decimal(0))
+                if actual_quantity or time.monotonic() >= deadline:
+                    break
+                broker.sleep(.1) if hasattr(broker, "sleep") else time.sleep(.1)
+            signed = actual_quantity if request.entry_terms.action == "BUY" else -actual_quantity
+            if (entry_facts["open_order_count"] != 0
+                    or not 0 <= actual_quantity <= request.quantity
+                    or Decimal(entry_facts["position_quantity"]) != signed
+                    or (filled != 0 and filled != actual_quantity)
+                    or any(f["action"] != request.entry_terms.action or f["order_ref"] != entry_ref
+                           or f["order_id"] != int(entry_order.orderId)
+                           or f["perm_id"] != int(entry_trade.order.permId)
+                           for f in entry_fills)):
+                raise RuntimeError("CANARY_PARTIAL_FILL_UNCERTAIN")
+            if actual_quantity == 0:
+                yield ("TERMINAL_NO_FILL", 0, 0, False)
+                return
         if self.canary_broker_accounting is not None:
             self.canary_broker_accounting(request, self._canary_broker_facts(request, broker))
         yield ("ENTRY_FILL", 0, 1, False)
@@ -769,10 +789,22 @@ class AuthoritativeBrokerWriter:
             action=request.flat_return_plan.action,
             order_type=request.flat_return_plan.order_type,
             order_ref=exit_ref,
+            quantity=actual_quantity,
         )
+        if partial_entry:
+            fresh = self._canary_broker_facts(request, broker)
+            signed = actual_quantity if request.entry_terms.action == "BUY" else -actual_quantity
+            def execution_signature(items):
+                return sha256_json(sorted(
+                    ({k: v for k, v in f.items() if k not in {"commission", "commission_currency"}}
+                     for f in items), key=lambda f: f["execution_id_sha256"]))
+            if (fresh["open_order_count"] != 0 or Decimal(fresh["position_quantity"]) != signed
+                    or execution_signature(fresh["fills"]) != execution_signature(entry_facts["fills"])
+                    or self.execution_lock_verifier() is not True):
+                raise RuntimeError("CANARY_PARTIAL_FILL_UNCERTAIN")
         exit_trade = broker.placeOrder(contract, exit_order)
         exit_status, exit_filled, _exit_remaining = wait_terminal(exit_trade)
-        if exit_status != "Filled" or exit_filled != request.quantity:
+        if exit_status != "Filled" or exit_filled != actual_quantity:
             raise RuntimeError("CANARY_EXIT_NOT_FILLED")
 
         open_refs = {
@@ -781,7 +813,7 @@ class AuthoritativeBrokerWriter:
                 "CANARY_OPEN_ORDERS", broker.reqAllOpenOrders
             )
         }
-        positions = self._broker_list_read("CANARY_POSITIONS", broker.positions)
+        positions = self._broker_list_read("CANARY_POSITIONS", getattr(broker, "reqPositions", broker.positions))
         canary_positions = [
             item
             for item in positions
@@ -805,6 +837,8 @@ class AuthoritativeBrokerWriter:
 
     def _canary_broker_facts(self, request, broker, *, recovery_ref=None):
         evidence = self._collect_evidence(broker)
+        if hasattr(broker, "reqPositions"):
+            evidence["positions"] = self._broker_list_read("CANARY_POSITIONS", broker.reqPositions)
         identity = request.canonical_contract
         refs = {f"codex-ibkr-paper-30d-canary-entry-{request.sha256[:12]}",
                 f"codex-ibkr-paper-30d-canary-exit-{request.sha256[:12]}"}

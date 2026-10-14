@@ -189,7 +189,7 @@ def test_initial_successor_supervision_does_not_require_available_family() -> No
     [
         ("SUCCESSOR_COMMITTED", "FROZEN", False, False, False),
         ("SUPERVISION_BOUND", "REGULAR_ONLY", True, True, False),
-        ("CANARY_EXCLUSIVE", "CANARY_EXCLUSIVE", True, False, False),
+        ("CANARY_EXCLUSIVE", "CANARY_EXCLUSIVE", True, True, False),
         ("CANARY_PASS", "REGULAR_ONLY", True, True, False),
         ("RUNTIME_BOUND", "REGULAR_ONLY", True, True, False),
         ("ACTIVE", "NORMAL", True, True, True),

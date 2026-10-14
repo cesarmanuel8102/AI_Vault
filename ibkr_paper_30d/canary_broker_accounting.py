@@ -297,7 +297,8 @@ class CanaryBrokerAccounting:
         if fees > request.fee_allowance_usd:
             raise ValueError("CANARY_BROKER_FEE_ALLOWANCE_EXCEEDED")
         flat = quantity == 0 and int(facts["open_order_count"]) == 0
-        reconciled = flat and fees_complete and all(amount == request.quantity for amount in quantities.values())
+        reconciled = (flat and fees_complete
+                      and Decimal(0) < quantities["BUY"] == quantities["SELL"] <= request.quantity)
         sleeve = CapitalSleeve.CONTINUOUS_SLEEVE
         with Database.open(self.db_path) as db, db.transaction():
             ownership = ContractOwnershipStore(db).projection()
@@ -465,7 +466,14 @@ class CanaryBrokerAccounting:
                                  if e['event_type'] == 'CANARY_FEE_IMPORTED'
                                  and e.get('execution_id_sha256') in imported_keys), Decimal(0))
             remaining_cost = cost_difference - imported_fees
-            insert("REALIZED_PNL", {"amount_usd": str(broker_net)})
+            already_realized = Decimal(0)
+            for index, event in enumerate(prior):
+                if (event["event_type"] == "CANARY_ECONOMICS_IMPORTED"
+                        and event.get("request_sha256") == request.sha256):
+                    if index == 0 or prior[index - 1]["event_type"] != "REALIZED_PNL":
+                        raise ValueError("CANARY_PRIOR_PNL_BINDING_INVALID")
+                    already_realized += Decimal(prior[index - 1]["amount_usd"])
+            insert("REALIZED_PNL", {"amount_usd": str(broker_net - already_realized)})
             if remaining_cost > 0:
                 if state.balance("USD") < remaining_cost:
                     raise ValueError("SLEEVE_CURRENCY_INSUFFICIENT_FOR_COST_DIFFERENCE")

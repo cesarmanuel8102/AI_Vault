@@ -43,6 +43,7 @@ class TransitionPhase(str, Enum):
 _REGULAR_ENTRY_PHASES = frozenset(
     {
         TransitionPhase.SUPERVISION_BOUND,
+        TransitionPhase.CANARY_EXCLUSIVE,
         TransitionPhase.CANARY_PASS,
         TransitionPhase.RUNTIME_BOUND,
         TransitionPhase.DUAL_SLEEVE_ACTIVE,

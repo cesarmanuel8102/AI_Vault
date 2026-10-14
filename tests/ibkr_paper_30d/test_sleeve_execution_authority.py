@@ -92,6 +92,7 @@ def _snapshot(request, **changes):
             and phase
             in {
                 TransitionPhase.SUPERVISION_BOUND.value,
+                TransitionPhase.CANARY_EXCLUSIVE.value,
                 TransitionPhase.CANARY_PASS.value,
                 TransitionPhase.RUNTIME_BOUND.value,
             }
@@ -177,6 +178,7 @@ def test_every_operation_has_explicit_authority_in_every_phase(
     }
     regular_entry_phase = phase in {
         TransitionPhase.SUPERVISION_BOUND,
+        TransitionPhase.CANARY_EXCLUSIVE,
         TransitionPhase.CANARY_PASS,
         TransitionPhase.RUNTIME_BOUND,
         TransitionPhase.ACTIVE,

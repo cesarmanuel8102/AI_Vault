@@ -876,14 +876,21 @@ def test_health_false_after_reconnect_before_first_poll(tmp_path):
     )
     try:
         watchdog.start()
-        # Wait for first failure, backoff, and second poll to start
-        time.sleep(1.5)
+        # Wait for the actual reconnect, not a fixed filesystem timing budget.
+        deadline = time.monotonic() + 3
+        while call_count["value"] < 2 and time.monotonic() < deadline:
+            time.sleep(.01)
         assert call_count["value"] >= 2
         # Second poll is blocked; must be unhealthy
         assert watchdog.is_healthy(NOW) is False
         block.set()
-        time.sleep(0.05)
-        assert watchdog.is_healthy(NOW) is True
+        deadline = time.monotonic() + 2
+        healthy = False
+        while not healthy and time.monotonic() < deadline:
+            healthy = watchdog.is_healthy(NOW)
+            if not healthy:
+                time.sleep(.01)
+        assert healthy is True
     finally:
         block.set()
         watchdog.stop(2)

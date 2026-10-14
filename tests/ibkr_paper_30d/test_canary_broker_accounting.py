@@ -76,6 +76,27 @@ def test_actual_fill_import_is_idempotent_and_preserves_economics(tmp_path):
     assert state.fill_count == 2
 
 
+def test_balanced_partial_round_trip_reconciles_actual_fills(tmp_path):
+    path, store, _, request = _setup(tmp_path)
+    store.begin_write(request.execution_key)
+    data = facts(request, flat=True)
+    for fill in data["fills"]:
+        fill["quantity"] = str(request.quantity / 2)
+    assert CanaryBrokerAccounting(path)(request, data) is True
+
+
+def test_owner_recovery_net_pnl_does_not_duplicate_complete_commission_pnl(tmp_path):
+    path, store, _, request = _setup(tmp_path)
+    store.begin_write(request.execution_key)
+    data = facts(request, flat=True)
+    observation = _pnl_observation(request, data["fills"], Decimal("-0.03"))
+    CanaryBrokerAccounting(path).reconcile_terminal_recovery(request, data, observation)
+    with Database.open(path) as db:
+        state = SleeveLedgerStore(db).project(CapitalSleeve.CONTINUOUS_SLEEVE)
+    assert state.realized_pnl_usd == Decimal("-0.03")
+    assert state.balance("USD") == Decimal("499.97")
+
+
 def test_missing_commission_never_claims_economics_reconciled(tmp_path):
     path, store, _, request = _setup(tmp_path)
     store.begin_write(request.execution_key)
