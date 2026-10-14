@@ -63,6 +63,31 @@ class TraderInputBundle(BaseModel, frozen=True):
         )
 
     @property
+    def market_context_available(self) -> bool:
+        """Admit research on a certified open family; order-level gates remain separate."""
+        if self.market_data_snapshot.get("gate_status") == "PASS":
+            return True
+        if (not self.multi_sleeve_v4_active or self.reconciliation_receipt.get("status") != "PASS"
+                or self.kill_switch_state != "KILL_SWITCH_CLEAR"):
+            return False
+        portfolio = self.multi_sleeve_portfolio or {}
+        capability = self.product_capability_snapshot or {}
+        entry = (portfolio.get("entry_eligibility") or {}).get("CONTINUOUS_SLEEVE") or {}
+        if entry.get("status") != "PASS":
+            return False
+        executable = set(capability.get("executable_family_sha256") or ())
+        verified = {item.get("family_sha256") for item in capability.get("families") or ()
+                    if item.get("status") == "FULL_LIFECYCLE_VERIFIED" and item.get("executable") is True}
+        sessions = capability.get("authenticated_sessions") or {}
+        for family in entry.get("eligible_family_sha256") or ():
+            evidence = sessions.get(family) or {}
+            if (family in executable and family in verified
+                    and evidence.get("authenticated") is True and evidence.get("tradable_now") is True
+                    and "CONTINUOUS_SLEEVE" in (evidence.get("eligible_sleeves") or ())):
+                return True
+        return False
+
+    @property
     def sha256(self) -> str:
         return sha256_json(self.model_dump(mode="json"))
 
@@ -558,7 +583,7 @@ class TraderInvocationAdapter:
             return self._invalid(request, "CYCLE_MISMATCH")
         if request.input_bundle_sha256 != bundle.sha256:
             return self._invalid(request, "INPUT_HASH_MISMATCH")
-        if bundle.market_data_snapshot.get("gate_status") != "PASS":
+        if not bundle.market_context_available:
             return self._invalid(request, "MARKET_DATA_GATE_BLOCK")
         try:
             response = self.provider.invoke(request, bundle)

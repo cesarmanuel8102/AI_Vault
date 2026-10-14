@@ -260,6 +260,31 @@ def test_stale_market_gate_blocks_invocation(database, valid_bundle) -> None:
     assert provider.calls == 0
 
 
+@pytest.mark.parametrize("fault", [None, "session", "certification", "eligibility", "reconciliation"])
+def test_certified_continuous_context_does_not_require_closed_regular_market(database, valid_bundle, fault):
+    family = "a" * 64
+    value = valid_bundle.model_copy(update={
+        "market_data_snapshot": {"gate_status": "BLOCK"},
+        "multi_sleeve_portfolio": {"schema": "MULTI_SLEEVE_PORTFOLIO_V4", "entry_eligibility": {
+            "CONTINUOUS_SLEEVE": {"status": "PASS", "eligible_family_sha256": [family]}}},
+        "product_capability_snapshot": {"executable_family_sha256": [family], "families": [
+            {"family_sha256": family, "status": "FULL_LIFECYCLE_VERIFIED", "executable": True}],
+            "authenticated_sessions": {family: {"authenticated": True, "tradable_now": True,
+                "eligible_sleeves": ["CONTINUOUS_SLEEVE"]}}}})
+    if fault == "session":
+        value.product_capability_snapshot["authenticated_sessions"][family]["authenticated"] = False
+    elif fault == "certification":
+        value.product_capability_snapshot["families"][0]["executable"] = False
+    elif fault == "eligibility":
+        value.multi_sleeve_portfolio["entry_eligibility"]["CONTINUOUS_SLEEVE"]["status"] = "BLOCK"
+    elif fault == "reconciliation":
+        value = value.model_copy(update={"reconciliation_receipt": {"status": "BLOCK"}})
+    subject, provider = adapter(database, no_trade_output(value))
+    result = subject.invoke(request(value), value)
+    assert provider.calls == (1 if fault is None else 0)
+    assert result.accepted is (fault is None)
+
+
 def test_explicit_model_fallback_metadata_is_persisted(database, valid_bundle) -> None:
     subject, _ = adapter(
         database,

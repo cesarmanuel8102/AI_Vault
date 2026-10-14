@@ -1401,7 +1401,7 @@ class AutonomousResearchLoop:
             return self._blocked(history, telemetry, 0, "BROKER_RECONCILIATION_REQUIRED")
         if bundle.kill_switch_state != "KILL_SWITCH_CLEAR":
             return self._blocked(history, telemetry, 0, "KILL_SWITCH_TRIGGERED")
-        if bundle.market_data_snapshot.get("gate_status") != "PASS":
+        if not bundle.market_context_available:
             return self._blocked(history, telemetry, 0, "MARKET_DATA_GATE_BLOCK")
 
         manifest = self.toolbox.manifest()

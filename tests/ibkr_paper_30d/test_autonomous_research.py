@@ -874,6 +874,24 @@ def test_stale_market_gate_blocks_before_autonomous_provider_call():
     assert provider.histories == []
 
 
+def test_open_certified_continuous_family_reaches_research_loop_after_regular_close():
+    family = "a" * 64
+    value = bundle("500.00").model_copy(update={
+        "market_data_snapshot": {"gate_status": "BLOCK"},
+        "multi_sleeve_portfolio": {"schema": "MULTI_SLEEVE_PORTFOLIO_V4", "entry_eligibility": {
+            "CONTINUOUS_SLEEVE": {"status": "PASS", "eligible_family_sha256": [family]}}},
+        "product_capability_snapshot": {"executable_family_sha256": [family], "families": [
+            {"family_sha256": family, "status": "FULL_LIFECYCLE_VERIFIED", "executable": True}],
+            "authenticated_sessions": {family: {"authenticated": True, "tradable_now": True,
+                "eligible_sleeves": ["CONTINUOUS_SLEEVE"]}}}})
+    final = AutonomousTurn(mode=AutonomousTurnMode.FINAL, decision=TraderDecision.NO_TRADE,
+        confidence="0.8", reasoning_summary="No attractive opportunity.", reason_codes=["NO_EDGE"])
+    provider = SequenceProvider([final])
+    outcome = AutonomousResearchLoop(provider, FakeToolbox()).run(request(value), value)
+    assert outcome.accepted is True
+    assert len(provider.histories) == 1
+
+
 def test_stale_input_hash_blocks_before_autonomous_provider_call():
     value = bundle("500.00")
     bad_request = request(value).model_copy(update={"input_bundle_sha256": "0" * 64})
