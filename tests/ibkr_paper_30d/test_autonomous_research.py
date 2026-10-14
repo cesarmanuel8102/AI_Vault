@@ -77,6 +77,38 @@ class FakeToolbox:
         )
 
 
+def test_v4_feasibility_delivers_host_bindings_to_next_model_turn():
+    from ibkr_paper_30d.contract_ownership import canonical_contract_identity
+
+    value = _v4_bundle(legacy_equity="500", regular_equity="500", extended_equity="500")
+    value.multi_sleeve_portfolio["sleeve_authority_sha256"] = {"CONTINUOUS_SLEEVE": "a" * 64}
+    value.contract_ownership_snapshot["projection_sha256"] = "b" * 64
+    candidate = _extended_proposal("100")
+    contract = {"conId": 756733, "secType": "STK", "currency": "USD", "exchange": "SMART"}
+    evidence = {"success": True, "contract": contract, "continuity_host_bindings": {
+        "account_identity_sha256": "d" * 64,
+        "canonical_contract_identity_v4": canonical_contract_identity(contract).model_dump(mode="json"),
+    }}
+
+    class BindingToolbox(FakeToolbox):
+        def execute(self, request, bundle):
+            return ResearchResult(request_id=request.request_id, tool=request.tool, success=True, data=evidence)
+
+    provider = SequenceProvider([
+        AutonomousTurn(mode="RESEARCH", confidence="0.5", reasoning_summary="evaluate", research_requests=[
+            ResearchRequest(request_id="what-if", tool="BROKER_FEASIBILITY", arguments={"proposal": candidate.model_dump(mode="json")}, purpose="validate")
+        ]),
+        AutonomousTurn(mode="FINAL", decision="NO_TRADE", confidence="0.5", reasoning_summary="retain cash"),
+    ])
+    outcome = AutonomousResearchLoop(provider, BindingToolbox()).run(request(value), value)
+    assert outcome.accepted is True
+    delivered = provider.histories[1][-1]["payload"]["data"]
+    assert delivered["continuity_v4_host_bindings"]["sleeve_authority_sha256"] == "a" * 64
+    assert delivered["continuity_v4_host_bindings"]["ownership_projection_sha256"] == "b" * 64
+    assert delivered["continuity_proposal_sha256"] == sha256_json(candidate)
+    assert "next_decision_deadline_utc" not in delivered["continuity_v4_host_bindings"]
+
+
 def bundle(equity="500.00"):
     return TraderInputBundle(
         decision_cycle_id="cycle-autonomous-1",

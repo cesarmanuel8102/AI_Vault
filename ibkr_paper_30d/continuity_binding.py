@@ -25,6 +25,53 @@ class ContinuityBindingError(RuntimeError):
     pass
 
 
+def build_v4_new_proposal_bindings(
+    bundle: Any, proposal: Any, what_if: dict[str, Any], order_ref: str,
+) -> dict[str, Any]:
+    """Bind a prospective position without claiming that it exists or is owned."""
+    from .contract_ownership import canonical_contract_identity as canonical_owned_contract
+    from .multi_universe_models import ContractOwnershipGroup
+
+    sleeve = proposal.capital_sleeve
+    authorities = (bundle.multi_sleeve_portfolio or {}).get("sleeve_authority_sha256") or {}
+    authority = authorities.get(sleeve.value) if sleeve is not None else None
+    ownership = (bundle.contract_ownership_snapshot or {}).get("projection_sha256")
+    account = (what_if.get("continuity_host_bindings") or {}).get("account_identity_sha256")
+    if (what_if.get("success") is not True or not order_ref
+            or not all(isinstance(value, str) and len(value) == 64
+                       and all(char in "0123456789abcdef" for char in value)
+                       for value in (authority, ownership, account, proposal.product_family_sha256))):
+        raise ValueError("V4_CONTINUITY_HOST_EVIDENCE_REQUIRED")
+    from .multi_universe_models import CanonicalContractIdentity
+    from .authoritative_broker_writer import AuthoritativeBrokerWriter
+
+    canonical = (what_if.get("continuity_host_bindings") or {}).get("canonical_contract_identity_v4")
+    if not isinstance(canonical, dict):
+        raise ValueError("V4_CONTINUITY_CANONICAL_CONTRACT_REQUIRED")
+    contract = CanonicalContractIdentity.model_validate(canonical)
+    reported = canonical_owned_contract(what_if.get("contract") or {})
+    if contract.con_id != reported.con_id or contract.security_type != reported.security_type:
+        raise ValueError("V4_CONTINUITY_CANONICAL_CONTRACT_MISMATCH")
+    if contract.security_type == "BAG":
+        raise ValueError("V4_CONTINUITY_BAG_MEMBER_EVIDENCE_REQUIRED")
+    group = ContractOwnershipGroup(
+        group_id=f"order:{order_ref}", sleeve=sleeve, parent_contract=contract,
+        member_contracts=(contract,), generation=1,
+    )
+    return {
+        "capital_sleeve": sleeve.value,
+        "canonical_contract_sha256": contract.sha256,
+        "ownership_group_sha256": group.sha256,
+        "product_family_sha256": proposal.product_family_sha256,
+        "position_identity_sha256": AuthoritativeBrokerWriter._position_identity(
+            account_identity_sha256=account, contract_sha256=contract.sha256,
+            quantity=Decimal(str(proposal.quantity)) * (1 if proposal.action.upper() == "BUY" else -1),
+        ),
+        "sleeve_authority_sha256": authority,
+        "ownership_projection_sha256": ownership,
+    }
+
+
 @dataclass(frozen=True)
 class PendingContinuityBinding:
     plan_id: str

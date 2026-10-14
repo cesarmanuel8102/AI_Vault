@@ -1274,6 +1274,7 @@ class AutonomousStateBuilder:
         }
         portfolio = {
             "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+            "sleeve_authority_sha256": {},
             "sleeves": {
                 name: {
                     **dict(canonical_ledger.get(name) or {}),
@@ -1339,6 +1340,14 @@ class AutonomousStateBuilder:
             ),
             "market_data_advisories": list(mark_reason_codes),
         }
+        from .multi_universe_authority import MultiUniverseAuthorityStore
+
+        if getattr(self, "db", None) is not None:
+            authority_store = MultiUniverseAuthorityStore(self.db)
+            for sleeve in (CapitalSleeve.REGULAR_SLEEVE, CapitalSleeve.CONTINUOUS_SLEEVE):
+                authority = authority_store.sleeve_authority(sleeve)
+                if authority is not None:
+                    portfolio["sleeve_authority_sha256"][sleeve.value] = authority.sha256
         ownership = {
             **ownership_projection,
             "contract_sleeves": contract_sleeves,

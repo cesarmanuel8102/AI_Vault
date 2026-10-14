@@ -413,12 +413,24 @@ class SleeveAuthorityReservationStore:
                             )
                         )
                     else:
-                        ownership.claim_in_transaction(
-                            snapshot.capital_sleeve,
-                            contract,
-                            side=str(getattr(request.payload, "action", "") or ""),
-                            group_id=f"execution:{request.execution_key}",
-                        )
+                        plan = request.continuity_plan
+                        if plan is not None and plan.schema == "CODEX_ORDER_CONTINUITY_PLAN_V4":
+                            group = ContractOwnershipGroup(
+                                group_id=f"order:{plan.order_binding.order_ref}",
+                                sleeve=snapshot.capital_sleeve, parent_contract=contract,
+                                member_contracts=(contract,), generation=1,
+                            )
+                            if (group.sha256 != plan.ownership_group_sha256
+                                    or contract.sha256 != plan.canonical_contract_sha256):
+                                raise OwnershipError("V4_CONTINUITY_OWNERSHIP_BINDING_MISMATCH")
+                            ownership.reserve_group_in_transaction(group)
+                        else:
+                            ownership.claim_in_transaction(
+                                snapshot.capital_sleeve,
+                                contract,
+                                side=str(getattr(request.payload, "action", "") or ""),
+                                group_id=f"execution:{request.execution_key}",
+                            )
                 except OwnershipError as exc:
                     return receipt.model_copy(
                         update={

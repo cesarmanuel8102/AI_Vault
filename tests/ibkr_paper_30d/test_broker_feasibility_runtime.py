@@ -169,7 +169,8 @@ def test_flat_runtime_request_reaches_authoritative_what_if(
     assert order.tif == "DAY"
     assert order.whatIf is True
     assert order.transmit is True
-    assert result.data["continuity_host_bindings"] == {
+    assert {key: value for key, value in result.data["continuity_host_bindings"].items()
+            if key != "canonical_contract_identity_v4"} == {
         "account_identity_sha256": "a" * 64,
         "contract_identity_sha256": sha256_json(
             canonical_contract_identity(contract)

@@ -1086,7 +1086,14 @@ class CodexAutonomousCLIProvider:
                     "host_new_proposal_bindings exactly and copy account_identity_sha256, "
                     "contract_identity_sha256, and execution_client_id exactly from the "
                     "continuity_host_bindings returned by the successful BROKER_FEASIBILITY "
-                    "for that exact proposal; do not infer or invent infrastructure identity."
+                    "for that exact proposal; do not infer or invent infrastructure identity. "
+                    "For a V4 plan, copy all seven fields in continuity_v4_host_bindings "
+                    "from successful BROKER_FEASIBILITY for the exact proposal, and copy "
+                    "continuity_proposal_sha256 into both proposal hash fields. These bind "
+                    "a prospective position, not an existing fill. You independently author "
+                    "next_decision_deadline_utc within plan validity and all economic actions. "
+                    "Include the complete proposal in BROKER_FEASIBILITY arguments to obtain "
+                    "these bindings. Missing host evidence must block execution."
                 ),
             },
             "continuity_authority": bundle.continuity_context,
@@ -1426,6 +1433,22 @@ class AutonomousResearchLoop:
                 for research_request in turn.research_requests:
                     telemetry.observe_request(research_request)
                     result = self.toolbox.execute(research_request, bundle)
+                    if (bundle.multi_sleeve_v4_active and result.success
+                            and research_request.tool == ResearchTool.BROKER_FEASIBILITY
+                            and "proposal" in research_request.arguments):
+                        from .continuity_binding import build_v4_new_proposal_bindings
+
+                        data = dict(result.data)
+                        try:
+                            candidate = AutonomousTradeProposal.model_validate(research_request.arguments["proposal"])
+                            data["continuity_proposal_sha256"] = sha256_json(candidate)
+                            data["continuity_v4_host_bindings"] = build_v4_new_proposal_bindings(
+                                bundle, candidate, data,
+                                f"{EXPERIMENT_ORDER_PREFIX}-a-{request.decision_cycle_id[-12:]}",
+                            )
+                        except ValueError as exc:
+                            data["continuity_v4_binding_error"] = str(exc)
+                        result = result.model_copy(update={"data": data})
                     telemetry.observe_result(result)
                     history.append({
                         "round": round_index,
@@ -1580,6 +1603,8 @@ class AutonomousResearchLoop:
                 turn.continuity_plan,
                 request=request,
                 broker_evidence=validation.broker_evidence,
+                bundle=bundle,
+                proposal=proposal,
             )
             if continuity_binding_error is not None:
                 return self._finish(
@@ -1617,6 +1642,8 @@ class AutonomousResearchLoop:
         *,
         request: InvocationRequest,
         broker_evidence: dict[str, Any],
+        bundle: TraderInputBundle | None = None,
+        proposal: AutonomousTradeProposal | None = None,
     ) -> str | None:
         if plan is None:
             return None
@@ -1644,6 +1671,18 @@ class AutonomousResearchLoop:
             )
         ):
             return "CONTINUITY_PLAN_HOST_BINDING_MISMATCH"
+        if plan.schema == "CODEX_ORDER_CONTINUITY_PLAN_V4":
+            from .continuity_binding import build_v4_new_proposal_bindings
+
+            if bundle is None or proposal is None:
+                return "V4_CONTINUITY_HOST_EVIDENCE_REQUIRED"
+            try:
+                expected = build_v4_new_proposal_bindings(bundle, proposal, what_if, expected_order_ref)
+            except ValueError:
+                return "V4_CONTINUITY_HOST_EVIDENCE_REQUIRED"
+            values = plan.model_dump(mode="json")
+            if any(values.get(key) != value for key, value in expected.items()):
+                return "V4_CONTINUITY_HOST_BINDING_MISMATCH"
         return None
 
     @staticmethod

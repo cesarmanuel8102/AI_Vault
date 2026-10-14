@@ -227,6 +227,21 @@ def test_proxy_submits_all_three_operations_without_broker_io() -> None:
     assert not hasattr(executor, "_connect_execution")
 
 
+@pytest.mark.parametrize("sleeve", ["REGULAR_SLEEVE", "CONTINUOUS_SLEEVE"])
+def test_proxy_binds_published_database_authority_not_portfolio_digest(sleeve):
+    from ibkr_paper_30d.multi_universe_models import CapitalSleeve
+
+    portfolio = {"schema": "MULTI_SLEEVE_PORTFOLIO_V4", "sleeve_authority_sha256": {sleeve: "e" * 64}}
+    value = _bundle().model_copy(update={"multi_sleeve_portfolio": portfolio, "contract_ownership_snapshot": {"projection_sha256": "f" * 64}})
+    candidate = _proposal().model_copy(update={"capital_sleeve": CapitalSleeve(sleeve), "product_family_sha256": "a" * 64})
+    coordinator = RecordingCoordinator()
+    assert _executor(coordinator).execute(candidate, value).success is True
+    emitted = coordinator.requests[0]
+    assert emitted.sleeve_authority_sha256 == "e" * 64
+    assert emitted.sleeve_authority_sha256 != sha256_json(portfolio)
+    assert ModelExecutionRequest.model_validate(emitted.model_dump()) == emitted
+
+
 def test_proxy_has_bounded_writer_wait() -> None:
     class NeverCompletes:
         def submit(self, request):

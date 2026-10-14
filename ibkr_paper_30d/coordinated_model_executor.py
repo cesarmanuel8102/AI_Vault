@@ -104,9 +104,10 @@ class ModelExecutionRequest(BaseModel, frozen=True):
         ):
             raise ValueError("V4 execution bindings are required")
         if self.input_bundle.multi_sleeve_v4_active:
-            if self.sleeve_authority_sha256 != sha256_json(
-                self.input_bundle.multi_sleeve_portfolio
-            ):
+            expected_authority = (self.input_bundle.multi_sleeve_portfolio.get("sleeve_authority_sha256") or {}).get(
+                self.capital_sleeve.value, sha256_json(self.input_bundle.multi_sleeve_portfolio)
+            )
+            if self.sleeve_authority_sha256 != expected_authority:
                 raise ValueError("sleeve authority binding mismatch")
             ownership = self.input_bundle.contract_ownership_snapshot or {}
             expected_ownership = ownership.get("projection_sha256")
@@ -232,7 +233,9 @@ class CoordinatedModelExecutor:
             created_at_utc=self._now_utc(),
             capital_sleeve=getattr(payload, "capital_sleeve", None),
             sleeve_authority_sha256=(
-                sha256_json(bundle.multi_sleeve_portfolio)
+                (bundle.multi_sleeve_portfolio.get("sleeve_authority_sha256") or {}).get(
+                    getattr(payload, "capital_sleeve").value, sha256_json(bundle.multi_sleeve_portfolio)
+                )
                 if bundle.multi_sleeve_v4_active
                 else None
             ),

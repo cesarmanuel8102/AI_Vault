@@ -2195,6 +2195,7 @@ class IBKRResearchToolbox:
                     ),
                     "execution_client_id": EXECUTION_CLIENT_ID,
                 }
+                self._add_v4_contract_binding(result, contract)
             return result
         if required_sentinel_fields:
             return {
@@ -2231,7 +2232,20 @@ class IBKRResearchToolbox:
                 ),
                 "execution_client_id": EXECUTION_CLIENT_ID,
             }
+            self._add_v4_contract_binding(result, contract)
         return result
+
+    @staticmethod
+    def _add_v4_contract_binding(result: dict[str, Any], contract: Any) -> None:
+        from types import SimpleNamespace
+        from .autonomous_execution import WriterOwnedModelExecutionMechanics
+
+        if contract.secType != "BAG" and int(getattr(contract, "conId", 0) or 0) > 0:
+            result["continuity_host_bindings"]["canonical_contract_identity_v4"] = (
+                WriterOwnedModelExecutionMechanics._authority_contract(
+                    contract, SimpleNamespace(multi_sleeve_v4_active=True)
+                )
+            )
 
     def _proposal_contract(self, ib: Any, proposal: AutonomousTradeProposal):
         from ib_insync import ComboLeg, Contract

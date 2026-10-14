@@ -427,6 +427,46 @@ def test_reservation_rereads_inside_transaction_and_is_exactly_idempotent(
         db.close()
 
 
+def test_v4_host_group_is_reserved_atomically_without_identity_drift(tmp_path):
+    from ibkr_paper_30d.continuity_binding import build_v4_new_proposal_bindings
+    from ibkr_paper_30d.continuity_models import CodexOrderContinuityPlan
+    from ibkr_paper_30d.contract_ownership import ContractOwnershipStore
+    from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+    from test_continuity_models import _valid_plan
+
+    request = _v4_request()
+    portfolio = dict(request.input_bundle.multi_sleeve_portfolio)
+    portfolio["sleeve_authority_sha256"] = {request.capital_sleeve.value: "e" * 64}
+    bundle = request.input_bundle.model_copy(update={"multi_sleeve_portfolio": portfolio})
+    request = request.model_copy(update={"input_bundle": bundle, "input_bundle_sha256": bundle.sha256, "sleeve_authority_sha256": "e" * 64})
+    broker = _broker(request)
+    what_if = {"success": True, "contract": broker["canonical_contract"], "continuity_host_bindings": {"account_identity_sha256": request.account_identity_sha256, "canonical_contract_identity_v4": broker["canonical_contract"]}}
+    bindings = build_v4_new_proposal_bindings(bundle, request.payload, what_if, "new-order-ref")
+    data = _valid_plan(schema="CODEX_ORDER_CONTINUITY_PLAN_V4", next_decision_deadline_utc="2026-10-01T15:00:00Z", **bindings)
+    data["order_binding"].update(
+        binding_type="NEW_PROPOSAL", order_ref="new-order-ref", ibkr_order_id=None,
+        perm_id=None, original_order_state_sha256=None,
+        proposal_sha256=sha256_json(request.payload), original_intent_sha256=sha256_json(request.payload),
+    )
+    plan = CodexOrderContinuityPlan.model_validate(data)
+    request = request.model_copy(update={"continuity_plan": plan, "continuity_plan_sha256": plan.sha256})
+    db = Database.open(tmp_path / "v4-group.sqlite3")
+    install_successor_schema_v2(db)
+    install_continuity_schema_v3(db)
+    install_multi_universe_schema_v4(db)
+    try:
+        SleeveLedgerStore(db).bootstrap_extended()
+        store = SleeveAuthorityReservationStore(db)
+        result = store.reserve(request, broker, lambda: _snapshot(request))
+        assert result.status == "PASS"
+        owner = ContractOwnershipStore(db).projection().owner_of(bindings["canonical_contract_sha256"])
+        assert owner.group_sha256 == bindings["ownership_group_sha256"]
+        assert owner.group_id == "order:new-order-ref"
+        assert store.reserve(request, broker, lambda: _snapshot(request)).idempotent is True
+    finally:
+        db.close()
+
+
 def test_db_state_change_after_broker_collection_blocks_without_reservation(
     tmp_path,
 ) -> None:
