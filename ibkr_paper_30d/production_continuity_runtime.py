@@ -847,6 +847,14 @@ def create_canary_pilot_orchestrator(
                         ),
                         "approved_head": effective_approved_head,
                     },
+                    "canary_pilot_limits": {
+                        "authorization_sha256": owner_pilot_authorization.sha256,
+                        "maximum_debit_usd": str(owner_pilot_authorization.maximum_debit_usd),
+                        "maximum_loss_usd": str(owner_pilot_authorization.maximum_loss_usd),
+                        "total_fee_allowance_usd": str(owner_pilot_authorization.fee_allowance_usd),
+                        "maximum_order_count": owner_pilot_authorization.maximum_order_count,
+                        "expires_at_utc": owner_pilot_authorization.expires_at_utc.isoformat(),
+                    },
                 }
             }
         )

@@ -867,6 +867,15 @@ class CodexAutonomousCLIProvider:
                     "Select an exact PAPER continuous-market canary candidate only "
                     "when its expected information value and bounded economics justify it."
                 ),
+                "technical_purpose": (
+                    "Prove the current approved runtime's PAPER entry, fill, supervision, "
+                    "flat return and reconciled total costs. Without this current proof, "
+                    "ordinary continuous-sleeve entries remain blocked. Historical probes "
+                    "do not supply current authority. This bounded diagnostic is not a "
+                    "strategy trade and need not have positive expected trading profit. "
+                    "Assess its information value and costs within the supplied signed "
+                    "Owner limits; independently choose a candidate or NO_CANDIDATE."
+                ),
                 "predefined_symbol_universe": False,
                 "predefined_security_type": False,
                 "fallback_candidate": False,
@@ -885,6 +894,7 @@ class CodexAutonomousCLIProvider:
             "request": request.model_dump(mode="json"),
             "request_sha256": sha256_json(request),
             "host_candidate_bindings": host_candidate_bindings,
+            "owner_pilot_limits": request.model_configuration.get("canary_pilot_limits"),
             "lifecycle_semantics": {
                 "fee_allowance_scope": "TOTAL_ENTRY_AND_FLAT_RETURN_COSTS",
                 "commission_interpretation": (
@@ -1334,6 +1344,8 @@ class CanaryCandidateDiscoveryLoop:
                     {
                         "outcome_sha256": outcome.sha256,
                         "transcript_sha256": transcript_sha256,
+                        "reasoning_summary": turn.reasoning_summary,
+                        "result_sha256": sha256_json(turn),
                     },
                 )
                 return outcome

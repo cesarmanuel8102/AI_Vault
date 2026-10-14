@@ -341,13 +341,27 @@ def test_no_candidate_is_valid_and_host_has_no_fallback_universe() -> None:
         result_sha256=RESULT,
         transcript_sha256=sha256_json([]),
     )
-
     assert outcome.proposal is None
     source = inspect.getsource(__import__("ibkr_paper_30d.canary_candidate", fromlist=["*"]))
     assert "FALLBACK_CANDIDATE" not in source
     assert "ALLOWED_SYMBOLS" not in source
     assert "ALLOWED_SECURITY_TYPES" not in source
 
+
+def test_no_candidate_preserves_the_agents_explanation_and_result_hash():
+    from test_autonomous_research import bundle, request
+    from types import SimpleNamespace
+    value = bundle()
+    turn = CanaryDiscoveryTurn(mode=AutonomousTurnMode.FINAL, decision="NO_CANDIDATE",
+        reasoning_summary="Fresh liquidity cannot support a bounded technical round trip.")
+    events = []
+    provider = SimpleNamespace(next_canary_candidate=lambda *args, **kwargs: turn)
+    toolbox = SimpleNamespace(manifest=lambda: [])
+    outcome = CanaryCandidateDiscoveryLoop(provider, toolbox,
+        event_persister=lambda kind, payload: events.append((kind,payload))).run(request(value),value)
+    assert outcome.decision == "NO_CANDIDATE" and outcome.proposal is None
+    assert events[-1][1]["reasoning_summary"] == turn.reasoning_summary
+    assert events[-1][1]["result_sha256"] == sha256_json(turn)
 
 def test_model_authored_flat_return_plan_must_exactly_flat_candidate() -> None:
     with pytest.raises(ValueError, match="flat-return quantity"):
