@@ -100,3 +100,14 @@ def test_canary_launch_accepts_exact_bound_authorization() -> None:
     )
 
     assert validated == authorization
+
+
+@pytest.mark.parametrize("phase", ["SUPERVISION_BOUND", "CANARY_EXCLUSIVE", "DUAL_SLEEVE_ACTIVE", "ACTIVE"])
+def test_owner_pilot_is_forwarded_unchanged_in_active_maintenance(phase):
+    from ibkr_paper_30d.multi_universe_models import TransitionPhase
+    authority = _authorization()
+    decision = {}
+    launch_module._bind_owner_pilot_for_phase(decision, authority.model_dump(mode="json"),
+                                             _target(authority), TransitionPhase(phase))
+    assert decision["owner_pilot_authorization"] == authority
+    assert decision["owner_pilot_authorization"].sha256 == authority.sha256

@@ -642,14 +642,19 @@ def _validate_multi_universe_launch_from_db(
         initial_activation=bool(envelope["initial_activation"]),
     )
     owner_pilot_raw = envelope.get("owner_pilot_authorization")
+    _bind_owner_pilot_for_phase(decision, owner_pilot_raw, target, phase)
+    decision["writer_binding_sha256"] = target.writer_binding_sha256
+    return decision
+
+
+def _bind_owner_pilot_for_phase(decision: dict[str, Any], raw: Any, target: Any, phase: Any) -> None:
+    from .multi_universe_models import TransitionPhase
     if phase in {
         TransitionPhase.SUPERVISION_BOUND,
         TransitionPhase.CANARY_EXCLUSIVE,
-    }:
-        owner_pilot = _validate_owner_pilot_authorization(owner_pilot_raw, target)
+    } or (raw is not None and phase in {TransitionPhase.DUAL_SLEEVE_ACTIVE, TransitionPhase.ACTIVE}):
+        owner_pilot = _validate_owner_pilot_authorization(raw, target)
         decision["owner_pilot_authorization"] = owner_pilot
-    decision["writer_binding_sha256"] = target.writer_binding_sha256
-    return decision
 
 
 def _validate_owner_pilot_authorization(raw: Any, target: Any) -> Any:
@@ -2153,9 +2158,17 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 current_adapter_sha256=adapter_sha256,
             )
             canary_pilot_orchestrator = None
-            if multi_universe_launch is not None and str(
+            active_maintenance = bool(
+                multi_universe_launch is not None
+                and multi_universe_launch.get("transition_phase") == "ACTIVE"
+                and multi_universe_stores.transition.active_recertification_release_sha256(
+                    preflight.expected_account_hash,
+                    config.approved_head or _current_git_commit(config.repo_root),
+                    adapter_sha256) is not None
+            )
+            if multi_universe_launch is not None and (active_maintenance or str(
                 multi_universe_launch.get("transition_phase") or ""
-            ) in {"SUPERVISION_BOUND", "CANARY_EXCLUSIVE", "DUAL_SLEEVE_ACTIVE", "ACTIVE"}:
+            ) in {"SUPERVISION_BOUND", "CANARY_EXCLUSIVE", "DUAL_SLEEVE_ACTIVE"}):
                 owner_pilot_authorization = multi_universe_launch.get(
                     "owner_pilot_authorization"
                 )
