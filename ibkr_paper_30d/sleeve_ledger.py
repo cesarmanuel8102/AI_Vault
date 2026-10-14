@@ -446,7 +446,25 @@ class SleeveLedgerStore:
             raise SleeveLedgerError("ATOMIC_RESERVATION_TRANSACTION_REQUIRED")
         state = self.project(sleeve)
         amount = normalized_decimal(amount_usd)
-        if amount < 0 or amount > state.reserved_liability_usd:
+        # Use the raw, unrounded reserved total for the comparison so that
+        # reservations recorded with sub-cent precision (e.g. maximum_debit_usd
+        # derived from quantity * limit_price) can be released exactly without
+        # being blocked by the cent-rounded projection used for reporting.
+        events = self._events()
+        raw_reserved = sum(
+            normalized_decimal(e.get("amount_usd"))
+            for e in events
+            if e["event_type"] == "LIABILITY_RESERVED"
+            and e.get("sleeve") == sleeve.value
+        )
+        raw_released = sum(
+            normalized_decimal(e.get("amount_usd"))
+            for e in events
+            if e["event_type"] == "LIABILITY_RELEASED"
+            and e.get("sleeve") == sleeve.value
+        )
+        net_reserved = raw_reserved - raw_released
+        if amount < 0 or amount > net_reserved:
             raise SleeveLedgerError("INVALID_RELEASED_LIABILITY")
         return self._insert(
             sleeve=sleeve,
