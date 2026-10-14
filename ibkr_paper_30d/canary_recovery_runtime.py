@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import subprocess
+from dataclasses import asdict, is_dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -26,7 +27,8 @@ class CanaryRecoveryStore:
         with Database.open(self.db_path) as db, db.transaction():
             events = store._verified_events(db)
             existing = next((e for e in events if e.get("event_type") == "OWNER_CANARY_RECOVERY_AUTHORIZED"
-                             and e.get("original_request_sha256") == original.sha256), None)
+                             and e.get("original_request_sha256") == original.sha256
+                             and e.get("owner_decision_sha256") == owner_decision_sha256), None)
             if existing is not None:
                 if (existing.get("owner_decision_sha256") != owner_decision_sha256
                         or existing.get("approved_head") != approved_head):
@@ -75,7 +77,7 @@ class CanaryRecoveryStore:
                     or not request.created_at_utc <= datetime.now(timezone.utc) < request.expires_at_utc):
                 return False
             if any(e.get("event_type") == "CANARY_RECOVERY_CLAIMED"
-                   and e.get("original_request_sha256") == original.sha256 for e in events):
+                   and e.get("request_sha256") == request.sha256 for e in events):
                 return False
             store._append_in_transaction(db, authorization_id=request.execution_key,
                 event_type="CANARY_RECOVERY_CLAIMED", body={
@@ -94,7 +96,8 @@ class CanaryRecoveryStore:
                 event_type="CANARY_RECOVERY_RESULT", body={
                     "candidate_sha256": request.original_request.candidate_sha256,
                     "original_request_sha256": request.original_request.sha256,
-                    "request_sha256": request.sha256, "result": result.model_dump(mode="json")})
+                    "request_sha256": request.sha256,
+                    "result": asdict(result) if is_dataclass(result) else result.model_dump(mode="json")})
 
 
 def main(argv=None):

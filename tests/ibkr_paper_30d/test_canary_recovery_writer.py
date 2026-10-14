@@ -60,6 +60,8 @@ class Broker:
         pass
 
     def placeOrder(self, contract, order):
+        if not getattr(contract, "exchange", ""):
+            raise ValueError("IBKR_321_MISSING_ORDER_EXCHANGE")
         self.orders.append(order)
         self.quantity -= Decimal(str(order.totalQuantity))
         order.permId = 1002

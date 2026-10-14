@@ -319,7 +319,7 @@ class AuthoritativeBrokerWriter:
 
     def _execute_canary_recovery(self, request: CanaryRecoveryRequest, broker: Any):
         """One separately authorized reduction; never reuse entry authority."""
-        from ib_insync import Order
+        from ib_insync import Contract, Order
 
         original = request.original_request
         if (self.canary_recovery_claim is None
@@ -360,6 +360,16 @@ class AuthoritativeBrokerWriter:
 
         try:
             position, entry_fill, _ = exact_evidence()
+            identity = original.canonical_contract
+            qualified = list(broker.qualifyContracts(Contract(
+                conId=identity.con_id, secType=identity.security_type,
+                exchange=identity.exchange, currency=identity.currency,
+                localSymbol=identity.local_symbol, tradingClass=identity.trading_class,
+                multiplier=identity.multiplier)))
+            if (len(qualified) != 1 or int(qualified[0].conId) != identity.con_id
+                    or not qualified[0].exchange):
+                raise ValueError("CANARY_RECOVERY_CONTRACT_QUALIFICATION_MISMATCH")
+            resolved_contract = qualified[0]
             price = self._canary_flat_return_limit_price(original, broker)
             if price is None:
                 raise ValueError("CANARY_FLAT_RETURN_PRICE_UNRESOLVED")
@@ -390,11 +400,21 @@ class AuthoritativeBrokerWriter:
                       tif="GTC", totalQuantity=float(original.quantity),
                       lmtPrice=float(price), transmit=True, whatIf=False,
                       account=position.account, orderRef=ref,
+                      outsideRth=original.entry_terms.outside_regular_hours,
                       orderId=int(broker.client.getReqId()))
         try:
-            trade = broker.placeOrder(position.contract, order)
+            trade = broker.placeOrder(resolved_contract, order)
             deadline = time.monotonic() + self.broker_request_timeout_seconds
             while not int(getattr(trade.order, "permId", 0) or 0):
+                if str(trade.orderStatus.status) in {"Cancelled", "ApiCancelled", "Inactive"}:
+                    errors = [int(getattr(item, "errorCode", 0)) for item in getattr(trade, "log", ())]
+                    if 321 in errors:
+                        result = self._result(success=False, status="REJECTED_PRE_BROKER",
+                            reasons=("IBKR_VALIDATION_REJECTED:321",),
+                            order={"orderRef": ref, "orderId": order.orderId, "permId": 0}, evidence=facts)
+                        self.canary_recovery_result_persister(request, result)
+                        return result
+                    raise RuntimeError("CANARY_RECOVERY_BINDING_REJECTED")
                 if time.monotonic() >= deadline:
                     raise RuntimeError("CANARY_RECOVERY_BINDING_TIMEOUT")
                 broker.sleep(0.05)
