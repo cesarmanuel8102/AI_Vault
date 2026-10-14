@@ -583,7 +583,9 @@ def test_recovered_canary_finalizes_against_its_certified_adapter_after_release(
             db_path=db_path,
             provider=None,
             toolbox=None,
-            owner_pilot_authorization=_owner(),
+            owner_pilot_authorization=_owner().model_copy(
+                update={"expires_at_utc": datetime.now(timezone.utc) + timedelta(days=1)}
+            ),
             writer_binding_sha256="d" * 64,
             model="test-model",
             reasoning_effort="low",
