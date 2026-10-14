@@ -124,8 +124,11 @@ class CanaryBrokerAccounting:
         from .production_continuity_runtime import _ProductionCanaryStore
         with Database.open(self.db_path) as db:
             events = _ProductionCanaryStore._verified_events(db)
+        retired = _ProductionCanaryStore._reconciled_recovery_candidates(events)
         for event in reversed(events):
             if event.get('event_type') != 'EXECUTION_REQUEST':
+                continue
+            if event.get('candidate_sha256') in retired:
                 continue
             request = CanaryExecutionRequest.model_validate(event['request'])
             if request.sha256 != event['request_sha256']:

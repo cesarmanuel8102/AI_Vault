@@ -124,6 +124,42 @@ def test_flat_lifecycle_completes_without_another_order_and_is_idempotent(tmp_pa
         assert SleeveLedgerStore(db).project(CapitalSleeve.CONTINUOUS_SLEEVE).reserved_liability_usd == 0
 
 
+@pytest.mark.parametrize("valid_recovery", [False, True])
+def test_reconciled_retired_flat_canary_is_not_reopened(tmp_path, valid_recovery):
+    from ibkr_paper_30d.canary_broker_accounting import CanaryBrokerAccounting
+    from ibkr_paper_30d.canary_authority import CanaryBrokerLifecycleReceipt, CanaryLifecycleRecorder
+    from ibkr_paper_30d.canary_net_economics import verified_net_observation
+    from ibkr_paper_30d.persistence import Database
+    path, store, _, request = _setup(tmp_path, age=timedelta(minutes=1))
+    store.begin_write(request.execution_key)
+    before, after, data = _observations(request)
+    accounting = CanaryBrokerAccounting(path)
+    accounting.record_verified_baseline(request, before)
+    recorder = CanaryLifecycleRecorder(request.canary_id, request.account_identity_sha256,
+        request.product_family.sha256, request.canonical_contract.sha256)
+    for i, step in enumerate(recorder.sequence[:-1]):
+        receipt = CanaryBrokerLifecycleReceipt(canary_id=request.canary_id, step=step,
+            endpoint='PAPER', account_identity_sha256=request.account_identity_sha256,
+            product_family_sha256=request.product_family.sha256,
+            contract_identity_sha256=request.canonical_contract.sha256,
+            broker_event_id_sha256=sha256_json([step, i]), broker_snapshot_sha256=sha256_json(data),
+            previous_receipt_sha256=recorder.last_receipt_sha256,
+            observed_at_utc=request.created_at_utc+timedelta(seconds=i), open_orders=0, positions=0)
+        recorder.record(receipt); store.persist_receipt(receipt)
+    recovery_data = dict(data)
+    if not valid_recovery:
+        recovery_data['request_sha256'] = 'f' * 64
+    with Database.open(path) as db, db.transaction():
+        store._append_in_transaction(db, authorization_id='owner-recovery', event_type='CANARY_RECOVERY_RESULT',
+            body={'candidate_sha256':request.candidate_sha256, 'original_request_sha256':request.sha256,
+                'result':{'success':True, 'status':'FILLED', 'broker_validation':{'broker_facts':recovery_data}}})
+    observation = verified_net_observation(request, before, after, data)
+    accounting.reconcile_terminal_recovery(request, data, observation)
+    pending = accounting.pending_flat_request()
+    assert (pending is None) is valid_recovery
+    assert store.recover_terminal_result(request.candidate_sha256) is None
+
+
 def test_collector_refreshes_cash_and_cancels_its_own_subscriptions(tmp_path, monkeypatch):
     from types import SimpleNamespace
     from ibkr_paper_30d.canary_net_economics import collect_net_snapshot
