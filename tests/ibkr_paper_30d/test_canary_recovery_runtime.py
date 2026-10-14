@@ -63,6 +63,7 @@ def test_fresh_explicit_owner_decision_has_its_own_one_attempt_limit(tmp_path):
                                 owner_decision_sha256="d" * 64, approved_head="e" * 40,
                                 now=datetime.now(timezone.utc))
     assert second.sha256 != first.sha256
+    assert recovery.load_authorized(original, "d" * 64).sha256 == second.sha256
     facts = {"request_sha256": second.sha256,
              "original_request_sha256": original.sha256,
              "entry_execution_id_sha256": "a" * 64,

@@ -47,7 +47,7 @@ class Broker:
 
     def positions(self):
         return [] if self.quantity == 0 else [SimpleNamespace(
-            account="DU12345", contract=self.contract, position=self.quantity,
+            account="DU12345", contract=self.contract, position=self.quantity, avgCost=10,
         )]
 
     def reqExecutions(self):
@@ -64,12 +64,12 @@ class Broker:
             raise ValueError("IBKR_321_MISSING_ORDER_EXCHANGE")
         self.orders.append(order)
         self.quantity -= Decimal(str(order.totalQuantity))
-        order.permId = 1002
+        order.permId = order.permId or 1002
         order.clientId = 19761
         self.fills.append(SimpleNamespace(contract=contract, execution=SimpleNamespace(
             execId="exit-fill", acctNumber="DU12345", clientId=19761,
             orderRef=order.orderRef, side="SLD", shares=order.totalQuantity,
-            price=order.lmtPrice, permId=1002, orderId=order.orderId,
+            price=order.lmtPrice, permId=order.permId, orderId=order.orderId,
         )))
         return SimpleNamespace(order=order, orderStatus=SimpleNamespace(
             status="Filled", filled=order.totalQuantity, remaining=0,
@@ -169,3 +169,35 @@ def test_recovery_filled_status_without_execution_is_not_certified():
     broker.placeOrder = missing_execution
     result = writer(broker, [], [])._execute(request, broker)
     assert result.status == "UNCERTAIN"
+
+
+def test_bound_recovery_refreshes_same_order_not_a_second_order():
+    request = recovery()
+    broker = Broker(request)
+    from ib_insync import Order
+    ref = f"codex-ibkr-paper-30d-canary-recovery-{request.sha256[:12]}"
+    order = Order(orderId=230, permId=9001, clientId=19761, orderRef=ref,
+                  action="SELL", totalQuantity=float(request.original_request.quantity),
+                  orderType="LMT", lmtPrice=11, tif="GTC", account="DU12345")
+    trade = SimpleNamespace(contract=broker.contract, order=order,
+                            orderStatus=SimpleNamespace(status="Submitted", filled=0, remaining=order.totalQuantity))
+    broker.reqAllOpenOrders = lambda: [] if broker.quantity == 0 else [trade]
+    actual_place = broker.placeOrder
+    seen_ids = []
+
+    def modify(contract, actual_order):
+        seen_ids.append(actual_order.orderId)
+        filled = actual_place(contract, actual_order)
+        trade.orderStatus = filled.orderStatus
+        trade.order = filled.order
+        return trade
+
+    broker.placeOrder = modify
+    w = writer(broker, [], [])
+    w.canary_recovery_bound_order_reader = lambda _request: {
+        "orderId": 230, "permId": 9001, "clientId": 19761, "orderRef": ref,
+    }
+    result = w._execute(request, broker)
+    assert result.status == "FILLED"
+    assert seen_ids == [230]
+    assert broker.quantity == 0

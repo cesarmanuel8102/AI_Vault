@@ -97,6 +97,7 @@ class AuthoritativeBrokerWriter:
         canary_recovery_claim: Callable[[CanaryRecoveryRequest, dict[str, Any]], bool] | None = None,
         canary_recovery_result_persister: Callable[[CanaryRecoveryRequest, Any], None] | None = None,
         canary_broker_accounting: Callable[[CanaryExecutionRequest, dict[str, Any]], bool] | None = None,
+        canary_recovery_bound_order_reader: Callable[[CanaryRecoveryRequest], dict[str, Any] | None] | None = None,
         startup_connect_attempts: int = 3,
         startup_retry_delay_seconds: float = 1.0,
     ) -> None:
@@ -129,6 +130,7 @@ class AuthoritativeBrokerWriter:
         self.canary_recovery_claim = canary_recovery_claim
         self.canary_recovery_result_persister = canary_recovery_result_persister
         self.canary_broker_accounting = canary_broker_accounting
+        self.canary_recovery_bound_order_reader = canary_recovery_bound_order_reader
         self.canary_supervision_verifier: Callable[[], bool] | None = None
         if (
             isinstance(self.canary_execution_adapter, CanaryExecutionAdapter)
@@ -328,6 +330,10 @@ class AuthoritativeBrokerWriter:
                 or not request.created_at_utc <= self.now_utc() < request.expires_at_utc):
             return self._result(success=False, status="BLOCKED",
                                 reasons=("CANARY_RECOVERY_AUTHORITY_REQUIRED",))
+        if self.canary_recovery_bound_order_reader is not None:
+            bound = self.canary_recovery_bound_order_reader(request)
+            if bound is not None:
+                return self._manage_bound_canary_recovery(request, broker, bound)
 
         def exact_evidence():
             evidence = self._collect_evidence(broker)
@@ -460,6 +466,73 @@ class AuthoritativeBrokerWriter:
             self._report_uncertainty("CANARY_RECOVERY_STATE_UNCERTAIN")
             self.canary_recovery_result_persister(request, result)
             return result
+
+    def _manage_bound_canary_recovery(self, request, broker, bound):
+        """Refresh the model-authorized limit on the same proven broker order."""
+        from ib_insync import Contract
+        original = request.original_request
+        identity = original.canonical_contract
+        ref = f"codex-ibkr-paper-30d-canary-recovery-{request.sha256[:12]}"
+        if (bound.get("orderRef") != ref or int(bound.get("permId") or 0) <= 0
+                or int(bound.get("clientId", -1)) != self.execution_client_id):
+            return self._result(success=False, status="BLOCKED", reasons=("CANARY_RECOVERY_BINDING_MISMATCH",))
+        qualified = list(broker.qualifyContracts(Contract(
+            conId=identity.con_id, secType=identity.security_type,
+            exchange=identity.exchange, currency=identity.currency)))
+        if len(qualified) != 1 or int(qualified[0].conId) != identity.con_id or not qualified[0].exchange:
+            return self._result(success=False, status="BLOCKED", reasons=("CANARY_RECOVERY_CONTRACT_QUALIFICATION_MISMATCH",))
+        deadline = time.monotonic() + self.broker_request_timeout_seconds
+        next_refresh = 0.0
+        while True:
+            evidence = self._collect_evidence(broker)
+            facts = self._canary_broker_facts(original, broker, recovery_ref=ref)
+            matches = [t for t in evidence["trades"]
+                       if int(t.contract.conId) == identity.con_id]
+            if not matches and Decimal(facts["position_quantity"]) == 0:
+                exit_fills = [f for f in facts["fills"] if f.get("order_ref") == ref
+                              and f.get("order_id") == bound["orderId"]
+                              and f.get("perm_id") == bound["permId"]]
+                if sum((Decimal(f["quantity"]) for f in exit_fills), Decimal("0")) != original.quantity:
+                    return self._result(success=False, status="UNCERTAIN", reasons=("CANARY_RECOVERY_FLAT_NOT_PROVEN",))
+                reconciled = self.canary_broker_accounting(original, facts) if self.canary_broker_accounting is not None else False
+                result = self._result(success=True, status="FILLED",
+                    order={**bound, "status": "Filled"},
+                    evidence={"broker_facts": facts, "economics_reconciled": reconciled,
+                              "post_position_quantity": "0", "new_order_created": False})
+                self.canary_recovery_result_persister(request, result)
+                return result
+            if len(matches) != 1:
+                return self._result(success=False, status="BLOCKED", reasons=("CANARY_RECOVERY_ORDER_IDENTITY_AMBIGUOUS",))
+            trade = matches[0]
+            order = trade.order
+            if (order.orderId != bound["orderId"] or order.permId != bound["permId"]
+                    or order.clientId != self.execution_client_id or order.orderRef != ref
+                    or order.action != original.flat_return_plan.action
+                    or order.orderType != "LMT" or Decimal(str(order.totalQuantity)) != original.quantity
+                    or self.execution_lock_verifier() is not True):
+                return self._result(success=False, status="BLOCKED", reasons=("CANARY_RECOVERY_BINDING_MISMATCH",))
+            if not 0 < abs(Decimal(facts["position_quantity"])) <= original.quantity:
+                return self._result(success=False, status="BLOCKED", reasons=("CANARY_RECOVERY_POSITION_SIZE_MISMATCH",))
+            if time.monotonic() >= deadline or self.now_utc() >= request.expires_at_utc:
+                result = self._result(success=True, status="BROKER_BOUND",
+                    order={**bound, "status": str(trade.orderStatus.status)}, evidence={"broker_facts": facts})
+                self.canary_recovery_result_persister(request, result)
+                return result
+            if time.monotonic() >= next_refresh:
+                price = self._canary_flat_return_limit_price(original, broker)
+                if price is None:
+                    return self._result(success=False, status="BLOCKED", reasons=("CANARY_FLAT_RETURN_PRICE_UNRESOLVED",))
+                fresh = self._collect_evidence(broker)
+                if not any(t.order.orderId == bound["orderId"] and t.order.permId == bound["permId"] for t in fresh["trades"]):
+                    continue
+                if Decimal(str(order.lmtPrice)) != price:
+                    result = self._result(success=True, status="REFRESH_AUTHORIZED",
+                        order=dict(bound), evidence={"limit_price": str(price), "new_order_created": False})
+                    self.canary_recovery_result_persister(request, result)
+                    order.lmtPrice = float(price)
+                    broker.placeOrder(qualified[0], order)
+                next_refresh = time.monotonic() + 5
+            broker.sleep(0.1)
 
     def _execute_canary(self, request: CanaryExecutionRequest, broker: Any):
         if self.canary_supervision_verifier is not None and (

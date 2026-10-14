@@ -99,6 +99,33 @@ class CanaryRecoveryStore:
                     "request_sha256": request.sha256,
                     "result": asdict(result) if is_dataclass(result) else result.model_dump(mode="json")})
 
+    def load_authorized(self, original, owner_decision_sha256):
+        from .production_continuity_runtime import _ProductionCanaryStore
+        with Database.open(self.db_path) as db:
+            events = _ProductionCanaryStore._verified_events(db)
+        authorized = next((e for e in reversed(events)
+                           if e.get("event_type") == "OWNER_CANARY_RECOVERY_AUTHORIZED"
+                           and e.get("owner_decision_sha256") == owner_decision_sha256
+                           and e.get("original_request_sha256") == original.sha256), None)
+        if authorized is None:
+            raise ValueError("CANARY_RECOVERY_AUTHORITY_REQUIRED")
+        request = CanaryRecoveryRequest.model_validate(authorized["request"])
+        if request.sha256 != authorized["request_sha256"]:
+            raise ValueError("CANARY_RECOVERY_REQUEST_HASH_MISMATCH")
+        return request
+
+    def bound_order(self, request):
+        from .production_continuity_runtime import _ProductionCanaryStore
+        with Database.open(self.db_path) as db:
+            events = _ProductionCanaryStore._verified_events(db)
+        for event in reversed(events):
+            if event.get("event_type") == "CANARY_RECOVERY_RESULT" and event.get("request_sha256") == request.sha256:
+                result = event.get("result") or {}
+                order = result.get("order") or {}
+                if result.get("status") in {"BROKER_BOUND", "FILLED"} and int(order.get("permId") or 0) > 0:
+                    return dict(order)
+        return None
+
 
 def main(argv=None):
     parser = argparse.ArgumentParser()
@@ -108,6 +135,7 @@ def main(argv=None):
     parser.add_argument("--expected-original-request-sha256", required=True)
     parser.add_argument("--entry-execution-id-sha256", required=True)
     parser.add_argument("--owner-decision-sha256", required=True)
+    parser.add_argument("--resume-existing-order", action="store_true")
     args = parser.parse_args(argv)
     root = args.repo_root.resolve()
     head = subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip()
@@ -145,10 +173,23 @@ def main(argv=None):
             import sqlite3
             with sqlite3.connect(backup) as target:
                 db.connection.backup(target)
-            request = recovery.authorize(original,
+            request = recovery.load_authorized(original, args.owner_decision_sha256) if args.resume_existing_order else recovery.authorize(original,
                 entry_execution_id_sha256=args.entry_execution_id_sha256,
                 owner_decision_sha256=args.owner_decision_sha256,
                 approved_head=head, now=datetime.now(timezone.utc))
+            if args.resume_existing_order:
+                if recovery.bound_order(request) is None:
+                    raise ValueError("CANARY_RECOVERY_BROKER_BOUND_REQUIRED")
+                with db.transaction():
+                    store._verified_events(db)
+                    store._append_in_transaction(db, authorization_id=request.execution_key,
+                        event_type="CANARY_RECOVERY_PROCESS_RESUMED", body={
+                            "candidate_sha256": original.candidate_sha256,
+                            "request_sha256": request.sha256,
+                            "approved_head": head,
+                            "owner_authorization_sha256": request.owner_authorization_sha256,
+                            "bound_order": recovery.bound_order(request),
+                            "new_order_authority": False})
             coordinator = BrokerWriteCoordinator()
             factory = build_ibkr_session_factory(host="127.0.0.1", port=4002,
                 expected_account_hash=original.account_identity_sha256,
@@ -160,6 +201,7 @@ def main(argv=None):
                 canary_recovery_claim=recovery.claim,
                 canary_recovery_result_persister=recovery.persist_result,
                 canary_broker_accounting=CanaryBrokerAccounting(db_path),
+                canary_recovery_bound_order_reader=recovery.bound_order if args.resume_existing_order else None,
                 broker_request_timeout_seconds=60)
             writer.start()
             if not writer.wait_until_ready(15):
