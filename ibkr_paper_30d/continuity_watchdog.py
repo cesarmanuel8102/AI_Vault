@@ -36,6 +36,7 @@ class ContinuityWatchdog:
         heartbeat_max_age_seconds: float,
         max_consecutive_transient_failures: int = 3,
         uncertainty_reporter: Callable[[str], None] | None = None,
+        recover_after_failure_limit: bool = False,
     ) -> None:
         if poll_interval_seconds <= 0:
             raise ValueError("poll_interval_seconds must be positive")
@@ -52,6 +53,7 @@ class ContinuityWatchdog:
         self.heartbeat_max_age_seconds = heartbeat_max_age_seconds
         self.max_consecutive_transient_failures = max_consecutive_transient_failures
         self.uncertainty_reporter = uncertainty_reporter or (lambda code: None)
+        self.recover_after_failure_limit = recover_after_failure_limit
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
         self._ready = threading.Event()
@@ -234,7 +236,9 @@ class ContinuityWatchdog:
                         consecutive_transient_failures
                         >= self.max_consecutive_transient_failures
                     ):
-                        raise
+                        if not self.recover_after_failure_limit:
+                            raise
+                        self._report_once("CONTINUITY_WATCHDOG_FAILED")
                     self._stop.wait(
                         self._backoff_seconds(consecutive_transient_failures)
                     )
@@ -264,7 +268,9 @@ class ContinuityWatchdog:
                         consecutive_transient_failures
                         >= self.max_consecutive_transient_failures
                     ):
-                        raise
+                        if not self.recover_after_failure_limit:
+                            raise
+                        self._report_once("CONTINUITY_WATCHDOG_FAILED")
                     self._stop.wait(
                         self._backoff_seconds(consecutive_transient_failures)
                     )

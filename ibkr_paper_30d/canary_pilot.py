@@ -304,12 +304,16 @@ class CanaryPilotOrchestrator:
                 },
             )
             return self._block(*validation.reason_codes)
-        self.store.persist_candidate(outcome, evidence, validation)
         try:
             self.candidate_finalizer(
                 proposal, evidence, validation, bundle=bundle
             )
         except Exception as exc:
+            if str(exc) not in {
+                "CERTIFICATION_ADAPTER_DRIFT", "CANARY_RECERTIFICATION_UNSAFE",
+                "CANARY_CERTIFICATION_FINALIZATION_FAILED",
+            }:
+                raise
             reason = self._map_certification_error(exc)
             self.store.persist_discovery_event(
                 "CANARY_DISCOVERY_CERTIFICATION_BLOCK",
@@ -321,6 +325,7 @@ class CanaryPilotOrchestrator:
                 },
             )
             return self._block(reason)
+        self.store.persist_candidate(outcome, evidence, validation)
         return {
             "schema": "CANARY_PILOT_ORCHESTRATION_RESULT_V1",
             "status": "PASS",

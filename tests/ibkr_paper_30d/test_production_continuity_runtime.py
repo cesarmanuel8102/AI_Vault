@@ -59,6 +59,7 @@ def test_production_canary_store_persists_authority_claim_and_receipt_once(
         install_successor_schema_v2(db)
         install_continuity_schema_v3(db)
         install_multi_universe_schema_v4(db)
+        KillSwitchStore(db).set("KILL_SWITCH_CLEAR", reason="TEST_INITIAL_STATE")
     now = datetime(2026, 10, 10, 18, 0, tzinfo=timezone.utc)
     authorization = CanaryAuthorization(
         authorization_id="canary-auth-1",
@@ -124,6 +125,7 @@ def test_production_canary_store_rejects_tampered_authority_chain(tmp_path) -> N
         install_successor_schema_v2(db)
         install_continuity_schema_v3(db)
         install_multi_universe_schema_v4(db)
+        KillSwitchStore(db).set("KILL_SWITCH_CLEAR", reason="TEST_INITIAL_STATE")
     store = _ProductionCanaryStore(db_path)
     assert store.begin_write("first") is True
 
@@ -337,6 +339,7 @@ def test_production_canary_store_recovers_terminal_no_fill_without_resubmission(
         install_successor_schema_v2(db)
         install_continuity_schema_v3(db)
         install_multi_universe_schema_v4(db)
+        KillSwitchStore(db).set("KILL_SWITCH_CLEAR", reason="TEST_INITIAL_STATE")
     proposal = _proposal()
     outcome = CanaryDiscoveryOutcome(
         decision="CANDIDATE",

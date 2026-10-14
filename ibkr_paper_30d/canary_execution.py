@@ -80,6 +80,12 @@ class CanaryRecoveryAction(str, Enum):
     UNCERTAIN_FREEZE = "UNCERTAIN_FREEZE"
 
 
+class CanaryPreWriteBlocked(RuntimeError):
+    def __init__(self, reason_codes: tuple[str, ...]) -> None:
+        self.reason_codes = reason_codes
+        super().__init__(";".join(reason_codes))
+
+
 class CanaryRecoveryDecision(_ExecutionModel):
     action: CanaryRecoveryAction
     reason_codes: tuple[str, ...] = ()
@@ -111,6 +117,7 @@ class CanaryExecutionAdapter:
     ) -> tuple[str, ...]:
         reasons: list[str] = []
         checks = (
+            (evidence.get("kill_switch_clear") is True, "KILL_SWITCH_TRIGGERED"),
             (evidence.get("transition_phase") in {"CANARY_EXCLUSIVE", "DUAL_SLEEVE_ACTIVE"}, "CANARY_EXCLUSIVE_REQUIRED"),
             (evidence.get("ordinary_entry_authority") is False, "ORDINARY_ENTRY_AUTHORITY_MUST_BE_FROZEN"),
             (evidence.get("paper_only") is True, "POSSIBLE_LIVE_CONNECTION"),
@@ -205,6 +212,12 @@ class CanaryExecutionAdapter:
         try:
             executor = self.writer_executor or broker.execute_canary_through_writer
             raw_events = list(executor(request, broker, evidence)) if self.writer_executor else list(executor(request, evidence))
+        except CanaryPreWriteBlocked as exc:
+            return CanaryExecutionResult(
+                status="BLOCKED", reason_codes=exc.reason_codes,
+                request_sha256=request.sha256,
+                broker_write_boundary_crossed=False,
+            )
         except Exception:
             return CanaryExecutionResult(
                 status="UNCERTAIN",

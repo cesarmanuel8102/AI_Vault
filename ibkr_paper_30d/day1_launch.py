@@ -2073,6 +2073,9 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
             )
             continuity_store = dependencies.continuity_store_factory(db)
             multi_universe_stores = None
+            from .epoch_manifest import product_adapter_sha256
+
+            adapter_sha256 = product_adapter_sha256(prepared.manifest)
             if multi_universe_launch is not None:
                 from .production_continuity_runtime import (
                     build_multi_universe_runtime_stores,
@@ -2080,7 +2083,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
 
                 multi_universe_stores = build_multi_universe_runtime_stores(
                     db,
-                    current_adapter_sha256=prepared.manifest["epoch_manifest_sha256"],
+                    current_adapter_sha256=adapter_sha256,
                 )
             provider_lifecycle = ProviderLifecycleRecorder(
                 continuity_store,
@@ -2100,7 +2103,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 uncertainty_reporter=critical_alert_reporter,
                 toolbox=prepared.toolbox,
                 production_validation_sha256=prepared.manifest["epoch_manifest_sha256"],
-                current_adapter_sha256=prepared.manifest["epoch_manifest_sha256"],
+                current_adapter_sha256=adapter_sha256,
             )
             canary_pilot_orchestrator = None
             if multi_universe_launch is not None and str(
@@ -2140,6 +2143,9 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                 config=config,
                 preflight=preflight,
                 uncertainty_reporter=critical_alert_reporter,
+            )
+            writer.canary_supervision_verifier = lambda: watchdog.is_healthy(
+                dependencies.now_utc()
             )
             if multi_universe_stores is not None:
                 from .production_continuity_runtime import (

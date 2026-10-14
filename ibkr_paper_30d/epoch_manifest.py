@@ -102,3 +102,13 @@ def epoch_manifest_hash(manifest: dict[str, Any]) -> str:
             if key != "epoch_manifest_sha256"
         }
     )
+
+
+def product_adapter_sha256(manifest: dict[str, Any]) -> str:
+    """Bind product evidence to verified code, not per-launch receipts/time."""
+    value = manifest.get("immutable_kernel_manifest_hash")
+    if not isinstance(value, str) or len(value) != 64 or any(
+        char not in "0123456789abcdef" for char in value
+    ):
+        raise ValueError("PRODUCT_ADAPTER_KERNEL_HASH_REQUIRED")
+    return value

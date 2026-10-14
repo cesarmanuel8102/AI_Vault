@@ -16,7 +16,10 @@ from .broker_write_coordinator import (
     BrokerWriteCoordinator,
 )
 from .canonical import sha256_json
-from .canary_execution import CanaryExecutionAdapter, CanaryExecutionRequest
+from .canary_execution import (
+    CanaryExecutionAdapter, CanaryExecutionRequest, CanaryExecutionResult,
+    CanaryPreWriteBlocked,
+)
 from .coordinated_model_executor import ModelExecutionRequest
 from .continuity_liability import MaximumLiabilityEvidence
 from .contract_ownership import canonical_contract_identity as v4_contract_identity
@@ -119,6 +122,7 @@ class AuthoritativeBrokerWriter:
         self.sleeve_broker_evidence_collector = sleeve_broker_evidence_collector
         self.canary_execution_adapter = canary_execution_adapter
         self.canary_evidence_collector = canary_evidence_collector
+        self.canary_supervision_verifier: Callable[[], bool] | None = None
         if (
             isinstance(self.canary_execution_adapter, CanaryExecutionAdapter)
             and self.canary_execution_adapter.writer_executor is None
@@ -221,6 +225,8 @@ class AuthoritativeBrokerWriter:
             while not self._stop.is_set():
                 claimed = self.coordinator.claim(self._capability, timeout=0.05)
                 if claimed is None:
+                    if hasattr(broker, "sleep"):
+                        broker.sleep(0.01)
                     continue
                 command, future = claimed
                 try:
@@ -303,6 +309,13 @@ class AuthoritativeBrokerWriter:
         )
 
     def _execute_canary(self, request: CanaryExecutionRequest, broker: Any):
+        if self.canary_supervision_verifier is not None and (
+            self.canary_supervision_verifier() is not True
+        ):
+            return CanaryExecutionResult(
+                status="BLOCKED", request_sha256=request.sha256,
+                reason_codes=("CONTINUITY_WATCHDOG_UNHEALTHY",),
+            )
         if self.execution_lock_verifier() is not True:
             return self._result(
                 success=False,
@@ -428,6 +441,7 @@ class AuthoritativeBrokerWriter:
             order = Order(
                 action=action,
                 orderType=order_type,
+                tif=request.entry_terms.time_in_force,
                 totalQuantity=float(request.quantity),
                 transmit=True,
                 whatIf=False,
@@ -482,6 +496,19 @@ class AuthoritativeBrokerWriter:
             order_type=request.entry_terms.order_type,
             order_ref=entry_ref,
         )
+        # Qualification/quotes may outlive a previously valid operator state.
+        if self.execution_lock_verifier() is not True:
+            raise CanaryPreWriteBlocked(("EXECUTION_LOCK_REQUIRED",))
+        if self.canary_supervision_verifier is not None and (
+            self.canary_supervision_verifier() is not True
+        ):
+            raise CanaryPreWriteBlocked(("CONTINUITY_WATCHDOG_UNHEALTHY",))
+        current_controls = self.canary_evidence_collector(broker, request, evidence)
+        reasons = self.canary_execution_adapter._authority_reasons(
+            request, {**evidence, **dict(current_controls)}
+        )
+        if reasons:
+            raise CanaryPreWriteBlocked(reasons)
         entry_trade = broker.placeOrder(contract, entry_order)
         events: list[tuple[str, int, int, bool]] = [
             ("BROKER_BOUND", 1, 0, False),

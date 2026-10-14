@@ -76,7 +76,9 @@ def _is_recoverable_provider_failure(
     if code.startswith("RETURN_CODE_"):
         return (
             isinstance(exc, RuntimeError)
-            and str(exc) == "AUTONOMOUS_CODEX_PROVIDER_FAILED"
+            and str(exc) in {
+                "AUTONOMOUS_CODEX_PROVIDER_FAILED", "CANARY_DISCOVERY_CODEX_PROVIDER_FAILED",
+            }
         )
     if code == "OUTPUT_INVALID":
         return (
@@ -938,6 +940,8 @@ class AutonomousExperimentService:
             {"trigger": trigger},
         )
         try:
+            self.provider.last_failure_code = None
+            self.provider.last_failure_detail = None
             result = self._run_cycle(trigger, allow_execution=allow_execution)
         except Exception as exc:
             _append_state_event(
@@ -945,6 +949,18 @@ class AutonomousExperimentService:
                 "AUTONOMOUS_CYCLE_FAILED",
                 {"trigger": trigger, "error_type": type(exc).__name__},
             )
+            code = getattr(self.provider, "last_failure_code", None)
+            if not isinstance(exc, RecoverableProviderInvocationError) and (
+                _is_recoverable_provider_failure(exc, code)
+            ):
+                if code != self._last_recoverable_provider_failure_code:
+                    _append_alert(
+                        self.db, "AUTONOMOUS_PROVIDER_FAILURE_OBSERVATION",
+                        {"provider_failure_code": str(code),
+                         "error_type": type(exc).__name__, "trigger": trigger},
+                    )
+                    self._last_recoverable_provider_failure_code = code
+                raise RecoverableProviderInvocationError(str(exc)) from exc
             raise
 
         status = str(result.get("status") or "UNKNOWN")
@@ -1335,7 +1351,7 @@ class AutonomousExperimentService:
             except Exception as exc:
                 _append_alert(
                     self.db,
-                    "RECOVERABLE_RUNTIME_ERROR",
+                    "FATAL_RUNTIME_ERROR",
                     {
                         "error_type": type(exc).__name__,
                         "message": str(exc)[:500],

@@ -767,6 +767,36 @@ def _sequence_allocator(coordinator: BrokerWriteCoordinator) -> Callable[[], int
     return allocate
 
 
+def _canary_family_exposure(bundle: Any, proposal: Any) -> tuple[int, int]:
+    portfolio = getattr(bundle, "multi_sleeve_portfolio", None) or {}
+    observation = portfolio.get("account_observation") or {}
+    positions = observation.get("positions")
+    orders = observation.get("open_orders")
+    if not isinstance(positions, list) or not isinstance(orders, list):
+        raise ProductionRuntimeConfigurationError("CANARY_RECERTIFICATION_UNSAFE")
+    if observation.get("position_count", len(positions)) != len(positions) or (
+        observation.get("open_order_count", len(orders)) != len(orders)
+    ):
+        raise ProductionRuntimeConfigurationError("CANARY_RECERTIFICATION_UNSAFE")
+
+    def same_family(item: Mapping[str, Any]) -> bool:
+        if item.get("product_family_sha256"):
+            return item["product_family_sha256"] == proposal.product_family.sha256
+        contract = item.get("contract") or {}
+        sec_type = contract.get("secType") or contract.get("security_type")
+        exchange = contract.get("exchange") or contract.get("primaryExchange")
+        if not sec_type:
+            raise ProductionRuntimeConfigurationError("CANARY_RECERTIFICATION_UNSAFE")
+        if sec_type != proposal.product_family.security_type:
+            return False
+        # An unclassified exposure of the same security type must block a reset.
+        return not exchange or exchange == proposal.product_family.venue_or_routing
+
+    return sum(same_family(item) for item in orders), sum(
+        same_family(item) for item in positions
+    )
+
+
 def create_canary_pilot_orchestrator(
     *,
     coordinator: BrokerWriteCoordinator,
@@ -857,37 +887,6 @@ def create_canary_pilot_orchestrator(
             expected_candidate_bindings=expected_bindings,
         )
 
-    def _extract_contract_id(item: Mapping[str, Any]) -> int | None:
-        contract = item.get("contract") or {}
-        cid = int(
-            contract.get("conId")
-            or contract.get("con_id")
-            or item.get("contract_id")
-            or item.get("con_id")
-            or 0
-        )
-        return cid if cid > 0 else None
-
-    def _family_exposure(
-        bundle: Any, proposal: Any
-    ) -> tuple[int, int]:
-        portfolio = getattr(bundle, "multi_sleeve_portfolio", None) or {}
-        observation = portfolio.get("account_observation") or {}
-        positions = observation.get("positions") or []
-        orders = observation.get("open_orders") or []
-        target_con_id = proposal.canonical_contract.con_id
-        position_count = sum(
-            1
-            for position in positions
-            if _extract_contract_id(position) == target_con_id
-        )
-        order_count = sum(
-            1
-            for order in orders
-            if _extract_contract_id(order) == target_con_id
-        )
-        return order_count, position_count
-
     def finalize_candidate(
         proposal: Any,
         evidence: Mapping[str, Any],
@@ -895,9 +894,7 @@ def create_canary_pilot_orchestrator(
         *,
         bundle: Any | None = None,
     ) -> None:
-        order_count, position_count = (
-            _family_exposure(bundle, proposal) if bundle is not None else (0, 0)
-        )
+        order_count, position_count = _canary_family_exposure(bundle, proposal)
         reconciliation = (
             getattr(bundle, "reconciliation_receipt", None) or {}
             if bundle is not None
@@ -910,7 +907,9 @@ def create_canary_pilot_orchestrator(
                 proposal.successor_definition_sha256
             ),
             "approved_git_head": effective_approved_head,
-            "transition_phase": "CANARY_EXCLUSIVE",
+            "transition_phase": (getattr(bundle, "multi_sleeve_portfolio", None) or {}).get(
+                "transition_phase", "UNKNOWN"
+            ),
             "reconciliation_status": reconciliation.get("status") or "PENDING",
             "family_open_orders": order_count,
             "family_positions": position_count,
@@ -1162,6 +1161,10 @@ class ReadOnlyContinuityBroker:
         self._last_server_time: datetime | None = None
         self._last_server_time_observed_at: float | None = None
         self._instrument: Callable[[str, float, BaseException | None], None] | None = None
+        self._poll_orders: list[Any] | None = None
+
+    def begin_poll(self) -> None:
+        self._poll_orders = None
 
     def _instrumented_call(self, name: str, fn: Callable, *args: Any, **kwargs: Any) -> Any:
         if self._instrument is None:
@@ -1183,7 +1186,7 @@ class ReadOnlyContinuityBroker:
             and 0 <= observed_at - self._last_server_time_observed_at < 4.0
         ):
             return self._last_server_time
-        server_time = self._broker.reqCurrentTime()
+        server_time = self._instrumented_call("CURRENT_TIME", self._broker.reqCurrentTime)
         self._last_server_time = server_time
         self._last_server_time_observed_at = observed_at
         return server_time
@@ -1195,7 +1198,9 @@ class ReadOnlyContinuityBroker:
         from .open_order_management import canonical_open_order
 
         matches = []
-        for trade in self._broker.reqAllOpenOrders():
+        if self._poll_orders is None:
+            self._poll_orders = list(self._broker.reqAllOpenOrders())
+        for trade in self._poll_orders:
             snapshot = canonical_open_order(trade)
             if (
                 snapshot["orderRef"] == binding.order_ref
@@ -2328,6 +2333,7 @@ class _ProductionCanaryStore:
 
             # Group protected events by candidate_sha256
             by_candidate: dict[str, set[str]] = {}
+            prewrite_blocked: set[str] = set()
             for event in events:
                 event_type = str(event.get("event_type") or "")
                 if event_type not in {
@@ -2350,9 +2356,19 @@ class _ProductionCanaryStore:
                     # Ambiguous attribution → fail-closed
                     return True
                 by_candidate.setdefault(candidate_sha256, set()).add(event_type)
+                result = event.get("result") or {}
+                if (
+                    event_type == "CANARY_RESULT"
+                    and result.get("status") == "BLOCKED"
+                    and result.get("broker_write_boundary_crossed") is False
+                    and result.get("projection") is None
+                ):
+                    prewrite_blocked.add(candidate_sha256)
 
             for candidate_sha256, event_types in by_candidate.items():
                 if candidate_sha256 == active_sha256:
+                    continue
+                if candidate_sha256 in prewrite_blocked and "LIFECYCLE_RECEIPT" not in event_types:
                     continue
                 # Fully completed lifecycle: both result and receipt present
                 if (
@@ -2509,10 +2525,15 @@ class _ProductionCanaryStore:
 
     def begin_write(self, execution_key: str) -> bool:
         with Database.open(self.db_path) as db, db.transaction():
+            from .experiment_control import KillSwitchStore
+
+            events = self._verified_events(db)
+            if KillSwitchStore(db).current() != "KILL_SWITCH_CLEAR":
+                return False
             if any(
                 event.get("event_type") == "EXECUTION_CLAIMED"
                 and event.get("execution_key") == execution_key
-                for event in self._verified_events(db)
+                for event in events
             ):
                 return False
             self._append_in_transaction(
@@ -2549,6 +2570,9 @@ class _ProductionCanaryStore:
         from .multi_universe_models import CanaryAuthorization
 
         with Database.open(self.db_path) as db:
+            from .experiment_control import KillSwitchStore
+
+            kill_switch_clear = KillSwitchStore(db).current() == "KILL_SWITCH_CLEAR"
             events = self._verified_events(db)
             transition_row = db.execute(
                 "SELECT phase,payload_json FROM successor_transition_events "
@@ -2571,6 +2595,7 @@ class _ProductionCanaryStore:
                 break
         now = datetime.now(timezone.utc)
         return {
+            "kill_switch_clear": kill_switch_clear,
             "transition_phase": str(transition_row[0]),
             "ordinary_entry_authority": False,
             "paper_only": True,
@@ -2728,6 +2753,8 @@ class ProductionContinuityPoller:
         correlation_id = str(new_uuid7())
         store = ContinuityStore(db)
         self.poll_results = []
+        if callable(getattr(broker, "begin_poll", None)):
+            broker.begin_poll()
         with self._poll_phase(store, correlation_id, "POLL_ENTER"):
             for plan in store.active_plans():
                 binding = _verified_registry_binding(db, plan)
@@ -3049,6 +3076,7 @@ def create_continuity_watchdog(
         poll_interval_seconds=5.0,
         heartbeat_max_age_seconds=20.0,
         uncertainty_reporter=uncertainty_reporter,
+        recover_after_failure_limit=True,
     )
 
 

@@ -271,6 +271,7 @@ class ProductFamilyCertificationStore:
         behavior is preserved.
         """
 
+        preceding = self.projection(family)
         for step in CERTIFICATION_SEQUENCE[:5]:
             self.record_step(
                 family,
@@ -289,7 +290,10 @@ class ProductFamilyCertificationStore:
                 runtime_authorization=runtime_authorization,
             )
         projection = self.projection(family)
-        if projection.status is not ProductFamilyCertificationStatus.RESEARCH_ONLY:
+        if (
+            projection.status is not ProductFamilyCertificationStatus.RESEARCH_ONLY
+            and projection.sha256 != preceding.sha256
+        ):
             raise ProductCapabilityError("READ_ONLY_EVIDENCE_CERTIFICATION_ESCALATION")
         return projection
 

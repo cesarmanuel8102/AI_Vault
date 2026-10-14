@@ -117,6 +117,7 @@ def _evidence(request: CanaryExecutionRequest, authorization=None, **updates):
         "transition_phase": "CANARY_EXCLUSIVE",
         "ordinary_entry_authority": False,
         "paper_only": True,
+        "kill_switch_clear": True,
         "fresh": True,
         "candidate_sha256": request.candidate_sha256,
         "authorization": authorization,
