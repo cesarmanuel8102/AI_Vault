@@ -2255,6 +2255,25 @@ class IBKRResearchToolbox:
                 currency="USD",
                 comboLegs=combo_legs,
             )
+        if proposal.sec_type.upper() == "CRYPTO":
+            from .multi_universe_models import ProductFamilyKey
+
+            details = ib.reqContractDetails(
+                Contract(symbol=proposal.symbol, secType="CRYPTO", currency="USD")
+            )
+            qualified = [item.contract for item in details if item.contract.exchange and ProductFamilyKey(
+                security_type="CRYPTO", venue_or_routing=item.contract.exchange,
+                order_representation="DIRECT", quantity_semantics="FRACTIONAL_ASSET_UNITS",
+                lifecycle_behavior="CONTINUOUS_24X7",
+            ).sha256 == proposal.product_family_sha256]
+            if len(qualified) != 1:
+                raise LookupError("CRYPTO_PROPOSAL_CONTRACT_NOT_UNIQUE")
+            contract = qualified[0]
+            if (contract.symbol.upper() != proposal.symbol.upper()
+                    or contract.secType != "CRYPTO" or contract.currency != "USD"
+                    or not contract.exchange or not contract.conId):
+                raise LookupError("CRYPTO_PROPOSAL_CONTRACT_IDENTITY_MISMATCH")
+            return contract
         return self._qualify(
             ib,
             {

@@ -61,6 +61,43 @@ def _order_state(**updates):
     return SimpleNamespace(**values)
 
 
+def test_crypto_proposal_qualification_does_not_assume_stock_routing():
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+
+    class CryptoBroker(WhatIfOnlyBroker):
+        def reqContractDetails(self, contract):
+            self.qualified_contracts.append(contract)
+            if contract.exchange == "SMART":
+                return []
+            assert contract.exchange == ""
+            contract.exchange = "PAXOS"
+            contract.conId = 495759171
+            return [SimpleNamespace(contract=contract)]
+
+    broker = CryptoBroker()
+    proposal = SimpleNamespace(symbol="ETH", sec_type="CRYPTO", legs=[], product_family_sha256="a82d8a2e546cd4a33c9b4d9bf1b4dbb95739282f8ef65dcc2c5c97c6ffc8dcd7")
+    contract = toolbox._proposal_contract(broker, proposal)
+    assert contract.conId == 495759171
+    assert contract.exchange == "PAXOS"
+
+
+@pytest.mark.parametrize("case", ["missing", "ambiguous", "wrong_symbol", "wrong_currency", "no_venue"])
+def test_crypto_proposal_qualification_rejects_unverified_identity(case):
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    contract = SimpleNamespace(symbol="ETH", secType="CRYPTO", currency="USD", exchange="PAXOS", conId=495759171)
+    if case == "wrong_symbol":
+        contract.symbol = "BTC"
+    if case == "wrong_currency":
+        contract.currency = "EUR"
+    if case == "no_venue":
+        contract.exchange = ""
+    result = [] if case == "missing" else [contract, contract] if case == "ambiguous" else [contract]
+    broker = SimpleNamespace(reqContractDetails=lambda _: [SimpleNamespace(contract=c) for c in result])
+    proposal = SimpleNamespace(symbol="ETH", sec_type="CRYPTO", legs=[], product_family_sha256="a82d8a2e546cd4a33c9b4d9bf1b4dbb95739282f8ef65dcc2c5c97c6ffc8dcd7")
+    with pytest.raises(LookupError):
+        toolbox._proposal_contract(broker, proposal)
+
+
 class WhatIfOnlyBroker:
     def __init__(self, state=None):
         self.state = state or _order_state()
