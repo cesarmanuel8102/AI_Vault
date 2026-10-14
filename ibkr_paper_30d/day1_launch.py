@@ -2155,7 +2155,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
             canary_pilot_orchestrator = None
             if multi_universe_launch is not None and str(
                 multi_universe_launch.get("transition_phase") or ""
-            ) in {"SUPERVISION_BOUND", "CANARY_EXCLUSIVE", "DUAL_SLEEVE_ACTIVE"}:
+            ) in {"SUPERVISION_BOUND", "CANARY_EXCLUSIVE", "DUAL_SLEEVE_ACTIVE", "ACTIVE"}:
                 owner_pilot_authorization = multi_universe_launch.get(
                     "owner_pilot_authorization"
                 )

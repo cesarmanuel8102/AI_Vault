@@ -1942,12 +1942,16 @@ def test_run_forever_deduplicates_recoverable_provider_failure_alerts(
 
 @pytest.mark.parametrize("regular_enabled", [False, True])
 @pytest.mark.parametrize("regular_management", [False, True])
+@pytest.mark.parametrize("phase", ["CANARY_EXCLUSIVE", "ACTIVE"])
 def test_canary_exclusive_fair_scheduling_allows_canary_after_regular_cycles(
-    tmp_path, monkeypatch, regular_enabled, regular_management
+    tmp_path, monkeypatch, regular_enabled, regular_management, phase
 ):
     calls = []
 
     class Pilot:
+        def recertification_required(self):
+            return True
+
         def discover(self, bundle):
             calls.append("discover")
             return {"status": "PASS", "decision": "NO_CANDIDATE", "reason_codes": []}
@@ -2009,7 +2013,7 @@ def test_canary_exclusive_fair_scheduling_allows_canary_after_regular_cycles(
     with Database.open(tmp_path / "fair.sqlite3") as db:
         service = _authorized_production_topology(db)
         service.multi_universe_runtime_authority = SimpleNamespace(
-            transition_phase="CANARY_EXCLUSIVE"
+            transition_phase=phase
         )
         service.canary_pilot_orchestrator = Pilot()
         service._builder = lambda: SimpleNamespace(build=lambda trigger: Bundle())

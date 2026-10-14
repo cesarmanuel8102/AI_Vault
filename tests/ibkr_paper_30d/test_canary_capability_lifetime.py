@@ -37,7 +37,7 @@ def test_technical_capability_lease_is_distinct_from_quote_freshness(tmp_path, m
         orchestrator.candidate_finalizer(_proposal(),evidence,SimpleNamespace(capability_evidence_sha256="d"*64),bundle=bundle)
         assert captured[0]["expires_at_utc"] == owner_expiry
         assert captured[0]["observed_at_utc"] == observed
-        orchestrator.lifecycle_finalizer(_proposal(),SimpleNamespace(projection=object()))
+        orchestrator.lifecycle_finalizer(_proposal(),SimpleNamespace(projection=object(), status="TERMINAL_NO_FILL"))
         assert captured[1]["expires_at_utc"] == owner_expiry
     assert evidence["expires_at_utc"] == original_expiry
 

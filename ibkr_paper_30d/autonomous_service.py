@@ -649,11 +649,17 @@ class AutonomousExperimentService:
             getattr(self.multi_universe_runtime_authority, "transition_phase", "")
         )
         canary_result = None
-        if self.canary_pilot_orchestrator is not None and canary_phase in {
+        active_recertification = bool(
+            canary_phase == "ACTIVE"
+            and self.canary_pilot_orchestrator is not None
+            and callable(getattr(self.canary_pilot_orchestrator, "recertification_required", None))
+            and self.canary_pilot_orchestrator.recertification_required() is True
+        )
+        if self.canary_pilot_orchestrator is not None and (active_recertification or canary_phase in {
             "SUPERVISION_BOUND",
             "CANARY_EXCLUSIVE",
             "DUAL_SLEEVE_ACTIVE",
-        }:
+        }):
             if bundle.reconciliation_receipt.get("status") != "PASS":
                 return {
                     "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
@@ -691,7 +697,7 @@ class AutonomousExperimentService:
                 run_canary = True
             elif canary_phase == "SUPERVISION_BOUND":
                 run_canary = not (regular_entry or regular_management)
-            elif canary_phase == "CANARY_EXCLUSIVE":
+            elif canary_phase == "CANARY_EXCLUSIVE" or active_recertification:
                 if self._regular_urgent_obligation(bundle):
                     run_canary = False
                 elif not (regular_entry or regular_management):
@@ -711,7 +717,7 @@ class AutonomousExperimentService:
                     else self.canary_pilot_orchestrator.execute(bundle)
                 )
             else:
-                if canary_phase == "CANARY_EXCLUSIVE" and (regular_entry or regular_management):
+                if (canary_phase == "CANARY_EXCLUSIVE" or active_recertification) and (regular_entry or regular_management):
                     self._regular_cycles_since_canary += 1
                 canary = None
             if canary is not None:

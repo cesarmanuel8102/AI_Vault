@@ -136,7 +136,11 @@ class CanaryExecutionAdapter:
         reasons: list[str] = []
         checks = (
             (evidence.get("kill_switch_clear") is True, "KILL_SWITCH_TRIGGERED"),
-            (evidence.get("transition_phase") in {"CANARY_EXCLUSIVE", "DUAL_SLEEVE_ACTIVE"}, "CANARY_EXCLUSIVE_REQUIRED"),
+            (evidence.get("transition_phase") in {"CANARY_EXCLUSIVE", "DUAL_SLEEVE_ACTIVE"}
+             or (evidence.get("transition_phase") == "ACTIVE"
+                 and evidence.get("active_recertification_authorized") is True
+                 and isinstance(evidence.get("active_recertification_release_sha256"), str)
+                 and len(evidence["active_recertification_release_sha256"]) == 64), "CANARY_EXCLUSIVE_REQUIRED"),
             (evidence.get("ordinary_entry_authority") is False, "ORDINARY_ENTRY_AUTHORITY_MUST_BE_FROZEN"),
             (evidence.get("paper_only") is True, "POSSIBLE_LIVE_CONNECTION"),
             (evidence.get("fresh") is True, "CANARY_EVIDENCE_STALE"),

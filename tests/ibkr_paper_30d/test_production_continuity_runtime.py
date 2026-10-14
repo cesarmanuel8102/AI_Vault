@@ -528,12 +528,18 @@ def test_recovered_canary_finalizes_against_its_certified_adapter_after_release(
     )
     from test_canary_pilot import _owner, _proposal
 
-    db_path = tmp_path / "adapter-drift-canary.sqlite3"
+    from test_canary_ownership_reservation import _setup
+    from test_canary_broker_accounting import facts
+    from ibkr_paper_30d.canary_broker_accounting import CanaryBrokerAccounting
+    db_path, journal, proposal, request = _setup(tmp_path)
+    journal.begin_write(request.execution_key)
+    no_fill_facts = facts(request, flat=True)
+    no_fill_facts["fills"] = []
+    CanaryBrokerAccounting(db_path)(request, no_fill_facts)
     with Database.open(db_path) as db:
         install_successor_schema_v2(db)
         install_continuity_schema_v3(db)
         install_multi_universe_schema_v4(db)
-        proposal = _proposal()
         certified_adapter = "a" * 64
         deployed_adapter = "b" * 64
         original_store = ProductFamilyCertificationStore(
@@ -557,8 +563,7 @@ def test_recovered_canary_finalizes_against_its_certified_adapter_after_release(
         for ordinal, step in enumerate(
             ("SUBMITTED", "BROKER_BOUND", "TERMINAL_NO_FILL"), 1
         ):
-            recorder.record(
-                CanaryBrokerLifecycleReceipt(
+            receipt = CanaryBrokerLifecycleReceipt(
                     canary_id=proposal.candidate_id,
                     step=step,
                     endpoint="PAPER",
@@ -569,12 +574,13 @@ def test_recovered_canary_finalizes_against_its_certified_adapter_after_release(
                     broker_snapshot_sha256=f"{ordinal + 10:064x}",
                     previous_receipt_sha256=recorder.last_receipt_sha256,
                     observed_at_utc=proposal.created_at_utc
-                    + timedelta(seconds=ordinal),
+                    - timedelta(seconds=1) + timedelta(microseconds=ordinal),
                     open_orders=1 if step == "BROKER_BOUND" else 0,
                     positions=0,
                     economics_reconciled=False,
                 )
-            )
+            recorder.record(receipt)
+            journal.persist_receipt(receipt)
         changed_store = ProductFamilyCertificationStore(
             db, current_adapter_sha256=deployed_adapter
         )
@@ -598,7 +604,7 @@ def test_recovered_canary_finalizes_against_its_certified_adapter_after_release(
             proposal,
             CanaryExecutionResult(
                 status="TERMINAL_NO_FILL",
-                request_sha256="e" * 64,
+                request_sha256=request.sha256,
                 projection=recorder.projection(),
                 broker_write_boundary_crossed=True,
             ),

@@ -12,6 +12,44 @@ from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
 from ibkr_paper_30d.production_continuity_runtime import _ProductionCanaryStore
 
 
+@pytest.mark.parametrize("proof", ["complete", "missing", "stale", "wrong_request", "ledger_nonflat"])
+def test_completed_lifecycle_releases_only_verified_flat_resources(tmp_path, proof):
+    from datetime import datetime, timedelta, timezone
+    from ibkr_paper_30d.canary_authority import CanaryBrokerLifecycleReceipt, CanaryLifecycleRecorder
+    from ibkr_paper_30d.canary_execution import CanaryExecutionResult
+    from ibkr_paper_30d.contract_ownership import ContractOwnershipStore
+    path, store, proposal, request = _setup(tmp_path)
+    store.begin_write(request.execution_key)
+    accounting = CanaryBrokerAccounting(path)
+    accounting(request, facts(request, flat=proof != "ledger_nonflat"))
+    recorder = CanaryLifecycleRecorder(request.canary_id, request.account_identity_sha256,
+        request.product_family.sha256, request.canonical_contract.sha256)
+    now = datetime.now(timezone.utc) - timedelta(seconds=120 if proof == "stale" else 1)
+    steps = recorder.sequence[:-1] if proof == "missing" else recorder.sequence
+    for ordinal, step in enumerate(steps):
+        receipt = CanaryBrokerLifecycleReceipt(canary_id=request.canary_id, step=step, endpoint="PAPER",
+            account_identity_sha256=request.account_identity_sha256, product_family_sha256=request.product_family.sha256,
+            contract_identity_sha256=request.canonical_contract.sha256, broker_event_id_sha256=f"{ordinal:064x}",
+            broker_snapshot_sha256="f" * 64, previous_receipt_sha256=recorder.last_receipt_sha256,
+            observed_at_utc=now + timedelta(milliseconds=ordinal), open_orders=0, positions=0,
+            economics_reconciled=step == "ECONOMICS_RECONCILED")
+        recorder.record(receipt)
+        store.persist_receipt(receipt)
+    result = CanaryExecutionResult(status="PASS", request_sha256="0" * 64 if proof == "wrong_request" else request.sha256,
+        projection=recorder.projection(), broker_write_boundary_crossed=True)
+    if proof == "complete":
+        accounting.release_verified_lifecycle_resources(request, result)
+        accounting.release_verified_lifecycle_resources(request, result)
+    else:
+        with pytest.raises(ValueError):
+            accounting.release_verified_lifecycle_resources(request, result)
+    with Database.open(path) as db:
+        reserved = SleeveLedgerStore(db).project(CapitalSleeve.CONTINUOUS_SLEEVE).reserved_liability_usd
+        owned = ContractOwnershipStore(db).projection().owner_of(request.canonical_contract.sha256)
+        assert reserved == (0 if proof == "complete" else request.maximum_loss_usd)
+        assert (owned is None) is (proof == "complete")
+
+
 @pytest.mark.parametrize("proof", ["complete", "missing", "nonflat", "wrong_hash"])
 def test_owner_recovery_retires_failed_candidate_only_with_bound_flat_proof(tmp_path, proof):
     path, store, proposal, request = _setup(tmp_path)
@@ -59,6 +97,37 @@ def facts(request, *, flat=False, commission="0.01"):
             "position_quantity": "0" if flat else str(request.quantity),
             "average_cost": str(Decimal("10") / request.quantity),
             "open_order_count": 0, "fills": fills}
+
+
+def test_terminal_no_fill_releases_resources_without_certifying_lifecycle(tmp_path):
+    from datetime import datetime, timedelta, timezone
+    from ibkr_paper_30d.canary_authority import CanaryBrokerLifecycleReceipt, CanaryLifecycleRecorder
+    from ibkr_paper_30d.canary_execution import CanaryExecutionResult
+    from ibkr_paper_30d.contract_ownership import ContractOwnershipStore
+    path, store, _, request = _setup(tmp_path)
+    store.begin_write(request.execution_key)
+    accounting = CanaryBrokerAccounting(path)
+    data = facts(request, flat=True)
+    data["fills"] = []
+    assert accounting(request, data) is False
+    recorder = CanaryLifecycleRecorder(request.canary_id, request.account_identity_sha256,
+        request.product_family.sha256, request.canonical_contract.sha256)
+    now = datetime.now(timezone.utc) - timedelta(seconds=1)
+    for index, step in enumerate(("SUBMITTED", "BROKER_BOUND", "TERMINAL_NO_FILL")):
+        receipt = CanaryBrokerLifecycleReceipt(canary_id=request.canary_id, step=step, endpoint="PAPER",
+            account_identity_sha256=request.account_identity_sha256, product_family_sha256=request.product_family.sha256,
+            contract_identity_sha256=request.canonical_contract.sha256, broker_event_id_sha256=f"{index:064x}",
+            broker_snapshot_sha256="f" * 64, previous_receipt_sha256=recorder.last_receipt_sha256,
+            observed_at_utc=now + timedelta(milliseconds=index), open_orders=0, positions=0, economics_reconciled=False)
+        recorder.record(receipt)
+        store.persist_receipt(receipt)
+    result = CanaryExecutionResult(status="TERMINAL_NO_FILL", request_sha256=request.sha256,
+        projection=recorder.projection(), broker_write_boundary_crossed=True)
+    accounting.release_verified_lifecycle_resources(request, result)
+    with Database.open(path) as db:
+        assert SleeveLedgerStore(db).project(CapitalSleeve.CONTINUOUS_SLEEVE).reserved_liability_usd == 0
+        assert ContractOwnershipStore(db).projection().owner_of(request.canonical_contract.sha256) is None
+    assert result.projection.status != "PASS"
 
 
 def test_actual_fill_import_is_idempotent_and_preserves_economics(tmp_path):

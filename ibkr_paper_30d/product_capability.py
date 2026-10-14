@@ -297,8 +297,8 @@ class ProductFamilyCertificationStore:
             raise ProductCapabilityError("READ_ONLY_EVIDENCE_CERTIFICATION_ESCALATION")
         return projection
 
-    @staticmethod
     def _validate_runtime_authorization(
+        self,
         runtime_authorization: Mapping[str, Any],
         projection: ProductExecutionCapability,
         account_sha256: str,
@@ -328,7 +328,13 @@ class ProductFamilyCertificationStore:
             raise ProductCapabilityError("CANARY_RECERTIFICATION_UNSAFE")
         if runtime_authorization["family_positions"] != 0:
             raise ProductCapabilityError("CANARY_RECERTIFICATION_UNSAFE")
-        if runtime_authorization["transition_phase"] != "CANARY_EXCLUSIVE":
+        if runtime_authorization["transition_phase"] == "ACTIVE":
+            from .multi_universe_transition import MultiUniverseTransitionCoordinator
+            release = MultiUniverseTransitionCoordinator(self.db).active_recertification_release_sha256(
+                account_sha256, str(runtime_authorization["approved_git_head"]), adapter_sha256)
+            if release is None or release != runtime_authorization.get("active_recertification_release_sha256"):
+                raise ProductCapabilityError("CANARY_RECERTIFICATION_UNSAFE")
+        elif runtime_authorization["transition_phase"] != "CANARY_EXCLUSIVE":
             raise ProductCapabilityError("CANARY_RECERTIFICATION_UNSAFE")
         if runtime_authorization.get("adapter_sha256", adapter_sha256) != adapter_sha256:
             raise ProductCapabilityError("CANARY_RECERTIFICATION_UNSAFE")

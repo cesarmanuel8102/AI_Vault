@@ -12,6 +12,64 @@ from .sleeve_ledger import SleeveLedgerStore
 
 
 class CanaryBrokerAccounting:
+    def release_verified_lifecycle_resources(self, request: Any, result: Any) -> None:
+        from datetime import datetime, timezone
+        from .canary_authority import CanaryBrokerLifecycleReceipt
+        from .contract_ownership import ReleaseEvidence
+        from .production_continuity_runtime import _ProductionCanaryStore
+        no_fill = (result.status == "TERMINAL_NO_FILL" and result.projection is not None
+                   and result.projection.terminal_no_fill)
+        if (result.request_sha256 != request.sha256 or result.projection is None
+                or not (no_fill or (result.status == "PASS" and result.projection.status == "PASS"))):
+            raise ValueError("CANARY_RESOURCE_RELEASE_PROOF_REQUIRED")
+        with Database.open(self.db_path) as db, db.transaction():
+            events = _ProductionCanaryStore._verified_events(db)
+            original, proposal, _ = _ProductionCanaryStore._reservation_binding(events, request.execution_key, recovery=True)
+            if original.sha256 != request.sha256:
+                raise ValueError("CANARY_RESOURCE_RELEASE_REQUEST_MISMATCH")
+            receipts = [event for event in events if event.get("event_type") == "LIFECYCLE_RECEIPT"
+                        and event["receipt"]["canary_id"] == request.canary_id]
+            if not _ProductionCanaryStore._terminal_receipts_match(result.model_dump(mode="json"), receipts):
+                raise ValueError("CANARY_RESOURCE_RELEASE_PROOF_REQUIRED")
+            terminal = CanaryBrokerLifecycleReceipt.model_validate(receipts[-1]["receipt"])
+            if (terminal.open_orders != 0 or terminal.positions != 0
+                    or (not no_fill and not terminal.economics_reconciled)
+                    or not 0 <= (datetime.now(timezone.utc) - terminal.observed_at_utc).total_seconds() < 60):
+                raise ValueError("CANARY_RESOURCE_RELEASE_NOT_FRESH_FLAT")
+            ledger = SleeveLedgerStore(db)
+            if any(position.contract_identity_sha256 == request.canonical_contract.sha256 and position.quantity != 0
+                   for position in ledger.project(CapitalSleeve.CONTINUOUS_SLEEVE).positions):
+                raise ValueError("CANARY_RESOURCE_RELEASE_LEDGER_NOT_FLAT")
+            prior = ledger._events()
+            observation = next((event for event in reversed(events)
+                if event.get("event_type") == "BROKER_FACTS_OBSERVED"
+                and event.get("request_sha256") == request.sha256), None)
+            facts = {} if observation is None else observation.get("facts") or {}
+            if (facts.get("request_sha256") != request.sha256
+                    or facts.get("account_identity_sha256") != request.account_identity_sha256
+                    or facts.get("contract_identity_sha256") != request.canonical_contract.sha256
+                    or facts.get("complete") is not True
+                    or Decimal(str(facts.get("position_quantity", "NaN"))) != 0
+                    or facts.get("open_order_count") != 0
+                    or (no_fill and bool(facts.get("fills")))
+                    or (not no_fill and not any(event["event_type"] in {"CANARY_ECONOMICS_IMPORTED", "BROKER_NET_PNL_RECONCILED"}
+                        and event.get("request_sha256") == request.sha256 for event in prior))):
+                raise ValueError("CANARY_RESOURCE_RELEASE_LEDGER_NOT_FLAT")
+            if not any(event["event_type"] == "LIABILITY_RELEASED" and event.get("reservation_key") == request.execution_key for event in prior):
+                ledger.release_liability_in_transaction(CapitalSleeve.CONTINUOUS_SLEEVE,
+                    amount_usd=request.maximum_loss_usd, reservation_key=request.execution_key,
+                    broker_snapshot_sha256=terminal.broker_snapshot_sha256)
+            ownership = ContractOwnershipStore(db)
+            owned = ownership.projection().owner_of(request.canonical_contract.sha256)
+            if owned is not None:
+                if owned.sleeve is not CapitalSleeve.CONTINUOUS_SLEEVE or owned.group_id != proposal.contract_group.group_id:
+                    raise ValueError("CANARY_RESOURCE_RELEASE_OWNER_MISMATCH")
+                ownership.release_in_transaction(request.canonical_contract.sha256, ReleaseEvidence(
+                    position_quantity=Decimal(0), open_order_count=0, pending_execution_count=0,
+                    child_position_count=0, fill_ambiguity=False,
+                    broker_snapshot_sha256=terminal.broker_snapshot_sha256,
+                    expected_broker_snapshot_sha256=terminal.broker_snapshot_sha256, broker_snapshot_fresh=True))
+
     @staticmethod
     def recognizes_fill(db: Database, observed: dict[str, Any]) -> bool:
         """Recognize a journaled canary fill, without posting it to Day1 again."""

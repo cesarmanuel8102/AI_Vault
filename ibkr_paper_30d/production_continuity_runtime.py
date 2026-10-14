@@ -933,6 +933,13 @@ def create_canary_pilot_orchestrator(
             "family_open_orders": order_count,
             "family_positions": position_count,
         }
+        if runtime_authorization["transition_phase"] == "ACTIVE":
+            from .multi_universe_transition import MultiUniverseTransitionCoordinator
+            runtime_authorization["active_recertification_release_sha256"] = (
+                MultiUniverseTransitionCoordinator(product_certification_store.db)
+                .active_recertification_release_sha256(
+                    proposal.account_identity_sha256, effective_approved_head,
+                    product_certification_store.current_adapter_sha256))
         product_certification_store.record_read_only_candidate_evidence(
             proposal.product_family,
             evidence_sha256=validation.capability_evidence_sha256,
@@ -957,6 +964,13 @@ def create_canary_pilot_orchestrator(
                 "CANARY_CERTIFICATION_ADAPTER_MISSING"
             )
         observed = datetime.now(timezone.utc)
+        if ((result.status == "PASS" and result.projection.status == "PASS")
+                or (result.status == "TERMINAL_NO_FILL" and getattr(result.projection, "terminal_no_fill", False) is True)):
+            from .canary_broker_accounting import CanaryBrokerAccounting
+            request = store.load_request(proposal.sha256)
+            if request is None:
+                raise ProductionRuntimeConfigurationError("CANARY_RESOURCE_RELEASE_REQUEST_REQUIRED")
+            CanaryBrokerAccounting(Path(db_path)).release_verified_lifecycle_resources(request, result)
         product_certification_store.record_canary_lifecycle(
             proposal.product_family,
             result.projection,
@@ -967,7 +981,7 @@ def create_canary_pilot_orchestrator(
             paper_limitations=("PAPER_SIMULATION_ONLY",),
         )
 
-    return CanaryPilotOrchestrator(
+    orchestrator = CanaryPilotOrchestrator(
         discovery_runner=discover,
         capability_evidence_collector=capability,
         store=store,
@@ -980,6 +994,24 @@ def create_canary_pilot_orchestrator(
         candidate_finalizer=finalize_candidate,
         lifecycle_finalizer=finalize_lifecycle,
     )
+    def recertification_required() -> bool:
+        from .multi_universe_transition import MultiUniverseTransitionCoordinator
+        from .product_capability import ProductCapabilityError
+        db = product_certification_store.db
+        if MultiUniverseTransitionCoordinator(db).active_recertification_release_sha256(
+                owner_pilot_authorization.account_identity_sha256, effective_approved_head,
+                product_certification_store.current_adapter_sha256) is None:
+            return False
+        for family in product_certification_store.projections():
+            try:
+                product_certification_store.assert_executable(
+                    family.family, datetime.now(timezone.utc), owner_pilot_authorization.account_identity_sha256)
+                return False
+            except ProductCapabilityError:
+                continue
+        return True
+    orchestrator.recertification_required = recertification_required
+    return orchestrator
 
 
 def create_model_executor(
@@ -2883,6 +2915,13 @@ class _ProductionCanaryStore:
                 "SELECT phase,payload_json FROM successor_transition_events "
                 "ORDER BY sequence DESC LIMIT 1"
             ).fetchone()
+            active_release = None
+            if transition_row is not None and str(transition_row[0]) == "ACTIVE":
+                from .multi_universe_transition import MultiUniverseTransitionCoordinator
+                root = self.db_path.resolve().parents[2]
+                kernel = json.loads((root / "IMMUTABLE_EXECUTION_KERNEL_MANIFEST.json").read_text())
+                active_release = MultiUniverseTransitionCoordinator(db).active_recertification_release_sha256(
+                    request.account_identity_sha256, _current_head(root), kernel["kernel_manifest_sha256"])
         if transition_row is None:
             return {"fresh": False}
         transition_payload = json.loads(str(transition_row[1]))
@@ -2902,6 +2941,8 @@ class _ProductionCanaryStore:
         return {
             "kill_switch_clear": kill_switch_clear,
             "transition_phase": str(transition_row[0]),
+            "active_recertification_authorized": active_release is not None,
+            "active_recertification_release_sha256": active_release,
             "ordinary_entry_authority": False,
             "paper_only": True,
             "fresh": bool(

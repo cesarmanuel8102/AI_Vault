@@ -271,8 +271,16 @@ class MultiUniverseTransitionCoordinator:
                 TransitionPhase.SUPERVISION_BOUND,
                 TransitionPhase.CANARY_EXCLUSIVE,
                 TransitionPhase.DUAL_SLEEVE_ACTIVE,
+                TransitionPhase.ACTIVE,
             }:
                 raise MultiUniverseTransitionError("RUNTIME_RELEASE_PHASE_INVALID")
+            if current_phase is TransitionPhase.ACTIVE:
+                if (evidence.get("transition_phase") != "ACTIVE"
+                        or evidence.get("phase_event_sha256") != events[-1]["event_sha256"]
+                        or evidence.get("recertification_required") is not True
+                        or not self._sha256_value(evidence.get("current_adapter_sha256"))):
+                    raise MultiUniverseTransitionError("ACTIVE_RELEASE_RECERTIFICATION_BINDING_REQUIRED")
+                self._cash_classifications(evidence)
             if current_phase is TransitionPhase.SUPERVISION_BOUND and (
                 evidence.get("transition_phase") != current_phase.value
                 or evidence.get("supervision_phase_event_sha256")
@@ -362,6 +370,30 @@ class MultiUniverseTransitionCoordinator:
             "event_sha256": event_sha,
             "idempotent": False,
         }
+
+    def active_recertification_release_sha256(
+        self, account_sha256: str, approved_head: str, adapter_sha256: str
+    ) -> str | None:
+        row = self.db.execute("SELECT payload_json FROM successor_transition_events ORDER BY sequence DESC LIMIT 1").fetchone()
+        if row is None:
+            return None
+        target = TransitionTarget.model_validate(json.loads(str(row[0]))["target"])
+        recovered = self.recover(target)
+        releases = self._runtime_release_rows(target)
+        if recovered.phase is not TransitionPhase.ACTIVE or not releases:
+            return None
+        release = releases[-1]
+        evidence = release.get("evidence") or {}
+        if (target.account_identity_sha256 != account_sha256
+                or release.get("approved_git_head") != approved_head
+                or release.get("phase") != "ACTIVE"
+                or evidence.get("recertification_required") is not True
+                or evidence.get("current_adapter_sha256") != adapter_sha256
+                or evidence.get("phase_event_sha256") != recovered.phase_event_sha256):
+            return None
+        self._validate_runtime_release_evidence(target, approved_head, evidence)
+        self._cash_classifications(evidence)
+        return str(release["event_sha256"])
 
     @classmethod
     def _cash_classifications(
