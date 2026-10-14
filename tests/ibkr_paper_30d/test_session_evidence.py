@@ -171,6 +171,107 @@ def test_session_evidence_returns_liquid_hours_timezone_and_no_open_orders():
     assert evidence["has_open_orders"] is False
 
 
+@pytest.mark.parametrize("hours,expected", [
+    ("20261005:0000-20261005:2359", True),
+    ("20261005:CLOSED", False),
+    ("", False),
+    ("20261004:1601-20261005:1600;20261005:1601-20261006:1600", True),
+])
+def test_certified_family_session_is_broker_backed_after_regular_close(hours, expected):
+    broker = FakeSessionIBKR(now_utc=datetime(2026, 10, 5, 21, 0, tzinfo=timezone.utc))
+    original = broker.reqContractDetails
+    def details(contract):
+        if getattr(contract, "conId", 0) == 99:
+            return [SimpleNamespace(contract=SimpleNamespace(conId=99, secType="CRYPTO", exchange="PAXOS", currency="USD"),
+                                    tradingHours=hours, liquidHours=hours, timeZoneId="UTC")]
+        return original(contract)
+    broker.reqContractDetails = details
+    toolbox, _ = _toolbox_with(broker)
+    evidence = toolbox.session_evidence(reference_symbols=("SPY", "QQQ", "IEF"),
+        family_contracts={"a" * 64: {"con_id": 99, "security_type": "CRYPTO", "exchange": "PAXOS", "currency": "USD"}})
+    assert evidence["session"] == "AFTER_HOURS"
+    session = evidence["family_sessions"]["a" * 64]
+    assert session["tradable_now"] is expected
+    assert session["authenticated"] is bool(hours)
+    assert session["eligible_sleeves"] == ["CONTINUOUS_SLEEVE"]
+
+
+def test_overnight_family_remains_open_before_next_interval_start():
+    broker = FakeSessionIBKR(now_utc=datetime(2026, 10, 5, 14, 0, tzinfo=timezone.utc))
+    original = broker.reqContractDetails
+    broker.reqContractDetails = lambda contract: ([SimpleNamespace(
+        contract=SimpleNamespace(conId=99, secType="CRYPTO", exchange="PAXOS", currency="USD"),
+        tradingHours="20261004:1601-20261005:1600;20261005:1601-20261006:1600", timeZoneId="US/Eastern")]
+        if getattr(contract, "conId", 0) == 99 else original(contract))
+    toolbox, _ = _toolbox_with(broker)
+    evidence = toolbox.session_evidence(reference_symbols=("SPY", "QQQ", "IEF"),
+        family_contracts={"a" * 64: {"con_id": 99, "security_type": "CRYPTO", "exchange": "PAXOS", "currency": "USD"}})
+    assert evidence["family_sessions"]["a" * 64]["tradable_now"] is True
+
+
+def test_family_session_contract_mismatch_cannot_enable_entry():
+    broker = FakeSessionIBKR()
+    original = broker.reqContractDetails
+    broker.reqContractDetails = lambda contract: ([SimpleNamespace(
+        contract=SimpleNamespace(conId=100, secType="CRYPTO", exchange="PAXOS", currency="USD"),
+        tradingHours="20261005:0000-20261005:2359", timeZoneId="UTC")]
+        if getattr(contract, "conId", 0) == 99 else original(contract))
+    toolbox, _ = _toolbox_with(broker)
+    evidence = toolbox.session_evidence(reference_symbols=("SPY", "QQQ", "IEF"),
+        family_contracts={"a" * 64: {"con_id": 99, "security_type": "CRYPTO", "exchange": "PAXOS", "currency": "USD"}})
+    assert evidence["family_sessions"]["a" * 64]["authenticated"] is False
+    assert evidence["family_sessions"]["a" * 64]["tradable_now"] is False
+
+
+def test_production_reader_passes_verified_family_contracts(monkeypatch):
+    contracts = {"a" * 64: {"con_id": 99}}
+    monkeypatch.setattr(launch_module, "_certified_session_contracts", lambda db, adapter, account: contracts,
+                        raising=False)
+    getter = Mock(return_value={"family_sessions": {}})
+    toolbox = SimpleNamespace(base=SimpleNamespace(session_evidence=getter))
+    reader = launch_module._session_evidence_reader(toolbox, db=object(), adapter_sha256="b" * 64,
+                                                    expected_account_hash="c" * 64)
+    reader()
+    assert getter.call_args.kwargs["family_contracts"] == contracts
+
+
+@pytest.mark.parametrize("account,hash_ok,certified,expected", [
+    ("c" * 64, True, True, True),
+    ("d" * 64, True, True, False),
+    ("c" * 64, True, False, False),
+    ("c" * 64, False, True, False),
+])
+def test_session_contract_selection_requires_bound_current_certification(
+    monkeypatch, account, hash_ok, certified, expected
+):
+    import ibkr_paper_30d.canary_execution as execution
+    import ibkr_paper_30d.product_capability as capability
+    from ibkr_paper_30d.production_continuity_runtime import _ProductionCanaryStore
+    identity = SimpleNamespace(security_type="CRYPTO", exchange="PAXOS",
+                               model_dump=lambda **kwargs: {"con_id": 99})
+    request = SimpleNamespace(sha256="e" * 64, account_identity_sha256=account,
+        product_family=SimpleNamespace(sha256="a" * 64, security_type="CRYPTO", venue_or_routing="PAXOS"),
+        canonical_contract=identity)
+    monkeypatch.setattr(execution.CanaryExecutionRequest, "model_validate", lambda value: request)
+    monkeypatch.setattr(_ProductionCanaryStore, "_verified_events", lambda db: [{
+        "event_type": "EXECUTION_REQUEST", "request": {},
+        "request_sha256": "e" * 64 if hash_ok else "f" * 64}])
+    class Store:
+        def __init__(self, db, *, current_adapter_sha256):
+            assert current_adapter_sha256 == "b" * 64
+        def assert_executable(self, family, now, account_hash):
+            assert account_hash == "c" * 64
+            if not certified:
+                raise capability.ProductCapabilityError("CERTIFICATION_ADAPTER_DRIFT")
+    monkeypatch.setattr(capability, "ProductFamilyCertificationStore", Store)
+    if not hash_ok:
+        with pytest.raises(launch_module.LaunchError, match="CANARY_EXECUTION_REQUEST_HASH_MISMATCH"):
+            launch_module._certified_session_contracts(object(), "b" * 64, "c" * 64)
+    else:
+        result = launch_module._certified_session_contracts(object(), "b" * 64, "c" * 64)
+        assert bool(result) is expected
+
+
 def test_session_evidence_detects_experiment_open_order():
     toolbox, broker = _toolbox_with(
         FakeSessionIBKR(open_order_refs=["codex-ibkr-paper-30d-a-abc1"])

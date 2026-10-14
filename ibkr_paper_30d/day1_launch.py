@@ -1715,12 +1715,52 @@ def _write_epoch_manifest(
         manifest=manifest,
         provider=provider,
         toolbox=toolbox,
-        session_evidence_reader=_session_evidence_reader(toolbox),
+        session_evidence_reader=_session_evidence_reader(
+            toolbox,
+            db=db if config.multi_universe_authority_path is not None else None,
+            adapter_sha256=kernel["kernel_manifest_sha256"],
+            expected_account_hash=preflight.expected_account_hash,
+        ),
     )
+
+
+def _certified_session_contracts(
+    db: Database, adapter_sha256: str, expected_account_hash: str
+) -> dict[str, dict[str, Any]]:
+    from .canary_execution import CanaryExecutionRequest
+    from .product_capability import ProductFamilyCertificationStore, ProductCapabilityError
+    from .production_continuity_runtime import _ProductionCanaryStore
+
+    store = ProductFamilyCertificationStore(db, current_adapter_sha256=adapter_sha256)
+    contracts: dict[str, dict[str, Any]] = {}
+    # Validate durable provenance before using a historical contract as a calendar probe.
+    for event in reversed(_ProductionCanaryStore._verified_events(db)):
+        if event.get("event_type") != "EXECUTION_REQUEST":
+            continue
+        request = CanaryExecutionRequest.model_validate(event.get("request"))
+        if request.sha256 != event.get("request_sha256"):
+            raise LaunchError("CANARY_EXECUTION_REQUEST_HASH_MISMATCH")
+        family_sha = request.product_family.sha256
+        if family_sha in contracts or request.account_identity_sha256 != expected_account_hash:
+            continue
+        try:
+            store.assert_executable(request.product_family, datetime.now(timezone.utc), expected_account_hash)
+        except ProductCapabilityError:
+            continue
+        identity = request.canonical_contract
+        if (identity.security_type != request.product_family.security_type
+                or identity.exchange != request.product_family.venue_or_routing):
+            continue
+        contracts[family_sha] = identity.model_dump(mode="json")
+    return contracts
 
 
 def _session_evidence_reader(
     toolbox: AutonomyToolbox,
+    *,
+    db: Database | None = None,
+    adapter_sha256: str | None = None,
+    expected_account_hash: str | None = None,
 ) -> Callable[[], dict[str, Any] | None] | None:
     """Bind the production session-evidence reader to the prepared toolbox.
 
@@ -1739,7 +1779,14 @@ def _session_evidence_reader(
     if not callable(getter):
         return None
     symbols = tuple(sorted(MarketPolicyFreezer.REQUIRED_SYMBOLS))
-    return lambda: getter(reference_symbols=symbols)
+    if db is None:
+        return lambda: getter(reference_symbols=symbols)
+    if adapter_sha256 is None or expected_account_hash is None:
+        raise LaunchError("FAMILY_SESSION_AUTHORITY_REQUIRED")
+    return lambda: getter(
+        reference_symbols=symbols,
+        family_contracts=_certified_session_contracts(db, adapter_sha256, expected_account_hash),
+    )
 
 
 def _current_git_commit(repo_root: Path) -> str:

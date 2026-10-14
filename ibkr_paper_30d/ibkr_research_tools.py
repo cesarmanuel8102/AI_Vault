@@ -3,11 +3,13 @@ from __future__ import annotations
 import copy
 import os
 import random
+import re
 import sys
-from datetime import timezone
+from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .autonomous_research import (
     AutonomousOpenOrderAction,
@@ -136,6 +138,37 @@ def resolve_position_execution_contract(ib: Any, contract: Any) -> Any:
             "POSITION_ACTION_CONTRACT_PRIMARY_EXCHANGE_MISMATCH"
         )
     return resolved
+
+
+def _family_calendar_session(now: datetime, hours: str, zone: str) -> str:
+    """Resolve broker intervals including sessions that started the previous day."""
+    try:
+        tz = ZoneInfo(zone)
+        local = now.astimezone(tz)
+        day = local.strftime("%Y%m%d")
+        intervals = []
+        covered = False
+        for entry in hours.split(";"):
+            if not entry:
+                continue
+            if re.fullmatch(r"\d{8}:CLOSED", entry):
+                covered |= entry.startswith(day + ":")
+                continue
+            for span in entry.split(","):
+                match = re.fullmatch(r"(\d{8}):(\d{4})-(\d{8}):(\d{4})", span)
+                if match is None:
+                    return "UNKNOWN"
+                start = datetime.strptime(match[1] + match[2], "%Y%m%d%H%M").replace(tzinfo=tz)
+                end = datetime.strptime(match[3] + match[4], "%Y%m%d%H%M").replace(tzinfo=tz)
+                if end <= start:
+                    return "UNKNOWN"
+                covered |= start.date() <= local.date() <= end.date()
+                intervals.append((start, end))
+        if any(start <= local < end for start, end in intervals):
+            return "REGULAR"
+        return "CLOSED" if covered else "UNKNOWN"
+    except (ValueError, ZoneInfoNotFoundError):
+        return "UNKNOWN"
 
 
 class IBKRResearchToolbox:
@@ -1415,6 +1448,7 @@ class IBKRResearchToolbox:
     def session_evidence(
         self,
         reference_symbols: tuple[str, ...],
+        family_contracts: dict[str, dict[str, Any]] | None = None,
     ) -> dict[str, Any] | None:
         """Authoritative IBKR session + open-order evidence for orchestration.
 
@@ -1490,12 +1524,41 @@ class IBKRResearchToolbox:
                 )
                 for trade in ib.reqAllOpenOrders()
             )
+            family_sessions: dict[str, dict[str, Any]] = {}
+            for family_sha, identity in sorted((family_contracts or {}).items()):
+                evidence = {"authenticated": False, "tradable_now": False,
+                            "session": "UNKNOWN", "eligible_sleeves": ["CONTINUOUS_SLEEVE"]}
+                family_sessions[family_sha] = evidence
+                try:
+                    probe = Contract(conId=int(identity["con_id"]),
+                                     secType=identity["security_type"],
+                                     exchange=identity["exchange"], currency=identity["currency"])
+                    details = ib.reqContractDetails(probe)
+                    if len(details or []) != 1:
+                        continue
+                    item = details[0]
+                    contract = item.contract
+                    if (contract.conId != probe.conId or contract.secType != probe.secType
+                            or contract.exchange != probe.exchange or contract.currency != probe.currency):
+                        continue
+                    hours = str(getattr(item, "tradingHours", "") or "")
+                    zone = str(getattr(item, "timeZoneId", "") or "")
+                    session = _family_calendar_session(broker_time_utc, hours, zone)
+                    if session == "UNKNOWN":
+                        continue
+                    evidence.update(authenticated=True,
+                                    tradable_now=session == "REGULAR",
+                                    session=session, trading_hours=hours, timezone_id=zone,
+                                    broker_time_utc=broker_time_utc.isoformat(), con_id=probe.conId)
+                except (AttributeError, KeyError, TypeError, ValueError):
+                    continue
             return {
                 "broker_time_utc": broker_time_utc.isoformat().replace("+00:00", "Z"),
                 "liquid_hours": references[0]["liquid_hours"],
                 "timezone_id": references[0]["timezone_id"],
                 "session": references[0]["session"],
                 "has_open_orders": bool(has_open_orders),
+                **({"family_sessions": family_sessions} if family_contracts is not None else {}),
             }
         except Exception:
             return None
