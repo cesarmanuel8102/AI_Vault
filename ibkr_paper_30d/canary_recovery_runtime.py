@@ -126,6 +126,21 @@ class CanaryRecoveryStore:
                     return dict(order)
         return None
 
+    def persist_resume(self, request, approved_head):
+        from .production_continuity_runtime import _ProductionCanaryStore
+        bound = self.bound_order(request)
+        if bound is None:
+            raise ValueError("CANARY_RECOVERY_BROKER_BOUND_REQUIRED")
+        with Database.open(self.db_path) as db, db.transaction():
+            store = _ProductionCanaryStore(self.db_path)
+            store._verified_events(db)
+            store._append_in_transaction(db, authorization_id=request.execution_key,
+                event_type="CANARY_RECOVERY_PROCESS_RESUMED", body={
+                    "candidate_sha256": request.original_request.candidate_sha256,
+                    "request_sha256": request.sha256, "approved_head": approved_head,
+                    "owner_authorization_sha256": request.owner_authorization_sha256,
+                    "bound_order": bound, "new_order_authority": False})
+
 
 def main(argv=None):
     parser = argparse.ArgumentParser()
@@ -178,18 +193,7 @@ def main(argv=None):
                 owner_decision_sha256=args.owner_decision_sha256,
                 approved_head=head, now=datetime.now(timezone.utc))
             if args.resume_existing_order:
-                if recovery.bound_order(request) is None:
-                    raise ValueError("CANARY_RECOVERY_BROKER_BOUND_REQUIRED")
-                with db.transaction():
-                    store._verified_events(db)
-                    store._append_in_transaction(db, authorization_id=request.execution_key,
-                        event_type="CANARY_RECOVERY_PROCESS_RESUMED", body={
-                            "candidate_sha256": original.candidate_sha256,
-                            "request_sha256": request.sha256,
-                            "approved_head": head,
-                            "owner_authorization_sha256": request.owner_authorization_sha256,
-                            "bound_order": recovery.bound_order(request),
-                            "new_order_authority": False})
+                recovery.persist_resume(request, head)
             coordinator = BrokerWriteCoordinator()
             factory = build_ibkr_session_factory(host="127.0.0.1", port=4002,
                 expected_account_hash=original.account_identity_sha256,

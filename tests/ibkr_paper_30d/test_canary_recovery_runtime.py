@@ -72,3 +72,23 @@ def test_fresh_explicit_owner_decision_has_its_own_one_attempt_limit(tmp_path):
              "position_quantity": str(original.quantity)}
     assert recovery.claim(second, facts) is True
     assert recovery.claim(second, facts) is False
+
+
+def test_resume_event_uses_one_sqlite_connection_for_write_transaction(tmp_path):
+    path, store, _, original = _setup(tmp_path)
+    store.begin_write(original.execution_key)
+    recovery = CanaryRecoveryStore(path)
+    request = recovery.authorize(original, entry_execution_id_sha256="a" * 64,
+                                 owner_decision_sha256="b" * 64,
+                                 approved_head="c" * 40, now=datetime.now(timezone.utc))
+    result = PaperExecutionResult(success=True, status="BROKER_BOUND", reason_codes=(),
+                                 order={"orderId": 230, "permId": 9001, "clientId": 19761,
+                                        "orderRef": f"codex-ibkr-paper-30d-canary-recovery-{request.sha256[:12]}"},
+                                 broker_validation={})
+    recovery.persist_result(request, result)
+    recovery.persist_resume(request, "d" * 40)
+    with Database.open(path) as db:
+        events = _ProductionCanaryStore._verified_events(db)
+    assert events[-1]["event_type"] == "CANARY_RECOVERY_PROCESS_RESUMED"
+    assert events[-1]["bound_order"]["permId"] == 9001
+    assert events[-1]["request_sha256"] == request.sha256
