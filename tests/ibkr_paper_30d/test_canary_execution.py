@@ -439,8 +439,12 @@ def test_authoritative_writer_blocks_canary_without_execution_lock() -> None:
     assert result.reason_codes == ("EXECUTION_LOCK_REQUIRED",)
 
 
-def test_real_writer_port_completes_exact_entry_and_flat_return() -> None:
-    request = _request()
+@pytest.mark.parametrize("entry_tif", ["DAY", "IOC"])
+def test_real_writer_port_completes_exact_entry_and_flat_return(entry_tif) -> None:
+    request = _request(entry_terms=CanaryEntryTerms(
+        action="BUY", order_type="LMT", limit_price=Decimal("10"),
+        time_in_force=entry_tif, outside_regular_hours=True,
+    ))
     coordinator = BrokerWriteCoordinator()
 
     class ImmediateFillBroker:
@@ -513,6 +517,49 @@ def test_real_writer_port_completes_exact_entry_and_flat_return() -> None:
     assert len(broker.refs) == 2
     assert broker.refs[0] != broker.refs[1]
     assert Decimal(str(broker.orders[1].lmtPrice)) == Decimal("9.75")
+    assert broker.orders[0].tif == entry_tif
+    assert broker.orders[1].tif == "GTC"
+
+
+def test_exit_failure_preserves_durable_entry_evidence() -> None:
+    request = _request()
+    persisted = []
+
+    def failed_exit(_request, _broker, _evidence):
+        yield ("BROKER_BOUND", 1, 0, False)
+        yield ("ENTRY_FILL", 0, 1, False)
+        yield ("POSITION_VISIBLE", 0, 1, False)
+        yield ("MANAGEMENT_OBSERVED", 0, 1, False)
+        raise RuntimeError("CANARY_EXIT_NOT_FILLED")
+
+    result = CanaryExecutionAdapter(
+        begin_write=lambda _key: True, now_utc=lambda: NOW,
+        receipt_persister=persisted.append, writer_executor=failed_exit,
+    ).execute(request, object(), _evidence(request))
+
+    assert result.status == "UNCERTAIN"
+    assert result.projection is not None
+    assert result.projection.flat is False
+    assert [item.step for item in persisted] == [
+        "SUBMITTED", "BROKER_BOUND", "ENTRY_FILL", "POSITION_VISIBLE",
+        "MANAGEMENT_OBSERVED",
+    ]
+
+
+def test_prewrite_block_exception_after_binding_cannot_hide_broker_write():
+    from ibkr_paper_30d.canary_execution import CanaryPreWriteBlocked
+    request = _request()
+
+    def failed_after_send(*_args):
+        yield ("BROKER_BOUND", 1, 0, False)
+        raise CanaryPreWriteBlocked(("LATE_FAILURE",))
+
+    result = CanaryExecutionAdapter(
+        begin_write=lambda _key: True, now_utc=lambda: NOW,
+        writer_executor=failed_after_send,
+    ).execute(request, object(), _evidence(request))
+    assert result.status == "UNCERTAIN"
+    assert result.broker_write_boundary_crossed is True
 
 
 def test_canary_invalid_flat_return_quote_blocks_before_entry_write() -> None:

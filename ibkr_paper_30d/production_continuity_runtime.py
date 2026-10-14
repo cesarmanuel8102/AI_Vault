@@ -1904,6 +1904,7 @@ def create_authoritative_writer(
     current_adapter_sha256: str | None = None,
 ) -> Any:
     from .authoritative_broker_writer import AuthoritativeBrokerWriter
+    from .canary_broker_accounting import CanaryBrokerAccounting
     from .canary_execution import CanaryExecutionAdapter
     from .production_authority import ProductionAuthorityValidator
 
@@ -1982,6 +1983,9 @@ def create_authoritative_writer(
         sleeve_authority_snapshot_reader=sleeve_snapshot_reader,
         sleeve_broker_evidence_collector=sleeve_broker_collector,
         canary_execution_adapter=canary_adapter,
+        canary_broker_accounting=(
+            CanaryBrokerAccounting(Path(db_path)) if canary_store is not None else None
+        ),
         canary_evidence_collector=(
             canary_store.authority_evidence if canary_store is not None else None
         ),
@@ -2306,8 +2310,8 @@ class _ProductionCanaryStore:
         """Return True if any non-active candidate has pending or ambiguous
         protected events that indicate in-flight work.
 
-        Completed history (CANARY_RESULT + LIFECYCLE_RECEIPT for the same
-        candidate) is NOT considered orphaned. Everything else for a
+        Only proven terminal results with lifecycle evidence are completed
+        history. Everything else for a
         non-active candidate is treated as pending/ambiguous and blocks
         recovery. Fail-closed on chain verification errors."""
         with Database.open(self.db_path) as db:
@@ -2334,6 +2338,8 @@ class _ProductionCanaryStore:
             # Group protected events by candidate_sha256
             by_candidate: dict[str, set[str]] = {}
             prewrite_blocked: set[str] = set()
+            terminal_results: dict[str, Mapping[str, Any]] = {}
+            lifecycle_events: dict[str, list[dict[str, Any]]] = {}
             for event in events:
                 event_type = str(event.get("event_type") or "")
                 if event_type not in {
@@ -2356,24 +2362,32 @@ class _ProductionCanaryStore:
                     # Ambiguous attribution → fail-closed
                     return True
                 by_candidate.setdefault(candidate_sha256, set()).add(event_type)
+                if event_type == "LIFECYCLE_RECEIPT":
+                    lifecycle_events.setdefault(candidate_sha256, []).append(event)
                 result = event.get("result") or {}
+                completed = self._completed_canary_result(result)
                 if (
                     event_type == "CANARY_RESULT"
-                    and result.get("status") == "BLOCKED"
-                    and result.get("broker_write_boundary_crossed") is False
-                    and result.get("projection") is None
+                    and completed
                 ):
-                    prewrite_blocked.add(candidate_sha256)
+                    if result.get("status") == "BLOCKED":
+                        prewrite_blocked.add(candidate_sha256)
+                    else:
+                        terminal_results[candidate_sha256] = result
 
             for candidate_sha256, event_types in by_candidate.items():
                 if candidate_sha256 == active_sha256:
                     continue
                 if candidate_sha256 in prewrite_blocked and "LIFECYCLE_RECEIPT" not in event_types:
                     continue
-                # Fully completed lifecycle: both result and receipt present
+                # A receipt alone may only prove submission, not completion.
                 if (
-                    "CANARY_RESULT" in event_types
+                    candidate_sha256 in terminal_results
                     and "LIFECYCLE_RECEIPT" in event_types
+                    and self._terminal_receipts_match(
+                        terminal_results[candidate_sha256],
+                        lifecycle_events.get(candidate_sha256, []),
+                    )
                 ):
                     continue
                 # Anything else for a non-active candidate is pending or ambiguous
@@ -2407,16 +2421,77 @@ class _ProductionCanaryStore:
             )
 
     @staticmethod
+    def _terminal_receipts_match(
+        result: Mapping[str, Any], events: list[dict[str, Any]]
+    ) -> bool:
+        from .canary_authority import (
+            CanaryBrokerLifecycleReceipt, CanaryLifecycleError,
+            CanaryLifecycleProjection, CanaryLifecycleRecorder,
+        )
+
+        try:
+            expected = CanaryLifecycleProjection.model_validate(result.get("projection"))
+            recorder = CanaryLifecycleRecorder(
+                expected.canary_id, expected.account_identity_sha256,
+                expected.product_family_sha256, expected.contract_identity_sha256,
+            )
+            for event in events:
+                receipt = CanaryBrokerLifecycleReceipt.model_validate(event.get("receipt"))
+                if receipt.sha256 != event.get("receipt_sha256"):
+                    return False
+                recorder.record(receipt)
+            return recorder.projection() == expected
+        except (ValueError, TypeError, CanaryLifecycleError):
+            return False
+
+    @staticmethod
+    def _completed_canary_result(result: Mapping[str, Any]) -> bool:
+        from .canary_authority import CanaryLifecycleProjection, CanaryLifecycleRecorder
+
+        if not isinstance(result, Mapping):
+            return False
+        status = result.get("status")
+        if status == "BLOCKED":
+            return (
+                result.get("broker_write_boundary_crossed") is False
+                and result.get("projection") is None
+            )
+        if status not in {"PASS", "TERMINAL_NO_FILL"}:
+            return False
+        if result.get("broker_write_boundary_crossed") is not True:
+            return False
+        try:
+            projection = CanaryLifecycleProjection.model_validate(result.get("projection"))
+        except ValueError:
+            return False
+        if projection.terminal_event_sha256 is None:
+            return False
+        if status == "PASS":
+            return (
+                projection.status == "PASS"
+                and projection.full_lifecycle_verified is True
+                and projection.flat is True
+                and projection.terminal_no_fill is False
+                and projection.completed_steps == CanaryLifecycleRecorder._SEQUENCE
+            )
+        return (
+            projection.status == "TRANSMIT_ONLY"
+            and projection.terminal_no_fill is True
+            and projection.full_lifecycle_verified is False
+            and projection.completed_steps == ("SUBMITTED", "BROKER_BOUND", "TERMINAL_NO_FILL")
+        )
+
+    @staticmethod
     def _active_candidate_event(
         events: list[dict[str, Any]],
     ) -> dict[str, Any] | None:
         retired: set[str] = set()
         for event in reversed(events):
             candidate_sha256 = str(event.get("candidate_sha256") or "")
-            if event.get("event_type") in {
-                "CANDIDATE_EXPIRED_UNUSED",
-                "CANARY_RESULT",
-            }:
+            if event.get("event_type") == "CANDIDATE_EXPIRED_UNUSED" or (
+                event.get("event_type") == "CANARY_RESULT"
+                and _ProductionCanaryStore._completed_canary_result(event.get("result") or {})
+            ):
                 retired.add(candidate_sha256)
             elif (
                 event.get("event_type") == "CANDIDATE_SELECTED"
@@ -2523,6 +2598,163 @@ class _ProductionCanaryStore:
             )
         return None if result is None else dict(result.get("result") or {})
 
+    @staticmethod
+    def _reservation_binding(
+        events: list[dict[str, Any]], execution_key: str, *, recovery: bool = False
+    ) -> tuple[Any, Any, Any]:
+        from .canary_authority import CanaryAuthorityValidator, CanaryExecutionTarget
+        from .canary_candidate import CanaryCandidateProposal
+        from .canary_execution import CanaryExecutionRequest, CanaryPreWriteBlocked
+        from .multi_universe_models import CanaryAuthorization
+
+        requested = [
+            event for event in events
+            if event.get("event_type") == "EXECUTION_REQUEST"
+            and (event.get("request") or {}).get("execution_key") == execution_key
+        ]
+        if len(requested) != 1:
+            raise CanaryPreWriteBlocked(("CANARY_EXECUTION_REQUEST_REQUIRED",))
+        request_event = requested[0]
+        try:
+            request = CanaryExecutionRequest.model_validate(request_event.get("request"))
+            candidate = next((
+                event for event in reversed(events)
+                if event.get("event_type") == "CANDIDATE_SELECTED"
+                and event.get("candidate_sha256") == request.candidate_sha256
+            ), None)
+            authorized = next((
+                event for event in reversed(events)
+                if event.get("event_type") == "AUTHORIZED"
+                and event.get("candidate_sha256") == request.candidate_sha256
+                and event.get("authorization_sha256") == request.authorization_sha256
+            ), None)
+            if candidate is None or authorized is None:
+                raise CanaryPreWriteBlocked(("CANARY_RESERVATION_BINDING_REQUIRED",))
+            proposal = CanaryCandidateProposal.model_validate(
+                (candidate.get("outcome") or {}).get("proposal"))
+            authorization = CanaryAuthorization.model_validate(authorized.get("authorization"))
+        except ValueError as exc:
+            raise CanaryPreWriteBlocked(("CANARY_RESERVATION_BINDING_INVALID",)) from exc
+        if (
+            request.sha256 != request_event.get("request_sha256")
+            or request.candidate_sha256 != request_event.get("candidate_sha256")
+            or proposal.sha256 != request.candidate_sha256
+            or authorization.sha256 != request.authorization_sha256
+            or request.canary_id != proposal.candidate_id
+            or proposal.contract_group.sleeve is not CapitalSleeve.CONTINUOUS_SLEEVE
+            or any(getattr(request, field) != getattr(proposal, field) for field in (
+                "account_identity_sha256", "successor_definition_sha256",
+                "product_family", "canonical_contract", "entry_terms", "quantity",
+                "maximum_debit_usd", "maximum_loss_usd", "fee_allowance_usd",
+                "flat_return_plan",
+            ))
+            or not {member.sha256 for member in proposal.contract_group.member_contracts}
+            <= set(authorization.contract_scope_sha256)
+        ):
+            raise CanaryPreWriteBlocked(("CANARY_RESERVATION_BINDING_MISMATCH",))
+        now = request.created_at_utc if recovery else datetime.now(timezone.utc)
+        if not recovery and (
+            _ProductionCanaryStore._active_candidate_event(events) != candidate
+            or not proposal.created_at_utc <= now < proposal.expires_at_utc
+        ):
+            raise CanaryPreWriteBlocked(("CANARY_CANDIDATE_NOT_ACTIVE",))
+        authority = CanaryAuthorityValidator.validate(authorization, CanaryExecutionTarget(
+            endpoint="PAPER", account_identity_sha256=request.account_identity_sha256,
+            successor_definition_sha256=request.successor_definition_sha256,
+            product_family_sha256=request.product_family.sha256,
+            contract_identity_sha256=request.canonical_contract.sha256,
+            debit_usd=request.maximum_debit_usd, maximum_loss_usd=request.maximum_loss_usd,
+            estimated_fees_usd=request.fee_allowance_usd, order_count=2,
+            capital_replenishment_usd=Decimal("0"), sleeve_transfer_usd=Decimal("0"),
+        ), now)
+        if authority.status != "PASS":
+            raise CanaryPreWriteBlocked(authority.reason_codes)
+        return request, proposal, authorization
+
+    @staticmethod
+    def _reserve_ownership_in_transaction(db: Any, request: Any, proposal: Any) -> None:
+        from .canary_execution import CanaryPreWriteBlocked
+        from .contract_ownership import ContractOwnershipStore, OwnershipError
+        from .sleeve_ledger import SleeveLedgerStore, SleeveLedgerError
+
+        try:
+            ContractOwnershipStore(db).reserve_group_in_transaction(proposal.contract_group)
+            ledger = SleeveLedgerStore(db)
+            reservations = [
+                event for event in ledger._events()
+                if event.get("event_type") == "LIABILITY_RESERVED"
+                and event.get("reservation_key") == request.execution_key
+            ]
+            if reservations:
+                if len(reservations) != 1 or (
+                    reservations[0].get("sleeve") != CapitalSleeve.CONTINUOUS_SLEEVE.value
+                    or Decimal(str(reservations[0].get("amount_usd"))) != request.maximum_loss_usd
+                ):
+                    raise CanaryPreWriteBlocked(("CANARY_LIABILITY_RESERVATION_CONFLICT",))
+                if any(
+                    event.get("event_type") == "LIABILITY_RELEASED"
+                    and event.get("reservation_key") == request.execution_key
+                    for event in ledger._events()
+                ):
+                    raise CanaryPreWriteBlocked(("CANARY_LIABILITY_ALREADY_RELEASED",))
+            else:
+                ledger.reserve_liability_in_transaction(
+                    CapitalSleeve.CONTINUOUS_SLEEVE,
+                    amount_usd=request.maximum_loss_usd,
+                    reservation_key=request.execution_key,
+                )
+        except (OwnershipError, SleeveLedgerError) as exc:
+            raise CanaryPreWriteBlocked((str(exc),)) from exc
+
+    @staticmethod
+    def _reservation_body(request: Any, proposal: Any) -> dict[str, Any]:
+        return {
+            "execution_key": request.execution_key,
+            "candidate_sha256": proposal.sha256,
+            "request_sha256": request.sha256,
+            "authorization_sha256": request.authorization_sha256,
+            "contract_group_sha256": proposal.contract_group.sha256,
+            "maximum_loss_usd": str(request.maximum_loss_usd),
+            "capital_sleeve": CapitalSleeve.CONTINUOUS_SLEEVE.value,
+        }
+
+    def reserve_recovery_ownership(self, request: Any) -> str:
+        """Attribute the original claimed canary without changing broker authority."""
+        from .canary_execution import CanaryPreWriteBlocked
+
+        with Database.open(self.db_path) as db, db.transaction():
+            events = self._verified_events(db)
+            original, proposal, _ = self._reservation_binding(
+                events, request.execution_key, recovery=True)
+            if request.sha256 != original.sha256:
+                raise CanaryPreWriteBlocked(("CANARY_EXECUTION_REQUEST_HASH_MISMATCH",))
+            claims = [
+                event for event in events
+                if event.get("event_type") == "EXECUTION_CLAIMED"
+                and event.get("execution_key") == original.execution_key
+            ]
+            if len(claims) != 1:
+                raise CanaryPreWriteBlocked(("CANARY_EXECUTION_CLAIM_REQUIRED",))
+            body = self._reservation_body(original, proposal)
+            if any(
+                field in claims[0] and claims[0][field] != value
+                for field, value in body.items()
+            ):
+                raise CanaryPreWriteBlocked(("CANARY_EXECUTION_CLAIM_MISMATCH",))
+            self._reserve_ownership_in_transaction(db, original, proposal)
+            existing = next((
+                event for event in events
+                if event.get("event_type") == "RECOVERY_OWNERSHIP_RESERVED"
+                and event.get("execution_key") == original.execution_key
+            ), None)
+            if existing is not None:
+                if any(existing.get(field) != value for field, value in body.items()):
+                    raise CanaryPreWriteBlocked(("CANARY_RECOVERY_RESERVATION_CONFLICT",))
+                return str(existing["event_sha256"])
+            return self._append_in_transaction(
+                db, authorization_id=original.execution_key,
+                event_type="RECOVERY_OWNERSHIP_RESERVED", body=body)
+
     def begin_write(self, execution_key: str) -> bool:
         with Database.open(self.db_path) as db, db.transaction():
             from .experiment_control import KillSwitchStore
@@ -2536,11 +2768,13 @@ class _ProductionCanaryStore:
                 for event in events
             ):
                 return False
+            request, proposal, _ = self._reservation_binding(events, execution_key)
+            self._reserve_ownership_in_transaction(db, request, proposal)
             self._append_in_transaction(
                 db,
                 authorization_id=execution_key,
                 event_type="EXECUTION_CLAIMED",
-                body={"execution_key": execution_key},
+                body=self._reservation_body(request, proposal),
             )
             return True
 

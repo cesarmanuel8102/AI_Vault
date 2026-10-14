@@ -8,7 +8,7 @@ import threading
 import time
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
 
 from .broker_write_coordinator import (
     AuthorizedBrokerCommand,
@@ -19,6 +19,7 @@ from .canonical import sha256_json
 from .canary_execution import (
     CanaryExecutionAdapter, CanaryExecutionRequest, CanaryExecutionResult,
     CanaryPreWriteBlocked,
+    CanaryRecoveryRequest,
 )
 from .coordinated_model_executor import ModelExecutionRequest
 from .continuity_liability import MaximumLiabilityEvidence
@@ -93,6 +94,9 @@ class AuthoritativeBrokerWriter:
             [Any, CanaryExecutionRequest, dict[str, Any]], dict[str, Any]
         ]
         | None = None,
+        canary_recovery_claim: Callable[[CanaryRecoveryRequest, dict[str, Any]], bool] | None = None,
+        canary_recovery_result_persister: Callable[[CanaryRecoveryRequest, Any], None] | None = None,
+        canary_broker_accounting: Callable[[CanaryExecutionRequest, dict[str, Any]], bool] | None = None,
         startup_connect_attempts: int = 3,
         startup_retry_delay_seconds: float = 1.0,
     ) -> None:
@@ -122,6 +126,9 @@ class AuthoritativeBrokerWriter:
         self.sleeve_broker_evidence_collector = sleeve_broker_evidence_collector
         self.canary_execution_adapter = canary_execution_adapter
         self.canary_evidence_collector = canary_evidence_collector
+        self.canary_recovery_claim = canary_recovery_claim
+        self.canary_recovery_result_persister = canary_recovery_result_persister
+        self.canary_broker_accounting = canary_broker_accounting
         self.canary_supervision_verifier: Callable[[], bool] | None = None
         if (
             isinstance(self.canary_execution_adapter, CanaryExecutionAdapter)
@@ -296,6 +303,8 @@ class AuthoritativeBrokerWriter:
         command: AuthorizedBrokerCommand | ModelExecutionRequest | CanaryExecutionRequest,
         broker: Any,
     ):
+        if isinstance(command, CanaryRecoveryRequest):
+            return self._execute_canary_recovery(command, broker)
         if isinstance(command, CanaryExecutionRequest):
             return self._execute_canary(command, broker)
         if isinstance(command, ModelExecutionRequest):
@@ -307,6 +316,130 @@ class AuthoritativeBrokerWriter:
             status="BLOCKED",
             reasons=("WRITER_REQUEST_TYPE_UNSUPPORTED",),
         )
+
+    def _execute_canary_recovery(self, request: CanaryRecoveryRequest, broker: Any):
+        """One separately authorized reduction; never reuse entry authority."""
+        from ib_insync import Order
+
+        original = request.original_request
+        if (self.canary_recovery_claim is None
+                or self.canary_recovery_result_persister is None
+                or self.execution_lock_verifier() is not True
+                or not request.created_at_utc <= self.now_utc() < request.expires_at_utc):
+            return self._result(success=False, status="BLOCKED",
+                                reasons=("CANARY_RECOVERY_AUTHORITY_REQUIRED",))
+
+        def exact_evidence():
+            evidence = self._collect_evidence(broker)
+            matching_orders = [t for t in evidence["trades"]
+                               if int(getattr(t.contract, "conId", 0) or 0)
+                               == original.canonical_contract.con_id]
+            positions = [p for p in evidence["positions"]
+                         if int(getattr(p.contract, "conId", 0) or 0)
+                         == original.canonical_contract.con_id]
+            entry_ref = f"codex-ibkr-paper-30d-canary-entry-{original.sha256[:12]}"
+            fills = [f for f in evidence["executions"]
+                     if str(getattr(f.execution, "orderRef", "")) == entry_ref]
+            expected_side = "BOT" if original.entry_terms.action == "BUY" else "SLD"
+            if matching_orders or len(positions) != 1 or len(fills) != 1:
+                raise ValueError("CANARY_RECOVERY_IDENTITY_AMBIGUOUS")
+            position, fill = positions[0], fills[0]
+            signed = Decimal(str(position.position))
+            expected_signed = original.quantity if expected_side == "BOT" else -original.quantity
+            if (signed != expected_signed
+                    or expected_identity_hash(position.account) != original.account_identity_sha256
+                    or expected_identity_hash(fill.execution.acctNumber) != original.account_identity_sha256
+                    or int(fill.contract.conId) != original.canonical_contract.con_id
+                    or int(fill.execution.clientId) != self.execution_client_id
+                    or int(fill.execution.permId) <= 0
+                    or sha256_json(fill.execution.execId) != request.entry_execution_id_sha256
+                    or Decimal(str(fill.execution.shares)) != original.quantity
+                    or fill.execution.side != expected_side):
+                raise ValueError("CANARY_RECOVERY_IDENTITY_MISMATCH")
+            return position, fill, evidence
+
+        try:
+            position, entry_fill, _ = exact_evidence()
+            price = self._canary_flat_return_limit_price(original, broker)
+            if price is None:
+                raise ValueError("CANARY_FLAT_RETURN_PRICE_UNRESOLVED")
+            position, entry_fill, evidence = exact_evidence()
+            if (self.execution_lock_verifier() is not True
+                    or not request.created_at_utc <= self.now_utc() < request.expires_at_utc):
+                raise ValueError("CANARY_RECOVERY_AUTHORITY_REQUIRED")
+            facts = {
+                "request_sha256": request.sha256,
+                "original_request_sha256": original.sha256,
+                "entry_execution_id_sha256": request.entry_execution_id_sha256,
+                "position_quantity": str(position.position),
+                "account_identity_sha256": original.account_identity_sha256,
+                "contract_identity_sha256": original.canonical_contract.sha256,
+                "entry_order_id": int(entry_fill.execution.orderId),
+                "entry_perm_id": int(entry_fill.execution.permId),
+                "entry_price": str(entry_fill.execution.price),
+                "exit_limit_price": str(price),
+                "observed_at_utc": self.now_utc().isoformat(),
+            }
+            if self.canary_recovery_claim(request, facts) is not True:
+                raise ValueError("CANARY_RECOVERY_ALREADY_CLAIMED")
+        except Exception as exc:
+            return self._result(success=False, status="BLOCKED", reasons=(str(exc),))
+
+        ref = f"codex-ibkr-paper-30d-canary-recovery-{request.sha256[:12]}"
+        order = Order(action=original.flat_return_plan.action, orderType="LMT",
+                      tif="GTC", totalQuantity=float(original.quantity),
+                      lmtPrice=float(price), transmit=True, whatIf=False,
+                      account=position.account, orderRef=ref,
+                      orderId=int(broker.client.getReqId()))
+        try:
+            trade = broker.placeOrder(position.contract, order)
+            deadline = time.monotonic() + self.broker_request_timeout_seconds
+            while not int(getattr(trade.order, "permId", 0) or 0):
+                if time.monotonic() >= deadline:
+                    raise RuntimeError("CANARY_RECOVERY_BINDING_TIMEOUT")
+                broker.sleep(0.05)
+            while (str(trade.orderStatus.status) not in {"Filled", "Cancelled", "ApiCancelled", "Inactive"}
+                   and time.monotonic() < deadline):
+                broker.sleep(0.05)
+            status = str(trade.orderStatus.status)
+            if status in {"Cancelled", "ApiCancelled", "Inactive"}:
+                raise RuntimeError("CANARY_RECOVERY_EXIT_NOT_FILLED")
+            if status == "Filled":
+                post = self._collect_evidence(broker)
+                exit_fills = [f for f in post["executions"]
+                              if f.execution.orderRef == ref
+                              and int(f.execution.orderId) == order.orderId
+                              and int(f.execution.permId) == int(trade.order.permId)
+                              and int(f.execution.clientId) == self.execution_client_id
+                              and expected_identity_hash(f.execution.acctNumber) == original.account_identity_sha256
+                              and int(f.contract.conId) == original.canonical_contract.con_id
+                              and f.execution.side == ("SLD" if order.action == "SELL" else "BOT")]
+                post_quantity = sum((Decimal(str(p.position)) for p in post["positions"]
+                                     if int(p.contract.conId) == original.canonical_contract.con_id), Decimal("0"))
+                if (not exit_fills or sum((Decimal(str(f.execution.shares)) for f in exit_fills), Decimal("0")) != original.quantity
+                        or post_quantity != 0
+                        or any(int(t.contract.conId) == original.canonical_contract.con_id for t in post["trades"])):
+                    raise RuntimeError("CANARY_RECOVERY_FLAT_NOT_PROVEN")
+                facts["exit_execution_ids_sha256"] = [sha256_json(f.execution.execId) for f in exit_fills]
+                facts["post_position_quantity"] = "0"
+                if self.canary_broker_accounting is not None:
+                    facts["economics_reconciled"] = self.canary_broker_accounting(
+                        original, self._canary_broker_facts(original, broker, recovery_ref=ref))
+            result = self._result(
+                success=True, status="FILLED" if status == "Filled" else "BROKER_BOUND",
+                order={"orderRef": ref, "orderId": int(trade.order.orderId),
+                       "permId": int(trade.order.permId), "clientId": self.execution_client_id,
+                       "status": status}, evidence=facts,
+            )
+            self.canary_recovery_result_persister(request, result)
+            return result
+        except Exception as exc:
+            result = self._result(success=False, status="UNCERTAIN",
+                                 reasons=("CANARY_RECOVERY_STATE_UNCERTAIN", type(exc).__name__),
+                                 order={"orderRef": ref, "orderId": order.orderId}, evidence=facts)
+            self._report_uncertainty("CANARY_RECOVERY_STATE_UNCERTAIN")
+            self.canary_recovery_result_persister(request, result)
+            return result
 
     def _execute_canary(self, request: CanaryExecutionRequest, broker: Any):
         if self.canary_supervision_verifier is not None and (
@@ -407,7 +540,7 @@ class AuthoritativeBrokerWriter:
         request: CanaryExecutionRequest,
         broker: Any,
         evidence: dict[str, Any],
-    ) -> list[tuple[str, int, int, bool]]:
+    ) -> Iterator[tuple[str, int, int, bool]]:
         """Perform the bounded round trip on this writer's existing IB session."""
 
         from ib_insync import Contract, Order
@@ -441,7 +574,8 @@ class AuthoritativeBrokerWriter:
             order = Order(
                 action=action,
                 orderType=order_type,
-                tif=request.entry_terms.time_in_force,
+                tif=(request.entry_terms.time_in_force if order_ref == entry_ref
+                     else "GTC" if order_type == "LMT" else "IOC"),
                 totalQuantity=float(request.quantity),
                 transmit=True,
                 whatIf=False,
@@ -510,22 +644,18 @@ class AuthoritativeBrokerWriter:
         if reasons:
             raise CanaryPreWriteBlocked(reasons)
         entry_trade = broker.placeOrder(contract, entry_order)
-        events: list[tuple[str, int, int, bool]] = [
-            ("BROKER_BOUND", 1, 0, False),
-        ]
+        yield ("BROKER_BOUND", 1, 0, False)
         status, filled, _remaining = wait_terminal(entry_trade)
         if filled == 0 and status in {"Cancelled", "ApiCancelled", "Inactive"}:
-            events.append(("TERMINAL_NO_FILL", 0, 0, False))
-            return events
+            yield ("TERMINAL_NO_FILL", 0, 0, False)
+            return
         if status != "Filled" or filled != request.quantity:
             raise RuntimeError("CANARY_PARTIAL_FILL_UNCERTAIN")
-        events.extend(
-            [
-                ("ENTRY_FILL", 0, 1, False),
-                ("POSITION_VISIBLE", 0, 1, False),
-                ("MANAGEMENT_OBSERVED", 0, 1, False),
-            ]
-        )
+        if self.canary_broker_accounting is not None:
+            self.canary_broker_accounting(request, self._canary_broker_facts(request, broker))
+        yield ("ENTRY_FILL", 0, 1, False)
+        yield ("POSITION_VISIBLE", 0, 1, False)
+        yield ("MANAGEMENT_OBSERVED", 0, 1, False)
 
         refreshed_exit_price = self._canary_flat_return_limit_price(
             request, broker
@@ -560,14 +690,58 @@ class AuthoritativeBrokerWriter:
         ]
         if entry_ref in open_refs or exit_ref in open_refs or canary_positions:
             raise RuntimeError("CANARY_FLAT_STATE_NOT_PROVEN")
-        events.extend(
-            [
-                ("EXIT_FILL", 0, 0, False),
-                ("FLAT_STATE", 0, 0, False),
-                ("ECONOMICS_RECONCILED", 0, 0, True),
-            ]
-        )
-        return events
+        yield ("EXIT_FILL", 0, 0, False)
+        yield ("FLAT_STATE", 0, 0, False)
+        if self.canary_broker_accounting is not None:
+            reconciled = self.canary_broker_accounting(
+                request, self._canary_broker_facts(request, broker))
+            if not reconciled:
+                return
+        yield ("ECONOMICS_RECONCILED", 0, 0, True)
+
+    def _canary_broker_facts(self, request, broker, *, recovery_ref=None):
+        evidence = self._collect_evidence(broker)
+        identity = request.canonical_contract
+        refs = {f"codex-ibkr-paper-30d-canary-entry-{request.sha256[:12]}",
+                f"codex-ibkr-paper-30d-canary-exit-{request.sha256[:12]}"}
+        if recovery_ref is not None:
+            refs.add(recovery_ref)
+        fills = []
+        for fill in evidence["executions"]:
+            execution = fill.execution
+            if int(fill.contract.conId) != identity.con_id:
+                continue
+            if (execution.orderRef not in refs
+                    or expected_identity_hash(execution.acctNumber) != request.account_identity_sha256
+                    or int(execution.clientId) != self.execution_client_id
+                    or int(execution.permId) <= 0):
+                raise ValueError("CANARY_BROKER_FILL_IDENTITY_MISMATCH")
+            commission = getattr(fill, "commissionReport", None)
+            fee = None
+            currency = ""
+            if commission is not None and commission.execId == execution.execId:
+                raw = Decimal(str(commission.commission))
+                if raw.is_finite() and abs(raw) < Decimal("1000000"):
+                    fee = str(raw)
+                    currency = commission.currency
+            fills.append({"execution_id_sha256": sha256_json(execution.execId),
+                          "action": "BUY" if execution.side == "BOT" else "SELL" if execution.side == "SLD" else "UNKNOWN",
+                          "quantity": str(execution.shares), "price": str(execution.price),
+                          "order_ref": execution.orderRef, "order_id": int(execution.orderId),
+                          "perm_id": int(execution.permId), "client_id": int(execution.clientId),
+                          "commission": fee, "commission_currency": currency})
+        matching_positions = [p for p in evidence["positions"] if int(p.contract.conId) == identity.con_id]
+        if any(expected_identity_hash(p.account) != request.account_identity_sha256 for p in matching_positions):
+            raise ValueError("CANARY_BROKER_POSITION_IDENTITY_MISMATCH")
+        if len(matching_positions) > 1:
+            raise ValueError("CANARY_BROKER_POSITION_IDENTITY_AMBIGUOUS")
+        return {"account_identity_sha256": request.account_identity_sha256,
+                "contract_identity_sha256": identity.sha256, "request_sha256": request.sha256,
+                "complete": True, "observed_at_utc": self.now_utc().isoformat(),
+                "position_quantity": str(sum((Decimal(str(p.position)) for p in matching_positions), Decimal("0"))),
+                "average_cost": str(matching_positions[0].avgCost) if matching_positions else "0",
+                "open_order_count": sum(int(t.contract.conId) == identity.con_id for t in evidence["trades"]),
+                "fills": fills}
 
     def _production_authority_read(
         self,

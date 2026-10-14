@@ -49,6 +49,60 @@ from ibkr_paper_30d.broker_write_coordinator import BrokerWriteCoordinator
 from ibkr_paper_30d.broker_write_coordinator import AuthorizedBrokerCommand
 
 
+def _canary_write_fixture(store, execution_key):
+    from ibkr_paper_30d.canary_candidate import (
+        CanaryDiscoveryOutcome, validate_canary_candidate,
+    )
+    from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+    from test_canary_pilot import _evidence, _proposal
+
+    now = datetime.now(timezone.utc)
+    proposal = _proposal()
+    proposal = proposal.model_copy(update={
+        "created_at_utc": now,
+        "expires_at_utc": now + timedelta(minutes=30),
+        "flat_return_plan": proposal.flat_return_plan.model_copy(update={
+            "deadline_utc": now + timedelta(minutes=20),
+        }),
+    })
+    authorization = CanaryAuthorization(
+        authorization_id="canary-auth-1", owner_id="owner",
+        account_identity_sha256=proposal.account_identity_sha256,
+        successor_definition_sha256=proposal.successor_definition_sha256,
+        product_family_sha256=proposal.product_family.sha256,
+        contract_scope_sha256=tuple(member.sha256 for member in proposal.contract_group.member_contracts),
+        maximum_debit_usd=proposal.maximum_debit_usd,
+        maximum_loss_usd=proposal.maximum_loss_usd,
+        fee_allowance_usd=proposal.fee_allowance_usd, maximum_order_count=2,
+        issued_at_utc=now, expires_at_utc=proposal.expires_at_utc,
+    )
+    request = CanaryExecutionRequest(
+        canary_id=proposal.candidate_id, durable_sequence=1, execution_key=execution_key,
+        candidate_sha256=proposal.sha256, authorization_sha256=authorization.sha256,
+        account_identity_sha256=proposal.account_identity_sha256,
+        successor_definition_sha256=proposal.successor_definition_sha256,
+        writer_binding_sha256="f" * 64, product_family=proposal.product_family,
+        canonical_contract=proposal.canonical_contract, entry_terms=proposal.entry_terms,
+        quantity=proposal.quantity, maximum_debit_usd=proposal.maximum_debit_usd,
+        maximum_loss_usd=proposal.maximum_loss_usd,
+        fee_allowance_usd=proposal.fee_allowance_usd,
+        flat_return_plan=proposal.flat_return_plan, created_at_utc=now,
+    )
+    evidence = _evidence(proposal)
+    evidence.update(observed_at_utc=now, expires_at_utc=now + timedelta(minutes=5))
+    store.persist_candidate(CanaryDiscoveryOutcome(
+        decision="CANDIDATE", proposal=proposal,
+        invocation_sha256=proposal.invocation_sha256,
+        result_sha256=proposal.result_sha256, transcript_sha256=sha256_json([]),
+    ), evidence, validate_canary_candidate(
+        proposal, read_only_capability_evidence=evidence, now_utc=now,
+    ))
+    store.persist_request(proposal.sha256, request)
+    with Database.open(store.db_path) as db:
+        SleeveLedgerStore(db).bootstrap_continuous()
+    return proposal, authorization, request
+
+
 def test_production_canary_store_persists_authority_claim_and_receipt_once(
     tmp_path,
 ) -> None:
@@ -60,43 +114,29 @@ def test_production_canary_store_persists_authority_claim_and_receipt_once(
         install_continuity_schema_v3(db)
         install_multi_universe_schema_v4(db)
         KillSwitchStore(db).set("KILL_SWITCH_CLEAR", reason="TEST_INITIAL_STATE")
-    now = datetime(2026, 10, 10, 18, 0, tzinfo=timezone.utc)
-    authorization = CanaryAuthorization(
-        authorization_id="canary-auth-1",
-        owner_id="owner",
-        account_identity_sha256="a" * 64,
-        successor_definition_sha256="b" * 64,
-        product_family_sha256="c" * 64,
-        contract_scope_sha256=("d" * 64,),
-        maximum_debit_usd=Decimal("10"),
-        maximum_loss_usd=Decimal("10"),
-        fee_allowance_usd=Decimal("1"),
-        maximum_order_count=2,
-        issued_at_utc=now - timedelta(minutes=1),
-        expires_at_utc=now + timedelta(minutes=10),
-    )
     store = _ProductionCanaryStore(db_path)
+    proposal, authorization, request = _canary_write_fixture(store, "canary-execution-1")
 
     first = store.persist_authorization(
-        candidate_sha256="e" * 64, authorization=authorization
+        candidate_sha256=proposal.sha256, authorization=authorization
     )
     duplicate = store.persist_authorization(
-        candidate_sha256="e" * 64, authorization=authorization
+        candidate_sha256=proposal.sha256, authorization=authorization
     )
     assert duplicate == first
     assert store.begin_write("canary-execution-1") is True
     assert store.begin_write("canary-execution-1") is False
 
     receipt = CanaryBrokerLifecycleReceipt(
-        canary_id="canary-1",
+        canary_id=request.canary_id,
         step="SUBMITTED",
         endpoint="PAPER",
         account_identity_sha256="a" * 64,
-        product_family_sha256="c" * 64,
-        contract_identity_sha256="d" * 64,
+        product_family_sha256=request.product_family.sha256,
+        contract_identity_sha256=request.canonical_contract.sha256,
         broker_event_id_sha256="f" * 64,
         broker_snapshot_sha256="1" * 64,
-        observed_at_utc=now,
+        observed_at_utc=request.created_at_utc,
         open_orders=0,
         positions=0,
     )
@@ -111,6 +151,8 @@ def test_production_canary_store_persists_authority_claim_and_receipt_once(
             ).fetchall()
         )
     assert counts == {
+        "CANDIDATE_SELECTED": 1,
+        "EXECUTION_REQUEST": 1,
         "AUTHORIZED": 1,
         "EXECUTION_CLAIMED": 1,
         "LIFECYCLE_RECEIPT": 1,
@@ -127,6 +169,8 @@ def test_production_canary_store_rejects_tampered_authority_chain(tmp_path) -> N
         install_multi_universe_schema_v4(db)
         KillSwitchStore(db).set("KILL_SWITCH_CLEAR", reason="TEST_INITIAL_STATE")
     store = _ProductionCanaryStore(db_path)
+    proposal, authorization, _ = _canary_write_fixture(store, "first")
+    store.persist_authorization(candidate_sha256=proposal.sha256, authorization=authorization)
     assert store.begin_write("first") is True
 
     connection = sqlite3.connect(db_path)
@@ -179,7 +223,28 @@ def test_production_canary_store_round_trips_selected_candidate_and_result(
     first = store.persist_candidate(outcome, evidence, validation)
     duplicate = store.persist_candidate(outcome, evidence, validation)
     loaded = store.load_candidate()
-    payload = {"status": "TERMINAL_NO_FILL", "candidate": proposal.sha256}
+    recorder = CanaryLifecycleRecorder(
+        proposal.candidate_id, proposal.account_identity_sha256,
+        proposal.product_family.sha256, proposal.canonical_contract.sha256,
+    )
+    # Keep receipts absent from durable history to exercise the orphan guard.
+    for ordinal, step in enumerate(("SUBMITTED", "BROKER_BOUND", "TERMINAL_NO_FILL"), 1):
+        recorder.record(CanaryBrokerLifecycleReceipt(
+            canary_id=proposal.candidate_id, step=step, endpoint="PAPER",
+            account_identity_sha256=proposal.account_identity_sha256,
+            product_family_sha256=proposal.product_family.sha256,
+            contract_identity_sha256=proposal.canonical_contract.sha256,
+            broker_event_id_sha256=f"{ordinal:064x}",
+            broker_snapshot_sha256=f"{ordinal + 10:064x}",
+            previous_receipt_sha256=recorder.last_receipt_sha256,
+            observed_at_utc=proposal.created_at_utc + timedelta(seconds=ordinal),
+            open_orders=1 if step == "BROKER_BOUND" else 0, positions=0,
+        ))
+    payload = {
+        "status": "TERMINAL_NO_FILL", "candidate": proposal.sha256,
+        "broker_write_boundary_crossed": True,
+        "projection": recorder.projection().model_dump(mode="json"),
+    }
     store.persist_result(proposal.sha256, payload)
 
     assert duplicate == first
@@ -340,7 +405,18 @@ def test_production_canary_store_recovers_terminal_no_fill_without_resubmission(
         install_continuity_schema_v3(db)
         install_multi_universe_schema_v4(db)
         KillSwitchStore(db).set("KILL_SWITCH_CLEAR", reason="TEST_INITIAL_STATE")
+        from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+
+        SleeveLedgerStore(db).bootstrap_continuous()
     proposal = _proposal()
+    now = datetime.now(timezone.utc)
+    proposal = proposal.model_copy(update={
+        "created_at_utc": now,
+        "expires_at_utc": now + timedelta(minutes=30),
+        "flat_return_plan": proposal.flat_return_plan.model_copy(update={
+            "deadline_utc": now + timedelta(minutes=20),
+        }),
+    })
     outcome = CanaryDiscoveryOutcome(
         decision="CANDIDATE",
         invocation_sha256=proposal.invocation_sha256,
@@ -394,6 +470,7 @@ def test_production_canary_store_recovers_terminal_no_fill_without_resubmission(
         candidate_sha256=proposal.sha256, authorization=authorization
     )
     store.persist_request(proposal.sha256, request)
+    assert store.begin_write(request.execution_key) is True
     recorder = CanaryLifecycleRecorder(
         request.canary_id,
         request.account_identity_sha256,
@@ -420,8 +497,6 @@ def test_production_canary_store_recovers_terminal_no_fill_without_resubmission(
         )
         recorder.record(receipt)
         store.persist_receipt(receipt)
-    assert store.begin_write(request.execution_key) is True
-
     recovered = store.recover_terminal_result(proposal.sha256)
 
     assert recovered is not None
@@ -434,6 +509,8 @@ def test_production_canary_store_recovers_terminal_no_fill_without_resubmission(
         {
             "status": recovered["result"].status,
             "request_sha256": recovered["result"].request_sha256,
+            "broker_write_boundary_crossed": recovered["result"].broker_write_boundary_crossed,
+            "projection": recovered["result"].projection.model_dump(mode="json"),
         },
     )
     assert store.load_candidate() is None

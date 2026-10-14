@@ -72,6 +72,24 @@ class CanaryExecutionResult(_ExecutionModel):
     broker_write_boundary_crossed: bool = False
 
 
+class CanaryRecoveryRequest(_ExecutionModel):
+    original_request: CanaryExecutionRequest
+    durable_sequence: int = Field(gt=0)
+    execution_key: str = Field(min_length=1)
+    owner_authorization_sha256: str = Field(pattern=SHA256_PATTERN)
+    entry_execution_id_sha256: str = Field(pattern=SHA256_PATTERN)
+    created_at_utc: datetime
+    expires_at_utc: datetime
+
+    @model_validator(mode="after")
+    def validate_recovery_window(self) -> "CanaryRecoveryRequest":
+        if self.created_at_utc.tzinfo is None or self.expires_at_utc.tzinfo is None:
+            raise ValueError("recovery requires authoritative UTC timestamps")
+        if self.expires_at_utc <= self.created_at_utc:
+            raise ValueError("recovery authorization window invalid")
+        return self
+
+
 class CanaryRecoveryAction(str, Enum):
     RESUME_OBSERVATION = "RESUME_OBSERVATION"
     EXACT_RISK_REDUCTION = "EXACT_RISK_REDUCTION"
@@ -211,7 +229,7 @@ class CanaryExecutionAdapter:
             )
         try:
             executor = self.writer_executor or broker.execute_canary_through_writer
-            raw_events = list(executor(request, broker, evidence)) if self.writer_executor else list(executor(request, evidence))
+            raw_events = executor(request, broker, evidence) if self.writer_executor else executor(request, evidence)
         except CanaryPreWriteBlocked as exc:
             return CanaryExecutionResult(
                 status="BLOCKED", reason_codes=exc.reason_codes,
@@ -255,6 +273,14 @@ class CanaryExecutionAdapter:
                 )
                 projection = recorder.record(receipt)
                 self.receipt_persister(receipt)
+        except CanaryPreWriteBlocked as exc:
+            crossed = len(recorder.projection().completed_steps) > 1
+            return CanaryExecutionResult(
+                status="UNCERTAIN" if crossed else "BLOCKED", reason_codes=exc.reason_codes,
+                request_sha256=request.sha256,
+                projection=recorder.projection() if crossed else None,
+                broker_write_boundary_crossed=crossed,
+            )
         except Exception:
             return CanaryExecutionResult(
                 status="UNCERTAIN",

@@ -46,6 +46,7 @@ PYTHON_ROOT_ROLES: dict[str, str] = {
     "ibkr_paper_30d/continuity_binding.py": "continuity_order_binding",
     "ibkr_paper_30d/broker_write_coordinator.py": "single_writer_command_queue",
     "ibkr_paper_30d/authoritative_broker_writer.py": "authoritative_broker_writer",
+    "ibkr_paper_30d/canary_recovery_runtime.py": "owner_authorized_canary_recovery",
     "ibkr_paper_30d/broker_writer_capability.py": "writer_capability_boundary",
     "ibkr_paper_30d/continuity_executor.py": "continuity_command_builder",
     "ibkr_paper_30d/continuity_watchdog.py": "independent_continuity_watchdog",

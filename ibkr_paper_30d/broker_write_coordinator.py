@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .canonical import sha256_json
 from .coordinated_model_executor import ModelExecutionRequest
-from .canary_execution import CanaryExecutionRequest
+from .canary_execution import CanaryExecutionRequest, CanaryRecoveryRequest
 from .continuity_liability import MaximumLiabilityRequirement
 from .continuity_models import ContinuityAuthorityClass, TimeInForce
 
@@ -190,7 +190,7 @@ class BrokerWriteCoordinator:
 
     def submit(
         self,
-        command: AuthorizedBrokerCommand | ModelExecutionRequest | CanaryExecutionRequest,
+        command: AuthorizedBrokerCommand | ModelExecutionRequest | CanaryExecutionRequest | CanaryRecoveryRequest,
     ) -> Future:
         future: Future = Future()
         with self._lock:
