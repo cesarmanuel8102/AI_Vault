@@ -436,6 +436,12 @@ class CanaryPilotOrchestrator:
         and no orphaned durable state exists."""
         if self._canary_scope_pending(bundle):
             return self._block("CANARY_CANDIDATE_RECOVERY_UNSAFE")
+        settle = getattr(self.store, "settle_prewrite_aborts", None)
+        if callable(settle):
+            try:
+                settle()
+            except Exception:
+                return self._block("CANARY_PREWRITE_SETTLEMENT_UNPROVEN")
         if self._durable_state_inconsistent():
             return self._block("CANARY_CANDIDATE_RECOVERY_UNSAFE")
         if not self._recovery_backoff_expired():

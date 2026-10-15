@@ -2541,6 +2541,22 @@ class _ProductionCanaryStore:
         """Retire proven Owner recoveries without granting lifecycle certification."""
         retired: set[str] = set()
         for index, marker in enumerate(events):
+            if marker.get("event_type") == "CANARY_PREWRITE_ABORT_RECONCILED":
+                candidate = str(marker.get("candidate_sha256") or "")
+                prior = events[:index]
+                requests = [e for e in prior if e.get("event_type") == "EXECUTION_REQUEST"
+                            and e.get("candidate_sha256") == candidate]
+                if len(requests) == 1:
+                    from .canary_execution import CanaryExecutionRequest
+                    try:
+                        request = CanaryExecutionRequest.model_validate(requests[0].get("request"))
+                        if (request.sha256 == marker.get("request_sha256") == requests[0].get("request_sha256")
+                                and sha256_json(marker.get("broker_evidence")) == marker.get("broker_evidence_sha256")
+                                and _ProductionCanaryStore._prewrite_abort_proven(events, request)):
+                            retired.add(candidate)
+                    except (ValueError, TypeError):
+                        pass
+                continue
             if marker.get("event_type") != "CANARY_RECOVERY_RECONCILED":
                 continue
             candidate = marker.get("candidate_sha256")
@@ -2583,6 +2599,109 @@ class _ProductionCanaryStore:
                         and evidence_sha):
                     retired.add(str(candidate))
         return retired
+
+    @staticmethod
+    def _prewrite_abort_proven(events: list[dict[str, Any]], request: Any) -> bool:
+        from .canary_authority import CanaryBrokerLifecycleReceipt
+        results = [e.get("result") or {} for e in events if e.get("event_type") == "CANARY_RESULT"
+                   and e.get("candidate_sha256") == request.candidate_sha256]
+        receipts = [e for e in events if e.get("event_type") == "LIFECYCLE_RECEIPT"
+                    and (e.get("receipt") or {}).get("canary_id") == request.canary_id]
+        if len(results) != 1 or len(receipts) != 1:
+            return False
+        result = results[0]
+        try:
+            receipt = CanaryBrokerLifecycleReceipt.model_validate(receipts[0].get("receipt"))
+        except ValueError:
+            return False
+        return (result.get("status") == "BLOCKED" and result.get("broker_write_boundary_crossed") is False
+                and result.get("projection") is None and result.get("request_sha256") == request.sha256
+                and receipt.sha256 == receipts[0].get("receipt_sha256") and receipt.step == "SUBMITTED"
+                and receipt.previous_receipt_sha256 is None and receipt.endpoint == "PAPER"
+                and receipt.account_identity_sha256 == request.account_identity_sha256
+                and receipt.contract_identity_sha256 == request.canonical_contract.sha256
+                and receipt.product_family_sha256 == request.product_family.sha256
+                and receipt.positions == 0 and receipt.open_orders == 0
+                and receipt.broker_snapshot_sha256 == sha256_json({"request_sha256":request.sha256,"pre_write":True})
+                and receipt.broker_event_id_sha256 == sha256_json({"request_sha256":request.sha256,"step":"SUBMITTED"}))
+
+    def settle_prewrite_aborts(self) -> None:
+        from .canary_execution import CanaryExecutionRequest
+        from .ibkr_readonly_session import IBKRReadOnlySessionCollector
+        with Database.open(self.db_path) as db:
+            events = self._verified_events(db)
+        retired = self._reconciled_recovery_candidates(events)
+        for event in events:
+            if event.get("event_type") != "EXECUTION_REQUEST":
+                continue
+            request = CanaryExecutionRequest.model_validate(event.get("request"))
+            if (request.sha256 != event.get("request_sha256")
+                    or request.candidate_sha256 in retired
+                    or not self._prewrite_abort_proven(events, request)):
+                continue
+            # No SQLite transaction is held during broker collection.
+            evidence = IBKRReadOnlySessionCollector().collect(client_id=19739, symbols=())
+            self.reconcile_prewrite_abort(request, evidence)
+
+    def reconcile_prewrite_abort(self, request: Any, evidence: Any) -> bool:
+        """Settle a proven no-write intent using fresh read-only broker evidence."""
+        from dataclasses import asdict
+        from .ibkr_readonly_session import ReadOnlyBrokerEvidence
+        from .ibkr_readonly import expected_identity_hash
+        from .contract_ownership import ReleaseEvidence, ContractOwnershipStore
+        from .sleeve_ledger import SleeveLedgerStore
+        if not isinstance(evidence, ReadOnlyBrokerEvidence):
+            raise ValueError("CANARY_PREWRITE_BROKER_EVIDENCE_REQUIRED")
+        required = {"managed_accounts","account_summary","account_values","positions","open_orders","executions","current_time"}
+        observed = datetime.fromisoformat(str(evidence.server_timestamp_utc).replace("Z", "+00:00"))
+        if (not evidence.authenticated or not evidence.connected or not evidence.heartbeat_ok
+                or observed.tzinfo is None or not 0 <= (datetime.now(timezone.utc)-observed).total_seconds() < 60
+                or len(evidence.managed_accounts) != 1
+                or expected_identity_hash(evidence.managed_accounts[0]) != request.account_identity_sha256
+                or any(evidence.query_completeness.get(k) is not True for k in required)
+                or evidence.open_orders
+                or any(int(p.get("contract_id",0)) == request.canonical_contract.con_id
+                       and Decimal(str(p.get("quantity"))) != 0 for p in evidence.positions)
+                ):
+            raise ValueError("CANARY_PREWRITE_FRESH_FLAT_EVIDENCE_REQUIRED")
+        snapshot = asdict(evidence)
+        snapshot_sha = sha256_json(snapshot)
+        with Database.open(self.db_path) as db, db.transaction():
+            events = self._verified_events(db)
+            if request.candidate_sha256 in self._reconciled_recovery_candidates(events):
+                return False
+            original, proposal, _ = self._reservation_binding(events, request.execution_key, recovery=True)
+            if original.sha256 != request.sha256 or not self._prewrite_abort_proven(events, request):
+                raise ValueError("CANARY_PREWRITE_ABORT_PROOF_REQUIRED")
+            ledger = SleeveLedgerStore(db)
+            known_executions = {e.get("execution_id_sha256") for e in ledger._events()
+                                if e.get("event_type") == "CANARY_FILL_IMPORTED"}
+            if any(int(e.get("contract_id",0)) == request.canonical_contract.con_id
+                   and e.get("execution_id_sha256") not in known_executions
+                   and e.get("canonical_execution_id_sha256") not in known_executions for e in evidence.executions):
+                raise ValueError("CANARY_PREWRITE_EXECUTION_UNCERTAIN")
+            if any(p.contract_identity_sha256 == request.canonical_contract.sha256 and p.quantity != 0
+                   for p in ledger.project(CapitalSleeve.CONTINUOUS_SLEEVE).positions):
+                raise ValueError("CANARY_PREWRITE_LEDGER_NOT_FLAT")
+            if not any(e["event_type"] == "LIABILITY_RELEASED" and e.get("reservation_key") == request.execution_key
+                       for e in ledger._events()):
+                ledger.release_liability_in_transaction(CapitalSleeve.CONTINUOUS_SLEEVE,
+                    amount_usd=request.maximum_loss_usd, reservation_key=request.execution_key,
+                    broker_snapshot_sha256=snapshot_sha)
+            ownership = ContractOwnershipStore(db)
+            owned = ownership.projection().owner_of(request.canonical_contract.sha256)
+            if owned is not None:
+                if owned.sleeve is not CapitalSleeve.CONTINUOUS_SLEEVE or owned.group_id != proposal.contract_group.group_id:
+                    raise ValueError("CANARY_PREWRITE_OWNER_MISMATCH")
+                ownership.release_in_transaction(request.canonical_contract.sha256,
+                    ReleaseEvidence(position_quantity=Decimal(0),open_order_count=0,pending_execution_count=0,
+                        child_position_count=0,fill_ambiguity=False,broker_snapshot_sha256=snapshot_sha,
+                        expected_broker_snapshot_sha256=snapshot_sha,broker_snapshot_fresh=True))
+            self._append_in_transaction(db, authorization_id=request.canary_id,
+                event_type="CANARY_PREWRITE_ABORT_RECONCILED", body={
+                    "candidate_sha256":request.candidate_sha256,"request_sha256":request.sha256,
+                    "broker_evidence":snapshot,"broker_evidence_sha256":snapshot_sha,"broker_write_count":0})
+        return True
 
     @staticmethod
     def _active_candidate_event(

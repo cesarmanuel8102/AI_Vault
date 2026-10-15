@@ -534,10 +534,19 @@ class AuthoritativeBrokerWriter:
                 next_refresh = time.monotonic() + 5
             broker.sleep(0.1)
 
+    def _canary_supervision_ready(self) -> bool:
+        if self.canary_supervision_verifier is None:
+            return True
+        deadline = time.monotonic() + 5.0
+        while True:
+            if self.canary_supervision_verifier() is True:
+                return True
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(0.05)
+
     def _execute_canary(self, request: CanaryExecutionRequest, broker: Any):
-        if self.canary_supervision_verifier is not None and (
-            self.canary_supervision_verifier() is not True
-        ):
+        if not self._canary_supervision_ready():
             return CanaryExecutionResult(
                 status="BLOCKED", request_sha256=request.sha256,
                 reason_codes=("CONTINUITY_WATCHDOG_UNHEALTHY",),
@@ -733,10 +742,10 @@ class AuthoritativeBrokerWriter:
         # Qualification/quotes may outlive a previously valid operator state.
         if self.execution_lock_verifier() is not True:
             raise CanaryPreWriteBlocked(("EXECUTION_LOCK_REQUIRED",))
-        if self.canary_supervision_verifier is not None and (
-            self.canary_supervision_verifier() is not True
-        ):
+        if not self._canary_supervision_ready():
             raise CanaryPreWriteBlocked(("CONTINUITY_WATCHDOG_UNHEALTHY",))
+        if self.execution_lock_verifier() is not True:
+            raise CanaryPreWriteBlocked(("EXECUTION_LOCK_REQUIRED",))
         current_controls = self.canary_evidence_collector(broker, request, evidence)
         reasons = self.canary_execution_adapter._authority_reasons(
             request, {**evidence, **dict(current_controls)}

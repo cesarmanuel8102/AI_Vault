@@ -18,7 +18,7 @@ from ibapi.execution import ExecutionFilter
 from ibapi.message import OUT
 from ibapi.wrapper import EWrapper
 
-from .canonical import canonical_bytes
+from .canonical import canonical_bytes, sha256_json
 from .ibkr_readonly import expected_identity_hash
 
 
@@ -286,10 +286,15 @@ class _ReadOnlyIBClient(EWrapper, EClient):
                 "execution_id_sha256": hashlib.sha256(
                     str(getattr(execution, "execId", "")).encode("utf-8")
                 ).hexdigest(),
+                "canonical_execution_id_sha256": sha256_json(str(getattr(execution, "execId", ""))),
                 "contract_id": int(getattr(contract, "conId", 0)),
                 "symbol": str(getattr(contract, "symbol", "")),
                 "quantity": str(getattr(execution, "shares", "")),
                 "price": str(getattr(execution, "price", "")),
+                "order_ref": str(getattr(execution, "orderRef", "")),
+                "broker_order_id": int(getattr(execution, "orderId", 0)),
+                "client_id": int(getattr(execution, "clientId", 0)),
+                "perm_id": int(getattr(execution, "permId", 0)),
             }
         )
 
