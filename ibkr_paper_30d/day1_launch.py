@@ -441,6 +441,8 @@ def _multi_universe_authority_bindings(
     db: Database,
     target: object,
     phase: object,
+    *,
+    recertification_release_sha256: str | None = None,
 ) -> dict[str, object]:
     """Derive launch bindings from the immutable target or persisted authority."""
 
@@ -472,16 +474,29 @@ def _multi_universe_authority_bindings(
         continuity_gap = not all((regular_hash, continuous_hash, economic_hash))
 
     family_rows = db.execute(
-        "SELECT product_family_sha256,event_type FROM "
+        "SELECT product_family_sha256,event_type,payload_json FROM "
         "product_family_certification_events ORDER BY sequence"
     ).fetchall()
     family_state: dict[str, str] = {}
-    for family_sha, event_type in family_rows:
+    historical_completed: set[str] = set()
+    for family_sha, event_type, payload_json in family_rows:
         family_state[str(family_sha)] = str(event_type)
+        payload = json.loads(str(payload_json))
+        if (event_type == "ECONOMICS_RECONCILED" and payload.get("endpoint") == "PAPER"
+                and payload.get("account_sha256") == target.account_identity_sha256):
+            historical_completed.add(str(family_sha))
+        elif event_type == "REVOKED":
+            historical_completed.discard(str(family_sha))
+    partial_stages = {"CONTRACT_QUALIFIED", "PERMISSIONS_VERIFIED", "MARKET_DATA_VERIFIED",
+                      "ORDER_SEMANTICS_VERIFIED", "BOUNDED_ECONOMICS_VERIFIED"}
+    authorized_recertification = (phase is TransitionPhase.ACTIVE
+        and recertification_release_sha256 is not None
+        and _SHA256_RE.fullmatch(recertification_release_sha256) is not None)
     certified = sorted(
         family_sha
         for family_sha, event_type in family_state.items()
-        if event_type == "ECONOMICS_RECONCILED"
+        if event_type == "ECONOMICS_RECONCILED" or (authorized_recertification
+            and family_sha in historical_completed and event_type in partial_stages)
     )
     certified_set_sha256 = sha256_json(certified)
     expected_certified_set_sha256 = target.certified_family_set_sha256
@@ -585,11 +600,21 @@ def _validate_multi_universe_launch_from_db(
     phase_index = tuple(TransitionPhase).index(phase)
     retired_index = tuple(TransitionPhase).index(TransitionPhase.PREDECESSOR_RETIRED)
     committed_index = tuple(TransitionPhase).index(TransitionPhase.SUCCESSOR_COMMITTED)
-    bindings = _multi_universe_authority_bindings(db, target, phase)
+    current_head = _current_git_commit(config.repo_root)
+    recertification_release = None
+    if phase is TransitionPhase.ACTIVE:
+        from .kernel_manifest import verify_kernel_manifest
+        kernel = verify_kernel_manifest(config.repo_root, json.loads(
+            (config.repo_root / "IMMUTABLE_EXECUTION_KERNEL_MANIFEST.json").read_text()))
+        if kernel.get("verified") is True:
+            recertification_release = transition_coordinator.active_recertification_release_sha256(
+                preflight.expected_account_hash, current_head, str(kernel["actual_sha256"]))
+    bindings = _multi_universe_authority_bindings(db, target, phase,
+        recertification_release_sha256=recertification_release)
     evidence = MultiUniverseLaunchEvidence(
         schema_v4_valid=True,
         transition_phase=phase.value,
-        approved_head=_current_git_commit(config.repo_root),
+        approved_head=current_head,
         expected_approved_head=effective_approved_head,
         account_identity_sha256=preflight.expected_account_hash,
         expected_account_identity_sha256=target.account_identity_sha256,
@@ -641,6 +666,10 @@ def _validate_multi_universe_launch_from_db(
         evidence,
         initial_activation=bool(envelope["initial_activation"]),
     )
+    if recertification_release is not None:
+        decision["recertification_release_sha256"] = recertification_release
+        decision["current_certification_required"] = True
+        decision["new_continuous_entries_allowed"] = False
     owner_pilot_raw = envelope.get("owner_pilot_authorization")
     _bind_owner_pilot_for_phase(decision, owner_pilot_raw, target, phase)
     decision["writer_binding_sha256"] = target.writer_binding_sha256
