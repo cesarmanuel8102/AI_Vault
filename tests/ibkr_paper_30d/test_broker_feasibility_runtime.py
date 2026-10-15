@@ -42,7 +42,7 @@ def test_missing_what_if_fields_never_claim_computed_economics():
     toolbox = IBKRResearchToolbox()
     evidence = toolbox._what_if_evidence(
         broker,
-        Contract(secType="CRYPTO", exchange="PAXOS", currency="USD"),
+        Contract(secType="STK", exchange="SMART", currency="USD"),
         action="BUY", order_type="LMT", quantity=Decimal("0.2"),
         limit_price=Decimal("2422"), time_in_force="DAY",
     )
@@ -68,13 +68,28 @@ def test_what_if_timeout_is_actionable_without_transmitting_an_order():
             raise TimeoutError()
 
     evidence = IBKRResearchToolbox()._what_if_evidence(
-        TimedOutBroker(), Contract(secType="CRYPTO", exchange="PAXOS", currency="USD"),
+        TimedOutBroker(), Contract(secType="STK", exchange="SMART", currency="USD"),
         action="BUY", order_type="LMT", quantity=Decimal("0.2"),
         limit_price=Decimal("2422"), time_in_force="DAY",
     )
     assert evidence["error_code"] == "BROKER_WHATIF_TIMEOUT"
     assert evidence["broker_economics_computed"] is False
     assert evidence["requested_time_in_force"] == "DAY"
+
+
+def test_qualified_crypto_proposal_reports_adapter_tif_without_rewriting():
+    from ib_insync import Contract
+    broker = WhatIfOnlyBroker()
+    evidence = IBKRResearchToolbox()._what_if_evidence(
+        broker, Contract(secType="CRYPTO", exchange="PAXOS", currency="USD"),
+        action="BUY", order_type="LMT", quantity=Decimal("0.2"),
+        limit_price=Decimal("2442"), time_in_force="DAY",
+    )
+    assert evidence["error_code"] == "BROKER_CRYPTO_BUY_IOC_REQUIRED"
+    assert evidence["supported_adapter_time_in_force"] == ["IOC"]
+    assert evidence["requested_time_in_force"] == "DAY"
+    assert evidence["broker_whatif_reached"] is False
+    assert broker.what_if_calls == []
 
 from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.autonomous_research import (

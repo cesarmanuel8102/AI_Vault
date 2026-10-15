@@ -9,6 +9,8 @@ def test_active_identity_takes_precedence_over_released_presentation():
     class Done(Exception):pass
     captured=[]
     subject=object.__new__(AutonomousStateBuilder)
+    subject._fresh_position_marks={479624278:Decimal('81000')}
+    subject._extra_mark_reasons=[]
     active=SimpleNamespace(contract=SimpleNamespace(con_id=479624278),contract_identity_sha256='a'*64)
     old=SimpleNamespace(contract=SimpleNamespace(con_id=479624278),contract_identity_sha256='b'*64)
     subject.contract_ownership_store=SimpleNamespace(projection=lambda:SimpleNamespace(active_contracts=(active,),released_contracts=(old,)))

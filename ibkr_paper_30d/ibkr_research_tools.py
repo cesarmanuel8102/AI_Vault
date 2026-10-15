@@ -292,6 +292,8 @@ class IBKRResearchToolbox:
             "error_code",
             "missing_economic_fields",
             "requested_time_in_force",
+            "supported_adapter_time_in_force",
+            "capability_source",
             "stage",
             "contract",
             "commission",
@@ -2118,6 +2120,27 @@ class IBKRResearchToolbox:
     ) -> dict[str, Any]:
         from ib_insync import Order
 
+        if (
+            str(getattr(contract, "secType", "")).upper() == "CRYPTO"
+            and str(getattr(contract, "exchange", "")).upper() == "PAXOS"
+            and action.upper() == "BUY"
+            and order_type.upper() == "LMT"
+            and time_in_force.upper() != "IOC"
+        ):
+            return {
+                "success": False,
+                "error": "BROKER_CRYPTO_BUY_IOC_REQUIRED",
+                "error_code": "BROKER_CRYPTO_BUY_IOC_REQUIRED",
+                "stage": "REQUEST_VALIDATION",
+                "whatIf": True,
+                "paper_only": True,
+                "contract": self._serialize_contract(contract),
+                "requested_time_in_force": time_in_force,
+                "supported_adapter_time_in_force": ["IOC"],
+                "capability_source": "PAXOS_BUY_LMT_ADAPTER_V1; broker Minutes TIF not implemented",
+                "broker_whatif_reached": False,
+                "broker_economics_computed": False,
+            }
         order = Order(
             action=action,
             orderType=order_type,

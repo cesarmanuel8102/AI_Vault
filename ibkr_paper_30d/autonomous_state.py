@@ -433,22 +433,7 @@ class AutonomousStateBuilder:
             quantity = Decimal(str(raw.get("position") or raw.get("quantity") or "0"))
             if quantity == 0:
                 continue
-            multiplier = Decimal(
-                str((raw.get("contract") or {}).get("multiplier") or "1")
-            )
-            average_cost = Decimal(
-                str(raw.get("avgCost") or raw.get("average_cost") or "0")
-            )
-            positions.append(
-                {
-                    "contract_identity_sha256": contract_hash(raw),
-                    "quantity": str(quantity),
-                    "multiplier": str(multiplier),
-                    "average_cost": str(average_cost),
-                    "mark": str(max(average_cost, Decimal("0"))),
-                    "market_value_usd": str(quantity * multiplier * average_cost),
-                }
-            )
+            positions.append(self._marked_broker_position(raw, contract_hash(raw)))
         orders = [
             {"contract_identity_sha256": contract_hash(raw)}
             for raw in open_orders.get("open_orders", ()) or ()
@@ -541,7 +526,43 @@ class AutonomousStateBuilder:
                 "V4_CURRENT_CASH_CLASSIFICATION_REQUIRED"
             ) from exc
 
+    def _marked_broker_position(self, raw: dict[str, Any], contract_hash: str) -> dict[str, Any]:
+        contract = raw.get("contract") or {}
+        con_id = int(contract.get("conId") or raw.get("contract_id") or 0)
+        marks = getattr(self, "_fresh_position_marks", {})
+        mark = marks.get(con_id)
+        if mark is None:
+            result = self.toolbox.execute(ResearchRequest(
+                request_id=f"sleeve-mark-{new_uuid7()}", tool=ResearchTool.QUOTE,
+                arguments={"conId": con_id, "symbol": contract.get("symbol"),
+                           "sec_type": contract.get("secType")},
+                purpose="Value the owned sleeve position from broker market data",
+            ), self._minimal_placeholder_bundle())
+            if result.success:
+                for key in ("marketPrice", "last", "bid", "ask"):
+                    try:
+                        candidate = Decimal(str(result.data.get(key)))
+                    except Exception:
+                        continue
+                    if candidate.is_finite() and candidate > 0:
+                        mark = candidate
+                        break
+        fresh = mark is not None
+        if not fresh:
+            self._extra_mark_reasons.append(f"MARK_QUOTE_FAILED:{con_id}")
+        quantity = Decimal(str(raw.get("position") or raw.get("quantity") or "0"))
+        multiplier = Decimal(str(contract.get("multiplier") or "1"))
+        # IB position avgCost is cost per contract, not per underlying unit.
+        average_cost = Decimal(str(raw.get("avgCost") or raw.get("average_cost") or "0")) / multiplier
+        mark = mark if fresh else Decimal("0")
+        return {"contract_identity_sha256": contract_hash, "quantity": str(quantity),
+                "multiplier": str(multiplier), "average_cost": str(average_cost),
+                "mark": str(mark), "market_value_usd": str(quantity * multiplier * mark),
+                "mark_fresh": fresh}
+
     def _mark_open_positions(self) -> list[str]:
+        self._fresh_position_marks: dict[int, Decimal] = {}
+        self._extra_mark_reasons: list[str] = []
         state = self.ledger.project()
         reasons: list[str] = []
         for position in state.positions:
@@ -573,6 +594,7 @@ class AutonomousStateBuilder:
                 reasons.append(f"MARK_QUOTE_INVALID:{position.contract_id}")
                 continue
             if price.is_finite() and price > 0:
+                self._fresh_position_marks[position.contract_id] = price
                 self.ledger.record_mark(
                     contract_id=position.contract_id,
                     symbol=position.symbol,
@@ -1279,6 +1301,15 @@ class AutonomousStateBuilder:
             for key, value in account.items()
             if key.lower() not in {"account", "account_id", "account_code"}
         }
+        for name, eligibility in (
+            ("regular", regular_entry_eligibility),
+            ("continuous", continuous_entry_eligibility),
+        ):
+            if (canonical_ledger.get(name) or {}).get("valuation_status") == "UNAVAILABLE":
+                eligibility["status"] = "BLOCK"
+                eligibility["reason_codes"] = list(dict.fromkeys(
+                    [*eligibility.get("reason_codes", []), "SLEEVE_FRESH_VALUATION_REQUIRED"]
+                ))
         portfolio = {
             "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
             "sleeve_authority_sha256": {},
@@ -1310,7 +1341,9 @@ class AutonomousStateBuilder:
                         )
                         - Decimal(
                             str(
-                                (canonical_ledger.get(name) or {}).get("fees_usd")
+                                (canonical_ledger.get(name) or {}).get("fees_deductible_usd")
+                                if (canonical_ledger.get(name) or {}).get("fees_deductible_usd") is not None
+                                else (canonical_ledger.get(name) or {}).get("fees_usd")
                                 or "0"
                             )
                         )
@@ -1433,6 +1466,7 @@ class AutonomousStateBuilder:
                 broker_positions=broker_positions,
                 open_orders=open_orders,
             )
+            mark_reasons.extend(getattr(self, "_extra_mark_reasons", []))
         state_reasons = list(execution_reasons)
         if self.sleeve_ledger_store is None:
             state_reasons.extend(mark_reasons)

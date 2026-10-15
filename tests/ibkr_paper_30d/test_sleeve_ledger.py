@@ -228,7 +228,6 @@ def test_broker_snapshot_projects_owned_positions_orders_fills_and_fees(tmp_path
         assert state.open_order_count == 1
         assert state.fill_count == 1
         assert state.fees_usd == Decimal("1.25")
-
         again = store.reconcile_broker_snapshot(
             {
                 "positions": [
@@ -256,5 +255,43 @@ def test_broker_snapshot_projects_owned_positions_orders_fills_and_fees(tmp_path
         )
         assert again == receipt
         assert state.event_count + 0 == store.project(CapitalSleeve.EXTENDED_SLEEVE).event_count
+    finally:
+        db.close()
+
+
+def test_fresh_broker_valuation_updates_pnl_without_resetting_allocation(tmp_path):
+    db, store = _store(tmp_path)
+    try:
+        store.bootstrap_regular(_carry())
+        store.bootstrap_extended()
+        ownership = {"active_contracts": [
+            {"contract_identity_sha256": "b" * 64, "sleeve": "REGULAR_SLEEVE"}
+        ]}
+        store.append(CapitalSleeve.EXTENDED_SLEEVE, "REALIZED_PNL", {"amount_usd": "-7.389627"})
+        store.reconcile_broker_snapshot({"executions": [{
+            "contract_identity_sha256": "b" * 64,
+            "execution_id_hash": "e" * 64, "commission": "1.25",
+        }], "positions": [{
+            "contract_identity_sha256": "b" * 64, "quantity": "2",
+            "multiplier": "1", "average_cost": "36", "mark": "42",
+            "market_value_usd": "84", "mark_fresh": True,
+        }]}, ownership)
+        state = store.project(CapitalSleeve.REGULAR_SLEEVE)
+        assert state.unrealized_pnl_usd == Decimal("12")
+        assert state.realized_pnl_usd == Decimal("12.50")
+        assert state.allocation_usd == Decimal("500")
+        assert state.valuation_status == "FRESH"
+        assert state.fees_usd == Decimal("1.25")
+        assert state.fees_deductible_usd == Decimal("5.25")
+        assert store.project(CapitalSleeve.EXTENDED_SLEEVE).realized_pnl_usd == Decimal("-7.389627")
+        assert store.project(CapitalSleeve.EXTENDED_SLEEVE).allocation_usd == Decimal("500")
+        store.reconcile_broker_snapshot({"positions": [{
+            "contract_identity_sha256": "b" * 64, "quantity": "2",
+            "multiplier": "1", "average_cost": "36", "mark": "0",
+            "market_value_usd": "0", "mark_fresh": False,
+        }]}, ownership)
+        stale = store.project(CapitalSleeve.REGULAR_SLEEVE)
+        assert stale.unrealized_pnl_usd == Decimal("12")
+        assert stale.valuation_status == "UNAVAILABLE"
     finally:
         db.close()

@@ -108,6 +108,8 @@ class SleeveLedgerState(_LedgerModel):
     historical_event_sha256: tuple[str, ...]
     source_ledger_sha256: str | None
     event_count: int = Field(ge=0)
+    valuation_status: str = "HISTORICAL"
+    fees_deductible_usd: Decimal | None = None
 
     def balance(self, currency: str) -> Decimal:
         normalized = currency.upper()
@@ -508,6 +510,7 @@ class SleeveLedgerStore:
                 "open_order_count": 0,
                 "execution_ids": set(),
                 "fees_usd": Decimal("0"),
+                "marks_fresh": True,
             }
             for sleeve in CapitalSleeve
         }
@@ -530,6 +533,7 @@ class SleeveLedgerStore:
             if quantity == 0:
                 continue
             sleeve = owner(raw)
+            per_sleeve[sleeve]["marks_fresh"] &= raw.get("mark_fresh") is True
             per_sleeve[sleeve]["positions"].append(
                 CarryForwardPosition(
                     contract_identity_sha256=str(
@@ -601,6 +605,11 @@ class SleeveLedgerStore:
                         "open_order_count": data["open_order_count"],
                         "fill_count": len(data["execution_ids"]),
                         "fees_usd": str(data["fees_usd"]),
+                        "valuation_status": "FRESH" if data["marks_fresh"] else "UNAVAILABLE",
+                        "unrealized_pnl_usd": str(sum(
+                            (item.quantity * item.multiplier * (item.mark - item.average_cost)
+                             for item in data["positions"]), Decimal("0")
+                        )) if data["marks_fresh"] else None,
                     },
                 )
                 receipts[sleeve.value] = receipt.event_sha256
@@ -626,6 +635,8 @@ class SleeveLedgerStore:
         historical: tuple[str, ...] = ()
         source_hash: str | None = None
         initialized = False
+        valuation_status = "HISTORICAL"
+        fees_deductible = Decimal("0")
         for event in events:
             event_type = event["event_type"]
             if event_type == "REGULAR_BOOTSTRAP":
@@ -637,6 +648,7 @@ class SleeveLedgerStore:
                 open_orders = carry.open_order_count
                 fill_count = carry.fill_count
                 fees = carry.fees_usd
+                fees_deductible = carry.fees_usd
                 realized = carry.realized_pnl_usd
                 unrealized = carry.unrealized_pnl_usd
                 historical = carry.historical_event_sha256
@@ -657,6 +669,7 @@ class SleeveLedgerStore:
                 reserved -= normalized_decimal(event.get("amount_usd"))
             elif event_type == "FEE_CHARGED":
                 fees += normalized_decimal(event.get("amount_usd"))
+                fees_deductible += normalized_decimal(event.get("amount_usd"))
             elif event_type == "REALIZED_PNL":
                 realized += normalized_decimal(event.get("amount_usd"))
             elif event_type == "UNREALIZED_PNL_SET":
@@ -675,6 +688,9 @@ class SleeveLedgerStore:
                 open_orders = int(event.get("open_order_count") or 0)
                 fill_count = int(event.get("fill_count") or 0)
                 fees = normalized_decimal(event.get("fees_usd") or "0")
+                valuation_status = str(event.get("valuation_status") or "HISTORICAL")
+                if valuation_status == "FRESH":
+                    unrealized = normalized_decimal(event.get("unrealized_pnl_usd"))
 
         currency_balances = tuple(
             CurrencyBalance(currency=currency, amount=normalized_decimal(amount))
@@ -695,6 +711,8 @@ class SleeveLedgerStore:
             historical_event_sha256=historical,
             source_ledger_sha256=source_hash,
             event_count=len(events),
+            valuation_status=valuation_status,
+            fees_deductible_usd=fees_deductible if valuation_status == "FRESH" else None,
         )
 
     def project_all(self) -> MultiSleeveLedgerState:

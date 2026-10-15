@@ -8,6 +8,65 @@ from types import SimpleNamespace
 import pytest
 import ibkr_paper_30d.autonomous_state as state_module
 
+
+def test_broker_position_uses_fresh_quote_not_average_cost():
+    subject = object.__new__(AutonomousStateBuilder)
+    subject._fresh_position_marks = {7884: Decimal("121.29")}
+    subject._extra_mark_reasons = []
+    position = subject._marked_broker_position(
+        {"contract": {"conId": 7884, "multiplier": "1"},
+         "position": "4", "avgCost": "118.85"}, "a" * 64,
+    )
+    assert position["mark"] == "121.29"
+    assert position["market_value_usd"] == "485.16"
+    assert position["average_cost"] == "118.85"
+    assert position["mark_fresh"] is True
+
+
+def test_broker_position_missing_mark_is_not_disguised_as_cost():
+    subject = object.__new__(AutonomousStateBuilder)
+    subject._fresh_position_marks = {}
+    subject._extra_mark_reasons = []
+    subject.toolbox = SimpleNamespace(execute=lambda *_args: SimpleNamespace(success=False))
+    position = subject._marked_broker_position(
+        {"contract": {"conId": 7884}, "position": "4", "avgCost": "118.85"},
+        "a" * 64,
+    )
+    assert position["mark_fresh"] is False
+    assert position["mark"] == "0"
+    assert "MARK_QUOTE_FAILED:7884" in subject._extra_mark_reasons
+
+
+def test_derivative_broker_cost_is_per_contract_but_mark_is_per_unit():
+    subject = object.__new__(AutonomousStateBuilder)
+    subject._fresh_position_marks = {9001: Decimal("205")}
+    subject._extra_mark_reasons = []
+    position = subject._marked_broker_position(
+        {"contract": {"conId": 9001, "multiplier": "5"},
+         "position": "1", "avgCost": "1000"}, "a" * 64,
+    )
+    assert position["average_cost"] == "200"
+    assert position["market_value_usd"] == "1025"
+
+
+def test_unavailable_sleeve_valuation_blocks_only_its_new_entries():
+    subject = object.__new__(AutonomousStateBuilder)
+    common = {"initialized": True, "allocation_usd": "500", "fees_usd": "0"}
+    subject.sleeve_ledger_store = SimpleNamespace(project_all=lambda: _Dumpable({
+        "regular": {**common, "valuation_status": "UNAVAILABLE"},
+        "continuous": {**common, "valuation_status": "FRESH"},
+    }))
+    subject.contract_ownership_store = SimpleNamespace(projection=lambda: _Dumpable({"active_contracts": []}))
+    subject.product_certification_store = SimpleNamespace(projections=lambda: ())
+    portfolio, _, _ = subject._multi_sleeve_context(
+        reconciliation={"status": "PASS"}, account={}, broker_positions={},
+        open_orders={}, transition_phase="ACTIVE", regular_entry_open=True,
+    )
+    gate = portfolio["entry_eligibility"]["REGULAR_SLEEVE"]
+    assert gate["status"] == "BLOCK"
+    assert gate["reason_codes"] == ["SLEEVE_FRESH_VALUATION_REQUIRED"]
+    assert "SLEEVE_FRESH_VALUATION_REQUIRED" not in portfolio["entry_eligibility"]["CONTINUOUS_SLEEVE"]["reason_codes"]
+
 from ibkr_paper_30d.autonomous_research import ResearchResult, ResearchTool
 from ibkr_paper_30d.autonomous_state import (
     AutonomousStateBuildError,
