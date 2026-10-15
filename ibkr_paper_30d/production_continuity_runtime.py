@@ -2586,6 +2586,59 @@ class _ProductionCanaryStore:
                     continue
                 result = event.get("result") or {}
                 facts = (result.get("broker_validation") or {}).get("broker_facts") or {}
+                if not facts:
+                    # Older immediate-fill recoveries stored compact order facts.
+                    # Bind their exact execution identities to a verified flat snapshot.
+                    compact = result.get("broker_validation") or {}
+                    order = result.get("order") or {}
+                    for observed in prior:
+                        value = observed.get("facts") or {}
+                        if (observed.get("event_type") != "BROKER_FACTS_OBSERVED"
+                                or observed.get("request_sha256") != request_sha
+                                or observed.get("facts_sha256") != marker.get("facts_sha256")
+                                or sha256_json(value) != observed.get("facts_sha256")):
+                            continue
+                        try:
+                            fills = value.get("fills") or []
+                            entry_id = compact.get("entry_execution_id_sha256")
+                            exit_ids = compact.get("exit_execution_ids_sha256") or []
+                            entry = [f for f in fills if f.get("execution_id_sha256") == entry_id]
+                            exits = [f for f in fills if f.get("execution_id_sha256") in exit_ids]
+                            if (compact.get("original_request_sha256") != request_sha
+                                    or compact.get("request_sha256") != event.get("request_sha256")
+                                    or compact.get("account_identity_sha256") != request.get("account_identity_sha256")
+                                    or compact.get("contract_identity_sha256") != value.get("contract_identity_sha256")
+                                    or value.get("contract_identity_sha256") != sha256_json(request.get("canonical_contract"))
+                                    or Decimal(str(compact.get("post_position_quantity"))) != 0
+                                    or len(entry) != 1 or not exit_ids
+                                    or len(set(exit_ids)) != len(exit_ids) or len(exits) != len(exit_ids)
+                                    or len(fills) != len(entry) + len(exits)
+                                    or len({f.get("execution_id_sha256") for f in fills}) != len(fills)
+                                    or order.get("clientId") != WRITER_CLIENT_ID
+                                    or int(order.get("permId", 0)) <= 0
+                                    or order.get("orderRef") != f"codex-ibkr-paper-30d-canary-recovery-{event.get('request_sha256', '')[:12]}"):
+                                continue
+                            entry = entry[0]
+                            if (entry.get("order_id") != compact.get("entry_order_id")
+                                    or entry.get("perm_id") != compact.get("entry_perm_id")
+                                    or int(entry.get("perm_id", 0)) <= 0
+                                    or entry.get("client_id") != WRITER_CLIENT_ID
+                                    or entry.get("order_ref") != f"codex-ibkr-paper-30d-canary-entry-{request_sha[:12]}"
+                                    or entry.get("action") != request["entry_terms"]["action"]
+                                    or Decimal(str(entry.get("price"))) != Decimal(str(compact.get("entry_price")))
+                                    or Decimal(str(entry.get("quantity"))) != Decimal(request["quantity"])
+                                    or sum((Decimal(str(f.get("quantity"))) for f in exits), Decimal(0)) != Decimal(request["quantity"])
+                                    or any(f.get("order_id") != order.get("orderId")
+                                           or f.get("perm_id") != order.get("permId")
+                                           or f.get("client_id") != WRITER_CLIENT_ID
+                                           or f.get("order_ref") != order.get("orderRef")
+                                           or f.get("action") != request["flat_return_plan"]["action"]
+                                           or Decimal(str(f.get("quantity"))) <= 0 for f in exits)):
+                                continue
+                        except (ValueError, TypeError, KeyError, ArithmeticError):
+                            continue
+                        facts = value
+                        break
                 if sha256_json(facts) != marker.get("facts_sha256"):
                     def terminal_signature(value):
                         return sha256_json({k:v for k,v in value.items()

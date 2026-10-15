@@ -448,9 +448,10 @@ class AuthoritativeBrokerWriter:
                     raise RuntimeError("CANARY_RECOVERY_FLAT_NOT_PROVEN")
                 facts["exit_execution_ids_sha256"] = [sha256_json(f.execution.execId) for f in exit_fills]
                 facts["post_position_quantity"] = "0"
+                facts["broker_facts"] = self._canary_broker_facts(original, broker, recovery_ref=ref)
                 if self.canary_broker_accounting is not None:
                     facts["economics_reconciled"] = self.canary_broker_accounting(
-                        original, self._canary_broker_facts(original, broker, recovery_ref=ref))
+                        original, facts["broker_facts"])
             result = self._result(
                 success=True, status="FILLED" if status == "Filled" else "BROKER_BOUND",
                 order={"orderRef": ref, "orderId": int(trade.order.orderId),
