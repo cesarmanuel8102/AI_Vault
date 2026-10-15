@@ -204,6 +204,22 @@ def test_contract_builder_accepts_model_security_type_alias():
     assert contract.currency == "USD"
 
 
+@pytest.mark.parametrize("key", ["conId", "con_id", "contract_id"])
+def test_contract_id_only_does_not_invent_stock_routing(key):
+    contract = IBKRResearchToolbox._contract_from_spec({key: 495759171})
+    assert contract.conId == 495759171
+    assert contract.secType == ""
+    assert contract.exchange == ""
+    assert contract.currency == ""
+
+
+def test_contract_id_preserves_explicit_crypto_routing():
+    contract = IBKRResearchToolbox._contract_from_spec(
+        {"contract_id": 495759171, "sec_type": "CRYPTO", "exchange": "PAXOS", "currency": "USD"}
+    )
+    assert (contract.secType, contract.exchange, contract.currency) == ("CRYPTO", "PAXOS", "USD")
+
+
 def test_contract_builder_rejects_conflicting_nested_and_flat_identity():
     subject = IBKRResearchToolbox(expected_account_hash="unused")
 

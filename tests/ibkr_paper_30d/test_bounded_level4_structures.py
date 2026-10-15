@@ -1,5 +1,7 @@
 from decimal import Decimal
 
+import pytest
+
 from ibkr_paper_30d.autonomous_research import AutonomousTradeProposal, ProposalLeg
 from ibkr_paper_30d.ibkr_research_tools import IBKRResearchToolbox
 from ibkr_paper_30d.trader_invocation import TraderInputBundle
@@ -72,6 +74,54 @@ def test_short_put_has_finite_deterministic_loss_floor():
 
     assert reason is None
     assert floor == Decimal("3900.00")
+
+
+def test_crypto_limit_buy_proves_full_notional_not_stop_loss():
+    proposal = base(sec_type="CRYPTO", action="BUY", quantity="0.19",
+                    limit_price="2442.00", maximum_loss="465.73", time_in_force="IOC")
+    floor, reason = IBKRResearchToolbox._structure_loss_floor(proposal, bundle())
+    assert reason is None
+    assert floor == Decimal("463.9800")
+
+
+@pytest.mark.parametrize("price", [None, "0"])
+def test_crypto_buy_without_positive_limit_stays_blocked(price):
+    proposal = base(sec_type="CRYPTO", action="BUY", limit_price=price)
+    floor, reason = IBKRResearchToolbox._structure_loss_floor(proposal, bundle())
+    assert floor is None
+    assert reason == "LONG_CRYPTO_COST_NOT_PRETRADE_BOUNDED"
+
+
+def test_crypto_short_is_not_made_bounded_by_long_support():
+    floor, reason = IBKRResearchToolbox._structure_loss_floor(base(sec_type="CRYPTO"), bundle())
+    assert floor is None
+    assert reason == "UNBOUNDED_OR_UNVERIFIED_SHORT_INSTRUMENT"
+
+
+def test_crypto_market_buy_cannot_use_advisory_limit_as_bound():
+    proposal = base(sec_type="CRYPTO", action="BUY", order_type="MKT", limit_price="2442")
+    floor, reason = IBKRResearchToolbox._structure_loss_floor(proposal, bundle())
+    assert floor is None
+    assert reason == "LONG_CRYPTO_COST_NOT_PRETRADE_BOUNDED"
+
+
+@pytest.mark.parametrize("equity,declared,expected", [
+    ("500", "465.73", None),
+    ("500", "5", "DECLARED_MAX_LOSS_UNDERSTATES_STRUCTURE"),
+    ("464", "463.98", "BROKER_CASH_DEBIT_EXCEEDS_EXPERIMENT_EQUITY"),
+])
+def test_crypto_validation_keeps_full_loss_and_broker_fee_boundary(equity, declared, expected):
+    subject = IBKRResearchToolbox(expected_account_hash="unused")
+    subject._broker_feasibility = lambda proposal, **kwargs: {
+        "success": True, "what_if_status": "BROKER_CASH_DEBIT_COMPUTED",
+        "cash_notional_usd": "463.98", "estimated_commission_usd": "1.75",
+        "maximum_cash_debit_usd": "465.73", "commission": "1.75",
+    }
+    proposal = base(sec_type="CRYPTO", action="BUY", quantity="0.19",
+                    limit_price="2442", maximum_loss=declared, time_in_force="IOC")
+    result = subject.validate_proposal(proposal, bundle(equity=equity))
+    assert result.passed is (expected is None)
+    assert result.reason_codes == (() if expected is None else (expected,))
 
 
 def test_naked_short_call_is_rejected():

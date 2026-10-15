@@ -1196,17 +1196,20 @@ class IBKRResearchToolbox:
         from ib_insync import Contract
 
         spec = cls._normalized_contract_spec(spec)
+        contract_id = spec.get("conId") or spec.get("con_id") or spec.get("contract_id")
+        # An ID-only lookup must let the broker resolve the asset and venue.
+        id_only = bool(contract_id) and not spec.get("symbol")
         sec_type = str(
             spec.get("sec_type")
             or spec.get("secType")
             or spec.get("security_type")
-            or "STK"
+            or ("" if id_only else "STK")
         ).upper()
         contract = Contract(
             symbol=str(spec.get("symbol", "")).upper(),
             secType=sec_type,
-            exchange=str(spec.get("exchange") or "SMART"),
-            currency=str(spec.get("currency") or "USD"),
+            exchange=str(spec.get("exchange") or ("" if id_only else "SMART")),
+            currency=str(spec.get("currency") or ("" if id_only else "USD")),
         )
         primary_exchange = spec.get("primary_exchange") or spec.get("primaryExchange")
         if primary_exchange:
@@ -1220,7 +1223,6 @@ class IBKRResearchToolbox:
             contract.right = str(spec["right"]).upper()
         if spec.get("multiplier"):
             contract.multiplier = str(spec["multiplier"])
-        contract_id = spec.get("conId") or spec.get("con_id") or spec.get("contract_id")
         if contract_id:
             contract.conId = int(contract_id)
         return contract
@@ -2469,6 +2471,10 @@ class IBKRResearchToolbox:
                 if sec_type == "STK":
                     if limit_price is None or limit_price <= 0:
                         return None, "LONG_STOCK_COST_NOT_PRETRADE_BOUNDED"
+                    return limit_price * quantity, None
+                if sec_type == "CRYPTO":
+                    if proposal.order_type.upper() != "LMT" or limit_price is None or limit_price <= 0:
+                        return None, "LONG_CRYPTO_COST_NOT_PRETRADE_BOUNDED"
                     return limit_price * quantity, None
                 return None, "LONG_INSTRUMENT_MAX_LOSS_NOT_PROVEN"
             if action != "SELL":
