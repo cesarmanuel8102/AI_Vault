@@ -22,6 +22,7 @@ from .autonomous_research import (
     capital_equity_for_sleeve,
 )
 from .canonical import sha256_json
+from .continuity_models import TimeInForce
 from .ibkr_readonly import expected_identity_hash
 from .ibkr_readonly_session import ExpectedPaperIdentityStore
 from .open_order_management import (
@@ -308,6 +309,7 @@ class IBKRResearchToolbox:
             "estimated_commission_usd",
             "maximum_cash_debit_usd",
             "continuity_host_bindings",
+            "validated_proposal",
         }
     )
 
@@ -603,9 +605,12 @@ class IBKRResearchToolbox:
                 action=action.action.upper(),
                 orderType=action.order_type.upper(),
                 totalQuantity=float(quantity),
+                tif=(action.time_in_force or TimeInForce.DAY).value,
                 transmit=True,
                 whatIf=True,
             )
+            if action.good_till_date_utc is not None:
+                order.goodTillDate = action.good_till_date_utc.astimezone(timezone.utc).strftime("%Y%m%d %H:%M:%S UTC")
             if action.limit_price is not None:
                 order.lmtPrice = float(action.limit_price)
             try:
@@ -1675,10 +1680,28 @@ class IBKRResearchToolbox:
 
     def _broker_feasibility_from_args(self, args: dict[str, Any]) -> dict[str, Any]:
         if "proposal" in args:
-            proposal = AutonomousTradeProposal.model_validate(args["proposal"])
-            return self._model_research_feasibility(
-                self._broker_feasibility(proposal)
-            )
+            try:
+                proposal = AutonomousTradeProposal.model_validate(args["proposal"])
+                normalized = self._normalized_feasibility_args(args)
+                for key in ("action", "order_type", "quantity", "limit_price", "symbol", "sec_type"):
+                    if normalized.get(key) is not None and self._normalized_order_argument(
+                        key, normalized[key]
+                    ) != self._normalized_order_argument(key, getattr(proposal, key)):
+                        raise ValueError("PROPOSAL_ORDER_ARGUMENT_CONFLICT")
+                explicit_tif = normalized.get("time_in_force") or normalized.get("tif")
+                if explicit_tif is not None:
+                    explicit_tif = TimeInForce(str(explicit_tif).upper())
+                    if proposal.time_in_force is not None and proposal.time_in_force != explicit_tif:
+                        raise ValueError("PROPOSAL_TIME_IN_FORCE_CONFLICT")
+                    proposal = AutonomousTradeProposal.model_validate({
+                        **proposal.model_dump(mode="json"), "time_in_force": explicit_tif.value,
+                    })
+            except ValueError as exc:
+                return {"success": False, "whatIf": True, "paper_only": True,
+                        "error": "BROKER_FEASIBILITY_ARGUMENTS_INVALID", "error_code": str(exc)}
+            result = self._model_research_feasibility(self._broker_feasibility(proposal))
+            result["validated_proposal"] = proposal.model_dump(mode="json")
+            return result
 
         try:
             args = self._normalized_feasibility_args(args)
@@ -2081,6 +2104,7 @@ class IBKRResearchToolbox:
         quantity: Decimal,
         limit_price: Decimal | None,
         time_in_force: str = "",
+        good_till_date_utc: datetime | None = None,
     ) -> dict[str, Any]:
         from ib_insync import Order
 
@@ -2094,6 +2118,8 @@ class IBKRResearchToolbox:
         )
         if limit_price is not None:
             order.lmtPrice = float(limit_price)
+        if good_till_date_utc is not None:
+            order.goodTillDate = good_till_date_utc.astimezone(timezone.utc).strftime("%Y%m%d %H:%M:%S UTC")
         state = self._request_what_if(broker, contract, order)
         if state is None:
             return {
@@ -2318,7 +2344,8 @@ class IBKRResearchToolbox:
                 order_type=proposal.order_type.upper(),
                 quantity=proposal.quantity,
                 limit_price=proposal.limit_price,
-                time_in_force="DAY",
+                time_in_force=TimeInForce(proposal.time_in_force or TimeInForce.DAY).value,
+                good_till_date_utc=proposal.good_till_date_utc,
             )
         except Exception as exc:
             return {

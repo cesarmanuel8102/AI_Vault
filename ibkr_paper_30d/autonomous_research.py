@@ -13,7 +13,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator, model_serializer
 
 from .canonical import canonical_bytes, sha256_json
 from .canary_candidate import CanaryCandidateProposal, CanaryDiscoveryOutcome
@@ -153,6 +153,8 @@ class AutonomousPositionAction(BaseModel, frozen=True):
     action: str
     quantity: Decimal = Field(gt=0)
     order_type: str
+    time_in_force: TimeInForce | None = None
+    good_till_date_utc: datetime | None = None
     limit_price: Decimal | None = None
     contract_id: int | None = None
     expiry: str | None = None
@@ -161,6 +163,19 @@ class AutonomousPositionAction(BaseModel, frozen=True):
     reason: str
     capital_sleeve: CapitalSleeve | None = None
     product_family_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
+
+    @model_serializer(mode="wrap")
+    def serialize_order_intent(self, handler):
+        value = handler(self)
+        for key in ("time_in_force", "good_till_date_utc"):
+            if getattr(self, key) is None:
+                value.pop(key, None)
+        return value
+
+    @model_validator(mode="after")
+    def validate_order_intent(self):
+        _validate_temporal_order_intent(self)
+        return self
 
 
 class AutonomousOpenOrderAction(BaseModel, frozen=True):
@@ -206,6 +221,8 @@ class AutonomousTradeProposal(BaseModel, frozen=True):
     action: str
     quantity: Decimal = Field(gt=0)
     order_type: str
+    time_in_force: TimeInForce | None = None
+    good_till_date_utc: datetime | None = None
     limit_price: Decimal | None = None
     expiry: str | None = None
     strike: Decimal | None = None
@@ -232,12 +249,34 @@ class AutonomousTradeProposal(BaseModel, frozen=True):
     capital_sleeve: CapitalSleeve | None = None
     product_family_sha256: str | None = Field(default=None, pattern=SHA256_PATTERN)
 
+    @model_serializer(mode="wrap")
+    def serialize_order_intent(self, handler):
+        value = handler(self)
+        for key in ("time_in_force", "good_till_date_utc"):
+            if getattr(self, key) is None:
+                value.pop(key, None)
+        return value
+
+    @model_validator(mode="after")
+    def validate_order_intent(self):
+        _validate_temporal_order_intent(self)
+        return self
+
     @model_validator(mode="after")
     def probability_mass_is_sane(self) -> "AutonomousTradeProposal":
         total = self.probability_profit + self.probability_loss
         if total > Decimal("1.0001"):
             raise ValueError("probability_profit + probability_loss cannot exceed 1")
         return self
+
+
+def _validate_temporal_order_intent(value: Any) -> None:
+    if value.time_in_force == TimeInForce.GTD:
+        date = value.good_till_date_utc
+        if date is None or date.tzinfo is None or date.utcoffset() is None:
+            raise ValueError("GTD_REQUIRES_AWARE_GOOD_TILL_DATE")
+    elif value.good_till_date_utc is not None:
+        raise ValueError("GOOD_TILL_DATE_REQUIRES_GTD")
 
 
 class AutonomousTurn(BaseModel, frozen=True):
@@ -1089,7 +1128,10 @@ class CodexAutonomousCLIProvider:
                     "for that exact proposal; do not infer or invent infrastructure identity. "
                     "For a V4 plan, copy all seven fields in continuity_v4_host_bindings "
                     "from successful BROKER_FEASIBILITY for the exact proposal, and copy "
-                    "continuity_proposal_sha256 into both proposal hash fields. These bind "
+                    "continuity_proposal_sha256 into both proposal hash fields. Preserve "
+                    "time_in_force and good_till_date_utc from validated_proposal and use "
+                    "the same values in order_binding. Choose broker-supported order semantics "
+                    "yourself; the host must not silently substitute them. These bind "
                     "a prospective position, not an existing fill. You independently author "
                     "next_decision_deadline_utc within plan validity and all economic actions. "
                     "Include the complete proposal in BROKER_FEASIBILITY arguments to obtain "
@@ -1440,7 +1482,9 @@ class AutonomousResearchLoop:
 
                         data = dict(result.data)
                         try:
-                            candidate = AutonomousTradeProposal.model_validate(research_request.arguments["proposal"])
+                            candidate = AutonomousTradeProposal.model_validate(
+                                data.get("validated_proposal") or research_request.arguments["proposal"]
+                            )
                             data["continuity_proposal_sha256"] = sha256_json(candidate)
                             data["continuity_v4_host_bindings"] = build_v4_new_proposal_bindings(
                                 bundle, candidate, data,
@@ -1737,6 +1781,9 @@ class AutonomousResearchLoop:
             if turn.proposal is None:
                 return "CONTINUITY_PLAN_PROPOSAL_MISSING"
             proposal_hash = sha256_json(turn.proposal)
+            if (plan.order_binding.original_tif != (turn.proposal.time_in_force or TimeInForce.DAY)
+                    or plan.order_binding.original_good_till_date_utc != turn.proposal.good_till_date_utc):
+                return "CONTINUITY_PLAN_ORDER_SEMANTICS_MISMATCH"
             if (
                 plan.order_binding.binding_type != OrderBindingType.NEW_PROPOSAL
                 or plan.order_binding.proposal_sha256 != proposal_hash

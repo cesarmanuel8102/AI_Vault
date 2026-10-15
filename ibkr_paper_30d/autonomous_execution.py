@@ -21,7 +21,7 @@ from .continuity_binding import (
     ContinuityBindingService,
     PendingContinuityBinding,
 )
-from .continuity_models import CodexOrderContinuityPlan
+from .continuity_models import CodexOrderContinuityPlan, TimeInForce
 from .ibkr_research_tools import (
     IBKRResearchToolbox,
     PositionExecutionContractError,
@@ -612,7 +612,7 @@ class WriterOwnedModelExecutionMechanics:
             reasons.append("BROKER_RECONCILIATION_REQUIRED")
         if bundle.kill_switch_state != "KILL_SWITCH_CLEAR":
             reasons.append("KILL_SWITCH_TRIGGERED")
-        if bundle.market_data_snapshot.get("gate_status") != "PASS":
+        if not bundle.market_context_available:
             reasons.append("MARKET_DATA_GATE_BLOCK")
         return tuple(reasons)
 
@@ -1355,13 +1355,7 @@ class WriterOwnedModelExecutionMechanics:
                 order={},
                 broker_validation={},
             )
-        safety_reasons = []
-        if bundle.reconciliation_receipt.get("status") != "PASS":
-            safety_reasons.append("BROKER_RECONCILIATION_REQUIRED")
-        if bundle.kill_switch_state != "KILL_SWITCH_CLEAR":
-            safety_reasons.append("KILL_SWITCH_TRIGGERED")
-        if bundle.market_data_snapshot.get("gate_status") != "PASS":
-            safety_reasons.append("MARKET_DATA_GATE_BLOCK")
+        safety_reasons = list(self._frozen_bundle_reasons(bundle))
         if safety_reasons:
             return PaperExecutionResult(
                 success=False,
@@ -1471,6 +1465,7 @@ class WriterOwnedModelExecutionMechanics:
                 action=proposal.action.upper(),
                 orderType=proposal.order_type.upper(),
                 totalQuantity=float(proposal.quantity),
+                tif=(proposal.time_in_force or TimeInForce.DAY).value,
                 transmit=True,
                 whatIf=False,
                 orderRef=order_ref,
@@ -1478,6 +1473,8 @@ class WriterOwnedModelExecutionMechanics:
             )
             if proposal.limit_price is not None:
                 order.lmtPrice = float(proposal.limit_price)
+            if proposal.good_till_date_utc is not None:
+                order.goodTillDate = proposal.good_till_date_utc.astimezone(timezone.utc).strftime("%Y%m%d %H:%M:%S UTC")
             if not int(getattr(order, "orderId", 0) or 0):
                 order.orderId = int(ib.client.getReqId())
             pending_binding: PendingContinuityBinding | None = None
@@ -1658,13 +1655,7 @@ class WriterOwnedModelExecutionMechanics:
                 order={},
                 broker_validation={},
             )
-        safety_reasons = []
-        if bundle.reconciliation_receipt.get("status") != "PASS":
-            safety_reasons.append("BROKER_RECONCILIATION_REQUIRED")
-        if bundle.kill_switch_state != "KILL_SWITCH_CLEAR":
-            safety_reasons.append("KILL_SWITCH_TRIGGERED")
-        if bundle.market_data_snapshot.get("gate_status") != "PASS":
-            safety_reasons.append("MARKET_DATA_GATE_BLOCK")
+        safety_reasons = list(self._frozen_bundle_reasons(bundle))
         if safety_reasons:
             return PaperExecutionResult(
                 success=False,
@@ -1873,6 +1864,7 @@ class WriterOwnedModelExecutionMechanics:
                 action=action.action.upper(),
                 orderType=action.order_type.upper(),
                 totalQuantity=float(action.quantity),
+                tif=(action.time_in_force or TimeInForce.DAY).value,
                 transmit=True,
                 whatIf=False,
                 orderRef=order_ref,
@@ -1880,6 +1872,8 @@ class WriterOwnedModelExecutionMechanics:
             )
             if action.limit_price is not None:
                 order.lmtPrice = float(action.limit_price)
+            if action.good_till_date_utc is not None:
+                order.goodTillDate = action.good_till_date_utc.astimezone(timezone.utc).strftime("%Y%m%d %H:%M:%S UTC")
             if not int(getattr(order, "orderId", 0) or 0):
                 order.orderId = int(ib.client.getReqId())
             self._register_order(
