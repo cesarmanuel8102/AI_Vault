@@ -192,6 +192,8 @@ class IBKRResearchToolbox:
     ) -> None:
         if host not in PAPER_HOSTS or port != PAPER_PORT:
             raise ValueError("autonomous research requires local IBKR paper Gateway :4002")
+        if not Decimal(str(timeout_seconds)).is_finite() or timeout_seconds <= 0:
+            raise ValueError("research timeout must be finite positive")
         self.host = host
         self.port = port
         self.client_id_min = client_id_min
@@ -288,6 +290,8 @@ class IBKRResearchToolbox:
             "error",
             "error_type",
             "error_code",
+            "missing_economic_fields",
+            "requested_time_in_force",
             "stage",
             "contract",
             "commission",
@@ -895,6 +899,7 @@ class IBKRResearchToolbox:
         from ib_insync import IB
 
         ib = IB()
+        ib.RequestTimeout = self.timeout_seconds
         selected_client_id = (
             random.randint(self.client_id_min, self.client_id_max)
             if client_id is None
@@ -2032,15 +2037,20 @@ class IBKRResearchToolbox:
             comboLegs=combo_legs,
         )
 
-    @staticmethod
-    def _request_what_if(broker: Any, contract: Any, order: Any):
+    def _request_what_if(self, broker: Any, contract: Any, order: Any):
         if getattr(order, "whatIf", False) is not True:
             raise RuntimeError("BROKER_FEASIBILITY_WHAT_IF_REQUIRED")
         # IBKR requires transmit=True on a what-if request.
         # whatIf=True keeps the request simulated.
         if getattr(order, "transmit", False) is not True:
             raise RuntimeError("BROKER_FEASIBILITY_WHAT_IF_TRANSMIT_REQUIRED")
-        return broker.whatIfOrder(contract, order)
+        previous_timeout = getattr(broker, "RequestTimeout", 0)
+        try:
+            # connect(timeout=...) does not bound synchronous IB API requests.
+            broker.RequestTimeout = self.timeout_seconds
+            return broker.whatIfOrder(contract, order)
+        finally:
+            broker.RequestTimeout = previous_timeout
 
     @staticmethod
     def _is_unusable_broker_economic_value(value: Any) -> bool:
@@ -2120,7 +2130,22 @@ class IBKRResearchToolbox:
             order.lmtPrice = float(limit_price)
         if good_till_date_utc is not None:
             order.goodTillDate = good_till_date_utc.astimezone(timezone.utc).strftime("%Y%m%d %H:%M:%S UTC")
-        state = self._request_what_if(broker, contract, order)
+        try:
+            state = self._request_what_if(broker, contract, order)
+        except TimeoutError:
+            return {
+                "success": False,
+                "error": "BROKER_WHATIF_TIMEOUT",
+                "error_type": "TimeoutError",
+                "error_code": "BROKER_WHATIF_TIMEOUT",
+                "contract": self._serialize_contract(contract),
+                "whatIf": True,
+                "paper_only": True,
+                "what_if_status": "BROKER_WHATIF_NO_RESPONSE",
+                "broker_economics_computed": False,
+                "requested_time_in_force": time_in_force,
+                "stage": "WHAT_IF_REQUEST",
+            }
         if state is None:
             return {
                 "success": False,
@@ -2223,12 +2248,30 @@ class IBKRResearchToolbox:
                 }
                 self._add_v4_contract_binding(result, contract)
             return result
-        if required_sentinel_fields:
+        missing_required_fields = {
+            key for key in ("initMarginChange", "maintMarginChange")
+            if sanitized_economics[key] is None
+        }
+        if not usable_commission:
+            missing_required_fields.update(commission_fields)
+        if required_sentinel_fields or missing_required_fields:
             return {
                 "success": False,
-                "error": "BROKER_WHATIF_DBL_MAX_SENTINEL",
+                "error": (
+                    "BROKER_WHATIF_DBL_MAX_SENTINEL" if required_sentinel_fields
+                    else "BROKER_FEASIBILITY_EVIDENCE_INCOMPLETE"
+                ),
                 "error_type": "ValueError",
-                "error_code": "BROKER_ECONOMICS_SENTINEL_DETECTED",
+                "error_code": (
+                    "BROKER_ECONOMICS_SENTINEL_DETECTED" if required_sentinel_fields
+                    else (
+                        "BROKER_MARGIN_EVIDENCE_MISSING"
+                        if missing_required_fields.intersection(
+                            {"initMarginChange", "maintMarginChange"}
+                        ) else "BROKER_COMMISSION_EVIDENCE_MISSING"
+                    )
+                ),
+                "missing_economic_fields": sorted(missing_required_fields),
                 "contract": self._serialize_contract(contract),
                 "whatIf": True,
                 "paper_only": True,

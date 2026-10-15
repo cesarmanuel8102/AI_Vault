@@ -5,6 +5,77 @@ from types import SimpleNamespace
 
 import pytest
 
+
+def test_what_if_without_broker_response_has_a_real_deadline():
+    import subprocess
+    import sys
+    import textwrap
+
+    # The subprocess bound also makes the pre-fix infinite wait testable.
+    script = textwrap.dedent('''
+        import asyncio
+        from ib_insync import IB, Contract, Order
+        from ibkr_paper_30d.ibkr_research_tools import IBKRResearchToolbox
+        class SilentBroker(IB):
+            async def whatIfOrderAsync(self, contract, order):
+                await asyncio.Future()
+        broker = SilentBroker()
+        toolbox = IBKRResearchToolbox(timeout_seconds=0.02)
+        try:
+            toolbox._request_what_if(broker, Contract(), Order(whatIf=True, transmit=True))
+        except TimeoutError:
+            assert broker.RequestTimeout == 0
+        else:
+            raise AssertionError("missing timeout")
+    ''')
+    result = subprocess.run(
+        [sys.executable, "-c", script], capture_output=True, text=True, timeout=5,
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_missing_what_if_fields_never_claim_computed_economics():
+    from ib_insync import Contract
+
+    broker = WhatIfOnlyBroker()
+    broker.state = SimpleNamespace(warningText="")
+    toolbox = IBKRResearchToolbox()
+    evidence = toolbox._what_if_evidence(
+        broker,
+        Contract(secType="CRYPTO", exchange="PAXOS", currency="USD"),
+        action="BUY", order_type="LMT", quantity=Decimal("0.2"),
+        limit_price=Decimal("2422"), time_in_force="DAY",
+    )
+    assert evidence["success"] is False
+    assert evidence["broker_economics_computed"] is False
+    assert evidence["what_if_status"] == "BROKER_ECONOMICS_NOT_COMPUTED"
+    assert broker.what_if_calls[0][1].tif == "DAY"
+
+
+@pytest.mark.parametrize("timeout", [0, -1, float("inf"), float("nan")])
+def test_research_request_deadline_must_be_finite_positive(timeout):
+    with pytest.raises(ValueError, match="finite positive"):
+        IBKRResearchToolbox(timeout_seconds=timeout)
+
+
+def test_what_if_timeout_is_actionable_without_transmitting_an_order():
+    from ib_insync import Contract
+
+    class TimedOutBroker(WhatIfOnlyBroker):
+        def whatIfOrder(self, contract, order):
+            assert self.RequestTimeout > 0
+            assert order.whatIf is True
+            raise TimeoutError()
+
+    evidence = IBKRResearchToolbox()._what_if_evidence(
+        TimedOutBroker(), Contract(secType="CRYPTO", exchange="PAXOS", currency="USD"),
+        action="BUY", order_type="LMT", quantity=Decimal("0.2"),
+        limit_price=Decimal("2422"), time_in_force="DAY",
+    )
+    assert evidence["error_code"] == "BROKER_WHATIF_TIMEOUT"
+    assert evidence["broker_economics_computed"] is False
+    assert evidence["requested_time_in_force"] == "DAY"
+
 from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.autonomous_research import (
     AutonomousTradeProposal,
@@ -1307,10 +1378,10 @@ def test_what_if_timeout_is_sanitized_and_fails_closed(monkeypatch):
     result = toolbox.execute(request, _bundle())
 
     assert result.success is False
-    assert result.error == "TimeoutError:broker_operation_failed"
+    assert result.error == "BROKER_WHATIF_TIMEOUT"
     assert result.data["error_type"] == "TimeoutError"
-    assert result.data["error_code"] == "BROKER_FEASIBILITY_BROKER_OPERATION_FAILED"
-    assert result.data["stage"] == "BROKER_WHAT_IF"
+    assert result.data["error_code"] == "BROKER_WHATIF_TIMEOUT"
+    assert result.data["stage"] == "WHAT_IF_REQUEST"
     assert "account-sensitive" not in str(result.model_dump(mode="json"))
 
 
