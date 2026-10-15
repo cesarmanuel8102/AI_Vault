@@ -402,14 +402,21 @@ class AutonomousStateBuilder:
         assert self.contract_ownership_store is not None
         ownership = self.contract_ownership_store.projection()
         ownership_records = (
-            *ownership.active_contracts,
             *getattr(ownership, "released_contracts", ()),
+            *ownership.active_contracts,
         )
         by_con_id = {
             int(item.contract.con_id): item.contract_identity_sha256
             for item in ownership_records
             if int(item.contract.con_id) > 0
         }
+        active_by_con_id: dict[int, str] = {}
+        for item in ownership.active_contracts:
+            con_id = int(item.contract.con_id)
+            previous = active_by_con_id.get(con_id)
+            if previous is not None and previous != item.contract_identity_sha256:
+                raise AutonomousStateBuildError("CONTRACT_OWNERSHIP_AMBIGUOUS")
+            active_by_con_id[con_id] = item.contract_identity_sha256
 
         def contract_hash(raw: dict[str, Any]) -> str:
             contract = raw.get("contract") or {}

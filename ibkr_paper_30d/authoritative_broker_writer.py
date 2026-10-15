@@ -632,17 +632,29 @@ class AuthoritativeBrokerWriter:
         qualified = list(broker.qualifyContracts(contract))
         if len(qualified) != 1 or int(qualified[0].conId or 0) != identity.con_id:
             return None
-        ticker = broker.reqMktData(qualified[0], snapshot=True)
-        if hasattr(broker, "sleep"):
-            broker.sleep(min(2.0, self.broker_request_timeout_seconds))
+        ticker = broker.reqMktData(qualified[0], snapshot=False)
         field = (
             "bid" if request.flat_return_plan.action == "SELL" else "ask"
         )
+        deadline = time.monotonic() + min(15.0, self.broker_request_timeout_seconds)
         try:
-            price = Decimal(str(getattr(ticker, field, None)))
-        except Exception:
-            return None
-        return price if price.is_finite() and price > 0 else None
+            while True:
+                try:
+                    price = Decimal(str(getattr(ticker, field, None)))
+                except Exception:
+                    price = Decimal("NaN")
+                if price.is_finite() and price > 0:
+                    return price
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return None
+                if hasattr(broker, "sleep"):
+                    broker.sleep(min(0.05, remaining))
+                else:
+                    time.sleep(min(0.05, remaining))
+        finally:
+            if hasattr(broker, "cancelMktData"):
+                broker.cancelMktData(qualified[0])
 
     def _execute_canary_lifecycle_through_writer(
         self,

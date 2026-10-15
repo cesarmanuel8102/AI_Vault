@@ -2586,6 +2586,18 @@ class _ProductionCanaryStore:
                     continue
                 result = event.get("result") or {}
                 facts = (result.get("broker_validation") or {}).get("broker_facts") or {}
+                if sha256_json(facts) != marker.get("facts_sha256"):
+                    def terminal_signature(value):
+                        return sha256_json({k:v for k,v in value.items()
+                            if k not in {"observed_at_utc", "average_cost"}})
+                    refreshed = next((e.get("facts") for e in prior
+                        if e.get("event_type") == "BROKER_FACTS_OBSERVED"
+                        and e.get("request_sha256") == request_sha
+                        and e.get("facts_sha256") == marker.get("facts_sha256")
+                        and sha256_json(e.get("facts")) == e.get("facts_sha256")
+                        and terminal_signature(e.get("facts") or {}) == terminal_signature(facts)), None)
+                    if refreshed is not None:
+                        facts = refreshed
                 try:
                     flat = Decimal(str(facts.get("position_quantity"))) == 0
                     orders_empty = int(facts.get("open_order_count")) == 0

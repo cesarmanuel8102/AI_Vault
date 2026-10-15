@@ -485,7 +485,7 @@ def test_real_writer_port_completes_exact_entry_and_flat_return(entry_tif) -> No
             return []
 
         def reqMktData(self, contract, snapshot=True):
-            assert snapshot is True
+            assert snapshot is False
             return SimpleNamespace(bid=Decimal("9.75"), ask=Decimal("10.25"))
 
         def sleep(self, seconds):
