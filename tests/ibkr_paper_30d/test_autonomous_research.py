@@ -77,7 +77,9 @@ class FakeToolbox:
         )
 
 
-def test_v4_feasibility_delivers_host_bindings_to_next_model_turn():
+@pytest.mark.parametrize("embedded_success", [False, True])
+@pytest.mark.parametrize("broker_success", [False, True])
+def test_v4_feasibility_delivers_host_bindings_to_next_model_turn(embedded_success, broker_success):
     from ibkr_paper_30d.contract_ownership import canonical_contract_identity
 
     value = _v4_bundle(legacy_equity="500", regular_equity="500", extended_equity="500")
@@ -85,14 +87,16 @@ def test_v4_feasibility_delivers_host_bindings_to_next_model_turn():
     value.contract_ownership_snapshot["projection_sha256"] = "b" * 64
     candidate = _extended_proposal("100")
     contract = {"conId": 756733, "secType": "STK", "currency": "USD", "exchange": "SMART"}
-    evidence = {"success": True, "contract": contract, "continuity_host_bindings": {
+    evidence = {"contract": contract, "continuity_host_bindings": {
         "account_identity_sha256": "d" * 64,
         "canonical_contract_identity_v4": canonical_contract_identity(contract).model_dump(mode="json"),
     }}
+    if embedded_success:
+        evidence["success"] = True
 
     class BindingToolbox(FakeToolbox):
         def execute(self, request, bundle):
-            return ResearchResult(request_id=request.request_id, tool=request.tool, success=True, data=evidence)
+            return ResearchResult(request_id=request.request_id, tool=request.tool, success=broker_success, data=evidence)
 
     provider = SequenceProvider([
         AutonomousTurn(mode="RESEARCH", confidence="0.5", reasoning_summary="evaluate", research_requests=[
@@ -103,6 +107,9 @@ def test_v4_feasibility_delivers_host_bindings_to_next_model_turn():
     outcome = AutonomousResearchLoop(provider, BindingToolbox()).run(request(value), value)
     assert outcome.accepted is True
     delivered = provider.histories[1][-1]["payload"]["data"]
+    if not broker_success:
+        assert "continuity_v4_host_bindings" not in delivered
+        return
     assert delivered["continuity_v4_host_bindings"]["sleeve_authority_sha256"] == "a" * 64
     assert delivered["continuity_v4_host_bindings"]["ownership_projection_sha256"] == "b" * 64
     assert delivered["continuity_proposal_sha256"] == sha256_json(candidate)

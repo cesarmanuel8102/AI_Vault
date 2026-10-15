@@ -1487,7 +1487,7 @@ class AutonomousResearchLoop:
                             )
                             data["continuity_proposal_sha256"] = sha256_json(candidate)
                             data["continuity_v4_host_bindings"] = build_v4_new_proposal_bindings(
-                                bundle, candidate, data,
+                                bundle, candidate, {**data, "success": result.success},
                                 f"{EXPERIMENT_ORDER_PREFIX}-a-{request.decision_cycle_id[-12:]}",
                             )
                         except ValueError as exc:
