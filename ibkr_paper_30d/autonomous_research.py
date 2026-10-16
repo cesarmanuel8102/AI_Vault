@@ -646,9 +646,11 @@ class CodexAutonomousCLIProvider:
                                     "OWNER_EXCEPTION_REQUEST_PIN"
                                 )
                         except RuntimeError as exc:
-                            if str(exc).endswith(":invalid_jsonl"):
+                            if str(exc).endswith(
+                                (":invalid_jsonl", ":actual_model_missing")
+                            ):
                                 self.last_failure_code = (
-                                    "ATTESTATION_INVALID_JSONL"
+                                    "ATTESTATION_PROTOCOL_INCOMPLETE"
                                     if self.owner_model_attestation_exception_sha256 is not None
                                     else "CODEX_PROVIDER_INVALID_JSONL"
                                 )
@@ -786,46 +788,70 @@ class CodexAutonomousCLIProvider:
                 payload = copy.deepcopy(base_payload)
                 if repair_context is not None:
                     payload["semantic_repair"] = repair_context
-                try:
-                    completed = self.runner(
-                        command,
-                        input=canonical_bytes(payload).decode("utf-8"),
-                        text=True,
-                        capture_output=True,
-                        timeout=request.timeout_seconds,
-                        cwd=workdir,
-                        env=self._sanitized_environment(),
-                        check=False,
-                    )
-                except subprocess.TimeoutExpired as exc:
-                    self.last_failure_code = "TIMEOUT"
-                    raise TimeoutError(
-                        "canary discovery Codex provider timed out"
-                    ) from exc
-                if completed.returncode != 0:
-                    self.last_failure_code = f"RETURN_CODE_{completed.returncode}"
-                    raise RuntimeError("CANARY_DISCOVERY_CODEX_PROVIDER_FAILED")
-                try:
-                    if self.owner_model_attestation_exception_sha256 is None:
-                        self._assert_effective_model(
-                            completed.stdout, request.requested_model
+                completed = None
+                retry_delays = (1.0, 3.0)
+                for attempt in range(len(retry_delays) + 1):
+                    try:
+                        completed = self.runner(
+                            command,
+                            input=canonical_bytes(payload).decode("utf-8"),
+                            text=True,
+                            capture_output=True,
+                            timeout=request.timeout_seconds,
+                            cwd=workdir,
+                            env=self._sanitized_environment(),
+                            check=False,
                         )
-                        self.last_model_attestation_mode = "SERVER_REPORTED"
-                    else:
-                        self._assert_effective_model_with_owner_exception(
-                            completed.stdout, request.requested_model
-                        )
-                        self.last_model_attestation_mode = (
-                            "OWNER_EXCEPTION_REQUEST_PIN"
-                        )
-                except RuntimeError as exc:
-                    if str(exc).endswith(":invalid_jsonl"):
+                    except subprocess.TimeoutExpired as exc:
+                        self.last_failure_code = "TIMEOUT"
+                        raise TimeoutError(
+                            "canary discovery Codex provider timed out"
+                        ) from exc
+                    if completed.returncode != 0:
                         self.last_failure_code = (
-                            "ATTESTATION_INVALID_JSONL"
-                            if self.owner_model_attestation_exception_sha256 is not None
-                            else "CODEX_PROVIDER_INVALID_JSONL"
+                            f"RETURN_CODE_{completed.returncode}"
                         )
-                    raise
+                        if completed.returncode != 1 or attempt == len(
+                            retry_delays
+                        ):
+                            raise RuntimeError(
+                                "CANARY_DISCOVERY_CODEX_PROVIDER_FAILED"
+                            )
+                        self.retry_sleep(retry_delays[attempt])
+                        continue
+                    try:
+                        if self.owner_model_attestation_exception_sha256 is None:
+                            self._assert_effective_model(
+                                completed.stdout, request.requested_model
+                            )
+                            self.last_model_attestation_mode = "SERVER_REPORTED"
+                        else:
+                            self._assert_effective_model_with_owner_exception(
+                                completed.stdout, request.requested_model
+                            )
+                            self.last_model_attestation_mode = (
+                                "OWNER_EXCEPTION_REQUEST_PIN"
+                            )
+                    except RuntimeError as exc:
+                        if str(exc).endswith(
+                            (":invalid_jsonl", ":actual_model_missing")
+                        ):
+                            self.last_failure_code = (
+                                "ATTESTATION_PROTOCOL_INCOMPLETE"
+                                if self.owner_model_attestation_exception_sha256
+                                is not None
+                                else "CODEX_PROVIDER_INVALID_JSONL"
+                            )
+                            if (
+                                self.owner_model_attestation_exception_sha256
+                                is not None
+                                and attempt < len(retry_delays)
+                            ):
+                                self.retry_sleep(retry_delays[attempt])
+                                continue
+                        raise
+                    break
+                assert completed is not None
                 self.last_native_tool_events = self._native_tool_events(
                     completed.stdout
                 )

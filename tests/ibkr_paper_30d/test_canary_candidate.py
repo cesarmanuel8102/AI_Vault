@@ -556,6 +556,131 @@ def test_canary_provider_repairs_one_semantically_invalid_final_without_research
     assert provider.last_failure_detail is None
 
 
+def test_canary_provider_retries_transient_exit_one_before_accepting_turn() -> None:
+    from test_autonomous_research import bundle, request
+    from ibkr_paper_30d.autonomous_research import CodexAutonomousCLIProvider
+
+    value = bundle().model_copy(
+        update={"market_data_snapshot": {"gate_status": "BLOCK"}}
+    )
+    invocation = request(value).model_copy(
+        update={
+            "model_configuration": {
+                "canary_authority_context": {
+                    "account_identity_sha256": ACCOUNT,
+                    "successor_definition_sha256": SUCCESSOR,
+                    "approved_head": HEAD,
+                }
+            }
+        }
+    )
+    attempts = []
+    delays = []
+
+    def runner(command, **kwargs):
+        attempts.append(command)
+        if len(attempts) == 1:
+            return subprocess.CompletedProcess(
+                command, 1, stdout="", stderr="transient failure"
+            )
+        output_path = command[command.index("--output-last-message") + 1]
+        with open(output_path, "w", encoding="utf-8") as handle:
+            json.dump(
+                {
+                    "mode": "FINAL",
+                    "research_requests": [],
+                    "decision": "NO_CANDIDATE",
+                    "proposal": None,
+                    "reasoning_summary": "No exact candidate is justified.",
+                },
+                handle,
+            )
+        stdout = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "thread.started",
+                        "thread_id": "t",
+                        "actual_model": invocation.requested_model,
+                    }
+                ),
+                json.dumps({"type": "turn.completed"}),
+            ]
+        )
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    provider = CodexAutonomousCLIProvider(
+        runner=runner,
+        retry_sleep=delays.append,
+    )
+
+    turn = provider.next_canary_candidate(invocation, value, [], [])
+
+    assert turn.decision == "NO_CANDIDATE"
+    assert len(attempts) == 2
+    assert delays == [1.0]
+    assert provider.last_failure_code is None
+
+
+def test_canary_owner_exception_retries_incomplete_success() -> None:
+    from test_autonomous_research import bundle, request
+    from ibkr_paper_30d.autonomous_research import CodexAutonomousCLIProvider
+
+    value = bundle().model_copy(
+        update={"market_data_snapshot": {"gate_status": "BLOCK"}}
+    )
+    invocation = request(value).model_copy(
+        update={
+            "model_configuration": {
+                "canary_authority_context": {
+                    "account_identity_sha256": ACCOUNT,
+                    "successor_definition_sha256": SUCCESSOR,
+                    "approved_head": HEAD,
+                }
+            }
+        }
+    )
+    attempts = []
+    delays = []
+
+    def runner(command, **kwargs):
+        attempts.append(command)
+        output_path = command[command.index("--output-last-message") + 1]
+        with open(output_path, "w", encoding="utf-8") as handle:
+            json.dump(
+                {
+                    "mode": "FINAL",
+                    "research_requests": [],
+                    "decision": "NO_CANDIDATE",
+                    "proposal": None,
+                    "reasoning_summary": "No exact candidate is justified.",
+                },
+                handle,
+            )
+        events = [{"type": "thread.started", "thread_id": "t"}]
+        if len(attempts) > 1:
+            events.append({"type": "turn.completed"})
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            stdout="\n".join(json.dumps(event) for event in events),
+            stderr="",
+        )
+
+    provider = CodexAutonomousCLIProvider(
+        runner=runner,
+        retry_sleep=delays.append,
+        owner_model_attestation_exception_sha256="e" * 64,
+    )
+
+    turn = provider.next_canary_candidate(invocation, value, [], [])
+
+    assert turn.decision == "NO_CANDIDATE"
+    assert len(attempts) == 2
+    assert delays == [1.0]
+    assert provider.last_failure_code is None
+
+
 def test_canary_provider_exhaustion_preserves_precise_validation_detail() -> None:
     from test_autonomous_research import bundle, request
     from ibkr_paper_30d.autonomous_research import CodexAutonomousCLIProvider

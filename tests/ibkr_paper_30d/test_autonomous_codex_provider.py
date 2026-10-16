@@ -949,6 +949,56 @@ def test_owner_exception_retries_transient_invalid_jsonl_before_accepting_turn()
     assert provider.last_failure_code is None
 
 
+def test_owner_exception_retries_incomplete_success_before_accepting_turn():
+    value = bundle()
+    attempts = []
+    delays = []
+
+    def runner(command, **kwargs):
+        attempts.append(command)
+        output_path = command[command.index("--output-last-message") + 1]
+        Path(output_path).write_text(
+            json.dumps(
+                {
+                    "mode": "FINAL",
+                    "research_requests": [],
+                    "decision": "NO_TRADE",
+                    "proposal": None,
+                    "position_action": None,
+                    "open_order_action": None,
+                    "confidence": "0.75",
+                    "reasoning_summary": "No trade.",
+                    "reason_codes": ["NO_EDGE_FOUND"],
+                }
+            ),
+            encoding="utf-8",
+        )
+        events = [{"type": "thread.started", "thread_id": "t"}]
+        if len(attempts) > 1:
+            events.append({"type": "turn.completed"})
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            stdout="\n".join(json.dumps(event) for event in events),
+            stderr="",
+        )
+
+    provider = CodexAutonomousCLIProvider(
+        runner=runner,
+        retry_sleep=delays.append,
+        owner_model_attestation_exception_sha256="e" * 64,
+    )
+
+    turn = provider.next_turn(
+        request(value), value, [], [{"tool": "MARKET_SCANNER"}]
+    )
+
+    assert turn.decision.value == "NO_TRADE"
+    assert len(attempts) == 2
+    assert delays == [1.0]
+    assert provider.last_failure_code is None
+
+
 def test_semantically_invalid_turn_is_returned_to_codex_for_bounded_repair():
     value = bundle()
     prompts = []

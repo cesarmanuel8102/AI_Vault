@@ -24,6 +24,14 @@ from .kernel_manifest import (
 
 EPOCH_MANIFEST_SCHEMA = "AUTONOMY_EPOCH_MANIFEST_V2"
 
+# Product-family certification belongs to this broker-adapter generation.  It
+# changes only when contract serialization or broker order semantics change;
+# the independently verified kernel hash still changes for every authority
+# code change.  This generation completed the full PAXOS PAPER lifecycle.
+PRODUCT_ADAPTER_CONTRACT_SHA256 = (
+    "a041487b0fa4090ab0168af646496325acbc78ea2913fcbb0a764f6e1b63a49a"
+)
+
 
 @dataclass(frozen=True)
 class EpochManifestInputs:
@@ -46,6 +54,7 @@ class EpochManifestInputs:
     self_tooling_enabled: bool
     persistent_workspace_enabled: bool
     model_turn_timeout_seconds: int = 600
+    product_adapter_contract_sha256: str | None = None
 
     def __post_init__(self) -> None:
         value = self.model_turn_timeout_seconds
@@ -55,6 +64,12 @@ class EpochManifestInputs:
             or not 30 <= value <= 600
         ):
             raise ValueError("MODEL_TURN_TIMEOUT_INVALID")
+        adapter = self.product_adapter_contract_sha256
+        if adapter is not None and (
+            len(adapter) != 64
+            or any(char not in "0123456789abcdef" for char in adapter)
+        ):
+            raise ValueError("PRODUCT_ADAPTER_CONTRACT_SHA256_INVALID")
 
 
 def build_epoch_manifest(inputs: EpochManifestInputs) -> dict[str, Any]:
@@ -81,6 +96,10 @@ def build_epoch_manifest(inputs: EpochManifestInputs) -> dict[str, Any]:
         "first_process_bootstrap_sha256": sha256_json(inputs.first_process_bootstrap),
         "tool_manifest_sha256": sha256_json(inputs.tool_manifest),
         "immutable_kernel_manifest_hash": inputs.immutable_kernel_manifest_hash,
+        "product_adapter_contract_sha256": (
+            inputs.product_adapter_contract_sha256
+            or inputs.immutable_kernel_manifest_hash
+        ),
         "market_policy_sha256": inputs.market_policy_sha256,
         "risk_policy": inputs.risk_policy_payload,
         "risk_policy_sha256": sha256_json(inputs.risk_policy_payload),
@@ -105,8 +124,10 @@ def epoch_manifest_hash(manifest: dict[str, Any]) -> str:
 
 
 def product_adapter_sha256(manifest: dict[str, Any]) -> str:
-    """Bind product evidence to verified code, not per-launch receipts/time."""
-    value = manifest.get("immutable_kernel_manifest_hash")
+    """Return the explicit product adapter generation for certification."""
+    value = manifest.get("product_adapter_contract_sha256")
+    if value is None:
+        value = manifest.get("immutable_kernel_manifest_hash")
     if not isinstance(value, str) or len(value) != 64 or any(
         char not in "0123456789abcdef" for char in value
     ):

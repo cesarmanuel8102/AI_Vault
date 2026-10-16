@@ -20,14 +20,23 @@ from ibkr_paper_30d.product_capability import ProductCapabilityError
 from ibkr_paper_30d import production_continuity_runtime as runtime
 
 
-def test_adapter_identity_survives_new_launch_receipts_but_changes_with_code():
+def test_adapter_identity_survives_launch_and_unrelated_kernel_changes():
     from ibkr_paper_30d.epoch_manifest import product_adapter_sha256
-    first = {"immutable_kernel_manifest_hash": "a" * 64,
-             "epoch_manifest_sha256": "b" * 64, "created_at_utc": "2026-10-13T23:00:00Z"}
+    first = {
+        "immutable_kernel_manifest_hash": "a" * 64,
+        "product_adapter_contract_sha256": "f" * 64,
+        "epoch_manifest_sha256": "b" * 64,
+        "created_at_utc": "2026-10-13T23:00:00Z",
+    }
     restarted = {**first, "epoch_manifest_sha256": "c" * 64,
                  "created_at_utc": "2026-10-14T01:00:00Z"}
     assert product_adapter_sha256(first) == product_adapter_sha256(restarted)
-    assert product_adapter_sha256({**restarted, "immutable_kernel_manifest_hash": "d" * 64}) != product_adapter_sha256(first)
+    assert product_adapter_sha256(
+        {**restarted, "immutable_kernel_manifest_hash": "d" * 64}
+    ) == product_adapter_sha256(first)
+    assert product_adapter_sha256(
+        {**restarted, "product_adapter_contract_sha256": "e" * 64}
+    ) != product_adapter_sha256(first)
     with pytest.raises(ValueError, match="PRODUCT_ADAPTER_KERNEL_HASH_REQUIRED"):
         product_adapter_sha256({"epoch_manifest_sha256": "e" * 64})
 

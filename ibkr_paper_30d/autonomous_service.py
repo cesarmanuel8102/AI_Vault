@@ -87,6 +87,10 @@ def _is_recoverable_provider_failure(
         )
     if code in ("ATTESTATION_INVALID_JSONL", "CODEX_PROVIDER_INVALID_JSONL"):
         return isinstance(exc, RuntimeError) and str(exc).endswith(":invalid_jsonl")
+    if code == "ATTESTATION_PROTOCOL_INCOMPLETE":
+        return isinstance(exc, RuntimeError) and str(exc).endswith(
+            (":invalid_jsonl", ":actual_model_missing")
+        )
     return False
 
 

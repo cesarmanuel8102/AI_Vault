@@ -1682,6 +1682,11 @@ def _write_epoch_manifest(
         first_process_bootstrap=bootstrap,
     )
     risk_policy = CapitalBoundaryRiskPolicy().model_dump(mode="json")
+    from .epoch_manifest import (
+        PRODUCT_ADAPTER_CONTRACT_SHA256,
+        product_adapter_sha256,
+    )
+
     manifest = build_epoch_manifest(
         EpochManifestInputs(
             epoch_id=str(bundle.experiment_clock.get("epoch_id") or "AUTONOMY_EPOCH_1"),
@@ -1720,6 +1725,7 @@ def _write_epoch_manifest(
             self_tooling_enabled=True,
             persistent_workspace_enabled=True,
             model_turn_timeout_seconds=config.model_turn_timeout_seconds,
+            product_adapter_contract_sha256=PRODUCT_ADAPTER_CONTRACT_SHA256,
         )
     )
     destination = config.epoch_manifest_path or (
@@ -1753,7 +1759,7 @@ def _write_epoch_manifest(
         session_evidence_reader=_session_evidence_reader(
             toolbox,
             db=db if config.multi_universe_authority_path is not None else None,
-            adapter_sha256=kernel["kernel_manifest_sha256"],
+            adapter_sha256=product_adapter_sha256(manifest),
             expected_account_hash=preflight.expected_account_hash,
         ),
     )

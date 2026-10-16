@@ -1851,6 +1851,18 @@ def test_invalid_jsonl_failure_is_recoverable():
     assert _is_recoverable_provider_failure(exc, "CODEX_PROVIDER_INVALID_JSONL") is True
 
 
+def test_incomplete_owner_attestation_protocol_is_recoverable():
+    exc = RuntimeError(
+        "AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED:actual_model_missing"
+    )
+    assert (
+        _is_recoverable_provider_failure(
+            exc, "ATTESTATION_PROTOCOL_INCOMPLETE"
+        )
+        is True
+    )
+
+
 def test_model_substitution_failure_is_not_recoverable():
     exc = RuntimeError("AUTONOMOUS_CODEX_MODEL_SUBSTITUTION_DETECTED:gpt-5.5-codex")
     assert _is_recoverable_provider_failure(exc, "MODEL_ATTESTATION_FAILED") is False
