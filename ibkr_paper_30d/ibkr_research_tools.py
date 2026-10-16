@@ -5,6 +5,7 @@ import os
 import random
 import re
 import sys
+import threading
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -45,6 +46,38 @@ class PositionExecutionContractError(ValueError):
     def __init__(self, reason_code: str) -> None:
         super().__init__(reason_code)
         self.reason_code = reason_code
+
+
+_TRANSPORT_ERRORS = (TimeoutError, ConnectionError, OSError)
+
+
+class _PersistentIBLease:
+    """Serialize access while keeping the authenticated research session alive."""
+
+    def __init__(self, owner: "IBKRResearchToolbox", ib: Any) -> None:
+        self._owner = owner
+        self._ib = ib
+        self._released = False
+
+    def __getattr__(self, name: str) -> Any:
+        value = getattr(self._ib, name)
+        if not callable(value):
+            return value
+
+        def guarded(*args: Any, **kwargs: Any) -> Any:
+            try:
+                return value(*args, **kwargs)
+            except _TRANSPORT_ERRORS:
+                self._owner._invalidate_persistent_session(self._ib)
+                raise
+
+        return guarded
+
+    def disconnect(self) -> None:
+        if self._released:
+            return
+        self._released = True
+        self._owner._persistent_session_lock.release()
 
 
 def capability_evidence_from_broker_checks(
@@ -189,6 +222,7 @@ class IBKRResearchToolbox:
         timeout_seconds: float = 12.0,
         declared_options_level: int | None = None,
         expected_account_hash: str | None = None,
+        persistent_session: bool = False,
     ) -> None:
         if host not in PAPER_HOSTS or port != PAPER_PORT:
             raise ValueError("autonomous research requires local IBKR paper Gateway :4002")
@@ -200,6 +234,9 @@ class IBKRResearchToolbox:
         self.client_id_max = client_id_max
         self.timeout_seconds = timeout_seconds
         self.declared_options_level = declared_options_level
+        self.persistent_session = bool(persistent_session)
+        self._persistent_session_lock = threading.RLock()
+        self._persistent_ib: Any | None = None
         configured_hash = expected_account_hash or os.environ.get("IBKR_PAPER_ACCOUNT_SHA256")
         if configured_hash is None:
             store = ExpectedPaperIdentityStore(
@@ -904,36 +941,75 @@ class IBKRResearchToolbox:
             return position
         return None
 
-    def _connect(self, *, client_id: int | None = None):
+    @staticmethod
+    def _new_ib():
         from ib_insync import IB
 
-        ib = IB()
+        return IB()
+
+    def _connect_authenticated(self, *, client_id: int):
+        ib = self._new_ib()
         ib.RequestTimeout = self.timeout_seconds
-        selected_client_id = (
-            random.randint(self.client_id_min, self.client_id_max)
-            if client_id is None
-            else int(client_id)
-        )
-        ib.connect(
-            self.host,
-            self.port,
-            clientId=selected_client_id,
-            timeout=self.timeout_seconds,
-        )
-        if not ib.isConnected():
-            raise ConnectionError("IBKR paper Gateway connection failed")
-        accounts = ib.managedAccounts()
-        if len(accounts) != 1 or not str(accounts[0]).upper().startswith("DU"):
-            ib.disconnect()
-            raise PermissionError("single DU paper account identity required")
-        if self.expected_account_hash is None:
-            ib.disconnect()
-            raise PermissionError("expected paper account identity hash is required")
-        actual_hash = expected_identity_hash(str(accounts[0]))
-        if actual_hash != self.expected_account_hash:
-            ib.disconnect()
-            raise PermissionError("paper account identity mismatch")
-        return ib
+        try:
+            ib.connect(
+                self.host,
+                self.port,
+                clientId=int(client_id),
+                timeout=self.timeout_seconds,
+            )
+            if not ib.isConnected():
+                raise ConnectionError("IBKR paper Gateway connection failed")
+            accounts = ib.managedAccounts()
+            if len(accounts) != 1 or not str(accounts[0]).upper().startswith("DU"):
+                raise PermissionError("single DU paper account identity required")
+            if self.expected_account_hash is None:
+                raise PermissionError("expected paper account identity hash is required")
+            actual_hash = expected_identity_hash(str(accounts[0]))
+            if actual_hash != self.expected_account_hash:
+                raise PermissionError("paper account identity mismatch")
+            return ib
+        except Exception:
+            try:
+                ib.disconnect()
+            except Exception:
+                pass
+            raise
+
+    def _invalidate_persistent_session(self, ib: Any | None = None) -> None:
+        current = self._persistent_ib
+        if current is None or (ib is not None and current is not ib):
+            return
+        self._persistent_ib = None
+        try:
+            current.disconnect()
+        except Exception:
+            pass
+
+    def close(self) -> None:
+        with self._persistent_session_lock:
+            self._invalidate_persistent_session()
+
+    def _connect(self, *, client_id: int | None = None):
+        if client_id is not None or not self.persistent_session:
+            selected_client_id = (
+                random.randint(self.client_id_min, self.client_id_max)
+                if client_id is None
+                else int(client_id)
+            )
+            return self._connect_authenticated(client_id=selected_client_id)
+
+        self._persistent_session_lock.acquire()
+        try:
+            if self._persistent_ib is not None and not self._persistent_ib.isConnected():
+                self._invalidate_persistent_session(self._persistent_ib)
+            if self._persistent_ib is None:
+                self._persistent_ib = self._connect_authenticated(
+                    client_id=random.randint(self.client_id_min, self.client_id_max)
+                )
+            return _PersistentIBLease(self, self._persistent_ib)
+        except Exception:
+            self._persistent_session_lock.release()
+            raise
 
     @staticmethod
     def _valid_live_price(value: Any) -> bool:

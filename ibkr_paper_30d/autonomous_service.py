@@ -240,7 +240,8 @@ class AutonomousExperimentService:
         self.options_level = options_level
         self.execute_paper = execute_paper
         base_toolbox = toolbox or IBKRResearchToolbox(
-            declared_options_level=options_level
+            declared_options_level=options_level,
+            persistent_session=True,
         )
         workspace_root = Path(
             os.environ.get(

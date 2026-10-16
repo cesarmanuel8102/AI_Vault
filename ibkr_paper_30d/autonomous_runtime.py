@@ -284,7 +284,10 @@ def run_autonomous_cycle(
         timeout_seconds=timeout_seconds,
         trigger=trigger,
     )
-    toolbox = toolbox or IBKRResearchToolbox(declared_options_level=options_level)
+    toolbox = toolbox or IBKRResearchToolbox(
+        declared_options_level=options_level,
+        persistent_session=True,
+    )
     provider = provider or CodexAutonomousCLIProvider()
     if database is not None and not getattr(
         provider, "_autonomy_bootstrap_initialized", False

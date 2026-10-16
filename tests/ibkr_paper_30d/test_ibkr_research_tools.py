@@ -14,6 +14,7 @@ from ibkr_paper_30d.ibkr_research_tools import (
     capability_evidence_from_broker_checks,
     resolve_position_execution_contract,
 )
+from ibkr_paper_30d.ibkr_readonly import expected_identity_hash
 
 
 def trade():
@@ -113,6 +114,105 @@ class FakeHistoricalIB:
 
     def disconnect(self):
         self.disconnected = True
+
+
+class FakePersistentSessionIB:
+    def __init__(self, *, fail_clock: bool = False):
+        self.connected = False
+        self.disconnected = False
+        self.connect_calls = 0
+        self.clock_calls = 0
+        self.fail_clock = fail_clock
+
+    def connect(self, host, port, *, clientId, timeout):
+        self.connect_calls += 1
+        self.connected = True
+
+    def isConnected(self):
+        return self.connected
+
+    def managedAccounts(self):
+        return ["DU1234567"]
+
+    def reqCurrentTime(self):
+        self.clock_calls += 1
+        if self.fail_clock:
+            raise TimeoutError("simulated transport timeout")
+        return datetime(2026, 10, 15, 18, 0, tzinfo=timezone.utc)
+
+    def disconnect(self):
+        self.disconnected = True
+        self.connected = False
+
+
+def test_persistent_research_session_reuses_one_authenticated_connection():
+    subject = IBKRResearchToolbox(
+        expected_account_hash=expected_identity_hash("DU1234567"),
+        persistent_session=True,
+    )
+    created = []
+
+    def factory():
+        session = FakePersistentSessionIB()
+        created.append(session)
+        return session
+
+    subject._new_ib = factory
+
+    assert subject.broker_server_time_utc() == "2026-10-15T18:00:00Z"
+    assert subject.broker_server_time_utc() == "2026-10-15T18:00:00Z"
+
+    assert len(created) == 1
+    assert created[0].connect_calls == 1
+    assert created[0].clock_calls == 2
+    assert created[0].disconnected is False
+
+
+def test_persistent_research_session_reconnects_after_transport_timeout():
+    subject = IBKRResearchToolbox(
+        expected_account_hash=expected_identity_hash("DU1234567"),
+        persistent_session=True,
+    )
+    created = []
+
+    def factory():
+        session = FakePersistentSessionIB(fail_clock=not created)
+        created.append(session)
+        return session
+
+    subject._new_ib = factory
+
+    with pytest.raises(TimeoutError, match="simulated transport timeout"):
+        subject.broker_server_time_utc()
+
+    assert created[0].disconnected is True
+    assert subject.broker_server_time_utc() == "2026-10-15T18:00:00Z"
+    assert len(created) == 2
+    assert created[1].disconnected is False
+
+
+def test_explicit_writer_client_bypasses_persistent_research_session():
+    subject = IBKRResearchToolbox(
+        expected_account_hash=expected_identity_hash("DU1234567"),
+        persistent_session=True,
+    )
+    created = []
+
+    def factory():
+        session = FakePersistentSessionIB()
+        created.append(session)
+        return session
+
+    subject._new_ib = factory
+
+    research = subject._connect()
+    research.disconnect()
+    writer = subject._connect(client_id=19761)
+    writer.disconnect()
+
+    assert len(created) == 2
+    assert created[0].disconnected is False
+    assert created[1].disconnected is True
 
 
 def test_open_orders_are_global_canonical_snapshots():

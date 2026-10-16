@@ -1642,6 +1642,7 @@ def _write_epoch_manifest(
             IBKRResearchToolbox(
                 declared_options_level=4,
                 expected_account_hash=preflight.expected_account_hash,
+                persistent_session=True,
             ),
             workspace,
         )
