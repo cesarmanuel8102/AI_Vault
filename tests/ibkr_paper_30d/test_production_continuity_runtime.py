@@ -1176,6 +1176,57 @@ def test_broker_evidence_collector_refreshes_server_time_after_pacing_window(
     assert broker.current_time_calls == 2
 
 
+@pytest.mark.parametrize("failure", ["transient", "persistent", "identity", "slow_retry"])
+def test_broker_clock_read_retry_never_extends_evidence_freshness(tmp_path, failure):
+    path = tmp_path / "authority.sqlite3"
+    with Database.open(path) as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+    current = [NOW]
+
+    class Broker:
+        all_order_visibility = True
+        current_time_calls = 0
+
+        def reqCurrentTime(self):
+            self.current_time_calls += 1
+            if failure == "identity":
+                raise PermissionError("identity failure must not be retried")
+            if self.current_time_calls == 1 or failure == "persistent":
+                current[0] += timedelta(seconds=16)
+                raise TimeoutError("authenticated server clock read timed out")
+            if failure == "slow_retry":
+                current[0] += timedelta(seconds=16)
+            return current[0]
+
+        @staticmethod
+        def managedAccounts():
+            return ["DU123456"]
+
+    broker = Broker()
+    collect = _broker_evidence_collector(path, now_utc=lambda: current[0])
+    raw = {"open_orders": [], "positions": [], "executions": []}
+    if failure in {"persistent", "identity"}:
+        with pytest.raises(PermissionError if failure == "identity" else TimeoutError):
+            collect(broker, SimpleNamespace(), raw)
+        with Database.open(path) as db:
+            assert db.execute("SELECT COUNT(*) FROM state_events").fetchone()[0] == 0
+        assert broker.current_time_calls == (1 if failure == "identity" else 2)
+    else:
+        evidence = collect(broker, SimpleNamespace(), raw)
+        assert broker.current_time_calls == 2
+        assert evidence.broker_time_utc == current[0]
+        assert evidence.collected_at_utc == NOW
+        assert evidence.fresh_until_utc == NOW + timedelta(seconds=30)
+        if failure == "slow_retry":
+            assert evidence.fresh_until_utc < current[0]
+        else:
+            current[0] += timedelta(seconds=1)
+            again = collect(broker, SimpleNamespace(), raw)
+            assert again.broker_time_utc == evidence.broker_time_utc
+            assert broker.current_time_calls == 2
+
+
 def test_default_day1_dependencies_have_concrete_continuity_factories() -> None:
     dependencies = _default_dependencies()
 

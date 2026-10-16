@@ -1597,8 +1597,14 @@ def _broker_evidence_collector(
             broker_time = last_broker_time
             broker_time_collected_at = last_broker_time_collected_at
         else:
-            broker_time = broker.reqCurrentTime()
-            broker_time_collected_at = collected
+            for read_attempt in range(2):
+                try:
+                    broker_time = broker.reqCurrentTime()
+                    break
+                except TimeoutError:
+                    if read_attempt == 1:
+                        raise
+            broker_time_collected_at = clock()
             last_broker = broker
             last_broker_time = broker_time
             last_broker_time_collected_at = broker_time_collected_at
@@ -1642,7 +1648,8 @@ def _broker_evidence_collector(
             EventRepository(db).append("BROKER_AUTHORITY_OBSERVATION_V1", payload)
         return ProductionBrokerEvidence(
             **body,
-            fresh_until_utc=broker_time_collected_at + timedelta(seconds=30),
+            # Clock retry must not renew the age of the other broker evidence.
+            fresh_until_utc=min(collected, broker_time_collected_at) + timedelta(seconds=30),
             evidence_sha256=evidence_sha256,
         )
 
