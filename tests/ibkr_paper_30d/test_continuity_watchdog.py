@@ -936,7 +936,9 @@ def test_health_cleared_immediately_on_timeout(tmp_path):
         # _last_successful_poll_utc was cleared by the first failure
         assert watchdog.is_healthy(NOW) is False
         block.set()
-        time.sleep(0.05)
+        deadline = time.monotonic() + 1.0
+        while not watchdog.is_healthy(NOW) and time.monotonic() < deadline:
+            time.sleep(0.01)
         assert watchdog.is_healthy(NOW) is True
     finally:
         block.set()

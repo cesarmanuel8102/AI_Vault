@@ -283,10 +283,16 @@ class AutonomyToolbox:
             raise RuntimeError("BROKER_SERVER_TIME_UNAVAILABLE")
         return server_time_utc
 
-    def account_reconciliation_snapshot(self) -> dict[str, Any]:
+    def account_reconciliation_snapshot(
+        self,
+        *,
+        observed_at_utc: str | None = None,
+    ) -> dict[str, Any]:
         """Delegate the host-only account cash observation to the IBKR adapter."""
 
-        return self.base.account_reconciliation_snapshot()
+        return self.base.account_reconciliation_snapshot(
+            observed_at_utc=observed_at_utc
+        )
 
     def validate_proposal(
         self,

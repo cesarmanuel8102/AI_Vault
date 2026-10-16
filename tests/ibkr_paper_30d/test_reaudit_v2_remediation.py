@@ -54,8 +54,8 @@ def _bundle() -> TraderInputBundle:
     )
 
 
-class _AccountSummaryBroker:
-    def accountSummary(self):
+class _AccountValuesBroker:
+    def accountValues(self):
         return [
             SimpleNamespace(tag="NetLiquidation", value="50000"),
             SimpleNamespace(tag="TotalCashValue", value="49000"),
@@ -66,6 +66,9 @@ class _AccountSummaryBroker:
             SimpleNamespace(tag="InitMarginReq", value="5000"),
             SimpleNamespace(tag="MaintMarginReq", value="4000"),
         ]
+
+    def accountSummary(self):
+        pytest.fail("model-facing account state must not start accountSummary")
 
     def reqCurrentTime(self):
         return datetime(2026, 9, 21, 14, 0, tzinfo=timezone.utc)
@@ -79,7 +82,7 @@ def test_account_state_research_never_exposes_global_broker_balances(monkeypatch
         expected_account_hash="a" * 64,
         declared_options_level=4,
     )
-    broker = _AccountSummaryBroker()
+    broker = _AccountValuesBroker()
     monkeypatch.setattr(toolbox, "_connect", lambda: broker)
 
     result = toolbox._account_state({})

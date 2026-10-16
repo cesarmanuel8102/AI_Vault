@@ -30,6 +30,10 @@ class BrokerBaseToolbox:
     def _private_broker_operation(self):
         return "must-not-be-exposed"
 
+    def account_reconciliation_snapshot(self, *, observed_at_utc=None):
+        self.calls.append(("account_reconciliation_snapshot", observed_at_utc))
+        return {"observed_at_utc": observed_at_utc}
+
     def validate_proposal(self, proposal, bundle, *, ib=None):
         self.calls.append(("validate_proposal", proposal, bundle, ib))
         return self.proposal_validation
@@ -92,6 +96,16 @@ def test_host_clock_delegates_narrow_query_without_account_summary():
         raise AssertionError("host clock must not request balances")
     base._account_state = forbidden_summary
     assert AutonomyToolbox(base, None).broker_server_time_utc() == SERVER_TIME
+
+
+def test_account_reconciliation_forwards_authenticated_broker_time():
+    base = BrokerBaseToolbox()
+    toolbox = AutonomyToolbox(base, None)
+
+    assert toolbox.account_reconciliation_snapshot(
+        observed_at_utc=SERVER_TIME
+    ) == {"observed_at_utc": SERVER_TIME}
+    assert base.calls == [("account_reconciliation_snapshot", SERVER_TIME)]
 
 
 def test_toolbox_has_no_generic_delegation_or_private_surface_expansion() -> None:

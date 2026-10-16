@@ -399,13 +399,19 @@ def test_v4_reconciliation_uses_independent_broker_cash_not_ledger_copy() -> Non
     subject = object.__new__(AutonomousStateBuilder)
     subject.sleeve_ledger_store = ledger_store
     subject.contract_ownership_store = SimpleNamespace(projection=lambda: Ownership())
-    subject.toolbox = SimpleNamespace(
-        account_reconciliation_snapshot=lambda: {
+    observed_times = []
+
+    def account_reconciliation_snapshot(*, observed_at_utc):
+        observed_times.append(observed_at_utc)
+        return {
             "paper_only": True,
             "account_identity_sha256": "b" * 64,
             "currency_balances": [{"currency": "USD", "amount": "1001"}],
             "broker_snapshot_sha256": "c" * 64,
         }
+
+    subject.toolbox = SimpleNamespace(
+        account_reconciliation_snapshot=account_reconciliation_snapshot
     )
     subject._latest_executions = []
     subject._transition_cash_classifications = lambda: {
@@ -414,13 +420,17 @@ def test_v4_reconciliation_uses_independent_broker_cash_not_ledger_copy() -> Non
     }
 
     receipt = subject._sync_and_reconcile_v4(
-        account={"paper_account": True},
+        account={
+            "paper_account": True,
+            "server_time_utc": "2026-10-16T04:28:12Z",
+        },
         broker_positions={"positions": []},
         open_orders={"open_orders": []},
     )
 
     assert receipt["status"] == "BLOCK"
     assert "AGGREGATE_CURRENCY_MISMATCH:USD" in receipt["reason_codes"]
+    assert observed_times == ["2026-10-16T04:28:12Z"]
 
 
 def open_order_trade():

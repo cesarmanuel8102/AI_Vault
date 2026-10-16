@@ -457,7 +457,11 @@ class AutonomousStateBuilder:
         ledgers = self.sleeve_ledger_store.project_all()
         ledger_payload = self._dump(ledgers)
         try:
-            account_snapshot = dict(self.toolbox.account_reconciliation_snapshot())
+            account_snapshot = dict(
+                self.toolbox.account_reconciliation_snapshot(
+                    observed_at_utc=str(account["server_time_utc"])
+                )
+            )
         except Exception as exc:
             raise AutonomousStateBuildError("V4_BROKER_CASH_EVIDENCE_REQUIRED") from exc
         account_snapshot.update(self._transition_cash_classifications())

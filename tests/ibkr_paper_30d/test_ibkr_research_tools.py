@@ -287,6 +287,25 @@ def test_account_reconciliation_snapshot_resynchronizes_missing_ledger_cash_once
     assert fake.disconnected is True
 
 
+def test_account_reconciliation_snapshot_reuses_authenticated_broker_time():
+    subject = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    fake = FakeAccountSummaryIB()
+    fake.reqCurrentTime = lambda: pytest.fail(
+        "cash reconciliation must not request a second broker clock"
+    )
+    subject._connect = lambda: fake
+
+    snapshot = subject.account_reconciliation_snapshot(
+        observed_at_utc="2026-10-16T04:28:12Z"
+    )
+
+    assert snapshot["observed_at_utc"] == "2026-10-16T04:28:12Z"
+    assert snapshot["currency_balances"] == [
+        {"currency": "USD", "amount": "1000500.31"},
+    ]
+    assert fake.disconnected is True
+
+
 def test_account_state_does_not_request_slow_account_summary():
     subject = IBKRResearchToolbox(expected_account_hash="a" * 64)
     fake = FakeAccountSummaryIB()

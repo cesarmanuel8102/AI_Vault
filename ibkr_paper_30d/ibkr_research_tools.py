@@ -1391,7 +1391,11 @@ class IBKRResearchToolbox:
                 values = list(account_values())
         return values
 
-    def account_reconciliation_snapshot(self) -> dict[str, Any]:
+    def account_reconciliation_snapshot(
+        self,
+        *,
+        observed_at_utc: str | None = None,
+    ) -> dict[str, Any]:
         """Collect host-only PAPER cash evidence, never exposed as a model tool."""
 
         ib = self._connect()
@@ -1400,12 +1404,29 @@ class IBKRResearchToolbox:
             usd_cash_balance = self._raw_usd_cash_balance(synchronized_values)
             if usd_cash_balance is None:
                 raise ValueError("BROKER_RAW_USD_CASH_BALANCE_REQUIRED")
-            server_time = ib.reqCurrentTime()
-            observed_at = (
-                server_time.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
-                if hasattr(server_time, "astimezone")
-                else str(server_time)
-            )
+            if observed_at_utc is None:
+                server_time = ib.reqCurrentTime()
+                observed_at = (
+                    server_time.astimezone(timezone.utc)
+                    .isoformat()
+                    .replace("+00:00", "Z")
+                    if hasattr(server_time, "astimezone")
+                    else str(server_time)
+                )
+            else:
+                authenticated_time = datetime.fromisoformat(
+                    str(observed_at_utc).replace("Z", "+00:00")
+                )
+                if (
+                    authenticated_time.tzinfo is None
+                    or authenticated_time.utcoffset() is None
+                ):
+                    raise ValueError("BROKER_SERVER_TIME_INVALID")
+                observed_at = (
+                    authenticated_time.astimezone(timezone.utc)
+                    .isoformat()
+                    .replace("+00:00", "Z")
+                )
             body = {
                 "paper_only": True,
                 "account_identity_sha256": self.expected_account_hash,
