@@ -12,7 +12,7 @@ from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
 from ibkr_paper_30d.production_continuity_runtime import _ProductionCanaryStore
 
 
-@pytest.mark.parametrize("proof", ["complete", "missing", "stale", "wrong_request", "ledger_nonflat"])
+@pytest.mark.parametrize("proof", ["complete", "complete_delayed", "partial_release", "missing", "stale", "wrong_request", "ledger_nonflat"])
 def test_completed_lifecycle_releases_only_verified_flat_resources(tmp_path, proof):
     from datetime import datetime, timedelta, timezone
     from ibkr_paper_30d.canary_authority import CanaryBrokerLifecycleReceipt, CanaryLifecycleRecorder
@@ -24,7 +24,7 @@ def test_completed_lifecycle_releases_only_verified_flat_resources(tmp_path, pro
     accounting(request, facts(request, flat=proof != "ledger_nonflat"))
     recorder = CanaryLifecycleRecorder(request.canary_id, request.account_identity_sha256,
         request.product_family.sha256, request.canonical_contract.sha256)
-    now = datetime.now(timezone.utc) - timedelta(seconds=120 if proof == "stale" else 1)
+    now = datetime.now(timezone.utc) - timedelta(seconds=120 if proof in {"stale", "partial_release", "complete_delayed"} else 1)
     steps = recorder.sequence[:-1] if proof == "missing" else recorder.sequence
     for ordinal, step in enumerate(steps):
         receipt = CanaryBrokerLifecycleReceipt(canary_id=request.canary_id, step=step, endpoint="PAPER",
@@ -37,17 +37,37 @@ def test_completed_lifecycle_releases_only_verified_flat_resources(tmp_path, pro
         store.persist_receipt(receipt)
     result = CanaryExecutionResult(status="PASS", request_sha256="0" * 64 if proof == "wrong_request" else request.sha256,
         projection=recorder.projection(), broker_write_boundary_crossed=True)
-    if proof == "complete":
+    if proof == "complete_delayed":
+        from unittest.mock import patch
+        class AtCompletion(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return now + timedelta(seconds=1)
+        with patch("datetime.datetime", AtCompletion):
+            accounting.release_verified_lifecycle_resources(request, result)
+        with Database.open(path) as db:
+            ledger_count = db.execute("SELECT COUNT(*) FROM sleeve_ledger_events").fetchone()[0]
+            ownership_count = db.execute("SELECT COUNT(*) FROM contract_ownership_events").fetchone()[0]
+        accounting.release_verified_lifecycle_resources(request, result)
+        with Database.open(path) as db:
+            assert db.execute("SELECT COUNT(*) FROM sleeve_ledger_events").fetchone()[0] == ledger_count
+            assert db.execute("SELECT COUNT(*) FROM contract_ownership_events").fetchone()[0] == ownership_count
+    elif proof == "complete":
         accounting.release_verified_lifecycle_resources(request, result)
         accounting.release_verified_lifecycle_resources(request, result)
     else:
+        if proof == "partial_release":
+            with Database.open(path) as db, db.transaction():
+                SleeveLedgerStore(db).release_liability_in_transaction(
+                    CapitalSleeve.CONTINUOUS_SLEEVE, amount_usd=request.maximum_loss_usd,
+                    reservation_key=request.execution_key, broker_snapshot_sha256="f" * 64)
         with pytest.raises(ValueError):
             accounting.release_verified_lifecycle_resources(request, result)
     with Database.open(path) as db:
         reserved = SleeveLedgerStore(db).project(CapitalSleeve.CONTINUOUS_SLEEVE).reserved_liability_usd
         owned = ContractOwnershipStore(db).projection().owner_of(request.canonical_contract.sha256)
-        assert reserved == (0 if proof == "complete" else request.maximum_loss_usd)
-        assert (owned is None) is (proof == "complete")
+        assert reserved == (0 if proof in {"complete", "complete_delayed", "partial_release"} else request.maximum_loss_usd)
+        assert (owned is None) is (proof in {"complete", "complete_delayed"})
 
 
 @pytest.mark.parametrize("proof", ["complete", "missing", "nonflat", "wrong_hash"])

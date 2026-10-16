@@ -33,8 +33,7 @@ class CanaryBrokerAccounting:
                 raise ValueError("CANARY_RESOURCE_RELEASE_PROOF_REQUIRED")
             terminal = CanaryBrokerLifecycleReceipt.model_validate(receipts[-1]["receipt"])
             if (terminal.open_orders != 0 or terminal.positions != 0
-                    or (not no_fill and not terminal.economics_reconciled)
-                    or not 0 <= (datetime.now(timezone.utc) - terminal.observed_at_utc).total_seconds() < 60):
+                    or (not no_fill and not terminal.economics_reconciled)):
                 raise ValueError("CANARY_RESOURCE_RELEASE_NOT_FRESH_FLAT")
             ledger = SleeveLedgerStore(db)
             if any(position.contract_identity_sha256 == request.canonical_contract.sha256 and position.quantity != 0
@@ -55,20 +54,41 @@ class CanaryBrokerAccounting:
                     or (not no_fill and not any(event["event_type"] in {"CANARY_ECONOMICS_IMPORTED", "BROKER_NET_PNL_RECONCILED"}
                         and event.get("request_sha256") == request.sha256 for event in prior))):
                 raise ValueError("CANARY_RESOURCE_RELEASE_LEDGER_NOT_FLAT")
-            if not any(event["event_type"] == "LIABILITY_RELEASED" and event.get("reservation_key") == request.execution_key for event in prior):
+            ownership = ContractOwnershipStore(db)
+            owned = ownership.projection().owner_of(request.canonical_contract.sha256)
+            release_evidence = ReleaseEvidence(
+                position_quantity=Decimal(0), open_order_count=0, pending_execution_count=0,
+                child_position_count=0, fill_ambiguity=False,
+                broker_snapshot_sha256=terminal.broker_snapshot_sha256,
+                expected_broker_snapshot_sha256=terminal.broker_snapshot_sha256,
+                broker_snapshot_fresh=True)
+            liability_released = any(
+                event["event_type"] == "LIABILITY_RELEASED"
+                and event.get("reservation_key") == request.execution_key
+                and event.get("sleeve") == CapitalSleeve.CONTINUOUS_SLEEVE.value
+                and Decimal(str(event.get("amount_usd"))) == request.maximum_loss_usd
+                and event.get("broker_snapshot_sha256") == terminal.broker_snapshot_sha256
+                for event in prior)
+            ownership_released = owned is None and any(
+                event["event_type"] == "RELEASED"
+                and event.get("contract_identity_sha256") == request.canonical_contract.sha256
+                and event.get("group_id") == proposal.contract_group.group_id
+                and event.get("sleeve") == CapitalSleeve.CONTINUOUS_SLEEVE.value
+                and event.get("release_evidence_sha256") == release_evidence.sha256
+                for event in ownership._events())
+            # A verified prior release is a no-op, not new broker authority.
+            if liability_released and ownership_released:
+                return
+            if not 0 <= (datetime.now(timezone.utc) - terminal.observed_at_utc).total_seconds() < 60:
+                raise ValueError("CANARY_RESOURCE_RELEASE_NOT_FRESH_FLAT")
+            if not liability_released:
                 ledger.release_liability_in_transaction(CapitalSleeve.CONTINUOUS_SLEEVE,
                     amount_usd=request.maximum_loss_usd, reservation_key=request.execution_key,
                     broker_snapshot_sha256=terminal.broker_snapshot_sha256)
-            ownership = ContractOwnershipStore(db)
-            owned = ownership.projection().owner_of(request.canonical_contract.sha256)
             if owned is not None:
                 if owned.sleeve is not CapitalSleeve.CONTINUOUS_SLEEVE or owned.group_id != proposal.contract_group.group_id:
                     raise ValueError("CANARY_RESOURCE_RELEASE_OWNER_MISMATCH")
-                ownership.release_in_transaction(request.canonical_contract.sha256, ReleaseEvidence(
-                    position_quantity=Decimal(0), open_order_count=0, pending_execution_count=0,
-                    child_position_count=0, fill_ambiguity=False,
-                    broker_snapshot_sha256=terminal.broker_snapshot_sha256,
-                    expected_broker_snapshot_sha256=terminal.broker_snapshot_sha256, broker_snapshot_fresh=True))
+                ownership.release_in_transaction(request.canonical_contract.sha256, release_evidence)
 
     @staticmethod
     def recognizes_fill(db: Database, observed: dict[str, Any]) -> bool:
