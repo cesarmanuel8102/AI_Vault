@@ -1362,7 +1362,11 @@ class IBKRResearchToolbox:
         ib = self._connect()
         try:
             usd_cash_balance: Decimal | None = None
-            for item in ib.accountSummary():
+            account_values = getattr(ib, "accountValues", None)
+            synchronized_values = (
+                account_values() if callable(account_values) else ib.accountSummary()
+            )
+            for item in synchronized_values:
                 if (
                     str(getattr(item, "tag", "")) != "$LEDGER-CashBalance"
                     or str(getattr(item, "currency", "") or "").upper() != "USD"

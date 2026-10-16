@@ -66,7 +66,7 @@ class FakeAccountSummaryIB:
     def __init__(self):
         self.disconnected = False
 
-    def accountSummary(self):
+    def accountValues(self):
         return [
             SimpleNamespace(tag="TotalCashValue", currency="BASE", value="999999"),
             SimpleNamespace(tag="TotalCashValue", currency="USD", value="1000000"),
@@ -77,6 +77,9 @@ class FakeAccountSummaryIB:
             SimpleNamespace(tag="$LEDGER-CashBalance", currency="EUR", value="125.50"),
             SimpleNamespace(tag="BuyingPower", currency="USD", value="9999999"),
         ]
+
+    def accountSummary(self):
+        pytest.fail("cash reconciliation must use connection-synchronized account values")
 
     def reqCurrentTime(self):
         return datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc)
@@ -252,7 +255,7 @@ def test_account_reconciliation_snapshot_reads_raw_usd_cash_without_fx_translati
 def test_account_reconciliation_snapshot_requires_raw_usd_cash():
     subject = IBKRResearchToolbox(expected_account_hash="a" * 64)
     fake = FakeAccountSummaryIB()
-    fake.accountSummary = lambda: [
+    fake.accountValues = lambda: [
         SimpleNamespace(tag="TotalCashValue", currency="USD", value="1000000"),
     ]
     subject._connect = lambda: fake
