@@ -512,7 +512,14 @@ class IBKRResearchToolbox:
             or self._decimal_or_none(feasibility.get("minCommission"))
             or Decimal("0")
         )
-        if effective_maximum_loss + max(commission, Decimal("0")) > equity:
+        cash_debit_computed = feasibility.get("what_if_status") == "BROKER_CASH_DEBIT_COMPUTED"
+        # The authenticated cash debit already contains the entry commission.
+        loss_after_costs = (
+            max(effective_maximum_loss, Decimal(str(feasibility["maximum_cash_debit_usd"])))
+            if cash_debit_computed
+            else effective_maximum_loss + max(commission, Decimal("0"))
+        )
+        if loss_after_costs > equity:
             return ProposalValidation(
                 passed=False,
                 reason_codes=("EXPERIMENT_CAPITAL_BOUNDARY_AFTER_COSTS",),
@@ -525,7 +532,7 @@ class IBKRResearchToolbox:
             broker_evidence={
                 "risk_policy": risk.model_dump(mode="json"),
                 "structural_loss_floor": str(structural_floor),
-                "effective_maximum_loss": str(effective_maximum_loss),
+                "effective_maximum_loss": str(loss_after_costs if cash_debit_computed else effective_maximum_loss),
                 "what_if": model_feasibility,
             },
         )
