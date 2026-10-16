@@ -1337,9 +1337,12 @@ class IBKRResearchToolbox:
         """
         ib = self._connect()
         try:
-            # Touch accountSummary so connection/account health is exercised, but
-            # never surface global balance fields to the model-facing tool result.
-            ib.accountSummary()
+            # Exercise the connection-synchronized cache without starting the
+            # slower account-summary request. Global balances remain redacted.
+            account_values = getattr(ib, "accountValues", None)
+            if not callable(account_values):
+                raise ValueError("BROKER_ACCOUNT_VALUES_REQUIRED")
+            account_values()
             server_time = ib.reqCurrentTime()
             server_time_utc = (
                 server_time.astimezone(__import__("datetime").timezone.utc).isoformat().replace("+00:00", "Z")
@@ -1356,26 +1359,45 @@ class IBKRResearchToolbox:
         finally:
             ib.disconnect()
 
+    @staticmethod
+    def _raw_usd_cash_balance(values: Any) -> Decimal | None:
+        balance: Decimal | None = None
+        for item in values:
+            if (
+                str(getattr(item, "tag", "")) != "$LEDGER-CashBalance"
+                or str(getattr(item, "currency", "") or "").upper() != "USD"
+            ):
+                continue
+            value = Decimal(str(getattr(item, "value", "")))
+            if not value.is_finite():
+                raise ValueError("BROKER_CASH_BALANCE_INVALID")
+            balance = value
+        return balance
+
+    def _synchronized_account_values(self, ib: Any) -> list[Any]:
+        account_values = getattr(ib, "accountValues", None)
+        if not callable(account_values):
+            raise ValueError("BROKER_ACCOUNT_VALUES_REQUIRED")
+        values = list(account_values())
+        if self._raw_usd_cash_balance(values) is not None:
+            return values
+
+        refresh = getattr(ib, "reqAccountUpdates", None)
+        managed_accounts = getattr(ib, "managedAccounts", None)
+        if callable(refresh) and callable(managed_accounts):
+            accounts = list(managed_accounts() or [])
+            if len(accounts) == 1:
+                refresh(str(accounts[0]))
+                values = list(account_values())
+        return values
+
     def account_reconciliation_snapshot(self) -> dict[str, Any]:
         """Collect host-only PAPER cash evidence, never exposed as a model tool."""
 
         ib = self._connect()
         try:
-            usd_cash_balance: Decimal | None = None
-            account_values = getattr(ib, "accountValues", None)
-            synchronized_values = (
-                account_values() if callable(account_values) else ib.accountSummary()
-            )
-            for item in synchronized_values:
-                if (
-                    str(getattr(item, "tag", "")) != "$LEDGER-CashBalance"
-                    or str(getattr(item, "currency", "") or "").upper() != "USD"
-                ):
-                    continue
-                value = Decimal(str(getattr(item, "value", "")))
-                if not value.is_finite():
-                    raise ValueError("BROKER_CASH_BALANCE_INVALID")
-                usd_cash_balance = value
+            synchronized_values = self._synchronized_account_values(ib)
+            usd_cash_balance = self._raw_usd_cash_balance(synchronized_values)
             if usd_cash_balance is None:
                 raise ValueError("BROKER_RAW_USD_CASH_BALANCE_REQUIRED")
             server_time = ib.reqCurrentTime()

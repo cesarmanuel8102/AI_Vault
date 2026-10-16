@@ -252,6 +252,53 @@ def test_account_reconciliation_snapshot_reads_raw_usd_cash_without_fx_translati
     assert fake.disconnected is True
 
 
+def test_account_reconciliation_snapshot_resynchronizes_missing_ledger_cash_once():
+    subject = IBKRResearchToolbox(expected_account_hash="a" * 64)
+
+    class DelayedLedgerIB(FakeAccountSummaryIB):
+        def __init__(self):
+            super().__init__()
+            self.refresh_calls = []
+
+        def accountValues(self):
+            if not self.refresh_calls:
+                return [
+                    SimpleNamespace(
+                        tag="TotalCashValue", currency="USD", value="1000000"
+                    )
+                ]
+            return super().accountValues()
+
+        def managedAccounts(self):
+            return ["DU1234567"]
+
+        def reqAccountUpdates(self, account):
+            self.refresh_calls.append(account)
+
+    fake = DelayedLedgerIB()
+    subject._connect = lambda: fake
+
+    snapshot = subject.account_reconciliation_snapshot()
+
+    assert snapshot["currency_balances"] == [
+        {"currency": "USD", "amount": "1000500.31"},
+    ]
+    assert fake.refresh_calls == ["DU1234567"]
+    assert fake.disconnected is True
+
+
+def test_account_state_does_not_request_slow_account_summary():
+    subject = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    fake = FakeAccountSummaryIB()
+    subject._connect = lambda: fake
+
+    result = subject._account_state({})
+
+    assert result["success"] is True
+    assert result["server_time_utc"] == "2026-10-09T18:00:00Z"
+    assert fake.disconnected is True
+
+
 def test_account_reconciliation_snapshot_requires_raw_usd_cash():
     subject = IBKRResearchToolbox(expected_account_hash="a" * 64)
     fake = FakeAccountSummaryIB()
