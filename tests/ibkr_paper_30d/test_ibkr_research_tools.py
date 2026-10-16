@@ -163,6 +163,15 @@ def test_account_reconciliation_snapshot_requires_raw_usd_cash():
     assert fake.disconnected is True
 
 
+def test_host_clock_query_does_not_request_account_summary():
+    subject = IBKRResearchToolbox(expected_account_hash="unused")
+    fake = FakeAccountSummaryIB()
+    fake.accountSummary = lambda: pytest.fail("clock query must not fetch account balances")
+    subject._connect = lambda: fake
+    assert subject.broker_server_time_utc() == "2026-10-09T18:00:00Z"
+    assert fake.disconnected
+
+
 def test_contract_builder_accepts_canonical_nested_contract_arguments():
     subject = IBKRResearchToolbox(expected_account_hash="unused")
 

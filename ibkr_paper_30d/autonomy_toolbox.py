@@ -274,8 +274,11 @@ class AutonomyToolbox:
     def broker_server_time_utc(self) -> str:
         """Return only the broker clock required by host-side safety checks."""
 
-        payload = self.base._account_state({})
-        server_time_utc = payload.get("server_time_utc")
+        clock_reader = getattr(self.base, "broker_server_time_utc", None)
+        server_time_utc = (
+            clock_reader() if callable(clock_reader)
+            else self.base._account_state({}).get("server_time_utc")
+        )
         if not isinstance(server_time_utc, str) or not server_time_utc:
             raise RuntimeError("BROKER_SERVER_TIME_UNAVAILABLE")
         return server_time_utc

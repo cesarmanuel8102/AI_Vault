@@ -423,8 +423,10 @@ def test_run_once_watchdog_progresses_while_provider_cycle_is_blocked(tmp_path):
     ]
 
 
-def test_watchdog_health_blocks_only_new_exposure_and_alerts_transitions(tmp_path):
+@pytest.mark.parametrize("recovering", [False, True])
+def test_watchdog_health_blocks_only_new_exposure_and_alerts_transitions(tmp_path, recovering):
     watchdog = FakeContinuityWatchdog(healthy=False)
+    watchdog.is_temporarily_unavailable = lambda: recovering
     critical_alert_reporter = Mock()
     with Database.open(tmp_path / "watchdog-health.sqlite3") as db:
         service = AutonomousExperimentService(
@@ -461,7 +463,29 @@ def test_watchdog_health_blocks_only_new_exposure_and_alerts_transitions(tmp_pat
         "CONTINUITY_WATCHDOG_HEALTH_FAILURE",
         "CONTINUITY_WATCHDOG_HEALTH_RECOVERED",
     ]
-    critical_alert_reporter.assert_called_once_with("CONTINUITY_WATCHDOG_STALE")
+    if recovering:
+        critical_alert_reporter.assert_not_called()
+    else:
+        critical_alert_reporter.assert_called_once_with("CONTINUITY_WATCHDOG_STALE")
+
+
+@pytest.mark.parametrize("error", [TimeoutError, ConnectionError])
+def test_host_broker_clock_outage_is_recoverable_without_local_time_fallback(tmp_path, error):
+    from ibkr_paper_30d.autonomous_state import TransientBrokerStateBuildError
+    clock = Clock()
+    with Database.open(tmp_path / "broker-clock-timeout.sqlite3") as db:
+        service = make_service(db, clock)
+        service.toolbox.broker_server_time_utc = Mock(side_effect=error("network unavailable"))
+        with pytest.raises(TransientBrokerStateBuildError, match="BROKER_TIME_UNAVAILABLE_FRESH"):
+            service._read_broker_time()
+
+
+def test_host_broker_clock_identity_error_is_not_recoverable(tmp_path):
+    with Database.open(tmp_path / "broker-clock-identity.sqlite3") as db:
+        service = make_service(db, Clock())
+        service.toolbox.broker_server_time_utc = Mock(side_effect=PermissionError("identity mismatch"))
+        with pytest.raises(PermissionError, match="identity mismatch"):
+            service._read_broker_time()
 
 
 def test_run_once_stops_watchdog_when_cycle_raises(tmp_path):

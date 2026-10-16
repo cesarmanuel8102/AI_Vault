@@ -251,8 +251,11 @@ def test_recertification_missing_observation_fails_closed():
 
 
 def test_watchdog_recovers_observation_after_alarm_without_clearing_kill(tmp_path):
+    from ibkr_paper_30d.experiment_control import KillSwitchStore
     path = tmp_path / "watchdog.sqlite3"
     _initialize(path)
+    with Database.open(path) as db:
+        KillSwitchStore(db).set("KILL_SWITCH_TRIGGERED", reason="unrelated existing incident", actor="TEST")
     recovered = threading.Event()
     reports = []
     attempts = []
@@ -273,9 +276,12 @@ def test_watchdog_recovers_observation_after_alarm_without_clearing_kill(tmp_pat
         while not watchdog.is_healthy(execution.NOW) and time.monotonic() < deadline:
             time.sleep(0.01)
         assert watchdog.is_healthy(execution.NOW)
-        assert reports == ["CONTINUITY_WATCHDOG_FAILED"]
+        assert reports == []
     finally:
         watchdog.stop(2)
+    with Database.open(path) as db:
+        assert KillSwitchStore(db).current() == "KILL_SWITCH_TRIGGERED"
+        assert db.execute("SELECT COUNT(*) FROM continuity_watchdog_events WHERE event_type='RECOVERY_PENDING'").fetchone()[0] == 1
 
 
 @pytest.mark.parametrize("code,message", [

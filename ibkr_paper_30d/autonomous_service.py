@@ -382,7 +382,12 @@ class AutonomousExperimentService:
         return True
 
     def _read_broker_time(self) -> datetime:
-        raw = self.toolbox.broker_server_time_utc()
+        try:
+            raw = self.toolbox.broker_server_time_utc()
+        except (TimeoutError, ConnectionError, OSError) as exc:
+            if isinstance(exc, PermissionError):
+                raise
+            raise TransientBrokerStateBuildError("BROKER_TIME_UNAVAILABLE_FRESH") from exc
         if not isinstance(raw, str) or not raw:
             raise AutonomousServiceError("broker server time unavailable")
         try:
@@ -446,7 +451,10 @@ class AutonomousExperimentService:
                         "CONTINUITY_WATCHDOG_HEALTH_FAILURE",
                         {"reason_codes": ["CONTINUITY_WATCHDOG_UNHEALTHY"]},
                     )
-                    if self.critical_alert_reporter is not None:
+                    recovering = getattr(
+                        self.continuity_watchdog, "is_temporarily_unavailable", lambda: False
+                    )()
+                    if self.critical_alert_reporter is not None and not recovering:
                         self.critical_alert_reporter("CONTINUITY_WATCHDOG_STALE")
                     self._watchdog_alert_active = True
             elif self._watchdog_alert_active:

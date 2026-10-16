@@ -154,6 +154,18 @@ class ContinuityWatchdog:
             and not poll_in_progress
         )
 
+    def is_temporarily_unavailable(self) -> bool:
+        with self._state_lock:
+            pending = (
+                self._transient_failure is not None or self._poll_in_progress
+                or self._last_successful_poll_utc is None
+            )
+            failed = self._failure is not None
+        return bool(
+            self.recover_after_failure_limit and pending and not failed
+            and self._thread is not None and self._thread.is_alive()
+        )
+
     def _append(
         self, store: ContinuityStore, event_type: str, payload: dict[str, Any]
     ) -> None:
@@ -238,12 +250,18 @@ class ContinuityWatchdog:
                     ):
                         if not self.recover_after_failure_limit:
                             raise
-                        self._report_once("CONTINUITY_WATCHDOG_FAILED")
+                        if consecutive_transient_failures == self.max_consecutive_transient_failures:
+                            self._append(store, "RECOVERY_PENDING", {
+                                "consecutive_failures": consecutive_transient_failures,
+                                "new_entries_allowed": False,
+                            })
                     self._stop.wait(
                         self._backoff_seconds(consecutive_transient_failures)
                     )
                     continue
                 except (ConnectionError, OSError) as exc:
+                    if isinstance(exc, PermissionError):
+                        raise
                     # Connection-level errors: disconnect immediately and backoff.
                     consecutive_transient_failures += 1
                     with self._state_lock:
@@ -270,7 +288,11 @@ class ContinuityWatchdog:
                     ):
                         if not self.recover_after_failure_limit:
                             raise
-                        self._report_once("CONTINUITY_WATCHDOG_FAILED")
+                        if consecutive_transient_failures == self.max_consecutive_transient_failures:
+                            self._append(store, "RECOVERY_PENDING", {
+                                "consecutive_failures": consecutive_transient_failures,
+                                "new_entries_allowed": False,
+                            })
                     self._stop.wait(
                         self._backoff_seconds(consecutive_transient_failures)
                     )

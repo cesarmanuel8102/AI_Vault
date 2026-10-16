@@ -85,6 +85,15 @@ def test_toolbox_explicitly_exposes_only_broker_server_time() -> None:
     assert "1010762" not in result
 
 
+def test_host_clock_delegates_narrow_query_without_account_summary():
+    base = BrokerBaseToolbox()
+    base.broker_server_time_utc = lambda: SERVER_TIME
+    def forbidden_summary(arguments):
+        raise AssertionError("host clock must not request balances")
+    base._account_state = forbidden_summary
+    assert AutonomyToolbox(base, None).broker_server_time_utc() == SERVER_TIME
+
+
 def test_toolbox_has_no_generic_delegation_or_private_surface_expansion() -> None:
     toolbox = AutonomyToolbox(BrokerBaseToolbox(), None)
 

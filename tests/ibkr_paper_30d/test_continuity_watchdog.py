@@ -289,6 +289,101 @@ def test_transient_broker_timeout_reconnects_and_recovers(tmp_path):
     assert reports == []
 
 
+@pytest.mark.parametrize("error", [PermissionError, RuntimeError])
+def test_recovery_mode_never_recovers_identity_or_writer_uncertainty(tmp_path, error):
+    path = tmp_path / "terminal-failure.sqlite3"
+    _initialize(path)
+    reports = []
+    def fatal_poll(*args):
+        raise error("identity mismatch or uncertain writer outcome")
+    watchdog = ContinuityWatchdog(
+        db_factory=lambda: Database.open(path), broker_factory=Broker,
+        poll_once=fatal_poll, coordinator=object(), broker_time_reader=lambda broker: NOW,
+        poll_interval_seconds=0.01, heartbeat_max_age_seconds=1,
+        recover_after_failure_limit=True, uncertainty_reporter=reports.append,
+    )
+    try:
+        watchdog.start()
+    except RuntimeError as exc:
+        assert str(exc) == "CONTINUITY_WATCHDOG_START_FAILED"
+    time.sleep(0.04)
+    watchdog.stop(2)
+    assert reports == ["CONTINUITY_WATCHDOG_FAILED"]
+    assert not watchdog.is_healthy(NOW)
+    assert not watchdog.is_temporarily_unavailable()
+
+
+def test_initial_incomplete_poll_is_not_terminal_but_has_no_authority(tmp_path):
+    path = tmp_path / "initial-poll.sqlite3"
+    _initialize(path)
+    entered, resume = threading.Event(), threading.Event()
+    def clock_reader(broker):
+        entered.set()
+        resume.wait(2)
+        return NOW
+    watchdog = ContinuityWatchdog(
+        db_factory=lambda: Database.open(path), broker_factory=Broker,
+        poll_once=lambda *args: None, coordinator=object(), broker_time_reader=clock_reader,
+        poll_interval_seconds=0.01, heartbeat_max_age_seconds=1,
+        recover_after_failure_limit=True,
+    )
+    try:
+        watchdog.start()
+        assert entered.wait(1)
+        assert not watchdog.is_healthy(NOW)
+        assert watchdog.is_temporarily_unavailable()
+    finally:
+        resume.set()
+        watchdog.stop(2)
+
+
+@pytest.mark.parametrize("error", [TimeoutError, ConnectionError])
+def test_recoverable_failure_limit_does_not_misreport_terminal_death(tmp_path, error):
+    path = tmp_path / "recover-after-limit.sqlite3"
+    _initialize(path)
+    reports = []
+    failed = threading.Event()
+    resume = threading.Event()
+    calls = 0
+
+    def read_time(broker):
+        nonlocal calls
+        calls += 1
+        if calls <= 4:
+            if calls == 4:
+                failed.set()
+            raise error("temporary PAPER outage")
+        resume.wait(1)
+        return NOW
+
+    watchdog = ContinuityWatchdog(
+        db_factory=lambda: Database.open(path), broker_factory=Broker,
+        poll_once=lambda *args: None, coordinator=object(),
+        broker_time_reader=read_time, poll_interval_seconds=0.01,
+        heartbeat_max_age_seconds=1, max_consecutive_transient_failures=3,
+        recover_after_failure_limit=True, uncertainty_reporter=reports.append,
+    )
+    watchdog._backoff_seconds = lambda count: 0.01
+    try:
+        watchdog.start()
+        assert failed.wait(2)
+        assert not watchdog.is_healthy(NOW)
+        assert reports == []
+        resume.set()
+        deadline = time.monotonic() + 2
+        while not watchdog.is_healthy(NOW) and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert watchdog.is_healthy(NOW)
+    finally:
+        resume.set()
+        watchdog.stop(2)
+    with Database.open(path) as db:
+        events = [r[0] for r in db.execute('SELECT event_type FROM continuity_watchdog_events')]
+    assert events.count("RECOVERY_PENDING") == 1
+    assert "RECOVERED" in events
+    assert "FAILED" not in events
+
+
 def test_non_executable_plan_freeze_is_alerted_without_inventing_action(tmp_path):
     path = tmp_path / "authority-frozen.sqlite3"
     _initialize(path)

@@ -1234,6 +1234,16 @@ class IBKRResearchToolbox:
             raise LookupError(f"IBKR contract not found for {spec}")
         return qualified[0]
 
+    def broker_server_time_utc(self) -> str:
+        broker = self._connect()
+        try:
+            now = broker.reqCurrentTime()
+            if not isinstance(now, datetime) or now.tzinfo is None or now.utcoffset() is None:
+                raise ValueError("BROKER_SERVER_TIME_INVALID")
+            return now.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        finally:
+            broker.disconnect()
+
     def _account_state(self, _: dict[str, Any]) -> dict[str, Any]:
         """Return broker/session context without exposing global account capital.
 
