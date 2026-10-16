@@ -207,8 +207,9 @@ class MultiUniverseRuntimeStores:
 class _PathSleeveAuthorityReservationStore:
     """Open the V4 reservation store on the writer thread for each commit."""
 
-    def __init__(self, db_path: Path) -> None:
+    def __init__(self, db_path: Path, snapshot_reader: Any) -> None:
         self.db_path = Path(db_path)
+        self.snapshot_reader = snapshot_reader
 
     def reserve(self, request: Any, broker_evidence: Any, snapshot_reader: Any) -> Any:
         from .persistence import Database
@@ -216,7 +217,9 @@ class _PathSleeveAuthorityReservationStore:
 
         with Database.open(self.db_path) as db:
             return SleeveAuthorityReservationStore(db).reserve(
-                request, broker_evidence, snapshot_reader
+                request,
+                broker_evidence,
+                lambda: self.snapshot_reader.read_in_transaction(request, db),
             )
 
 
@@ -244,7 +247,8 @@ class _ProductionSleeveAuthoritySnapshotReader:
         self.config = config
         self.current_adapter_sha256 = str(current_adapter_sha256)
 
-    def __call__(self, request: Any) -> Any:
+    def __call__(self, request: Any, *, transaction_db: Any | None = None) -> Any:
+        from contextlib import nullcontext
         from .contract_ownership import ContractOwnershipStore
         from .coordinated_model_executor import ModelExecutionOperation
         from .multi_universe_models import (
@@ -258,7 +262,12 @@ class _ProductionSleeveAuthoritySnapshotReader:
         from .sleeve_execution_authority import SleeveAuthoritySnapshot
         from .sleeve_ledger import SleeveLedgerStore
 
-        with Database.open(self.db_path) as db:
+        db_context = (
+            nullcontext(transaction_db)
+            if transaction_db is not None
+            else Database.open(self.db_path)
+        )
+        with db_context as db:
             ledger = SleeveLedgerStore(db).project(request.capital_sleeve)
             if not ledger.initialized:
                 raise ProductionRuntimeConfigurationError("SLEEVE_NOT_INITIALIZED")
@@ -426,6 +435,11 @@ class _ProductionSleeveAuthoritySnapshotReader:
                 ),
                 continuity_plan_sha256=request.continuity_plan_sha256,
             )
+
+    def read_in_transaction(self, request: Any, db: Any) -> Any:
+        """Re-read every DB authority through the reservation transaction."""
+
+        return self(request, transaction_db=db)
 
 
 def _sleeve_broker_evidence_collector(
@@ -1993,13 +2007,15 @@ def create_authoritative_writer(
         expected_approved_head=_current_head(Path(config.repo_root)),
     )
     effective_session_factory = validation_broker_factory or session_factory
-    sleeve_reservation_store = (
-        _PathSleeveAuthorityReservationStore(Path(db_path)) if v4_active else None
-    )
     sleeve_snapshot_reader = (
         _ProductionSleeveAuthoritySnapshotReader(
             Path(db_path), config, str(current_adapter_sha256 or "")
         )
+        if v4_active
+        else None
+    )
+    sleeve_reservation_store = (
+        _PathSleeveAuthorityReservationStore(Path(db_path), sleeve_snapshot_reader)
         if v4_active
         else None
     )

@@ -674,6 +674,49 @@ def test_v4_writer_factory_wires_path_scoped_sleeve_authority(
     )
 
 
+def test_path_scoped_sleeve_reservation_reuses_transaction_database(
+    tmp_path, monkeypatch
+) -> None:
+    from ibkr_paper_30d import sleeve_execution_authority
+    from ibkr_paper_30d.production_continuity_runtime import (
+        _PathSleeveAuthorityReservationStore,
+    )
+
+    db_path = tmp_path / "runtime.sqlite3"
+    with Database.open(db_path):
+        pass
+
+    marker = object()
+    observed = {}
+
+    class FakeReservationStore:
+        def __init__(self, db):
+            self.db = db
+
+        def reserve(self, request, broker_evidence, snapshot_reader):
+            with self.db.transaction():
+                return snapshot_reader()
+
+    class SnapshotReader:
+        def read_in_transaction(self, request, db):
+            observed["request"] = request
+            observed["same_db"] = db.connection.in_transaction
+            db.execute("SELECT 1").fetchone()
+            return marker
+
+    monkeypatch.setattr(
+        sleeve_execution_authority,
+        "SleeveAuthorityReservationStore",
+        FakeReservationStore,
+    )
+    store = _PathSleeveAuthorityReservationStore(db_path, SnapshotReader())
+
+    result = store.reserve(object(), {}, lambda: pytest.fail("legacy reader used"))
+
+    assert result is marker
+    assert observed["same_db"] is True
+
+
 def test_bag_sleeve_evidence_resolves_every_leg_from_broker() -> None:
     from ibkr_paper_30d.contract_ownership import canonical_contract_identity
     from ibkr_paper_30d.production_continuity_runtime import (
