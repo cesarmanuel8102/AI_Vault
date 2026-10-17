@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+import sqlite3
 import socket
 import threading
 import time
@@ -1491,6 +1492,8 @@ class _LockHeartbeat:
             name="ibkr-paper-launch-lock-heartbeat",
             daemon=True,
         )
+        self.sqlite_contention_attempts = 3
+        self.sqlite_contention_retry_seconds = min(interval_seconds, 1.0)
 
     def start(self) -> None:
         self.thread.start()
@@ -1514,15 +1517,25 @@ class _LockHeartbeat:
 
     def _run(self) -> None:
         while not self.stop_event.wait(self.interval_seconds):
-            try:
-                with self.dependencies.database_factory(self.config.db_path) as db:
-                    result = self.dependencies.lock_factory(db).heartbeat(self.receipt)
-                if result.accepted is not True:
-                    self._stop_service("EXECUTION_LOCK_HEARTBEAT_REJECTED")
+            for attempt in range(self.sqlite_contention_attempts):
+                try:
+                    with self.dependencies.database_factory(self.config.db_path) as db:
+                        result = self.dependencies.lock_factory(db).heartbeat(self.receipt)
+                    if result.accepted is not True:
+                        self._stop_service("EXECUTION_LOCK_HEARTBEAT_REJECTED")
+                        return
+                    break
+                except sqlite3.OperationalError as exc:
+                    contention = "locked" in str(exc).lower() or "busy" in str(exc).lower()
+                    final_attempt = attempt + 1 >= self.sqlite_contention_attempts
+                    if not contention or final_attempt:
+                        self._stop_service("EXECUTION_LOCK_HEARTBEAT_FAILED")
+                        return
+                    if self.stop_event.wait(self.sqlite_contention_retry_seconds):
+                        return
+                except Exception:
+                    self._stop_service("EXECUTION_LOCK_HEARTBEAT_FAILED")
                     return
-            except Exception:
-                self._stop_service("EXECUTION_LOCK_HEARTBEAT_FAILED")
-                return
 
 
 @dataclass(frozen=True)

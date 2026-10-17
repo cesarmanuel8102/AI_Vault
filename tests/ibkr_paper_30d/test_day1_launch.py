@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import sqlite3
 import time
 from dataclasses import asdict, dataclass
 from dataclasses import replace
@@ -2742,6 +2743,104 @@ def test_rejected_lock_heartbeat_stops_service_and_records_owner_action(
         (
             "OWNER_ACTION_REQUIRED",
             {"reason_codes": ["EXECUTION_LOCK_HEARTBEAT_REJECTED"]},
+        )
+    ]
+
+
+def test_lock_heartbeat_retries_transient_sqlite_contention(
+    tmp_path: Path, monkeypatch
+) -> None:
+    ctx = passing_context(tmp_path)
+    service = Mock()
+    evidence: list[tuple[str, dict[str, object]]] = []
+    database_opens = 0
+    accepted = SimpleNamespace(accepted=True, reason="ACCEPTED")
+
+    class AcceptedHeartbeat:
+        def heartbeat(self, receipt):
+            return accepted
+
+    def database_factory(path):
+        nonlocal database_opens
+        database_opens += 1
+        if database_opens == 1:
+            raise sqlite3.OperationalError("database is locked")
+        return Database.open(path)
+
+    ctx.dependencies.database_factory = database_factory
+    ctx.dependencies.lock_factory = lambda _db: AcceptedHeartbeat()
+    monkeypatch.setattr(
+        launch_module,
+        "write_launch_evidence",
+        lambda _config, event_type, payload: evidence.append((event_type, payload)),
+    )
+    worker = launch_module._LockHeartbeat(
+        config=ctx.config,
+        dependencies=ctx.dependencies,
+        receipt=SimpleNamespace(),
+        service=service,
+        interval_seconds=0.01,
+    )
+
+    worker.start()
+    deadline = time.time() + 1.0
+    while database_opens < 2 and time.time() < deadline:
+        time.sleep(0.01)
+    worker.stop()
+
+    assert database_opens >= 2
+    assert not service.stop.called
+    assert worker.failure_code is None
+    assert evidence == []
+
+
+@pytest.mark.parametrize(
+    ("message", "expected_opens"),
+    [
+        ("database is locked", 3),
+        ("disk I/O error", 1),
+    ],
+)
+def test_lock_heartbeat_fails_closed_after_unrecoverable_database_error(
+    tmp_path: Path, monkeypatch, message: str, expected_opens: int
+) -> None:
+    ctx = passing_context(tmp_path)
+    service = Mock()
+    evidence: list[tuple[str, dict[str, object]]] = []
+    database_opens = 0
+
+    def database_factory(path):
+        nonlocal database_opens
+        database_opens += 1
+        raise sqlite3.OperationalError(message)
+
+    ctx.dependencies.database_factory = database_factory
+    monkeypatch.setattr(
+        launch_module,
+        "write_launch_evidence",
+        lambda _config, event_type, payload: evidence.append((event_type, payload)),
+    )
+    worker = launch_module._LockHeartbeat(
+        config=ctx.config,
+        dependencies=ctx.dependencies,
+        receipt=SimpleNamespace(),
+        service=service,
+        interval_seconds=0.01,
+    )
+
+    worker.start()
+    deadline = time.time() + 1.0
+    while not service.stop.called and time.time() < deadline:
+        time.sleep(0.01)
+    worker.stop()
+
+    assert service.stop.called
+    assert worker.failure_code == "EXECUTION_LOCK_HEARTBEAT_FAILED"
+    assert database_opens == expected_opens
+    assert evidence == [
+        (
+            "OWNER_ACTION_REQUIRED",
+            {"reason_codes": ["EXECUTION_LOCK_HEARTBEAT_FAILED"]},
         )
     ]
 
