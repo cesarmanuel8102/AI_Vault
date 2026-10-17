@@ -6,6 +6,7 @@ from decimal import Decimal
 import pytest
 
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.multi_universe_authority import (
     MultiUniverseAuthorityError,
     MultiUniverseAuthorityStore,
@@ -22,7 +23,6 @@ from ibkr_paper_30d.production_continuity_runtime import (
     _database_sleeve_authority_sha256,
 )
 from ibkr_paper_30d.successor_schema import install_successor_schema_v2
-
 
 NOW = datetime(2026, 10, 10, 17, 0, tzinfo=timezone.utc)
 
@@ -106,10 +106,16 @@ def test_exact_authorities_persist_and_recover_idempotently(tmp_path) -> None:
         assert store.sleeve_authority(CapitalSleeve.REGULAR_SLEEVE) == regular
         assert store.sleeve_authority(CapitalSleeve.CONTINUOUS_SLEEVE) == continuous
         assert store.economic_authorization() == economic
-        assert db.execute("SELECT COUNT(*) FROM sleeve_authority_events").fetchone()[0] == 2
-        assert db.execute(
-            "SELECT COUNT(*) FROM owner_economic_risk_authorization_events"
-        ).fetchone()[0] == 1
+        assert (
+            db.execute("SELECT COUNT(*) FROM sleeve_authority_events").fetchone()[0]
+            == 2
+        )
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM owner_economic_risk_authorization_events"
+            ).fetchone()[0]
+            == 1
+        )
 
 
 def test_changed_authority_conflicts_without_partial_append(tmp_path) -> None:
@@ -123,13 +129,18 @@ def test_changed_authority_conflicts_without_partial_append(tmp_path) -> None:
             sleeve_authorities=(regular, continuous),
             economic_authorization=economic,
         )
-        with pytest.raises(MultiUniverseAuthorityError, match="AUTHORITY_TARGET_MISMATCH"):
+        with pytest.raises(
+            MultiUniverseAuthorityError, match="AUTHORITY_TARGET_MISMATCH"
+        ):
             store.bind(
                 target=target,
                 sleeve_authorities=(changed, continuous),
                 economic_authorization=economic,
             )
-        assert db.execute("SELECT COUNT(*) FROM sleeve_authority_events").fetchone()[0] == 2
+        assert (
+            db.execute("SELECT COUNT(*) FROM sleeve_authority_events").fetchone()[0]
+            == 2
+        )
 
 
 def test_runtime_authority_hash_is_derived_from_database_not_caller(tmp_path) -> None:
@@ -142,9 +153,79 @@ def test_runtime_authority_hash_is_derived_from_database_not_caller(tmp_path) ->
             economic_authorization=economic,
         )
 
-        actual = _database_sleeve_authority_sha256(
-            db, CapitalSleeve.REGULAR_SLEEVE
-        )
+        actual = _database_sleeve_authority_sha256(db, CapitalSleeve.REGULAR_SLEEVE)
 
     assert actual == regular.sha256
     assert actual != "f" * 64
+
+
+def _append_sleeve_event(db, *, event_type: str, payload: dict) -> None:
+    previous = db.execute(
+        "SELECT event_sha256 FROM sleeve_authority_events "
+        "ORDER BY sequence DESC LIMIT 1"
+    ).fetchone()[0]
+    event_sha = sha256_json({"previous_event_sha256": previous, "payload": payload})
+    db.execute(
+        "INSERT INTO sleeve_authority_events("
+        "event_id,sleeve,event_type,payload_json,payload_sha256,"
+        "previous_event_sha256,event_sha256,created_at_utc) "
+        "VALUES(?,?,?,?,?,?,?,?)",
+        (
+            f"event-{event_type}",
+            CapitalSleeve.CONTINUOUS_SLEEVE.value,
+            event_type,
+            canonical_bytes(payload).decode("utf-8"),
+            sha256_json(payload),
+            previous,
+            event_sha,
+            NOW.isoformat(),
+        ),
+    )
+
+
+def test_authority_projection_survives_valid_execution_reservation_event(
+    tmp_path,
+) -> None:
+    regular, continuous, economic = _authorities()
+    target = _target(regular, continuous, economic)
+    with _open(tmp_path / "reservation.sqlite3") as db:
+        store = MultiUniverseAuthorityStore(db)
+        store.bind(
+            target=target,
+            sleeve_authorities=(regular, continuous),
+            economic_authorization=economic,
+        )
+        _append_sleeve_event(
+            db,
+            event_type="EXECUTION_AUTHORITY_RESERVED",
+            payload={
+                "schema": "SLEEVE_EXECUTION_RESERVATION_V1",
+                "execution_key": "model:cycle:NEW_TRADE:proposal",
+            },
+        )
+
+        assert store.sleeve_authority(CapitalSleeve.REGULAR_SLEEVE) == regular
+        assert store.sleeve_authority(CapitalSleeve.CONTINUOUS_SLEEVE) == continuous
+        assert store.economic_authorization() == economic
+
+
+def test_authority_projection_rejects_unknown_auxiliary_event(tmp_path) -> None:
+    regular, continuous, economic = _authorities()
+    target = _target(regular, continuous, economic)
+    with _open(tmp_path / "unknown-event.sqlite3") as db:
+        store = MultiUniverseAuthorityStore(db)
+        store.bind(
+            target=target,
+            sleeve_authorities=(regular, continuous),
+            economic_authorization=economic,
+        )
+        _append_sleeve_event(
+            db,
+            event_type="UNRECOGNIZED_AUTHORITY_EVENT",
+            payload={"schema": "UNRECOGNIZED_AUTHORITY_SCHEMA_V1"},
+        )
+
+        with pytest.raises(
+            MultiUniverseAuthorityError, match="AUTHORITY_PROJECTION_AMBIGUOUS"
+        ):
+            store.sleeve_authority(CapitalSleeve.CONTINUOUS_SLEEVE)

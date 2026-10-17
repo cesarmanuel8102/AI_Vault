@@ -38,38 +38,57 @@ class MultiUniverseAuthorityStore:
     """Persist and replay immutable authority without trusting launch callers."""
 
     SLEEVE_SCHEMA = "SLEEVE_AUTHORITY_EVENT_V1"
+    SLEEVE_EXECUTION_SCHEMA = "SLEEVE_EXECUTION_RESERVATION_V1"
+    SLEEVE_EXECUTION_EVENT_TYPES = frozenset(
+        {
+            "EXECUTION_AUTHORITY_RESERVED",
+            "TERMINAL_RELEASE_OBSERVED",
+            "TERMINAL_RELEASE_RESET",
+            "TERMINAL_RESERVATION_RELEASED",
+        }
+    )
     ECONOMIC_SCHEMA = "OWNER_ECONOMIC_RISK_AUTHORIZATION_EVENT_V1"
 
     def __init__(self, db: Database):
         verify_multi_universe_schema_v4(db)
         self.db = db
 
-    def _events(self, table: str, schema: str) -> list[dict[str, Any]]:
+    def _events(self, table: str) -> list[dict[str, Any]]:
         rows = self.db.execute(
-            f"SELECT payload_json,payload_sha256,previous_event_sha256,"  # noqa: S608
+            f"SELECT event_type,payload_json,payload_sha256,"  # noqa: S608
+            "previous_event_sha256,"
             f"event_sha256 FROM {table} ORDER BY sequence"
         ).fetchall()
         events: list[dict[str, Any]] = []
         previous: str | None = None
-        for payload_json, payload_sha, stored_previous, event_sha in rows:
+        for (
+            stored_event_type,
+            payload_json,
+            payload_sha,
+            stored_previous,
+            event_sha,
+        ) in rows:
             try:
                 payload = json.loads(str(payload_json))
             except (TypeError, json.JSONDecodeError) as exc:
-                raise MultiUniverseAuthorityError("AUTHORITY_PROJECTION_AMBIGUOUS") from exc
+                raise MultiUniverseAuthorityError(
+                    "AUTHORITY_PROJECTION_AMBIGUOUS"
+                ) from exc
             normalized_previous = (
                 None if stored_previous is None else str(stored_previous)
             )
             if (
-                payload.get("schema") != schema
-                or sha256_json(payload) != str(payload_sha)
+                sha256_json(payload) != str(payload_sha)
                 or normalized_previous != previous
-                or sha256_json(
-                    {"previous_event_sha256": previous, "payload": payload}
-                )
+                or sha256_json({"previous_event_sha256": previous, "payload": payload})
                 != str(event_sha)
+                or (
+                    payload.get("event_type") is not None
+                    and payload.get("event_type") != str(stored_event_type)
+                )
             ):
                 raise MultiUniverseAuthorityError("AUTHORITY_PROJECTION_AMBIGUOUS")
-            events.append(payload)
+            events.append({**payload, "event_type": str(stored_event_type)})
             previous = str(event_sha)
         return events
 
@@ -92,9 +111,7 @@ class MultiUniverseAuthorityStore:
             f"SELECT event_sha256 FROM {table} ORDER BY sequence DESC LIMIT 1"  # noqa: S608
         ).fetchone()
         previous = None if row is None else str(row[0])
-        event_sha = sha256_json(
-            {"previous_event_sha256": previous, "payload": body}
-        )
+        event_sha = sha256_json({"previous_event_sha256": previous, "payload": body})
         self.db.execute(
             f"INSERT INTO {table}(event_id,{authority_column},event_type,"  # noqa: S608
             "payload_json,payload_sha256,previous_event_sha256,event_sha256,"
@@ -148,15 +165,18 @@ class MultiUniverseAuthorityStore:
         dict[CapitalSleeve, SleeveAuthorityDefinition],
         OwnerEconomicRiskAuthorization | None,
     ]:
-        sleeve_events = self._events(
-            "sleeve_authority_events", self.SLEEVE_SCHEMA
-        )
-        economic_events = self._events(
-            "owner_economic_risk_authorization_events", self.ECONOMIC_SCHEMA
-        )
+        sleeve_events = self._events("sleeve_authority_events")
+        economic_events = self._events("owner_economic_risk_authorization_events")
         authorities: dict[CapitalSleeve, SleeveAuthorityDefinition] = {}
         for event in sleeve_events:
-            if event.get("event_type") != "SLEEVE_AUTHORITY_BOUND":
+            event_type = event.get("event_type")
+            schema = event.get("schema")
+            if (
+                schema == self.SLEEVE_EXECUTION_SCHEMA
+                and event_type in self.SLEEVE_EXECUTION_EVENT_TYPES
+            ):
+                continue
+            if schema != self.SLEEVE_SCHEMA or event_type != "SLEEVE_AUTHORITY_BOUND":
                 raise MultiUniverseAuthorityError("AUTHORITY_PROJECTION_AMBIGUOUS")
             try:
                 authority = SleeveAuthorityDefinition.model_validate(
@@ -177,7 +197,10 @@ class MultiUniverseAuthorityStore:
         economic: OwnerEconomicRiskAuthorization | None = None
         if economic_events:
             event = economic_events[0]
-            if event.get("event_type") != "ECONOMIC_RISK_AUTHORIZATION_BOUND":
+            if (
+                event.get("schema") != self.ECONOMIC_SCHEMA
+                or event.get("event_type") != "ECONOMIC_RISK_AUTHORIZATION_BOUND"
+            ):
                 raise MultiUniverseAuthorityError("AUTHORITY_PROJECTION_AMBIGUOUS")
             try:
                 economic = OwnerEconomicRiskAuthorization.model_validate(
@@ -218,10 +241,14 @@ class MultiUniverseAuthorityStore:
         self._validate_target(target, regular, continuous, economic_authorization)
         current, current_economic = self._current()
         if current or current_economic is not None:
-            if current != {
-                CapitalSleeve.REGULAR_SLEEVE: regular,
-                CapitalSleeve.CONTINUOUS_SLEEVE: continuous,
-            } or current_economic != economic_authorization:
+            if (
+                current
+                != {
+                    CapitalSleeve.REGULAR_SLEEVE: regular,
+                    CapitalSleeve.CONTINUOUS_SLEEVE: continuous,
+                }
+                or current_economic != economic_authorization
+            ):
                 raise MultiUniverseAuthorityError("AUTHORITY_BINDING_CONFLICT")
             return self._receipt(regular, continuous, economic_authorization, True)
         for authority in (regular, continuous):
