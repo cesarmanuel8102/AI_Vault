@@ -14,14 +14,15 @@ from ibkr_paper_30d.multi_universe_transition import (
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.successor_schema import install_successor_schema_v2
 
-
 OLD_HEAD = "1" * 40
 NEW_HEAD = "2" * 40
 SECOND_HEAD = "4" * 40
 
 
 @pytest.mark.parametrize("invalid_hash", [False, True])
-def test_current_cash_uses_phase_bound_release_not_old_supervision(tmp_path, invalid_hash):
+def test_current_cash_uses_phase_bound_release_not_old_supervision(
+    tmp_path, invalid_hash
+):
     db, coordinator, target = _coordinator(tmp_path)
     try:
         bound = coordinator.advance(
@@ -29,7 +30,8 @@ def test_current_cash_uses_phase_bound_release_not_old_supervision(tmp_path, inv
             _phase_evidence(TransitionPhase.SUPERVISION_BOUND),
         )
         coordinator.authorize_runtime_release(
-            target, approved_git_head=NEW_HEAD,
+            target,
+            approved_git_head=NEW_HEAD,
             evidence=_release_evidence(
                 transition_phase=TransitionPhase.SUPERVISION_BOUND.value,
                 supervision_phase_event_sha256=bound.phase_event_sha256,
@@ -41,16 +43,20 @@ def test_current_cash_uses_phase_bound_release_not_old_supervision(tmp_path, inv
             _phase_evidence(TransitionPhase.CANARY_EXCLUSIVE),
         )
         current = _cash_classification_evidence()
-        current["classified_non_experiment_currency_balances"][0]["amount"] = "253880.1802"
+        current["classified_non_experiment_currency_balances"][0][
+            "amount"
+        ] = "253880.1802"
         classifications = {
-            key: value for key, value in current.items()
+            key: value
+            for key, value in current.items()
             if key != "cash_classification_sha256"
         }
         current["cash_classification_sha256"] = (
             "0" * 64 if invalid_hash else sha256_json(classifications)
         )
         coordinator.authorize_runtime_release(
-            target, approved_git_head=SECOND_HEAD,
+            target,
+            approved_git_head=SECOND_HEAD,
             evidence=_release_evidence(
                 current_head=SECOND_HEAD,
                 transition_phase=TransitionPhase.CANARY_EXCLUSIVE.value,
@@ -59,7 +65,10 @@ def test_current_cash_uses_phase_bound_release_not_old_supervision(tmp_path, inv
             ),
         )
         if invalid_hash:
-            with pytest.raises(MultiUniverseTransitionError, match="ACTIVE_CASH_CLASSIFICATION_REQUIRED"):
+            with pytest.raises(
+                MultiUniverseTransitionError,
+                match="ACTIVE_CASH_CLASSIFICATION_REQUIRED",
+            ):
                 current_cash_classifications(db)
         else:
             assert current_cash_classifications(db) == classifications
@@ -140,6 +149,28 @@ def _release_evidence(**updates: object) -> dict[str, object]:
         "new_execution_count": 0,
         "broker_write_count": 0,
         "release_artifact_sha256": "0" * 64,
+    }
+    evidence.update(updates)
+    return evidence
+
+
+def _open_order_continuation_evidence(**updates: object) -> dict[str, object]:
+    orders = [
+        {
+            "order_ref": "codex-ibkr-paper-30d-a-ba24881193d7",
+            "ibkr_order_id": 728,
+            "perm_id": 1772352245,
+            "contract_id": 498989721,
+            "action": "BUY",
+            "quantity": "1.7",
+            "registry_payload_sha256": "a" * 64,
+        }
+    ]
+    evidence = {
+        "open_order_count": 1,
+        "continuity_open_orders_verified": True,
+        "continuity_open_orders": orders,
+        "continuity_open_orders_sha256": sha256_json(orders),
     }
     evidence.update(updates)
     return evidence
@@ -411,6 +442,43 @@ def test_runtime_release_blocks_unsafe_broker_or_host_evidence(tmp_path) -> None
                 assert str(exc) == reason
             else:
                 raise AssertionError(reason)
+    finally:
+        db.close()
+
+
+def test_runtime_release_allows_exact_registered_open_order_continuation(
+    tmp_path,
+) -> None:
+    db, coordinator, target = _coordinator(tmp_path)
+    try:
+        receipt = coordinator.authorize_runtime_release(
+            target,
+            approved_git_head=NEW_HEAD,
+            evidence=_release_evidence(**_open_order_continuation_evidence()),
+        )
+
+        assert receipt["status"] == "PASS"
+        assert coordinator.effective_approved_git_head(target) == NEW_HEAD
+    finally:
+        db.close()
+
+
+def test_runtime_release_blocks_tampered_open_order_continuation(tmp_path) -> None:
+    db, coordinator, target = _coordinator(tmp_path)
+    try:
+        with pytest.raises(
+            MultiUniverseTransitionError,
+            match="RUNTIME_RELEASE_OPEN_ORDER_CONTINUITY_INVALID",
+        ):
+            coordinator.authorize_runtime_release(
+                target,
+                approved_git_head=NEW_HEAD,
+                evidence=_release_evidence(
+                    **_open_order_continuation_evidence(
+                        continuity_open_orders_sha256="f" * 64
+                    )
+                ),
+            )
     finally:
         db.close()
 

@@ -15,7 +15,6 @@ from .persistence import Database
 from .repositories import utc_now
 from .types import new_uuid7
 
-
 _PHASES = tuple(TransitionPhase)
 
 
@@ -77,14 +76,15 @@ class MultiUniverseTransitionCoordinator:
             try:
                 payload = json.loads(str(payload_json))
             except (TypeError, json.JSONDecodeError) as exc:
-                raise MultiUniverseTransitionError("TRANSITION_PROJECTION_AMBIGUOUS") from exc
+                raise MultiUniverseTransitionError(
+                    "TRANSITION_PROJECTION_AMBIGUOUS"
+                ) from exc
             if (
                 payload.get("target_sha256") != target.sha256
                 or sha256_json(payload) != str(payload_sha)
-                or (None if stored_previous is None else str(stored_previous)) != previous
-                or sha256_json(
-                    {"previous_event_sha256": previous, "payload": payload}
-                )
+                or (None if stored_previous is None else str(stored_previous))
+                != previous
+                or sha256_json({"previous_event_sha256": previous, "payload": payload})
                 != str(event_sha)
                 or payload.get("phase") != str(phase)
             ):
@@ -139,9 +139,7 @@ class MultiUniverseTransitionCoordinator:
             "evidence": dict(evidence),
             "evidence_sha256": sha256_json(dict(evidence)),
         }
-        event_sha = sha256_json(
-            {"previous_event_sha256": previous, "payload": payload}
-        )
+        event_sha = sha256_json({"previous_event_sha256": previous, "payload": payload})
         self.db.execute(
             "INSERT INTO successor_transition_events("
             "event_id,transition_id,phase,event_type,payload_json,payload_sha256,"
@@ -171,15 +169,77 @@ class MultiUniverseTransitionCoordinator:
         text = str(value or "")
         return len(text) == 40 and all(char in "0123456789abcdef" for char in text)
 
+    @classmethod
+    def _open_order_continuation_valid(cls, evidence: Mapping[str, Any]) -> bool:
+        orders = evidence.get("continuity_open_orders")
+        count = evidence.get("open_order_count")
+        if not isinstance(count, int) or isinstance(count, bool) or count <= 0:
+            return False
+        if not isinstance(orders, list) or len(orders) != count:
+            return False
+        if sha256_json(orders) != evidence.get("continuity_open_orders_sha256"):
+            return False
+        order_refs: set[str] = set()
+        order_ids: set[int] = set()
+        perm_ids: set[int] = set()
+        for order in orders:
+            if not isinstance(order, Mapping):
+                return False
+            order_ref = str(order.get("order_ref") or "")
+            order_id = order.get("ibkr_order_id")
+            perm_id = order.get("perm_id")
+            contract_id = order.get("contract_id")
+            try:
+                quantity = Decimal(str(order.get("quantity")))
+            except (InvalidOperation, ValueError):
+                return False
+            if (
+                not order_ref.startswith("codex-ibkr-paper-30d-")
+                or not isinstance(order_id, int)
+                or isinstance(order_id, bool)
+                or order_id <= 0
+                or not isinstance(perm_id, int)
+                or isinstance(perm_id, bool)
+                or perm_id <= 0
+                or not isinstance(contract_id, int)
+                or isinstance(contract_id, bool)
+                or contract_id <= 0
+                or str(order.get("action") or "") not in {"BUY", "SELL"}
+                or not quantity.is_finite()
+                or quantity <= 0
+                or not cls._sha256_value(order.get("registry_payload_sha256"))
+                or order_ref in order_refs
+                or order_id in order_ids
+                or perm_id in perm_ids
+            ):
+                return False
+            order_refs.add(order_ref)
+            order_ids.add(order_id)
+            perm_ids.add(perm_id)
+        return True
+
     @staticmethod
     def _validate_runtime_release_evidence(
         target: TransitionTarget,
         approved_git_head: str,
         evidence: Mapping[str, Any],
     ) -> None:
+        open_order_count = evidence.get("open_order_count")
+        if open_order_count != 0:
+            if evidence.get("continuity_open_orders_verified") is not True:
+                raise MultiUniverseTransitionError("RUNTIME_RELEASE_BROKER_NOT_FLAT")
+            if not MultiUniverseTransitionCoordinator._open_order_continuation_valid(
+                evidence
+            ):
+                raise MultiUniverseTransitionError(
+                    "RUNTIME_RELEASE_OPEN_ORDER_CONTINUITY_INVALID"
+                )
         checks = (
             (evidence.get("owner_authorized") is True, "OWNER_AUTHORIZATION_REQUIRED"),
-            (bool(str(evidence.get("owner_sid") or "").strip()), "OWNER_AUTHORIZATION_REQUIRED"),
+            (
+                bool(str(evidence.get("owner_sid") or "").strip()),
+                "OWNER_AUTHORIZATION_REQUIRED",
+            ),
             (
                 evidence.get("account_identity_sha256")
                 == target.account_identity_sha256,
@@ -206,8 +266,7 @@ class MultiUniverseTransitionCoordinator:
             (evidence.get("tracked_tree_clean") is True, "TRACKED_TREE_DIRTY"),
             (evidence.get("writer_count") == 0, "RUNTIME_RELEASE_WRITER_ACTIVE"),
             (
-                evidence.get("open_order_count") == 0
-                and evidence.get("new_execution_count") == 0
+                evidence.get("new_execution_count") == 0
                 and evidence.get("broker_write_count") == 0,
                 "RUNTIME_RELEASE_BROKER_NOT_FLAT",
             ),
@@ -258,9 +317,7 @@ class MultiUniverseTransitionCoordinator:
     ) -> dict[str, Any]:
         if not self._git_head_value(approved_git_head):
             raise MultiUniverseTransitionError("RUNTIME_RELEASE_HEAD_INVALID")
-        self._validate_runtime_release_evidence(
-            target, approved_git_head, evidence
-        )
+        self._validate_runtime_release_evidence(target, approved_git_head, evidence)
         with self.db.transaction():
             events = self._events(target)
             if not events:
@@ -275,11 +332,15 @@ class MultiUniverseTransitionCoordinator:
             }:
                 raise MultiUniverseTransitionError("RUNTIME_RELEASE_PHASE_INVALID")
             if current_phase is TransitionPhase.ACTIVE:
-                if (evidence.get("transition_phase") != "ACTIVE"
-                        or evidence.get("phase_event_sha256") != events[-1]["event_sha256"]
-                        or evidence.get("recertification_required") is not True
-                        or not self._sha256_value(evidence.get("current_adapter_sha256"))):
-                    raise MultiUniverseTransitionError("ACTIVE_RELEASE_RECERTIFICATION_BINDING_REQUIRED")
+                if (
+                    evidence.get("transition_phase") != "ACTIVE"
+                    or evidence.get("phase_event_sha256") != events[-1]["event_sha256"]
+                    or evidence.get("recertification_required") is not True
+                    or not self._sha256_value(evidence.get("current_adapter_sha256"))
+                ):
+                    raise MultiUniverseTransitionError(
+                        "ACTIVE_RELEASE_RECERTIFICATION_BINDING_REQUIRED"
+                    )
                 self._cash_classifications(evidence)
             if current_phase is TransitionPhase.SUPERVISION_BOUND and (
                 evidence.get("transition_phase") != current_phase.value
@@ -298,8 +359,7 @@ class MultiUniverseTransitionCoordinator:
                     ) from exc
             if current_phase is TransitionPhase.CANARY_EXCLUSIVE and (
                 evidence.get("transition_phase") != current_phase.value
-                or evidence.get("phase_event_sha256")
-                != events[-1]["event_sha256"]
+                or evidence.get("phase_event_sha256") != events[-1]["event_sha256"]
             ):
                 raise MultiUniverseTransitionError(
                     "RUNTIME_RELEASE_PHASE_BINDING_REQUIRED"
@@ -374,7 +434,9 @@ class MultiUniverseTransitionCoordinator:
     def active_recertification_release_sha256(
         self, account_sha256: str, approved_head: str, adapter_sha256: str
     ) -> str | None:
-        row = self.db.execute("SELECT payload_json FROM successor_transition_events ORDER BY sequence DESC LIMIT 1").fetchone()
+        row = self.db.execute(
+            "SELECT payload_json FROM successor_transition_events ORDER BY sequence DESC LIMIT 1"
+        ).fetchone()
         if row is None:
             return None
         target = TransitionTarget.model_validate(json.loads(str(row[0]))["target"])
@@ -384,12 +446,14 @@ class MultiUniverseTransitionCoordinator:
             return None
         release = releases[-1]
         evidence = release.get("evidence") or {}
-        if (target.account_identity_sha256 != account_sha256
-                or release.get("approved_git_head") != approved_head
-                or release.get("phase") != "ACTIVE"
-                or evidence.get("recertification_required") is not True
-                or evidence.get("current_adapter_sha256") != adapter_sha256
-                or evidence.get("phase_event_sha256") != recovered.phase_event_sha256):
+        if (
+            target.account_identity_sha256 != account_sha256
+            or release.get("approved_git_head") != approved_head
+            or release.get("phase") != "ACTIVE"
+            or evidence.get("recertification_required") is not True
+            or evidence.get("current_adapter_sha256") != adapter_sha256
+            or evidence.get("phase_event_sha256") != recovered.phase_event_sha256
+        ):
             return None
         self._validate_runtime_release_evidence(target, approved_head, evidence)
         self._cash_classifications(evidence)
@@ -440,20 +504,16 @@ class MultiUniverseTransitionCoordinator:
             result[name] = rows
         expected = evidence.get("cash_classification_sha256")
         if not cls._sha256_value(expected) or expected != sha256_json(result):
-            raise MultiUniverseTransitionError(
-                "ACTIVE_CASH_CLASSIFICATION_REQUIRED"
-            )
-        if 'cash_rounding_quantum_usd' in evidence:
-            quantum = Decimal(str(evidence['cash_rounding_quantum_usd']))
-            reference = evidence.get('raw_usd_cash_snapshot_sha256')
+            raise MultiUniverseTransitionError("ACTIVE_CASH_CLASSIFICATION_REQUIRED")
+        if "cash_rounding_quantum_usd" in evidence:
+            quantum = Decimal(str(evidence["cash_rounding_quantum_usd"]))
+            reference = evidence.get("raw_usd_cash_snapshot_sha256")
             if (
                 not quantum.is_finite()
                 or not 0 < quantum <= Decimal("0.01")
                 or not cls._sha256_value(reference)
             ):
-                raise MultiUniverseTransitionError(
-                    "CASH_ROUNDING_REFERENCE_INVALID"
-                )
+                raise MultiUniverseTransitionError("CASH_ROUNDING_REFERENCE_INVALID")
             result["cash_rounding_reference"] = {
                 "quantum_usd": str(quantum),
                 "provenance_sha256": reference,
@@ -477,17 +537,11 @@ class MultiUniverseTransitionCoordinator:
         if phase in {
             TransitionPhase.CANARY_PASS,
             TransitionPhase.RUNTIME_BOUND,
-        } and not self._sha256_value(
-            evidence.get("certified_family_set_sha256")
-        ):
-            raise MultiUniverseTransitionError(
-                "CERTIFIED_FAMILY_SET_EVIDENCE_INVALID"
-            )
+        } and not self._sha256_value(evidence.get("certified_family_set_sha256")):
+            raise MultiUniverseTransitionError("CERTIFIED_FAMILY_SET_EVIDENCE_INVALID")
         if phase is TransitionPhase.PREDECESSOR_RETIRED and (
             evidence.get("retirement_status") != "PASS"
-            or not self._sha256_value(
-                evidence.get("retirement_tombstone_sha256")
-            )
+            or not self._sha256_value(evidence.get("retirement_tombstone_sha256"))
         ):
             raise MultiUniverseTransitionError("RETIREMENT_EVIDENCE_INVALID")
         if phase is TransitionPhase.SUCCESSOR_COMMITTED and not self._sha256_value(
@@ -500,13 +554,10 @@ class MultiUniverseTransitionCoordinator:
                 evidence.get("inherited_position_projection_sha256")
             )
             or not self._sha256_value(evidence.get("ownership_projection_sha256"))
-            or evidence.get("writer_binding_sha256")
-            != target.writer_binding_sha256
+            or evidence.get("writer_binding_sha256") != target.writer_binding_sha256
             or evidence.get("new_entry_authority") is not False
         ):
-            raise MultiUniverseTransitionError(
-                "SUPERVISION_BINDING_EVIDENCE_INVALID"
-            )
+            raise MultiUniverseTransitionError("SUPERVISION_BINDING_EVIDENCE_INVALID")
         if phase is TransitionPhase.RUNTIME_BOUND and (
             evidence.get("writer_binding_sha256") != target.writer_binding_sha256
         ):
@@ -558,9 +609,7 @@ class MultiUniverseTransitionCoordinator:
             if rows:
                 first_payload = json.loads(str(rows[0][2]))
                 if first_payload.get("target_sha256") != target.sha256:
-                    raise MultiUniverseTransitionError(
-                        "TRANSITION_TARGET_CONFLICT"
-                    )
+                    raise MultiUniverseTransitionError("TRANSITION_TARGET_CONFLICT")
                 events = self._events(target)
                 if not events:
                     raise MultiUniverseTransitionError("TRANSITION_TARGET_CONFLICT")
@@ -596,9 +645,7 @@ class MultiUniverseTransitionCoordinator:
         evidence: Mapping[str, Any],
     ) -> TransitionRecoveryResult:
         if not self.db.connection.in_transaction:
-            raise MultiUniverseTransitionError(
-                "ATOMIC_TRANSITION_TRANSACTION_REQUIRED"
-            )
+            raise MultiUniverseTransitionError("ATOMIC_TRANSITION_TRANSACTION_REQUIRED")
         self._target = target
         self._validate_evidence(target, expected_phase, evidence)
         events = self._events(target)
@@ -651,9 +698,7 @@ def active_cash_classifications(db: Database) -> dict[str, list[dict[str, str]]]
         payload = json.loads(str(row[0]))
         target = TransitionTarget.model_validate(payload.get("target"))
     except Exception as exc:
-        raise MultiUniverseTransitionError(
-            "TRANSITION_PROJECTION_AMBIGUOUS"
-        ) from exc
+        raise MultiUniverseTransitionError("TRANSITION_PROJECTION_AMBIGUOUS") from exc
     recovered = MultiUniverseTransitionCoordinator(db).recover(target)
     if recovered.phase is not TransitionPhase.ACTIVE:
         raise MultiUniverseTransitionError("ACTIVE_TRANSITION_REQUIRED")
@@ -676,9 +721,7 @@ def current_cash_classifications(db: Database) -> dict[str, list[dict[str, str]]
         payload = json.loads(str(row[1]))
         target = TransitionTarget.model_validate(payload.get("target"))
     except Exception as exc:
-        raise MultiUniverseTransitionError(
-            "TRANSITION_PROJECTION_AMBIGUOUS"
-        ) from exc
+        raise MultiUniverseTransitionError("TRANSITION_PROJECTION_AMBIGUOUS") from exc
     recovered = MultiUniverseTransitionCoordinator(db).recover(target)
     if recovered.phase is TransitionPhase.ACTIVE:
         return active_cash_classifications(db)
@@ -689,9 +732,7 @@ def current_cash_classifications(db: Database) -> dict[str, list[dict[str, str]]
         TransitionPhase.RUNTIME_BOUND,
         TransitionPhase.DUAL_SLEEVE_ACTIVE,
     }:
-        raise MultiUniverseTransitionError(
-            "SUPERVISION_CASH_CLASSIFICATION_REQUIRED"
-        )
+        raise MultiUniverseTransitionError("SUPERVISION_CASH_CLASSIFICATION_REQUIRED")
     # A later phase-bound release may supersede the supervision cash evidence.
     release_row = db.execute(
         "SELECT payload_json FROM successor_transition_events "
@@ -699,7 +740,10 @@ def current_cash_classifications(db: Database) -> dict[str, list[dict[str, str]]
         "AND event_type='RUNTIME_RELEASE_AUTHORIZED' ORDER BY sequence DESC LIMIT 1",
         (target.transition_id, recovered.phase.value),
     ).fetchone()
-    if release_row is not None and recovered.phase is not TransitionPhase.SUPERVISION_BOUND:
+    if (
+        release_row is not None
+        and recovered.phase is not TransitionPhase.SUPERVISION_BOUND
+    ):
         release = json.loads(str(release_row[0]))
         evidence = release.get("evidence") or {}
         cash_keys = {
@@ -713,7 +757,9 @@ def current_cash_classifications(db: Database) -> dict[str, list[dict[str, str]]
                 or evidence.get("transition_phase") != recovered.phase.value
                 or evidence.get("phase_event_sha256") != recovered.phase_event_sha256
             ):
-                raise MultiUniverseTransitionError("RUNTIME_RELEASE_PHASE_BINDING_REQUIRED")
+                raise MultiUniverseTransitionError(
+                    "RUNTIME_RELEASE_PHASE_BINDING_REQUIRED"
+                )
             MultiUniverseTransitionCoordinator._validate_runtime_release_evidence(
                 target, str(release.get("approved_git_head") or ""), evidence
             )
@@ -730,27 +776,19 @@ def current_cash_classifications(db: Database) -> dict[str, list[dict[str, str]]
         (target.transition_id, TransitionPhase.SUPERVISION_BOUND.value),
     ).fetchall()
     if len(supervision_row) != 1 or not release_rows:
-        raise MultiUniverseTransitionError(
-            "SUPERVISION_CASH_CLASSIFICATION_REQUIRED"
-        )
+        raise MultiUniverseTransitionError("SUPERVISION_CASH_CLASSIFICATION_REQUIRED")
     try:
         release = json.loads(str(release_rows[0][0]))
     except (TypeError, json.JSONDecodeError) as exc:
-        raise MultiUniverseTransitionError(
-            "TRANSITION_PROJECTION_AMBIGUOUS"
-        ) from exc
+        raise MultiUniverseTransitionError("TRANSITION_PROJECTION_AMBIGUOUS") from exc
     evidence = release.get("evidence")
     if (
         not isinstance(evidence, Mapping)
         or release.get("phase") != TransitionPhase.SUPERVISION_BOUND.value
-        or evidence.get("transition_phase")
-        != TransitionPhase.SUPERVISION_BOUND.value
-        or evidence.get("supervision_phase_event_sha256")
-        != str(supervision_row[0][0])
+        or evidence.get("transition_phase") != TransitionPhase.SUPERVISION_BOUND.value
+        or evidence.get("supervision_phase_event_sha256") != str(supervision_row[0][0])
     ):
-        raise MultiUniverseTransitionError(
-            "SUPERVISION_CASH_CLASSIFICATION_REQUIRED"
-        )
+        raise MultiUniverseTransitionError("SUPERVISION_CASH_CLASSIFICATION_REQUIRED")
     try:
         return MultiUniverseTransitionCoordinator._cash_classifications(evidence)
     except MultiUniverseTransitionError as exc:
@@ -770,8 +808,6 @@ def require_predecessor_retired(
     if row is None:
         raise MultiUniverseTransitionError("PREDECESSOR_RETIREMENT_NOT_PROVEN")
     payload = json.loads(str(row[1]))
-    if (
-        payload.get("target_sha256") != target_sha256
-    ):
+    if payload.get("target_sha256") != target_sha256:
         raise MultiUniverseTransitionError("PREDECESSOR_RETIREMENT_NOT_PROVEN")
     return str(row[2])
