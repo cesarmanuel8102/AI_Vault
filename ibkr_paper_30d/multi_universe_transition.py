@@ -446,9 +446,18 @@ class MultiUniverseTransitionCoordinator:
         if 'cash_rounding_quantum_usd' in evidence:
             quantum = Decimal(str(evidence['cash_rounding_quantum_usd']))
             reference = evidence.get('raw_usd_cash_snapshot_sha256')
-            if not quantum.is_finite() or not 0 < quantum <= Decimal('.0001') or not cls._sha256_value(reference):
-                raise MultiUniverseTransitionError('CASH_ROUNDING_REFERENCE_INVALID')
-            result['cash_rounding_reference'] = {'quantum_usd': str(quantum), 'provenance_sha256': reference}
+            if (
+                not quantum.is_finite()
+                or not 0 < quantum <= Decimal("0.01")
+                or not cls._sha256_value(reference)
+            ):
+                raise MultiUniverseTransitionError(
+                    "CASH_ROUNDING_REFERENCE_INVALID"
+                )
+            result["cash_rounding_reference"] = {
+                "quantum_usd": str(quantum),
+                "provenance_sha256": reference,
+            }
         return result
 
     def _validate_evidence(

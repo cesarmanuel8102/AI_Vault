@@ -145,6 +145,45 @@ def test_active_phase_requires_hash_bound_external_cash_classification(tmp_path)
             coordinator.advance(TransitionPhase.ACTIVE, invalid)
 
 
+def test_cash_classification_accepts_broker_cent_reporting_quantum():
+    classifications = {
+        "classified_canary_currency_balances": [],
+        "classified_non_experiment_currency_balances": [],
+    }
+    evidence = {
+        **classifications,
+        "cash_classification_sha256": sha256_json(classifications),
+        "cash_rounding_quantum_usd": "0.01",
+        "raw_usd_cash_snapshot_sha256": "f" * 64,
+    }
+
+    result = MultiUniverseTransitionCoordinator._cash_classifications(evidence)
+
+    assert result["cash_rounding_reference"] == {
+        "quantum_usd": "0.01",
+        "provenance_sha256": "f" * 64,
+    }
+
+
+def test_cash_classification_rejects_quantum_larger_than_one_cent():
+    classifications = {
+        "classified_canary_currency_balances": [],
+        "classified_non_experiment_currency_balances": [],
+    }
+    evidence = {
+        **classifications,
+        "cash_classification_sha256": sha256_json(classifications),
+        "cash_rounding_quantum_usd": "0.0101",
+        "raw_usd_cash_snapshot_sha256": "f" * 64,
+    }
+
+    with pytest.raises(
+        MultiUniverseTransitionError,
+        match="CASH_ROUNDING_REFERENCE_INVALID",
+    ):
+        MultiUniverseTransitionCoordinator._cash_classifications(evidence)
+
+
 def test_supervision_cash_classification_is_recovered_from_bound_release(tmp_path):
     with _open(tmp_path / "supervision-cash-classification.sqlite3") as db:
         coordinator = MultiUniverseTransitionCoordinator(db)
