@@ -57,6 +57,7 @@ class ContinuityWatchdog:
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
         self._ready = threading.Event()
+        self._operational_stopped = threading.Event()
         self._state_lock = threading.Lock()
         self._last_heartbeat_utc: datetime | None = None
         self._last_successful_poll_utc: datetime | None = None
@@ -98,6 +99,7 @@ class ContinuityWatchdog:
             raise RuntimeError("CONTINUITY_WATCHDOG_ALREADY_RUNNING")
         self._stop.clear()
         self._ready.clear()
+        self._operational_stopped.clear()
         with self._state_lock:
             self._last_heartbeat_utc = None
             self._last_successful_poll_utc = None
@@ -123,7 +125,14 @@ class ContinuityWatchdog:
         thread = self._thread
         if thread is not None and thread is not threading.current_thread():
             thread.join(max(0.0, timeout_seconds))
-        stopped = thread is None or not thread.is_alive()
+        # Once the polling loop has durably recorded STOPPED, no continuity
+        # authority remains active.  A slow best-effort disconnect must not be
+        # confused with a poll that is still capable of acting on an order.
+        stopped = (
+            thread is None
+            or not thread.is_alive()
+            or self._operational_stopped.is_set()
+        )
         if not stopped:
             self._report_once("CONTINUITY_WATCHDOG_SHUTDOWN_TIMEOUT")
         return WatchdogShutdownResult(stopped=stopped, timed_out=not stopped)
@@ -328,6 +337,7 @@ class ContinuityWatchdog:
                     self._append(store, "STOPPED", {})
                 except Exception:
                     self._report_once("CONTINUITY_WATCHDOG_FAILED")
+            self._operational_stopped.set()
             if broker is not None:
                 try:
                     broker.disconnect()

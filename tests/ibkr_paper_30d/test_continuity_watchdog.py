@@ -197,6 +197,46 @@ def test_blocked_poll_shutdown_times_out_without_inventing_action(tmp_path):
     assert reports == ["CONTINUITY_WATCHDOG_SHUTDOWN_TIMEOUT"]
 
 
+def test_completed_poll_shutdown_does_not_fail_on_slow_read_only_cleanup(tmp_path):
+    path = tmp_path / "slow-cleanup.sqlite3"
+    _initialize(path)
+    cleanup_entered = threading.Event()
+    release_cleanup = threading.Event()
+    polled = threading.Event()
+    reports = []
+
+    class SlowCleanupBroker(Broker):
+        def disconnect(self):
+            cleanup_entered.set()
+            release_cleanup.wait(2)
+            super().disconnect()
+
+    def poll_once(db, broker, coordinator):
+        polled.set()
+
+    watchdog = ContinuityWatchdog(
+        db_factory=lambda: Database.open(path),
+        broker_factory=SlowCleanupBroker,
+        poll_once=poll_once,
+        coordinator=object(),
+        broker_time_reader=lambda value: NOW,
+        poll_interval_seconds=0.01,
+        heartbeat_max_age_seconds=1,
+        uncertainty_reporter=reports.append,
+    )
+
+    watchdog.start()
+    assert polled.wait(2)
+    first = watchdog.stop(0.1)
+    assert cleanup_entered.wait(2)
+    release_cleanup.set()
+    watchdog.stop(2)
+
+    assert first.stopped is True
+    assert first.timed_out is False
+    assert reports == []
+
+
 def test_poll_failure_records_failed_and_reports_uncertainty(tmp_path):
     path = tmp_path / "failed.sqlite3"
     _initialize(path)
