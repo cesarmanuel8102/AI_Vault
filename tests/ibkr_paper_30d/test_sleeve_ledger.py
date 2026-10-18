@@ -259,6 +259,53 @@ def test_broker_snapshot_projects_owned_positions_orders_fills_and_fees(tmp_path
         db.close()
 
 
+def test_broker_snapshot_recurrence_records_transition_back_to_prior_state(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    contract = canonical_contract_identity(
+        {
+            "conId": 9002,
+            "secType": "CRYPTO",
+            "currency": "USD",
+            "exchange": "PAXOS",
+            "localSymbol": "BCH.USD",
+            "multiplier": "1",
+        }
+    )
+    try:
+        store.bootstrap_regular(_carry())
+        store.bootstrap_extended()
+        ownership = ContractOwnershipStore(db)
+        ownership.claim(CapitalSleeve.EXTENDED_SLEEVE, contract)
+
+        flat_receipt = store.reconcile_broker_snapshot(
+            {"positions": [], "open_orders": [], "executions": []},
+            ownership.projection(),
+        )
+        store.reconcile_broker_snapshot(
+            {
+                "positions": [],
+                "open_orders": [
+                    {"contract_identity_sha256": contract.sha256}
+                ],
+                "executions": [],
+            },
+            ownership.projection(),
+        )
+        returned_flat_receipt = store.reconcile_broker_snapshot(
+            {"positions": [], "open_orders": [], "executions": []},
+            ownership.projection(),
+        )
+
+        state = store.project(CapitalSleeve.EXTENDED_SLEEVE)
+        assert state.open_order_count == 0
+        assert (
+            returned_flat_receipt[CapitalSleeve.EXTENDED_SLEEVE.value]
+            != flat_receipt[CapitalSleeve.EXTENDED_SLEEVE.value]
+        )
+    finally:
+        db.close()
+
+
 def test_fresh_broker_valuation_updates_pnl_without_resetting_allocation(tmp_path):
     db, store = _store(tmp_path)
     try:

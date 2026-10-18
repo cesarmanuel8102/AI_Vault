@@ -577,11 +577,13 @@ class SleeveLedgerStore:
                         for event in reversed(events)
                         if event["sleeve"] == sleeve.value
                         and event["event_type"] == "BROKER_STATE_RECONCILED"
-                        and event.get("broker_snapshot_sha256") == snapshot_sha256
                     ),
                     None,
                 )
-                if prior is not None:
+                if (
+                    prior is not None
+                    and prior.get("broker_snapshot_sha256") == snapshot_sha256
+                ):
                     receipts[sleeve.value] = str(prior["event_sha256"])
                     continue
                 data = per_sleeve[sleeve]
