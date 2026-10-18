@@ -18,6 +18,7 @@ from ibkr_paper_30d.sleeve_execution_authority import (
     SleeveExecutionAuthorityValidator,
 )
 from ibkr_paper_30d.successor_schema import install_successor_schema_v2
+from ibkr_paper_30d.trader_invocation import TraderDecision
 from test_model_execution_engine import _request
 
 NOW = datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc)
@@ -382,6 +383,51 @@ def test_missing_continuity_plan_blocks_when_snapshot_requires_it() -> None:
         _broker(request),
         _snapshot(request, continuity_required=True),
     )
+    assert "CONTINUITY_PLAN_REQUIRED" in receipt.reason_codes
+
+
+def test_cancel_owned_order_does_not_require_tradable_session_or_new_plan() -> None:
+    request = _v4_request(ModelExecutionOperation.OPEN_ORDER_ACTION)
+
+    receipt = SleeveExecutionAuthorityValidator.validate(
+        request,
+        _broker(request),
+        _snapshot(
+            request,
+            instrument_management_tradable=False,
+            continuity_required=True,
+            proposed_maximum_loss_usd=Decimal("0"),
+        ),
+    )
+
+    assert receipt.status == "PASS"
+    assert receipt.reason_codes == ()
+
+
+def test_modify_order_still_requires_manageability_and_continuity_plan() -> None:
+    request = _v4_request(ModelExecutionOperation.OPEN_ORDER_ACTION)
+    payload = request.payload.model_copy(update={"new_limit_price": Decimal("1.1")})
+    request = request.model_copy(
+        update={
+            "accepted_decision": TraderDecision.MODIFY_ORDER,
+            "payload": payload,
+            "payload_sha256": sha256_json(payload),
+        }
+    )
+
+    receipt = SleeveExecutionAuthorityValidator.validate(
+        request,
+        _broker(request),
+        _snapshot(
+            request,
+            instrument_management_tradable=False,
+            continuity_required=True,
+            proposed_maximum_loss_usd=Decimal("0"),
+        ),
+    )
+
+    assert receipt.status == "BLOCK"
+    assert "INSTRUMENT_NOT_CURRENTLY_MANAGEABLE" in receipt.reason_codes
     assert "CONTINUITY_PLAN_REQUIRED" in receipt.reason_codes
 
 

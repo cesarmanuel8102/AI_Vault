@@ -117,6 +117,10 @@ class SleeveExecutionAuthorityValidator:
             ModelExecutionOperation.OPEN_ORDER_ACTION,
             ModelExecutionOperation.POSITION_ACTION,
         }
+        risk_reducing_cancel = bool(
+            request.operation is ModelExecutionOperation.OPEN_ORDER_ACTION
+            and request.accepted_decision.value == "CANCEL_ORDER"
+        )
         if not request.input_bundle.multi_sleeve_v4_active:
             reasons.append("V4_AUTHORITY_REQUIRED")
         if request.capital_sleeve != db_snapshot.capital_sleeve:
@@ -163,7 +167,11 @@ class SleeveExecutionAuthorityValidator:
             )
             if not phase_entry_allowed or db_snapshot.entry_authority != "ACTIVE":
                 reasons.append("SUCCESSOR_NOT_ACTIVE")
-        if management and not db_snapshot.instrument_management_tradable:
+        if (
+            management
+            and not risk_reducing_cancel
+            and not db_snapshot.instrument_management_tradable
+        ):
             reasons.append("INSTRUMENT_NOT_CURRENTLY_MANAGEABLE")
         if (
             management
@@ -244,7 +252,7 @@ class SleeveExecutionAuthorityValidator:
                 > db_snapshot.equity_usd
             ):
                 reasons.append("SLEEVE_AGGREGATE_LIABILITY_EXCEEDED")
-        if db_snapshot.continuity_required and (
+        if db_snapshot.continuity_required and not risk_reducing_cancel and (
             request.continuity_plan_sha256 is None
             or request.continuity_plan_sha256 != db_snapshot.continuity_plan_sha256
         ):
