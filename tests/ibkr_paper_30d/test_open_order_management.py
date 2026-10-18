@@ -10,6 +10,7 @@ from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.open_order_management import (
     EXECUTION_CLIENT_ID,
     OpenOrderOwnershipError,
+    _contract_identity_matches,
     append_order_registry_event,
     canonical_contract_identity,
     canonical_order_contract_snapshot,
@@ -522,6 +523,54 @@ def test_registry_and_live_identity_must_resolve_exactly_one_trade(tmp_path):
 
     assert resolved.order.orderId == 41
     assert snapshot["state_sha256"] == action.observed_state_sha256
+
+
+def test_crypto_broker_right_placeholder_matches_registered_empty_right(tmp_path):
+    registered = trade()
+    registered.contract.conId = 498989721
+    registered.contract.symbol = "BCH"
+    registered.contract.localSymbol = "BCH.USD"
+    registered.contract.secType = "CRYPTO"
+    registered.contract.exchange = "PAXOS"
+    registered.contract.right = ""
+    registered.order.orderRef = "codex-ibkr-paper-30d-a-ba24881193d7"
+    registered.order.orderId = 728
+    registered.order.permId = 1772352245
+    registered.order.totalQuantity = "1.7"
+    registered.order.tif = "IOC"
+
+    live = deepcopy(registered)
+    live.contract.right = "?"
+    action = open_order_action_from_trade(live)
+    registered_snapshot = canonical_open_order(registered)
+
+    with Database.open(tmp_path / "crypto-right-placeholder.sqlite3") as db:
+        register_issuance(
+            db,
+            registered,
+            schema="EXPERIMENT_ORDER_REGISTRY_V3",
+            payload_updates={"contract": registered_snapshot["contract"]},
+        )
+        resolved, snapshot = resolve_owned_open_trade(
+            db,
+            [live],
+            action,
+            execution_client_id=EXECUTION_CLIENT_ID,
+        )
+
+    assert resolved is live
+    assert snapshot["contract"]["right"] == "?"
+
+
+def test_option_right_placeholder_does_not_match_registered_call():
+    expected = canonical_open_order(trade())["contract"]
+    expected.update({"secType": "OPT", "right": "C"})
+    actual = deepcopy(expected)
+    actual["right"] = "?"
+
+    assert _contract_identity_matches(
+        expected, actual, allow_zero_parent=False
+    ) is False
 
 
 def test_prefix_spoof_without_registry_anchor_is_blocked(tmp_path):

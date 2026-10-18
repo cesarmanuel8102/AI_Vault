@@ -288,6 +288,16 @@ def _contract_identity_matches(
         if allow_zero_parent and int(expected.get("conId") or 0) == 0:
             stable_parent_fields.remove("conId")
         return all(expected.get(key) == actual.get(key) for key in stable_parent_fields)
+    expected_sec_type = str(expected.get("secType") or "").upper()
+    actual_sec_type = str(actual.get("secType") or "").upper()
+    if (
+        expected_sec_type == actual_sec_type
+        and expected_sec_type not in {"OPT", "FOP", "WAR"}
+        and {str(expected.get("right") or ""), str(actual.get("right") or "")}
+        <= {"", "?"}
+    ):
+        expected = {**expected, "right": ""}
+        actual = {**actual, "right": ""}
     return expected == actual
 
 
