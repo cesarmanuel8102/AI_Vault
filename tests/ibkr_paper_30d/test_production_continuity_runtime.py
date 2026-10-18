@@ -2917,6 +2917,79 @@ def test_superseded_plan_reuses_only_exact_verified_broker_anchor(
     assert binding["plan_sha256"] == successor.sha256
 
 
+def test_verified_registry_binding_ignores_later_management_lifecycle_events(
+    tmp_path, continuity_plan_factory
+) -> None:
+    account_hash = expected_identity_hash("DU123456")
+    contract = {
+        "conId": 498989721,
+        "symbol": "BCH",
+        "localSymbol": "BCH.USD",
+        "secType": "CRYPTO",
+        "exchange": "PAXOS",
+        "currency": "USD",
+        "expiry": "",
+        "strike": "0",
+        "right": "",
+        "multiplier": "1",
+        "comboLegs": [],
+        "attributes": {},
+    }
+    plan = continuity_plan_factory(
+        order_binding={
+            "execution_client_id": WRITER_CLIENT_ID,
+            "account_identity_sha256": account_hash,
+            "contract_identity_sha256": sha256_json(contract),
+        }
+    )
+    broker_bound = {
+        "lifecycle_event": "BROKER_BOUND",
+        "plan_sha256": plan.sha256,
+        "order_ref": plan.order_binding.order_ref,
+        "ibkr_order_id": plan.order_binding.ibkr_order_id,
+        "perm_id": plan.order_binding.perm_id,
+        "execution_client_id": WRITER_CLIENT_ID,
+        "account": "DU123456",
+        "action": "BUY",
+        "contract": contract,
+    }
+    cancel_result = {
+        "lifecycle_event": "CANCEL_RESULT",
+        "order_ref": plan.order_binding.order_ref,
+        "order_id": plan.order_binding.ibkr_order_id,
+        "perm_id": plan.order_binding.perm_id,
+        "reason_codes": ["BROKER_CANCELLATION_UNCONFIRMED"],
+    }
+    path = tmp_path / "management-events.sqlite3"
+    with Database.open(path) as db:
+        for ordinal, payload in enumerate((broker_bound, cancel_result), 1):
+            db.execute(
+                "INSERT INTO experiment_order_registry("
+                "registry_id,order_ref,client_order_id,perm_id,ibkr_order_id,"
+                "contract_id,action,quantity,payload_json,payload_sha256,created_at_utc"
+                ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                (
+                    f"registry-{ordinal}",
+                    plan.order_binding.order_ref,
+                    plan.order_binding.ibkr_order_id,
+                    plan.order_binding.perm_id,
+                    plan.order_binding.ibkr_order_id,
+                    498989721,
+                    "BUY",
+                    "1.7",
+                    canonical_bytes(payload).decode("utf-8"),
+                    sha256_json(payload),
+                    (NOW + timedelta(seconds=ordinal)).isoformat(),
+                ),
+            )
+
+        binding = _verified_registry_binding(db, plan)
+
+    assert binding is not None
+    assert binding["order_ref"] == plan.order_binding.order_ref
+    assert binding["contract_identity_sha256"] == sha256_json(contract)
+
+
 def test_validate_only_constructs_composition_without_broker_io(
     tmp_path, monkeypatch
 ) -> None:

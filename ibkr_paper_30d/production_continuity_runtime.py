@@ -3191,11 +3191,27 @@ class _ProductionClock:
 
 
 def _verified_registry_binding(db: Any, plan: Any) -> dict[str, Any] | None:
-    row = db.execute(
+    rows = db.execute(
         "SELECT payload_json,payload_sha256 FROM experiment_order_registry "
-        "WHERE order_ref=? AND perm_id>0 ORDER BY sequence DESC LIMIT 1",
+        "WHERE order_ref=? AND perm_id>0 ORDER BY sequence DESC",
         (plan.order_binding.order_ref,),
-    ).fetchone()
+    ).fetchall()
+    row = next(
+        (
+            candidate
+            for candidate in rows
+            if (
+                (payload := json.loads(str(candidate[0]))).get("lifecycle_event")
+                == "BROKER_BOUND"
+                or (
+                    payload.get("lifecycle_event") is None
+                    and payload.get("plan_sha256") is not None
+                    and isinstance(payload.get("contract"), dict)
+                )
+            )
+        ),
+        None,
+    )
     if row is None:
         return None
     payload = json.loads(str(row[0]))
