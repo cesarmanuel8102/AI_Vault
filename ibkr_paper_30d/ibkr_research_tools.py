@@ -21,6 +21,7 @@ from .autonomous_research import (
     ResearchResult,
     ResearchTool,
     capital_equity_for_sleeve,
+    effective_broker_time_in_force,
 )
 from .canonical import sha256_json
 from .continuity_models import TimeInForce
@@ -688,7 +689,11 @@ class IBKRResearchToolbox:
                 action=action.action.upper(),
                 orderType=action.order_type.upper(),
                 totalQuantity=float(quantity),
-                tif=(action.time_in_force or TimeInForce.DAY).value,
+                tif=effective_broker_time_in_force(
+                    sec_type=action.sec_type,
+                    order_type=action.order_type,
+                    requested=action.time_in_force,
+                ).value,
                 transmit=True,
                 whatIf=True,
             )
@@ -2585,7 +2590,11 @@ class IBKRResearchToolbox:
                 order_type=proposal.order_type.upper(),
                 quantity=proposal.quantity,
                 limit_price=proposal.limit_price,
-                time_in_force=TimeInForce(proposal.time_in_force or TimeInForce.DAY).value,
+                time_in_force=effective_broker_time_in_force(
+                    sec_type=proposal.sec_type,
+                    order_type=proposal.order_type,
+                    requested=proposal.time_in_force,
+                ).value,
                 good_till_date_utc=proposal.good_till_date_utc,
             )
         except Exception as exc:

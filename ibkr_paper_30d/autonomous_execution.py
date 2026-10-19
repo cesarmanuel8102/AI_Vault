@@ -14,6 +14,7 @@ from .autonomous_research import (
     AutonomousOpenOrderAction,
     AutonomousPositionAction,
     AutonomousTradeProposal,
+    effective_broker_time_in_force,
 )
 from .canonical import canonical_bytes, sha256_json
 from .continuity_binding import (
@@ -1465,7 +1466,11 @@ class WriterOwnedModelExecutionMechanics:
                 action=proposal.action.upper(),
                 orderType=proposal.order_type.upper(),
                 totalQuantity=float(proposal.quantity),
-                tif=(proposal.time_in_force or TimeInForce.DAY).value,
+                tif=effective_broker_time_in_force(
+                    sec_type=proposal.sec_type,
+                    order_type=proposal.order_type,
+                    requested=proposal.time_in_force,
+                ).value,
                 transmit=True,
                 whatIf=False,
                 orderRef=order_ref,
@@ -1864,7 +1869,11 @@ class WriterOwnedModelExecutionMechanics:
                 action=action.action.upper(),
                 orderType=action.order_type.upper(),
                 totalQuantity=float(action.quantity),
-                tif=(action.time_in_force or TimeInForce.DAY).value,
+                tif=effective_broker_time_in_force(
+                    sec_type=action.sec_type,
+                    order_type=action.order_type,
+                    requested=action.time_in_force,
+                ).value,
                 transmit=True,
                 whatIf=False,
                 orderRef=order_ref,

@@ -178,6 +178,20 @@ class AutonomousPositionAction(BaseModel, frozen=True):
         return self
 
 
+def effective_broker_time_in_force(
+    *,
+    sec_type: str,
+    order_type: str,
+    requested: TimeInForce | None,
+) -> TimeInForce:
+    if (
+        sec_type.strip().upper() == "CRYPTO"
+        and order_type.strip().upper() == "MKT"
+    ):
+        return TimeInForce.IOC
+    return requested or TimeInForce.DAY
+
+
 class AutonomousOpenOrderAction(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
