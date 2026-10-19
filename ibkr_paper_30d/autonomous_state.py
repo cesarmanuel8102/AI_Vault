@@ -660,7 +660,10 @@ class AutonomousStateBuilder:
             result = self.toolbox.execute(ResearchRequest(
                 request_id=f"sleeve-mark-{new_uuid7()}", tool=ResearchTool.QUOTE,
                 arguments={"conId": con_id, "symbol": contract.get("symbol"),
-                           "sec_type": contract.get("secType")},
+                           "local_symbol": contract.get("localSymbol"),
+                           "sec_type": contract.get("secType"),
+                           "exchange": contract.get("exchange"),
+                           "currency": contract.get("currency")},
                 purpose="Value the owned sleeve position from broker market data",
             ), self._minimal_placeholder_bundle())
             if result.success:
