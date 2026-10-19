@@ -657,13 +657,18 @@ class AutonomousStateBuilder:
         marks = getattr(self, "_fresh_position_marks", {})
         mark = marks.get(con_id)
         if mark is None:
+            quote_arguments = (
+                {"conId": con_id, "symbol": contract.get("symbol"),
+                 "local_symbol": contract.get("localSymbol"),
+                 "sec_type": contract.get("secType"),
+                 "exchange": contract.get("exchange"),
+                 "currency": contract.get("currency")}
+                if contract.get("exchange")
+                else {"conId": con_id}
+            )
             result = self.toolbox.execute(ResearchRequest(
                 request_id=f"sleeve-mark-{new_uuid7()}", tool=ResearchTool.QUOTE,
-                arguments={"conId": con_id, "symbol": contract.get("symbol"),
-                           "local_symbol": contract.get("localSymbol"),
-                           "sec_type": contract.get("secType"),
-                           "exchange": contract.get("exchange"),
-                           "currency": contract.get("currency")},
+                arguments=quote_arguments,
                 purpose="Value the owned sleeve position from broker market data",
             ), self._minimal_placeholder_bundle())
             if result.success:

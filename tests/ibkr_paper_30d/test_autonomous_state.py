@@ -77,6 +77,39 @@ def test_broker_position_quote_preserves_crypto_venue_identity():
     assert position["mark"] == "103.25"
 
 
+def test_broker_position_quote_uses_id_only_when_broker_omits_venue():
+    captured = {}
+
+    def execute(request, _bundle):
+        captured.update(request.arguments)
+        return SimpleNamespace(success=True, data={"marketPrice": "104.30"})
+
+    subject = object.__new__(AutonomousStateBuilder)
+    subject._fresh_position_marks = {}
+    subject._extra_mark_reasons = []
+    subject.toolbox = SimpleNamespace(execute=execute)
+
+    position = subject._marked_broker_position(
+        {
+            "contract": {
+                "conId": 766137558,
+                "symbol": "SOL",
+                "localSymbol": "SOL.USD",
+                "secType": "CRYPTO",
+                "exchange": "",
+                "currency": "USD",
+            },
+            "position": "4.7",
+            "avgCost": "102.59234045",
+        },
+        "b" * 64,
+    )
+
+    assert captured == {"conId": 766137558}
+    assert position["mark_fresh"] is True
+    assert position["mark"] == "104.30"
+
+
 def test_derivative_broker_cost_is_per_contract_but_mark_is_per_unit():
     subject = object.__new__(AutonomousStateBuilder)
     subject._fresh_position_marks = {9001: Decimal("205")}
