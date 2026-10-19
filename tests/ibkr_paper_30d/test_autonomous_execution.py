@@ -1356,10 +1356,13 @@ def test_v4_position_action_supplies_exact_contract_to_final_authority(tmp_path)
     broker = _DirectRoutedPositionIB()
     toolbox = IBKRResearchToolbox()
     toolbox._connect = lambda *, client_id=None: broker
-    toolbox.live_contract_quote_evidence = lambda *_args, **_kwargs: {
+    live_quote = {
         "success": True,
+        "bid": "103.85",
+        "ask": "103.86",
         "market_data_type": 1,
     }
+    toolbox.live_contract_quote_evidence = lambda *_args, **_kwargs: live_quote
     action = AutonomousPositionAction(
         symbol="HAE",
         sec_type="STK",
@@ -1417,6 +1420,7 @@ def test_v4_position_action_supplies_exact_contract_to_final_authority(tmp_path)
         "multiplier": "1",
         "bag_legs": [],
     }
+    assert contexts[0]["trade_contract_market_data"] == live_quote
 
 
 def test_direct_v4_position_action_cannot_bypass_missing_final_writer_authority(

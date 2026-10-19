@@ -121,6 +121,14 @@ class SleeveExecutionAuthorityValidator:
             request.operation is ModelExecutionOperation.OPEN_ORDER_ACTION
             and request.accepted_decision.value == "CANCEL_ORDER"
         )
+        risk_reducing_position_action = bool(
+            request.operation is ModelExecutionOperation.POSITION_ACTION
+            and request.accepted_decision.value
+            in {"CLOSE_POSITION", "REDUCE_POSITION"}
+        )
+        risk_reducing_management = bool(
+            risk_reducing_cancel or risk_reducing_position_action
+        )
         if not request.input_bundle.multi_sleeve_v4_active:
             reasons.append("V4_AUTHORITY_REQUIRED")
         if request.capital_sleeve != db_snapshot.capital_sleeve:
@@ -170,7 +178,10 @@ class SleeveExecutionAuthorityValidator:
         if (
             management
             and not risk_reducing_cancel
-            and not db_snapshot.instrument_management_tradable
+            and not (
+                db_snapshot.instrument_management_tradable
+                or broker_evidence.get("instrument_management_tradable") is True
+            )
         ):
             reasons.append("INSTRUMENT_NOT_CURRENTLY_MANAGEABLE")
         if (
@@ -252,7 +263,7 @@ class SleeveExecutionAuthorityValidator:
                 > db_snapshot.equity_usd
             ):
                 reasons.append("SLEEVE_AGGREGATE_LIABILITY_EXCEEDED")
-        if db_snapshot.continuity_required and not risk_reducing_cancel and (
+        if db_snapshot.continuity_required and not risk_reducing_management and (
             request.continuity_plan_sha256 is None
             or request.continuity_plan_sha256 != db_snapshot.continuity_plan_sha256
         ):

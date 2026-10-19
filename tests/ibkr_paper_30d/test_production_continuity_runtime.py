@@ -814,6 +814,12 @@ def test_sleeve_broker_evidence_binds_target_writer_reconciliation_and_owner() -
             "model_write_context": {
                 "canonical_contract": contract.model_dump(mode="json"),
                 "order_ref": "codex-order-2",
+                "trade_contract_market_data": {
+                    "success": True,
+                    "bid": "103.85",
+                    "ask": "103.86",
+                    "market_data_type": 1,
+                },
             },
             "production_authority": {"authority_snapshot_sha256": "b" * 64},
         },
@@ -824,6 +830,7 @@ def test_sleeve_broker_evidence_binds_target_writer_reconciliation_and_owner() -
     assert evidence["reconciliation_status"] == "PASS"
     assert evidence["owned_contract_sleeve"] == "CONTINUOUS_SLEEVE"
     assert evidence["management_identity_match"] is True
+    assert evidence["instrument_management_tradable"] is True
     assert evidence["possible_live_connection"] is False
 
 

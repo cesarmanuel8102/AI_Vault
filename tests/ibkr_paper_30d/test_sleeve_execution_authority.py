@@ -241,6 +241,24 @@ def test_management_ignores_entry_family_and_capacity_but_requires_manageability
     assert "INSTRUMENT_NOT_CURRENTLY_MANAGEABLE" in blocked.reason_codes
 
 
+def test_fresh_writer_quote_can_prove_management_tradability() -> None:
+    request = _v4_request(ModelExecutionOperation.POSITION_ACTION)
+    snapshot = _snapshot(
+        request,
+        proposed_maximum_loss_usd=Decimal("0"),
+        instrument_management_tradable=False,
+    )
+
+    receipt = SleeveExecutionAuthorityValidator.validate_operation(
+        request,
+        _broker(request, instrument_management_tradable=True),
+        snapshot,
+    )
+
+    assert receipt.status == "PASS"
+    assert receipt.reason_codes == ()
+
+
 @pytest.mark.parametrize(
     ("evidence_change", "snapshot_change", "reason"),
     [
@@ -384,6 +402,31 @@ def test_missing_continuity_plan_blocks_when_snapshot_requires_it() -> None:
         _snapshot(request, continuity_required=True),
     )
     assert "CONTINUITY_PLAN_REQUIRED" in receipt.reason_codes
+
+
+@pytest.mark.parametrize(
+    "decision",
+    (TraderDecision.CLOSE_POSITION, TraderDecision.REDUCE_POSITION),
+)
+def test_risk_reducing_position_action_does_not_require_replacement_plan(
+    decision,
+) -> None:
+    request = _v4_request(ModelExecutionOperation.POSITION_ACTION).model_copy(
+        update={"accepted_decision": decision}
+    )
+
+    receipt = SleeveExecutionAuthorityValidator.validate(
+        request,
+        _broker(request),
+        _snapshot(
+            request,
+            continuity_required=True,
+            proposed_maximum_loss_usd=Decimal("0"),
+        ),
+    )
+
+    assert receipt.status == "PASS"
+    assert receipt.reason_codes == ()
 
 
 def test_cancel_owned_order_does_not_require_tradable_session_or_new_plan() -> None:

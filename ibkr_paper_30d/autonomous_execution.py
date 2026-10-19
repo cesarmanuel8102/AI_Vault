@@ -1901,6 +1901,7 @@ class WriterOwnedModelExecutionMechanics:
                     "canonical_contract": self._authority_contract(
                         execution_contract, bundle
                     ),
+                    "trade_contract_market_data": live_quote,
                     "order_ref": order_ref,
                     "action": action.action.upper(),
                     "quantity": str(action.quantity),

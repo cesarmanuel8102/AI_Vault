@@ -533,6 +533,21 @@ def _sleeve_broker_evidence_collector(
                 == payload_contract_id
             )
         )
+        quote = dict(context.get("trade_contract_market_data") or {})
+        try:
+            bid = Decimal(str(quote.get("bid")))
+            ask = Decimal(str(quote.get("ask")))
+            instrument_management_tradable = bool(
+                quote.get("success") is True
+                and quote.get("market_data_type") == 1
+                and bid.is_finite()
+                and ask.is_finite()
+                and bid > 0
+                and ask > 0
+                and ask >= bid
+            )
+        except Exception:
+            instrument_management_tradable = False
         return {
             "paper_only": True,
             "fresh": True,
@@ -542,6 +557,7 @@ def _sleeve_broker_evidence_collector(
             "reconciliation_status": reconciliation.get("status"),
             "owned_contract_sleeve": owned_sleeve,
             "management_identity_match": management_identity_match,
+            "instrument_management_tradable": instrument_management_tradable,
             "possible_live_connection": False,
             "contract_identity_sha256": contract_sha,
             "canonical_contract": contract,
