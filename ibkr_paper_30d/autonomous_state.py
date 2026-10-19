@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Callable, Mapping
@@ -699,15 +700,20 @@ class AutonomousStateBuilder:
         state = self.ledger.project()
         reasons: list[str] = []
         for position in state.positions:
+            quote_arguments = (
+                {"conId": position.contract_id}
+                if str(position.sec_type).upper() == "CRYPTO"
+                else {
+                    "conId": position.contract_id,
+                    "symbol": position.symbol,
+                    "sec_type": position.sec_type,
+                }
+            )
             result = self.toolbox.execute(
                 ResearchRequest(
                     request_id=f"mark-{new_uuid7()}",
                     tool=ResearchTool.QUOTE,
-                    arguments={
-                        "conId": position.contract_id,
-                        "symbol": position.symbol,
-                        "sec_type": position.sec_type,
-                    },
+                    arguments=quote_arguments,
                     purpose="Mark isolated open position before decision",
                 ),
                 self._minimal_placeholder_bundle(),
@@ -937,6 +943,45 @@ class AutonomousStateBuilder:
                 Decimal("0.0001")
             )
 
+        latest_kill_switch_event: dict[str, Any] | None = None
+        kill_switch_row = self.db.execute(
+            "SELECT state,payload_json,payload_sha256 FROM kill_switch_events "
+            "ORDER BY sequence DESC LIMIT 1"
+        ).fetchone()
+        if kill_switch_row is not None:
+            kill_switch_payload = self._json_mapping(kill_switch_row[1])
+            if (
+                kill_switch_payload is not None
+                and sha256_json(kill_switch_payload) == str(kill_switch_row[2])
+                and str(kill_switch_payload.get("state")) == str(kill_switch_row[0])
+            ):
+                recovery_receipt = kill_switch_payload.get("recovery_receipt")
+                reason = str(kill_switch_payload.get("reason") or "")
+                reason_code = (
+                    reason
+                    if re.fullmatch(r"[A-Z][A-Z0-9_]{2,127}", reason)
+                    else None
+                )
+                latest_kill_switch_event = {
+                    "state": str(kill_switch_row[0]),
+                    "actor": str(kill_switch_payload.get("actor") or ""),
+                    "reason_code": reason_code,
+                    "recovery_receipt_present": isinstance(recovery_receipt, dict),
+                }
+                if isinstance(recovery_receipt, dict):
+                    latest_kill_switch_event["recovery_receipt"] = {
+                        key: recovery_receipt.get(key)
+                        for key in (
+                            "approved_head",
+                            "broker_server_time_utc",
+                            "broker_write_count",
+                            "collected_at_utc",
+                            "open_orders_count",
+                            "positions_count",
+                            "recovery_reason_code",
+                        )
+                    }
+
         return {
             "schema": "AUTONOMOUS_PROCESS_OBSERVATION_V1",
             "telemetry_source": "SYSTEM_GENERATED_DURABLE_EVENTS",
@@ -959,6 +1004,7 @@ class AutonomousStateBuilder:
             "largest_position_symbol": largest_position_symbol,
             "largest_position_market_value": str(largest_position_value),
             "largest_position_share_of_equity": str(largest_share),
+            "latest_kill_switch_event": latest_kill_switch_event,
         }
 
     def _clock(self, now: datetime) -> dict[str, Any]:

@@ -110,6 +110,42 @@ def test_broker_position_quote_uses_id_only_when_broker_omits_venue():
     assert position["mark"] == "104.30"
 
 
+def test_ledger_crypto_position_mark_uses_authoritative_contract_id_only():
+    captured = {}
+
+    def execute(request, _bundle):
+        captured.update(request.arguments)
+        return SimpleNamespace(success=True, data={"marketPrice": "104.30"})
+
+    recorded = {}
+    subject = object.__new__(AutonomousStateBuilder)
+    subject.toolbox = SimpleNamespace(execute=execute)
+    subject.ledger = SimpleNamespace(
+        project=lambda: SimpleNamespace(
+            positions=(
+                SimpleNamespace(
+                    contract_id=766137558,
+                    symbol="SOL",
+                    sec_type="CRYPTO",
+                ),
+            )
+        ),
+        record_mark=lambda **kwargs: recorded.update(kwargs),
+    )
+    subject._minimal_placeholder_bundle = lambda: None
+
+    reasons = subject._mark_open_positions()
+
+    assert reasons == []
+    assert captured == {"conId": 766137558}
+    assert subject._fresh_position_marks == {766137558: Decimal("104.30")}
+    assert recorded == {
+        "contract_id": 766137558,
+        "symbol": "SOL",
+        "price": Decimal("104.30"),
+    }
+
+
 def test_derivative_broker_cost_is_per_contract_but_mark_is_per_unit():
     subject = object.__new__(AutonomousStateBuilder)
     subject._fresh_position_marks = {9001: Decimal("205")}
@@ -1015,6 +1051,12 @@ def test_state_builder_projects_factual_process_observation_without_guidance(tmp
     assert observation["decision_counts"] == {
         "MONITOR_POSITION": 1,
         "NO_TRADE": 1,
+    }
+    assert observation["latest_kill_switch_event"] == {
+        "actor": "test-owner",
+        "reason_code": None,
+        "recovery_receipt_present": False,
+        "state": "KILL_SWITCH_CLEAR",
     }
     assert observation["symbols_examined"] == ["HAE"]
     assert observation["symbol_cycle_counts"] == {"HAE": 2}
