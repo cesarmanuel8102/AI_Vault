@@ -834,6 +834,78 @@ def test_sleeve_broker_evidence_binds_target_writer_reconciliation_and_owner() -
     assert evidence["possible_live_connection"] is False
 
 
+def test_sleeve_broker_evidence_uses_durable_identity_when_broker_enriches_primary_exchange() -> None:
+    from ibkr_paper_30d.contract_ownership import canonical_contract_identity
+    from ibkr_paper_30d.production_continuity_runtime import (
+        _sleeve_broker_evidence_collector,
+    )
+
+    durable = canonical_contract_identity(
+        {
+            "conId": 7884,
+            "secType": "STK",
+            "currency": "USD",
+            "exchange": "SMART",
+            "localSymbol": "HAE",
+            "tradingClass": "HAE",
+            "multiplier": "1",
+        }
+    )
+    broker_enriched = canonical_contract_identity(
+        {
+            **durable.model_dump(mode="json"),
+            "primary_exchange": "NYSE",
+        }
+    )
+    assert broker_enriched.sha256 != durable.sha256
+
+    request = SimpleNamespace(
+        sha256="f" * 64,
+        capital_sleeve=SimpleNamespace(value="REGULAR_SLEEVE"),
+        payload=SimpleNamespace(contract_id=7884),
+        input_bundle=SimpleNamespace(
+            multi_sleeve_portfolio={
+                "transition_target_sha256": "1" * 64,
+                "writer_binding_sha256": "2" * 64,
+            },
+            contract_ownership_snapshot={
+                "contract_sleeves": {"7884": "REGULAR_SLEEVE"},
+                "active_contracts": [
+                    {
+                        "contract_identity_sha256": durable.sha256,
+                        "contract": durable.model_dump(mode="json"),
+                        "sleeve": "REGULAR_SLEEVE",
+                    }
+                ],
+            },
+            reconciliation_receipt={"status": "PASS"},
+        ),
+    )
+
+    evidence = _sleeve_broker_evidence_collector("a" * 64)(
+        SimpleNamespace(),
+        request,
+        {
+            "model_write_context": {
+                "canonical_contract": broker_enriched.model_dump(mode="json"),
+                "order_ref": "codex-ibkr-paper-30d-p-test",
+                "trade_contract_market_data": {
+                    "success": True,
+                    "bid": "118.50",
+                    "ask": "118.75",
+                    "market_data_type": 1,
+                },
+            },
+            "production_authority": {"authority_snapshot_sha256": "b" * 64},
+        },
+    )
+
+    assert evidence["owned_contract_sleeve"] == "REGULAR_SLEEVE"
+    assert evidence["management_identity_match"] is True
+    assert evidence["contract_identity_sha256"] == durable.sha256
+    assert evidence["canonical_contract"] == durable.model_dump(mode="json")
+
+
 def test_v4_snapshot_reader_rejects_missing_or_non_hash_adapter_identity(tmp_path):
     config = SimpleNamespace(target_successor_definition_sha256="1" * 64)
 

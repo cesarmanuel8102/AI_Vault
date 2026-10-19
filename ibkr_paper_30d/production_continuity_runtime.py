@@ -442,6 +442,48 @@ class _ProductionSleeveAuthoritySnapshotReader:
         return self(request, transaction_db=db)
 
 
+def _compatible_owned_contract(
+    observed: Any,
+    ownership: Mapping[str, Any],
+) -> Mapping[str, Any] | None:
+    """Resolve harmless broker enrichment to one durable owned identity."""
+
+    candidates: list[Mapping[str, Any]] = []
+    for raw in ownership.get("active_contracts", ()):
+        if not isinstance(raw, Mapping) or not isinstance(raw.get("contract"), Mapping):
+            continue
+        try:
+            durable = observed.__class__.model_validate(raw["contract"])
+        except Exception:
+            continue
+        if durable.sha256 == observed.sha256:
+            return raw
+        if durable.con_id <= 0 or durable.con_id != observed.con_id:
+            continue
+        if (
+            durable.security_type != observed.security_type
+            or durable.currency != observed.currency
+            or durable.bag_legs != observed.bag_legs
+        ):
+            continue
+        optional_fields = (
+            "exchange",
+            "primary_exchange",
+            "local_symbol",
+            "trading_class",
+            "multiplier",
+        )
+        if any(
+            getattr(durable, field) not in (None, "")
+            and getattr(observed, field) not in (None, "")
+            and getattr(durable, field) != getattr(observed, field)
+            for field in optional_fields
+        ):
+            continue
+        candidates.append(raw)
+    return candidates[0] if len(candidates) == 1 else None
+
+
 def _sleeve_broker_evidence_collector(
     expected_account_sha256: str,
 ) -> Callable[[Any, Any, dict[str, Any]], dict[str, Any]]:
@@ -449,6 +491,8 @@ def _sleeve_broker_evidence_collector(
         context = dict(evidence.get("model_write_context") or {})
         contract = context.get("canonical_contract")
         contract_sha = None
+        broker_contract_sha = None
+        parent = None
         ownership_contracts: list[dict[str, Any]] = []
         if contract is not None:
             from .contract_ownership import (
@@ -458,6 +502,7 @@ def _sleeve_broker_evidence_collector(
 
             parent = CanonicalContractIdentity.model_validate(contract)
             contract_sha = parent.sha256
+            broker_contract_sha = parent.sha256
             ownership_contracts.append(parent.model_dump(mode="json"))
             if parent.security_type == "BAG":
                 from ib_insync import Contract
@@ -511,7 +556,14 @@ def _sleeve_broker_evidence_collector(
             else {}
         )
         owned_sleeve = None
-        if contract_sha is not None:
+        if parent is not None:
+            owned = _compatible_owned_contract(parent, ownership)
+            if owned is not None:
+                durable = CanonicalContractIdentity.model_validate(owned["contract"])
+                contract = durable.model_dump(mode="json")
+                contract_sha = durable.sha256
+                owned_sleeve = owned.get("sleeve")
+        if contract_sha is not None and owned_sleeve is None:
             owned_sleeve = (ownership.get("contract_sleeves") or {}).get(contract_sha)
             if owned_sleeve is None:
                 owned_sleeve = next(
@@ -560,6 +612,7 @@ def _sleeve_broker_evidence_collector(
             "instrument_management_tradable": instrument_management_tradable,
             "possible_live_connection": False,
             "contract_identity_sha256": contract_sha,
+            "broker_contract_identity_sha256": broker_contract_sha,
             "canonical_contract": contract,
             "ownership_contracts": ownership_contracts,
             "order_ref": str(context.get("order_ref") or ""),
