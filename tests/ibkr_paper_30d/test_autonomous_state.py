@@ -1271,3 +1271,147 @@ def test_authorized_bag_leg_fill_remains_deduplicated_in_ledger(tmp_path):
         assert not first.startswith("duplicate:")
         assert second.startswith("duplicate:")
         assert subject.ledger.project().event_count == 1
+
+
+def test_durable_registered_model_fill_is_recovered_into_its_sleeve_once(tmp_path):
+    from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+    from ibkr_paper_30d.contract_ownership import (
+        ContractOwnershipStore,
+        canonical_contract_identity,
+    )
+    from ibkr_paper_30d.experiment_ledger import AutonomousExperimentLedger
+    from ibkr_paper_30d.multi_universe_models import CapitalSleeve
+    from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
+    from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+    from ibkr_paper_30d.successor_schema import install_successor_schema_v2
+
+    with Database.open(tmp_path / "durable-fill-recovery.sqlite3") as db:
+        install_successor_schema_v2(db)
+        install_continuity_schema_v3(db)
+        install_multi_universe_schema_v4(db)
+        sleeve = CapitalSleeve.CONTINUOUS_SLEEVE
+        ledger = SleeveLedgerStore(db)
+        ledger.bootstrap_continuous()
+        execution_key = "model:sol-entry"
+        with db.transaction():
+            ledger.reserve_liability_in_transaction(
+                sleeve,
+                amount_usd=Decimal("482.60"),
+                reservation_key=execution_key,
+            )
+        contract = canonical_contract_identity(
+            {
+                "conId": 766137558,
+                "secType": "CRYPTO",
+                "currency": "USD",
+                "exchange": "PAXOS",
+                "localSymbol": "SOL.USD",
+                "tradingClass": "SOL",
+            }
+        )
+        ownership = ContractOwnershipStore(db)
+        ownership.claim(
+            sleeve,
+            contract,
+            side="BUY",
+            group_id="order:codex-ibkr-paper-30d-a-sol",
+        )
+        order_ref = "codex-ibkr-paper-30d-a-sol"
+        registry_payload = {
+            "schema": "EXPERIMENT_ORDER_REGISTRY_V3",
+            "lifecycle_event": "BROKER_BOUND",
+            "order_ref": order_ref,
+            "client_order_id": 736,
+            "perm_id": 1017434661,
+            "ibkr_order_id": 736,
+            "contract_id": contract.con_id,
+            "action": "BUY",
+            "quantity": "4.7",
+            "execution_client_id": 19761,
+            "account": "DUM891854",
+            "contract": {"conId": contract.con_id},
+        }
+        db.execute(
+            "INSERT INTO experiment_order_registry("
+            "registry_id,order_ref,client_order_id,perm_id,ibkr_order_id,"
+            "contract_id,action,quantity,payload_json,payload_sha256,created_at_utc"
+            ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                "sol-registry",
+                order_ref,
+                736,
+                1017434661,
+                736,
+                contract.con_id,
+                "BUY",
+                "4.7",
+                canonical_bytes(registry_payload).decode("utf-8"),
+                sha256_json(registry_payload),
+                "2026-10-18T17:14:37Z",
+            ),
+        )
+        authority_payload = {
+            "schema": "SLEEVE_EXECUTION_RESERVATION_V1",
+            "execution_key": execution_key,
+            "operation": "NEW_TRADE",
+            "order_ref": order_ref,
+            "capital_sleeve": sleeve.value,
+            "reserved_liability_usd": "482.60",
+            "contract_identity_sha256": contract.sha256,
+        }
+        authority_sha = sha256_json(
+            {"previous_event_sha256": None, "payload": authority_payload}
+        )
+        db.execute(
+            "INSERT INTO sleeve_authority_events("
+            "event_id,sleeve,event_type,payload_json,payload_sha256,"
+            "previous_event_sha256,event_sha256,created_at_utc) "
+            "VALUES(?,?,?,?,?,?,?,?)",
+            (
+                "sol-authority",
+                sleeve.value,
+                "EXECUTION_AUTHORITY_RESERVED",
+                canonical_bytes(authority_payload).decode("utf-8"),
+                sha256_json(authority_payload),
+                None,
+                authority_sha,
+                "2026-10-18T17:14:33Z",
+            ),
+        )
+        legacy = AutonomousExperimentLedger(db)
+        legacy.record_fill(
+            {
+                "execution_id_hash": "e" * 64,
+                "execution_fingerprint": "d" * 64,
+                "orderRef": order_ref,
+                "orderId": 736,
+                "permId": 1017434661,
+                "clientId": 19761,
+                "side": "BUY",
+                "quantity": "4.7",
+                "cumQty": "4.7",
+                "price": "102.22",
+                "commission": "1.75",
+                "contract": {
+                    "conId": contract.con_id,
+                    "symbol": "SOL",
+                    "secType": "CRYPTO",
+                    "multiplier": "1",
+                },
+            }
+        )
+        subject = object.__new__(AutonomousStateBuilder)
+        subject.db = db
+        subject.ledger = legacy
+        subject.sleeve_ledger_store = ledger
+        subject.contract_ownership_store = ownership
+
+        assert subject._import_durable_sleeve_fills() == []
+        event_count = ledger.project(sleeve).event_count
+        assert subject._import_durable_sleeve_fills() == []
+        state = ledger.project(sleeve)
+
+        assert state.balance("USD") == Decimal("17.816")
+        assert state.fees_usd == Decimal("1.75")
+        assert state.reserved_liability_usd == Decimal("482.60")
+        assert state.event_count == event_count

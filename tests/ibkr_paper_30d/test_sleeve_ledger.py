@@ -180,6 +180,76 @@ def test_one_sleeve_cannot_spend_or_pledge_the_others_currency(tmp_path) -> None
         db.close()
 
 
+def test_model_fill_import_posts_exact_economics_once_and_preserves_reservation(
+    tmp_path,
+) -> None:
+    db, store = _store(tmp_path)
+    sleeve = CapitalSleeve.CONTINUOUS_SLEEVE
+    try:
+        store.bootstrap_continuous()
+        with db.transaction():
+            store.reserve_liability_in_transaction(
+                sleeve,
+                amount_usd=Decimal("482.60"),
+                reservation_key="model:sol-entry",
+            )
+        fill = {
+            "execution_id_sha256": "e" * 64,
+            "order_ref": "codex-ibkr-paper-30d-a-sol",
+            "contract_identity_sha256": "f" * 64,
+            "action": "BUY",
+            "quantity": "4.7",
+            "price": "102.22",
+            "multiplier": "1",
+            "commission_usd": "1.75",
+            "authority_event_sha256": ["a" * 64],
+        }
+
+        first = store.import_model_fill(sleeve, fill)
+        retry = store.import_model_fill(sleeve, fill)
+        state = store.project(sleeve)
+
+        assert first.duplicate is False
+        assert retry.duplicate is True
+        assert retry.event_sha256 == first.event_sha256
+        assert state.balance("USD") == Decimal("17.816")
+        assert state.fees_usd == Decimal("1.75")
+        assert state.reserved_liability_usd == Decimal("482.60")
+        assert sum(
+            event["event_type"] == "MODEL_FILL_IMPORTED"
+            for event in store._events()
+        ) == 1
+    finally:
+        db.close()
+
+
+def test_model_fill_import_rejects_conflicting_replay_without_mutation(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    sleeve = CapitalSleeve.CONTINUOUS_SLEEVE
+    try:
+        store.bootstrap_continuous()
+        fill = {
+            "execution_id_sha256": "e" * 64,
+            "order_ref": "codex-ibkr-paper-30d-a-sol",
+            "contract_identity_sha256": "f" * 64,
+            "action": "BUY",
+            "quantity": "1",
+            "price": "100",
+            "multiplier": "1",
+            "commission_usd": "1",
+            "authority_event_sha256": ["a" * 64],
+        }
+        store.import_model_fill(sleeve, fill)
+        event_count = store.project(sleeve).event_count
+
+        with pytest.raises(SleeveLedgerError, match="MODEL_FILL_IMPORT_CONFLICT"):
+            store.import_model_fill(sleeve, {**fill, "price": "101"})
+
+        assert store.project(sleeve).event_count == event_count
+    finally:
+        db.close()
+
+
 def test_broker_snapshot_projects_owned_positions_orders_fills_and_fees(tmp_path) -> None:
     db, store = _store(tmp_path)
     contract = canonical_contract_identity(

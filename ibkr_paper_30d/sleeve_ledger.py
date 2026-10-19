@@ -479,6 +479,133 @@ class SleeveLedgerStore:
             },
         )
 
+    def import_model_fill(
+        self,
+        sleeve: CapitalSleeve,
+        fill: Mapping[str, Any],
+    ) -> SleeveLedgerReceipt:
+        with self.db.transaction():
+            return self.import_model_fill_in_transaction(sleeve, fill)
+
+    def import_model_fill_in_transaction(
+        self,
+        sleeve: CapitalSleeve,
+        fill: Mapping[str, Any],
+    ) -> SleeveLedgerReceipt:
+        """Post one authority-bound model fill to its sleeve exactly once."""
+
+        if not self.db.connection.in_transaction:
+            raise SleeveLedgerError("ATOMIC_MODEL_FILL_TRANSACTION_REQUIRED")
+        if not isinstance(sleeve, CapitalSleeve):
+            sleeve = CapitalSleeve(sleeve)
+        state = self.project(sleeve)
+        if not state.initialized:
+            raise SleeveLedgerError("SLEEVE_NOT_INITIALIZED")
+
+        execution_id = str(fill.get("execution_id_sha256") or "")
+        order_ref = str(fill.get("order_ref") or "")
+        contract_sha = str(fill.get("contract_identity_sha256") or "")
+        action = str(fill.get("action") or "").upper()
+        authority_hashes = tuple(
+            sorted(str(value) for value in fill.get("authority_event_sha256", ()))
+        )
+        try:
+            quantity = normalized_decimal(fill.get("quantity"))
+            price = normalized_decimal(fill.get("price"))
+            multiplier = normalized_decimal(fill.get("multiplier") or "1")
+            commission = normalized_decimal(fill.get("commission_usd") or "0")
+        except (TypeError, ValueError) as exc:
+            raise SleeveLedgerError("MODEL_FILL_INVALID") from exc
+        hashes = (execution_id, contract_sha, *authority_hashes)
+        if (
+            any(
+                len(value) != 64
+                or any(char not in "0123456789abcdef" for char in value)
+                for value in hashes
+            )
+            or not authority_hashes
+            or not order_ref
+            or action not in {"BUY", "SELL"}
+            or not quantity.is_finite()
+            or quantity <= 0
+            or not price.is_finite()
+            or price <= 0
+            or not multiplier.is_finite()
+            or multiplier <= 0
+            or not commission.is_finite()
+            or commission < 0
+        ):
+            raise SleeveLedgerError("MODEL_FILL_INVALID")
+
+        normalized_fill = {
+            "execution_id_sha256": execution_id,
+            "order_ref": order_ref,
+            "contract_identity_sha256": contract_sha,
+            "action": action,
+            "quantity": str(quantity),
+            "price": str(price),
+            "multiplier": str(multiplier),
+            "commission_usd": str(commission),
+            "authority_event_sha256": list(authority_hashes),
+        }
+        fill_sha256 = sha256_json(normalized_fill)
+        imported = [
+            event
+            for event in self._events()
+            if event["event_type"] == "MODEL_FILL_IMPORTED"
+            and event.get("execution_id_sha256") == execution_id
+        ]
+        if imported:
+            prior = imported[-1]
+            if len(imported) != 1 or prior.get("fill_sha256") != fill_sha256:
+                raise SleeveLedgerError("MODEL_FILL_IMPORT_CONFLICT")
+            return SleeveLedgerReceipt(
+                event_id=prior["event_id"],
+                event_sha256=prior["event_sha256"],
+                sleeve=sleeve,
+                event_type="MODEL_FILL_IMPORTED",
+                duplicate=True,
+            )
+
+        gross = quantity * price * multiplier
+        if action == "BUY" and state.balance("USD") < gross + commission:
+            raise SleeveLedgerError("SLEEVE_CURRENCY_INSUFFICIENT")
+        self._insert(
+            sleeve=sleeve,
+            currency="USD",
+            event_type="CURRENCY_DEBIT" if action == "BUY" else "CURRENCY_CREDIT",
+            payload={"amount": str(gross)},
+        )
+        self._insert(
+            sleeve=sleeve,
+            currency="USD",
+            event_type="FILL_RECORDED",
+            payload={"execution_id_sha256": execution_id},
+        )
+        if commission > 0:
+            self._insert(
+                sleeve=sleeve,
+                currency="USD",
+                event_type="CURRENCY_DEBIT",
+                payload={"amount": str(commission)},
+            )
+            self._insert(
+                sleeve=sleeve,
+                currency="USD",
+                event_type="FEE_CHARGED",
+                payload={"amount_usd": str(commission)},
+            )
+        return self._insert(
+            sleeve=sleeve,
+            currency="USD",
+            event_type="MODEL_FILL_IMPORTED",
+            payload={
+                "execution_id_sha256": execution_id,
+                "fill_sha256": fill_sha256,
+                "fill": normalized_fill,
+            },
+        )
+
     def reconcile_broker_snapshot(
         self,
         snapshot: Mapping[str, Any],

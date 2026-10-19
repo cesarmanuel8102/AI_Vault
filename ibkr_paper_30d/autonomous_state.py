@@ -34,7 +34,7 @@ from .market_data import DecisionClass
 from .repositories import utc_now
 from .product_capability import ProductFamilyCertificationStore
 from .runtime_integrity import RuntimeMarketDataGate
-from .sleeve_ledger import SleeveLedgerStore
+from .sleeve_ledger import SleeveLedgerError, SleeveLedgerStore
 from .sleeve_reconciliation import SleeveReconciler
 from .successor_clock import clock_for_epoch
 from .successor_epoch import (
@@ -388,6 +388,127 @@ class AutonomousStateBuilder:
                 )
                 continue
             self.ledger.record_fill(fill)
+        if getattr(self, "contract_ownership_store", None) is not None:
+            reasons.extend(self._import_durable_sleeve_fills())
+        return reasons
+
+    def _import_durable_sleeve_fills(self) -> list[str]:
+        """Recover authority-bound fills after broker execution history expires."""
+
+        if (
+            self.sleeve_ledger_store is None
+            or getattr(self, "contract_ownership_store", None) is None
+        ):
+            return []
+        from .sleeve_execution_authority import SleeveAuthorityReservationStore
+
+        reservations = [
+            event
+            for event in SleeveAuthorityReservationStore(self.db)._events()
+            if event.get("event_type") == "EXECUTION_AUTHORITY_RESERVED"
+        ]
+        ownership = self.contract_ownership_store.projection()
+        records = (*ownership.active_contracts, *ownership.released_contracts)
+        by_con_id: dict[int, list[Any]] = {}
+        for record in records:
+            by_con_id.setdefault(int(record.contract.con_id), []).append(record)
+
+        reasons: list[str] = []
+        for event in self.ledger.canonical_fill_events():
+            order_ref = str(event.get("orderRef") or "")
+            matching_authority = [
+                item for item in reservations if item.get("order_ref") == order_ref
+            ]
+            # Pre-V4 carry-forward fills and technical canaries do not have model
+            # sleeve authority and must not be posted a second time.
+            if not matching_authority:
+                continue
+            contract_id = int(event.get("contract_id") or 0)
+            candidates = by_con_id.get(contract_id, [])
+            identities = {
+                (item.contract_identity_sha256, item.sleeve.value)
+                for item in candidates
+            }
+            if len(identities) != 1:
+                reasons.append(f"MODEL_FILL_OWNERSHIP_AMBIGUOUS:{contract_id}")
+                continue
+            contract_sha, sleeve_value = next(iter(identities))
+            sleeve = CapitalSleeve(sleeve_value)
+            authority_contracts = {
+                str(item.get("contract_identity_sha256") or "")
+                for item in matching_authority
+            }
+            authority_sleeves = {
+                str(item.get("capital_sleeve") or "")
+                for item in matching_authority
+            }
+            if authority_contracts != {contract_sha} or authority_sleeves != {
+                sleeve.value
+            }:
+                reasons.append(f"MODEL_FILL_AUTHORITY_AMBIGUOUS:{contract_id}")
+                continue
+            owner = next(
+                item
+                for item in candidates
+                if item.contract_identity_sha256 == contract_sha
+                and item.sleeve is sleeve
+            )
+            if owner.contract.currency != "USD":
+                reasons.append(f"MODEL_FILL_CURRENCY_UNSUPPORTED:{contract_id}")
+                continue
+            registry_row = self.db.execute(
+                "SELECT payload_json FROM experiment_order_registry "
+                "WHERE order_ref=? ORDER BY sequence DESC LIMIT 1",
+                (order_ref,),
+            ).fetchone()
+            try:
+                registry_payload = json.loads(str(registry_row[0]))
+            except (TypeError, ValueError, json.JSONDecodeError):
+                reasons.append(f"MODEL_FILL_REGISTRY_INVALID:{contract_id}")
+                continue
+            fill = {
+                "execution_id_sha256": str(event.get("execution_id_hash") or ""),
+                "execution_id_hash": str(event.get("execution_id_hash") or ""),
+                "orderRef": order_ref,
+                "orderId": int(event.get("orderId") or 0),
+                "permId": int(event.get("permId") or 0),
+                "clientId": int(event.get("clientId") or 0),
+                "account": str(registry_payload.get("account") or ""),
+                "side": str(event.get("side") or "").upper(),
+                "quantity": str(event.get("quantity") or ""),
+                "cumQty": str(event.get("quantity") or ""),
+                "price": str(event.get("price") or ""),
+                "commission": str(event.get("commission") or "0"),
+                "contract": {
+                    "conId": contract_id,
+                    "symbol": str(event.get("symbol") or ""),
+                    "secType": str(event.get("sec_type") or ""),
+                    "multiplier": str(event.get("multiplier") or "1"),
+                },
+            }
+            if not self._registered_fill(fill):
+                reasons.append(f"UNREGISTERED_DURABLE_EXPERIMENT_FILL:{contract_id}")
+                continue
+            authority_hashes = sorted(
+                str(item.get("event_sha256") or "") for item in matching_authority
+            )
+            try:
+                self.sleeve_ledger_store.import_model_fill(
+                    sleeve,
+                    {
+                        "execution_id_sha256": fill["execution_id_sha256"],
+                        "order_ref": order_ref,
+                        "contract_identity_sha256": contract_sha,
+                        "action": fill["side"],
+                        "quantity": fill["quantity"],
+                        "price": fill["price"],
+                        "multiplier": fill["contract"]["multiplier"],
+                        "commission_usd": fill["commission"],
+                        "authority_event_sha256": authority_hashes,
+                    },
+                )
+            except SleeveLedgerError as exc:
+                reasons.append(f"MODEL_FILL_IMPORT_FAILED:{contract_id}:{exc}")
         return reasons
 
     def _sync_and_reconcile_v4(
