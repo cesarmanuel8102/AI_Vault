@@ -111,9 +111,43 @@ def capability_evidence_from_broker_checks(
 
 
 def resolve_position_execution_contract(ib: Any, contract: Any) -> Any:
-    """Qualify stock position actions through SMART without changing identity."""
-    if str(getattr(contract, "secType", "") or "").upper() != "STK":
-        return contract
+    """Qualify position actions without changing broker contract identity."""
+    original_sec_type = str(getattr(contract, "secType", "") or "").upper()
+    original_exchange = str(getattr(contract, "exchange", "") or "").upper()
+    if original_sec_type != "STK":
+        if original_sec_type != "CRYPTO" or original_exchange:
+            return contract
+        original_con_id = int(getattr(contract, "conId", 0) or 0)
+        if original_con_id <= 0:
+            raise PositionExecutionContractError(
+                "POSITION_ACTION_CONTRACT_IDENTITY_REQUIRED"
+            )
+        from ib_insync import Contract
+
+        try:
+            qualified = list(ib.qualifyContracts(Contract(conId=original_con_id)) or [])
+        except Exception as exc:
+            raise PositionExecutionContractError(
+                "POSITION_ACTION_CONTRACT_QUALIFICATION_FAILED"
+            ) from exc
+        if not qualified:
+            raise PositionExecutionContractError(
+                "POSITION_ACTION_CONTRACT_QUALIFICATION_NOT_FOUND"
+            )
+        if len(qualified) != 1:
+            raise PositionExecutionContractError(
+                "POSITION_ACTION_CONTRACT_QUALIFICATION_AMBIGUOUS"
+            )
+        resolved = qualified[0]
+        if (
+            int(getattr(resolved, "conId", 0) or 0) != original_con_id
+            or str(getattr(resolved, "secType", "") or "").upper()
+            != original_sec_type
+        ):
+            raise PositionExecutionContractError(
+                "POSITION_ACTION_CONTRACT_IDENTITY_MISMATCH"
+            )
+        return resolved
 
     original_con_id = int(getattr(contract, "conId", 0) or 0)
     if original_con_id <= 0:
@@ -121,7 +155,6 @@ def resolve_position_execution_contract(ib: Any, contract: Any) -> Any:
             "POSITION_ACTION_CONTRACT_IDENTITY_REQUIRED"
         )
 
-    original_exchange = str(getattr(contract, "exchange", "") or "").upper()
     expected_primary = str(
         getattr(contract, "primaryExchange", "") or ""
     ).upper()

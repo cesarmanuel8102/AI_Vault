@@ -519,6 +519,42 @@ def test_position_execution_contract_fails_closed_on_identity_change():
         resolve_position_execution_contract(broker, contract)
 
 
+def test_position_execution_contract_qualifies_crypto_when_venue_is_omitted():
+    contract = SimpleNamespace(
+        conId=766137558,
+        symbol="SOL",
+        localSymbol="SOL.USD",
+        secType="CRYPTO",
+        exchange="",
+        primaryExchange="",
+        currency="USD",
+    )
+    observed = {}
+    resolved = SimpleNamespace(
+        conId=766137558,
+        symbol="SOL",
+        localSymbol="SOL.USD",
+        secType="CRYPTO",
+        exchange="PAXOS",
+        primaryExchange="",
+        currency="USD",
+    )
+
+    def qualify(probe):
+        observed.update(vars(probe))
+        return [resolved]
+
+    actual = resolve_position_execution_contract(
+        SimpleNamespace(qualifyContracts=qualify), contract
+    )
+
+    assert observed["conId"] == 766137558
+    assert not observed.get("symbol")
+    assert not observed.get("secType")
+    assert not observed.get("exchange")
+    assert actual is resolved
+
+
 def test_toolbox_normalizes_connection_subclass_error_category(monkeypatch):
     subject = IBKRResearchToolbox(expected_account_hash="unused")
     monkeypatch.setattr(
