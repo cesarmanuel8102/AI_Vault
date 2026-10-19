@@ -58,6 +58,23 @@ PROCESS_OBSERVATION_CYCLE_LIMIT = 20
 PROVIDER_STATE_CONTEXT_LIMIT = 5
 
 
+def _resolved_market_session_state(
+    requested_state: str, session_evidence: Mapping[str, Any]
+) -> str:
+    requested = str(requested_state or "UNKNOWN").upper()
+    if requested != "UNKNOWN":
+        return requested
+    authenticated = str(session_evidence.get("session") or "UNKNOWN").upper()
+    if authenticated in {
+        "REGULAR",
+        "PREMARKET",
+        "AFTER_HOURS",
+        "CLOSED",
+    }:
+        return authenticated
+    return "UNKNOWN"
+
+
 class AutonomousStateBuilder:
     """Build a fresh decision bundle from isolated experiment state + IBKR.
 
@@ -1284,6 +1301,8 @@ class AutonomousStateBuilder:
         writer_binding_sha256: str | None = None,
         family_sessions: Mapping[str, Mapping[str, Any]] | None = None,
         regular_entry_open: bool = False,
+        regular_session_open: bool | None = None,
+        regular_market_gate_reason_codes: tuple[str, ...] = (),
         unmarked_contract_ids: set[int] | None = None,
         mark_reason_codes: tuple[str, ...] = (),
     ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
@@ -1337,10 +1356,15 @@ class AutonomousStateBuilder:
             for family_sha, evidence in sorted((family_sessions or {}).items())
             if family_sha in capability_by_sha and isinstance(evidence, Mapping)
         }
+        session_open = (
+            bool(regular_entry_open)
+            if regular_session_open is None
+            else bool(regular_session_open)
+        )
         authenticated_sessions[regular_family_sha256] = {
-            "authenticated": bool(regular_entry_open),
-            "tradable_now": bool(regular_entry_open),
-            "session": "REGULAR" if regular_entry_open else "CLOSED",
+            "authenticated": session_open,
+            "tradable_now": session_open,
+            "session": "REGULAR" if session_open else "CLOSED",
             "eligible_sleeves": [CapitalSleeve.REGULAR_SLEEVE.value],
         }
         executable_family_sha256 = sorted(
@@ -1389,7 +1413,11 @@ class AutonomousStateBuilder:
         unmarked = set(unmarked_contract_ids or ())
 
         def entry_eligibility(
-            *, phase_allowed: bool, available: bool, eligible_families: list[str]
+            *,
+            phase_allowed: bool,
+            available: bool,
+            eligible_families: list[str],
+            unavailable_reasons: tuple[str, ...] = ("FAMILY_SESSION_CLOSED",),
         ) -> dict[str, Any]:
             reasons: list[str] = []
             if not phase_allowed:
@@ -1397,7 +1425,7 @@ class AutonomousStateBuilder:
             if not reconciliation_pass:
                 reasons.append("BROKER_RECONCILIATION_REQUIRED")
             if not available:
-                reasons.append("FAMILY_SESSION_CLOSED")
+                reasons.extend(unavailable_reasons)
             return {
                 "status": "PASS" if not reasons else "BLOCK",
                 "reason_codes": reasons,
@@ -1408,6 +1436,18 @@ class AutonomousStateBuilder:
             phase_allowed=regular_phase_active,
             available=regular_entry_open and bool(regular_eligible_families),
             eligible_families=regular_eligible_families,
+            unavailable_reasons=(
+                ("FAMILY_SESSION_CLOSED",)
+                if not session_open
+                else tuple(
+                    dict.fromkeys(
+                        (
+                            "MARKET_DATA_GATE_BLOCK",
+                            *regular_market_gate_reason_codes,
+                        )
+                    )
+                )
+            ),
         )
         continuous_entry_eligibility = entry_eligibility(
             phase_allowed=continuous_phase_active,
@@ -1456,7 +1496,7 @@ class AutonomousStateBuilder:
                         explicitly_manageable
                         or (
                             owner_sleeve == CapitalSleeve.REGULAR_SLEEVE.value
-                            and regular_entry_open
+                            and session_open
                         )
                         or observed_families.intersection(continuous_eligible_families)
                     )
@@ -1711,6 +1751,14 @@ class AutonomousStateBuilder:
                     session_evidence = dict(self.session_evidence_reader() or {})
                 except Exception:
                     session_evidence = {}
+            market_session_state = _resolved_market_session_state(
+                market_session_state, session_evidence
+            )
+            regular_session_open = (
+                market_session_state.upper() == "REGULAR"
+                or str(session_evidence.get("session") or "").upper() == "REGULAR"
+            )
+            market_gate_pass = market_gate.get("gate_status") == "PASS"
             (
                 multi_sleeve_portfolio,
                 contract_ownership_snapshot,
@@ -1724,13 +1772,11 @@ class AutonomousStateBuilder:
                 transition_target_sha256=transition["target_sha256"],
                 writer_binding_sha256=transition["writer_binding_sha256"],
                 family_sessions=(session_evidence.get("family_sessions") or {}),
-                regular_entry_open=(
-                    market_gate.get("gate_status") == "PASS"
-                    and (
-                        market_session_state.upper() == "REGULAR"
-                        or str(session_evidence.get("session") or "").upper()
-                        == "REGULAR"
-                    )
+                regular_entry_open=market_gate_pass and regular_session_open,
+                regular_session_open=regular_session_open,
+                regular_market_gate_reason_codes=tuple(
+                    str(reason)
+                    for reason in (market_gate.get("reason_codes") or ())
                 ),
                 unmarked_contract_ids={
                     int(reason.rsplit(":", 1)[-1])

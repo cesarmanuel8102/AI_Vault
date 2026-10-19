@@ -208,6 +208,18 @@ class _Dumpable:
         return self.payload
 
 
+def test_authenticated_broker_session_replaces_unknown_requested_session() -> None:
+    assert state_module._resolved_market_session_state(
+        "UNKNOWN", {"session": "REGULAR"}
+    ) == "REGULAR"
+    assert state_module._resolved_market_session_state(
+        "UNKNOWN", {"session": "AFTER_HOURS"}
+    ) == "AFTER_HOURS"
+    assert state_module._resolved_market_session_state(
+        "PREMARKET", {"session": "REGULAR"}
+    ) == "PREMARKET"
+
+
 def test_v4_state_context_contains_both_sleeves_ownership_and_capabilities() -> None:
     subject = object.__new__(AutonomousStateBuilder)
     subject.sleeve_ledger_store = SimpleNamespace(
@@ -382,6 +394,75 @@ def test_supervision_exposes_only_regular_entry_eligibility() -> None:
         "eligible_family_sha256": [],
     }
     assert portfolio["new_entries_enabled"] is True
+
+
+def test_open_regular_session_reports_market_gate_block_without_disabling_management() -> None:
+    subject = object.__new__(AutonomousStateBuilder)
+    subject.sleeve_ledger_store = SimpleNamespace(
+        project_all=lambda: _Dumpable(
+            {
+                "regular": {
+                    "initialized": True,
+                    "allocation_usd": "500",
+                    "realized_pnl_usd": "0",
+                    "unrealized_pnl_usd": "0",
+                    "fees_usd": "0",
+                },
+                "continuous": {
+                    "initialized": True,
+                    "allocation_usd": "500",
+                    "realized_pnl_usd": "0",
+                    "unrealized_pnl_usd": "0",
+                    "fees_usd": "0",
+                },
+                "aggregate_currency_balances": [],
+            }
+        )
+    )
+    subject.contract_ownership_store = SimpleNamespace(
+        projection=lambda: _Dumpable(
+            {
+                "active_contracts": [
+                    {
+                        "contract_identity_sha256": "c" * 64,
+                        "contract": {"con_id": 10828168},
+                        "sleeve": "REGULAR_SLEEVE",
+                    }
+                ],
+                "projection_sha256": "o" * 64,
+            }
+        )
+    )
+    subject.product_certification_store = SimpleNamespace(projections=lambda: ())
+
+    portfolio, _, capabilities = subject._multi_sleeve_context(
+        reconciliation={"status": "PASS", "reason_codes": []},
+        account={},
+        broker_positions={"positions": [{"contract_id": 10828168}]},
+        open_orders={"open_orders": []},
+        transition_phase="ACTIVE",
+        regular_entry_open=False,
+        regular_session_open=True,
+        regular_market_gate_reason_codes=("TIMESTAMP_MISMATCH", "CLOCK_SKEW"),
+    )
+
+    regular_family = REGULAR_DAY1_PRODUCT_FAMILY.sha256
+    assert portfolio["entry_eligibility"]["REGULAR_SLEEVE"] == {
+        "status": "BLOCK",
+        "reason_codes": [
+            "MARKET_DATA_GATE_BLOCK",
+            "TIMESTAMP_MISMATCH",
+            "CLOCK_SKEW",
+        ],
+        "eligible_family_sha256": [regular_family],
+    }
+    assert portfolio["management_eligibility"]["10828168"]["status"] == "PASS"
+    assert capabilities["authenticated_sessions"][regular_family] == {
+        "authenticated": True,
+        "tradable_now": True,
+        "session": "REGULAR",
+        "eligible_sleeves": ["REGULAR_SLEEVE"],
+    }
 
 
 def test_v4_state_blocks_until_both_sleeves_are_bootstrapped() -> None:
