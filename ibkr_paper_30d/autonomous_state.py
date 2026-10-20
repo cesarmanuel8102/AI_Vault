@@ -1758,6 +1758,36 @@ class AutonomousStateBuilder:
                     for raw in observations
                     if raw.get("product_family_sha256")
                 }
+                contract_security_type = str(
+                    contract.get("security_type")
+                    or contract.get("secType")
+                    or ""
+                ).upper()
+                contract_venue = str(contract.get("exchange") or "").upper()
+                contract_representation = (
+                    "BAG" if contract_security_type == "BAG" else "DIRECT"
+                )
+                durable_family_matches = [
+                    family_sha
+                    for family_sha, capability in capability_by_sha.items()
+                    if str(
+                        (capability.get("family") or {}).get("security_type")
+                        or ""
+                    ).upper()
+                    == contract_security_type
+                    and str(
+                        (capability.get("family") or {}).get("venue_or_routing")
+                        or ""
+                    ).upper()
+                    == contract_venue
+                    and str(
+                        (capability.get("family") or {}).get("order_representation")
+                        or ""
+                    ).upper()
+                    == contract_representation
+                ]
+                if len(durable_family_matches) == 1:
+                    observed_families.add(durable_family_matches[0])
                 fresh_mark_available = contract_id not in unmarked
                 manageable = bool(
                     fresh_mark_available

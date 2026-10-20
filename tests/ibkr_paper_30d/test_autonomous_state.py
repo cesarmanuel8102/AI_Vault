@@ -185,7 +185,10 @@ from ibkr_paper_30d.autonomous_state import (
 from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.continuity_store import ContinuityStore
 from ibkr_paper_30d.experiment_control import KillSwitchStore
-from ibkr_paper_30d.multi_universe_models import REGULAR_DAY1_PRODUCT_FAMILY
+from ibkr_paper_30d.multi_universe_models import (
+    ProductFamilyKey,
+    REGULAR_DAY1_PRODUCT_FAMILY,
+)
 from ibkr_paper_30d.open_order_management import canonical_open_order
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.successor_clock import BrokerTimeObservation, clock_for_epoch
@@ -557,6 +560,156 @@ def test_open_regular_session_reports_market_gate_block_without_disabling_manage
         "session": "REGULAR",
         "eligible_sleeves": ["REGULAR_SLEEVE"],
     }
+
+
+def test_continuous_owned_position_in_current_family_is_manageable() -> None:
+    subject = object.__new__(AutonomousStateBuilder)
+    subject.sleeve_ledger_store = SimpleNamespace(
+        project_all=lambda: _Dumpable(
+            {
+                "regular": {"initialized": True},
+                "continuous": {"initialized": True},
+                "aggregate_currency_balances": [],
+            }
+        )
+    )
+    family = ProductFamilyKey(
+        security_type="CRYPTO",
+        venue_or_routing="PAXOS",
+        quantity_semantics="FRACTIONAL_ASSET_UNITS",
+        order_representation="DIRECT",
+        lifecycle_behavior="CONTINUOUS_24X7",
+    )
+    subject.contract_ownership_store = SimpleNamespace(
+        projection=lambda: _Dumpable(
+            {
+                "active_contracts": [
+                    {
+                        "contract_identity_sha256": "c" * 64,
+                        "contract": {
+                            "con_id": 766137558,
+                            "security_type": "CRYPTO",
+                            "exchange": "PAXOS",
+                        },
+                        "sleeve": "CONTINUOUS_SLEEVE",
+                    }
+                ],
+                "projection_sha256": "o" * 64,
+            }
+        )
+    )
+    subject.product_certification_store = SimpleNamespace(
+        projections=lambda: (
+            _Dumpable(
+                {
+                    "family": family.model_dump(mode="json"),
+                    "family_sha256": family.sha256,
+                    "status": "FULL_LIFECYCLE_VERIFIED",
+                    "executable": True,
+                }
+            ),
+        )
+    )
+
+    portfolio, _, _ = subject._multi_sleeve_context(
+        reconciliation={"status": "PASS", "reason_codes": []},
+        account={},
+        broker_positions={
+            "positions": [
+                {
+                    "contract": {
+                        "conId": 766137558,
+                        "secType": "CRYPTO",
+                        "exchange": "PAXOS",
+                    }
+                }
+            ]
+        },
+        open_orders={"open_orders": []},
+        transition_phase="ACTIVE",
+        family_sessions={
+            family.sha256: {
+                "authenticated": True,
+                "tradable_now": True,
+                "session": "REGULAR",
+                "eligible_sleeves": ["CONTINUOUS_SLEEVE"],
+            }
+        },
+    )
+
+    assert portfolio["management_eligibility"]["766137558"] == {
+        "status": "PASS",
+        "reason_codes": [],
+        "capital_sleeve": "CONTINUOUS_SLEEVE",
+        "contract_identity_sha256": "c" * 64,
+    }
+
+
+def test_continuous_owned_position_does_not_borrow_another_venues_family() -> None:
+    subject = object.__new__(AutonomousStateBuilder)
+    subject.sleeve_ledger_store = SimpleNamespace(
+        project_all=lambda: _Dumpable(
+            {
+                "regular": {"initialized": True},
+                "continuous": {"initialized": True},
+                "aggregate_currency_balances": [],
+            }
+        )
+    )
+    family = ProductFamilyKey(
+        security_type="CRYPTO",
+        venue_or_routing="PAXOS",
+        quantity_semantics="FRACTIONAL_ASSET_UNITS",
+        order_representation="DIRECT",
+        lifecycle_behavior="CONTINUOUS_24X7",
+    )
+    subject.contract_ownership_store = SimpleNamespace(
+        projection=lambda: _Dumpable(
+            {
+                "active_contracts": [
+                    {
+                        "contract_identity_sha256": "c" * 64,
+                        "contract": {
+                            "con_id": 766137558,
+                            "security_type": "CRYPTO",
+                            "exchange": "OTHER",
+                        },
+                        "sleeve": "CONTINUOUS_SLEEVE",
+                    }
+                ],
+                "projection_sha256": "o" * 64,
+            }
+        )
+    )
+    subject.product_certification_store = SimpleNamespace(
+        projections=lambda: (
+            _Dumpable(
+                {
+                    "family": family.model_dump(mode="json"),
+                    "family_sha256": family.sha256,
+                    "status": "FULL_LIFECYCLE_VERIFIED",
+                    "executable": True,
+                }
+            ),
+        )
+    )
+
+    portfolio, _, _ = subject._multi_sleeve_context(
+        reconciliation={"status": "PASS", "reason_codes": []},
+        account={},
+        broker_positions={"positions": [{"contract_id": 766137558}]},
+        open_orders={"open_orders": []},
+        transition_phase="ACTIVE",
+        family_sessions={
+            family.sha256: {
+                "authenticated": True,
+                "tradable_now": True,
+                "eligible_sleeves": ["CONTINUOUS_SLEEVE"],
+            }
+        },
+    )
+
+    assert portfolio["management_eligibility"]["766137558"]["status"] == "BLOCK"
 
 
 def test_v4_state_blocks_until_both_sleeves_are_bootstrapped() -> None:
