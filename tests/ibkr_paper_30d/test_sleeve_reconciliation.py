@@ -84,6 +84,30 @@ def test_reported_cash_rounding_requires_bound_reference_and_never_masks_costs(d
     assert SleeveReconciler.reconcile(account, ledgers, _ownership()).status == status
 
 
+@pytest.mark.parametrize(
+    "expected_cash,status",
+    (("830.003", "PASS"), ("830.006", "BLOCK")),
+)
+def test_authenticated_cent_cash_accepts_only_values_that_round_to_broker_report(
+    expected_cash: str,
+    status: str,
+) -> None:
+    account, ledgers = _account(), _ledgers()
+    account["currency_balances"] = [{"currency": "USD", "amount": "830.00"}]
+    account["cash_balance_basis"] = "IBKR_LEDGER_CASH_BALANCE_USD_V1"
+    account["cash_rounding_reference"] = {
+        "quantum_usd": "0.001",
+        "provenance_sha256": "a" * 64,
+    }
+    ledgers["aggregate_currency_balances"] = [
+        {"currency": "USD", "amount": expected_cash}
+    ]
+
+    receipt = SleeveReconciler.reconcile(account, ledgers, _ownership())
+
+    assert receipt.status == status
+
+
 def test_unattributed_or_aggregate_mismatch_freezes_new_entries() -> None:
     account = _account()
     account["positions"].append(

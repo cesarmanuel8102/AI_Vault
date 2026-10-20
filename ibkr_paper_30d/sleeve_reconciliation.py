@@ -268,6 +268,10 @@ class SleeveReconciler:
                     observed_quantum = Decimal(1).scaleb(actual.as_tuple().exponent)
                     if all(0 < q <= Decimal('.0001') for q in (baseline_quantum, observed_quantum)):
                         matches = abs(actual-expected) < (baseline_quantum+observed_quantum)/2
+                    elif (
+                        Decimal("0") < baseline_quantum <= observed_quantum <= Decimal("0.01")
+                    ):
+                        matches = expected.quantize(observed_quantum) == actual
                 except (KeyError, ValueError, ArithmeticError):
                     pass
             if not matches:
