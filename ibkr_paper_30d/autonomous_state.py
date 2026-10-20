@@ -58,6 +58,70 @@ PROCESS_OBSERVATION_CYCLE_LIMIT = 20
 PROVIDER_STATE_CONTEXT_LIMIT = 5
 
 
+def _trusted_commission_from_outcome(
+    fill: Mapping[str, Any],
+    authority: Mapping[str, Any],
+    result: Mapping[str, Any],
+) -> Decimal | None:
+    """Return a what-if commission only for an exactly bound accepted action."""
+
+    execution_key = str(authority.get("execution_key") or "")
+    parts = execution_key.split(":")
+    if (
+        len(parts) != 5
+        or parts[0] != "model"
+        or parts[3] != "POSITION_ACTION"
+        or authority.get("event_type") != "EXECUTION_AUTHORITY_RESERVED"
+        or authority.get("operation") != "POSITION_ACTION"
+        or authority.get("order_ref") != fill.get("orderRef")
+        or result.get("accepted") is not True
+        or result.get("validation") != "PASS"
+        or result.get("invocation_id") != parts[2]
+        or result.get("decision") not in {"CLOSE_POSITION", "REDUCE_POSITION"}
+    ):
+        return None
+    action = result.get("position_action")
+    evidence = result.get("broker_validation")
+    if not isinstance(action, dict) or not isinstance(evidence, dict):
+        return None
+    if sha256_json(action) != parts[4]:
+        return None
+    contract = fill.get("contract") or {}
+    evidence_contract = evidence.get("contract") or {}
+    try:
+        fill_quantity = Decimal(str(fill.get("quantity") or ""))
+        action_quantity = Decimal(str(action.get("quantity") or ""))
+        requested_quantity = Decimal(str(evidence.get("requested_quantity") or ""))
+        commission = Decimal(str(evidence.get("commission") or ""))
+    except (ValueError, ArithmeticError):
+        return None
+    if (
+        action.get("capital_sleeve") != authority.get("capital_sleeve")
+        or str(action.get("action") or "").upper()
+        != str(fill.get("side") or "").upper()
+        or int(action.get("contract_id") or 0)
+        != int(contract.get("conId") or fill.get("contract_id") or 0)
+        or int(evidence_contract.get("conId") or 0)
+        != int(action.get("contract_id") or 0)
+        or str(evidence_contract.get("currency") or "").upper() != "USD"
+        or evidence.get("success") is not True
+        or evidence.get("whatIf") is not True
+        or not all(
+            value.is_finite() and value > 0
+            for value in (
+                fill_quantity,
+                action_quantity,
+                requested_quantity,
+                commission,
+            )
+        )
+        or fill_quantity != action_quantity
+        or requested_quantity != action_quantity
+    ):
+        return None
+    return commission
+
+
 def _resolved_market_session_state(
     requested_state: str, session_evidence: Mapping[str, Any]
 ) -> str:
@@ -529,6 +593,175 @@ class AutonomousStateBuilder:
                 reasons.append(f"MODEL_FILL_IMPORT_FAILED:{contract_id}:{exc}")
         return reasons
 
+    def _reconciliation_executions(
+        self, contract_hash: Callable[[dict[str, Any]], str]
+    ) -> list[dict[str, Any]]:
+        executions: list[dict[str, Any]] = []
+        for raw in self._latest_executions:
+            if not str(raw.get("orderRef") or "").startswith(
+                f"{EXPERIMENT_ORDER_PREFIX}-"
+            ):
+                continue
+            commission = raw.get("commission")
+            if commission in {None, ""}:
+                execution_hash = str(raw.get("execution_id_hash") or "")
+                effective = self.ledger._effective_commission_for_execution(
+                    execution_hash
+                )
+                if effective is not None and effective > 0:
+                    commission = str(effective)
+            executions.append(
+                {
+                    "contract_identity_sha256": contract_hash(raw),
+                    "execution_id_hash": raw.get("execution_id_hash"),
+                    "commission": commission,
+                }
+            )
+        return executions
+
+    @staticmethod
+    def _usd_cash_values(
+        account_snapshot: Mapping[str, Any], ledger_payload: Mapping[str, Any]
+    ) -> tuple[Decimal, Decimal, Decimal] | None:
+        if account_snapshot.get("cash_balance_basis") != (
+            "IBKR_LEDGER_CASH_BALANCE_USD_V1"
+        ):
+            return None
+        reference = account_snapshot.get("cash_rounding_reference") or {}
+        if len(str(reference.get("provenance_sha256") or "")) != 64:
+            return None
+        try:
+            baseline_quantum = Decimal(str(reference["quantum_usd"]))
+            actual = sum(
+                (
+                    Decimal(str(item.get("amount") or "0"))
+                    for item in account_snapshot.get("currency_balances", ())
+                    if str(item.get("currency") or "").upper() == "USD"
+                ),
+                Decimal("0"),
+            )
+            expected = sum(
+                (
+                    Decimal(str(item.get("amount") or "0"))
+                    for item in ledger_payload.get(
+                        "aggregate_currency_balances", ()
+                    )
+                    if str(item.get("currency") or "").upper() == "USD"
+                ),
+                Decimal("0"),
+            )
+            for field in (
+                "classified_canary_currency_balances",
+                "classified_non_experiment_currency_balances",
+            ):
+                expected += sum(
+                    (
+                        Decimal(str(item.get("amount") or "0"))
+                        for item in account_snapshot.get(field, ())
+                        if str(item.get("currency") or "").upper() == "USD"
+                    ),
+                    Decimal("0"),
+                )
+            observed_quantum = Decimal(1).scaleb(actual.as_tuple().exponent)
+        except (KeyError, TypeError, ValueError, ArithmeticError):
+            return None
+        if not all(
+            quantum.is_finite()
+            and Decimal("0") < quantum <= Decimal("0.01")
+            for quantum in (baseline_quantum, observed_quantum)
+        ):
+            return None
+        return actual, expected, max(baseline_quantum, observed_quantum)
+
+    def _recover_missing_commission(
+        self,
+        *,
+        account_snapshot: Mapping[str, Any],
+        ledger_payload: Mapping[str, Any],
+        receipt: Mapping[str, Any],
+    ) -> bool:
+        """Recover one omitted broker commission from exact accepted evidence."""
+
+        if set(receipt.get("reason_codes") or ()) != {
+            "AGGREGATE_CURRENCY_MISMATCH:USD"
+        }:
+            return False
+        cash = self._usd_cash_values(account_snapshot, ledger_payload)
+        if cash is None:
+            return False
+        actual, expected, quantum = cash
+        from .sleeve_execution_authority import SleeveAuthorityReservationStore
+
+        reservations = [
+            event
+            for event in SleeveAuthorityReservationStore(self.db)._events()
+            if event.get("event_type") == "EXECUTION_AUTHORITY_RESERVED"
+        ]
+        candidates: list[tuple[dict[str, Any], dict[str, Any], Decimal, str]] = []
+        for fill in self._latest_executions:
+            if (
+                fill.get("commission") not in {None, ""}
+                or not str(fill.get("orderRef") or "").startswith(
+                    f"{EXPERIMENT_ORDER_PREFIX}-"
+                )
+            ):
+                continue
+            matching = [
+                event
+                for event in reservations
+                if event.get("order_ref") == fill.get("orderRef")
+            ]
+            if len(matching) != 1:
+                continue
+            authority = matching[0]
+            parts = str(authority.get("execution_key") or "").split(":")
+            if len(parts) != 5:
+                continue
+            rows = self.db.execute(
+                "SELECT payload_json,payload_sha256 FROM trader_results "
+                "WHERE invocation_id=? AND accepted=1",
+                (parts[2],),
+            ).fetchall()
+            if len(rows) != 1:
+                continue
+            result = self._json_mapping(rows[0][0])
+            if result is None or sha256_json(result) != str(rows[0][1]):
+                continue
+            commission = _trusted_commission_from_outcome(
+                fill, authority, result
+            )
+            if commission is None:
+                continue
+            if (expected - commission).quantize(quantum) != actual.quantize(
+                quantum
+            ):
+                continue
+            evidence_sha = sha256_json(
+                {
+                    "schema": "MISSING_COMMISSION_RECOVERY_EVIDENCE_V1",
+                    "execution_id_hash": fill.get("execution_id_hash"),
+                    "authority_event_sha256": authority.get("event_sha256"),
+                    "trader_result_sha256": str(rows[0][1]),
+                    "account_snapshot_sha256": sha256_json(dict(account_snapshot)),
+                    "commission_usd": str(commission),
+                    "comparison_quantum_usd": str(quantum),
+                }
+            )
+            candidates.append((fill, authority, commission, evidence_sha))
+        if len(candidates) != 1:
+            return False
+
+        fill, authority, commission, evidence_sha = candidates[0]
+        execution_hash = str(fill.get("execution_id_hash") or "")
+        self.sleeve_ledger_store.adjust_model_fill_commission(
+            CapitalSleeve(str(authority["capital_sleeve"])),
+            execution_id_sha256=execution_hash,
+            effective_commission_usd=commission,
+            evidence_sha256=evidence_sha,
+        )
+        self.ledger.record_fill({**fill, "commission": str(commission)})
+        return True
+
     def _sync_and_reconcile_v4(
         self,
         *,
@@ -578,15 +811,7 @@ class AutonomousStateBuilder:
             for raw in open_orders.get("open_orders", ()) or ()
             if str(raw.get("orderRef") or "").startswith(f"{EXPERIMENT_ORDER_PREFIX}-")
         ]
-        executions = [
-            {
-                "contract_identity_sha256": contract_hash(raw),
-                "execution_id_hash": raw.get("execution_id_hash"),
-                "commission": raw.get("commission"),
-            }
-            for raw in self._latest_executions
-            if str(raw.get("orderRef") or "").startswith(f"{EXPERIMENT_ORDER_PREFIX}-")
-        ]
+        executions = self._reconciliation_executions(contract_hash)
         broker_snapshot = {
             "positions": positions,
             "open_orders": orders,
@@ -623,6 +848,40 @@ class AutonomousStateBuilder:
         receipt = SleeveReconciler.reconcile(
             account_snapshot, ledger_payload, self._dump(ownership)
         )
+        if self._recover_missing_commission(
+            account_snapshot=account_snapshot,
+            ledger_payload=ledger_payload,
+            receipt=receipt.model_dump(mode="json"),
+        ):
+            executions = self._reconciliation_executions(contract_hash)
+            broker_snapshot = {
+                "positions": positions,
+                "open_orders": orders,
+                "executions": executions,
+            }
+            self.sleeve_ledger_store.reconcile_broker_snapshot(
+                broker_snapshot, ownership
+            )
+            ledgers = self.sleeve_ledger_store.project_all()
+            ledger_payload = self._dump(ledgers)
+            account_snapshot.update(
+                {
+                    "executions": executions,
+                    "fees": [
+                        {
+                            "contract_identity_sha256": item[
+                                "contract_identity_sha256"
+                            ],
+                            "amount": item["commission"],
+                        }
+                        for item in executions
+                        if item.get("commission") not in {None, ""}
+                    ],
+                }
+            )
+            receipt = SleeveReconciler.reconcile(
+                account_snapshot, ledger_payload, self._dump(ownership)
+            )
         if receipt.status == "PASS":
             from .sleeve_execution_authority import (
                 SleeveAuthorityReservationStore,

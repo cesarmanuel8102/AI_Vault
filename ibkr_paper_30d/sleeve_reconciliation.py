@@ -266,12 +266,23 @@ class SleeveReconciler:
                 try:
                     baseline_quantum = _decimal(reference['quantum_usd'])
                     observed_quantum = Decimal(1).scaleb(actual.as_tuple().exponent)
-                    if all(0 < q <= Decimal('.0001') for q in (baseline_quantum, observed_quantum)):
-                        matches = abs(actual-expected) < (baseline_quantum+observed_quantum)/2
-                    elif (
-                        Decimal("0") < baseline_quantum <= observed_quantum <= Decimal("0.01")
+                    if all(
+                        Decimal("0") < quantum <= Decimal("0.0001")
+                        for quantum in (baseline_quantum, observed_quantum)
                     ):
-                        matches = expected.quantize(observed_quantum) == actual
+                        matches = abs(actual - expected) < (
+                            baseline_quantum + observed_quantum
+                        ) / 2
+                    elif all(
+                        Decimal("0") < quantum <= Decimal("0.01")
+                        for quantum in (baseline_quantum, observed_quantum)
+                    ):
+                        comparison_quantum = max(
+                            baseline_quantum, observed_quantum
+                        )
+                        matches = expected.quantize(
+                            comparison_quantum
+                        ) == actual.quantize(comparison_quantum)
                 except (KeyError, ValueError, ArithmeticError):
                     pass
             if not matches:

@@ -1519,6 +1519,27 @@ class IBKRResearchToolbox:
                 side = "BUY" if raw_side in {"BOT", "BUY"} else "SELL" if raw_side in {"SLD", "SELL"} else raw_side
                 import hashlib
                 exec_id = str(getattr(execution, "execId", "") or "")
+                commission = None
+                if commission_report is not None:
+                    report_exec_id = str(
+                        getattr(commission_report, "execId", "") or ""
+                    )
+                    report_currency = str(
+                        getattr(commission_report, "currency", "") or ""
+                    ).upper()
+                    try:
+                        report_commission = Decimal(
+                            str(getattr(commission_report, "commission", ""))
+                        )
+                    except (ValueError, ArithmeticError):
+                        report_commission = Decimal("NaN")
+                    if (
+                        report_exec_id == exec_id
+                        and report_currency == "USD"
+                        and report_commission.is_finite()
+                        and report_commission >= 0
+                    ):
+                        commission = str(report_commission)
                 items.append({
                     "execution_id_hash": hashlib.sha256(exec_id.encode("utf-8")).hexdigest() if exec_id else None,
                     "execution_id_sha256": sha256_json(exec_id) if exec_id else None,
@@ -1533,11 +1554,12 @@ class IBKRResearchToolbox:
                     "side": side,
                     "quantity": str(getattr(execution, "shares", "") or ""),
                     "price": str(getattr(execution, "price", "") or ""),
-                    "commission": (
-                    None
-                    if commission_report is None
-                    else str(getattr(commission_report, "commission", 0))
-                ),
+                    "commission": commission,
+                    "commission_currency": (
+                        str(getattr(commission_report, "currency", "") or "").upper()
+                        if commission_report is not None
+                        else ""
+                    ),
                     "contract": self._serialize_contract(contract),
                 })
             return {"success": True, "executions": items}

@@ -180,6 +180,7 @@ from ibkr_paper_30d.autonomous_research import ResearchResult, ResearchTool
 from ibkr_paper_30d.autonomous_state import (
     AutonomousStateBuildError,
     AutonomousStateBuilder,
+    _trusted_commission_from_outcome,
 )
 from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.continuity_store import ContinuityStore
@@ -198,6 +199,75 @@ from successor_test_support import (
     SUCCESSOR_START,
     build_authorized_successor,
 )
+
+
+def test_missing_commission_recovery_requires_exact_accepted_outcome_binding():
+    action = {
+        "action": "SELL",
+        "capital_sleeve": "REGULAR_SLEEVE",
+        "contract_id": 7884,
+        "expiry": None,
+        "limit_price": "118.25",
+        "order_type": "LMT",
+        "product_family_sha256": "a" * 64,
+        "quantity": "4",
+        "reason": "Exit the position.",
+        "right": None,
+        "sec_type": "STK",
+        "strike": None,
+        "symbol": "HAE",
+        "time_in_force": "DAY",
+    }
+    invocation_id = "autonomous-commission-test"
+    authority = {
+        "event_type": "EXECUTION_AUTHORITY_RESERVED",
+        "event_sha256": "b" * 64,
+        "execution_key": (
+            f"model:writer-id:{invocation_id}:POSITION_ACTION:{sha256_json(action)}"
+        ),
+        "operation": "POSITION_ACTION",
+        "order_ref": "codex-ibkr-paper-30d-p-hae",
+        "capital_sleeve": "REGULAR_SLEEVE",
+        "contract_identity_sha256": "c" * 64,
+    }
+    result = {
+        "accepted": True,
+        "validation": "PASS",
+        "decision": "CLOSE_POSITION",
+        "invocation_id": invocation_id,
+        "position_action": action,
+        "broker_validation": {
+            "success": True,
+            "whatIf": True,
+            "commission": 1.0097558,
+            "requested_quantity": "4",
+            "contract": {"conId": 7884, "currency": "USD"},
+        },
+    }
+    fill = {
+        "execution_id_hash": "d" * 64,
+        "orderRef": "codex-ibkr-paper-30d-p-hae",
+        "side": "SELL",
+        "quantity": "4.0",
+        "contract": {"conId": 7884},
+    }
+
+    assert _trusted_commission_from_outcome(fill, authority, result) == Decimal(
+        "1.0097558"
+    )
+    assert _trusted_commission_from_outcome(
+        {**fill, "quantity": "3"}, authority, result
+    ) is None
+    assert _trusted_commission_from_outcome(
+        fill,
+        authority,
+        {**result, "broker_validation": {**result["broker_validation"], "whatIf": False}},
+    ) is None
+    assert _trusted_commission_from_outcome(
+        fill,
+        {**authority, "execution_key": authority["execution_key"][:-1] + "0"},
+        result,
+    ) is None
 
 
 class _Dumpable:

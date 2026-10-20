@@ -744,6 +744,117 @@ class SleeveLedgerStore:
                 receipts[sleeve.value] = receipt.event_sha256
         return receipts
 
+    def adjust_model_fill_commission(
+        self,
+        sleeve: CapitalSleeve,
+        *,
+        execution_id_sha256: str,
+        effective_commission_usd: Decimal,
+        evidence_sha256: str,
+    ) -> SleeveLedgerReceipt:
+        with self.db.transaction():
+            return self.adjust_model_fill_commission_in_transaction(
+                sleeve,
+                execution_id_sha256=execution_id_sha256,
+                effective_commission_usd=effective_commission_usd,
+                evidence_sha256=evidence_sha256,
+            )
+
+    def adjust_model_fill_commission_in_transaction(
+        self,
+        sleeve: CapitalSleeve,
+        *,
+        execution_id_sha256: str,
+        effective_commission_usd: Decimal,
+        evidence_sha256: str,
+    ) -> SleeveLedgerReceipt:
+        """Apply one evidence-bound late commission to an imported model fill."""
+
+        if not self.db.connection.in_transaction:
+            raise SleeveLedgerError("ATOMIC_MODEL_FILL_TRANSACTION_REQUIRED")
+        if not isinstance(sleeve, CapitalSleeve):
+            sleeve = CapitalSleeve(sleeve)
+        execution_id = str(execution_id_sha256 or "")
+        evidence_hash = str(evidence_sha256 or "")
+        try:
+            effective = normalized_decimal(effective_commission_usd)
+        except (TypeError, ValueError) as exc:
+            raise SleeveLedgerError("MODEL_FILL_COMMISSION_INVALID") from exc
+        if (
+            any(
+                len(value) != 64
+                or any(char not in "0123456789abcdef" for char in value)
+                for value in (execution_id, evidence_hash)
+            )
+            or not effective.is_finite()
+            or effective < 0
+        ):
+            raise SleeveLedgerError("MODEL_FILL_COMMISSION_INVALID")
+
+        events = self._events()
+        imported = [
+            event
+            for event in events
+            if event["event_type"] == "MODEL_FILL_IMPORTED"
+            and event.get("execution_id_sha256") == execution_id
+        ]
+        if len(imported) != 1 or imported[0].get("sleeve") != sleeve.value:
+            raise SleeveLedgerError("MODEL_FILL_COMMISSION_IMPORT_REQUIRED")
+        initial = normalized_decimal(
+            (imported[0].get("fill") or {}).get("commission_usd") or "0"
+        )
+        prior = [
+            event
+            for event in events
+            if event["event_type"] == "MODEL_FILL_COMMISSION_ADJUSTED"
+            and event.get("execution_id_sha256") == execution_id
+        ]
+        if prior:
+            latest = prior[-1]
+            if (
+                len(prior) == 1
+                and normalized_decimal(latest.get("effective_commission_usd"))
+                == effective
+                and latest.get("evidence_sha256") == evidence_hash
+            ):
+                return SleeveLedgerReceipt(
+                    event_id=latest["event_id"],
+                    event_sha256=latest["event_sha256"],
+                    sleeve=sleeve,
+                    event_type="MODEL_FILL_COMMISSION_ADJUSTED",
+                    duplicate=True,
+                )
+            raise SleeveLedgerError("MODEL_FILL_COMMISSION_CONFLICT")
+        if effective < initial:
+            raise SleeveLedgerError("MODEL_FILL_COMMISSION_CONFLICT")
+
+        delta = effective - initial
+        if delta > 0:
+            self._insert(
+                sleeve=sleeve,
+                currency="USD",
+                event_type="CURRENCY_DEBIT",
+                payload={"amount": str(delta)},
+            )
+            self._insert(
+                sleeve=sleeve,
+                currency="USD",
+                event_type="FEE_CHARGED",
+                payload={"amount_usd": str(delta)},
+            )
+        return self._insert(
+            sleeve=sleeve,
+            currency="USD",
+            event_type="MODEL_FILL_COMMISSION_ADJUSTED",
+            payload={
+                "execution_id_sha256": execution_id,
+                "initial_commission_usd": str(initial),
+                "commission_delta_usd": str(delta),
+                "effective_commission_usd": str(effective),
+                "evidence_sha256": evidence_hash,
+            },
+        )
+
     def project(self, sleeve: CapitalSleeve) -> SleeveLedgerState:
         if not isinstance(sleeve, CapitalSleeve):
             sleeve = CapitalSleeve(sleeve)

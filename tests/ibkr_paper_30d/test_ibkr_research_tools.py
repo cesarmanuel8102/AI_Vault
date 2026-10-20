@@ -62,6 +62,59 @@ class FakeIB:
         self.disconnected = True
 
 
+class FakeExecutionsIB:
+    def __init__(self, *, commission: float, currency: str):
+        self.disconnected = False
+        execution = SimpleNamespace(
+            execId="execution-1",
+            side="SLD",
+            orderRef="codex-ibkr-paper-30d-p-test",
+            permId=11,
+            orderId=12,
+            clientId=19761,
+            acctNumber="DU1234567",
+            time="2026-10-20T15:01:59Z",
+            cumQty=4,
+            avgPrice=118.25,
+            shares=4,
+            price=118.25,
+        )
+        self.fill = SimpleNamespace(
+            execution=execution,
+            contract=trade().contract,
+            commissionReport=SimpleNamespace(
+                execId="execution-1",
+                commission=commission,
+                currency=currency,
+            ),
+        )
+
+    def reqExecutions(self, _):
+        return [self.fill]
+
+    def disconnect(self):
+        self.disconnected = True
+
+
+@pytest.mark.parametrize(
+    "commission,currency,expected",
+    ((0.0, "", None), (1.0097558, "USD", "1.0097558")),
+)
+def test_execution_commission_requires_complete_matching_usd_report(
+    commission, currency, expected
+):
+    subject = IBKRResearchToolbox(
+        expected_account_hash=expected_identity_hash("DU1234567")
+    )
+    broker = FakeExecutionsIB(commission=commission, currency=currency)
+    subject._connect = lambda: broker
+
+    result = subject._executions({})
+
+    assert result["executions"][0]["commission"] == expected
+    assert broker.disconnected is True
+
+
 class FakeAccountSummaryIB:
     def __init__(self):
         self.disconnected = False

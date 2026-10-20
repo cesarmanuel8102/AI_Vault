@@ -250,6 +250,86 @@ def test_model_fill_import_rejects_conflicting_replay_without_mutation(tmp_path)
         db.close()
 
 
+def test_missing_model_fill_commission_is_adjusted_once_with_provenance(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    sleeve = CapitalSleeve.REGULAR_SLEEVE
+    try:
+        store.bootstrap_regular(_carry())
+        fill = {
+            "execution_id_sha256": "e" * 64,
+            "order_ref": "codex-ibkr-paper-30d-p-hae",
+            "contract_identity_sha256": "f" * 64,
+            "action": "SELL",
+            "quantity": "4",
+            "price": "118.25",
+            "multiplier": "1",
+            "commission_usd": "0",
+            "authority_event_sha256": ["a" * 64],
+        }
+        store.import_model_fill(sleeve, fill)
+        before = store.project(sleeve)
+
+        first = store.adjust_model_fill_commission(
+            sleeve,
+            execution_id_sha256="e" * 64,
+            effective_commission_usd=Decimal("1.0097558"),
+            evidence_sha256="b" * 64,
+        )
+        retry = store.adjust_model_fill_commission(
+            sleeve,
+            execution_id_sha256="e" * 64,
+            effective_commission_usd=Decimal("1.0097558"),
+            evidence_sha256="b" * 64,
+        )
+        after = store.project(sleeve)
+
+        assert first.duplicate is False
+        assert retry.duplicate is True
+        assert after.balance("USD") == before.balance("USD") - Decimal("1.0097558")
+        assert after.fees_usd == before.fees_usd + Decimal("1.0097558")
+        assert sum(
+            event["event_type"] == "MODEL_FILL_COMMISSION_ADJUSTED"
+            for event in store._events()
+        ) == 1
+    finally:
+        db.close()
+
+
+def test_model_fill_commission_adjustment_rejects_conflict(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    sleeve = CapitalSleeve.CONTINUOUS_SLEEVE
+    try:
+        store.bootstrap_continuous()
+        fill = {
+            "execution_id_sha256": "e" * 64,
+            "order_ref": "codex-ibkr-paper-30d-a-sol",
+            "contract_identity_sha256": "f" * 64,
+            "action": "SELL",
+            "quantity": "1",
+            "price": "100",
+            "multiplier": "1",
+            "commission_usd": "0",
+            "authority_event_sha256": ["a" * 64],
+        }
+        store.import_model_fill(sleeve, fill)
+        store.adjust_model_fill_commission(
+            sleeve,
+            execution_id_sha256="e" * 64,
+            effective_commission_usd=Decimal("1"),
+            evidence_sha256="b" * 64,
+        )
+
+        with pytest.raises(SleeveLedgerError, match="MODEL_FILL_COMMISSION_CONFLICT"):
+            store.adjust_model_fill_commission(
+                sleeve,
+                execution_id_sha256="e" * 64,
+                effective_commission_usd=Decimal("2"),
+                evidence_sha256="c" * 64,
+            )
+    finally:
+        db.close()
+
+
 def test_broker_snapshot_projects_owned_positions_orders_fills_and_fees(tmp_path) -> None:
     db, store = _store(tmp_path)
     contract = canonical_contract_identity(
