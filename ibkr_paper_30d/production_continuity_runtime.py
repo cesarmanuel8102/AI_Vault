@@ -24,6 +24,8 @@ from .continuity_store import ContinuityStore, ContinuityStoreError
 from .ibkr_readonly import expected_identity_hash
 from .multi_universe_models import (
     CapitalSleeve,
+    ProductFamilyKey,
+    REGULAR_DAY1_PRODUCT_FAMILY,
     TransitionPhase,
     continuous_new_entries_allowed,
     regular_new_entries_allowed,
@@ -41,6 +43,17 @@ DEFAULT_SMTP_CONFIG = Path("Secrets/email_alerts.env")
 
 class ProductionRuntimeConfigurationError(RuntimeError):
     pass
+
+
+def _uses_inherited_regular_day1_capability(
+    sleeve: CapitalSleeve, family: ProductFamilyKey
+) -> bool:
+    """Match the regular execution path already exposed in decision bundles."""
+
+    return (
+        sleeve is CapitalSleeve.REGULAR_SLEEVE
+        and family == REGULAR_DAY1_PRODUCT_FAMILY
+    )
 
 
 @dataclass(frozen=True)
@@ -290,10 +303,15 @@ class _ProductionSleeveAuthoritySnapshotReader:
                     "PRODUCT_FAMILY_DB_AUTHORITY_REQUIRED"
                 )
             family = ProductFamilyKey.model_validate(family_payload)
-            capability = ProductFamilyCertificationStore(
-                db,
-                current_adapter_sha256=self.current_adapter_sha256,
-            ).projection(family)
+            inherited_regular_capability = _uses_inherited_regular_day1_capability(
+                request.capital_sleeve, family
+            )
+            capability = None
+            if not inherited_regular_capability:
+                capability = ProductFamilyCertificationStore(
+                    db,
+                    current_adapter_sha256=self.current_adapter_sha256,
+                ).projection(family)
             row = db.execute(
                 "SELECT phase,payload_json FROM successor_transition_events "
                 "ORDER BY sequence DESC LIMIT 1"
@@ -399,7 +417,11 @@ class _ProductionSleeveAuthoritySnapshotReader:
                 capital_sleeve=request.capital_sleeve,
                 sleeve_authority_sha256=sleeve_authority_sha256,
                 ownership_projection_sha256=ownership.projection_sha256,
-                product_family_sha256=capability.family_sha256,
+                product_family_sha256=(
+                    family.sha256
+                    if inherited_regular_capability
+                    else capability.family_sha256
+                ),
                 economic_authorization_sha256=target.economic_risk_authorization_sha256,
                 transition_target_sha256=target.sha256,
                 writer_binding_sha256=target.writer_binding_sha256,
@@ -416,10 +438,17 @@ class _ProductionSleeveAuthoritySnapshotReader:
                     and reconciliation.get("fresh", True) is True
                 ),
                 paper_only=True,
-                family_executable=capability.executable,
+                family_executable=(
+                    True
+                    if inherited_regular_capability
+                    else capability.executable
+                ),
                 capability_fresh=(
-                    capability.expires_at_utc is not None
-                    and capability.expires_at_utc > datetime.now(timezone.utc)
+                    inherited_regular_capability
+                    or (
+                        capability.expires_at_utc is not None
+                        and capability.expires_at_utc > datetime.now(timezone.utc)
+                    )
                 ),
                 ownership_conflict=(
                     ownership.projection_sha256 != request.ownership_projection_sha256

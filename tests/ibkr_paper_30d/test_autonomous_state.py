@@ -270,6 +270,30 @@ def test_missing_commission_recovery_requires_exact_accepted_outcome_binding():
     ) is None
 
 
+def test_usd_cash_values_accepts_raw_ibkr_reconciliation_snapshot_shape():
+    account = {
+        "cash_balance_basis": "IBKR_LEDGER_CASH_BALANCE_USD_V1",
+        "cash_reporting_quantum_usd": "0.0001",
+        "broker_snapshot_sha256": "a" * 64,
+        "currency_balances": [{"currency": "USD", "amount": "254845.3702"}],
+        "classified_canary_currency_balances": [],
+        "classified_non_experiment_currency_balances": [
+            {"currency": "USD", "amount": "253880.174886"}
+        ],
+    }
+    ledger = {
+        "aggregate_currency_balances": [
+            {"currency": "USD", "amount": "966.2050698"}
+        ]
+    }
+
+    assert AutonomousStateBuilder._usd_cash_values(account, ledger) == (
+        Decimal("254845.3702"),
+        Decimal("254846.3799558"),
+        Decimal("0.0001"),
+    )
+
+
 class _Dumpable:
     def __init__(self, payload):
         self.payload = payload

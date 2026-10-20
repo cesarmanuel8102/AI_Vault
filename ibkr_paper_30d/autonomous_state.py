@@ -628,10 +628,20 @@ class AutonomousStateBuilder:
         ):
             return None
         reference = account_snapshot.get("cash_rounding_reference") or {}
-        if len(str(reference.get("provenance_sha256") or "")) != 64:
+        reference_sha256 = str(
+            reference.get("provenance_sha256")
+            or account_snapshot.get("broker_snapshot_sha256")
+            or ""
+        )
+        if len(reference_sha256) != 64:
             return None
         try:
-            baseline_quantum = Decimal(str(reference["quantum_usd"]))
+            baseline_quantum = Decimal(
+                str(
+                    reference.get("quantum_usd")
+                    or account_snapshot["cash_reporting_quantum_usd"]
+                )
+            )
             actual = sum(
                 (
                     Decimal(str(item.get("amount") or "0"))

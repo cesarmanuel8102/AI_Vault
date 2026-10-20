@@ -35,6 +35,7 @@ from ibkr_paper_30d.production_continuity_runtime import (
     ProductionCriticalAlertReporter,
     _ProductionSnapshotReader,
     _ProductionSleeveAuthoritySnapshotReader,
+    _uses_inherited_regular_day1_capability,
     build_ibkr_session_factory,
     validate_production_runtime_configuration,
     _verified_registry_binding,
@@ -45,6 +46,32 @@ from ibkr_paper_30d.production_continuity_runtime import (
     create_authoritative_writer,
     validate_production_composition,
 )
+from ibkr_paper_30d.multi_universe_models import (
+    CapitalSleeve,
+    ProductFamilyKey,
+    REGULAR_DAY1_PRODUCT_FAMILY,
+)
+
+
+def test_only_regular_sleeve_uses_inherited_day1_product_capability():
+    assert _uses_inherited_regular_day1_capability(
+        CapitalSleeve.REGULAR_SLEEVE,
+        REGULAR_DAY1_PRODUCT_FAMILY,
+    )
+    assert not _uses_inherited_regular_day1_capability(
+        CapitalSleeve.CONTINUOUS_SLEEVE,
+        REGULAR_DAY1_PRODUCT_FAMILY,
+    )
+    assert not _uses_inherited_regular_day1_capability(
+        CapitalSleeve.REGULAR_SLEEVE,
+        ProductFamilyKey(
+            security_type="CRYPTO",
+            venue_or_routing="PAXOS",
+            quantity_semantics="FRACTIONAL_ASSET_UNITS",
+            order_representation="DIRECT",
+            lifecycle_behavior="CONTINUOUS_24X7",
+        ),
+    )
 from ibkr_paper_30d.broker_write_coordinator import BrokerWriteCoordinator
 from ibkr_paper_30d.broker_write_coordinator import AuthorizedBrokerCommand
 
