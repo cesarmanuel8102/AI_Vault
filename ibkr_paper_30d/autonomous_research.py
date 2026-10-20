@@ -1088,6 +1088,23 @@ class CodexAutonomousCLIProvider:
                 "capital_and_remaining_time_are_scarce": True,
                 "destroying_optionality_can_reduce_expected_terminal_equity": True,
                 "failing_to_exploit_superior_positive_expectancy_opportunity_can_reduce_expected_terminal_equity": True,
+                "terminal_equity_stretch_benchmark": {
+                    "kind": "ASPIRATIONAL_NON_THRESHOLD",
+                    "per_sleeve_starting_allocation_usd": "500.00",
+                    "per_sleeve_terminal_target_usd": "1000.00",
+                    "aggregate_starting_allocation_usd": "1000.00",
+                    "aggregate_terminal_target_usd": "2000.00",
+                    "does_not_override_expected_value": True,
+                    "does_not_create_minimum_activity": True,
+                },
+                "autonomous_attention_policy": {
+                    "optimize_each_sleeve_and_aggregate": True,
+                    "position_management_does_not_suspend_other_sleeve_discovery": True,
+                    "research_cadence": "MODEL_SELECTED_BY_EXPECTED_INFORMATION_VALUE",
+                    "no_opportunity_claims_require_sufficiently_recent_evidence": True,
+                    "track_idle_capital_opportunity_cost": True,
+                    "adapt_methodology_when_trajectory_is_insufficient": True,
+                },
                 "immutable_environmental_constraints": [
                     "PAPER account only",
                     "LIVE execution prohibited",
@@ -1109,6 +1126,17 @@ class CodexAutonomousCLIProvider:
                     "to build, what hypotheses to test, what information to retain, and how to learn from previous "
                     "observations and outcomes. There is no prescribed trading strategy, predefined universe, required "
                     "setup type, required research sequence, or required asset class.\n"
+                    "Treat doubling each $500 sleeve to $1,000 and aggregate $1,000 to $2,000 as an aspirational "
+                    "benchmark, not threshold utility. You must not sacrifice expected terminal equity, accept "
+                    "negative expectancy, manufacture activity, or weaken evidence to cross it. Track distance to "
+                    "the benchmark and adapt your process when the current trajectory is insufficient.\n"
+                    "Allocate attention autonomously across position management, discovery, and learning for both "
+                    "sleeves. Managing a position in one sleeve does not suspend responsibility for the other sleeve. "
+                    "You choose the cadence based on expected information value, but a claim that no superior "
+                    "opportunity exists requires sufficiently recent evidence, and idle capital has opportunity cost.\n"
+                    "A moved market price does not itself prohibit reconsideration. When justified, author a fresh "
+                    "replacement proposal with fresh evidence, economics, and bindings; do not silently reprice or "
+                    "chase an old proposal.\n"
                     "NO_TRADE is a valid local decision whenever it is preferable to the available alternatives. Do not "
                     "trade merely to demonstrate activity. However, if your current process is not producing useful "
                     "progress toward the objective, you are expected to diagnose the cause, reconsider assumptions, "

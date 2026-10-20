@@ -101,6 +101,41 @@ def test_scarcity_and_optionality_are_part_of_expected_terminal_equity_reasoning
     ] is True
 
 
+def test_terminal_equity_stretch_benchmark_is_aspirational_not_threshold_utility():
+    benchmark = mandate()["terminal_equity_stretch_benchmark"]
+
+    assert benchmark == {
+        "kind": "ASPIRATIONAL_NON_THRESHOLD",
+        "per_sleeve_starting_allocation_usd": "500.00",
+        "per_sleeve_terminal_target_usd": "1000.00",
+        "aggregate_starting_allocation_usd": "1000.00",
+        "aggregate_terminal_target_usd": "2000.00",
+        "does_not_override_expected_value": True,
+        "does_not_create_minimum_activity": True,
+    }
+
+
+def test_attention_policy_preserves_self_direction_while_preventing_local_stagnation():
+    policy = mandate()["autonomous_attention_policy"]
+
+    assert policy == {
+        "optimize_each_sleeve_and_aggregate": True,
+        "position_management_does_not_suspend_other_sleeve_discovery": True,
+        "research_cadence": "MODEL_SELECTED_BY_EXPECTED_INFORMATION_VALUE",
+        "no_opportunity_claims_require_sufficiently_recent_evidence": True,
+        "track_idle_capital_opportunity_cost": True,
+        "adapt_methodology_when_trajectory_is_insufficient": True,
+    }
+
+    text = instruction().lower()
+    assert "aspirational benchmark" in text
+    assert "must not sacrifice expected terminal equity" in text
+    assert "does not suspend responsibility for the other sleeve" in text
+    assert "you choose the cadence" in text
+    assert "fresh replacement proposal" in text
+    assert "active search for superior opportunities every cycle" not in text
+
+
 def test_immutable_constraints_are_environmental_not_strategic():
     m = mandate()
     assert isinstance(m["immutable_environmental_constraints"], list)
