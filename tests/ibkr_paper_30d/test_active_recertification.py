@@ -2,8 +2,13 @@ from datetime import datetime, timezone
 
 import pytest
 
+from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.multi_universe_models import TransitionPhase
-from ibkr_paper_30d.multi_universe_transition import MultiUniverseTransitionCoordinator, MultiUniverseTransitionError
+from ibkr_paper_30d.multi_universe_transition import (
+    MultiUniverseTransitionCoordinator,
+    MultiUniverseTransitionError,
+    current_cash_classifications,
+)
 from test_multi_universe_transition import _open, _target, _evidence, PHASES
 from test_canary_execution import _request, _evidence as canary_evidence
 from ibkr_paper_30d.canary_execution import CanaryExecutionAdapter
@@ -45,6 +50,64 @@ def test_active_release_preserves_history_and_binds_recertification(tmp_path):
                                       (target.account_identity_sha256, "0" * 40, "d" * 64),
                                       (target.account_identity_sha256, "f" * 40, "0" * 64)]:
             assert coordinator.active_recertification_release_sha256(account, head, adapter) is None
+
+
+def test_active_release_refreshes_changed_broker_evidence_under_same_head(tmp_path):
+    with _open(tmp_path / "active-refresh.sqlite3") as db:
+        coordinator, target = active(db)
+        first_evidence = release_evidence(coordinator, target)
+        first = coordinator.authorize_runtime_release(
+            target,
+            approved_git_head="f" * 40,
+            evidence=first_evidence,
+        )
+        refreshed_evidence = release_evidence(coordinator, target)
+        refreshed_classifications = {
+            "classified_canary_currency_balances": [],
+            "classified_non_experiment_currency_balances": [
+                {
+                    "currency": "USD",
+                    "amount": "253880.18",
+                    "provenance_sha256": "9" * 64,
+                }
+            ],
+        }
+        refreshed_evidence.update(
+            {
+                **refreshed_classifications,
+                "cash_classification_sha256": sha256_json(
+                    refreshed_classifications
+                ),
+                "cash_rounding_quantum_usd": "0.01",
+                "raw_usd_cash_snapshot_sha256": "8" * 64,
+                "broker_readonly_report_sha256": "7" * 64,
+                "observed_at_utc": "2026-10-21T13:43:38Z",
+            }
+        )
+
+        refreshed = coordinator.authorize_runtime_release(
+            target,
+            approved_git_head="f" * 40,
+            evidence=refreshed_evidence,
+        )
+        retry = coordinator.authorize_runtime_release(
+            target,
+            approved_git_head="f" * 40,
+            evidence=refreshed_evidence,
+        )
+
+        assert refreshed["idempotent"] is False
+        assert refreshed["previous_approved_git_head"] == "f" * 40
+        assert refreshed["event_sha256"] != first["event_sha256"]
+        assert retry["idempotent"] is True
+        assert retry["event_sha256"] == refreshed["event_sha256"]
+        assert current_cash_classifications(db) == {
+            **refreshed_classifications,
+            "cash_rounding_reference": {
+                "quantum_usd": "0.01",
+                "provenance_sha256": "8" * 64,
+            },
+        }
 
 
 @pytest.mark.parametrize("field,value", [("recertification_required", False),

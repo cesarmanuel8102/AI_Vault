@@ -370,21 +370,27 @@ class MultiUniverseTransitionCoordinator:
                 if not releases
                 else str(releases[-1]["approved_git_head"])
             )
+            active_evidence_refresh = False
             if releases:
                 existing = releases[-1]
                 if existing.get("approved_git_head") == approved_git_head:
-                    if existing.get("evidence_sha256") != sha256_json(dict(evidence)):
+                    if existing.get("evidence_sha256") == sha256_json(dict(evidence)):
+                        return {
+                            "status": "PASS",
+                            "previous_approved_git_head": existing[
+                                "previous_approved_git_head"
+                            ],
+                            "approved_git_head": approved_git_head,
+                            "event_sha256": existing["event_sha256"],
+                            "idempotent": True,
+                        }
+                    if current_phase is not TransitionPhase.ACTIVE:
                         raise MultiUniverseTransitionError("RUNTIME_RELEASE_CONFLICT")
-                    return {
-                        "status": "PASS",
-                        "previous_approved_git_head": existing[
-                            "previous_approved_git_head"
-                        ],
-                        "approved_git_head": approved_git_head,
-                        "event_sha256": existing["event_sha256"],
-                        "idempotent": True,
-                    }
-            if approved_git_head == previous_approved_git_head:
+                    active_evidence_refresh = True
+            if (
+                approved_git_head == previous_approved_git_head
+                and not active_evidence_refresh
+            ):
                 raise MultiUniverseTransitionError("RUNTIME_RELEASE_HEAD_UNCHANGED")
             row = self.db.execute(
                 "SELECT event_sha256 FROM successor_transition_events "
