@@ -169,6 +169,44 @@ def test_projection_rejects_corrupt_payload_and_hash(tmp_path) -> None:
             store.active_plan("order-78")
 
 
+def test_verify_all_chains_streams_event_rows_without_fetchall(
+    tmp_path, monkeypatch
+) -> None:
+    with _open(tmp_path / "state.sqlite3") as db:
+        store = ContinuityStore(db)
+        for index in range(3):
+            store.append_watchdog_event(
+                "order-78", "HEARTBEAT", {"sequence": index}
+            )
+
+        original_execute = db.execute
+
+        class StreamingOnlyCursor:
+            def __init__(self, cursor):
+                self._cursor = cursor
+
+            def __iter__(self):
+                return iter(self._cursor)
+
+            def fetchall(self):
+                raise AssertionError("event-chain rows must be streamed")
+
+        def execute(sql, parameters=()):
+            cursor = original_execute(sql, parameters)
+            if (
+                "SELECT event_type,payload_json,payload_sha256" in sql
+                and "continuity_watchdog_events" in sql
+            ):
+                return StreamingOnlyCursor(cursor)
+            return cursor
+
+        monkeypatch.setattr(db, "execute", execute)
+
+        counts = store.verify_all_chains()
+
+        assert counts["continuity_watchdog_events"] == 3
+
+
 def test_one_shot_execution_is_unique(tmp_path) -> None:
     with _open(tmp_path / "state.sqlite3") as db:
         store = ContinuityStore(db)

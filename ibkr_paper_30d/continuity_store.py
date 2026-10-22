@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from decimal import Decimal
-from typing import Any, Mapping
+from typing import Any, Iterator, Mapping
 
 from .canonical import canonical_bytes, sha256_json
 from .continuity_models import (
@@ -87,16 +87,15 @@ class ContinuityStore:
         )
         return event_sha
 
-    def _verified_rows(
+    def _iter_verified_rows(
         self, table: str, stream_column: str, stream_id: str
-    ) -> list[tuple[str, dict[str, Any], str]]:
+    ) -> Iterator[tuple[str, dict[str, Any], str]]:
         rows = self.db.execute(
             f"SELECT event_type,payload_json,payload_sha256,previous_event_sha256,"
             f"event_sha256 FROM {table} WHERE {stream_column}=? ORDER BY sequence",
             (stream_id,),
-        ).fetchall()
+        )
         previous = None
-        result = []
         for event_type, payload_json, payload_sha, claimed_previous, event_sha in rows:
             try:
                 payload = json.loads(str(payload_json))
@@ -108,9 +107,13 @@ class ContinuityStore:
                 or self._event_hash(previous, payload) != str(event_sha)
             ):
                 raise ContinuityStoreError("HASH_MISMATCH")
-            result.append((str(event_type), payload, str(event_sha)))
+            yield str(event_type), payload, str(event_sha)
             previous = str(event_sha)
-        return result
+
+    def _verified_rows(
+        self, table: str, stream_column: str, stream_id: str
+    ) -> list[tuple[str, dict[str, Any], str]]:
+        return list(self._iter_verified_rows(table, stream_column, stream_id))
 
     def verify_all_chains(self) -> dict[str, int]:
         streams = {
@@ -132,7 +135,12 @@ class ContinuityStore:
                 ).fetchall()
             ]
             counts[table] = sum(
-                len(self._verified_rows(table, stream_column, stream_id))
+                sum(
+                    1
+                    for _ in self._iter_verified_rows(
+                        table, stream_column, stream_id
+                    )
+                )
                 for stream_id in stream_ids
             )
         return counts
