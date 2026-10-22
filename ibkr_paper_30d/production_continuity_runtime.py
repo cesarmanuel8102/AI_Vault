@@ -1440,9 +1440,15 @@ class ReadOnlyContinuityBroker:
             from .open_order_management import canonical_contract_identity
 
             contract = canonical_contract_identity(getattr(position, "contract", None))
+            expected_contract_id = int(getattr(binding, "contract_id", 0) or 0)
+            observed_contract_id = int(contract.get("conId") or 0)
+            contract_matches = (
+                expected_contract_id > 0
+                and observed_contract_id == expected_contract_id
+            ) or sha256_json(contract) == binding.contract_identity_sha256
             if (
                 expected_identity_hash(account) == binding.account_identity_sha256
-                and sha256_json(contract) == binding.contract_identity_sha256
+                and contract_matches
             ):
                 quantity += Decimal(str(getattr(position, "position", 0) or 0))
         values["POSITION_EXISTS"] = fact(quantity != 0)
@@ -3347,6 +3353,7 @@ def _verified_registry_binding(db: Any, plan: Any) -> dict[str, Any] | None:
         "perm_id": int(payload.get("perm_id") or 0),
         "execution_client_id": int(payload.get("execution_client_id") or -1),
         "account_identity_sha256": expected_identity_hash(account),
+        "contract_id": int(contract.get("conId") or 0),
         "contract_identity_sha256": sha256_json(contract),
         "contract_leg_identity_sha256": leg_hashes,
     }
@@ -3456,6 +3463,7 @@ class ProductionContinuityPoller:
                     perm_id=binding["perm_id"],
                     execution_client_id=binding["execution_client_id"],
                     account_identity_sha256=binding["account_identity_sha256"],
+                    contract_id=binding["contract_id"],
                     contract_identity_sha256=binding["contract_identity_sha256"],
                 )
                 observed_at = datetime.now(timezone.utc)
