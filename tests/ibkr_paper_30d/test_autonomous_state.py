@@ -1396,6 +1396,81 @@ def test_state_builder_projects_factual_process_observation_without_guidance(tmp
     assert "recommend" not in serialized.lower()
 
 
+def test_instrument_coverage_observes_available_but_unexamined_option_family():
+    process_observation = {
+        "telemetry_cycles_observed": 20,
+        "scanner_queries": 3,
+        "option_chains_queried": 0,
+        "asset_class_cycle_counts": {"CRYPTO": 4},
+    }
+    product_capabilities = {
+        "families": [
+            {
+                "status": "FULL_LIFECYCLE_VERIFIED",
+                "executable": True,
+                "family": REGULAR_DAY1_PRODUCT_FAMILY.model_dump(mode="json"),
+            },
+            {
+                "status": "FULL_LIFECYCLE_VERIFIED",
+                "executable": True,
+                "family": {
+                    "security_type": "CRYPTO",
+                    "venue_or_routing": "PAXOS",
+                },
+            },
+        ]
+    }
+
+    coverage = AutonomousStateBuilder._instrument_family_coverage(
+        process_observation,
+        product_capabilities,
+    )
+
+    assert coverage == {
+        "schema": "INSTRUMENT_FAMILY_COVERAGE_OBSERVATION_V1",
+        "telemetry_cycles_observed": 20,
+        "minimum_cycles_for_gap_diagnostic": 10,
+        "available_families": ["BAG", "CRYPTO", "OPT", "STK"],
+        "examined_families": ["CRYPTO", "STK"],
+        "unexamined_available_families": ["BAG", "OPT"],
+        "diagnostic_reason_codes": [
+            "AVAILABLE_INSTRUMENT_FAMILY_UNEXAMINED:BAG",
+            "AVAILABLE_INSTRUMENT_FAMILY_UNEXAMINED:OPT",
+        ],
+        "diagnostic_only": True,
+        "host_enforcement": False,
+    }
+
+
+def test_instrument_coverage_clears_option_gap_after_chain_research():
+    coverage = AutonomousStateBuilder._instrument_family_coverage(
+        {
+            "telemetry_cycles_observed": 20,
+            "scanner_queries": 3,
+            "option_chains_queried": 1,
+            "asset_class_cycle_counts": {"CRYPTO": 4},
+        },
+        {
+            "families": [
+                {
+                    "status": "FULL_LIFECYCLE_VERIFIED",
+                    "executable": True,
+                    "family": REGULAR_DAY1_PRODUCT_FAMILY.model_dump(mode="json"),
+                },
+                {
+                    "status": "FULL_LIFECYCLE_VERIFIED",
+                    "executable": True,
+                    "family": {"security_type": "CRYPTO"},
+                },
+            ]
+        },
+    )
+
+    assert coverage["examined_families"] == ["BAG", "CRYPTO", "OPT", "STK"]
+    assert coverage["unexamined_available_families"] == []
+    assert coverage["diagnostic_reason_codes"] == []
+
+
 def test_expired_filled_plan_is_summarized_but_not_model_active(
     tmp_path, continuity_plan_factory
 ):

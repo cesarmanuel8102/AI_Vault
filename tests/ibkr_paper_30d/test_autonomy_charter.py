@@ -199,6 +199,18 @@ def test_persistence_language_without_forced_trading():
         assert forbidden not in text, forbidden
 
 
+def test_instrument_coverage_diagnostics_preserve_model_choice():
+    text = instruction_text(charter()).lower()
+    assert (
+        "persistent non-examination of an available instrument family is diagnostic evidence"
+        in text
+    )
+    assert "you remain free to continue excluding that family" in text
+    assert "does not require uniform coverage or a trade" in text
+    assert "you must research options" not in text
+    assert "you must trade options" not in text
+
+
 def test_counterfactual_ritual_is_no_longer_prescribed():
     text = instruction_text(charter()).lower()
     assert "counterfactual challenge" not in text

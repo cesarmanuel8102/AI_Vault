@@ -55,6 +55,7 @@ class TransientBrokerStateBuildError(AutonomousStateBuildError):
 
 
 PROCESS_OBSERVATION_CYCLE_LIMIT = 20
+INSTRUMENT_COVERAGE_MIN_CYCLES = 10
 PROVIDER_STATE_CONTEXT_LIMIT = 5
 
 
@@ -1100,6 +1101,59 @@ class AutonomousStateBuilder:
             return None
         return value if isinstance(value, dict) else None
 
+    @staticmethod
+    def _instrument_family_coverage(
+        process_observation: Mapping[str, Any],
+        product_capability_snapshot: Mapping[str, Any] | None,
+    ) -> dict[str, Any]:
+        available: set[str] = set()
+        for item in (product_capability_snapshot or {}).get("families", []) or []:
+            if not isinstance(item, Mapping):
+                continue
+            if item.get("executable") is not True:
+                continue
+            if str(item.get("status") or "") != "FULL_LIFECYCLE_VERIFIED":
+                continue
+            family = item.get("family") or {}
+            if not isinstance(family, Mapping):
+                continue
+            security_type = str(family.get("security_type") or "").upper()
+            available.update(part for part in security_type.split("_") if part)
+
+        asset_counts = process_observation.get("asset_class_cycle_counts") or {}
+        examined = {
+            str(asset_class).upper()
+            for asset_class, count in asset_counts.items()
+            if int(count or 0) > 0
+        }
+        if int(process_observation.get("scanner_queries") or 0) > 0:
+            examined.add("STK")
+        if int(process_observation.get("option_chains_queried") or 0) > 0:
+            examined.update({"OPT", "BAG"})
+        examined.intersection_update(available)
+
+        unexamined = sorted(available - examined)
+        telemetry_cycles = int(
+            process_observation.get("telemetry_cycles_observed") or 0
+        )
+        diagnostic_reason_codes = []
+        if telemetry_cycles >= INSTRUMENT_COVERAGE_MIN_CYCLES:
+            diagnostic_reason_codes = [
+                f"AVAILABLE_INSTRUMENT_FAMILY_UNEXAMINED:{family}"
+                for family in unexamined
+            ]
+        return {
+            "schema": "INSTRUMENT_FAMILY_COVERAGE_OBSERVATION_V1",
+            "telemetry_cycles_observed": telemetry_cycles,
+            "minimum_cycles_for_gap_diagnostic": INSTRUMENT_COVERAGE_MIN_CYCLES,
+            "available_families": sorted(available),
+            "examined_families": sorted(examined),
+            "unexamined_available_families": unexamined,
+            "diagnostic_reason_codes": diagnostic_reason_codes,
+            "diagnostic_only": True,
+            "host_enforcement": False,
+        }
+
     def _process_observation(
         self,
         *,
@@ -1116,6 +1170,7 @@ class AutonomousStateBuilder:
         trigger_counts: dict[str, int] = {}
         decision_counts: dict[str, int] = {}
         symbol_cycle_counts: dict[str, int] = {}
+        asset_class_cycle_counts: dict[str, int] = {}
         tools_used: set[str] = set()
         accepted_results = 0
         rejected_results = 0
@@ -1193,6 +1248,15 @@ class AutonomousStateBuilder:
             }
             for symbol in cycle_symbols:
                 symbol_cycle_counts[symbol] = symbol_cycle_counts.get(symbol, 0) + 1
+            cycle_asset_classes = {
+                str(asset_class).upper()
+                for asset_class in telemetry.get("asset_classes_examined", []) or []
+                if str(asset_class).strip()
+            }
+            for asset_class in cycle_asset_classes:
+                asset_class_cycle_counts[asset_class] = (
+                    asset_class_cycle_counts.get(asset_class, 0) + 1
+                )
             tools_used.update(
                 str(tool)
                 for tool in telemetry.get("tools_used", []) or []
@@ -1280,6 +1344,9 @@ class AutonomousStateBuilder:
             "decision_counts": dict(sorted(decision_counts.items())),
             "symbols_examined": sorted(symbol_cycle_counts),
             "symbol_cycle_counts": dict(sorted(symbol_cycle_counts.items())),
+            "asset_class_cycle_counts": dict(
+                sorted(asset_class_cycle_counts.items())
+            ),
             "tools_used": sorted(tools_used),
             **aggregate_fields,
             "cycles_with_no_candidates": cycles_with_no_candidates,
@@ -2033,11 +2100,12 @@ class AutonomousStateBuilder:
         else:
             market_gate = self.runtime_market_gate.evaluate(decision_class)
         projected_benchmark_state = dict(benchmark_state or {})
+        process_observation = self._process_observation(
+            positions_snapshot=isolated_positions,
+            equity=ledger_state.equity,
+        )
         projected_benchmark_state["autonomous_process_observation"] = (
-            self._process_observation(
-                positions_snapshot=isolated_positions,
-                equity=ledger_state.equity,
-            )
+            process_observation
         )
         multi_sleeve_portfolio = None
         contract_ownership_snapshot = None
@@ -2084,6 +2152,12 @@ class AutonomousStateBuilder:
                     and reason.rsplit(":", 1)[-1].isdigit()
                 },
                 mark_reason_codes=tuple(mark_reasons),
+            )
+            process_observation["instrument_family_coverage"] = (
+                self._instrument_family_coverage(
+                    process_observation,
+                    product_capability_snapshot,
+                )
             )
         return TraderInputBundle(
             decision_cycle_id=f"cycle-{new_uuid7()}",
