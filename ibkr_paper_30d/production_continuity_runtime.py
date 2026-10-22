@@ -3355,6 +3355,8 @@ def _verified_registry_binding(db: Any, plan: Any) -> dict[str, Any] | None:
 class ProductionContinuityPoller:
     """Evaluate durable model-authored plans and submit at most one exact command."""
 
+    _TERMINAL_FLAT_GRACE_SECONDS = 60
+
     def __init__(
         self,
         *,
@@ -3378,6 +3380,27 @@ class ProductionContinuityPoller:
             (plan_id,),
         ).fetchall()
         return {str(key): int(count) for key, count in rows if key is not None}
+
+    @classmethod
+    def _expired_plan_is_broker_flat(cls, plan: Any, facts: Any) -> bool:
+        if facts.broker_time_utc < (
+            plan.plan_valid_until
+            + timedelta(seconds=cls._TERMINAL_FLAT_GRACE_SECONDS)
+        ):
+            return False
+        values = {
+            item.fact.value: item.canonical_value for item in facts.facts
+        }
+        try:
+            remaining = Decimal(str(values["ORDER_REMAINING_QUANTITY"]))
+        except (KeyError, ArithmeticError, ValueError):
+            return False
+        return bool(
+            str(values.get("ORDER_STATUS") or "")
+            in {"ABSENT", "CANCELLED", "REJECTED", "FILLED"}
+            and remaining == 0
+            and values.get("POSITION_EXISTS") is False
+        )
 
     @contextmanager
     def _poll_phase(
@@ -3477,6 +3500,26 @@ class ProductionContinuityPoller:
                         )
                 finally:
                     broker._instrument = None
+                if self._expired_plan_is_broker_flat(plan, facts):
+                    store.append_plan_event(
+                        "TERMINAL",
+                        plan,
+                        event_id=f"continuity-terminal-flat:{plan.plan_id}:{plan.sha256}",
+                        bindings={
+                            "reason_code": "EXPIRED_PLAN_BROKER_FLAT",
+                            "fact_snapshot_sha256": facts.evidence_sha256,
+                            "broker_time_utc": facts.broker_time_utc.isoformat(),
+                        },
+                    )
+                    self.poll_results.append(
+                        {
+                            "plan_id": plan.plan_id,
+                            "order_ref": plan.order_binding.order_ref,
+                            "action": "TERMINALIZED",
+                            "reason": "EXPIRED_PLAN_BROKER_FLAT",
+                        }
+                    )
+                    continue
                 evaluation = ContinuityEvaluator(
                     execution_counts=self._execution_counts(db, plan.plan_id)
                 ).evaluate(plan, facts)

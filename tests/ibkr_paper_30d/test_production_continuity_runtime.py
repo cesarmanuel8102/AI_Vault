@@ -1679,6 +1679,40 @@ def test_production_poller_submits_at_most_one_exact_command(
         )
 
 
+def test_production_poller_terminalizes_expired_flat_plan(
+    tmp_path, monkeypatch, continuity_plan_factory
+) -> None:
+    db, broker, plan, config, preflight = _make_test_context(
+        tmp_path, continuity_plan_factory
+    )
+    submitted = []
+    coordinator = _MockCoordinator(submitted)
+    broker._broker.reqCurrentTime = lambda: NOW + timedelta(hours=7)
+    broker._broker.reqAllOpenOrders = lambda: []
+    broker._broker.positions = lambda: []
+    monkeypatch.setattr(
+        "ibkr_paper_30d.production_continuity_runtime._ProductionClock.state",
+        lambda self: "ACTIVE",
+    )
+    poller = ProductionContinuityPoller(
+        coordinator=coordinator,
+        config=config,
+        preflight=preflight,
+    )
+
+    poller(db, broker, coordinator)
+    poller(db, broker, coordinator)
+
+    assert ContinuityStore(db).active_plan(plan.order_binding.order_ref) is None
+    assert submitted == []
+    assert db.execute(
+        "SELECT COUNT(*) FROM continuity_plan_events "
+        "WHERE plan_id=? AND event_type='TERMINAL'",
+        (plan.plan_id,),
+    ).fetchone()[0] == 1
+    db.close()
+
+
 def test_poller_does_not_retransmit_after_uncertain_result(
     tmp_path, monkeypatch, continuity_plan_factory
 ) -> None:
