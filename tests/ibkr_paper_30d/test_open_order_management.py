@@ -507,6 +507,48 @@ def test_state_hash_binds_preserved_order_semantics(field, replacement):
     )
 
 
+def test_cancel_accepts_broker_view_drift_when_control_state_is_unchanged(tmp_path):
+    original = trade()
+    action = open_order_action_from_trade(original)
+    frozen_snapshot = canonical_open_order(original)
+    writer_view = deepcopy(original)
+    writer_view.order.autoCancelDate = "20261024"
+    writer_view.orderStatus.status = "PreSubmitted"
+
+    with Database.open(tmp_path / "cancel-view-drift.sqlite3") as db:
+        register_issuance(db, original)
+        resolved, snapshot = resolve_owned_open_trade(
+            db,
+            [writer_view],
+            action,
+            execution_client_id=EXECUTION_CLIENT_ID,
+            cancel_observed_snapshot=frozen_snapshot,
+        )
+
+    assert resolved is writer_view
+    assert snapshot["state_sha256"] != action.observed_state_sha256
+
+
+def test_cancel_rejects_control_state_change_even_with_frozen_snapshot(tmp_path):
+    original = trade()
+    action = open_order_action_from_trade(original)
+    frozen_snapshot = canonical_open_order(original)
+    changed = deepcopy(original)
+    changed.orderStatus.filled = 1
+    changed.orderStatus.remaining = 1
+
+    with Database.open(tmp_path / "cancel-control-change.sqlite3") as db:
+        register_issuance(db, original)
+        with pytest.raises(OpenOrderOwnershipError, match="OPEN_ORDER_STATE_CHANGED"):
+            resolve_owned_open_trade(
+                db,
+                [changed],
+                action,
+                execution_client_id=EXECUTION_CLIENT_ID,
+                cancel_observed_snapshot=frozen_snapshot,
+            )
+
+
 def test_execution_client_is_outside_research_client_range():
     assert EXECUTION_CLIENT_ID == 19761
     assert not 19800 <= EXECUTION_CLIENT_ID <= 19899

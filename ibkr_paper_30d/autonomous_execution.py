@@ -1094,12 +1094,39 @@ class WriterOwnedModelExecutionMechanics:
                     order={},
                     broker_validation={},
                 )
+            frozen_matches = [
+                item
+                for item in bundle.open_orders_snapshot
+                if item.get("orderRef") == action.order_ref
+                and int(item.get("orderId") or 0) == action.order_id
+                and int(item.get("clientId") or 0) == action.client_id
+                and int((item.get("contract") or {}).get("conId") or 0)
+                == action.contract_id
+            ]
+            if len(frozen_matches) != 1:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("OPEN_ORDER_FROZEN_STATE_ABSENT",),
+                    order={},
+                    broker_validation={},
+                )
+            frozen_snapshot = frozen_matches[0]
+            if frozen_snapshot.get("state_sha256") != action.observed_state_sha256:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("OPEN_ORDER_FROZEN_STATE_MISMATCH",),
+                    order={},
+                    broker_validation={},
+                )
             try:
                 selected_trade, snapshot = resolve_owned_open_trade(
                     self.database,
                     trades,
                     action,
                     execution_client_id=self.execution_client_id,
+                    cancel_observed_snapshot=frozen_snapshot,
                 )
             except OpenOrderOwnershipError as exc:
                 return PaperExecutionResult(
@@ -1692,26 +1719,14 @@ class WriterOwnedModelExecutionMechanics:
                     broker_validation={},
                 )
 
-            validation = self.toolbox.validate_position_action(
-                action, bundle, decision, ib=ib
-            )
-            if not validation.passed:
-                return PaperExecutionResult(
-                    success=False,
-                    status="BLOCKED",
-                    reason_codes=validation.reason_codes,
-                    order={},
-                    broker_validation=validation.broker_evidence,
-                )
-
             position = self.toolbox._resolve_open_position(ib, action)
             if position is None:
                 return PaperExecutionResult(
                     success=False,
                     status="BLOCKED",
-                    reason_codes=("POSITION_NOT_FOUND_AFTER_VALIDATION",),
+                    reason_codes=("POSITION_NOT_FOUND_BEFORE_VALIDATION",),
                     order={},
-                    broker_validation=validation.broker_evidence,
+                    broker_validation={},
                 )
             current_position = Decimal(str(position.position))
             required_action = "SELL" if current_position > 0 else "BUY"
@@ -1721,7 +1736,7 @@ class WriterOwnedModelExecutionMechanics:
                     status="BLOCKED",
                     reason_codes=("POSITION_ACTION_WOULD_INCREASE_EXPOSURE_AFTER_RECHECK",),
                     order={},
-                    broker_validation=validation.broker_evidence,
+                    broker_validation={"current_position": str(current_position)},
                 )
             current_size = abs(current_position)
             if action.quantity > current_size:
@@ -1730,7 +1745,7 @@ class WriterOwnedModelExecutionMechanics:
                     status="BLOCKED",
                     reason_codes=("POSITION_ACTION_EXCEEDS_OPEN_SIZE_AFTER_RECHECK",),
                     order={},
-                    broker_validation=validation.broker_evidence,
+                    broker_validation={"current_position": str(current_position)},
                 )
             if decision == TraderDecision.CLOSE_POSITION and action.quantity != current_size:
                 return PaperExecutionResult(
@@ -1738,7 +1753,7 @@ class WriterOwnedModelExecutionMechanics:
                     status="BLOCKED",
                     reason_codes=("CLOSE_POSITION_SIZE_CHANGED_AFTER_VALIDATION",),
                     order={},
-                    broker_validation=validation.broker_evidence,
+                    broker_validation={"current_position": str(current_position)},
                 )
             if decision == TraderDecision.REDUCE_POSITION and action.quantity >= current_size:
                 return PaperExecutionResult(
@@ -1746,7 +1761,7 @@ class WriterOwnedModelExecutionMechanics:
                     status="BLOCKED",
                     reason_codes=("REDUCE_POSITION_SIZE_CHANGED_AFTER_VALIDATION",),
                     order={},
-                    broker_validation=validation.broker_evidence,
+                    broker_validation={"current_position": str(current_position)},
                 )
 
             try:
@@ -1759,7 +1774,7 @@ class WriterOwnedModelExecutionMechanics:
                     status="BLOCKED",
                     reason_codes=(exc.reason_code,),
                     order={},
-                    broker_validation=validation.broker_evidence,
+                    broker_validation={"current_position": str(current_position)},
                 )
 
             live_quote = self.toolbox.live_contract_quote_evidence(
@@ -1774,14 +1789,12 @@ class WriterOwnedModelExecutionMechanics:
                         str(live_quote.get("reason") or "UNKNOWN"),
                     ),
                     order={},
-                    broker_validation={
-                        **validation.broker_evidence,
-                        "trade_contract_market_data": live_quote,
-                    },
+                    broker_validation={"trade_contract_market_data": live_quote},
                 )
 
-            # Re-issue what-if against the same connection after exact-contract
-            # market data and immediately before the final position/control checks.
+            # Perform one broker what-if after exact-contract market data and
+            # immediately before the final position/control checks. A second
+            # identical what-if can consume the writer's entire request budget.
             final_validation = self.toolbox.validate_position_action(
                 action, bundle, decision, ib=ib
             )
@@ -1964,6 +1977,19 @@ class WriterOwnedModelExecutionMechanics:
                     success=False,
                     status="UNCERTAIN",
                     reason_codes=("BROKER_IDENTITY_UNRESOLVED",),
+                    order=payload,
+                    broker_validation=final_validation.broker_evidence,
+                )
+            if str(status).upper().replace(" ", "") in {
+                "PENDINGSUBMIT",
+                "APIPENDING",
+            }:
+                return PaperExecutionResult(
+                    success=False,
+                    status="UNCERTAIN",
+                    reason_codes=(
+                        "POSITION_ACTION_PENDING_BROKER_ACKNOWLEDGEMENT",
+                    ),
                     order=payload,
                     broker_validation=final_validation.broker_evidence,
                 )

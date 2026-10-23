@@ -1252,6 +1252,7 @@ class _DirectRoutedPositionIB:
         self.what_if_contracts = []
         self.place_contracts = []
         self.place_orders = []
+        self.place_status = "PreSubmitted"
 
     def managedAccounts(self):
         return ["DU1234567"]
@@ -1283,7 +1284,7 @@ class _DirectRoutedPositionIB:
             contract=contract,
             order=order,
             orderStatus=SimpleNamespace(
-                status="PreSubmitted",
+                status=self.place_status,
                 filled=0,
                 remaining=1,
                 avgFillPrice=0,
@@ -1337,6 +1338,7 @@ def test_position_stock_order_uses_smart_route_instead_of_position_exchange(tmp_
         ]
 
     assert result.success is True
+    assert len(broker.what_if_contracts) == 1
     assert len(broker.qualified_contracts) >= 1
     routed = [
         *broker.what_if_contracts,
@@ -1403,6 +1405,43 @@ def test_crypto_market_position_action_uses_broker_required_ioc(tmp_path):
     assert len(broker.place_contracts) == 1
     assert broker.place_orders[0].orderType == "MKT"
     assert broker.place_orders[0].tif == "IOC"
+
+
+def test_market_position_action_pending_submit_is_not_reported_successful(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    broker = _DirectRoutedPositionIB()
+    broker.place_status = "PendingSubmit"
+    toolbox = IBKRResearchToolbox()
+    toolbox._connect = lambda *, client_id=None: broker
+    toolbox.live_contract_quote_evidence = lambda *_args, **_kwargs: {
+        "success": True,
+        "market_data_type": 1,
+    }
+    action = AutonomousPositionAction(
+        symbol="HAE",
+        sec_type="STK",
+        action="SELL",
+        quantity="1",
+        order_type="MKT",
+        contract_id=7884,
+        reason="Reduce the existing long position.",
+    )
+
+    with Database.open(tmp_path / "pending-position-exit.sqlite3") as db:
+        result = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        ).execute_position_action(action, bundle(), TraderDecision.REDUCE_POSITION)
+
+    assert result.success is False
+    assert result.status == "UNCERTAIN"
+    assert result.reason_codes == (
+        "POSITION_ACTION_PENDING_BROKER_ACKNOWLEDGEMENT",
+    )
 
 
 def test_v4_position_action_supplies_exact_contract_to_final_authority(tmp_path):
@@ -1810,6 +1849,18 @@ def test_cancel_calls_only_selected_owned_order_and_persists_attempt_and_result(
         "CANCEL_RESULT",
     ]
     assert result.order["post_action_reconciliation"]["target_actionable"] is False
+
+
+def test_cancel_tolerates_non_control_broker_view_drift(tmp_path):
+    with armed_cancel_fixture(tmp_path) as (executor, _, broker, action, value):
+        broker.target.order.autoCancelDate = "20261024"
+        broker.target.orderStatus.status = "PreSubmitted"
+        result = executor.execute_open_order_action(
+            action, value, TraderDecision.CANCEL_ORDER
+        )
+
+    assert result.success is True
+    assert broker.cancelled_order_ids == [action.order_id]
 
 
 def test_cancel_exact_legacy_bag_reconciles_identity_without_global_cancel(tmp_path):

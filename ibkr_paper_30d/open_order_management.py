@@ -258,6 +258,34 @@ def preserved_open_order_sha256(snapshot: dict[str, Any]) -> str:
     return sha256_json(preserved)
 
 
+def cancel_control_state_sha256(snapshot: dict[str, Any]) -> str:
+    """Hash only state that can make cancelling the selected order unsafe.
+
+    IBKR can populate session-specific order defaults differently in an
+    observer client and the owning writer client. Those fields remain in the
+    full audit snapshot, but they must not prevent a risk-reducing cancel when
+    exact broker identity, exposure, and fill state are unchanged.
+    """
+    status = str(snapshot.get("status") or "").upper().replace(" ", "")
+    if status in {item.replace(" ", "") for item in ACTIONABLE_ORDER_STATUSES}:
+        status = "ACTIONABLE"
+    payload = {
+        "orderRef": str(snapshot.get("orderRef") or ""),
+        "orderId": int(snapshot.get("orderId") or 0),
+        "permId": int(snapshot.get("permId") or 0),
+        "clientId": int(snapshot.get("clientId") or 0),
+        "account": str(snapshot.get("account") or ""),
+        "action": str(snapshot.get("action") or "").upper(),
+        "orderType": str(snapshot.get("orderType") or "").upper(),
+        "totalQuantity": _decimal_text(snapshot.get("totalQuantity")),
+        "filled": _decimal_text(snapshot.get("filled")),
+        "remaining": _decimal_text(snapshot.get("remaining")),
+        "status": status,
+        "contract": snapshot.get("contract") or {},
+    }
+    return sha256_json(payload)
+
+
 def _registry_payload(raw: Any) -> dict[str, Any]:
     try:
         value = json.loads(raw or "{}")
@@ -352,6 +380,7 @@ def resolve_owned_open_trade(
     action: Any,
     *,
     execution_client_id: int,
+    cancel_observed_snapshot: dict[str, Any] | None = None,
 ) -> tuple[Any, dict[str, Any]]:
     if not action.order_ref.startswith(f"{EXPERIMENT_ORDER_PREFIX}-"):
         raise OpenOrderOwnershipError("ORDER_REF_NAMESPACE_MISMATCH")
@@ -528,7 +557,15 @@ def resolve_owned_open_trade(
         raise OpenOrderOwnershipError("OPEN_ORDER_ACCOUNT_MISMATCH")
 
     if snapshot["state_sha256"] != action.observed_state_sha256:
-        raise OpenOrderOwnershipError("OPEN_ORDER_STATE_CHANGED")
+        cancel_state_matches = (
+            cancel_observed_snapshot is not None
+            and cancel_observed_snapshot.get("state_sha256")
+            == action.observed_state_sha256
+            and cancel_control_state_sha256(cancel_observed_snapshot)
+            == cancel_control_state_sha256(snapshot)
+        )
+        if not cancel_state_matches:
+            raise OpenOrderOwnershipError("OPEN_ORDER_STATE_CHANGED")
     if snapshot["status"].upper() not in ACTIONABLE_ORDER_STATUSES:
         raise OpenOrderOwnershipError("OPEN_ORDER_NOT_ACTIONABLE")
     has_positive_v3_contract = any(
