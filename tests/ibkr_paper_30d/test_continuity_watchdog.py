@@ -4,6 +4,7 @@ import asyncio
 import inspect
 import json
 import pytest
+import sqlite3
 import threading
 import time
 from datetime import datetime, timedelta, timezone
@@ -327,6 +328,96 @@ def test_transient_broker_timeout_reconnects_and_recovers(tmp_path):
     assert "RECOVERED" in events
     assert "FAILED" not in events
     assert reports == []
+
+
+def test_transient_sqlite_contention_recovers_without_killing_watchdog(tmp_path):
+    path = tmp_path / "transient-sqlite-contention.sqlite3"
+    _initialize(path)
+    calls = {"count": 0}
+    reports = []
+
+    def poll_once(db, broker, coordinator):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise sqlite3.OperationalError("database is locked")
+        return None
+
+    watchdog = ContinuityWatchdog(
+        db_factory=lambda: Database.open(path),
+        broker_factory=Broker,
+        poll_once=poll_once,
+        coordinator=object(),
+        broker_time_reader=lambda value: NOW,
+        poll_interval_seconds=0.01,
+        heartbeat_max_age_seconds=1,
+        uncertainty_reporter=reports.append,
+    )
+    watchdog._backoff_seconds = lambda count: 0.01
+
+    try:
+        watchdog.start()
+        deadline = time.monotonic() + 2
+        while not watchdog.is_healthy(NOW) and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert watchdog.is_healthy(NOW) is True
+    finally:
+        watchdog.stop(2)
+
+    with Database.open(path) as db:
+        rows = db.execute(
+            "SELECT event_type,payload_json FROM continuity_watchdog_events "
+            "ORDER BY sequence"
+        ).fetchall()
+
+    event_types = [row[0] for row in rows]
+    transient = next(
+        json.loads(row[1]) for row in rows if row[0] == "TRANSIENT_FAILURE"
+    )
+    assert transient["error_type"] == "OperationalError"
+    assert transient["phase"] == "SQLITE_CONTENTION"
+    assert "RECOVERED" in event_types
+    assert "FAILED" not in event_types
+    assert reports == []
+
+
+def test_non_contention_sqlite_operational_error_remains_fatal(tmp_path):
+    path = tmp_path / "fatal-sqlite-operational-error.sqlite3"
+    _initialize(path)
+    reports = []
+
+    def poll_once(db, broker, coordinator):
+        raise sqlite3.OperationalError("disk I/O error")
+
+    watchdog = ContinuityWatchdog(
+        db_factory=lambda: Database.open(path),
+        broker_factory=Broker,
+        poll_once=poll_once,
+        coordinator=object(),
+        broker_time_reader=lambda value: NOW,
+        poll_interval_seconds=0.01,
+        heartbeat_max_age_seconds=1,
+        recover_after_failure_limit=True,
+        uncertainty_reporter=reports.append,
+    )
+
+    watchdog.start()
+    deadline = time.monotonic() + 2
+    while not reports and time.monotonic() < deadline:
+        time.sleep(0.01)
+    watchdog.stop(2)
+
+    with Database.open(path) as db:
+        events = [
+            row[0]
+            for row in db.execute(
+                "SELECT event_type FROM continuity_watchdog_events ORDER BY sequence"
+            ).fetchall()
+        ]
+
+    assert watchdog.is_healthy(NOW) is False
+    assert "FAILED" in events
+    assert "TRANSIENT_FAILURE" not in events
+    assert reports == ["CONTINUITY_WATCHDOG_FAILED"]
 
 
 @pytest.mark.parametrize("error", [PermissionError, RuntimeError])

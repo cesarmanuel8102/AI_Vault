@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import sqlite3
 import threading
 import time
 from dataclasses import dataclass
@@ -184,6 +185,11 @@ class ContinuityWatchdog:
     def _backoff_seconds(failure_count: int, base: float = 1.0, max_seconds: float = 30.0) -> float:
         return min(base * (2 ** (failure_count - 1)), max_seconds)
 
+    @staticmethod
+    def _is_sqlite_contention(exc: sqlite3.OperationalError) -> bool:
+        message = str(exc).lower()
+        return "locked" in message or "busy" in message
+
     def _run(self) -> None:
         event_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(event_loop)
@@ -232,6 +238,52 @@ class ContinuityWatchdog:
                             self._poll_in_progress = False
                     with self._state_lock:
                         self._last_successful_poll_utc = broker_now
+                except sqlite3.OperationalError as exc:
+                    if not self._is_sqlite_contention(exc):
+                        raise
+                    consecutive_transient_failures += 1
+                    with self._state_lock:
+                        self._transient_failure = exc
+                        self._last_successful_poll_utc = None
+                    try:
+                        self._append(
+                            store,
+                            "TRANSIENT_FAILURE",
+                            {
+                                "error_type": type(exc).__name__,
+                                "consecutive_failures": consecutive_transient_failures,
+                                "phase": "SQLITE_CONTENTION",
+                            },
+                        )
+                    except sqlite3.OperationalError as append_exc:
+                        if not self._is_sqlite_contention(append_exc):
+                            raise
+                    if (
+                        consecutive_transient_failures
+                        >= self.max_consecutive_transient_failures
+                    ):
+                        if not self.recover_after_failure_limit:
+                            raise
+                        if (
+                            consecutive_transient_failures
+                            == self.max_consecutive_transient_failures
+                        ):
+                            try:
+                                self._append(
+                                    store,
+                                    "RECOVERY_PENDING",
+                                    {
+                                        "consecutive_failures": consecutive_transient_failures,
+                                        "new_entries_allowed": False,
+                                    },
+                                )
+                            except sqlite3.OperationalError as append_exc:
+                                if not self._is_sqlite_contention(append_exc):
+                                    raise
+                    self._stop.wait(
+                        self._backoff_seconds(consecutive_transient_failures)
+                    )
+                    continue
                 except TimeoutError as exc:
                     # Timeout during broker_time_reader or poll_once.
                     consecutive_transient_failures += 1
