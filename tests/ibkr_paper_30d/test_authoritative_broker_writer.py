@@ -349,6 +349,22 @@ def test_writer_applies_bounded_timeout_to_broker_session():
         assert writer.stop(2)
 
 
+def test_writer_startup_wait_budget_covers_all_connection_attempts():
+    coordinator = BrokerWriteCoordinator()
+    writer = AuthoritativeBrokerWriter(
+        coordinator,
+        broker_factory=lambda client_id: FakeGateway(client_id),
+        execution_client_id=19761,
+        execution_lock_verifier=lambda: True,
+        authority_validator=lambda command, evidence: (),
+        broker_request_timeout_seconds=15,
+        startup_connect_attempts=3,
+        startup_retry_delay_seconds=1,
+    )
+
+    assert writer.startup_wait_timeout_seconds == 52.0
+
+
 def test_writer_retries_transient_startup_connection_failures():
     attempts = []
 

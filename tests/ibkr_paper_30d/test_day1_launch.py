@@ -2168,6 +2168,23 @@ def test_writer_readiness_failure_stops_writer_before_releasing_lock(
     assert ctx.service_factory.mock_calls == []
 
 
+def test_launch_waits_for_the_writer_complete_startup_retry_budget(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    install_fake_lock(ctx)
+    writer = Mock()
+    writer.startup_wait_timeout_seconds = 52.0
+    writer.wait_until_ready.return_value = False
+    writer.stop.return_value = True
+    ctx.dependencies.authoritative_writer_factory = Mock(return_value=writer)
+
+    with pytest.raises(LaunchError, match="CONTINUITY_WRITER_START_FAILURE"):
+        run_day1_launch(ctx.config, ctx.dependencies)
+
+    writer.wait_until_ready.assert_called_once_with(52.0)
+
+
 def test_writer_shutdown_timeout_does_not_mask_start_failure(
     tmp_path: Path,
 ) -> None:

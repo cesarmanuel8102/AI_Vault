@@ -151,6 +151,12 @@ class AuthoritativeBrokerWriter:
             raise ValueError("startup_retry_delay_seconds must be in [0, 10]")
         self.startup_connect_attempts = int(startup_connect_attempts)
         self.startup_retry_delay_seconds = float(startup_retry_delay_seconds)
+        self.startup_wait_timeout_seconds = (
+            self.startup_connect_attempts * self.broker_request_timeout_seconds
+            + (self.startup_connect_attempts - 1)
+            * self.startup_retry_delay_seconds
+            + 5.0
+        )
         self.contract_write_quarantine_check = contract_write_quarantine_check
         self._capability = None
         self._thread: threading.Thread | None = None
