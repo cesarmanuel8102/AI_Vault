@@ -100,6 +100,9 @@ class AuthoritativeBrokerWriter:
         canary_recovery_bound_order_reader: Callable[[CanaryRecoveryRequest], dict[str, Any] | None] | None = None,
         startup_connect_attempts: int = 3,
         startup_retry_delay_seconds: float = 1.0,
+        contract_write_quarantine_check: Callable[
+            [dict[str, Any]], tuple[str, ...]
+        ] | None = None,
     ) -> None:
         self.coordinator = coordinator
         self.broker_factory = broker_factory
@@ -148,6 +151,7 @@ class AuthoritativeBrokerWriter:
             raise ValueError("startup_retry_delay_seconds must be in [0, 10]")
         self.startup_connect_attempts = int(startup_connect_attempts)
         self.startup_retry_delay_seconds = float(startup_retry_delay_seconds)
+        self.contract_write_quarantine_check = contract_write_quarantine_check
         self._capability = None
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
@@ -155,6 +159,16 @@ class AuthoritativeBrokerWriter:
         self._startup_error: BaseException | None = None
         self._frozen_order_refs: set[str] = set()
         self._model_write_authority_frozen = False
+
+    def _contract_quarantine_reasons(
+        self, context: dict[str, Any]
+    ) -> tuple[str, ...]:
+        if self.contract_write_quarantine_check is None:
+            return ()
+        try:
+            return tuple(self.contract_write_quarantine_check(context))
+        except Exception as exc:
+            return (f"CONTRACT_ORDER_QUARANTINE_CHECK_FAILED:{type(exc).__name__}",)
 
     def _report_uncertainty(self, reason_code: str) -> None:
         try:
@@ -324,6 +338,11 @@ class AuthoritativeBrokerWriter:
         from ib_insync import Contract, Order
 
         original = request.original_request
+        quarantine_reasons = self._contract_quarantine_reasons(
+            {"canonical_contract": original.canonical_contract.model_dump(mode="json")}
+        )
+        if quarantine_reasons:
+            return self._result(success=False, status="BLOCKED", reasons=quarantine_reasons)
         if (self.canary_recovery_claim is None
                 or self.canary_recovery_result_persister is None
                 or self.execution_lock_verifier() is not True
@@ -547,6 +566,11 @@ class AuthoritativeBrokerWriter:
             time.sleep(0.05)
 
     def _execute_canary(self, request: CanaryExecutionRequest, broker: Any):
+        quarantine_reasons = self._contract_quarantine_reasons(
+            {"canonical_contract": request.canonical_contract.model_dump(mode="json")}
+        )
+        if quarantine_reasons:
+            return self._result(success=False, status="BLOCKED", reasons=quarantine_reasons)
         if not self._canary_supervision_ready():
             return CanaryExecutionResult(
                 status="BLOCKED", request_sha256=request.sha256,
@@ -1036,6 +1060,11 @@ class AuthoritativeBrokerWriter:
         ) -> tuple[str, ...]:
             nonlocal decision, evidence, final_gate_invoked
             final_gate_invoked = True
+            quarantine_reasons = self._contract_quarantine_reasons(
+                dict(write_context or {})
+            )
+            if quarantine_reasons:
+                return quarantine_reasons
             if self.coordinator.is_execution_expired(request.execution_key):
                 return ("MODEL_EXECUTION_REQUEST_EXPIRED",)
             final_decision, final_evidence, final_reasons = (
@@ -1162,6 +1191,13 @@ class AuthoritativeBrokerWriter:
         return result
 
     def _execute_continuity(self, command: AuthorizedBrokerCommand, broker: Any):
+        quarantine_reasons = self._contract_quarantine_reasons(
+            {"order_ref": command.order_ref}
+        )
+        if quarantine_reasons:
+            return self._result(
+                success=False, status="BLOCKED", reasons=quarantine_reasons
+            )
         if command.order_ref in self._frozen_order_refs:
             return self._result(
                 success=False,

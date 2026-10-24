@@ -311,7 +311,13 @@ class KillSwitchStore:
             value = receipt.get(field)
             if isinstance(value, bool) or not isinstance(value, int) or value < 0:
                 raise ExperimentControlError("KILL_SWITCH_RECOVERY_RECEIPT_INVALID")
-        if receipt["open_orders_count"] != 0:
+        quarantine_sha = receipt.get("contract_order_quarantine_sha256")
+        quarantined_open_order = (
+            receipt["open_orders_count"] == 1
+            and isinstance(quarantine_sha, str)
+            and cls._SHA256_RE.fullmatch(quarantine_sha)
+        )
+        if receipt["open_orders_count"] != 0 and not quarantined_open_order:
             raise ExperimentControlError("KILL_SWITCH_RECOVERY_OPEN_ORDERS_PRESENT")
         if receipt["broker_write_count"] != 0:
             raise ExperimentControlError("KILL_SWITCH_RECOVERY_BROKER_WRITE_DETECTED")

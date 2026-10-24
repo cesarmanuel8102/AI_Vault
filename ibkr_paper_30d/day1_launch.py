@@ -2299,6 +2299,8 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                     config, preflight.expected_account_hash
                 )
                 try:
+                    from .contract_order_quarantine import ContractOrderQuarantineStore
+
                     service = dependencies.service_factory(
                         db,
                         experiment_start_utc=(
@@ -2362,6 +2364,11 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                             multi_universe_runtime_authority
                         ),
                         canary_pilot_orchestrator=canary_pilot_orchestrator,
+                        contract_order_quarantine_store=ContractOrderQuarantineStore(
+                            config.repo_root
+                            / "state" / "ibkr_paper_30d" / "reports"
+                            / "contract_order_quarantine_v1.json"
+                        ),
                     )
                 except AutonomousServiceError as exc:
                     reason_codes = [

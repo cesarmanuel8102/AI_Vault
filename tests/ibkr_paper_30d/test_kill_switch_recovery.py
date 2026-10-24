@@ -334,6 +334,83 @@ def test_recovery_command_collects_readonly_paper_evidence_before_db_clear(
         assert KillSwitchStore(db).current() == "KILL_SWITCH_CLEAR"
 
 
+def test_recovery_accepts_only_exact_active_contract_quarantine(tmp_path) -> None:
+    repo = tmp_path / "repo"
+    db_path = repo / "state" / "ibkr_paper_30d" / "autonomous.sqlite3"
+    expected_path = repo / "Secrets" / "expected_paper_account_identity_v1.json"
+    quarantine_path = (
+        repo / "state" / "ibkr_paper_30d" / "reports" / "contract_order_quarantine_v1.json"
+    )
+    expected_path.parent.mkdir(parents=True)
+    account_hash = expected_identity_hash("DU123456")
+    expected_path.write_text(
+        '{"schema":"EXPECTED_PAPER_ACCOUNT_IDENTITY_V1","account_sha256":"'
+        + account_hash
+        + '"}',
+        encoding="utf-8",
+    )
+    from ibkr_paper_30d.contract_order_quarantine import ContractOrderQuarantineStore
+
+    ContractOrderQuarantineStore(quarantine_path).activate(
+        account_identity_sha256=account_hash,
+        approved_head=APPROVED_HEAD,
+        order={
+            "orderId": 955,
+            "permId": 399803157,
+            "clientId": 19761,
+            "orderRef": "codex-ibkr-paper-30d-p-7ca1eec02caa",
+            "contract": {"conId": 766137558, "symbol": "SOL"},
+            "action": "SELL",
+            "totalQuantity": "4.5",
+            "status": "PendingCancel",
+            "filled": "0",
+            "remaining": "4.5",
+        },
+        position_quantity="4.5",
+        authorized_at_utc=NOW,
+    )
+    with Database.open(db_path) as db:
+        clock = ExperimentClockStore(db).initialize_or_load(
+            requested_start_utc=NOW - timedelta(days=1), duration_days=30,
+            initial_allocation=Decimal("500"),
+        )
+        OwnerAuthorizationStore(db).set(
+            "AUTHORIZED", clock_event_sha256=clock.event_sha256,
+            reason="test", actor=OWNER_SID,
+        )
+        switch = KillSwitchStore(db)
+        switch.set("KILL_SWITCH_CLEAR", reason="initial", actor=OWNER_SID)
+        switch.set("KILL_SWITCH_TRIGGERED", reason="ghost order", actor="runtime")
+    quarantined = {
+        "orderId": 955, "permId": 399803157, "clientId": 19761,
+        "orderRef": "codex-ibkr-paper-30d-p-7ca1eec02caa",
+        "contract": {"conId": 766137558, "symbol": "SOL"},
+        "action": "SELL", "totalQuantity": "4.5", "status": "PendingCancel",
+        "filled": "0", "remaining": "4.5",
+    }
+    evidence = SimpleNamespace(
+        connected=True, authenticated=True, managed_accounts=("DU123456",),
+        positions=({"contract": {"conId": 766137558, "symbol": "SOL"}, "position": "4.5"},),
+        open_orders=(quarantined,), executions=(),
+        server_timestamp_utc=NOW.isoformat().replace("+00:00", "Z"), heartbeat_ok=True,
+        query_completeness={name: True for name in (
+            "managed_accounts", "positions", "open_orders", "executions", "current_time"
+        )}, outbound_message_ids=(71, 6, 62), errors=(),
+    )
+
+    result = recover_kill_switch(
+        repo_root=repo, approved_head=APPROVED_HEAD,
+        recovery_reason_code="EXACT_CONTRACT_ORDER_QUARANTINE_ACTIVE",
+        evidence_collector=lambda **_: evidence, head_reader=lambda _: APPROVED_HEAD,
+        current_sid=lambda: OWNER_SID, token_elevated=lambda: True,
+        now_utc=lambda: NOW + timedelta(seconds=1),
+    )
+
+    assert result["status"] == "PASS"
+    assert result["receipt"]["open_orders_count"] == 1
+    assert result["receipt"]["contract_order_quarantine_sha256"]
+
+
 def test_recovery_command_binds_active_successor_authority(tmp_path) -> None:
     repo = tmp_path / "repo"
     db_path = repo / "state" / "ibkr_paper_30d" / "autonomous.sqlite3"

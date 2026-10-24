@@ -1432,3 +1432,24 @@ def test_capability_describe_is_connection_free():
     assert payload["connections_performed"] == 0
     assert payload["writes_performed"] == 0
     assert any("same-client" in item for item in payload["required_checks"])
+def test_writer_contract_quarantine_is_exact_and_fail_closed():
+    writer = AuthoritativeBrokerWriter(
+        BrokerWriteCoordinator(),
+        broker_factory=lambda _: object(),
+        execution_client_id=19761,
+        execution_lock_verifier=lambda: True,
+        authority_validator=lambda request, evidence: (),
+        contract_write_quarantine_check=lambda context: (
+            ("QUARANTINED_CONTRACT_WRITE_BLOCKED",)
+            if (context.get("canonical_contract") or {}).get("con_id") == 766137558
+            else ()
+        ),
+    )
+
+    assert writer._contract_quarantine_reasons(
+        {"canonical_contract": {"con_id": 766137558}}
+    ) == ("QUARANTINED_CONTRACT_WRITE_BLOCKED",)
+    assert writer._contract_quarantine_reasons(
+        {"canonical_contract": {"con_id": 123}}
+    ) == ()
+
