@@ -212,6 +212,7 @@ class _ReadOnlyIBClient(EWrapper, EClient):
         self.account_summary_value: dict[str, dict[str, str]] = {}
         self.positions_value: list[dict[str, object]] = []
         self.open_orders_value: list[dict[str, object]] = []
+        self.order_status_values: dict[int, dict[str, str]] = {}
         self.executions_value: list[dict[str, object]] = []
         self.quote_values: dict[int, dict[str, Any]] = {}
         self.quote_events: dict[int, threading.Event] = {}
@@ -270,6 +271,7 @@ class _ReadOnlyIBClient(EWrapper, EClient):
         contract_id = int(getattr(contract, "conId", 0))
         symbol = str(getattr(contract, "symbol", ""))
         perm_id = int(getattr(order, "permId", 0))
+        status = self.order_status_values.get(orderId, {})
         self.open_orders_value.append(
             {
                 "broker_order_id": orderId,
@@ -277,17 +279,32 @@ class _ReadOnlyIBClient(EWrapper, EClient):
                 "contract_id": contract_id,
                 "contract": {"conId": contract_id, "symbol": symbol},
                 "symbol": symbol,
-                "status": str(getattr(orderState, "status", "")),
+                "status": status.get("status", str(getattr(orderState, "status", ""))),
                 "perm_id": perm_id,
                 "permId": perm_id,
                 "clientId": int(getattr(order, "clientId", 0)),
                 "orderRef": str(getattr(order, "orderRef", "")),
                 "action": str(getattr(order, "action", "")),
                 "totalQuantity": str(getattr(order, "totalQuantity", "")),
-                "filled": str(getattr(orderState, "filled", "")),
-                "remaining": str(getattr(orderState, "remaining", "")),
+                "filled": status.get("filled", str(getattr(orderState, "filled", ""))),
+                "remaining": status.get("remaining", str(getattr(orderState, "remaining", ""))),
             }
         )
+
+    def orderStatus(
+        self, orderId: int, status: str, filled: float, remaining: float,
+        avgFillPrice: float, permId: int, parentId: int, lastFillPrice: float,
+        clientId: int, whyHeld: str, mktCapPrice: float,
+    ) -> None:
+        observed = {
+            "status": str(status),
+            "filled": str(filled),
+            "remaining": str(remaining),
+        }
+        self.order_status_values[orderId] = observed
+        for order in self.open_orders_value:
+            if int(order.get("broker_order_id", 0)) == orderId:
+                order.update(observed)
 
     def openOrderEnd(self) -> None:
         self.open_orders_event.set()
