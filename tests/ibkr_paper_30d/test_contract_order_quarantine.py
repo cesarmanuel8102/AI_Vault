@@ -107,3 +107,31 @@ def test_absent_order_with_changed_position_requires_global_pause(tmp_path):
             open_orders=[], positions=[position("0")],
             observed_at_utc=NOW + timedelta(minutes=1),
         )
+
+
+def test_service_exposes_contract_scoped_quarantine_without_global_entry_block(tmp_path):
+    from ibkr_paper_30d.autonomous_service import AutonomousExperimentService
+    from ibkr_paper_30d.trader_invocation import TraderInputBundle
+
+    quarantine = store(tmp_path)
+    service = object.__new__(AutonomousExperimentService)
+    service.contract_order_quarantine_store = quarantine
+    bundle = TraderInputBundle(
+        decision_cycle_id="cycle-1", utc_timestamp="2026-10-23T22:01:00Z",
+        market_session_state="EXTENDED", reconciliation_receipt={"status": "PASS"},
+        experiment_subledger_snapshot={}, broker_account_snapshot={},
+        positions_snapshot=[position()], open_orders_snapshot=[order()],
+        risk_snapshot={}, kill_switch_state="KILL_SWITCH_CLEAR",
+        market_data_snapshot={}, candidate_screen_results=[],
+        relevant_previous_immutable_decisions=[], process_policy_version="v1",
+        execution_realism_version="v1", benchmark_state={"existing": True},
+    )
+
+    updated = service._with_contract_order_quarantine_context(bundle)
+    context = updated.benchmark_state["contract_order_quarantine"]
+    assert context["scope"] == "EXACT_CONTRACT_AND_ORDER_ONLY"
+    assert context["quarantined_contract_id"] == 766137558
+    assert context["quarantined_order_ref"] == "codex-ibkr-paper-30d-p-7ca1eec02caa"
+    assert context["global_entry_block"] is False
+    assert context["other_contract_execution_policy"] == "NORMAL_RUNTIME_GATES_APPLY"
+    assert updated.benchmark_state["existing"] is True
