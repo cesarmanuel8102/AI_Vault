@@ -184,6 +184,7 @@ class AutonomousExperimentService:
         sleep: Callable[[float], None] = time.sleep,
         monotonic: Callable[[], float] = time.monotonic,
         canary_fair_cycle_limit: int | None = None,
+        contract_order_quarantine_store: Any | None = None,
     ) -> None:
         if scan_interval_seconds < 60:
             raise ValueError("scan cadence below 60 seconds is unsupported")
@@ -276,6 +277,7 @@ class AutonomousExperimentService:
         self.product_certification_store = product_certification_store
         self.multi_universe_runtime_authority = multi_universe_runtime_authority
         self.canary_pilot_orchestrator = canary_pilot_orchestrator
+        self.contract_order_quarantine_store = contract_order_quarantine_store
         self._last_orchestration_action: OrchestrationAction | None = None
         self._successor_supervision_pending_emitted = False
         self._watchdog_started = False
@@ -646,6 +648,16 @@ class AutonomousExperimentService:
             }
 
         bundle = self._builder().build(trigger=trigger)
+        quarantine_reasons = self._reconcile_contract_order_quarantine(bundle)
+        if quarantine_reasons:
+            return {
+                "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
+                "status": "STATE_GATE_BLOCK",
+                "gate": "CONTRACT_ORDER_QUARANTINE",
+                "reason_codes": list(quarantine_reasons),
+                "bundle": bundle.model_dump(mode="json"),
+                "auditor": auditor,
+            }
         if bundle.experiment_clock.get("not_started"):
             return {
                 "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
@@ -872,6 +884,51 @@ class AutonomousExperimentService:
                     )
                 )
         return result
+
+    def _reconcile_contract_order_quarantine(
+        self, bundle: TraderInputBundle
+    ) -> tuple[str, ...]:
+        store = self.contract_order_quarantine_store
+        if store is None:
+            return ()
+        try:
+            observed_at = datetime.fromisoformat(
+                bundle.utc_timestamp.replace("Z", "+00:00")
+            ).astimezone(timezone.utc)
+            observation = store.observe(
+                open_orders=bundle.open_orders_snapshot,
+                positions=bundle.positions_snapshot,
+                observed_at_utc=observed_at,
+            )
+            if observation.status in {"RELEASE_PENDING", "RELEASED"}:
+                _append_state_event(
+                    self.db,
+                    "CONTRACT_ORDER_QUARANTINE_OBSERVED",
+                    {
+                        "status": observation.status,
+                        "reason_codes": list(observation.reason_codes),
+                        "artifact_sha256": observation.artifact_sha256,
+                    },
+                )
+            return ()
+        except Exception as exc:
+            reason = str(exc) or "CONTRACT_ORDER_QUARANTINE_UNCERTAIN"
+            if not reason.startswith(("QUARANTINED_", "UNEXPECTED_", "CONTRACT_")):
+                reason = "CONTRACT_ORDER_QUARANTINE_UNCERTAIN"
+            self.kill_switch.set(
+                "KILL_SWITCH_TRIGGERED",
+                reason=reason,
+                actor="CONTRACT_ORDER_QUARANTINE_MONITOR",
+            )
+            _append_alert(
+                self.db,
+                "CONTRACT_ORDER_QUARANTINE_FAILURE",
+                {"reason_codes": [reason], "error_type": type(exc).__name__},
+            )
+            if self.critical_alert_reporter is not None:
+                self.critical_alert_reporter(reason)
+            self.stop_event.set()
+            return (reason,)
 
     def _handle_pause(self, result: dict[str, Any]) -> bool:
         outcome = result.get("outcome") or {}

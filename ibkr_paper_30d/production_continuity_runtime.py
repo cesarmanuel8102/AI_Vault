@@ -2084,6 +2084,7 @@ def create_authoritative_writer(
     from .canary_broker_accounting import CanaryBrokerAccounting
     from .canary_execution import CanaryExecutionAdapter
     from .production_authority import ProductionAuthorityValidator
+    from .contract_order_quarantine import ContractOrderQuarantineStore
 
     validate_production_runtime_configuration(config)
     session_factory = build_ibkr_session_factory(
@@ -2137,6 +2138,11 @@ def create_authoritative_writer(
         if canary_store is not None
         else None
     )
+    quarantine_store = ContractOrderQuarantineStore(
+        Path(config.repo_root)
+        / "state" / "ibkr_paper_30d" / "reports"
+        / "contract_order_quarantine_v1.json"
+    )
     return AuthoritativeBrokerWriter(
         coordinator,
         broker_factory=lambda client_id: (
@@ -2168,6 +2174,7 @@ def create_authoritative_writer(
         canary_evidence_collector=(
             canary_store.authority_evidence if canary_store is not None else None
         ),
+        contract_write_quarantine_check=quarantine_store.write_reasons,
     )
 
 

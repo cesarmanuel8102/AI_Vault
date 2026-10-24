@@ -12,6 +12,10 @@ from typing import Any, Callable, Mapping, Sequence
 import psutil
 
 from .canonical import canonical_bytes, sha256_json
+from .contract_order_quarantine import (
+    ContractOrderQuarantineError,
+    ContractOrderQuarantineStore,
+)
 from .experiment_control import (
     ExperimentClockStore,
     ExperimentControlError,
@@ -156,8 +160,17 @@ def recover_kill_switch(
     }
     if any(evidence.query_completeness.get(name) is not True for name in required_queries):
         raise KillSwitchRecoveryError("KILL_SWITCH_RECOVERY_RECONCILIATION_INCOMPLETE")
+    quarantine_store = ContractOrderQuarantineStore(
+        root / "state" / "ibkr_paper_30d" / "reports" / "contract_order_quarantine_v1.json"
+    )
+    quarantine_sha256 = None
     if evidence.open_orders:
-        raise KillSwitchRecoveryError("KILL_SWITCH_RECOVERY_OPEN_ORDERS_PRESENT")
+        try:
+            quarantine_sha256 = quarantine_store.verify_recovery_evidence(
+                evidence.open_orders, evidence.positions
+            )
+        except ContractOrderQuarantineError as exc:
+            raise KillSwitchRecoveryError(str(exc)) from exc
     if any(
         message_id not in ReadOnlyMessageGuard.ALLOWED_MESSAGE_IDS
         for message_id in evidence.outbound_message_ids
@@ -226,6 +239,8 @@ def recover_kill_switch(
             "query_completeness": broker_evidence["query_completeness"],
             "recovery_reason_code": recovery_reason_code,
         }
+        if quarantine_sha256 is not None:
+            receipt["contract_order_quarantine_sha256"] = quarantine_sha256
         event_id = KillSwitchStore(db).recover(
             receipt,
             now_utc=collected_at,
