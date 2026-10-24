@@ -134,6 +134,32 @@ def test_readonly_open_order_retains_complete_quarantine_identity():
     }]
 
 
+def test_readonly_open_order_merges_fill_state_from_order_status():
+    from types import SimpleNamespace
+    from ibkr_paper_30d.ibkr_readonly_session import _ReadOnlyIBClient
+
+    client = _ReadOnlyIBClient()
+    client.openOrder(
+        955,
+        SimpleNamespace(conId=766137558, symbol="SOL"),
+        SimpleNamespace(
+            permId=399803157, clientId=19761,
+            orderRef="codex-ibkr-paper-30d-p-7ca1eec02caa",
+            action="SELL", totalQuantity="4.5",
+        ),
+        SimpleNamespace(status="PendingCancel"),
+    )
+    client.orderStatus(
+        955, "PendingCancel", "0", "4.5", 0, 399803157,
+        0, 0, 19761, "", 0,
+    )
+
+    observed = client.open_orders_value[0]
+    assert observed["status"] == "PendingCancel"
+    assert observed["filled"] == "0"
+    assert observed["remaining"] == "4.5"
+
+
 def test_runtime_automatically_settles_only_proven_prewrite_abort(tmp_path,monkeypatch):
     from ibkr_paper_30d.ibkr_readonly_session import IBKRReadOnlySessionCollector
     store,request,evidence=fixture(tmp_path)
