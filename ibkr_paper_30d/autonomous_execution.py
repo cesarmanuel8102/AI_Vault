@@ -1777,6 +1777,23 @@ class WriterOwnedModelExecutionMechanics:
                     broker_validation={"current_position": str(current_position)},
                 )
 
+            if str(getattr(execution_contract, "secType", "") or "").upper() == "CRYPTO":
+                session_evidence = self.toolbox.live_contract_session_evidence(
+                    ib, execution_contract
+                )
+                if session_evidence.get("tradable_now") is not True:
+                    session = str(session_evidence.get("session") or "UNKNOWN").upper()
+                    return PaperExecutionResult(
+                        success=False,
+                        status="BLOCKED",
+                        reason_codes=(f"TRADE_CONTRACT_SESSION_{session}",),
+                        order={},
+                        broker_validation={
+                            "current_position": str(current_position),
+                            "trade_contract_session": session_evidence,
+                        },
+                    )
+
             live_quote = self.toolbox.live_contract_quote_evidence(
                 ib, execution_contract
             )
