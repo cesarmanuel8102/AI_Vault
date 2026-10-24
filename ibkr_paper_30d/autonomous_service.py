@@ -658,6 +658,7 @@ class AutonomousExperimentService:
                 "bundle": bundle.model_dump(mode="json"),
                 "auditor": auditor,
             }
+        bundle = self._with_contract_order_quarantine_context(bundle)
         if bundle.experiment_clock.get("not_started"):
             return {
                 "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
@@ -929,6 +930,38 @@ class AutonomousExperimentService:
                 self.critical_alert_reporter(reason)
             self.stop_event.set()
             return (reason,)
+
+    def _with_contract_order_quarantine_context(
+        self, bundle: TraderInputBundle
+    ) -> TraderInputBundle:
+        store = self.contract_order_quarantine_store
+        if store is None:
+            return bundle
+        payload = store.load()
+        if payload is None or payload.get("state") == "RELEASED":
+            return bundle
+        order = payload["order"]
+        context = {
+            "schema": "CONTRACT_ORDER_QUARANTINE_MODEL_CONTEXT_V1",
+            "state": payload["state"],
+            "scope": "EXACT_CONTRACT_AND_ORDER_ONLY",
+            "quarantined_contract_id": int(order["con_id"]),
+            "quarantined_order_ref": str(order["order_ref"]),
+            "quarantined_order_status": str(order["status"]),
+            "global_entry_block": False,
+            "other_contract_execution_policy": "NORMAL_RUNTIME_GATES_APPLY",
+            "prohibited_actions": [
+                "SUBMIT_MODIFY_OR_CANCEL_QUARANTINED_ORDER",
+                "SUBMIT_ORDER_FOR_QUARANTINED_CONTRACT",
+            ],
+            "release_condition": (
+                "TWO_FRESH_ORDER_ABSENT_OBSERVATIONS_WITH_POSITION_UNCHANGED"
+            ),
+            "artifact_sha256": str(payload["artifact_sha256"]),
+        }
+        benchmark_state = dict(bundle.benchmark_state)
+        benchmark_state["contract_order_quarantine"] = context
+        return bundle.model_copy(update={"benchmark_state": benchmark_state})
 
     def _handle_pause(self, result: dict[str, Any]) -> bool:
         outcome = result.get("outcome") or {}
