@@ -216,11 +216,14 @@ def _family_calendar_session(now: datetime, hours: str, zone: str) -> str:
         day = local.strftime("%Y%m%d")
         intervals = []
         covered = False
+        explicitly_closed = False
         for entry in hours.split(";"):
             if not entry:
                 continue
             if re.fullmatch(r"\d{8}:CLOSED", entry):
-                covered |= entry.startswith(day + ":")
+                if entry.startswith(day + ":"):
+                    covered = True
+                    explicitly_closed = True
                 continue
             for span in entry.split(","):
                 match = re.fullmatch(r"(\d{8}):(\d{4})-(\d{8}):(\d{4})", span)
@@ -232,6 +235,8 @@ def _family_calendar_session(now: datetime, hours: str, zone: str) -> str:
                     return "UNKNOWN"
                 covered |= start.date() <= local.date() <= end.date()
                 intervals.append((start, end))
+        if explicitly_closed:
+            return "CLOSED"
         if any(start <= local < end for start, end in intervals):
             return "REGULAR"
         return "CLOSED" if covered else "UNKNOWN"
@@ -1781,6 +1786,46 @@ class IBKRResearchToolbox:
                 ib.disconnect()
             except Exception:
                 pass
+
+    def live_contract_session_evidence(self, ib: Any, contract: Any) -> dict[str, Any]:
+        """Resolve the exact contract's current broker session without writing."""
+        try:
+            broker_time = ib.reqCurrentTime()
+            if broker_time is None or not hasattr(broker_time, "astimezone"):
+                raise ValueError("BROKER_TIME_UNAVAILABLE")
+            details = ib.reqContractDetails(contract)
+            if len(details or ()) != 1:
+                raise ValueError("CONTRACT_SESSION_DETAILS_AMBIGUOUS")
+            item = details[0]
+            resolved = item.contract
+            expected_con_id = int(getattr(contract, "conId", 0) or 0)
+            if expected_con_id and int(getattr(resolved, "conId", 0) or 0) != expected_con_id:
+                raise ValueError("CONTRACT_SESSION_IDENTITY_MISMATCH")
+            hours = str(
+                getattr(item, "tradingHours", "")
+                or getattr(item, "liquidHours", "")
+                or ""
+            )
+            zone = str(getattr(item, "timeZoneId", "") or "")
+            session = _family_calendar_session(broker_time, hours, zone)
+            if session == "UNKNOWN":
+                raise ValueError("CONTRACT_SESSION_UNRESOLVED")
+            return {
+                "success": True,
+                "tradable_now": session == "REGULAR",
+                "session": session,
+                "trading_hours": hours,
+                "timezone_id": zone,
+                "broker_time_utc": broker_time.astimezone(timezone.utc).isoformat(),
+                "contract_id": int(getattr(resolved, "conId", 0) or 0),
+            }
+        except (AttributeError, TypeError, ValueError) as exc:
+            return {
+                "success": False,
+                "tradable_now": False,
+                "session": "UNKNOWN",
+                "reason": str(exc) or type(exc).__name__,
+            }
 
     def _option_chain(self, args: dict[str, Any]) -> dict[str, Any]:
         ib = self._connect()

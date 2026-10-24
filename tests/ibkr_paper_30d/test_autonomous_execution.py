@@ -1378,6 +1378,11 @@ def test_crypto_market_position_action_uses_broker_required_ioc(tmp_path):
     )
     toolbox = IBKRResearchToolbox()
     toolbox._connect = lambda *, client_id=None: broker
+    toolbox.live_contract_session_evidence = lambda *_args, **_kwargs: {
+        "success": True,
+        "tradable_now": True,
+        "session": "REGULAR",
+    }
     toolbox.live_contract_quote_evidence = lambda *_args, **_kwargs: {
         "success": True,
         "market_data_type": 1,
@@ -1405,6 +1410,67 @@ def test_crypto_market_position_action_uses_broker_required_ioc(tmp_path):
     assert len(broker.place_contracts) == 1
     assert broker.place_orders[0].orderType == "MKT"
     assert broker.place_orders[0].tif == "IOC"
+
+
+def test_crypto_position_action_is_not_sent_when_exact_contract_session_is_closed(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    broker = _DirectRoutedPositionIB()
+    broker.position_contract = SimpleNamespace(
+        conId=766137558,
+        symbol="SOL",
+        localSymbol="SOL.USD",
+        secType="CRYPTO",
+        exchange="PAXOS",
+        primaryExchange="",
+        currency="USD",
+        lastTradeDateOrContractMonth="",
+        strike=0,
+        right="",
+        multiplier="1",
+        tradingClass="SOL",
+        comboLegs=[],
+    )
+    broker.position = SimpleNamespace(
+        contract=broker.position_contract,
+        position=Decimal("4.5"),
+    )
+    toolbox = IBKRResearchToolbox()
+    toolbox._connect = lambda *, client_id=None: broker
+    toolbox.live_contract_session_evidence = lambda *_args, **_kwargs: {
+        "success": True,
+        "tradable_now": False,
+        "session": "CLOSED",
+        "trading_hours": "20261024:CLOSED",
+    }
+    toolbox.live_contract_quote_evidence = lambda *_args, **_kwargs: {
+        "success": True,
+        "market_data_type": 1,
+    }
+    action = AutonomousPositionAction(
+        symbol="SOL",
+        sec_type="CRYPTO",
+        action="SELL",
+        quantity="4.5",
+        order_type="MKT",
+        contract_id=766137558,
+        reason="Close the existing crypto position.",
+    )
+
+    with Database.open(tmp_path / "crypto-closed-session.sqlite3") as db:
+        result = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        ).execute_position_action(action, bundle(), TraderDecision.CLOSE_POSITION)
+
+    assert result.success is False
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("TRADE_CONTRACT_SESSION_CLOSED",)
+    assert broker.what_if_contracts == []
+    assert broker.place_orders == []
 
 
 def test_market_position_action_pending_submit_is_not_reported_successful(tmp_path):

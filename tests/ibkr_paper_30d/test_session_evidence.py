@@ -17,7 +17,10 @@ import pytest
 
 import ibkr_paper_30d.day1_launch as launch_module
 from ibkr_paper_30d.autonomous_service import AutonomousExperimentService
-from ibkr_paper_30d.ibkr_research_tools import IBKRResearchToolbox
+from ibkr_paper_30d.ibkr_research_tools import (
+    IBKRResearchToolbox,
+    _family_calendar_session,
+)
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.session_orchestration import OrchestrationAction
 from ibkr_paper_30d.types import new_uuid7
@@ -207,6 +210,18 @@ def test_overnight_family_remains_open_before_next_interval_start():
     evidence = toolbox.session_evidence(reference_symbols=("SPY", "QQQ", "IEF"),
         family_contracts={"a" * 64: {"con_id": 99, "security_type": "CRYPTO", "exchange": "PAXOS", "currency": "USD"}})
     assert evidence["family_sessions"]["a" * 64]["tradable_now"] is True
+
+
+def test_explicit_broker_closed_day_overrides_overlapping_prior_interval():
+    assert _family_calendar_session(
+        datetime(2026, 10, 24, 5, 1, tzinfo=timezone.utc),
+        (
+            "20261024:CLOSED;"
+            "20261023:1601-20261024:1600;"
+            "20261024:1601-20261025:1600"
+        ),
+        "US/Eastern",
+    ) == "CLOSED"
 
 
 def test_family_session_contract_mismatch_cannot_enable_entry():
