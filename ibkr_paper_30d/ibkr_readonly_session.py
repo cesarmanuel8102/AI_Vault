@@ -267,13 +267,25 @@ class _ReadOnlyIBClient(EWrapper, EClient):
     def openOrder(
         self, orderId: int, contract: object, order: object, orderState: object
     ) -> None:
+        contract_id = int(getattr(contract, "conId", 0))
+        symbol = str(getattr(contract, "symbol", ""))
+        perm_id = int(getattr(order, "permId", 0))
         self.open_orders_value.append(
             {
                 "broker_order_id": orderId,
-                "contract_id": int(getattr(contract, "conId", 0)),
-                "symbol": str(getattr(contract, "symbol", "")),
+                "orderId": orderId,
+                "contract_id": contract_id,
+                "contract": {"conId": contract_id, "symbol": symbol},
+                "symbol": symbol,
                 "status": str(getattr(orderState, "status", "")),
-                "perm_id": int(getattr(order, "permId", 0)),
+                "perm_id": perm_id,
+                "permId": perm_id,
+                "clientId": int(getattr(order, "clientId", 0)),
+                "orderRef": str(getattr(order, "orderRef", "")),
+                "action": str(getattr(order, "action", "")),
+                "totalQuantity": str(getattr(order, "totalQuantity", "")),
+                "filled": str(getattr(orderState, "filled", "")),
+                "remaining": str(getattr(orderState, "remaining", "")),
             }
         )
 
