@@ -316,6 +316,7 @@ def test_production_reader_passes_verified_family_contracts(monkeypatch):
                                                     expected_account_hash="c" * 64)
     reader()
     assert getter.call_args.kwargs["family_contracts"] == contracts
+    assert reader()["family_session_inventory_complete"] is True
 
 
 def test_production_reader_exposes_active_continuity_deadlines(monkeypatch):

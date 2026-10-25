@@ -1290,9 +1290,13 @@ class AutonomousExperimentService:
         positions = evidence.get("positions")
         if (
             not isinstance(family_sessions, dict)
-            or not family_sessions
             or not isinstance(open_orders, list)
             or not isinstance(positions, list)
+        ):
+            return None
+        if (
+            not family_sessions
+            and evidence.get("family_session_inventory_complete") is not True
         ):
             return None
         try:

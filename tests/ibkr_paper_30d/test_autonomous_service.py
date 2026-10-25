@@ -1963,6 +1963,26 @@ def test_closed_quarantine_idles_when_its_entry_certification_has_expired(
     assert json.loads(event[0])["family_session"] == "MONITOR_ONLY"
 
 
+def test_closed_quarantine_idles_with_authenticated_empty_family_inventory(
+    tmp_path, monkeypatch
+):
+    class PositionLedger(FakeLedger):
+        positions = ("OPEN",)
+
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", PositionLedger)
+    evidence = _closed_quarantine_evidence()
+    evidence["family_sessions"] = {}
+    evidence["family_session_inventory_complete"] = True
+    clock = _IdleStoppingClock(stop_after_sleeps=1)
+    with Database.open(tmp_path / "complete-empty-family-inventory.sqlite3") as db:
+        service = _quarantine_idle_service(
+            db, clock, _active_sol_quarantine(tmp_path), evidence
+        )
+        service.run_forever()
+
+    assert service.triggers == []
+
+
 def test_active_continuity_deadline_prevents_quarantine_idle(tmp_path, monkeypatch):
     class PositionLedger(FakeLedger):
         positions = ("OPEN",)

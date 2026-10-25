@@ -1849,6 +1849,7 @@ def _session_evidence_reader(
         return {
             **evidence,
             "continuity_deadlines": list(_active_continuity_deadlines(db)),
+            "family_session_inventory_complete": True,
         }
 
     return read
