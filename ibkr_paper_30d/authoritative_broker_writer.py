@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import traceback
 import threading
 import time
 from datetime import datetime, timezone
@@ -264,10 +265,19 @@ class AuthoritativeBrokerWriter:
                     if isinstance(command, ModelExecutionRequest):
                         self._model_write_authority_frozen = True
                     self._report_uncertainty("BROKER_STATE_UNCERTAIN")
+                    frame = traceback.extract_tb(exc.__traceback__)[-1]
+                    failure_location = (
+                        f"{frame.name}:{frame.lineno}"
+                        if frame is not None
+                        else "unknown:0"
+                    )
                     result = self._result(
                         success=False,
                         status="UNCERTAIN",
-                        reasons=(f"WRITER_INTERNAL_FAILURE:{type(exc).__name__}",),
+                        reasons=(
+                            f"WRITER_INTERNAL_FAILURE:{type(exc).__name__}:"
+                            f"{failure_location}",
+                        ),
                     )
                 self.coordinator.complete(
                     self._capability,

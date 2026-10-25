@@ -828,7 +828,10 @@ def test_model_engine_failure_is_uncertain_and_not_retried():
         writer.stop(2)
 
     assert result.status == "UNCERTAIN"
-    assert result.reason_codes == ("WRITER_INTERNAL_FAILURE:RuntimeError",)
+    assert len(result.reason_codes) == 1
+    assert result.reason_codes[0].startswith(
+        "WRITER_INTERNAL_FAILURE:RuntimeError:execute:"
+    )
     assert len(engine.calls) == 1
     assert factory.connection_ids == [19761]
 
