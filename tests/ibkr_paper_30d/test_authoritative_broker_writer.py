@@ -1468,4 +1468,39 @@ def test_writer_contract_quarantine_is_exact_and_fail_closed():
     assert writer._contract_quarantine_reasons(
         {"canonical_contract": {"con_id": 123}}
     ) == ()
+    assert writer._contract_quarantine_reasons(
+        {
+            "order_ref": "codex-ibkr-paper-30d-p-6ea0925b6b3a",
+            "canonical_contract": {"con_id": 123},
+        }
+    ) == ()
+
+
+def test_writer_contract_quarantine_can_bind_exact_order_ref_independently():
+    quarantined_ref = "codex-ibkr-paper-30d-p-6ea0925b6b3a"
+    writer = AuthoritativeBrokerWriter(
+        BrokerWriteCoordinator(),
+        broker_factory=lambda _: object(),
+        execution_client_id=19761,
+        execution_lock_verifier=lambda: True,
+        authority_validator=lambda request, evidence: (),
+        contract_write_quarantine_check=lambda context: (
+            ("QUARANTINED_CONTRACT_WRITE_BLOCKED",)
+            if context.get("order_ref") == quarantined_ref
+            else ()
+        ),
+    )
+
+    assert writer._contract_quarantine_reasons(
+        {
+            "order_ref": quarantined_ref,
+            "canonical_contract": {"con_id": 123},
+        }
+    ) == ("QUARANTINED_CONTRACT_WRITE_BLOCKED",)
+    assert writer._contract_quarantine_reasons(
+        {
+            "order_ref": "unrelated-order-ref",
+            "canonical_contract": {"con_id": 123},
+        }
+    ) == ()
 

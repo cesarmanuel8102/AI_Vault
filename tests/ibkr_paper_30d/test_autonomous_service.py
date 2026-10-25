@@ -901,6 +901,26 @@ class _ReadyBuilder:
 
 
 class _ContinuousReadyBundle(_ReadyBundle):
+    utc_timestamp = "2026-10-24T21:37:00Z"
+    open_orders_snapshot = (
+        {
+            "orderId": 964,
+            "permId": 1166274319,
+            "clientId": 19761,
+            "orderRef": "codex-ibkr-paper-30d-p-6ea0925b6b3a",
+            "conId": 766137558,
+            "symbol": "SOL",
+            "action": "SELL",
+            "totalQuantity": "4.5",
+            "status": "PendingCancel",
+            "filled": "0",
+            "remaining": "4.5",
+        },
+    )
+    positions_snapshot = (
+        {"conId": 766137558, "symbol": "SOL", "position": "4.5"},
+    )
+    benchmark_state = {}
     market_data_snapshot = {
         "gate_status": "BLOCK",
         "reason_codes": ["REGULAR_MARKET_CLOSED"],
@@ -922,7 +942,13 @@ class _ContinuousReadyBundle(_ReadyBundle):
         return {
             **super().model_dump(mode=mode),
             "multi_sleeve_portfolio": self.multi_sleeve_portfolio,
+            "benchmark_state": self.benchmark_state,
         }
+
+    def model_copy(self, *, update):
+        copied = _ContinuousReadyBundle()
+        copied.benchmark_state = update["benchmark_state"]
+        return copied
 
 
 class _ContinuousReadyBuilder:
@@ -933,6 +959,26 @@ class _ContinuousReadyBuilder:
 def test_regular_market_gate_block_does_not_hide_eligible_continuous_family(
     tmp_path, monkeypatch
 ) -> None:
+    observed = []
+    cycle_bundles = []
+
+    class ExactSolQuarantine:
+        def observe(self, **kwargs):
+            observed.append(kwargs)
+            return SimpleNamespace(status="ACTIVE", reason_codes=(), artifact_sha256="a" * 64)
+
+        def load(self):
+            return {
+                "schema": "CONTRACT_ORDER_QUARANTINE_V1",
+                "state": "ACTIVE",
+                "artifact_sha256": "a" * 64,
+                "order": {
+                    "con_id": 766137558,
+                    "order_ref": "codex-ibkr-paper-30d-p-6ea0925b6b3a",
+                    "status": "PendingCancel",
+                },
+            }
+
     with Database.open(tmp_path / "continuous-open.sqlite3") as db:
         subject = AutonomousExperimentService(
             db,
@@ -943,20 +989,36 @@ def test_regular_market_gate_block_does_not_hide_eligible_continuous_family(
             executor=StubExecutor(),
             runtime_market_gate=PassGate(),
             runtime_auditor_gate=PassGate(),
+            contract_order_quarantine_store=ExactSolQuarantine(),
         )
         monkeypatch.setattr(subject, "_builder", lambda: _ContinuousReadyBuilder())
+
+        def run_cycle(bundle, *args, **kwargs):
+            cycle_bundles.append(bundle)
+            return {
+                "status": "PASS",
+                "outcome": {"validation": "PASS", "decision": "NO_TRADE"},
+            }
+
         monkeypatch.setattr(
             service_module,
             "run_autonomous_cycle",
-            lambda *args, **kwargs: {
-                "status": "PASS",
-                "outcome": {"validation": "PASS", "decision": "NO_TRADE"},
-            },
+            run_cycle,
         )
 
         result = subject._run_cycle("SCHEDULED_SCAN")
 
     assert result["status"] == "PASS"
+    assert result.get("gate") not in {
+        "CONTRACT_ORDER_QUARANTINE",
+        "MARKET_DATA_GATE_BLOCK",
+    }
+    assert len(observed) == 1
+    assert len(cycle_bundles) == 1
+    context = cycle_bundles[0].benchmark_state["contract_order_quarantine"]
+    assert context["scope"] == "EXACT_CONTRACT_AND_ORDER_ONLY"
+    assert context["quarantined_contract_id"] == 766137558
+    assert context["global_entry_block"] is False
 
 
 def test_provider_failure_is_observed_without_claiming_policy_attribution(
