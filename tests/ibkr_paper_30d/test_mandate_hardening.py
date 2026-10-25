@@ -179,6 +179,17 @@ def test_stagnation_redirects_to_methodology_not_trading():
     assert "replace an ineffective methodology" in text
 
 
+def test_position_reductions_use_their_exact_host_validator_not_new_trade_feasibility():
+    text = instruction().lower()
+
+    assert "broker_feasibility is the research validator for new trade proposals" in text
+    assert "close_position or reduce_position" in text
+    assert "does not require a prior broker_feasibility research request" in text
+    assert "the host performs an exact exposure-reducing broker validation" in text
+    assert "missing or sentinel margin fields from a generic feasibility request" in text
+    assert "do not prove that an exposure-reducing position action is unavailable" in text
+
+
 def test_methodological_freedom_dimensions_are_open():
     text = instruction().lower()
     for freedom in (
