@@ -357,6 +357,13 @@ class AutonomyToolbox:
             max_age_seconds=max_age_seconds,
         )
 
+    def live_contract_session_evidence(
+        self,
+        ib: Any,
+        contract: Any,
+    ) -> dict[str, Any]:
+        return self.base.live_contract_session_evidence(ib, contract)
+
     def manifest(self) -> list[dict[str, Any]]:
         manifest = list(self.base.manifest())
         manifest.extend(

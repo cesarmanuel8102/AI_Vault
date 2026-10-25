@@ -15,6 +15,7 @@ class BrokerBaseToolbox:
         self.contract = object()
         self.position = object()
         self.quote = {"success": True, "market_data_type": 1}
+        self.session = {"success": True, "tradable_now": True, "session": "REGULAR"}
 
     def manifest(self):
         return []
@@ -75,6 +76,10 @@ class BrokerBaseToolbox:
             )
         )
         return self.quote
+
+    def live_contract_session_evidence(self, ib, contract):
+        self.calls.append(("live_contract_session_evidence", ib, contract))
+        return self.session
 
 
 def test_toolbox_explicitly_exposes_only_broker_server_time() -> None:
@@ -178,9 +183,11 @@ def test_toolbox_explicit_executor_host_delegates_preserve_arguments() -> None:
         )
         is base.quote
     )
+    assert toolbox.live_contract_session_evidence(ib, contract) is base.session
     assert base.calls == [
         ("_connect", 19761),
         ("_proposal_contract", ib, proposal),
         ("_resolve_open_position", ib, action),
         ("live_contract_quote_evidence", ib, contract, 1.25, 7.5),
+        ("live_contract_session_evidence", ib, contract),
     ]

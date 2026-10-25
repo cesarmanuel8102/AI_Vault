@@ -1376,17 +1376,18 @@ def test_crypto_market_position_action_uses_broker_required_ioc(tmp_path):
         contract=broker.position_contract,
         position=Decimal("4.7"),
     )
-    toolbox = IBKRResearchToolbox()
-    toolbox._connect = lambda *, client_id=None: broker
-    toolbox.live_contract_session_evidence = lambda *_args, **_kwargs: {
+    base_toolbox = IBKRResearchToolbox()
+    base_toolbox._connect = lambda *, client_id=None: broker
+    base_toolbox.live_contract_session_evidence = lambda *_args, **_kwargs: {
         "success": True,
         "tradable_now": True,
         "session": "REGULAR",
     }
-    toolbox.live_contract_quote_evidence = lambda *_args, **_kwargs: {
+    base_toolbox.live_contract_quote_evidence = lambda *_args, **_kwargs: {
         "success": True,
         "market_data_type": 1,
     }
+    toolbox = AutonomyToolbox(base_toolbox, None)
     action = AutonomousPositionAction(
         symbol="SOL",
         sec_type="CRYPTO",
