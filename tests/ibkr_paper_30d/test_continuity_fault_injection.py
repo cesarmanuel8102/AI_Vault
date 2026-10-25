@@ -150,6 +150,7 @@ def _command(
         "perm_id": snapshot["permId"],
         "execution_client_id": snapshot["clientId"],
         "account_identity_sha256": expected_identity_hash(snapshot["account"]),
+        "contract_id": snapshot["contract"]["conId"],
         "contract_identity_sha256": sha256_json(snapshot["contract"]),
         "observed_state_sha256": snapshot["state_sha256"],
         "authority_class": "PREAUTHORIZED_CONTINUITY",
