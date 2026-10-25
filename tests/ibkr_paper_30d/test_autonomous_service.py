@@ -1931,6 +1931,55 @@ def test_closed_quarantined_only_obligation_idles_at_scan_cadence(
     assert store.load()["last_observed_at_utc"] == "2026-10-24T21:37:00Z"
 
 
+def test_closed_quarantine_idles_when_its_entry_certification_has_expired(
+    tmp_path, monkeypatch
+):
+    class PositionLedger(FakeLedger):
+        positions = ("OPEN",)
+
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", PositionLedger)
+    evidence = _closed_quarantine_evidence()
+    evidence["family_sessions"] = {
+        "other-certified-family": {
+            "authenticated": True,
+            "tradable_now": False,
+            "session": "CLOSED",
+            "con_id": 123,
+        }
+    }
+    clock = _IdleStoppingClock(stop_after_sleeps=1)
+    with Database.open(tmp_path / "expired-quarantine-family.sqlite3") as db:
+        service = _quarantine_idle_service(
+            db, clock, _active_sol_quarantine(tmp_path), evidence
+        )
+        service.run_forever()
+        event = db.execute(
+            "SELECT payload_json FROM state_events WHERE event_type=?",
+            ("CONTRACT_QUARANTINE_MONITOR_IDLE",),
+        ).fetchone()
+
+    assert service.triggers == []
+    assert event is not None
+    assert json.loads(event[0])["family_session"] == "MONITOR_ONLY"
+
+
+def test_active_continuity_deadline_prevents_quarantine_idle(tmp_path, monkeypatch):
+    class PositionLedger(FakeLedger):
+        positions = ("OPEN",)
+
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", PositionLedger)
+    evidence = _closed_quarantine_evidence()
+    evidence["continuity_deadlines"] = ["2026-10-25T03:00:00Z"]
+    clock = _IdleStoppingClock()
+    with Database.open(tmp_path / "continuity-deadline.sqlite3") as db:
+        service = _quarantine_idle_service(
+            db, clock, _active_sol_quarantine(tmp_path), evidence
+        )
+        service.run_forever()
+
+    assert service.triggers != []
+
+
 @pytest.mark.parametrize(
     "mutation",
     ["UNRELATED_FAMILY_OPEN", "UNRELATED_OPEN_ORDER", "REGULAR_SESSION_OPEN"],

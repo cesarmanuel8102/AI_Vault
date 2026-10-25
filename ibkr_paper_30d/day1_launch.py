@@ -1837,10 +1837,33 @@ def _session_evidence_reader(
         return lambda: getter(reference_symbols=symbols)
     if adapter_sha256 is None or expected_account_hash is None:
         raise LaunchError("FAMILY_SESSION_AUTHORITY_REQUIRED")
-    return lambda: getter(
-        reference_symbols=symbols,
-        family_contracts=_certified_session_contracts(db, adapter_sha256, expected_account_hash),
-    )
+    def read() -> dict[str, Any] | None:
+        evidence = getter(
+            reference_symbols=symbols,
+            family_contracts=_certified_session_contracts(
+                db, adapter_sha256, expected_account_hash
+            ),
+        )
+        if not isinstance(evidence, dict):
+            return evidence
+        return {
+            **evidence,
+            "continuity_deadlines": list(_active_continuity_deadlines(db)),
+        }
+
+    return read
+
+
+def _active_continuity_deadlines(db: Database) -> tuple[str, ...]:
+    from .continuity_store import ContinuityStore
+
+    deadlines = []
+    for plan in ContinuityStore(db).active_plans():
+        deadline = plan.next_decision_deadline_utc or plan.plan_valid_until
+        deadlines.append(
+            deadline.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        )
+    return tuple(sorted(deadlines))
 
 
 def _current_git_commit(repo_root: Path) -> str:

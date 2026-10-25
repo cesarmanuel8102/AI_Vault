@@ -1316,12 +1316,18 @@ class AutonomousExperimentService:
                 if matched_family is not None:
                     return None
                 matched_family = (str(family_sha), session)
-        if matched_family is None:
-            return None
+        family_sha256 = (
+            matched_family[0]
+            if matched_family is not None
+            else "UNAVAILABLE_QUARANTINED_FAMILY"
+        )
+        family_session = (
+            matched_family[1] if matched_family is not None else "MONITOR_ONLY"
+        )
         return {
             "payload": payload,
-            "family_sha256": matched_family[0],
-            "family_session": matched_family[1],
+            "family_sha256": family_sha256,
+            "family_session": family_session,
             "observed_at": broker_time,
         }
 

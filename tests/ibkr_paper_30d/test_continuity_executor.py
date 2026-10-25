@@ -40,6 +40,7 @@ def _binding(plan):
         "perm_id": plan.order_binding.perm_id or 225256222,
         "execution_client_id": plan.order_binding.execution_client_id,
         "account_identity_sha256": plan.order_binding.account_identity_sha256,
+        "contract_id": 756733,
         "contract_identity_sha256": plan.order_binding.contract_identity_sha256,
         "observed_state_sha256": plan.order_binding.original_order_state_sha256
         or "9" * 64,

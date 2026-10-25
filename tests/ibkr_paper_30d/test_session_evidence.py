@@ -307,12 +307,42 @@ def test_production_reader_passes_verified_family_contracts(monkeypatch):
     contracts = {"a" * 64: {"con_id": 99}}
     monkeypatch.setattr(launch_module, "_certified_session_contracts", lambda db, adapter, account: contracts,
                         raising=False)
+    monkeypatch.setattr(
+        launch_module, "_active_continuity_deadlines", lambda db: (), raising=False
+    )
     getter = Mock(return_value={"family_sessions": {}})
     toolbox = SimpleNamespace(base=SimpleNamespace(session_evidence=getter))
     reader = launch_module._session_evidence_reader(toolbox, db=object(), adapter_sha256="b" * 64,
                                                     expected_account_hash="c" * 64)
     reader()
     assert getter.call_args.kwargs["family_contracts"] == contracts
+
+
+def test_production_reader_exposes_active_continuity_deadlines(monkeypatch):
+    monkeypatch.setattr(
+        launch_module,
+        "_certified_session_contracts",
+        lambda db, adapter, account: {"a" * 64: {"con_id": 99}},
+        raising=False,
+    )
+    monkeypatch.setattr(
+        launch_module,
+        "_active_continuity_deadlines",
+        lambda db: ("2026-10-25T03:00:00Z",),
+        raising=False,
+    )
+    getter = Mock(return_value={"family_sessions": {}})
+    toolbox = SimpleNamespace(base=SimpleNamespace(session_evidence=getter))
+    reader = launch_module._session_evidence_reader(
+        toolbox,
+        db=object(),
+        adapter_sha256="b" * 64,
+        expected_account_hash="c" * 64,
+    )
+
+    evidence = reader()
+
+    assert evidence["continuity_deadlines"] == ["2026-10-25T03:00:00Z"]
 
 
 @pytest.mark.parametrize("account,hash_ok,certified,expected", [

@@ -1198,7 +1198,10 @@ class AuthoritativeBrokerWriter:
 
     def _execute_continuity(self, command: AuthorizedBrokerCommand, broker: Any):
         quarantine_reasons = self._contract_quarantine_reasons(
-            {"order_ref": command.order_ref}
+            {
+                "order_ref": command.order_ref,
+                "canonical_contract": {"con_id": command.contract_id},
+            }
         )
         if quarantine_reasons:
             return self._result(

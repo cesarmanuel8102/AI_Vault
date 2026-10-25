@@ -339,6 +339,7 @@ class ContinuityExecutor:
             perm_id=int(binding["perm_id"]),
             execution_client_id=int(binding["execution_client_id"]),
             account_identity_sha256=str(binding["account_identity_sha256"]),
+            contract_id=int(binding["contract_id"]),
             contract_identity_sha256=resolved_contract_sha256,
             observed_state_sha256=str(binding["observed_state_sha256"]),
             epoch_id=plan.epoch_id,

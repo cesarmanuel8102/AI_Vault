@@ -91,6 +91,7 @@ def _command(sequence=1, command_type=BrokerCommandType.CANCEL, **changes):
         "perm_id": snapshot["permId"],
         "execution_client_id": snapshot["clientId"],
         "account_identity_sha256": expected_identity_hash(snapshot["account"]),
+        "contract_id": snapshot["contract"]["conId"],
         "contract_identity_sha256": sha256_json(snapshot["contract"]),
         "observed_state_sha256": snapshot["state_sha256"],
         "authority_class": "PREAUTHORIZED_CONTINUITY",
@@ -1497,6 +1498,30 @@ def test_writer_contract_quarantine_can_bind_exact_order_ref_independently():
             "canonical_contract": {"con_id": 123},
         }
     ) == ("QUARANTINED_CONTRACT_WRITE_BLOCKED",)
+
+
+def test_continuity_writer_blocks_same_quarantined_contract_with_different_order_ref():
+    writer = AuthoritativeBrokerWriter(
+        BrokerWriteCoordinator(),
+        broker_factory=lambda _: object(),
+        execution_client_id=19761,
+        execution_lock_verifier=lambda: True,
+        authority_validator=lambda request, evidence: (),
+        contract_write_quarantine_check=lambda context: (
+            ("QUARANTINED_CONTRACT_WRITE_BLOCKED",)
+            if (context.get("canonical_contract") or {}).get("con_id") == 766137558
+            else ()
+        ),
+    )
+    command = _command(
+        order_ref="codex-ibkr-paper-30d-a-another-sol-order",
+        contract_id=766137558,
+    )
+
+    result = writer._execute_continuity(command, object())
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("QUARANTINED_CONTRACT_WRITE_BLOCKED",)
     assert writer._contract_quarantine_reasons(
         {
             "order_ref": "unrelated-order-ref",

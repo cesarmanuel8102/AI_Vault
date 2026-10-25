@@ -46,6 +46,7 @@ class AuthorizedBrokerCommand(BaseModel, frozen=True):
     perm_id: int = Field(gt=0)
     execution_client_id: int = Field(ge=0)
     account_identity_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    contract_id: int = Field(gt=0)
     contract_identity_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     observed_state_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     epoch_id: str = Field(min_length=1)
