@@ -2000,6 +2000,25 @@ def test_active_continuity_deadline_prevents_quarantine_idle(tmp_path, monkeypat
     assert service.triggers != []
 
 
+def test_expired_continuity_deadline_does_not_prevent_quarantine_idle(
+    tmp_path, monkeypatch
+):
+    class PositionLedger(FakeLedger):
+        positions = ("OPEN",)
+
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", PositionLedger)
+    evidence = _closed_quarantine_evidence()
+    evidence["continuity_deadlines"] = ["2026-10-23T04:15:00Z"]
+    clock = _IdleStoppingClock(stop_after_sleeps=1)
+    with Database.open(tmp_path / "expired-continuity-deadline.sqlite3") as db:
+        service = _quarantine_idle_service(
+            db, clock, _active_sol_quarantine(tmp_path), evidence
+        )
+        service.run_forever()
+
+    assert service.triggers == []
+
+
 @pytest.mark.parametrize(
     "mutation",
     ["UNRELATED_FAMILY_OPEN", "UNRELATED_OPEN_ORDER", "REGULAR_SESSION_OPEN"],

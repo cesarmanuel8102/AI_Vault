@@ -1277,14 +1277,21 @@ class AutonomousExperimentService:
             "CLOSED",
         }:
             return None
-        if tuple(evidence.get("continuity_deadlines") or ()):
-            return None
         try:
             broker_time = datetime.fromisoformat(
                 str(evidence["broker_time_utc"]).replace("Z", "+00:00")
             ).astimezone(timezone.utc)
         except (KeyError, TypeError, ValueError):
             return None
+        for raw_deadline in evidence.get("continuity_deadlines") or ():
+            try:
+                deadline = datetime.fromisoformat(
+                    str(raw_deadline).replace("Z", "+00:00")
+                ).astimezone(timezone.utc)
+            except (TypeError, ValueError):
+                return None
+            if deadline > broker_time:
+                return None
         family_sessions = evidence.get("family_sessions")
         open_orders = evidence.get("open_orders")
         positions = evidence.get("positions")
