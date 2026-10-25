@@ -339,6 +339,60 @@ def test_exposure_reducing_position_action_still_blocks_broker_warning(monkeypat
     assert result.reason_codes == ("BROKER_FEASIBILITY_WARNING_BLOCK",)
 
 
+def test_crypto_position_reduction_survives_broker_whatif_timeout(monkeypatch):
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    contract = SimpleNamespace(
+        conId=766137558,
+        symbol="SOL",
+        localSymbol="SOL.USD",
+        secType="CRYPTO",
+        exchange="PAXOS",
+        primaryExchange="",
+        currency="USD",
+        lastTradeDateOrContractMonth="",
+        strike=0,
+        right="",
+        multiplier="",
+    )
+    monkeypatch.setattr(
+        toolbox,
+        "_resolve_open_position",
+        lambda ib, action: SimpleNamespace(position="4.5", contract=contract),
+    )
+    monkeypatch.setattr(
+        toolbox,
+        "_request_what_if",
+        lambda ib, resolved_contract, order: (_ for _ in ()).throw(TimeoutError()),
+    )
+    action = AutonomousPositionAction(
+        symbol="SOL",
+        sec_type="CRYPTO",
+        action="SELL",
+        quantity="4.5",
+        order_type="MKT",
+        contract_id=766137558,
+        time_in_force="IOC",
+        reason="close exact reconciled crypto position",
+    )
+
+    result = toolbox.validate_position_action(
+        action,
+        bundle(),
+        TraderDecision.CLOSE_POSITION,
+        ib=SimpleNamespace(),
+    )
+
+    assert result.passed is True
+    assert result.reason_codes == ()
+    assert result.broker_evidence["success"] is True
+    assert result.broker_evidence["whatIf"] is False
+    assert result.broker_evidence["what_if_status"] == "BROKER_WHATIF_NO_RESPONSE"
+    assert (
+        result.broker_evidence["validation_basis"]
+        == "EXACT_CRYPTO_POSITION_REDUCTION"
+    )
+
+
 def test_multi_leg_market_buy_cannot_use_model_capital_as_loss_floor():
     p = proposal(
         order_type="MKT",

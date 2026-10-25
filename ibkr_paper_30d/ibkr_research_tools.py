@@ -706,20 +706,41 @@ class IBKRResearchToolbox:
                 order.goodTillDate = action.good_till_date_utc.astimezone(timezone.utc).strftime("%Y%m%d %H:%M:%S UTC")
             if action.limit_price is not None:
                 order.lmtPrice = float(action.limit_price)
+            deterministic_crypto_reduction = False
             try:
                 state = self._request_what_if(broker, execution_contract, order)
+            except TimeoutError as exc:
+                state = None
+                state_error = f"{type(exc).__name__}:broker_operation_failed"
+                deterministic_crypto_reduction = (
+                    str(getattr(execution_contract, "secType", "") or "").upper()
+                    == "CRYPTO"
+                    and str(getattr(execution_contract, "exchange", "") or "").upper()
+                    == "PAXOS"
+                )
             except Exception as exc:
                 state = None
                 state_error = f"{type(exc).__name__}:broker_operation_failed"
             else:
                 state_error = None
             evidence = {
-                "success": state is not None,
+                "success": state is not None or deterministic_crypto_reduction,
                 "error": state_error or ("WHAT_IF_RETURNED_NONE" if state is None else None),
                 "contract": self._serialize_contract(execution_contract),
                 "current_position": str(position),
                 "requested_quantity": str(quantity),
-                "whatIf": True,
+                "whatIf": state is not None,
+                "broker_what_if_attempted": True,
+                "what_if_status": (
+                    "BROKER_WHATIF_NO_RESPONSE"
+                    if deterministic_crypto_reduction
+                    else ("BROKER_WHATIF_RESPONSE" if state is not None else None)
+                ),
+                "validation_basis": (
+                    "EXACT_CRYPTO_POSITION_REDUCTION"
+                    if deterministic_crypto_reduction
+                    else "BROKER_WHATIF"
+                ),
                 "commission": getattr(state, "commission", None),
                 "minCommission": getattr(state, "minCommission", None),
                 "maxCommission": getattr(state, "maxCommission", None),
