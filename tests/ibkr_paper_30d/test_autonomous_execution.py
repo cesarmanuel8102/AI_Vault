@@ -1511,6 +1511,67 @@ def test_market_position_action_pending_submit_is_not_reported_successful(tmp_pa
     )
 
 
+def test_position_action_preserves_explicit_broker_rejection_code(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    broker = _DirectRoutedPositionIB()
+    broker.place_status = "PendingSubmit"
+    original_place_order = broker.placeOrder
+
+    def rejected_place_order(contract, order):
+        trade = original_place_order(contract, order)
+        trade.order.permId = 0
+        trade.log = [
+            SimpleNamespace(
+                time="2026-10-25T20:05:54Z",
+                status="PendingSubmit",
+                message="Order rejected",
+                errorCode=201,
+            )
+        ]
+        return trade
+
+    broker.placeOrder = rejected_place_order
+    toolbox = IBKRResearchToolbox()
+    toolbox._connect = lambda *, client_id=None: broker
+    toolbox.live_contract_quote_evidence = lambda *_args, **_kwargs: {
+        "success": True,
+        "market_data_type": 1,
+    }
+    action = AutonomousPositionAction(
+        symbol="HAE",
+        sec_type="STK",
+        action="SELL",
+        quantity="1",
+        order_type="MKT",
+        contract_id=7884,
+        reason="Reduce the existing long position.",
+    )
+
+    with Database.open(tmp_path / "rejected-position-exit.sqlite3") as db:
+        result = AutonomousPaperExecutor(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        ).execute_position_action(action, bundle(), TraderDecision.REDUCE_POSITION)
+
+    assert result.success is False
+    assert result.reason_codes == (
+        "BROKER_REJECTED_OR_CANCELLED",
+        "BROKER_ERROR_CODE:201",
+    )
+    assert result.order["broker_trade_log"] == [
+        {
+            "time": "2026-10-25T20:05:54Z",
+            "status": "PendingSubmit",
+            "message": "Order rejected",
+            "error_code": 201,
+        }
+    ]
+
+
 def test_v4_position_action_supplies_exact_contract_to_final_authority(tmp_path):
     from ibkr_paper_30d.multi_universe_models import CapitalSleeve
     from ibkr_paper_30d.persistence import Database

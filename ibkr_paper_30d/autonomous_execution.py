@@ -534,6 +534,35 @@ class WriterOwnedModelExecutionMechanics:
             identity["secType"] != "BAG" or identity["conId"] > 0
         )
 
+    @staticmethod
+    def _broker_rejection_reason_codes(trade: Any) -> tuple[str, ...]:
+        status = str(getattr(trade.orderStatus, "status", "") or "").upper()
+        error_codes = sorted(
+            {
+                int(getattr(entry, "errorCode", 0) or 0)
+                for entry in list(getattr(trade, "log", ()) or ())
+                if int(getattr(entry, "errorCode", 0) or 0) > 0
+            }
+        )
+        if status not in {"INACTIVE", "CANCELLED", "API CANCELLED"} and not error_codes:
+            return ()
+        return (
+            "BROKER_REJECTED_OR_CANCELLED",
+            *(f"BROKER_ERROR_CODE:{code}" for code in error_codes),
+        )
+
+    @staticmethod
+    def _broker_trade_log(trade: Any) -> list[dict[str, Any]]:
+        return [
+            {
+                "time": str(getattr(entry, "time", "") or ""),
+                "status": str(getattr(entry, "status", "") or ""),
+                "message": str(getattr(entry, "message", "") or ""),
+                "error_code": int(getattr(entry, "errorCode", 0) or 0),
+            }
+            for entry in list(getattr(trade, "log", ()) or ())
+        ]
+
     def _register_lifecycle_event(
         self,
         *,
@@ -1646,10 +1675,11 @@ class WriterOwnedModelExecutionMechanics:
                 "remaining": getattr(trade.orderStatus, "remaining", None),
                 "avgFillPrice": getattr(trade.orderStatus, "avgFillPrice", None),
                 "fills": self._fills_payload(trade, fallback_order_ref=order_ref),
+                "broker_trade_log": self._broker_trade_log(trade),
                 "paper_only": True,
             }
-            failed = str(status).upper() in {"INACTIVE", "CANCELLED", "API CANCELLED"}
-            if not failed and not broker_identity_available:
+            rejection_reasons = self._broker_rejection_reason_codes(trade)
+            if not rejection_reasons and not broker_identity_available:
                 return PaperExecutionResult(
                     success=False,
                     status="UNCERTAIN",
@@ -1658,9 +1688,9 @@ class WriterOwnedModelExecutionMechanics:
                     broker_validation=validation.broker_evidence,
                 )
             return PaperExecutionResult(
-                success=not failed,
+                success=not rejection_reasons,
                 status=str(status),
-                reason_codes=() if not failed else ("BROKER_REJECTED_OR_CANCELLED",),
+                reason_codes=rejection_reasons,
                 order=payload,
                 broker_validation=validation.broker_evidence,
             )
@@ -1985,11 +2015,12 @@ class WriterOwnedModelExecutionMechanics:
                 "remaining": getattr(trade.orderStatus, "remaining", None),
                 "avgFillPrice": getattr(trade.orderStatus, "avgFillPrice", None),
                 "fills": self._fills_payload(trade, fallback_order_ref=order_ref),
+                "broker_trade_log": self._broker_trade_log(trade),
                 "paper_only": True,
                 "position_management": decision.value,
             }
-            failed = str(status).upper() in {"INACTIVE", "CANCELLED", "API CANCELLED"}
-            if not failed and not broker_identity_available:
+            rejection_reasons = self._broker_rejection_reason_codes(trade)
+            if not rejection_reasons and not broker_identity_available:
                 return PaperExecutionResult(
                     success=False,
                     status="UNCERTAIN",
@@ -1997,7 +2028,7 @@ class WriterOwnedModelExecutionMechanics:
                     order=payload,
                     broker_validation=final_validation.broker_evidence,
                 )
-            if str(status).upper().replace(" ", "") in {
+            if not rejection_reasons and str(status).upper().replace(" ", "") in {
                 "PENDINGSUBMIT",
                 "APIPENDING",
             }:
@@ -2011,9 +2042,9 @@ class WriterOwnedModelExecutionMechanics:
                     broker_validation=final_validation.broker_evidence,
                 )
             return PaperExecutionResult(
-                success=not failed,
+                success=not rejection_reasons,
                 status=str(status),
-                reason_codes=() if not failed else ("BROKER_REJECTED_OR_CANCELLED",),
+                reason_codes=rejection_reasons,
                 order=payload,
                 broker_validation=final_validation.broker_evidence,
             )
