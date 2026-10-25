@@ -51,6 +51,9 @@ from .trader_invocation import TraderDecision
 from .types import new_uuid7
 
 
+_SESSION_EVIDENCE_UNSET = object()
+
+
 class AutonomousServiceError(RuntimeError):
     def __init__(
         self,
@@ -279,6 +282,7 @@ class AutonomousExperimentService:
         self.canary_pilot_orchestrator = canary_pilot_orchestrator
         self.contract_order_quarantine_store = contract_order_quarantine_store
         self._last_orchestration_action: OrchestrationAction | None = None
+        self._contract_quarantine_monitor_idle = False
         self._successor_supervision_pending_emitted = False
         self._watchdog_started = False
         self._watchdog_alert_active = False
@@ -889,16 +893,32 @@ class AutonomousExperimentService:
     def _reconcile_contract_order_quarantine(
         self, bundle: TraderInputBundle
     ) -> tuple[str, ...]:
+        if self.contract_order_quarantine_store is None:
+            return ()
+        return self._observe_contract_order_quarantine(
+            open_orders=bundle.open_orders_snapshot,
+            positions=bundle.positions_snapshot,
+            observed_at=getattr(bundle, "utc_timestamp", None),
+        )
+
+    def _observe_contract_order_quarantine(
+        self,
+        *,
+        open_orders: Any,
+        positions: Any,
+        observed_at: Any,
+    ) -> tuple[str, ...]:
         store = self.contract_order_quarantine_store
         if store is None:
             return ()
         try:
-            observed_at = datetime.fromisoformat(
-                bundle.utc_timestamp.replace("Z", "+00:00")
-            ).astimezone(timezone.utc)
+            if not isinstance(observed_at, datetime):
+                observed_at = datetime.fromisoformat(
+                    str(observed_at).replace("Z", "+00:00")
+                ).astimezone(timezone.utc)
             observation = store.observe(
-                open_orders=bundle.open_orders_snapshot,
-                positions=bundle.positions_snapshot,
+                open_orders=open_orders,
+                positions=positions,
                 observed_at_utc=observed_at,
             )
             if observation.status in {"RELEASE_PENDING", "RELEASED"}:
@@ -1191,7 +1211,10 @@ class AutonomousExperimentService:
             self._stop_continuity_watchdog()
 
     def _session_orchestration_decision(
-        self, has_open_positions: bool
+        self,
+        has_open_positions: bool,
+        *,
+        evidence: Any = _SESSION_EVIDENCE_UNSET,
     ) -> SessionOrchestrationDecision | None:
         """Decide trading-session orchestration from authoritative calendar evidence.
 
@@ -1200,12 +1223,8 @@ class AutonomousExperimentService:
         """
         from datetime import datetime, timezone
 
-        if self.session_evidence_reader is None:
-            return None
-        try:
-            evidence = self.session_evidence_reader()
-        except Exception:
-            return None
+        if evidence is _SESSION_EVIDENCE_UNSET:
+            evidence = self._read_session_evidence()
         if not isinstance(evidence, dict):
             return None
         broker_time_raw = evidence.get("broker_time_utc")
@@ -1237,6 +1256,97 @@ class AutonomousExperimentService:
             has_open_positions=has_open_positions,
             has_open_orders=bool(evidence.get("has_open_orders")),
         )
+
+    def _read_session_evidence(self) -> dict[str, Any] | None:
+        if self.session_evidence_reader is None:
+            return None
+        try:
+            evidence = self.session_evidence_reader()
+        except Exception:
+            return None
+        return evidence if isinstance(evidence, dict) else None
+
+    def _closed_quarantined_obligation(
+        self, evidence: dict[str, Any] | None
+    ) -> dict[str, Any] | None:
+        store = self.contract_order_quarantine_store
+        if store is None or not isinstance(evidence, dict):
+            return None
+        if str(evidence.get("session") or "").upper() not in {
+            "AFTER_HOURS",
+            "CLOSED",
+        }:
+            return None
+        if tuple(evidence.get("continuity_deadlines") or ()):
+            return None
+        try:
+            broker_time = datetime.fromisoformat(
+                str(evidence["broker_time_utc"]).replace("Z", "+00:00")
+            ).astimezone(timezone.utc)
+        except (KeyError, TypeError, ValueError):
+            return None
+        family_sessions = evidence.get("family_sessions")
+        open_orders = evidence.get("open_orders")
+        positions = evidence.get("positions")
+        if (
+            not isinstance(family_sessions, dict)
+            or not family_sessions
+            or not isinstance(open_orders, list)
+            or not isinstance(positions, list)
+        ):
+            return None
+        try:
+            payload = store.load()
+            if payload is None or payload.get("state") != "ACTIVE":
+                return None
+            order = payload["order"]
+            quarantined_con_id = int(order["con_id"])
+            store.verify_recovery_evidence(open_orders, positions)
+        except Exception:
+            return None
+
+        matched_family = None
+        for family_sha, family in family_sessions.items():
+            if not isinstance(family, dict) or family.get("authenticated") is not True:
+                return None
+            session = str(family.get("session") or "UNKNOWN").upper()
+            if family.get("tradable_now") is True or session != "CLOSED":
+                return None
+            if int(family.get("con_id", 0) or 0) == quarantined_con_id:
+                if matched_family is not None:
+                    return None
+                matched_family = (str(family_sha), session)
+        if matched_family is None:
+            return None
+        return {
+            "payload": payload,
+            "family_sha256": matched_family[0],
+            "family_session": matched_family[1],
+            "observed_at": broker_time,
+        }
+
+    def _enter_contract_quarantine_monitor_idle(
+        self, classification: dict[str, Any]
+    ) -> None:
+        if self._contract_quarantine_monitor_idle:
+            return
+        order = classification["payload"]["order"]
+        _append_state_event(
+            self.db,
+            "CONTRACT_QUARANTINE_MONITOR_IDLE",
+            {
+                "action": "CONTRACT_QUARANTINE_MONITOR_IDLE",
+                "reason_codes": ["ONLY_CLOSED_QUARANTINED_OBLIGATION"],
+                "con_id": int(order["con_id"]),
+                "order_id": int(order["order_id"]),
+                "perm_id": int(order["perm_id"]),
+                "client_id": int(order["client_id"]),
+                "order_ref": str(order["order_ref"]),
+                "family_sha256": classification["family_sha256"],
+                "family_session": classification["family_session"],
+            },
+        )
+        self._contract_quarantine_monitor_idle = True
 
     def _enter_market_closed_idle(self, decision: SessionOrchestrationDecision) -> None:
         """Record the idle transition exactly once, not on every poll."""
@@ -1342,7 +1452,26 @@ class AutonomousExperimentService:
 
                 now = self.monotonic()
                 has_positions = bool(projected.positions)
-                orchestration = self._session_orchestration_decision(has_positions)
+                session_evidence = self._read_session_evidence()
+                quarantine_idle = self._closed_quarantined_obligation(
+                    session_evidence
+                )
+                if quarantine_idle is not None:
+                    quarantine_reasons = self._observe_contract_order_quarantine(
+                        open_orders=session_evidence["open_orders"],
+                        positions=session_evidence["positions"],
+                        observed_at=quarantine_idle["observed_at"],
+                    )
+                    if quarantine_reasons:
+                        continue
+                    self._enter_contract_quarantine_monitor_idle(quarantine_idle)
+                    self.sleep(self.scan_interval_seconds)
+                    continue
+                self._contract_quarantine_monitor_idle = False
+                orchestration = self._session_orchestration_decision(
+                    has_positions,
+                    evidence=session_evidence,
+                )
                 if orchestration is not None and not orchestration.should_run_cycle:
                     # Market is provably non-regular and no continuity
                     # obligation survives. Idle instead of asking the

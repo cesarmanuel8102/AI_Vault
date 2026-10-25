@@ -1737,12 +1737,24 @@ class IBKRResearchToolbox:
             if len(sessions) != 1 or len(timezones) != 1:
                 return None
 
-            has_open_orders = any(
-                str(getattr(trade.order, "orderRef", "") or "").startswith(
+            broker_open_orders = list(ib.reqAllOpenOrders())
+            open_orders = [canonical_open_order(trade) for trade in broker_open_orders]
+            experiment_open_orders = [
+                snapshot
+                for trade, snapshot in zip(broker_open_orders, open_orders)
+                if str(getattr(trade.order, "orderRef", "") or "").startswith(
                     f"{EXPERIMENT_ORDER_PREFIX}-"
                 )
-                for trade in ib.reqAllOpenOrders()
-            )
+            ]
+            positions = [
+                {
+                    "contract": self._serialize_contract(position.contract),
+                    "position": str(position.position),
+                    "avgCost": float(position.avgCost),
+                }
+                for position in ib.positions()
+                if Decimal(str(position.position)) != 0
+            ]
             family_sessions: dict[str, dict[str, Any]] = {}
             for family_sha, identity in sorted((family_contracts or {}).items()):
                 evidence = {"authenticated": False, "tradable_now": False,
@@ -1776,7 +1788,9 @@ class IBKRResearchToolbox:
                 "liquid_hours": references[0]["liquid_hours"],
                 "timezone_id": references[0]["timezone_id"],
                 "session": references[0]["session"],
-                "has_open_orders": bool(has_open_orders),
+                "has_open_orders": bool(experiment_open_orders),
+                "open_orders": open_orders,
+                "positions": positions,
                 **({"family_sessions": family_sessions} if family_contracts is not None else {}),
             }
         except Exception:

@@ -23,6 +23,7 @@ from ibkr_paper_30d.autonomous_state import AutonomousStateBuildError
 from ibkr_paper_30d.autonomy_toolbox import AutonomyToolbox
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
 from ibkr_paper_30d.continuity_watchdog import ContinuityWatchdog
+from ibkr_paper_30d.contract_order_quarantine import ContractOrderQuarantineStore
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.experiment_control import (
     ExperimentClockStore,
@@ -1771,6 +1772,78 @@ def _closed_session_service(db, clock, *, positions=(), open_orders=False):
     return service
 
 
+def _quarantined_sol_order():
+    return {
+        "orderId": 964,
+        "permId": 1166274319,
+        "clientId": 19761,
+        "orderRef": "codex-ibkr-paper-30d-p-6ea0925b6b3a",
+        "contract": {"conId": 766137558, "symbol": "SOL"},
+        "action": "SELL",
+        "totalQuantity": "4.5",
+        "status": "PendingCancel",
+        "filled": "0",
+        "remaining": "4.5",
+    }
+
+
+def _closed_quarantine_evidence():
+    return {
+        "broker_time_utc": "2026-10-24T21:37:00Z",
+        "session": "AFTER_HOURS",
+        "family_sessions": {
+            "paxos-family": {
+                "authenticated": True,
+                "tradable_now": False,
+                "session": "CLOSED",
+                "con_id": 766137558,
+            }
+        },
+        "has_open_orders": True,
+        "open_orders": [_quarantined_sol_order()],
+        "positions": [
+            {"contract": {"conId": 766137558, "symbol": "SOL"}, "position": "4.5"},
+            {"contract": {"conId": 1001, "symbol": "PBR"}, "position": "1"},
+            {"contract": {"conId": 1002, "symbol": "SLB"}, "position": "9"},
+        ],
+        "continuity_deadlines": [],
+    }
+
+
+def _quarantine_idle_service(db, clock, store, evidence):
+    service = RecordingService(
+        db,
+        experiment_start_utc=datetime.now(timezone.utc),
+        allocation=Decimal("500.00"),
+        scan_interval_seconds=300,
+        position_interval_seconds=60,
+        execute_paper=False,
+        toolbox=StubToolbox(),
+        provider=StubProvider(),
+        executor=StubExecutor(),
+        sleep=clock.sleep,
+        monotonic=clock.monotonic,
+        stop_after=2,
+        session_evidence_reader=lambda: evidence,
+        contract_order_quarantine_store=store,
+        broker_now=lambda: datetime(2026, 10, 24, 21, 37, tzinfo=timezone.utc),
+    )
+    clock.service = service
+    return service
+
+
+def _active_sol_quarantine(tmp_path):
+    store = ContractOrderQuarantineStore(tmp_path / "quarantine.json")
+    store.activate(
+        account_identity_sha256="a" * 64,
+        approved_head="b" * 40,
+        order=_quarantined_sol_order(),
+        position_quantity="4.5",
+        authorized_at_utc=datetime(2026, 10, 24, 21, 30, tzinfo=timezone.utc),
+    )
+    return store
+
+
 def test_closed_session_flat_idles_without_running_trader_cycles(tmp_path, monkeypatch):
     monkeypatch.setattr(service_module, "AutonomousExperimentLedger", FakeLedger)
     clock = _IdleStoppingClock()
@@ -1821,6 +1894,115 @@ def test_closed_session_with_open_position_still_runs_continuity_cycle(
     clock = _IdleStoppingClock()
     with Database.open(tmp_path / "idle-position.sqlite3") as db:
         service = _closed_session_service(db, clock)
+        service.run_forever()
+
+    assert service.triggers != []
+
+
+def test_closed_quarantined_only_obligation_idles_at_scan_cadence(
+    tmp_path, monkeypatch
+):
+    class PositionLedger(FakeLedger):
+        positions = ("OPEN",)
+
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", PositionLedger)
+    clock = _IdleStoppingClock(stop_after_sleeps=3)
+    store = _active_sol_quarantine(tmp_path)
+    with Database.open(tmp_path / "quarantine-idle.sqlite3") as db:
+        service = _quarantine_idle_service(
+            db, clock, store, _closed_quarantine_evidence()
+        )
+        service.run_forever()
+        events = db.execute(
+            "SELECT payload_json FROM state_events WHERE event_type=?",
+            ("CONTRACT_QUARANTINE_MONITOR_IDLE",),
+        ).fetchall()
+
+    assert service.triggers == []
+    assert clock.sleeps == [300, 300, 300]
+    assert len(events) == 1
+    payload = json.loads(events[0][0])
+    assert payload["con_id"] == 766137558
+    assert payload["order_id"] == 964
+    assert payload["perm_id"] == 1166274319
+    assert payload["family_session"] == "CLOSED"
+    assert "gate_status" not in payload
+    assert "order_authority" not in payload
+    assert store.load()["last_observed_at_utc"] == "2026-10-24T21:37:00Z"
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["UNRELATED_FAMILY_OPEN", "UNRELATED_OPEN_ORDER", "REGULAR_SESSION_OPEN"],
+)
+def test_quarantine_idle_never_suppresses_actionable_work(
+    tmp_path, monkeypatch, mutation
+):
+    class PositionLedger(FakeLedger):
+        positions = ("OPEN",)
+
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", PositionLedger)
+    evidence = _closed_quarantine_evidence()
+    if mutation == "UNRELATED_FAMILY_OPEN":
+        evidence["family_sessions"]["other-family"] = {
+            "authenticated": True,
+            "tradable_now": True,
+            "session": "REGULAR",
+            "con_id": 123,
+        }
+    elif mutation == "UNRELATED_OPEN_ORDER":
+        evidence["open_orders"].append(
+            {
+                **_quarantined_sol_order(),
+                "orderId": 965,
+                "permId": 1166274320,
+                "orderRef": "codex-ibkr-paper-30d-a-unrelated",
+                "contract": {"conId": 123, "symbol": "ETH"},
+            }
+        )
+    else:
+        evidence["session"] = "REGULAR"
+    clock = _IdleStoppingClock()
+    with Database.open(tmp_path / f"actionable-{mutation}.sqlite3") as db:
+        service = _quarantine_idle_service(
+            db, clock, _active_sol_quarantine(tmp_path), evidence
+        )
+        service.run_forever()
+
+    assert service.triggers != []
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "MISSING_FAMILY",
+        "UNAUTHENTICATED_FAMILY",
+        "INVALID_BROKER_TIME",
+        "MALFORMED_QUARANTINE",
+    ],
+)
+def test_quarantine_idle_requires_complete_authenticated_session_evidence(
+    tmp_path, monkeypatch, mutation
+):
+    class PositionLedger(FakeLedger):
+        positions = ("OPEN",)
+
+    monkeypatch.setattr(service_module, "AutonomousExperimentLedger", PositionLedger)
+    evidence = _closed_quarantine_evidence()
+    if mutation == "MISSING_FAMILY":
+        evidence["family_sessions"] = {}
+    elif mutation == "UNAUTHENTICATED_FAMILY":
+        evidence["family_sessions"]["paxos-family"]["authenticated"] = False
+    elif mutation == "INVALID_BROKER_TIME":
+        evidence["broker_time_utc"] = "not-a-timestamp"
+    clock = _IdleStoppingClock()
+    store = _active_sol_quarantine(tmp_path)
+    if mutation == "MALFORMED_QUARANTINE":
+        store.path.write_text("{}", encoding="utf-8")
+    with Database.open(tmp_path / f"uncertain-{mutation}.sqlite3") as db:
+        service = _quarantine_idle_service(
+            db, clock, store, evidence
+        )
         service.run_forever()
 
     assert service.triggers != []

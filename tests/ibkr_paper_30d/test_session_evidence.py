@@ -103,6 +103,7 @@ class FakeSessionIBKR:
         liquid_hours="20261005:0930-20261005:1600",
         timezone_id="US/Eastern",
         open_order_refs=(),
+        positions=(),
         now_utc=None,
         per_symbol=None,
     ):
@@ -113,6 +114,7 @@ class FakeSessionIBKR:
         self._liquid_hours = liquid_hours
         self._timezone_id = timezone_id
         self._open_order_refs = list(open_order_refs)
+        self._positions = list(positions)
         self._per_symbol = per_symbol or {}
         self._now_utc = now_utc or datetime(2026, 10, 5, 14, 0, 0, tzinfo=timezone.utc)
         self._symbols = sorted(MarketPolicyFreezer.REQUIRED_SYMBOLS)
@@ -143,6 +145,9 @@ class FakeSessionIBKR:
     def reqAllOpenOrders(self):
         return [_FakeTrade(ref) for ref in self._open_order_refs]
 
+    def positions(self):
+        return list(self._positions)
+
     def disconnect(self):
         self.disconnected = True
 
@@ -172,6 +177,66 @@ def test_session_evidence_returns_liquid_hours_timezone_and_no_open_orders():
     assert evidence["liquid_hours"] == "20261005:0930-20261005:1600"
     assert evidence["timezone_id"] == "US/Eastern"
     assert evidence["has_open_orders"] is False
+    assert evidence["open_orders"] == []
+    assert evidence["positions"] == []
+
+
+def test_session_evidence_carries_exact_order_and_position_identities():
+    position = SimpleNamespace(
+        contract=_FakeContract("SOL", 766137558),
+        position=Decimal("4.5"),
+        avgCost=Decimal("186.25"),
+    )
+    broker = FakeSessionIBKR(
+        open_order_refs=("codex-ibkr-paper-30d-p-6ea0925b6b3a",),
+        positions=(position,),
+    )
+    trade = _FakeTrade(
+        "codex-ibkr-paper-30d-p-6ea0925b6b3a",
+        order_id=964,
+        perm_id=1166274319,
+        client_id=19761,
+    )
+    trade.contract = _FakeContract("SOL", 766137558)
+    trade.order.action = "SELL"
+    trade.order.totalQuantity = Decimal("4.5")
+    trade.orderStatus = SimpleNamespace(
+        status="PendingCancel",
+        filled=Decimal("0"),
+        remaining=Decimal("4.5"),
+        avgFillPrice=0,
+    )
+    broker.reqAllOpenOrders = lambda: [trade]
+    toolbox, _ = _toolbox_with(broker)
+
+    evidence = toolbox.session_evidence(reference_symbols=("SPY", "QQQ", "IEF"))
+
+    assert evidence is not None
+    assert evidence["has_open_orders"] is True
+    assert evidence["open_orders"][0]["orderId"] == 964
+    assert evidence["open_orders"][0]["permId"] == 1166274319
+    assert evidence["open_orders"][0]["clientId"] == 19761
+    assert evidence["open_orders"][0]["orderRef"] == "codex-ibkr-paper-30d-p-6ea0925b6b3a"
+    assert evidence["open_orders"][0]["contract"]["conId"] == 766137558
+    assert evidence["positions"] == [
+        {
+            "contract": {
+                "conId": 766137558,
+                "symbol": "SOL",
+                "localSymbol": "SOL",
+                "secType": "STK",
+                "exchange": "SMART",
+                "primaryExchange": "",
+                "currency": "USD",
+                "expiry": "",
+                "strike": 0.0,
+                "right": "",
+                "multiplier": "",
+            },
+            "position": "4.5",
+            "avgCost": 186.25,
+        }
+    ]
 
 
 @pytest.mark.parametrize("hours,expected", [
