@@ -207,6 +207,27 @@ def test_verify_all_chains_streams_event_rows_without_fetchall(
         assert counts["continuity_watchdog_events"] == 3
 
 
+def test_verify_all_chains_hashes_canonical_payload_without_deserializing(
+    tmp_path, monkeypatch
+) -> None:
+    with _open(tmp_path / "state.sqlite3") as db:
+        store = ContinuityStore(db)
+        store.append_watchdog_event(
+            "order-78", "HEARTBEAT", {"nested": {"sequence": 1}}
+        )
+
+        def reject_deserialization(*_args, **_kwargs):
+            raise AssertionError("full-chain verification must hash canonical bytes")
+
+        monkeypatch.setattr(
+            "ibkr_paper_30d.continuity_store.json.loads", reject_deserialization
+        )
+
+        counts = store.verify_all_chains()
+
+        assert counts["continuity_watchdog_events"] == 1
+
+
 def test_one_shot_execution_is_unique(tmp_path) -> None:
     with _open(tmp_path / "state.sqlite3") as db:
         store = ContinuityStore(db)

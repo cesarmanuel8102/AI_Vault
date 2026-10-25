@@ -29,6 +29,7 @@ from .open_order_management import (
     EXECUTION_CLIENT_ID,
     EXPERIMENT_ORDER_PREFIX,
     V2_OWNERSHIP_ANCHOR_KEYS,
+    append_order_registry_event,
 )
 from .persistence import Database
 from .market_data import DecisionClass
@@ -470,10 +471,45 @@ class AutonomousStateBuilder:
                     f"UNREGISTERED_EXPERIMENT_FILL:{int(fill.get('orderId') or 0)}"
                 )
                 continue
+            try:
+                self._backfill_late_broker_identity(fill)
+            except (TypeError, ValueError, json.JSONDecodeError):
+                reasons.append(
+                    f"BROKER_IDENTITY_BACKFILL_FAILED:{int(fill.get('orderId') or 0)}"
+                )
+                continue
             self.ledger.record_fill(fill)
         if getattr(self, "contract_ownership_store", None) is not None:
             reasons.extend(self._import_durable_sleeve_fills())
         return reasons
+
+    def _backfill_late_broker_identity(self, fill: dict[str, Any]) -> bool:
+        order_ref = str(fill.get("orderRef") or "")
+        perm_id = int(fill.get("permId") or 0)
+        if not order_ref or perm_id <= 0:
+            raise ValueError("late broker identity is incomplete")
+        with self.db.transaction():
+            rows = self.db.execute(
+                "SELECT perm_id,payload_json,payload_sha256 "
+                "FROM experiment_order_registry WHERE order_ref=? "
+                "ORDER BY sequence DESC",
+                (order_ref,),
+            ).fetchall()
+            if any(int(row[0] or 0) == perm_id for row in rows):
+                return False
+            if any(int(row[0] or 0) > 0 for row in rows):
+                raise ValueError("conflicting broker identity")
+            if not rows:
+                raise ValueError("order registry anchor is missing")
+            source = json.loads(str(rows[0][1]))
+            if not isinstance(source, dict) or sha256_json(source) != str(rows[0][2]):
+                raise ValueError("order registry anchor is invalid")
+            source["lifecycle_event"] = "BROKER_BOUND"
+            source["perm_id"] = perm_id
+            source["created_at_utc"] = utc_now()
+            source["identity_recovery"] = "BROKER_EXECUTION_OBSERVED"
+            append_order_registry_event(self.db, source)
+        return True
 
     def _import_durable_sleeve_fills(self) -> list[str]:
         """Recover authority-bound fills after broker execution history expires."""

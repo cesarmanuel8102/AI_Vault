@@ -1723,8 +1723,16 @@ def test_state_builder_accepts_late_perm_id_when_v2_anchor_has_zero(tmp_path):
         subject = builder(db, FakeToolbox(), anchor_perm_id=0)
         value = subject.build(trigger="SCHEDULED_SCAN")
 
+        bound = db.execute(
+            "SELECT perm_id,payload_json FROM experiment_order_registry "
+            "WHERE order_ref='codex-ibkr-paper-30d-autonomous' "
+            "ORDER BY sequence DESC LIMIT 1"
+        ).fetchone()
+
         assert value.reconciliation_receipt["status"] == "PASS"
         assert value.experiment_subledger_snapshot["equity"] == "599.00"
+        assert int(bound[0]) == 55
+        assert json.loads(str(bound[1]))["lifecycle_event"] == "BROKER_BOUND"
 
 
 @pytest.mark.parametrize(

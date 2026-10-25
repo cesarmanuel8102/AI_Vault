@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 from decimal import Decimal
@@ -115,6 +116,35 @@ class ContinuityStore:
     ) -> list[tuple[str, dict[str, Any], str]]:
         return list(self._iter_verified_rows(table, stream_column, stream_id))
 
+    def _iter_verified_hash_rows(
+        self, table: str, stream_column: str, stream_id: str
+    ) -> Iterator[str]:
+        rows = self.db.execute(
+            f"SELECT event_type,payload_json,payload_sha256,previous_event_sha256,"
+            f"event_sha256 FROM {table} WHERE {stream_column}=? ORDER BY sequence",
+            (stream_id,),
+        )
+        previous = None
+        for event_type, payload_json, payload_sha, claimed_previous, event_sha in rows:
+            if not isinstance(payload_json, str):
+                raise ContinuityStoreError("PAYLOAD_INVALID")
+            payload_bytes = payload_json.encode("utf-8")
+            event_bytes = (
+                b'{"payload":'
+                + payload_bytes
+                + b',"previous_event_sha256":'
+                + canonical_bytes(previous)
+                + b"}"
+            )
+            if (
+                claimed_previous != previous
+                or hashlib.sha256(payload_bytes).hexdigest() != str(payload_sha)
+                or hashlib.sha256(event_bytes).hexdigest() != str(event_sha)
+            ):
+                raise ContinuityStoreError("HASH_MISMATCH")
+            yield str(event_type)
+            previous = str(event_sha)
+
     def verify_all_chains(self) -> dict[str, int]:
         streams = {
             "continuity_plan_events": "order_ref",
@@ -137,7 +167,7 @@ class ContinuityStore:
             counts[table] = sum(
                 sum(
                     1
-                    for _ in self._iter_verified_rows(
+                    for _ in self._iter_verified_hash_rows(
                         table, stream_column, stream_id
                     )
                 )
