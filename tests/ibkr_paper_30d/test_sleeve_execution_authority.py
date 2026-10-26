@@ -7,6 +7,7 @@ import pytest
 
 from ibkr_paper_30d.canonical import sha256_json
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
+from ibkr_paper_30d.continuity_store import ContinuityStore
 from ibkr_paper_30d.coordinated_model_executor import ModelExecutionOperation
 from ibkr_paper_30d.multi_universe_models import CapitalSleeve, TransitionPhase
 from ibkr_paper_30d.contract_ownership import canonical_contract_identity
@@ -875,6 +876,47 @@ def test_terminal_reconciliation_releases_every_reservation_for_same_contract(
             observation_id="3" * 64,
         )
         assert retry == {"released": (), "pending_confirmation": ()}
+    finally:
+        db.close()
+
+
+def test_terminal_reconciliation_also_closes_matching_active_continuity_plan(
+    tmp_path, continuity_plan_factory
+) -> None:
+    request = _v4_request()
+    plan = continuity_plan_factory()
+    db = Database.open(tmp_path / "terminal-plan-release.sqlite3")
+    install_successor_schema_v2(db)
+    install_continuity_schema_v3(db)
+    install_multi_universe_schema_v4(db)
+    from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+
+    SleeveLedgerStore(db).bootstrap_extended()
+    reservations = SleeveAuthorityReservationStore(db)
+    broker = _broker(request, order_ref=plan.order_binding.order_ref)
+    flat = {
+        "positions": [],
+        "open_orders": [],
+        "pending_execution_contract_sha256": [],
+        "fill_ambiguity": False,
+        "fresh": True,
+    }
+    try:
+        assert reservations.reserve(
+            request, broker, lambda: _snapshot(request)
+        ).status == "PASS"
+        ContinuityStore(db).append_plan_event("ACTIVATED", plan)
+
+        reservations.finalize_terminal_reservations(flat, observation_id="1" * 64)
+        reservations.finalize_terminal_reservations(flat, observation_id="2" * 64)
+
+        assert ContinuityStore(db).active_plan(plan.order_binding.order_ref) is None
+        terminal = db.execute(
+            "SELECT payload_json FROM continuity_plan_events "
+            "WHERE event_type='TERMINAL' ORDER BY sequence DESC LIMIT 1"
+        ).fetchone()
+        assert terminal is not None
+        assert "TERMINAL_RESERVATION_RELEASED" in terminal[0]
     finally:
         db.close()
 

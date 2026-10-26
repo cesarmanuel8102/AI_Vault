@@ -10,6 +10,7 @@ from typing import Any, Callable, Literal, Mapping
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .canonical import canonical_bytes, sha256_json
+from .continuity_store import ContinuityStore
 from .coordinated_model_executor import ModelExecutionOperation, ModelExecutionRequest
 from .multi_universe_models import (
     CapitalSleeve,
@@ -706,6 +707,16 @@ class SleeveAuthorityReservationStore:
                     reservation_key=key,
                     broker_snapshot_sha256=broker_snapshot_sha256,
                 )
+                order_ref = str(reservation.get("order_ref") or "")
+                if order_ref:
+                    ContinuityStore(self.db).terminalize_active_plan_in_transaction(
+                        order_ref,
+                        broker_evidence_sha256=broker_snapshot_sha256,
+                        reason_code="TERMINAL_RESERVATION_RELEASED",
+                        expected_contract_sha256=str(
+                            reservation["contract_identity_sha256"]
+                        ),
+                    )
                 self._append_terminal_event(
                     event_type="TERMINAL_RESERVATION_RELEASED",
                     reservation=reservation,

@@ -372,6 +372,47 @@ class ContinuityStore:
                 expected_previous_event_sha256=invalid_activation_event_sha256,
             )
 
+    def terminalize_active_plan_in_transaction(
+        self,
+        order_ref: str,
+        *,
+        broker_evidence_sha256: str,
+        reason_code: str,
+        expected_contract_sha256: str | None = None,
+    ) -> str | None:
+        """Close a broker-flat active plan in the caller's release transaction."""
+        if not self.db.connection.in_transaction:
+            raise ContinuityStoreError("ATOMIC_PLAN_TERMINAL_TRANSACTION_REQUIRED")
+        plan = self.active_plan(order_ref)
+        if plan is None:
+            return None
+        if (
+            expected_contract_sha256 is not None
+            and plan.canonical_contract_sha256 is not None
+            and plan.canonical_contract_sha256 != expected_contract_sha256
+        ):
+            raise ContinuityStoreError("TERMINAL_PLAN_CONTRACT_MISMATCH")
+        payload = {
+            "plan": plan.model_dump(mode="json", exclude_unset=True),
+            "plan_sha256": plan.sha256,
+            "bindings": {
+                "reason_code": reason_code,
+                "broker_evidence_sha256": broker_evidence_sha256,
+            },
+        }
+        return self._append(
+            table="continuity_plan_events",
+            event_id=(
+                f"continuity-terminal-reservation-released:"
+                f"{plan.plan_id}:{plan.sha256}"
+            ),
+            stream_column="order_ref",
+            stream_id=order_ref,
+            event_type="TERMINAL",
+            payload=payload,
+            identity_columns={"plan_id": plan.plan_id, "order_ref": order_ref},
+        )
+
     def active_plans(self) -> tuple[CodexOrderContinuityPlan, ...]:
         order_refs = tuple(
             str(row[0])
