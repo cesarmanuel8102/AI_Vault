@@ -6,6 +6,7 @@ import json
 import subprocess
 import sys
 import threading
+import time
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from types import SimpleNamespace
@@ -393,6 +394,50 @@ def test_writer_retries_transient_startup_connection_failures():
         assert writer.stop(2)
 
     assert attempts == [19761, 19761, 19761]
+
+
+def test_writer_reconnects_after_idle_socket_disconnect_and_executes_next_request():
+    class IdleDisconnectGateway(FakeGateway):
+        def sleep(self, _seconds):
+            raise ConnectionError("socket disconnect while writer is idle")
+
+    class ReconnectingGatewayFactory:
+        def __init__(self):
+            self.connection_ids = []
+            self.gateways = []
+
+        def __call__(self, client_id):
+            self.connection_ids.append(client_id)
+            gateway = (
+                IdleDisconnectGateway(client_id)
+                if len(self.connection_ids) == 1
+                else FakeGateway(client_id)
+            )
+            self.gateways.append(gateway)
+            return gateway
+
+    factory = ReconnectingGatewayFactory()
+    engine = RecordingModelEngine()
+    coordinator, writer, _ = _start_writer(
+        factory=factory,
+        model_execution_engine=engine,
+        startup_retry_delay_seconds=0,
+    )
+    try:
+        deadline = time.monotonic() + 2
+        while len(factory.connection_ids) < 2 and time.monotonic() < deadline:
+            time.sleep(0.01)
+        future = coordinator.submit(
+            _model_request(1, ModelExecutionOperation.NEW_TRADE)
+        )
+        result = future.result(timeout=2)
+    finally:
+        assert writer.stop(2)
+
+    assert factory.connection_ids == [19761, 19761]
+    assert factory.gateways[0].disconnected is True
+    assert result.success is True
+    assert len(engine.calls) == 1
 
 
 def test_writer_does_not_retry_non_transient_startup_failure():

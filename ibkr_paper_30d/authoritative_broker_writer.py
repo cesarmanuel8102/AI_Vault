@@ -253,10 +253,28 @@ class AuthoritativeBrokerWriter:
                         return
             self._ready.set()
             while not self._stop.is_set():
+                if broker is None:
+                    try:
+                        broker = self.broker_factory(self.execution_client_id)
+                        if hasattr(broker, "RequestTimeout"):
+                            broker.RequestTimeout = self.broker_request_timeout_seconds
+                    except (ConnectionError, TimeoutError, OSError):
+                        if self._stop.wait(self.startup_retry_delay_seconds):
+                            break
+                        continue
                 claimed = self.coordinator.claim(self._capability, timeout=0.05)
                 if claimed is None:
                     if hasattr(broker, "sleep"):
-                        broker.sleep(0.01)
+                        try:
+                            broker.sleep(0.01)
+                        except (ConnectionError, TimeoutError, OSError):
+                            try:
+                                broker.disconnect()
+                            except Exception:
+                                pass
+                            broker = None
+                            if self._stop.wait(self.startup_retry_delay_seconds):
+                                break
                     continue
                 command, future = claimed
                 try:
