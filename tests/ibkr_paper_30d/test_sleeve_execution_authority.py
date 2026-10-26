@@ -880,6 +880,73 @@ def test_terminal_reconciliation_releases_every_reservation_for_same_contract(
         db.close()
 
 
+def test_terminal_reconciliation_recovers_previously_released_liability(
+    tmp_path,
+) -> None:
+    request = _v4_request()
+    db = Database.open(tmp_path / "terminal-pre-released-liability.sqlite3")
+    install_successor_schema_v2(db)
+    install_continuity_schema_v3(db)
+    install_multi_universe_schema_v4(db)
+    from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+
+    ledger = SleeveLedgerStore(db)
+    ledger.bootstrap_extended()
+    store = SleeveAuthorityReservationStore(db)
+    flat = {
+        "positions": [],
+        "open_orders": [],
+        "pending_execution_contract_sha256": [],
+        "fill_ambiguity": False,
+        "fresh": True,
+    }
+    try:
+        assert store.reserve(
+            request, _broker(request), lambda: _snapshot(request)
+        ).status == "PASS"
+        assert store.finalize_terminal_reservations(
+            flat, observation_id="1" * 64
+        ) == {
+            "released": (),
+            "pending_confirmation": (request.execution_key,),
+        }
+
+        with db.transaction():
+            ledger.release_liability_in_transaction(
+                CapitalSleeve.CONTINUOUS_SLEEVE,
+                amount_usd=Decimal("1"),
+                reservation_key=request.execution_key,
+                broker_snapshot_sha256="a" * 64,
+            )
+
+        recovered = store.finalize_terminal_reservations(
+            flat, observation_id="2" * 64
+        )
+        assert recovered == {
+            "released": (request.execution_key,),
+            "pending_confirmation": (),
+        }
+        assert ledger.project(
+            CapitalSleeve.CONTINUOUS_SLEEVE
+        ).reserved_liability_usd == Decimal("0")
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM sleeve_ledger_events "
+                "WHERE event_type='LIABILITY_RELEASED'"
+            ).fetchone()[0]
+            == 1
+        )
+        assert (
+            db.execute(
+                "SELECT COUNT(*) FROM sleeve_authority_events "
+                "WHERE event_type='TERMINAL_RESERVATION_RELEASED'"
+            ).fetchone()[0]
+            == 1
+        )
+    finally:
+        db.close()
+
+
 def test_terminal_reconciliation_also_closes_matching_active_continuity_plan(
     tmp_path, continuity_plan_factory
 ) -> None:

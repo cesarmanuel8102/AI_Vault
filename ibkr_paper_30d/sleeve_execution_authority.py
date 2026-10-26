@@ -616,6 +616,7 @@ class SleeveAuthorityReservationStore:
             ]
             ownership = ContractOwnershipStore(self.db)
             ledger = SleeveLedgerStore(self.db)
+            ledger_events = ledger._events()
             projection = ownership.projection()
             all_ownership = (
                 *projection.active_contracts,
@@ -701,12 +702,33 @@ class SleeveAuthorityReservationStore:
                     ownership.release_in_transaction(member_sha, evidence)
             for reservation, _group_id in confirmed:
                 key = str(reservation["execution_key"])
-                ledger.release_liability_in_transaction(
-                    CapitalSleeve(str(reservation["capital_sleeve"])),
-                    amount_usd=Decimal(str(reservation["reserved_liability_usd"])),
-                    reservation_key=key,
-                    broker_snapshot_sha256=broker_snapshot_sha256,
+                sleeve = CapitalSleeve(str(reservation["capital_sleeve"]))
+                reserved_amount = Decimal(
+                    str(reservation["reserved_liability_usd"])
                 )
+                matching_releases = [
+                    event
+                    for event in ledger_events
+                    if event.get("event_type") == "LIABILITY_RELEASED"
+                    and event.get("reservation_key") == key
+                ]
+                if matching_releases:
+                    if len(matching_releases) != 1 or (
+                        matching_releases[0].get("sleeve") != sleeve.value
+                        or Decimal(
+                            str(matching_releases[0].get("amount_usd") or "0")
+                        )
+                        != reserved_amount
+                    ):
+                        raise SleeveLedgerError("LIABILITY_RELEASE_CONFLICT")
+                else:
+                    release = ledger.release_liability_in_transaction(
+                        sleeve,
+                        amount_usd=reserved_amount,
+                        reservation_key=key,
+                        broker_snapshot_sha256=broker_snapshot_sha256,
+                    )
+                    ledger_events.append(release.model_dump(mode="json"))
                 order_ref = str(reservation.get("order_ref") or "")
                 if order_ref:
                     ContinuityStore(self.db).terminalize_active_plan_in_transaction(
