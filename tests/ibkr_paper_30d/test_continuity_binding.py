@@ -102,6 +102,30 @@ def test_stage_persists_registry_and_pending_plan_atomically(tmp_path, continuit
     assert plan.sha256 in plan_event[1]
 
 
+def test_stage_rejects_cross_order_predecessor_before_persisting_or_sending(
+    tmp_path, continuity_plan_factory
+) -> None:
+    plan = _new_plan(
+        continuity_plan_factory,
+        predecessor_plan_sha256="a" * 64,
+    )
+    with _open(tmp_path / "cross-order-predecessor.sqlite3") as db:
+        service = ContinuityBindingService(db, ContinuityStore(db))
+
+        with pytest.raises(
+            ContinuityBindingError,
+            match="NEW_PROPOSAL_PREDECESSOR_FORBIDDEN",
+        ):
+            _stage(service, plan)
+
+        assert db.execute(
+            "SELECT COUNT(*) FROM experiment_order_registry"
+        ).fetchone()[0] == 0
+        assert db.execute(
+            "SELECT COUNT(*) FROM continuity_plan_events"
+        ).fetchone()[0] == 0
+
+
 def test_pre_send_abort_terminalizes_pending_binding_append_only(
     tmp_path, continuity_plan_factory
 ) -> None:

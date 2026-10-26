@@ -231,9 +231,10 @@ class ContinuityStore:
 
     def plan_chain(self, order_ref: str) -> list[CodexOrderContinuityPlan]:
         active: CodexOrderContinuityPlan | None = None
+        invalid_activation_sha256: str | None = None
         chain: list[CodexOrderContinuityPlan] = []
         terminals: set[str] = set()
-        for event_type, payload, _ in self._verified_rows(
+        for event_type, payload, event_sha256 in self._verified_rows(
             "continuity_plan_events", "order_ref", order_ref
         ):
             try:
@@ -247,9 +248,12 @@ class ContinuityStore:
             }:
                 continue
             if event_type == "ACTIVATED":
-                if active is not None or plan.predecessor_plan_sha256 is not None:
+                if active is not None or invalid_activation_sha256 is not None:
                     raise ContinuityStoreError("ACTIVE_PLAN_FORK")
-                active = plan
+                if plan.predecessor_plan_sha256 is not None:
+                    invalid_activation_sha256 = event_sha256
+                else:
+                    active = plan
                 chain.append(plan)
             elif event_type == "SUPERSEDED":
                 if active is None or plan.predecessor_plan_sha256 != active.sha256:
@@ -257,15 +261,29 @@ class ContinuityStore:
                 active = plan
                 chain.append(plan)
             elif event_type == "TERMINAL":
-                if active is None or active.sha256 != plan.sha256 or plan.sha256 in terminals:
+                bindings = payload.get("bindings") or {}
+                if invalid_activation_sha256 is not None:
+                    if (
+                        active is not None
+                        or plan.sha256 in terminals
+                        or bindings.get("invalid_activation_event_sha256")
+                        != invalid_activation_sha256
+                    ):
+                        raise ContinuityStoreError("INVALID_RECOVERY_TERMINAL")
+                    invalid_activation_sha256 = None
+                elif active is None or active.sha256 != plan.sha256 or plan.sha256 in terminals:
                     raise ContinuityStoreError("DUPLICATE_OR_INVALID_TERMINAL")
                 terminals.add(plan.sha256)
                 active = None
+        if invalid_activation_sha256 is not None:
+            raise ContinuityStoreError("ACTIVE_PLAN_FORK")
         return chain
 
     def active_plan(self, order_ref: str) -> CodexOrderContinuityPlan | None:
         active: CodexOrderContinuityPlan | None = None
-        for event_type, payload, _ in self._verified_rows(
+        invalid_activation_sha256: str | None = None
+        terminals: set[str] = set()
+        for event_type, payload, event_sha256 in self._verified_rows(
             "continuity_plan_events", "order_ref", order_ref
         ):
             try:
@@ -279,18 +297,80 @@ class ContinuityStore:
             }:
                 continue
             if event_type == "ACTIVATED":
-                if active is not None or plan.predecessor_plan_sha256 is not None:
+                if active is not None or invalid_activation_sha256 is not None:
                     raise ContinuityStoreError("ACTIVE_PLAN_FORK")
-                active = plan
+                if plan.predecessor_plan_sha256 is not None:
+                    invalid_activation_sha256 = event_sha256
+                else:
+                    active = plan
             elif event_type == "SUPERSEDED":
                 if active is None or plan.predecessor_plan_sha256 != active.sha256:
                     raise ContinuityStoreError("ACTIVE_PLAN_FORK")
                 active = plan
             elif event_type == "TERMINAL":
-                if active is None or active.sha256 != plan.sha256:
+                bindings = payload.get("bindings") or {}
+                if invalid_activation_sha256 is not None:
+                    if (
+                        active is not None
+                        or plan.sha256 in terminals
+                        or bindings.get("invalid_activation_event_sha256")
+                        != invalid_activation_sha256
+                    ):
+                        raise ContinuityStoreError("INVALID_RECOVERY_TERMINAL")
+                    invalid_activation_sha256 = None
+                elif active is None or active.sha256 != plan.sha256:
                     raise ContinuityStoreError("DUPLICATE_OR_INVALID_TERMINAL")
+                terminals.add(plan.sha256)
                 active = None
+        if invalid_activation_sha256 is not None:
+            raise ContinuityStoreError("ACTIVE_PLAN_FORK")
         return active
+
+    def append_recovery_terminal(
+        self,
+        plan: CodexOrderContinuityPlan,
+        *,
+        invalid_activation_event_sha256: str,
+        broker_evidence_sha256: str,
+        reason_code: str,
+    ) -> str:
+        """Close one historical activation that bypassed predecessor validation."""
+        order_ref = plan.order_binding.order_ref
+        rows = self._verified_rows("continuity_plan_events", "order_ref", order_ref)
+        matches = [
+            (payload, event_sha256)
+            for event_type, payload, event_sha256 in rows
+            if event_type == "ACTIVATED"
+            and payload.get("plan_sha256") == plan.sha256
+            and event_sha256 == invalid_activation_event_sha256
+        ]
+        if (
+            len(matches) != 1
+            or plan.predecessor_plan_sha256 is None
+            or not rows
+            or rows[-1][2] != invalid_activation_event_sha256
+        ):
+            raise ContinuityStoreError("RECOVERY_ACTIVATION_MISMATCH")
+        payload = {
+            "plan": plan.model_dump(mode="json", exclude_unset=True),
+            "plan_sha256": plan.sha256,
+            "bindings": {
+                "reason_code": reason_code,
+                "invalid_activation_event_sha256": invalid_activation_event_sha256,
+                "broker_evidence_sha256": broker_evidence_sha256,
+            },
+        }
+        with self.db.transaction():
+            return self._append(
+                table="continuity_plan_events",
+                event_id=f"continuity-recovery-terminal:{plan.plan_id}:{plan.sha256}",
+                stream_column="order_ref",
+                stream_id=order_ref,
+                event_type="TERMINAL",
+                payload=payload,
+                identity_columns={"plan_id": plan.plan_id, "order_ref": order_ref},
+                expected_previous_event_sha256=invalid_activation_event_sha256,
+            )
 
     def active_plans(self) -> tuple[CodexOrderContinuityPlan, ...]:
         order_refs = tuple(

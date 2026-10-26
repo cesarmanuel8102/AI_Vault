@@ -156,6 +156,77 @@ def test_store_rejects_bad_predecessor_duplicate_active_and_conflicting_replay(t
             store.append_plan_event("ACTIVATED", _plan("other"), event_id="activate-1")
 
 
+def test_exact_recovery_terminal_closes_historical_cross_order_activation(
+    tmp_path,
+) -> None:
+    with _open(tmp_path / "historical-cross-order.sqlite3") as db:
+        store = ContinuityStore(db)
+        malformed = _plan("replacement", predecessor=H4)
+        payload = {
+            "plan": malformed.model_dump(mode="json", exclude_unset=True),
+            "plan_sha256": malformed.sha256,
+            "bindings": {"perm_id": 1253988479},
+        }
+        activation_sha = store._append(
+            table="continuity_plan_events",
+            event_id="historical-bypass-activation",
+            stream_column="order_ref",
+            stream_id=malformed.order_binding.order_ref,
+            event_type="ACTIVATED",
+            payload=payload,
+            identity_columns={
+                "plan_id": malformed.plan_id,
+                "order_ref": malformed.order_binding.order_ref,
+            },
+        )
+
+        with pytest.raises(ContinuityStoreError, match="ACTIVE_PLAN_FORK"):
+            store.active_plan(malformed.order_binding.order_ref)
+
+        store.append_recovery_terminal(
+            malformed,
+            invalid_activation_event_sha256=activation_sha,
+            broker_evidence_sha256="e" * 64,
+            reason_code="INVALID_CROSS_ORDER_PREDECESSOR_BROKER_FLAT",
+        )
+
+        assert store.active_plan(malformed.order_binding.order_ref) is None
+        assert store.plan_chain(malformed.order_binding.order_ref) == [malformed]
+
+
+def test_recovery_terminal_rejects_wrong_activation_hash(tmp_path) -> None:
+    with _open(tmp_path / "wrong-recovery-anchor.sqlite3") as db:
+        store = ContinuityStore(db)
+        malformed = _plan("replacement", predecessor=H4)
+        store._append(
+            table="continuity_plan_events",
+            event_id="historical-bypass-activation",
+            stream_column="order_ref",
+            stream_id=malformed.order_binding.order_ref,
+            event_type="ACTIVATED",
+            payload={
+                "plan": malformed.model_dump(mode="json", exclude_unset=True),
+                "plan_sha256": malformed.sha256,
+                "bindings": {},
+            },
+            identity_columns={
+                "plan_id": malformed.plan_id,
+                "order_ref": malformed.order_binding.order_ref,
+            },
+        )
+
+        with pytest.raises(
+            ContinuityStoreError,
+            match="RECOVERY_ACTIVATION_MISMATCH",
+        ):
+            store.append_recovery_terminal(
+                malformed,
+                invalid_activation_event_sha256="f" * 64,
+                broker_evidence_sha256="e" * 64,
+                reason_code="INVALID_CROSS_ORDER_PREDECESSOR_BROKER_FLAT",
+            )
+
+
 def test_projection_rejects_corrupt_payload_and_hash(tmp_path) -> None:
     with _open(tmp_path / "state.sqlite3") as db:
         store = ContinuityStore(db)

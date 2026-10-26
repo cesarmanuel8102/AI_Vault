@@ -149,6 +149,10 @@ class ContinuityBindingService:
                 "NEW_PROPOSAL_PLAN_REQUIRED",
             ),
             (
+                plan.predecessor_plan_sha256 is None,
+                "NEW_PROPOSAL_PREDECESSOR_FORBIDDEN",
+            ),
+            (
                 binding.account_identity_sha256 == expected_identity_hash(account),
                 "ACCOUNT_IDENTITY_MISMATCH",
             ),
@@ -332,6 +336,8 @@ class ContinuityBindingService:
         plan = self._load_plan(pending.plan_id)
         if plan.sha256 != plan_sha256:
             raise ContinuityBindingError("PLAN_HASH_MISMATCH")
+        if plan.predecessor_plan_sha256 is not None:
+            raise ContinuityBindingError("NEW_PROPOSAL_PREDECESSOR_FORBIDDEN")
         perm_id = self._validate_snapshot(pending, snapshot)
         registry_payload = {
             "schema": "EXPERIMENT_ORDER_REGISTRY_V3",
