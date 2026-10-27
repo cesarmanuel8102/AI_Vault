@@ -1048,6 +1048,114 @@ def test_proposal_validation_what_if_uses_required_transmit_flag(monkeypatch):
     assert order.tif == "DAY"
 
 
+def test_single_redundant_crypto_leg_is_normalized_to_direct_proposal(monkeypatch):
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    captured = []
+    monkeypatch.setattr(toolbox, "_model_research_feasibility", lambda result: result)
+    monkeypatch.setattr(
+        toolbox,
+        "_broker_feasibility",
+        lambda proposal: captured.append(proposal) or {"success": True},
+    )
+    proposal = {
+        "thesis": "test",
+        "catalyst": "test",
+        "symbol": "BCH",
+        "sec_type": "CRYPTO",
+        "direction": "LONG",
+        "action": "BUY",
+        "quantity": "1.64",
+        "order_type": "LMT",
+        "time_in_force": "IOC",
+        "limit_price": "282.45",
+        "legs": [{
+            "symbol": "BCH",
+            "sec_type": "CRYPTO",
+            "action": "BUY",
+            "ratio": 1,
+            "exchange": "PAXOS",
+            "currency": "USD",
+        }],
+        "capital_required": "464.97",
+        "maximum_loss": "466.72",
+        "loss_is_bounded": True,
+        "probability_profit": "0.55",
+        "probability_loss": "0.45",
+        "expected_gain": "7.25",
+        "expected_loss": "6.25",
+        "expected_value": "1.18",
+        "expected_reward_risk": "1.16",
+        "expected_holding_period": "2 hours",
+        "entry_condition": "test",
+        "invalidation_condition": "test",
+        "exit_plan": "test",
+        "why_now": "test",
+        "alternatives_considered": ["cash"],
+        "evidence_used": ["quote"],
+        "disconfirming_evidence": [],
+        "confidence": "0.54",
+        "capital_sleeve": "CONTINUOUS_SLEEVE",
+        "product_family_sha256": "a82d8a2e546cd4a33c9b4d9bf1b4dbb95739282f8ef65dcc2c5c97c6ffc8dcd7",
+    }
+
+    result = toolbox._broker_feasibility_from_args({"proposal": proposal})
+
+    assert result["success"] is True
+    assert result["validated_proposal"]["legs"] == []
+    assert captured[0].legs == []
+
+
+def test_single_conflicting_leg_is_rejected_before_broker_feasibility(monkeypatch):
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_model_research_feasibility", lambda result: result)
+    monkeypatch.setattr(
+        toolbox,
+        "_broker_feasibility",
+        lambda _proposal: pytest.fail("conflicting singleton leg reached broker"),
+    )
+    proposal = {
+        "thesis": "test",
+        "symbol": "BCH",
+        "sec_type": "CRYPTO",
+        "direction": "LONG",
+        "action": "BUY",
+        "quantity": "1",
+        "order_type": "LMT",
+        "time_in_force": "IOC",
+        "limit_price": "282.45",
+        "legs": [{
+            "symbol": "ETH",
+            "sec_type": "CRYPTO",
+            "action": "BUY",
+            "ratio": 1,
+            "exchange": "PAXOS",
+            "currency": "USD",
+        }],
+        "capital_required": "282.45",
+        "maximum_loss": "284.20",
+        "loss_is_bounded": True,
+        "probability_profit": "0.55",
+        "probability_loss": "0.45",
+        "expected_gain": "7",
+        "expected_loss": "6",
+        "expected_value": "1.15",
+        "expected_holding_period": "2 hours",
+        "entry_condition": "test",
+        "invalidation_condition": "test",
+        "exit_plan": "test",
+        "alternatives_considered": ["cash"],
+        "evidence_used": ["quote"],
+        "disconfirming_evidence": [],
+        "confidence": "0.54",
+    }
+
+    result = toolbox._broker_feasibility_from_args({"proposal": proposal})
+
+    assert result["success"] is False
+    assert result["error"] == "BROKER_FEASIBILITY_ARGUMENTS_INVALID"
+    assert result["error_code"] == "SINGLE_LEG_PROPOSAL_CONFLICT"
+
+
 @pytest.mark.parametrize(
     ("state_updates", "error_code"),
     (

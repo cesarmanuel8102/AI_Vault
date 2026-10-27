@@ -1971,6 +1971,7 @@ class IBKRResearchToolbox:
         if "proposal" in args:
             try:
                 proposal = AutonomousTradeProposal.model_validate(args["proposal"])
+                proposal = self._normalize_singleton_direct_leg(proposal)
                 normalized = self._normalized_feasibility_args(args)
                 for key in ("action", "order_type", "quantity", "limit_price", "symbol", "sec_type"):
                     if normalized.get(key) is not None and self._normalized_order_argument(
@@ -2049,6 +2050,32 @@ class IBKRResearchToolbox:
         finally:
             if broker is not None:
                 broker.disconnect()
+
+    @staticmethod
+    def _normalize_singleton_direct_leg(
+        proposal: AutonomousTradeProposal,
+    ) -> AutonomousTradeProposal:
+        if len(proposal.legs) != 1:
+            return proposal
+
+        leg = proposal.legs[0]
+
+        def text(value: Any) -> str:
+            return str(value or "").strip().upper()
+
+        same_direct_identity = (
+            leg.ratio == 1
+            and text(leg.symbol) == text(proposal.symbol)
+            and text(leg.sec_type) == text(proposal.sec_type)
+            and text(leg.action) == text(proposal.action)
+            and text(leg.expiry) == text(proposal.expiry)
+            and leg.strike == proposal.strike
+            and text(leg.right) == text(proposal.right)
+            and text(leg.currency) == "USD"
+        )
+        if not same_direct_identity:
+            raise ValueError("SINGLE_LEG_PROPOSAL_CONFLICT")
+        return proposal.model_copy(update={"legs": []})
 
     @staticmethod
     def _combo_leg_contract_spec(leg: dict[str, Any]) -> dict[str, Any]:
