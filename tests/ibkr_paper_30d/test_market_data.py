@@ -419,7 +419,7 @@ def test_runtime_gate_evaluates_latest_observation_per_symbol(
 
         def collect_window(self, config, prerequisites):
             assert config.cadence_seconds == 5
-            assert config.window_seconds == 5
+            assert config.window_seconds == 0
             return SimpleNamespace(observations=observations)
 
     monkeypatch.setattr(

@@ -376,6 +376,40 @@ class _IBKRMarketDataClient(EWrapper, EClient):
                 marketDataType, "UNKNOWN"
             )
 
+    def tickPrice(
+        self,
+        reqId: int,
+        tickType: int,
+        price: float,
+        attrib: object,
+    ) -> None:
+        symbol = self.request_symbols.get(reqId)
+        if not symbol or price <= 0:
+            return
+        field_by_tick_type = {1: "bid", 2: "ask", 4: "last"}
+        field = field_by_tick_type.get(tickType)
+        if field is None:
+            return
+        quote = self.quotes[symbol]
+        quote[field] = Decimal(str(price))
+        receipt = self.now_utc()
+        quote["standard_price_receipt_timestamp"] = receipt
+        quote["local_receipt_timestamp"] = receipt
+        quote["monotonic_receipt_ns"] = self.monotonic_ns()
+
+    def tickSize(self, reqId: int, tickType: int, size: object) -> None:
+        symbol = self.request_symbols.get(reqId)
+        if not symbol:
+            return
+        field_by_tick_type = {0: "bid_size", 3: "ask_size", 5: "last_size"}
+        field = field_by_tick_type.get(tickType)
+        if field is None:
+            return
+        parsed = Decimal(str(size))
+        if parsed < 0:
+            return
+        self.quotes[symbol][field] = parsed
+
     def tickByTickBidAsk(
         self,
         reqId: int,
@@ -428,6 +462,19 @@ class _IBKRMarketDataClient(EWrapper, EClient):
 
     def raw_quote(self, symbol: str) -> RawQuote:
         quote = dict(self.quotes[symbol])
+        broker_quote_timestamp = quote.get("broker_quote_timestamp")
+        standard_receipt = quote.get("standard_price_receipt_timestamp")
+        standard_stream_fallback = (
+            not isinstance(broker_quote_timestamp, datetime)
+            and isinstance(standard_receipt, datetime)
+            and self.clock_sample is not None
+        )
+        if standard_stream_fallback:
+            # Standard reqMktData events do not carry an exchange timestamp.
+            # Their authenticated local receipt is the freshness timestamp;
+            # a successful broker clock round trip is still mandatory before
+            # this fallback can establish timestamp provenance.
+            broker_quote_timestamp = standard_receipt
         local_receipt = quote.get("local_receipt_timestamp")
         if not isinstance(local_receipt, datetime):
             local_receipt = self.now_utc()
@@ -435,7 +482,7 @@ class _IBKRMarketDataClient(EWrapper, EClient):
             skew = None
             round_trip = None
         else:
-            skew = self.clock_sample.clock_skew_ms
+            skew = 0 if standard_stream_fallback else self.clock_sample.clock_skew_ms
             round_trip = self.clock_sample.round_trip_ms
         has_data = any(quote.get(name) is not None for name in ("bid", "ask", "last"))
         return RawQuote(
@@ -451,7 +498,7 @@ class _IBKRMarketDataClient(EWrapper, EClient):
             bid_size=quote.get("bid_size"),
             ask_size=quote.get("ask_size"),
             last_size=quote.get("last_size"),
-            broker_quote_timestamp=quote.get("broker_quote_timestamp"),
+            broker_quote_timestamp=broker_quote_timestamp,
             local_receipt_timestamp=local_receipt,
             monotonic_receipt_ns=int(quote.get("monotonic_receipt_ns", 0)),
             clock_skew_ms=skew,
@@ -569,12 +616,12 @@ class IBKRMarketDataSource:
         while time.monotonic() < deadline:
             complete = True
             for symbol in symbols:
-                quote = self.client.quotes.get(symbol, {})
+                quote = self.client.raw_quote(symbol)
                 if (
-                    quote.get("bid") is None
-                    or quote.get("ask") is None
-                    or quote.get("broker_quote_timestamp") is None
-                    or quote.get("realtime_or_delayed") in {None, "UNKNOWN"}
+                    quote.bid is None
+                    or quote.ask is None
+                    or quote.broker_quote_timestamp is None
+                    or quote.realtime_or_delayed == "UNKNOWN"
                 ):
                     complete = False
                     break

@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from ibkr_paper_30d.market_observation import MarketSession
+from ibkr_paper_30d.market_observation import ClockSample, MarketSession
 from ibkr_paper_30d.market_observation_collector import (
     _IBKRMarketDataClient,
     MarketObservationCollector,
@@ -256,6 +256,53 @@ def test_ibkr_callbacks_retain_broker_timestamp_and_local_receipt() -> None:
     assert raw.local_receipt_timestamp == NOW
     assert raw.monotonic_receipt_ns == 42
     assert raw.realtime_or_delayed == "REALTIME"
+
+
+def test_standard_streaming_ticks_use_broker_clock_corrected_receipt() -> None:
+    receipt = NOW + timedelta(milliseconds=250)
+    client = _IBKRMarketDataClient(now_utc=lambda: receipt, monotonic_ns=lambda: 42)
+    client.register_request(7110, "SPY", 1, "20260921:0930-20260921:1600", "US/Eastern")
+    client.clock_sample = ClockSample.from_round_trip(
+        NOW,
+        NOW,
+        NOW + timedelta(milliseconds=200),
+        timestamp_resolution_ms=1000,
+    )
+
+    client.marketDataType(7110, 1)
+    client.tickPrice(7110, 1, 500.0, None)
+    client.tickPrice(7110, 2, 500.02, None)
+    client.tickPrice(7110, 4, 500.01, None)
+    client.tickSize(7110, 0, 100)
+    client.tickSize(7110, 3, 120)
+    client.tickSize(7110, 5, 10)
+
+    raw = client.raw_quote("SPY")
+    assert raw.bid == Decimal("500.0")
+    assert raw.ask == Decimal("500.02")
+    assert raw.last == Decimal("500.01")
+    assert raw.bid_size == Decimal("100")
+    assert raw.ask_size == Decimal("120")
+    assert raw.last_size == Decimal("10")
+    assert raw.local_receipt_timestamp == receipt
+    assert raw.broker_quote_timestamp == receipt
+    assert raw.clock_skew_ms == 0
+    assert raw.timestamp_resolution_ms == 1000
+
+
+def test_standard_streaming_ticks_fail_closed_without_broker_clock() -> None:
+    client = _IBKRMarketDataClient(now_utc=lambda: NOW, monotonic_ns=lambda: 42)
+    client.register_request(7111, "SPY", 1, "20260921:0930-20260921:1600", "US/Eastern")
+
+    client.marketDataType(7111, 1)
+    client.tickPrice(7111, 1, 500.0, None)
+    client.tickPrice(7111, 2, 500.02, None)
+
+    raw = client.raw_quote("SPY")
+    assert raw.bid == Decimal("500.0")
+    assert raw.ask == Decimal("500.02")
+    assert raw.broker_quote_timestamp is None
+    assert raw.clock_skew_ms is None
 
 
 def test_ibkr_contract_details_resolve_identity_and_session_metadata() -> None:

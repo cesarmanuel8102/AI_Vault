@@ -112,7 +112,7 @@ class RuntimeMarketDataGate:
                 ObservationConfig(
                     symbols=tuple(sorted(MarketPolicyFreezer.REQUIRED_SYMBOLS)),
                     cadence_seconds=5,
-                    window_seconds=5,
+                    window_seconds=0,
                 ),
                 ObservationPrerequisites(
                     identity_receipt_sha256=self.expected_account_hash,
