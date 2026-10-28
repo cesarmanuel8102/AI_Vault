@@ -95,6 +95,11 @@ def _canonical_result_payload(
         "rounds": outcome.rounds,
         "transcript_sha256": outcome.transcript_sha256,
         "broker_validation": outcome.broker_validation,
+        "economic_accountability": (
+            None
+            if outcome.economic_accountability is None
+            else outcome.economic_accountability.model_dump(mode="json")
+        ),
         "continuity_plan": (
             None
             if outcome.continuity_plan is None

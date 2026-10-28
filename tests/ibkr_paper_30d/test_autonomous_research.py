@@ -15,10 +15,13 @@ from ibkr_paper_30d.autonomous_research import (
     AutonomousTradeProposal,
     AutonomousTurn,
     AutonomousTurnMode,
+    EconomicCandidateAssessment,
+    EconomicDecisionAccountability,
     ProposalValidation,
     ResearchRequest,
     ResearchResult,
     ResearchTool,
+    SleeveEconomicAccountability,
     validate_multi_sleeve_payload,
 )
 from ibkr_paper_30d.multi_universe_models import CapitalSleeve
@@ -76,6 +79,117 @@ class FakeToolbox:
             broker_evidence={"decision": decision.value},
         )
 
+
+def _economic_accountability() -> EconomicDecisionAccountability:
+    now = datetime(2026, 10, 28, 13, 10, tzinfo=timezone.utc)
+    return EconomicDecisionAccountability(
+        sleeves=[
+            SleeveEconomicAccountability(
+                capital_sleeve=CapitalSleeve.REGULAR_SLEEVE,
+                availability="AVAILABLE",
+                strongest_alternatives_examined=[
+                    EconomicCandidateAssessment(
+                        symbol="SLB",
+                        sec_type="STK",
+                        disposition="MONITOR_EXISTING",
+                        gross_expected_value=None,
+                        estimated_total_costs=None,
+                        net_expected_value=None,
+                        estimate_basis="Current position evidence does not support a precise EV.",
+                        reason="Existing position remains above invalidation.",
+                        evidence_refs=["QUOTE:SLB"],
+                    )
+                ],
+                no_identifiable_candidate=False,
+                incomplete_evidence=["Expected value remains interval-valued."],
+                evidence_as_of_utc=now,
+                evidence_expires_at_utc=None,
+                staleness_condition="SLB crosses the model-selected invalidation level.",
+                next_recheck_trigger="Next material price or news change.",
+                methodology_assessment="PRODUCTIVE",
+                methodology_change=None,
+            ),
+            SleeveEconomicAccountability(
+                capital_sleeve=CapitalSleeve.CONTINUOUS_SLEEVE,
+                availability="AVAILABLE",
+                strongest_alternatives_examined=[],
+                no_identifiable_candidate=True,
+                incomplete_evidence=["No candidate survived the current screen."],
+                evidence_as_of_utc=now,
+                evidence_expires_at_utc=datetime(
+                    2026, 10, 28, 13, 25, tzinfo=timezone.utc
+                ),
+                staleness_condition="Price or volume regime changes materially.",
+                next_recheck_trigger="At evidence expiry or an earlier regime change.",
+                methodology_assessment="ADAPT",
+                methodology_change="Broaden the next screen beyond the prior three symbols.",
+            ),
+        ],
+        aggregate_assessment="Preserve the regular position while adapting continuous discovery.",
+    )
+
+
+def test_economic_accountability_requires_distinct_records_for_both_sleeves():
+    accountability = _economic_accountability()
+
+    assert [item.capital_sleeve for item in accountability.sleeves] == [
+        CapitalSleeve.REGULAR_SLEEVE,
+        CapitalSleeve.CONTINUOUS_SLEEVE,
+    ]
+    with pytest.raises(ValidationError, match="both sleeves exactly once"):
+        EconomicDecisionAccountability(
+            sleeves=[accountability.sleeves[0], accountability.sleeves[0]],
+            aggregate_assessment="Duplicate sleeve is invalid.",
+        )
+
+
+def test_economic_accountability_never_requires_fabricated_candidate():
+    continuous = _economic_accountability().sleeves[1]
+
+    assert continuous.no_identifiable_candidate is True
+    assert continuous.strongest_alternatives_examined == []
+    with pytest.raises(ValidationError, match="no_identifiable_candidate"):
+        continuous.model_copy(
+            update={"strongest_alternatives_examined": [
+                _economic_accountability().sleeves[0].strongest_alternatives_examined[0]
+            ]}
+        ).model_validate(
+            {
+                **continuous.model_dump(mode="python"),
+                "strongest_alternatives_examined": [
+                    _economic_accountability().sleeves[0].strongest_alternatives_examined[0]
+                ],
+            }
+        )
+
+
+def test_multi_sleeve_final_turn_requires_economic_accountability():
+    value = _v4_bundle(
+        legacy_equity="500", regular_equity="500", extended_equity="500"
+    )
+    missing = AutonomousTurn(
+        mode=AutonomousTurnMode.FINAL,
+        decision=TraderDecision.NO_TRADE,
+        confidence="0.8",
+        reasoning_summary="No positive net expectancy.",
+        reason_codes=["NO_EDGE"],
+    )
+    complete = missing.model_copy(
+        update={"economic_accountability": _economic_accountability()}
+    )
+
+    assert (
+        AutonomousResearchLoop._validate_economic_accountability_turn(
+            missing, bundle=value
+        )
+        == "ECONOMIC_ACCOUNTABILITY_REQUIRED"
+    )
+    assert (
+        AutonomousResearchLoop._validate_economic_accountability_turn(
+            complete, bundle=value
+        )
+        is None
+    )
 
 @pytest.mark.parametrize("embedded_success", [False, True])
 @pytest.mark.parametrize("broker_success", [False, True])

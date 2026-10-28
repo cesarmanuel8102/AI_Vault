@@ -227,6 +227,47 @@ def test_no_trade_validity_is_unconditional_as_local_decision():
     assert "no_trade is valid only when" not in text
 
 
+def test_economic_accountability_applies_to_both_sleeves_without_forcing_trades():
+    payload = charter()
+    contract = payload["mandate"]["economic_accountability_contract"]
+
+    assert contract["applies_to_sleeves"] == [
+        "REGULAR_SLEEVE",
+        "CONTINUOUS_SLEEVE",
+    ]
+    assert contract["separate_capital_and_economics"] is True
+    assert contract["minimum_trade_count"] is None
+    assert contract["host_strategy_prescription"] is False
+    assert contract["candidate_fabrication_prohibited"] is True
+    assert contract["incomplete_evidence_must_be_labeled"] is True
+
+    text = instruction_text(payload).lower()
+    assert "assess each sleeve separately" in text
+    assert "strongest alternatives actually examined" in text
+    assert "spread, commissions, fees" in text
+    assert "evidence expiry" in text
+    assert "next recheck trigger" in text
+    assert "change methodology" in text
+    assert "do not fabricate candidates" in text
+    assert "minimum trade count" in text
+    assert "must trade" not in text
+
+
+def test_accountability_uses_existing_process_feedback_without_prescribing_method():
+    payload = charter()
+    contract = payload["mandate"]["economic_accountability_contract"]
+
+    assert contract["feedback_sources"] == [
+        "autonomous_process_observation",
+        "instrument_family_coverage",
+        "regret_observations_and_outcomes_when_present",
+        "sleeve_equity_fees_and_realized_pnl",
+    ]
+    assert contract["methodology_selection"] == "MODEL_AUTONOMOUS"
+    assert contract["research_cadence"] == "MODEL_SELECTED_BY_EXPECTED_INFORMATION_VALUE"
+    assert contract["decision_quality_not_activity"] is True
+
+
 # ---------------------------------------------------------------------------
 # 5. Broad legal research access
 # ---------------------------------------------------------------------------

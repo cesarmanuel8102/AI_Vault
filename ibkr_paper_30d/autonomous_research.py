@@ -284,6 +284,88 @@ class AutonomousTradeProposal(BaseModel, frozen=True):
         return self
 
 
+class EconomicCandidateAssessment(BaseModel, frozen=True):
+    """One alternative the model actually examined, never a host candidate."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    symbol: str = Field(min_length=1)
+    sec_type: str = Field(min_length=1)
+    disposition: str = Field(min_length=1)
+    gross_expected_value: Decimal | None = None
+    estimated_total_costs: Decimal | None = Field(default=None, ge=0)
+    net_expected_value: Decimal | None = None
+    estimate_basis: str = Field(min_length=1)
+    reason: str = Field(min_length=1)
+    evidence_refs: list[str] = Field(default_factory=list)
+
+
+class SleeveEconomicAccountability(BaseModel, frozen=True):
+    """Model-authored economic evidence for one independently funded sleeve."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    capital_sleeve: CapitalSleeve
+    availability: Literal["AVAILABLE", "BLOCKED", "CLOSED", "UNAVAILABLE"]
+    strongest_alternatives_examined: list[EconomicCandidateAssessment] = Field(
+        default_factory=list, max_length=3
+    )
+    no_identifiable_candidate: bool
+    incomplete_evidence: list[str] = Field(default_factory=list)
+    evidence_as_of_utc: datetime
+    evidence_expires_at_utc: datetime | None = None
+    staleness_condition: str = Field(min_length=1)
+    next_recheck_trigger: str = Field(min_length=1)
+    methodology_assessment: Literal[
+        "PRODUCTIVE", "ADAPT", "INSUFFICIENT_EVIDENCE"
+    ]
+    methodology_change: str | None = None
+
+    @model_validator(mode="after")
+    def validate_accountability(self) -> "SleeveEconomicAccountability":
+        if self.evidence_as_of_utc.tzinfo is None or self.evidence_as_of_utc.utcoffset() is None:
+            raise ValueError("evidence_as_of_utc must be timezone-aware")
+        if self.evidence_expires_at_utc is not None:
+            if (
+                self.evidence_expires_at_utc.tzinfo is None
+                or self.evidence_expires_at_utc.utcoffset() is None
+            ):
+                raise ValueError("evidence_expires_at_utc must be timezone-aware")
+            if self.evidence_expires_at_utc <= self.evidence_as_of_utc:
+                raise ValueError("evidence expiry must follow evidence timestamp")
+        if self.no_identifiable_candidate and self.strongest_alternatives_examined:
+            raise ValueError(
+                "no_identifiable_candidate cannot accompany fabricated candidates"
+            )
+        if not self.no_identifiable_candidate and not self.strongest_alternatives_examined:
+            raise ValueError(
+                "strongest_alternatives_examined required unless no_identifiable_candidate"
+            )
+        if self.methodology_assessment == "ADAPT" and not self.methodology_change:
+            raise ValueError("ADAPT requires methodology_change")
+        return self
+
+
+class EconomicDecisionAccountability(BaseModel, frozen=True):
+    """Separate economic accountability for both autonomous capital sleeves."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    sleeves: list[SleeveEconomicAccountability] = Field(min_length=2, max_length=2)
+    aggregate_assessment: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_both_sleeves(self) -> "EconomicDecisionAccountability":
+        observed = [item.capital_sleeve for item in self.sleeves]
+        expected = {
+            CapitalSleeve.REGULAR_SLEEVE,
+            CapitalSleeve.CONTINUOUS_SLEEVE,
+        }
+        if len(set(observed)) != 2 or set(observed) != expected:
+            raise ValueError("economic accountability requires both sleeves exactly once")
+        return self
+
+
 def _validate_temporal_order_intent(value: Any) -> None:
     if value.time_in_force == TimeInForce.GTD:
         date = value.good_till_date_utc
@@ -305,6 +387,7 @@ class AutonomousTurn(BaseModel, frozen=True):
     confidence: Decimal = Field(ge=0, le=1)
     reasoning_summary: str
     reason_codes: list[str] = Field(default_factory=list)
+    economic_accountability: EconomicDecisionAccountability | None = None
     continuity_plan: CodexOrderContinuityPlan | None = None
     continuity_reviews: list[ContinuityReview] = Field(default_factory=list)
 
@@ -685,6 +768,8 @@ class CodexAutonomousCLIProvider:
                 raw: Any = None
                 try:
                     raw = json.loads(output_path.read_text(encoding="utf-8"))
+                    if isinstance(raw, dict):
+                        raw.setdefault("economic_accountability", None)
                     for item in raw.get("research_requests", []):
                         if isinstance(item, dict) and isinstance(
                             item.get("arguments"), str
@@ -743,6 +828,37 @@ class CodexAutonomousCLIProvider:
                         ],
                     }
                     continue
+                accountability_error = (
+                    AutonomousResearchLoop._validate_economic_accountability_turn(
+                        turn, bundle=bundle
+                    )
+                )
+                if (
+                    accountability_error is not None
+                    and semantic_attempt < maximum_repairs
+                ):
+                    self.last_failure_code = "ECONOMIC_ACCOUNTABILITY_INVALID"
+                    self.last_failure_detail = accountability_error
+                    repair_context = {
+                        "attempt": semantic_attempt + 1,
+                        "maximum_attempts": maximum_repairs,
+                        "instruction": (
+                            "Correct only the economic-accountability contract error below. "
+                            "Preserve your independent research and trading judgment. Do not "
+                            "invent candidates or estimates. Return a complete replacement object."
+                        ),
+                        "invalid_output": raw,
+                        "validation_errors": [
+                            {
+                                "location": ["economic_accountability"],
+                                "message": accountability_error,
+                                "type": "economic_accountability_contract",
+                            }
+                        ],
+                    }
+                    continue
+                if accountability_error is not None:
+                    raise RuntimeError(accountability_error)
                 self.last_failure_code = None
                 self.last_failure_detail = None
                 return turn
@@ -1105,6 +1221,26 @@ class CodexAutonomousCLIProvider:
                     "track_idle_capital_opportunity_cost": True,
                     "adapt_methodology_when_trajectory_is_insufficient": True,
                 },
+                "economic_accountability_contract": {
+                    "applies_to_sleeves": [
+                        "REGULAR_SLEEVE",
+                        "CONTINUOUS_SLEEVE",
+                    ],
+                    "separate_capital_and_economics": True,
+                    "decision_quality_not_activity": True,
+                    "minimum_trade_count": None,
+                    "host_strategy_prescription": False,
+                    "methodology_selection": "MODEL_AUTONOMOUS",
+                    "research_cadence": "MODEL_SELECTED_BY_EXPECTED_INFORMATION_VALUE",
+                    "candidate_fabrication_prohibited": True,
+                    "incomplete_evidence_must_be_labeled": True,
+                    "feedback_sources": [
+                        "autonomous_process_observation",
+                        "instrument_family_coverage",
+                        "regret_observations_and_outcomes_when_present",
+                        "sleeve_equity_fees_and_realized_pnl",
+                    ],
+                },
                 "immutable_environmental_constraints": [
                     "PAPER account only",
                     "LIVE execution prohibited",
@@ -1134,6 +1270,19 @@ class CodexAutonomousCLIProvider:
                     "sleeves. Managing a position in one sleeve does not suspend responsibility for the other sleeve. "
                     "You choose the cadence based on expected information value, but a claim that no superior "
                     "opportunity exists requires sufficiently recent evidence, and idle capital has opportunity cost.\n"
+                    "Assess each sleeve separately using its own capital, positions, eligibility, costs, and opportunity "
+                    "set. In every final decision, make the economic accountability of your judgment visible in the "
+                    "reasoning summary and reason codes: identify the strongest alternatives actually examined for "
+                    "each available sleeve; compare expected benefit net of spread, commissions, fees, and other known "
+                    "costs when the evidence supports an estimate; state the evidence expiry or the market condition "
+                    "that would make the conclusion stale; state the next recheck trigger; and state whether the current "
+                    "method remains productive or whether you will change methodology. Do not fabricate candidates, "
+                    "probabilities, prices, or economic estimates. When evidence is incomplete, label that limitation "
+                    "and acquire better evidence when its expected information value is positive rather than expressing "
+                    "unsupported high confidence. Use system-generated process observations, instrument-family coverage, "
+                    "sleeve economics, and available regret observations as feedback about search quality, not as a "
+                    "host-selected strategy. There is no minimum trade count, and these accountability expectations do "
+                    "not require a trade or prescribe an instrument, strategy, cadence, or risk level.\n"
                     "Persistent non-examination of an available instrument family is diagnostic evidence about your "
                     "search process. Use the instrument-family coverage observation to decide whether investigating "
                     "that family has positive expected information value or whether its continued exclusion is "
@@ -1191,6 +1340,17 @@ class CodexAutonomousCLIProvider:
                 "research_request_arguments": (
                     "Encode each research_requests[].arguments value as a JSON "
                     "object string. The host decodes and validates it before use."
+                ),
+                "economic_accountability": (
+                    "RESEARCH turns set economic_accountability to null. Every FINAL turn in "
+                    "the active two-sleeve experiment supplies exactly one separate assessment "
+                    "for REGULAR_SLEEVE and CONTINUOUS_SLEEVE. Include at most three strongest "
+                    "alternatives actually examined per sleeve. Use no_identifiable_candidate "
+                    "with an empty alternatives list rather than fabricating a candidate. Numeric "
+                    "economic estimates may be null when evidence is insufficient, but the "
+                    "limitation, evidence freshness, staleness condition, next recheck trigger, "
+                    "and methodology assessment remain explicit. This record documents judgment; "
+                    "it does not require a trade or prescribe strategy."
                 ),
                 "continuity_instruction": (
                     "When continuity authority is required, every final PROPOSE_TRADE or "
@@ -1389,6 +1549,7 @@ class AutonomousResearchOutcome(BaseModel, frozen=True):
     transcript: list[dict[str, Any]]
     transcript_sha256: str
     broker_validation: dict[str, Any] = Field(default_factory=dict)
+    economic_accountability: EconomicDecisionAccountability | None = None
     continuity_plan: CodexOrderContinuityPlan | None = None
     continuity_reviews: tuple[ContinuityReview, ...] = ()
 
@@ -1588,7 +1749,6 @@ class AutonomousResearchLoop:
                 return self._blocked(
                     history, telemetry, round_index, continuity_error
                 )
-
             selected_payload = (
                 turn.proposal or turn.position_action or turn.open_order_action
             )
@@ -1635,6 +1795,7 @@ class AutonomousResearchLoop:
                     validation="PASS",
                     reason_codes=tuple(turn.reason_codes),
                     broker_validation=validation.broker_evidence,
+                    economic_accountability=turn.economic_accountability,
                     continuity_plan=turn.continuity_plan,
                     continuity_reviews=tuple(turn.continuity_reviews),
                 )
@@ -1675,6 +1836,7 @@ class AutonomousResearchLoop:
                     validation="PASS",
                     reason_codes=tuple(turn.reason_codes),
                     broker_validation=validation.broker_evidence,
+                    economic_accountability=turn.economic_accountability,
                     continuity_plan=turn.continuity_plan,
                     continuity_reviews=tuple(turn.continuity_reviews),
                 )
@@ -1690,6 +1852,7 @@ class AutonomousResearchLoop:
                     accepted=True,
                     validation="PASS",
                     reason_codes=tuple(turn.reason_codes),
+                    economic_accountability=turn.economic_accountability,
                     continuity_plan=turn.continuity_plan,
                     continuity_reviews=tuple(turn.continuity_reviews),
                 )
@@ -1754,11 +1917,28 @@ class AutonomousResearchLoop:
                 validation="PASS",
                 reason_codes=tuple(turn.reason_codes),
                 broker_validation=validation.broker_evidence,
+                economic_accountability=turn.economic_accountability,
                 continuity_plan=turn.continuity_plan,
                 continuity_reviews=tuple(turn.continuity_reviews),
             )
 
         return self._blocked(history, telemetry, self.max_rounds, "RESEARCH_ROUND_LIMIT_REACHED")
+
+    @staticmethod
+    def _validate_economic_accountability_turn(
+        turn: AutonomousTurn,
+        *,
+        bundle: TraderInputBundle,
+    ) -> str | None:
+        if turn.mode is AutonomousTurnMode.RESEARCH:
+            if turn.economic_accountability is not None:
+                return "ECONOMIC_ACCOUNTABILITY_FORBIDDEN_DURING_RESEARCH"
+            return None
+        if not bundle.multi_sleeve_v4_active:
+            return None
+        if turn.economic_accountability is None:
+            return "ECONOMIC_ACCOUNTABILITY_REQUIRED"
+        return None
 
     @staticmethod
     def _validate_new_proposal_host_bindings(
@@ -1934,6 +2114,7 @@ class AutonomousResearchLoop:
         validation: str,
         reason_codes: tuple[str, ...],
         broker_validation: dict[str, Any] | None = None,
+        economic_accountability: EconomicDecisionAccountability | None = None,
         open_order_action: AutonomousOpenOrderAction | None = None,
         continuity_plan: CodexOrderContinuityPlan | None = None,
         continuity_reviews: tuple[ContinuityReview, ...] = (),
@@ -1956,6 +2137,7 @@ class AutonomousResearchLoop:
             transcript=history,
             transcript_sha256=transcript_hash,
             broker_validation=broker_validation or {},
+            economic_accountability=economic_accountability,
             continuity_plan=continuity_plan,
             continuity_reviews=continuity_reviews,
         )
