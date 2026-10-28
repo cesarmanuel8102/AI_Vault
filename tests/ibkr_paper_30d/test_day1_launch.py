@@ -2811,6 +2811,53 @@ def test_lock_heartbeat_retries_transient_sqlite_contention(
     assert evidence == []
 
 
+def test_lock_heartbeat_survives_extended_local_sqlite_contention(
+    tmp_path: Path, monkeypatch
+) -> None:
+    ctx = passing_context(tmp_path)
+    service = Mock()
+    evidence: list[tuple[str, dict[str, object]]] = []
+    database_opens = 0
+    accepted = SimpleNamespace(accepted=True, reason="ACCEPTED")
+
+    class AcceptedHeartbeat:
+        def heartbeat(self, receipt):
+            return accepted
+
+    def database_factory(path):
+        nonlocal database_opens
+        database_opens += 1
+        if database_opens <= 4:
+            raise sqlite3.OperationalError("database is locked")
+        return Database.open(path)
+
+    ctx.dependencies.database_factory = database_factory
+    ctx.dependencies.lock_factory = lambda _db: AcceptedHeartbeat()
+    monkeypatch.setattr(
+        launch_module,
+        "write_launch_evidence",
+        lambda _config, event_type, payload: evidence.append((event_type, payload)),
+    )
+    worker = launch_module._LockHeartbeat(
+        config=ctx.config,
+        dependencies=ctx.dependencies,
+        receipt=SimpleNamespace(),
+        service=service,
+        interval_seconds=0.01,
+    )
+
+    worker.start()
+    deadline = time.time() + 1.0
+    while database_opens < 5 and time.time() < deadline:
+        time.sleep(0.01)
+    worker.stop()
+
+    assert database_opens >= 5
+    assert not service.stop.called
+    assert worker.failure_code is None
+    assert evidence == []
+
+
 @pytest.mark.parametrize(
     ("message", "expected_opens"),
     [
@@ -2844,6 +2891,7 @@ def test_lock_heartbeat_fails_closed_after_unrecoverable_database_error(
         service=service,
         interval_seconds=0.01,
     )
+    worker.sqlite_contention_budget_seconds = 0.021
 
     worker.start()
     deadline = time.time() + 1.0

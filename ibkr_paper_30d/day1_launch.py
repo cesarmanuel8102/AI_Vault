@@ -35,7 +35,12 @@ from .epoch_manifest import (
     epoch_manifest_hash,
     verify_kernel_manifest,
 )
-from .execution_lock import ExecutionLock, LockIntegrityError, LockOwner
+from .execution_lock import (
+    DEFAULT_STALE_AFTER,
+    ExecutionLock,
+    LockIntegrityError,
+    LockOwner,
+)
 from .experiment_control import (
     ExperimentClock,
     ExperimentClockStore,
@@ -1492,8 +1497,11 @@ class _LockHeartbeat:
             name="ibkr-paper-launch-lock-heartbeat",
             daemon=True,
         )
-        self.sqlite_contention_attempts = 3
         self.sqlite_contention_retry_seconds = min(interval_seconds, 1.0)
+        self.sqlite_contention_budget_seconds = max(
+            1.0,
+            DEFAULT_STALE_AFTER.total_seconds() - interval_seconds,
+        )
 
     def start(self) -> None:
         self.thread.start()
@@ -1517,7 +1525,10 @@ class _LockHeartbeat:
 
     def _run(self) -> None:
         while not self.stop_event.wait(self.interval_seconds):
-            for attempt in range(self.sqlite_contention_attempts):
+            contention_deadline = (
+                time.monotonic() + self.sqlite_contention_budget_seconds
+            )
+            while not self.stop_event.is_set():
                 try:
                     with self.dependencies.database_factory(self.config.db_path) as db:
                         result = self.dependencies.lock_factory(db).heartbeat(self.receipt)
@@ -1527,11 +1538,13 @@ class _LockHeartbeat:
                     break
                 except sqlite3.OperationalError as exc:
                     contention = "locked" in str(exc).lower() or "busy" in str(exc).lower()
-                    final_attempt = attempt + 1 >= self.sqlite_contention_attempts
-                    if not contention or final_attempt:
+                    remaining = contention_deadline - time.monotonic()
+                    if not contention or remaining <= 0:
                         self._stop_service("EXECUTION_LOCK_HEARTBEAT_FAILED")
                         return
-                    if self.stop_event.wait(self.sqlite_contention_retry_seconds):
+                    if self.stop_event.wait(
+                        min(self.sqlite_contention_retry_seconds, remaining)
+                    ):
                         return
                 except Exception:
                     self._stop_service("EXECUTION_LOCK_HEARTBEAT_FAILED")
