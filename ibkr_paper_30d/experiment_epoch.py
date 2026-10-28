@@ -444,6 +444,20 @@ class ExperimentEpochStore:
                     self._state_event_rows()
                 ),
             }
+        from .measurement_clock import MeasurementClockStore
+
+        if MeasurementClockStore(self.db).present():
+            from .experiment_control import ExperimentClockStore
+
+            effective_clock = ExperimentClockStore(self.db).clock_for_epoch(
+                active.epoch_id
+            )
+            active = replace(
+                active,
+                start_utc=effective_clock.start_utc,
+                end_utc=effective_clock.end_utc,
+                duration_days=effective_clock.duration_days,
+            )
         remaining = max((active.end_utc - now).total_seconds(), 0.0)
         elapsed = max((now - active.start_utc).total_seconds(), 0.0)
         return {

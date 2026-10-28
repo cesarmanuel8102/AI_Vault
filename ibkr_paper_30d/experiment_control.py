@@ -110,8 +110,14 @@ class ExperimentClockStore:
 
     def clock_for_epoch(self, epoch_id: str) -> ExperimentClock:
         from .successor_clock import clock_for_epoch
+        from .measurement_clock import MeasurementClockStore
 
-        return clock_for_epoch(self.db, epoch_id, experiment_id=self.experiment_id)
+        base = clock_for_epoch(
+            self.db, epoch_id, experiment_id=self.experiment_id
+        )
+        return MeasurementClockStore(
+            self.db, experiment_id=self.experiment_id
+        ).effective(base)
 
     def initialize_or_load(
         self,

@@ -1285,7 +1285,7 @@ def validate_launch_controls(
             if resume_started_epoch:
                 if current.definition_sha256 != target_definition_sha256:
                     raise SuccessorEpochError("SUCCESSOR_DEFINITION_HASH_MISMATCH")
-                clock = clock_for_epoch(db, target_epoch_id)
+                clock = ExperimentClockStore(db).clock_for_epoch(target_epoch_id)
                 manifest_rows = db.execute(
                     "SELECT payload_json FROM state_events "
                     "WHERE event_type='EPOCH_MANIFEST_CREATED' "
