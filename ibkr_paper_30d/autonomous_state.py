@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from datetime import datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, localcontext
 from typing import Any, Callable, Mapping
 
 from .autonomous_research import ResearchRequest, ResearchTool
@@ -60,6 +60,32 @@ INSTRUMENT_COVERAGE_MIN_CYCLES = 10
 PROVIDER_STATE_CONTEXT_LIMIT = 5
 
 
+def _commission_adjusted_cash_matches(
+    *,
+    actual: Decimal,
+    expected: Decimal,
+    commission: Decimal,
+    quantum: Decimal,
+) -> bool:
+    """Compare broker cash without depending on ambient Decimal precision."""
+
+    values = (actual, expected, commission, quantum)
+    if not all(value.is_finite() for value in values) or quantum <= 0:
+        return False
+    fractional_places = max(0, -quantum.as_tuple().exponent)
+    integer_places = max(1, *(value.adjusted() + 1 for value in values))
+    coefficient_places = max(len(value.as_tuple().digits) for value in values)
+    with localcontext() as context:
+        context.prec = max(
+            context.prec,
+            integer_places + fractional_places + 4,
+            coefficient_places + 4,
+        )
+        return (expected - commission).quantize(quantum) == actual.quantize(
+            quantum
+        )
+
+
 def _trusted_commission_from_outcome(
     fill: Mapping[str, Any],
     authority: Mapping[str, Any],
@@ -72,13 +98,55 @@ def _trusted_commission_from_outcome(
     if (
         len(parts) != 5
         or parts[0] != "model"
-        or parts[3] != "POSITION_ACTION"
         or authority.get("event_type") != "EXECUTION_AUTHORITY_RESERVED"
-        or authority.get("operation") != "POSITION_ACTION"
         or authority.get("order_ref") != fill.get("orderRef")
         or result.get("accepted") is not True
         or result.get("validation") != "PASS"
         or result.get("invocation_id") != parts[2]
+    ):
+        return None
+    if parts[3] == "NEW_TRADE":
+        proposal = result.get("proposal")
+        validation = result.get("broker_validation")
+        evidence = (
+            validation.get("what_if") if isinstance(validation, dict) else None
+        )
+        if (
+            authority.get("operation") != "NEW_TRADE"
+            or result.get("decision") != "PROPOSE_TRADE"
+            or not isinstance(proposal, dict)
+            or not isinstance(evidence, dict)
+            or sha256_json(proposal) != parts[4]
+        ):
+            return None
+        contract = fill.get("contract") or {}
+        evidence_contract = evidence.get("contract") or {}
+        try:
+            fill_quantity = Decimal(str(fill.get("quantity") or ""))
+            proposal_quantity = Decimal(str(proposal.get("quantity") or ""))
+            commission = Decimal(str(evidence.get("commission") or ""))
+        except (ValueError, ArithmeticError):
+            return None
+        if (
+            proposal.get("capital_sleeve") != authority.get("capital_sleeve")
+            or str(proposal.get("action") or "").upper()
+            != str(fill.get("side") or "").upper()
+            or int(evidence_contract.get("conId") or 0)
+            != int(contract.get("conId") or fill.get("contract_id") or 0)
+            or str(evidence_contract.get("currency") or "").upper() != "USD"
+            or evidence.get("success") is not True
+            or evidence.get("whatIf") is not True
+            or not all(
+                value.is_finite() and value > 0
+                for value in (fill_quantity, proposal_quantity, commission)
+            )
+            or fill_quantity != proposal_quantity
+        ):
+            return None
+        return commission
+    if (
+        parts[3] != "POSITION_ACTION"
+        or authority.get("operation") != "POSITION_ACTION"
         or result.get("decision") not in {"CLOSE_POSITION", "REDUCE_POSITION"}
     ):
         return None
@@ -746,10 +814,14 @@ class AutonomousStateBuilder:
         ]
         candidates: list[tuple[dict[str, Any], dict[str, Any], Decimal, str]] = []
         for fill in self._latest_executions:
+            execution_hash = str(fill.get("execution_id_hash") or "")
             if (
                 fill.get("commission") not in {None, ""}
                 or not str(fill.get("orderRef") or "").startswith(
                     f"{EXPERIMENT_ORDER_PREFIX}-"
+                )
+                or self.sleeve_ledger_store.model_fill_commission_recorded(
+                    execution_hash
                 )
             ):
                 continue
@@ -779,8 +851,11 @@ class AutonomousStateBuilder:
             )
             if commission is None:
                 continue
-            if (expected - commission).quantize(quantum) != actual.quantize(
-                quantum
+            if not _commission_adjusted_cash_matches(
+                actual=actual,
+                expected=expected,
+                commission=commission,
+                quantum=quantum,
             ):
                 continue
             evidence_sha = sha256_json(

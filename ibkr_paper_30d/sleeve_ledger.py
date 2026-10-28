@@ -760,6 +760,30 @@ class SleeveLedgerStore:
                 evidence_sha256=evidence_sha256,
             )
 
+    def model_fill_commission_recorded(self, execution_id_sha256: str) -> bool:
+        """Return whether an imported model fill already carries a commission."""
+
+        execution_id = str(execution_id_sha256 or "")
+        events = self._events()
+        imported = [
+            event
+            for event in events
+            if event["event_type"] == "MODEL_FILL_IMPORTED"
+            and event.get("execution_id_sha256") == execution_id
+        ]
+        if len(imported) != 1:
+            return False
+        initial = normalized_decimal(
+            (imported[0].get("fill") or {}).get("commission_usd") or "0"
+        )
+        if initial > 0:
+            return True
+        return any(
+            event["event_type"] == "MODEL_FILL_COMMISSION_ADJUSTED"
+            and event.get("execution_id_sha256") == execution_id
+            for event in events
+        )
+
     def adjust_model_fill_commission_in_transaction(
         self,
         sleeve: CapitalSleeve,
@@ -815,7 +839,6 @@ class SleeveLedgerStore:
                 len(prior) == 1
                 and normalized_decimal(latest.get("effective_commission_usd"))
                 == effective
-                and latest.get("evidence_sha256") == evidence_hash
             ):
                 return SleeveLedgerReceipt(
                     event_id=latest["event_id"],

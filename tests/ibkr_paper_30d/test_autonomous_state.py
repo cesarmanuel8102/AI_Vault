@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal
+from decimal import Decimal, localcontext
 from types import SimpleNamespace
 
 import pytest
@@ -180,6 +180,7 @@ from ibkr_paper_30d.autonomous_research import ResearchResult, ResearchTool
 from ibkr_paper_30d.autonomous_state import (
     AutonomousStateBuildError,
     AutonomousStateBuilder,
+    _commission_adjusted_cash_matches,
     _trusted_commission_from_outcome,
 )
 from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
@@ -273,6 +274,55 @@ def test_missing_commission_recovery_requires_exact_accepted_outcome_binding():
     ) is None
 
 
+def test_missing_entry_commission_recovery_requires_exact_proposal_binding():
+    proposal = {
+        "action": "BUY",
+        "capital_sleeve": "REGULAR_SLEEVE",
+        "quantity": "69",
+        "symbol": "WEN",
+    }
+    invocation_id = "autonomous-entry-commission-test"
+    authority = {
+        "event_type": "EXECUTION_AUTHORITY_RESERVED",
+        "event_sha256": "b" * 64,
+        "execution_key": (
+            f"model:writer-id:{invocation_id}:NEW_TRADE:{sha256_json(proposal)}"
+        ),
+        "operation": "NEW_TRADE",
+        "order_ref": "codex-ibkr-paper-30d-a-wen",
+        "capital_sleeve": "REGULAR_SLEEVE",
+    }
+    result = {
+        "accepted": True,
+        "validation": "PASS",
+        "decision": "PROPOSE_TRADE",
+        "invocation_id": invocation_id,
+        "proposal": proposal,
+        "broker_validation": {
+            "what_if": {
+                "success": True,
+                "whatIf": True,
+                "commission": 1.000207,
+                "contract": {"conId": 90655688, "currency": "USD"},
+            }
+        },
+    }
+    fill = {
+        "execution_id_hash": "d" * 64,
+        "orderRef": "codex-ibkr-paper-30d-a-wen",
+        "side": "BUY",
+        "quantity": "69.0",
+        "contract": {"conId": 90655688},
+    }
+
+    assert _trusted_commission_from_outcome(fill, authority, result) == Decimal(
+        "1.000207"
+    )
+    assert _trusted_commission_from_outcome(
+        {**fill, "quantity": "68"}, authority, result
+    ) is None
+
+
 def test_usd_cash_values_accepts_raw_ibkr_reconciliation_snapshot_shape():
     account = {
         "cash_balance_basis": "IBKR_LEDGER_CASH_BALANCE_USD_V1",
@@ -295,6 +345,17 @@ def test_usd_cash_values_accepts_raw_ibkr_reconciliation_snapshot_shape():
         Decimal("254846.3799558"),
         Decimal("0.0001"),
     )
+
+
+def test_missing_commission_cash_comparison_ignores_ambient_decimal_precision():
+    with localcontext() as context:
+        context.prec = 6
+        assert _commission_adjusted_cash_matches(
+            actual=Decimal("254375.4615"),
+            expected=Decimal("254376.46174400000000000"),
+            commission=Decimal("1.000207"),
+            quantum=Decimal("0.01"),
+        )
 
 
 class _Dumpable:

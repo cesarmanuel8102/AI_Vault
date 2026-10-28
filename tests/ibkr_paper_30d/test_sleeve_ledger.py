@@ -267,6 +267,7 @@ def test_missing_model_fill_commission_is_adjusted_once_with_provenance(tmp_path
             "authority_event_sha256": ["a" * 64],
         }
         store.import_model_fill(sleeve, fill)
+        assert store.model_fill_commission_recorded("e" * 64) is False
         before = store.project(sleeve)
 
         first = store.adjust_model_fill_commission(
@@ -279,12 +280,13 @@ def test_missing_model_fill_commission_is_adjusted_once_with_provenance(tmp_path
             sleeve,
             execution_id_sha256="e" * 64,
             effective_commission_usd=Decimal("1.0097558"),
-            evidence_sha256="b" * 64,
+            evidence_sha256="c" * 64,
         )
         after = store.project(sleeve)
 
         assert first.duplicate is False
         assert retry.duplicate is True
+        assert store.model_fill_commission_recorded("e" * 64) is True
         assert after.balance("USD") == before.balance("USD") - Decimal("1.0097558")
         assert after.fees_usd == before.fees_usd + Decimal("1.0097558")
         assert sum(
