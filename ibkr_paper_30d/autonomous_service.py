@@ -741,11 +741,12 @@ class AutonomousExperimentService:
                 run_canary = False
             if run_canary:
                 self._regular_cycles_since_canary = 0
-                canary = (
-                    self.canary_pilot_orchestrator.discover(bundle)
-                    if canary_phase == "SUPERVISION_BOUND"
-                    else self.canary_pilot_orchestrator.execute(bundle)
-                )
+                if active_recertification:
+                    canary = self.canary_pilot_orchestrator.refresh_read_only(bundle)
+                elif canary_phase == "SUPERVISION_BOUND":
+                    canary = self.canary_pilot_orchestrator.discover(bundle)
+                else:
+                    canary = self.canary_pilot_orchestrator.execute(bundle)
             else:
                 if (canary_phase == "CANARY_EXCLUSIVE" or active_recertification) and (regular_entry or regular_management):
                     self._regular_cycles_since_canary += 1

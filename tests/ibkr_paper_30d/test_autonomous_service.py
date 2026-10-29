@@ -2332,6 +2332,14 @@ def test_canary_exclusive_fair_scheduling_allows_canary_after_regular_cycles(
                 "reason_codes": [],
             }
 
+        def refresh_read_only(self, bundle):
+            calls.append("refresh_read_only")
+            return {
+                "status": "PASS",
+                "decision": "CERTIFICATION_REFRESHED_READ_ONLY",
+                "reason_codes": [],
+            }
+
     class Bundle:
         experiment_clock = {"not_started": False, "expired": False}
         reconciliation_receipt = {"status": "PASS"}
@@ -2393,8 +2401,13 @@ def test_canary_exclusive_fair_scheduling_allows_canary_after_regular_cycles(
             assert "canary" not in result
 
         result = service._run_cycle("SCHEDULED_SCAN")
-        assert result["outcome"]["decision"] == "CANARY_EXECUTED"
-        assert calls == ["execute"]
+        expected = (
+            "CERTIFICATION_REFRESHED_READ_ONLY"
+            if phase == "ACTIVE"
+            else "CANARY_EXECUTED"
+        )
+        assert result["outcome"]["decision"] == expected
+        assert calls == ["refresh_read_only" if phase == "ACTIVE" else "execute"]
 
 
 def test_canary_exclusive_open_regular_order_defers_canary(tmp_path, monkeypatch):

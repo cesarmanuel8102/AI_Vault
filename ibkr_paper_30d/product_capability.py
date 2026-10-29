@@ -520,6 +520,87 @@ class ProductFamilyCertificationStore:
             )
         return self.projection(family)
 
+    def refresh_full_lifecycle_validity(
+        self,
+        family: ProductFamilyKey,
+        *,
+        evidence_sha256: str,
+        account_sha256: str,
+        adapter_sha256: str,
+        observed_at_utc: datetime,
+        expires_at_utc: datetime,
+        paper_limitations: tuple[str, ...],
+        runtime_authorization: Mapping[str, Any],
+    ) -> ProductExecutionCapability:
+        """Refresh a proven lifecycle using fresh, zero-write broker evidence."""
+        if len(evidence_sha256) != 64 or any(
+            char not in "0123456789abcdef" for char in evidence_sha256
+        ):
+            raise ProductCapabilityError("INVALID_EVIDENCE_SHA256")
+        _utc(observed_at_utc, "observed_at_utc")
+        _utc(expires_at_utc, "expires_at_utc")
+        if expires_at_utc <= observed_at_utc:
+            raise ProductCapabilityError("INVALID_EVIDENCE_WINDOW")
+        if not paper_limitations:
+            raise ProductCapabilityError("PAPER_LIMITATIONS_REQUIRED")
+        required = {
+            "active_recertification_release_sha256",
+            "reconciliation_status",
+            "family_open_orders",
+            "family_positions",
+            "broker_write_count",
+            "fresh_read_only_capability",
+        }
+        if not required.issubset(runtime_authorization):
+            raise ProductCapabilityError("READ_ONLY_RECERTIFICATION_UNAUTHORIZED")
+        release_sha = str(
+            runtime_authorization["active_recertification_release_sha256"]
+        )
+        safe = (
+            len(release_sha) == 64
+            and all(char in "0123456789abcdef" for char in release_sha)
+            and runtime_authorization["reconciliation_status"] == "PASS"
+            and runtime_authorization["family_open_orders"] == 0
+            and runtime_authorization["family_positions"] == 0
+            and runtime_authorization["broker_write_count"] == 0
+            and runtime_authorization["fresh_read_only_capability"] is True
+        )
+        if not safe:
+            raise ProductCapabilityError("READ_ONLY_RECERTIFICATION_UNSAFE")
+        with self.db.transaction():
+            projection = self.projection(family)
+            if projection.status is ProductFamilyCertificationStatus.REVOKED:
+                raise ProductCapabilityError("FAMILY_REVOKED")
+            if projection.status is not ProductFamilyCertificationStatus.FULL_LIFECYCLE_VERIFIED:
+                raise ProductCapabilityError("FULL_LIFECYCLE_REQUIRED")
+            if projection.account_sha256 != account_sha256:
+                raise ProductCapabilityError("ACCOUNT_MISMATCH")
+            if (
+                projection.adapter_sha256 != adapter_sha256
+                or adapter_sha256 != self.current_adapter_sha256
+            ):
+                raise ProductCapabilityError("ADAPTER_MISMATCH")
+            self._append(
+                family,
+                "CERTIFICATION_VALIDITY_REFRESHED",
+                {
+                    "evidence_sha256": evidence_sha256,
+                    "account_sha256": account_sha256,
+                    "adapter_sha256": adapter_sha256,
+                    "observed_at_utc": observed_at_utc,
+                    "expires_at_utc": expires_at_utc,
+                    "paper_limitations": list(paper_limitations),
+                    "active_recertification_release_sha256": release_sha,
+                    "reconciliation_status": "PASS",
+                    "family_open_orders": 0,
+                    "family_positions": 0,
+                    "broker_write_count": 0,
+                    "fresh_read_only_capability": True,
+                    "endpoint": "PAPER",
+                },
+            )
+        return self.projection(family)
+
     def revoke(self, family: ProductFamilyKey, *, reason: str) -> str:
         with self.db.transaction():
             return self._append(family, "REVOKED", {"reason": reason})
@@ -541,6 +622,7 @@ class ProductFamilyCertificationStore:
         adapter_hashes: set[str] = set()
         observed_values: list[datetime] = []
         expiry_values: list[datetime] = []
+        validity_refreshes: list[datetime] = []
         limitations: set[str] = set()
         revoked_reason: str | None = None
         for event in active_events:
@@ -561,6 +643,8 @@ class ProductFamilyCertificationStore:
                     observed_values.append(observed)
                 if expires is not None:
                     expiry_values.append(expires)
+                    if step == "CERTIFICATION_VALIDITY_REFRESHED":
+                        validity_refreshes.append(expires)
                 limitations.update(event.get("paper_limitations") or ())
         if len(account_hashes) > 1:
             raise ProductCapabilityError("CERTIFICATION_ACCOUNT_DRIFT")
@@ -582,7 +666,11 @@ class ProductFamilyCertificationStore:
             account_sha256=next(iter(account_hashes), None),
             adapter_sha256=next(iter(adapter_hashes), None),
             observed_at_utc=max(observed_values) if observed_values else None,
-            expires_at_utc=min(expiry_values) if expiry_values else None,
+            expires_at_utc=(
+                validity_refreshes[-1]
+                if validity_refreshes
+                else (min(expiry_values) if expiry_values else None)
+            ),
             paper_limitations=tuple(sorted(limitations)),
             executable=status is ProductFamilyCertificationStatus.FULL_LIFECYCLE_VERIFIED,
             revoked_reason=revoked_reason,

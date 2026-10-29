@@ -2811,6 +2811,41 @@ def test_lock_heartbeat_retries_transient_sqlite_contention(
     assert evidence == []
 
 
+def test_lock_heartbeat_protects_prelaunch_before_service_is_constructed(
+    tmp_path: Path,
+) -> None:
+    ctx = passing_context(tmp_path)
+    accepted = SimpleNamespace(accepted=True, reason="ACCEPTED")
+    heartbeat_calls = 0
+
+    class AcceptedHeartbeat:
+        def heartbeat(self, receipt):
+            nonlocal heartbeat_calls
+            heartbeat_calls += 1
+            return accepted
+
+    ctx.dependencies.lock_factory = lambda _db: AcceptedHeartbeat()
+    worker = launch_module._LockHeartbeat(
+        config=ctx.config,
+        dependencies=ctx.dependencies,
+        receipt=SimpleNamespace(),
+        interval_seconds=0.01,
+    )
+
+    worker.start()
+    deadline = time.time() + 1.0
+    while heartbeat_calls == 0 and time.time() < deadline:
+        time.sleep(0.01)
+
+    service = Mock()
+    worker.attach_service(service)
+    worker.stop()
+
+    assert heartbeat_calls >= 1
+    assert not service.stop.called
+    assert worker.failure_code is None
+
+
 def test_lock_heartbeat_survives_extended_local_sqlite_contention(
     tmp_path: Path, monkeypatch
 ) -> None:

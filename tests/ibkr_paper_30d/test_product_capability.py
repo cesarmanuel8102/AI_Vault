@@ -281,6 +281,48 @@ def test_family_scope_account_adapter_staleness_and_revocation_are_local(tmp_pat
         db.close()
 
 
+def test_expired_full_lifecycle_can_be_refreshed_with_zero_write_evidence(
+    tmp_path,
+) -> None:
+    db, store = _store(tmp_path)
+    family = _family("CRYPTO", "PAXOS")
+    try:
+        _full(store, family)
+        refresh_time = NOW + timedelta(days=2)
+        valid_until = NOW + timedelta(days=30)
+
+        refreshed = store.refresh_full_lifecycle_validity(
+            family,
+            evidence_sha256="9" * 64,
+            account_sha256=ACCOUNT,
+            adapter_sha256=ADAPTER,
+            observed_at_utc=refresh_time,
+            expires_at_utc=valid_until,
+            paper_limitations=("PAPER_SIMULATION_ONLY",),
+            runtime_authorization={
+                "active_recertification_release_sha256": "8" * 64,
+                "reconciliation_status": "PASS",
+                "family_open_orders": 0,
+                "family_positions": 0,
+                "broker_write_count": 0,
+                "fresh_read_only_capability": True,
+            },
+        )
+
+        assert refreshed.status is ProductFamilyCertificationStatus.FULL_LIFECYCLE_VERIFIED
+        assert refreshed.completed_steps == CERTIFICATION_SEQUENCE
+        assert refreshed.expires_at_utc == valid_until
+        assert store.assert_executable(family, refresh_time, ACCOUNT).executable is True
+        event = db.execute(
+            "SELECT event_type,payload_json FROM product_family_certification_events "
+            "ORDER BY sequence DESC LIMIT 1"
+        ).fetchone()
+        assert event[0] == "CERTIFICATION_VALIDITY_REFRESHED"
+        assert json.loads(str(event[1]))["broker_write_count"] == 0
+    finally:
+        db.close()
+
+
 def test_research_only_certification_restarts_on_adapter_change(tmp_path) -> None:
     db, store = _store(tmp_path)
     family = _family("CRYPTO", "PAXOS")

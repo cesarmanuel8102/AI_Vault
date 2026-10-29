@@ -609,12 +609,13 @@ def _validate_multi_universe_launch_from_db(
     current_head = _current_git_commit(config.repo_root)
     recertification_release = None
     if phase is TransitionPhase.ACTIVE:
-        from .kernel_manifest import verify_kernel_manifest
-        kernel = verify_kernel_manifest(config.repo_root, json.loads(
-            (config.repo_root / "IMMUTABLE_EXECUTION_KERNEL_MANIFEST.json").read_text()))
-        if kernel.get("verified") is True:
-            recertification_release = transition_coordinator.active_recertification_release_sha256(
-                preflight.expected_account_hash, current_head, str(kernel["actual_sha256"]))
+        from .epoch_manifest import PRODUCT_ADAPTER_CONTRACT_SHA256
+
+        recertification_release = transition_coordinator.active_recertification_release_sha256(
+            preflight.expected_account_hash,
+            current_head,
+            PRODUCT_ADAPTER_CONTRACT_SHA256,
+        )
     bindings = _multi_universe_authority_bindings(db, target, phase,
         recertification_release_sha256=recertification_release)
     evidence = MultiUniverseLaunchEvidence(
@@ -1482,7 +1483,7 @@ class _LockHeartbeat:
         config: Day1LaunchConfig,
         dependencies: LaunchDependencies,
         receipt: Any,
-        service: Any,
+        service: Any | None = None,
         interval_seconds: float = 30.0,
     ) -> None:
         self.config = config
@@ -1502,6 +1503,13 @@ class _LockHeartbeat:
             1.0,
             DEFAULT_STALE_AFTER.total_seconds() - interval_seconds,
         )
+
+    def attach_service(self, service: Any) -> None:
+        self.service = service
+        if self.failure_code is not None:
+            stop = getattr(service, "stop", None)
+            if callable(stop):
+                stop()
 
     def start(self) -> None:
         self.thread.start()
@@ -2066,6 +2074,13 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
         if not receipt.acquired:
             raise LaunchError("EXECUTION_LOCK_OWNER_ACTION_REQUIRED")
 
+        heartbeat = _LockHeartbeat(
+            config=config,
+            dependencies=dependencies,
+            receipt=receipt,
+        )
+        heartbeat.start()
+
         transition: SuccessorTransitionResult | None = None
         prepared: PreparedEpochLaunch | None = None
         try:
@@ -2476,17 +2491,10 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                             "started_at_utc": datetime.now(timezone.utc),
                         },
                     )
-                heartbeat = _LockHeartbeat(
-                    config=config,
-                    dependencies=dependencies,
-                    receipt=receipt,
-                    service=service,
-                )
-                heartbeat.start()
-                try:
-                    service.run_forever()
-                finally:
-                    heartbeat.stop()
+                heartbeat.attach_service(service)
+                if heartbeat.failure_code is not None:
+                    raise LaunchError("EXECUTION_LOCK_OWNER_ACTION_REQUIRED")
+                service.run_forever()
                 if heartbeat.failure_code is not None:
                     raise LaunchError("EXECUTION_LOCK_OWNER_ACTION_REQUIRED")
             except BaseException as exc:
@@ -2521,6 +2529,7 @@ def run_day1_launch(config: Day1LaunchConfig, dependencies: LaunchDependencies) 
                     ) from audit_exc
             raise
         finally:
+            heartbeat.stop()
             lock.release(receipt)
 
 

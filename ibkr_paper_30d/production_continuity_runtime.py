@@ -1093,6 +1093,66 @@ def create_canary_pilot_orchestrator(
             paper_limitations=("PAPER_SIMULATION_ONLY",),
         )
 
+    def finalize_read_only_recertification(
+        proposal: Any,
+        evidence: Mapping[str, Any],
+        *,
+        bundle: Any | None = None,
+    ) -> None:
+        if bundle is None:
+            raise ProductionRuntimeConfigurationError(
+                "READ_ONLY_RECERTIFICATION_BUNDLE_REQUIRED"
+            )
+        reconciliation = getattr(bundle, "reconciliation_receipt", None) or {}
+        order_count, position_count = _canary_family_exposure(bundle, proposal)
+        from .multi_universe_transition import MultiUniverseTransitionCoordinator
+
+        release_sha = MultiUniverseTransitionCoordinator(
+            product_certification_store.db
+        ).active_recertification_release_sha256(
+            proposal.account_identity_sha256,
+            effective_approved_head,
+            product_certification_store.current_adapter_sha256,
+        )
+        clock = getattr(bundle, "experiment_clock", None) or {}
+        valid_until_raw = clock.get("end_utc")
+        if not isinstance(valid_until_raw, str):
+            raise ProductionRuntimeConfigurationError(
+                "READ_ONLY_RECERTIFICATION_CLOCK_REQUIRED"
+            )
+        valid_until = datetime.fromisoformat(valid_until_raw.replace("Z", "+00:00"))
+        observed = evidence.get("observed_at_utc")
+        if isinstance(observed, str):
+            observed = datetime.fromisoformat(observed.replace("Z", "+00:00"))
+        if (
+            release_sha is None
+            or reconciliation.get("status") != "PASS"
+            or not isinstance(observed, datetime)
+            or observed.tzinfo is None
+            or valid_until.tzinfo is None
+            or valid_until <= observed
+        ):
+            raise ProductionRuntimeConfigurationError(
+                "READ_ONLY_RECERTIFICATION_UNSAFE"
+            )
+        product_certification_store.refresh_full_lifecycle_validity(
+            proposal.product_family,
+            evidence_sha256=sha256_json(evidence),
+            account_sha256=proposal.account_identity_sha256,
+            adapter_sha256=product_certification_store.current_adapter_sha256,
+            observed_at_utc=observed,
+            expires_at_utc=valid_until,
+            paper_limitations=("PAPER_SIMULATION_ONLY",),
+            runtime_authorization={
+                "active_recertification_release_sha256": release_sha,
+                "reconciliation_status": "PASS",
+                "family_open_orders": order_count,
+                "family_positions": position_count,
+                "broker_write_count": evidence.get("broker_write_count"),
+                "fresh_read_only_capability": evidence.get("fresh") is True,
+            },
+        )
+
     orchestrator = CanaryPilotOrchestrator(
         discovery_runner=discover,
         capability_evidence_collector=capability,
@@ -1105,6 +1165,7 @@ def create_canary_pilot_orchestrator(
         now_utc=lambda: datetime.now(timezone.utc),
         candidate_finalizer=finalize_candidate,
         lifecycle_finalizer=finalize_lifecycle,
+        read_only_recertification_finalizer=finalize_read_only_recertification,
     )
     def recertification_required() -> bool:
         from .multi_universe_transition import MultiUniverseTransitionCoordinator
@@ -3235,11 +3296,14 @@ class _ProductionCanaryStore:
             ).fetchone()
             active_release = None
             if transition_row is not None and str(transition_row[0]) == "ACTIVE":
+                from .epoch_manifest import PRODUCT_ADAPTER_CONTRACT_SHA256
                 from .multi_universe_transition import MultiUniverseTransitionCoordinator
                 root = self.db_path.resolve().parents[2]
-                kernel = json.loads((root / "IMMUTABLE_EXECUTION_KERNEL_MANIFEST.json").read_text())
                 active_release = MultiUniverseTransitionCoordinator(db).active_recertification_release_sha256(
-                    request.account_identity_sha256, _current_head(root), kernel["kernel_manifest_sha256"])
+                    request.account_identity_sha256,
+                    _current_head(root),
+                    PRODUCT_ADAPTER_CONTRACT_SHA256,
+                )
         if transition_row is None:
             return {"fresh": False}
         transition_payload = json.loads(str(transition_row[1]))

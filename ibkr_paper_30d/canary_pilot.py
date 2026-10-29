@@ -220,6 +220,7 @@ class CanaryPilotOrchestrator:
         | None = None,
         lifecycle_finalizer: Callable[[Any, CanaryExecutionResult], None]
         | None = None,
+        read_only_recertification_finalizer: Callable[..., None] | None = None,
         result_timeout_seconds: float = 300.0,
         recovery_cooldown_seconds: float = 300.0,
     ) -> None:
@@ -241,6 +242,10 @@ class CanaryPilotOrchestrator:
         )
         self.lifecycle_finalizer = lifecycle_finalizer or (
             lambda _proposal, _result: None
+        )
+        self.read_only_recertification_finalizer = (
+            read_only_recertification_finalizer
+            or (lambda _proposal, _evidence, *, bundle=None: None)
         )
         self.result_timeout_seconds = result_timeout_seconds
         self.recovery_cooldown_seconds = recovery_cooldown_seconds
@@ -610,3 +615,62 @@ class CanaryPilotOrchestrator:
             result,
             authorization_sha256=authorization.sha256,
         )
+
+    def refresh_read_only(self, bundle: Any) -> dict[str, Any]:
+        """Refresh static lifecycle validity without crossing the write boundary."""
+        stored = self.store.load_candidate()
+        if stored is None or stored[0].proposal is None:
+            return self._block("READ_ONLY_RECERTIFICATION_CANDIDATE_REQUIRED")
+        proposal = stored[0].proposal
+        evidence = dict(self.capability_evidence_collector(bundle, proposal))
+        expected = {
+            "invocation_id": proposal.invocation_id,
+            "invocation_sha256": proposal.invocation_sha256,
+            "result_sha256": proposal.result_sha256,
+            "account_identity_sha256": proposal.account_identity_sha256,
+            "successor_definition_sha256": proposal.successor_definition_sha256,
+            "approved_head": proposal.approved_head,
+            "product_family_sha256": proposal.product_family.sha256,
+            "contract_identity_sha256": proposal.canonical_contract.sha256,
+        }
+        now = self.now_utc()
+        expires = evidence.get("expires_at_utc")
+        if isinstance(expires, str):
+            expires = datetime.fromisoformat(expires.replace("Z", "+00:00"))
+        safe = (
+            all(evidence.get(key) == value for key, value in expected.items())
+            and evidence.get("paper_only") is True
+            and evidence.get("fresh") is True
+            and evidence.get("broker_write_count") == 0
+            and evidence.get("contract_qualified") is True
+            and evidence.get("market_data_verified") is True
+            and evidence.get("broker_feasibility_verified") is True
+            and isinstance(expires, datetime)
+            and expires.tzinfo is not None
+            and now < expires
+        )
+        if not safe:
+            return self._block("READ_ONLY_RECERTIFICATION_EVIDENCE_INVALID")
+        try:
+            self.read_only_recertification_finalizer(
+                proposal, evidence, bundle=bundle
+            )
+        except Exception:
+            return self._block("READ_ONLY_RECERTIFICATION_FINALIZATION_FAILED")
+        self.store.persist_discovery_event(
+            "CERTIFICATION_REFRESHED_READ_ONLY",
+            {
+                "candidate_sha256": proposal.sha256,
+                "evidence_sha256": sha256_json(evidence),
+                "broker_write_count": 0,
+                "observed_at_utc": now.isoformat(),
+            },
+        )
+        return {
+            "schema": "CANARY_PILOT_ORCHESTRATION_RESULT_V1",
+            "status": "PASS",
+            "decision": "CERTIFICATION_REFRESHED_READ_ONLY",
+            "reason_codes": [],
+            "candidate_sha256": proposal.sha256,
+            "broker_write_count": 0,
+        }
