@@ -8,6 +8,7 @@ import pytest
 
 from ibkr_paper_30d.cli import (
     _market_behavior,
+    _raw_usd_ledger_cash,
     _required_summary_complete,
     _sanitized_account_facts,
     _settled_cash,
@@ -330,3 +331,13 @@ def test_reconciliation_requires_all_authorized_account_summary_fields() -> None
     complete["SettledCashByDate"] = "20260920:500.00"
     assert _required_summary_complete(complete) is True
     assert _settled_cash(complete) == "500.00"
+
+
+def test_raw_ledger_cash_is_distinct_from_total_cash_value() -> None:
+    summary = {
+        "TotalCashValue": "253376.20",
+        "$LEDGER-CashBalance": "254862.2813008",
+    }
+
+    assert _raw_usd_ledger_cash(summary) == "254862.2813008"
+    assert _raw_usd_ledger_cash({"TotalCashValue": "253376.20"}) is None

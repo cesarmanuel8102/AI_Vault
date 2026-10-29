@@ -233,6 +233,7 @@ def inspect_readonly(
         "account_summary_consistent": account_summary_consistent,
         "account_summary_complete": summary_complete,
         "cash": snapshot.cash,
+        "ledger_cash_balance_usd": _raw_usd_ledger_cash(selected_summary),
         "settled_cash": snapshot.settled_cash,
         "buying_power": selected_summary.get("BuyingPower"),
         "net_liquidation": selected_summary.get("NetLiquidation"),
@@ -593,6 +594,11 @@ def _settled_cash(summary: dict[str, str]) -> str | None:
     dated = summary.get("SettledCashByDate", "")
     match = re.fullmatch(r"\d{8}:([-+]?\d+(?:\.\d+)?)", dated)
     return match.group(1) if match else None
+
+
+def _raw_usd_ledger_cash(summary: dict[str, str]) -> str | None:
+    value = summary.get("$LEDGER-CashBalance")
+    return str(value) if value not in {None, ""} else None
 
 
 def _redacted_errors(errors: Sequence[dict[str, object]]) -> list[dict[str, object]]:
