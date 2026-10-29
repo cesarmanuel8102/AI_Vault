@@ -866,6 +866,34 @@ def test_transient_codex_exit_one_is_retried_before_any_turn_is_accepted():
     assert provider.last_failure_code is None
 
 
+def test_terminal_codex_failure_preserves_stderr_diagnostic():
+    value = bundle()
+
+    def runner(command, **kwargs):
+        return subprocess.CompletedProcess(
+            command,
+            1,
+            stdout="",
+            stderr="remote service rejected the production payload",
+        )
+
+    provider = CodexAutonomousCLIProvider(
+        runner=runner,
+        retry_sleep=lambda _seconds: None,
+        owner_model_attestation_exception_sha256="e" * 64,
+    )
+
+    with pytest.raises(RuntimeError, match="AUTONOMOUS_CODEX_PROVIDER_FAILED"):
+        provider.next_turn(
+            request(value), value, [], [{"tool": "MARKET_SCANNER"}]
+        )
+
+    assert provider.last_failure_code == "RETURN_CODE_1"
+    assert provider.last_failure_detail == (
+        "remote service rejected the production payload"
+    )
+
+
 def test_invalid_jsonl_is_reported_as_provider_protocol_error_not_substitution():
     value = bundle()
 

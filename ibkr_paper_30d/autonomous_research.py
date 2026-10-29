@@ -56,6 +56,11 @@ def _resolve_codex_executable() -> str:
     raise FileNotFoundError("CODEX_CLI_EXECUTABLE_NOT_FOUND")
 
 
+def _provider_failure_detail(completed: subprocess.CompletedProcess[str]) -> str | None:
+    detail = (completed.stderr or completed.stdout or "").strip()
+    return detail[-2000:] if detail else None
+
+
 class ResearchTool(str, Enum):
     ACCOUNT_STATE = "ACCOUNT_STATE"
     POSITIONS = "POSITIONS"
@@ -760,6 +765,7 @@ class CodexAutonomousCLIProvider:
                             raise
                         break
                     self.last_failure_code = f"RETURN_CODE_{completed.returncode}"
+                    self.last_failure_detail = _provider_failure_detail(completed)
                     if completed.returncode != 1 or attempt == len(retry_delays):
                         raise RuntimeError("AUTONOMOUS_CODEX_PROVIDER_FAILED")
                     self.retry_sleep(retry_delays[attempt])
@@ -941,6 +947,7 @@ class CodexAutonomousCLIProvider:
                         self.last_failure_code = (
                             f"RETURN_CODE_{completed.returncode}"
                         )
+                        self.last_failure_detail = _provider_failure_detail(completed)
                         if completed.returncode != 1 or attempt == len(
                             retry_delays
                         ):
