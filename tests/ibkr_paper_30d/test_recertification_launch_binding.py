@@ -7,7 +7,15 @@ from ibkr_paper_30d.day1_launch import _multi_universe_authority_bindings
 from ibkr_paper_30d.multi_universe_models import TransitionPhase
 
 
-@pytest.mark.parametrize('authorized,last,expected',[(True,'BOUNDED_ECONOMICS_VERIFIED',True),(False,'BOUNDED_ECONOMICS_VERIFIED',False),(True,'REVOKED',False)])
+@pytest.mark.parametrize(
+    'authorized,last,expected',
+    [
+        (True, 'BOUNDED_ECONOMICS_VERIFIED', True),
+        (True, 'CERTIFICATION_VALIDITY_REFRESHED', True),
+        (False, 'BOUNDED_ECONOMICS_VERIFIED', False),
+        (True, 'REVOKED', False),
+    ],
+)
 def test_partial_recertification_keeps_only_authorized_historical_launch_binding(monkeypatch,authorized,last,expected):
     import ibkr_paper_30d.multi_universe_authority as module
     target=_launch_transition_target()

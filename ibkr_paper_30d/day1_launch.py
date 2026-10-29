@@ -493,8 +493,14 @@ def _multi_universe_authority_bindings(
             historical_completed.add(str(family_sha))
         elif event_type == "REVOKED":
             historical_completed.discard(str(family_sha))
-    partial_stages = {"CONTRACT_QUALIFIED", "PERMISSIONS_VERIFIED", "MARKET_DATA_VERIFIED",
-                      "ORDER_SEMANTICS_VERIFIED", "BOUNDED_ECONOMICS_VERIFIED"}
+    recertification_stages = {
+        "CONTRACT_QUALIFIED",
+        "PERMISSIONS_VERIFIED",
+        "MARKET_DATA_VERIFIED",
+        "ORDER_SEMANTICS_VERIFIED",
+        "BOUNDED_ECONOMICS_VERIFIED",
+        "CERTIFICATION_VALIDITY_REFRESHED",
+    }
     authorized_recertification = (phase is TransitionPhase.ACTIVE
         and recertification_release_sha256 is not None
         and _SHA256_RE.fullmatch(recertification_release_sha256) is not None)
@@ -502,7 +508,8 @@ def _multi_universe_authority_bindings(
         family_sha
         for family_sha, event_type in family_state.items()
         if event_type == "ECONOMICS_RECONCILED" or (authorized_recertification
-            and family_sha in historical_completed and event_type in partial_stages)
+            and family_sha in historical_completed
+            and event_type in recertification_stages)
     )
     certified_set_sha256 = sha256_json(certified)
     expected_certified_set_sha256 = target.certified_family_set_sha256
