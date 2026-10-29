@@ -61,6 +61,92 @@ def _provider_failure_detail(completed: subprocess.CompletedProcess[str]) -> str
     return detail[-2000:] if detail else None
 
 
+MAX_PROVIDER_PROMPT_BYTES = 700_000
+
+
+def _history_receipt(item: Any) -> dict[str, Any]:
+    value = item if isinstance(item, dict) else {"value": item}
+    return {
+        "round": value.get("round"),
+        "type": "compacted_history_receipt",
+        "payload": {
+            "original_type": value.get("type"),
+            "source_payload_sha256": sha256_json(value),
+            "instruction": (
+                "Older evidence was compacted to keep the provider request bounded. "
+                "Re-query narrowly if its full contents are still decision-relevant."
+            ),
+        },
+    }
+
+
+def _prior_decision_receipt(item: Any) -> dict[str, Any]:
+    value = item if isinstance(item, dict) else {"value": item}
+    reasons = value.get("reason_codes")
+    return {
+        "decision_cycle_id": str(value.get("decision_cycle_id") or "")[:128],
+        "decision": str(value.get("decision") or "")[:32],
+        "accepted": value.get("accepted"),
+        "reason_codes": [str(reason)[:128] for reason in reasons[:8]]
+        if isinstance(reasons, list)
+        else [],
+        "source_payload_sha256": sha256_json(value),
+        "compacted": True,
+    }
+
+
+def _fit_provider_prompt(payload: dict[str, Any]) -> dict[str, Any]:
+    """Bound model context while retaining current state and newest evidence."""
+
+    fitted = copy.deepcopy(payload)
+    history = fitted.get("research_history")
+    if not isinstance(history, list):
+        history = []
+        fitted["research_history"] = history
+    previous = (fitted.get("bundle") or {}).get(
+        "relevant_previous_immutable_decisions"
+    )
+    if not isinstance(previous, list):
+        previous = []
+
+    metadata = {
+        "applied": False,
+        "maximum_bytes": MAX_PROVIDER_PROMPT_BYTES,
+        "omitted_payloads": 0,
+        "policy": "OLDEST_FIRST_HASH_RECEIPTS_CURRENT_STATE_AND_NEWEST_EVIDENCE_PRESERVED",
+        "final_bytes": 0,
+    }
+    fitted["prompt_context_compaction"] = metadata
+
+    for index, item in enumerate(history):
+        if len(canonical_bytes(fitted)) <= MAX_PROVIDER_PROMPT_BYTES:
+            break
+        if isinstance(item, dict) and item.get("type") == "compacted_history_receipt":
+            continue
+        history[index] = _history_receipt(item)
+        metadata["applied"] = True
+        metadata["omitted_payloads"] += 1
+
+    for index, item in enumerate(previous):
+        if len(canonical_bytes(fitted)) <= MAX_PROVIDER_PROMPT_BYTES:
+            break
+        if isinstance(item, dict) and item.get("compacted") is True:
+            continue
+        previous[index] = _prior_decision_receipt(item)
+        metadata["applied"] = True
+        metadata["omitted_payloads"] += 1
+
+    final_size = len(canonical_bytes(fitted))
+    metadata["final_bytes"] = final_size
+    final_size = len(canonical_bytes(fitted))
+    metadata["final_bytes"] = final_size
+    if final_size > MAX_PROVIDER_PROMPT_BYTES:
+        raise RuntimeError(
+            f"AUTONOMOUS_PROMPT_FIXED_CONTEXT_TOO_LARGE:{final_size}"
+        )
+    return fitted
+
+
 class ResearchTool(str, Enum):
     ACCOUNT_STATE = "ACCOUNT_STATE"
     POSITIONS = "POSITIONS"
@@ -1047,7 +1133,7 @@ class CodexAutonomousCLIProvider:
         toolbox_manifest: list[dict[str, Any]],
     ) -> dict[str, Any]:
         host_candidate_bindings = build_canary_candidate_bindings(request)
-        return {
+        payload = {
             "schema": "CODEX_CANARY_CANDIDATE_DISCOVERY_V1",
             "host_clock": {
                 "utc_at_prompt_build": datetime.now(timezone.utc).isoformat().replace(
@@ -1138,6 +1224,7 @@ class CodexAutonomousCLIProvider:
                 ),
             },
         }
+        return _fit_provider_prompt(payload)
 
     @staticmethod
     def _semantic_validation_errors(exc: Exception) -> list[dict[str, Any]]:
@@ -1400,7 +1487,7 @@ class CodexAutonomousCLIProvider:
             payload["workspace_context"] = workspace_context
         if first_process_bootstrap:
             payload["first_process_bootstrap"] = first_process_bootstrap
-        return payload
+        return _fit_provider_prompt(payload)
 
     @staticmethod
     def strict_output_schema() -> dict[str, Any]:

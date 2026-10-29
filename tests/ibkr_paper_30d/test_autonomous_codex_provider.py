@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from ibkr_paper_30d.canonical import sha256_json
+from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.autonomous_research import (
     AutonomousTradeProposal,
     CodexAutonomousCLIProvider,
@@ -154,6 +154,76 @@ def test_prompt_exposes_both_sleeves_and_capabilities_without_host_recommendatio
     assert payload["bundle"]["multi_sleeve_portfolio"] == value.multi_sleeve_portfolio
     assert payload["mandate"]["predefined_symbol_universe"] is False
     assert payload["mandate"]["predefined_strategy_family"] is False
+
+
+def test_prompt_compacts_old_research_evidence_before_provider_limit() -> None:
+    value = bundle().model_copy(
+        update={
+            "relevant_previous_immutable_decisions": [
+                {
+                    "decision_cycle_id": f"prior-{index}",
+                    "decision": "NO_TRADE",
+                    "reasoning": "p" * 40_000,
+                }
+                for index in range(8)
+            ]
+        }
+    )
+    history = [
+        {
+            "round": index,
+            "type": "research_result",
+            "payload": {"symbol": f"SYM{index}", "evidence": "x" * 100_000},
+        }
+        for index in range(12)
+    ]
+    original_history = json.loads(json.dumps(history))
+
+    payload = CodexAutonomousCLIProvider._prompt_payload(
+        request(value), value, history, []
+    )
+
+    assert len(canonical_bytes(payload)) <= 700_000
+    assert history == original_history
+    assert payload["research_history"][-1] == history[-1]
+    assert any(
+        item["type"] == "compacted_history_receipt"
+        for item in payload["research_history"]
+    )
+    assert payload["prompt_context_compaction"]["applied"] is True
+    assert payload["prompt_context_compaction"]["omitted_payloads"] > 0
+
+
+def test_canary_prompt_uses_same_bounded_context_policy() -> None:
+    value = bundle()
+    invocation = request(value).model_copy(
+        update={
+            "model_configuration": {
+                "mode": "host-mediated-autonomous-research",
+                "canary_authority_context": {
+                    "account_identity_sha256": "a" * 64,
+                    "successor_definition_sha256": "b" * 64,
+                    "approved_head": "c" * 40,
+                },
+            }
+        }
+    )
+    history = [
+        {
+            "round": index,
+            "type": "research_result",
+            "payload": {"evidence": "x" * 120_000},
+        }
+        for index in range(10)
+    ]
+
+    payload = CodexAutonomousCLIProvider._canary_prompt_payload(
+        invocation, value, history, []
+    )
+
+    assert len(canonical_bytes(payload)) <= 700_000
+    assert payload["research_history"][-1] == history[-1]
+    assert payload["prompt_context_compaction"]["applied"] is True
 
 
 def test_prompt_exposes_host_derived_continuity_provenance_bindings() -> None:
