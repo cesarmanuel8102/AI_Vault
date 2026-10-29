@@ -619,6 +619,12 @@ class CanaryPilotOrchestrator:
     def refresh_read_only(self, bundle: Any) -> dict[str, Any]:
         """Refresh static lifecycle validity without crossing the write boundary."""
         stored = self.store.load_candidate()
+        if stored is None:
+            load_last_successful = getattr(
+                self.store, "load_last_successful_candidate", None
+            )
+            if callable(load_last_successful):
+                stored = load_last_successful()
         if stored is None or stored[0].proposal is None:
             return self._block("READ_ONLY_RECERTIFICATION_CANDIDATE_REQUIRED")
         proposal = stored[0].proposal

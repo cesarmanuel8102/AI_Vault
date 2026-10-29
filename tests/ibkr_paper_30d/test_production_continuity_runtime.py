@@ -280,6 +280,7 @@ def test_production_canary_store_round_trips_selected_candidate_and_result(
     assert loaded[2] == validation
     assert store.load_result(proposal.sha256) == payload
     assert store.load_candidate() is None
+    assert store.load_last_successful_candidate()[0] == outcome
     assert store.has_orphaned_durable_state() is True
 
 

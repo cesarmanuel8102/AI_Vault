@@ -3042,6 +3042,47 @@ class _ProductionCanaryStore:
         )
         return outcome, dict(selected.get("capability_evidence") or {}), validation
 
+    def load_last_successful_candidate(self) -> tuple[Any, dict[str, Any], Any] | None:
+        from .canary_candidate import (
+            CanaryCandidateValidationReceipt,
+            CanaryDiscoveryOutcome,
+        )
+
+        with Database.open(self.db_path) as db:
+            events = self._verified_events(db)
+        candidate_sha256 = next(
+            (
+                str(event.get("candidate_sha256") or "")
+                for event in reversed(events)
+                if event.get("event_type") == "CANARY_RESULT"
+                and self._completed_canary_result(event.get("result") or {})
+                and event.get("candidate_sha256")
+            ),
+            "",
+        )
+        if not candidate_sha256:
+            return None
+        selected = next(
+            (
+                event
+                for event in reversed(events)
+                if event.get("event_type") == "CANDIDATE_SELECTED"
+                and event.get("candidate_sha256") == candidate_sha256
+            ),
+            None,
+        )
+        if selected is None:
+            raise ProductionRuntimeConfigurationError(
+                "CANARY_SUCCESSFUL_CANDIDATE_MISSING"
+            )
+        outcome = CanaryDiscoveryOutcome.model_validate(selected.get("outcome"))
+        if outcome.proposal is None or outcome.proposal.sha256 != candidate_sha256:
+            raise ProductionRuntimeConfigurationError("CANARY_CANDIDATE_HASH_MISMATCH")
+        validation = CanaryCandidateValidationReceipt.model_validate(
+            selected.get("validation")
+        )
+        return outcome, dict(selected.get("capability_evidence") or {}), validation
+
     def persist_result(self, candidate_sha256: str, result: Mapping[str, Any]) -> str:
         with Database.open(self.db_path) as db, db.transaction():
             existing = next(

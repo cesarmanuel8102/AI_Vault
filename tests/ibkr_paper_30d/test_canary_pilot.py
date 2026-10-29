@@ -132,6 +132,7 @@ def _evidence(proposal: CanaryCandidateProposal) -> dict:
 class Store:
     def __init__(self):
         self.candidate = None
+        self.last_successful_candidate = None
         self.result = None
         self.request = None
         self.claimed_execution_keys = set()
@@ -141,6 +142,9 @@ class Store:
 
     def load_candidate(self):
         return self.candidate
+
+    def load_last_successful_candidate(self):
+        return self.last_successful_candidate
 
     def persist_candidate(self, outcome, evidence, validation):
         self.candidate = (outcome, evidence, validation)
@@ -325,6 +329,48 @@ def test_read_only_refresh_never_submits_an_order() -> None:
     assert result["broker_write_count"] == 0
     assert len(finalized) == 1
     assert coordinator.requests == []
+
+
+def test_read_only_refresh_reuses_last_successful_candidate_when_active_is_retired() -> None:
+    proposal = _proposal()
+    outcome = CanaryDiscoveryOutcome(
+        decision="CANDIDATE",
+        invocation_sha256=proposal.invocation_sha256,
+        result_sha256=proposal.result_sha256,
+        transcript_sha256=sha256_json([]),
+        proposal=proposal,
+    )
+    store = Store()
+    store.last_successful_candidate = (outcome, _evidence(proposal), object())
+    coordinator = Coordinator(
+        lambda _request: (_ for _ in ()).throw(
+            AssertionError("read-only refresh must not submit")
+        )
+    )
+    finalized = []
+    controller = CanaryPilotOrchestrator(
+        discovery_runner=lambda *_args: (_ for _ in ()).throw(
+            AssertionError("read-only refresh must not rediscover")
+        ),
+        capability_evidence_collector=lambda _bundle, actual: _evidence(actual),
+        store=store,
+        coordinator=coordinator,
+        owner_pilot_authorization=_owner(),
+        writer_binding_sha256=WRITER,
+        durable_sequence_allocator=lambda: 1,
+        now_utc=lambda: NOW + timedelta(seconds=1),
+        read_only_recertification_finalizer=lambda *args, **kwargs: finalized.append(
+            (args, kwargs)
+        ),
+    )
+
+    result = controller.refresh_read_only(object())
+
+    assert result["status"] == "PASS"
+    assert result["decision"] == "CERTIFICATION_REFRESHED_READ_ONLY"
+    assert result["candidate_sha256"] == proposal.sha256
+    assert coordinator.requests == []
+    assert len(finalized) == 1
 
 
 def test_execution_finalizes_and_persists_recovered_terminal_result() -> None:
