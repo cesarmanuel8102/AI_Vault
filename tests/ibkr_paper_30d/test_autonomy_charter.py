@@ -199,6 +199,33 @@ def test_persistence_language_without_forced_trading():
         assert forbidden not in text, forbidden
 
 
+def test_repeated_uncertainty_requires_autonomous_closure_without_prescribing_method():
+    payload = charter()
+    policy = payload["mandate"]["autonomous_uncertainty_closure"]
+    text = instruction_text(payload).lower()
+
+    assert policy["resolution_method"] == "MODEL_AUTONOMOUS"
+    assert policy["allowed_responses"] == [
+        "RESOLVE_EVIDENCE_GAP",
+        "CHANGE_METHODOLOGY",
+        "REDIRECT_ATTENTION",
+    ]
+    assert policy["does_not_require_trade"] is True
+    assert "repeats across cycles without material new information" in text
+    assert "method or tool you select" in text
+    assert "replace the methodology" in text
+    assert "redirect attention to a different opportunity" in text
+    assert "material new information or positive expected information value" in text
+    assert "does not prescribe" in text
+    for forbidden in (
+        "host-selected method",
+        "must trade",
+        "required to trade",
+        "mandatory trade",
+    ):
+        assert forbidden not in text, forbidden
+
+
 def test_instrument_coverage_diagnostics_preserve_model_choice():
     text = instruction_text(charter()).lower()
     assert (

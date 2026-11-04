@@ -1315,6 +1315,19 @@ class CodexAutonomousCLIProvider:
                     "track_idle_capital_opportunity_cost": True,
                     "adapt_methodology_when_trajectory_is_insufficient": True,
                 },
+                "autonomous_uncertainty_closure": {
+                    "repeated_unresolved_material_uncertainty_is_a_process_problem": True,
+                    "resolution_method": "MODEL_AUTONOMOUS",
+                    "allowed_responses": [
+                        "RESOLVE_EVIDENCE_GAP",
+                        "CHANGE_METHODOLOGY",
+                        "REDIRECT_ATTENTION",
+                    ],
+                    "continuation_requires": (
+                        "MATERIAL_NEW_INFORMATION_OR_POSITIVE_EXPECTED_INFORMATION_VALUE"
+                    ),
+                    "does_not_require_trade": True,
+                },
                 "economic_accountability_contract": {
                     "applies_to_sleeves": [
                         "REGULAR_SLEEVE",
@@ -1392,6 +1405,13 @@ class CodexAutonomousCLIProvider:
                     "explore alternatives, acquire better information, develop useful capabilities, or replace an "
                     "ineffective methodology when doing so has positive expected value. Persist toward the objective "
                     "with adaptive methodology; neither a losing trade nor a failed strategy ends the pursuit.\n"
+                    "When a material evidence gap repeats across cycles without material new information, treat the "
+                    "recurrence as a process problem rather than reusable justification. Autonomously choose whether "
+                    "to resolve the gap with a method or tool you select, replace the methodology, or redirect attention "
+                    "to a different opportunity. Continue the same investigation only when you can identify material "
+                    "new information or positive expected information value. This closes the research loop but does not "
+                    "prescribe an evidence type, strategy, instrument, cadence, risk level, or trade; NO_TRADE remains "
+                    "valid whenever it is preferable to the available alternatives.\n"
                     "You may use any legally permissible and technically authorized research resource available to the "
                     "environment when you judge that its expected value justifies its use, including public web "
                     "information, market data, news, IBKR read-only data, historical data, local Python, statistical "
