@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from decimal import Decimal
+from decimal import ROUND_CEILING, Decimal
 from typing import Any, Callable, Literal, Mapping
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -31,7 +31,7 @@ from .multi_universe_models import CanonicalContractIdentity
 from .persistence import Database
 from .repositories import utc_now
 from .types import new_uuid7
-from .sleeve_ledger import SleeveLedgerStore
+from .sleeve_ledger import SleeveLedgerError, SleeveLedgerStore, authoritative_sleeve_equity
 
 
 class _AuthorityModel(BaseModel):
@@ -374,9 +374,21 @@ class SleeveAuthorityReservationStore:
                         "reason_codes": ("SLEEVE_LEDGER_RESERVATION_MISMATCH",),
                     }
                 )
+            ledger_equity = authoritative_sleeve_equity(ledger_state).equity_usd
             if (
-                ledger_state.reserved_liability_usd + snapshot.proposed_maximum_loss_usd
-                > ledger_state.allocation_usd
+                request.operation is ModelExecutionOperation.NEW_TRADE
+                and ledger_equity is None
+            ):
+                return receipt.model_copy(
+                    update={
+                        "status": "BLOCK",
+                        "reason_codes": ("SLEEVE_FRESH_VALUATION_REQUIRED",),
+                    }
+                )
+            if (
+                ledger_equity is not None
+                and ledger_state.reserved_liability_usd + snapshot.proposed_maximum_loss_usd
+                > ledger_equity
             ):
                 return receipt.model_copy(
                     update={
@@ -568,6 +580,44 @@ class SleeveAuthorityReservationStore:
         )
         return event_sha
 
+    def _reduce_to_live_liability(
+        self,
+        ledger: SleeveLedgerStore,
+        *,
+        reservation: Mapping[str, Any],
+        owner: Any,
+        member_hashes: tuple[str, ...],
+        live_cost_basis: Decimal | None,
+        blocked: bool,
+        broker_snapshot_sha256: str,
+    ) -> None:
+        """Shrink a reservation to the cost basis of the still-open long position.
+
+        Only single-contract, non-combo long positions with no working order or
+        pending execution are adjusted; the reservation never grows and never
+        drops below the live position's maximum loss (its cost basis).
+        """
+
+        if blocked or owner is None or live_cost_basis is None or live_cost_basis <= 0:
+            return
+        if len(member_hashes) != 1:
+            return
+        contract = getattr(owner, "contract", None)
+        if str(getattr(contract, "security_type", "") or "").upper() in {"BAG", "FOP", "FUT"}:
+            return
+        key = str(reservation["execution_key"])
+        outstanding = ledger.outstanding_liability(key)
+        target = live_cost_basis.quantize(Decimal("0.01"), rounding=ROUND_CEILING)
+        excess = outstanding - target
+        if excess < Decimal("0.01"):
+            return
+        ledger.release_liability_in_transaction(
+            CapitalSleeve(str(reservation["capital_sleeve"])),
+            amount_usd=excess,
+            reservation_key=key,
+            broker_snapshot_sha256=broker_snapshot_sha256,
+        )
+
     def finalize_terminal_reservations(
         self,
         broker_snapshot: Mapping[str, Any],
@@ -599,6 +649,21 @@ class SleeveAuthorityReservationStore:
             return result
 
         visible = visible_hashes("positions") | visible_hashes("open_orders")
+        order_hashes = visible_hashes("open_orders")
+        live_positions: dict[str, Decimal] = {}
+        for raw in broker_snapshot.get("positions", ()) or ():
+            quantity = Decimal(str(raw.get("quantity") or "0"))
+            if quantity == 0:
+                continue
+            contract_sha = str(raw.get("contract_identity_sha256"))
+            if quantity < 0 or contract_sha in live_positions:
+                live_positions[contract_sha] = Decimal("-1")
+                continue
+            live_positions[contract_sha] = (
+                quantity
+                * Decimal(str(raw.get("multiplier") or "1"))
+                * Decimal(str(raw.get("average_cost") or "0"))
+            )
         pending = {
             str(value)
             for value in broker_snapshot.get("pending_execution_contract_sha256", ())
@@ -619,7 +684,6 @@ class SleeveAuthorityReservationStore:
             ]
             ownership = ContractOwnershipStore(self.db)
             ledger = SleeveLedgerStore(self.db)
-            ledger_events = ledger._events()
             projection = ownership.projection()
             all_ownership = (
                 *projection.active_contracts,
@@ -672,6 +736,17 @@ class SleeveAuthorityReservationStore:
                             observation_id=observation_id,
                             broker_snapshot_sha256=broker_snapshot_sha256,
                         )
+                    self._reduce_to_live_liability(
+                        ledger,
+                        reservation=reservation,
+                        owner=owner,
+                        member_hashes=member_hashes,
+                        live_cost_basis=live_positions.get(contract_sha),
+                        blocked=bool(
+                            contract_sha in order_hashes or contract_sha in pending
+                        ),
+                        broker_snapshot_sha256=broker_snapshot_sha256,
+                    )
                     continue
                 if latest.get("event_type") != "TERMINAL_RELEASE_OBSERVED":
                     self._append_terminal_event(
@@ -706,32 +781,16 @@ class SleeveAuthorityReservationStore:
             for reservation, _group_id in confirmed:
                 key = str(reservation["execution_key"])
                 sleeve = CapitalSleeve(str(reservation["capital_sleeve"]))
-                reserved_amount = Decimal(
-                    str(reservation["reserved_liability_usd"])
-                )
-                matching_releases = [
-                    event
-                    for event in ledger_events
-                    if event.get("event_type") == "LIABILITY_RELEASED"
-                    and event.get("reservation_key") == key
-                ]
-                if matching_releases:
-                    if len(matching_releases) != 1 or (
-                        matching_releases[0].get("sleeve") != sleeve.value
-                        or Decimal(
-                            str(matching_releases[0].get("amount_usd") or "0")
-                        )
-                        != reserved_amount
-                    ):
-                        raise SleeveLedgerError("LIABILITY_RELEASE_CONFLICT")
-                else:
-                    release = ledger.release_liability_in_transaction(
+                outstanding = ledger.outstanding_liability(key)
+                if outstanding < 0:
+                    raise SleeveLedgerError("LIABILITY_RELEASE_CONFLICT")
+                if outstanding > 0:
+                    ledger.release_liability_in_transaction(
                         sleeve,
-                        amount_usd=reserved_amount,
+                        amount_usd=outstanding,
                         reservation_key=key,
                         broker_snapshot_sha256=broker_snapshot_sha256,
                     )
-                    ledger_events.append(release.model_dump(mode="json"))
                 order_ref = str(reservation.get("order_ref") or "")
                 if order_ref:
                     ContinuityStore(self.db).terminalize_active_plan_in_transaction(

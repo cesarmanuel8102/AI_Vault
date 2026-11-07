@@ -481,7 +481,10 @@ class SleeveLedgerStore:
         amount = normalized_decimal(amount_usd)
         if amount < 0:
             raise SleeveLedgerError("INVALID_RESERVED_LIABILITY")
-        if state.reserved_liability_usd + amount > state.allocation_usd:
+        valuation = authoritative_sleeve_equity(state)
+        if valuation.equity_usd is None:
+            raise SleeveLedgerError("SLEEVE_FRESH_VALUATION_REQUIRED")
+        if state.reserved_liability_usd + amount > valuation.equity_usd:
             raise SleeveLedgerError("SLEEVE_AGGREGATE_LIABILITY_EXCEEDED")
         return self._insert(
             sleeve=sleeve,
@@ -528,6 +531,8 @@ class SleeveLedgerStore:
         net_reserved = raw_reserved - raw_released
         if amount < 0 or amount > net_reserved:
             raise SleeveLedgerError("INVALID_RELEASED_LIABILITY")
+        if amount > self.outstanding_liability(reservation_key, events=events):
+            raise SleeveLedgerError("INVALID_RELEASED_LIABILITY")
         return self._insert(
             sleeve=sleeve,
             currency="USD",
@@ -538,6 +543,22 @@ class SleeveLedgerStore:
                 "broker_snapshot_sha256": broker_snapshot_sha256,
             },
         )
+
+    def outstanding_liability(
+        self, reservation_key: str, *, events: list[dict[str, Any]] | None = None
+    ) -> Decimal:
+        """Reserved minus already-released liability for one reservation key."""
+
+        rows = self._events() if events is None else events
+        total = Decimal("0")
+        for event in rows:
+            if event.get("reservation_key") != reservation_key:
+                continue
+            if event["event_type"] == "LIABILITY_RESERVED":
+                total += normalized_decimal(event.get("amount_usd"))
+            elif event["event_type"] == "LIABILITY_RELEASED":
+                total -= normalized_decimal(event.get("amount_usd"))
+        return total
 
     def import_model_fill(
         self,
