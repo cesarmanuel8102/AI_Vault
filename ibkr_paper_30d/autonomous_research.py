@@ -1831,7 +1831,12 @@ class AutonomousResearchLoop:
                     )
                 for research_request in turn.research_requests:
                     telemetry.observe_request(research_request)
-                    result = self.toolbox.execute(research_request, bundle)
+                    execute_with_history = getattr(self.toolbox, "execute_with_history", None)
+                    result = (
+                        execute_with_history(research_request, bundle, history)
+                        if callable(execute_with_history)
+                        else self.toolbox.execute(research_request, bundle)
+                    )
                     if (bundle.multi_sleeve_v4_active and result.success
                             and research_request.tool == ResearchTool.BROKER_FEASIBILITY
                             and "proposal" in research_request.arguments):

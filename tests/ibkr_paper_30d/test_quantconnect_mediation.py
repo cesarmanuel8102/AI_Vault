@@ -77,7 +77,9 @@ def test_status_invokes_only_version_with_a_clean_environment_and_redacts_output
     command, kwargs = runner.calls[0]
     assert command == ["C:/Python/Scripts/lean.exe", "--version"]
     assert kwargs["shell"] is False
-    assert set(kwargs["env"]) == {"SystemRoot"}
+    assert set(kwargs["env"]) == {"SystemRoot", "HOME", "USERPROFILE"}
+    assert kwargs["env"]["HOME"] == kwargs["env"]["USERPROFILE"]
+    assert Path(kwargs["env"]["HOME"]) == tmp_path.parent / "research_lean_home"
 
 
 def test_missing_cli_is_optional_unavailable_and_not_an_error(tmp_path: Path) -> None:
