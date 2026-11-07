@@ -235,10 +235,10 @@ def _family_calendar_session(now: datetime, hours: str, zone: str) -> str:
                     return "UNKNOWN"
                 covered |= start.date() <= local.date() <= end.date()
                 intervals.append((start, end))
-        if explicitly_closed:
-            return "CLOSED"
         if any(start <= local < end for start, end in intervals):
             return "REGULAR"
+        if explicitly_closed:
+            return "CLOSED"
         return "CLOSED" if covered else "UNKNOWN"
     except (ValueError, ZoneInfoNotFoundError):
         return "UNKNOWN"

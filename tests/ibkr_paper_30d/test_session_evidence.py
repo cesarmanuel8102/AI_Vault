@@ -277,7 +277,7 @@ def test_overnight_family_remains_open_before_next_interval_start():
     assert evidence["family_sessions"]["a" * 64]["tradable_now"] is True
 
 
-def test_explicit_broker_closed_day_overrides_overlapping_prior_interval():
+def test_active_spanning_interval_overrides_conflicting_closed_day_marker():
     assert _family_calendar_session(
         datetime(2026, 10, 24, 5, 1, tzinfo=timezone.utc),
         (
@@ -286,7 +286,7 @@ def test_explicit_broker_closed_day_overrides_overlapping_prior_interval():
             "20261024:1601-20261025:1600"
         ),
         "US/Eastern",
-    ) == "CLOSED"
+    ) == "REGULAR"
 
 
 def test_family_session_contract_mismatch_cannot_enable_entry():
