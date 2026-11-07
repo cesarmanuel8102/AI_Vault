@@ -1,4 +1,4 @@
-"""Reason-scoped runtime recovery and runtime supervision.
+"""Reason-scoped runtime recovery, runtime supervision and auditor-receipt renewal.
 
 These are availability controls for the PAPER runtime. They never place, modify
 or cancel orders, never change sleeves, ledgers or the clock, and never relax
@@ -11,6 +11,8 @@ PAPER identity, reconciliation, lock or receipt predicates:
 * ``supervise_runtime`` restarts a dead runtime exclusively through the existing
   launcher task (single instance, lock-protected), leaves slow processes alone,
   and opens a circuit breaker after repeated restarts.
+* ``renew_auditor_receipt_if_due`` refreshes the auditor receipt before it
+  expires by running the unchanged independent Receipts stage.
 """
 
 from __future__ import annotations
@@ -40,6 +42,7 @@ LOCK_STALE_AFTER = timedelta(minutes=2)
 HEARTBEAT_HEALTHY_WITHIN = timedelta(minutes=3)
 MAX_AUTOMATIC_RECOVERIES_PER_DAY = 3
 MAX_SUPERVISOR_RESTARTS_PER_HOUR = 3
+RECEIPT_RENEW_AFTER = timedelta(hours=20)
 LAUNCHER_TASK_NAME = "CodexIBKRMultiUniversePilot"
 RUNTIME_PROCESS_MARKER = "ibkr_paper_30d.day1_launch"
 _TRIGGER_REASON = re.compile(r"^critical runtime event (continuity-v3-[0-9a-f]{32})$")
@@ -434,6 +437,59 @@ def supervise_runtime(
     return record("RELAUNCH_REQUESTED")
 
 
+# --- auditor receipt renewal --------------------------------------------------------------
+
+
+def renew_auditor_receipt_if_due(
+    *,
+    repo_root: Path,
+    now_utc: Callable[[], datetime],
+    runtime_alive: Callable[[], bool],
+    head_reader: Callable[[Path], str],
+    run_receipts_stage: Callable[[str], int],
+    auditor_gate: Callable[[], Mapping[str, Any]],
+    alert_sink: AlertSink,
+    launch_attempt_id_reader: Callable[[], str | None],
+) -> dict[str, Any]:
+    root = Path(repo_root)
+    now = now_utc().astimezone(timezone.utc)
+    receipt_path = root / "state" / "ibkr_paper_30d" / "reports" / "auditor_gate_v2_receipt.json"
+    try:
+        completed = _parse(json.loads(receipt_path.read_text(encoding="utf-8")).get("completed_at_utc"))
+    except (OSError, json.JSONDecodeError):
+        completed = None
+    age = None if completed is None else now - completed
+    if age is not None and age < RECEIPT_RENEW_AFTER:
+        return {"status": "NOT_DUE", "receipt_age_hours": round(age.total_seconds() / 3600, 2)}
+    if not runtime_alive():
+        return {"status": "LAUNCHER_RENEWS"}
+    with Database.open(_db_path(root)) as db:
+        approved = approved_runtime_head(db)
+
+    def outcome(status: str, **extra: Any) -> dict[str, Any]:
+        payload = {"status": status, "approved_head": approved, **extra}
+        with Database.open(_db_path(root)) as db:
+            _append_state_event(db, "AUDITOR_RECEIPT_RENEWAL", payload, now=now)
+        if status != "RENEWED":
+            alert_sink("AUDITOR_RECEIPT_RENEWAL_FAILED", payload)
+        return payload
+
+    if approved is None or head_reader(root).strip().lower() != approved:
+        return outcome("BLOCKED", reason_codes=["APPROVED_HEAD_MISMATCH"])
+    attempt = launch_attempt_id_reader()
+    if not attempt:
+        return outcome("BLOCKED", reason_codes=["LAUNCH_ATTEMPT_ID_UNAVAILABLE"])
+    code = run_receipts_stage(attempt)
+    try:
+        refreshed = _parse(json.loads(receipt_path.read_text(encoding="utf-8")).get("completed_at_utc"))
+    except (OSError, json.JSONDecodeError):
+        refreshed = None
+    gate = dict(auditor_gate())
+    if code != 0 or refreshed is None or (completed is not None and refreshed <= completed) or gate.get("gate_status") != "PASS":
+        return outcome("FAILED", exit_code=code, gate=gate)
+    return outcome("RENEWED", completed_at_utc=_iso(refreshed))
+
+
 # --- host adapters and CLI ----------------------------------------------------------------
 
 
@@ -491,13 +547,24 @@ def _auditor_gate(root: Path) -> Callable[[], Mapping[str, Any]]:
     return gate.evaluate
 
 
+def _latest_launch_attempt(root: Path) -> str | None:
+    with Database.open(_db_path(root)) as db:
+        row = db.execute(
+            "SELECT payload_json FROM state_events WHERE event_type='AUTONOMOUS_SERVICE_STARTED' "
+            "ORDER BY sequence DESC LIMIT 1"
+        ).fetchone()
+    return None if row is None else json.loads(str(row[0])).get("launch_attempt_id") or None
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     import psutil
 
     parser = argparse.ArgumentParser(prog="python -m ibkr_paper_30d.runtime_supervisor")
-    parser.add_argument("command", choices=("recover-kill-switch", "supervise"))
+    parser.add_argument("command", choices=("recover-kill-switch", "supervise", "renew-auditor-receipt"))
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--task-name", default=LAUNCHER_TASK_NAME)
+    parser.add_argument("--authority-path", type=Path, help="multi-universe launch authority JSON")
+    parser.add_argument("--python-exe", default="python")
     args = parser.parse_args(argv)
     root = args.repo_root.resolve()
     sink = database_alert_sink(_db_path(root))
@@ -522,6 +589,37 @@ def main(argv: Sequence[str] | None = None) -> int:
             alert_sink=sink,
         )
         code = 0
+    else:
+        if args.authority_path is None:
+            parser.error("--authority-path is required for renew-auditor-receipt")
+        authority = json.loads(args.authority_path.read_text(encoding="utf-8"))
+
+        def runtime_alive() -> bool:
+            with Database.open(_db_path(root)) as db:
+                lock = read_execution_lock(db) or {}
+            pid = lock.get("pid")
+            return bool(lock.get("state") == "ACTIVE" and isinstance(pid, int) and psutil.pid_exists(pid))
+
+        def run_stage(attempt: str) -> int:
+            return subprocess.run(
+                [
+                    "powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass",
+                    "-File", str(root / "FINALIZE_IBKR_PREREQUISITES.ps1"),
+                    "-RepoRoot", str(root), "-PythonExe", args.python_exe,
+                    "-Stage", "Receipts", "-ConfirmStage", "-SkipTaskRegistration",
+                    "-LaunchAttemptId", attempt,
+                    "-TargetSuccessorEpochId", str(authority["successor_epoch_id"]),
+                    "-TargetSuccessorDefinitionSha256", str(authority["successor_definition_sha256"]).lower(),
+                ],
+                cwd=str(root), timeout=900, check=False,
+            ).returncode
+
+        result = renew_auditor_receipt_if_due(
+            repo_root=root, now_utc=now, runtime_alive=runtime_alive, head_reader=_git_head,
+            run_receipts_stage=run_stage, auditor_gate=_auditor_gate(root), alert_sink=sink,
+            launch_attempt_id_reader=lambda: _latest_launch_attempt(root),
+        )
+        code = 0 if result["status"] in {"NOT_DUE", "LAUNCHER_RENEWS", "RENEWED"} else 2
     print(json.dumps(result, sort_keys=True, default=str))
     return code
 

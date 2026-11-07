@@ -405,6 +405,81 @@ def test_supervisor_does_not_stop_runtime_with_exposure(tmp_path):
     assert result["action"] == "KILL_SWITCH_EXPOSURE_PRESENT"
 
 
+# --- auditor receipt renewal -------------------------------------------------------------
+
+def _renew(repo, *, completed_age, runtime_alive=True, head=HEAD, stage_ok=True, gate_after="PASS"):
+    calls = []
+    receipt = repo / "state" / "ibkr_paper_30d" / "reports" / "auditor_gate_v2_receipt.json"
+    receipt.parent.mkdir(parents=True, exist_ok=True)
+    receipt.write_text(json.dumps({"completed_at_utc": (NOW - completed_age).isoformat().replace("+00:00", "Z")}))
+
+    def run_stage(launch_attempt_id):
+        calls.append(launch_attempt_id)
+        if stage_ok:
+            receipt.write_text(json.dumps({"completed_at_utc": NOW.isoformat().replace("+00:00", "Z")}))
+        return 0 if stage_ok else 1
+
+    alerts = Alerts()
+    result = rs.renew_auditor_receipt_if_due(
+        repo_root=repo, now_utc=lambda: NOW, runtime_alive=lambda: runtime_alive,
+        head_reader=lambda _: head, run_receipts_stage=run_stage,
+        auditor_gate=lambda: {"gate_status": gate_after}, alert_sink=alerts,
+        launch_attempt_id_reader=lambda: "11111111-1111-1111-1111-111111111111",
+    )
+    return result, calls, alerts
+
+
+def test_receipt_renewal_not_due_when_fresh(tmp_path):
+    repo, _ = _repo(tmp_path, triggered=False)
+
+    result, calls, _ = _renew(repo, completed_age=timedelta(hours=5))
+
+    assert result["status"] == "NOT_DUE" and calls == []
+
+
+def test_receipt_near_expiry_is_renewed_by_independent_stage(tmp_path):
+    repo, db_path = _repo(tmp_path, triggered=False)
+
+    result, calls, _ = _renew(repo, completed_age=timedelta(hours=21))
+
+    assert result["status"] == "RENEWED"
+    assert calls == ["11111111-1111-1111-1111-111111111111"]
+
+
+def test_receipt_renewal_failure_alerts_owner(tmp_path):
+    repo, _ = _repo(tmp_path, triggered=False)
+
+    result, _, alerts = _renew(repo, completed_age=timedelta(hours=21), stage_ok=False)
+
+    assert result["status"] == "FAILED"
+    assert any(name == "AUDITOR_RECEIPT_RENEWAL_FAILED" for name, _ in alerts)
+
+
+def test_receipt_renewal_requires_gate_pass_after_refresh(tmp_path):
+    repo, _ = _repo(tmp_path, triggered=False)
+
+    result, _, alerts = _renew(repo, completed_age=timedelta(hours=21), gate_after="BLOCK")
+
+    assert result["status"] == "FAILED"
+    assert alerts
+
+
+def test_receipt_renewal_blocks_on_head_mismatch(tmp_path):
+    repo, _ = _repo(tmp_path, triggered=False)
+
+    result, calls, _ = _renew(repo, completed_age=timedelta(hours=21), head="d" * 40)
+
+    assert result["status"] == "BLOCKED" and calls == []
+
+
+def test_receipt_renewal_left_to_launcher_when_runtime_is_down(tmp_path):
+    repo, _ = _repo(tmp_path, triggered=False)
+
+    result, calls, _ = _renew(repo, completed_age=timedelta(hours=21), runtime_alive=False)
+
+    assert result["status"] == "LAUNCHER_RENEWS" and calls == []
+
+
 def test_supervisor_does_not_relaunch_after_measurement_clock_end(tmp_path):
     repo, db_path = _repo(tmp_path, triggered=False)
     with Database.open(db_path) as db:
