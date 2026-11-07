@@ -304,7 +304,7 @@ class IBKRResearchToolbox:
             {"tool": ResearchTool.QUOTE.value, "purpose": "Snapshot quote for a requested stock, ETF, option or other resolvable contract."},
             {"tool": ResearchTool.HISTORICAL_BARS.value, "purpose": "Historical bars with model-selected duration, bar size, data type and RTH policy. CRYPTO TRADES is adapted to the broker-required AGGTRADES representation."},
             {"tool": ResearchTool.OPTION_CHAIN.value, "purpose": "Discover option expirations, strikes, exchanges and multipliers."},
-            {"tool": ResearchTool.NEWS_SEARCH.value, "purpose": "IBKR subscribed news providers and historical headlines for a resolved contract."},
+            {"tool": ResearchTool.NEWS_SEARCH.value, "purpose": "IBKR subscribed news providers and historical headlines for a resolved contract. Optional article_ids (max 3, from earlier headlines) returns bounded article text when the provider entitlement allows; unavailable bodies are reported, never assumed."},
             {"tool": ResearchTool.BROKER_FEASIBILITY.value, "purpose": "IBKR what-if feasibility, margin and commission check for a single or combo order. Contract and order fields may be flat or canonical nested objects; contradictory duplicates fail closed."},
         ]
 
@@ -1950,20 +1950,51 @@ class IBKRResearchToolbox:
                 str(args.get("end", "")),
                 int(args.get("total_results", 50)),
             )
-            return {
+            serialized_headlines = [
+                {
+                    "time": str(item.time),
+                    "providerCode": item.providerCode,
+                    "articleId": item.articleId,
+                    "headline": item.headline,
+                }
+                for item in headlines
+            ]
+            payload: dict[str, Any] = {
                 "success": True,
                 "contract": self._serialize_contract(contract),
                 "providers": [{"code": p.code, "name": p.name} for p in providers],
-                "headlines": [
-                    {
-                        "time": str(item.time),
-                        "providerCode": item.providerCode,
-                        "articleId": item.articleId,
-                        "headline": item.headline,
-                    }
-                    for item in headlines
-                ],
+                "headlines": serialized_headlines,
             }
+            requested_articles = args.get("article_ids") or []
+            if isinstance(requested_articles, str):
+                requested_articles = [requested_articles]
+            if requested_articles:
+                provider_by_article = {
+                    item["articleId"]: item["providerCode"] for item in serialized_headlines
+                }
+                articles = []
+                for article_id in [str(item) for item in requested_articles][:3]:
+                    provider_code = provider_by_article.get(article_id) or article_id.split("$", 1)[0]
+                    try:
+                        article = ib.reqNewsArticle(provider_code, article_id)
+                        text = str(getattr(article, "articleText", "") or "")
+                        articles.append({
+                            "articleId": article_id,
+                            "providerCode": provider_code,
+                            "status": "RETRIEVED",
+                            "articleType": getattr(article, "articleType", None),
+                            "text": text[:8000],
+                            "truncated": len(text) > 8000,
+                        })
+                    except Exception as exc:
+                        articles.append({
+                            "articleId": article_id,
+                            "providerCode": provider_code,
+                            "status": "UNAVAILABLE",
+                            "error_type": type(exc).__name__,
+                        })
+                payload["articles"] = articles
+            return payload
         finally:
             ib.disconnect()
 

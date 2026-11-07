@@ -3098,6 +3098,7 @@ def test_launch_writes_epoch_observational_manifest(tmp_path: Path) -> None:
     assert manifest["self_tooling_enabled"] is True
     assert manifest["persistent_workspace_enabled"] is True
     assert manifest["quantconnect_capability"] in {
+        "RUNTIME_AVAILABLE",
         "OPTIONAL_AVAILABLE",
         "OPTIONAL_UNAVAILABLE",
     }

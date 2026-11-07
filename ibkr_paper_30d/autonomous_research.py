@@ -24,6 +24,12 @@ from .continuity_models import (
     TimeInForce,
 )
 from .open_order_management import EXPERIMENT_ORDER_PREFIX
+from .repositories import utc_now
+from .source_provenance import (
+    model_visible_history,
+    native_tool_provenance,
+    research_source_provenance,
+)
 from .multi_universe_models import CapitalSleeve, SHA256_PATTERN
 from .research_telemetry import (
     ResearchTelemetryAccumulator,
@@ -1217,7 +1223,7 @@ class CodexAutonomousCLIProvider:
             },
             "bundle": bundle.model_dump(mode="json"),
             "toolbox": toolbox_manifest,
-            "research_history": history,
+            "research_history": model_visible_history(history),
             "output_contract": {
                 "research_request_arguments": (
                     "Encode each research_requests[].arguments value as a JSON object string."
@@ -1456,7 +1462,7 @@ class CodexAutonomousCLIProvider:
             "request": request.model_dump(mode="json"),
             "bundle": bundle.model_dump(mode="json"),
             "toolbox": toolbox_manifest,
-            "research_history": history,
+            "research_history": model_visible_history(history),
             "output_contract": {
                 "research_request_arguments": (
                     "Encode each research_requests[].arguments value as a JSON "
@@ -1649,11 +1655,23 @@ class CodexAutonomousCLIProvider:
             item = event.get("item") if isinstance(event, dict) else None
             item_type = item.get("type") if isinstance(item, dict) else None
             if item_type in cls.NATIVE_TOOL_TYPES:
-                events.append({
+                record = {
                     "type": item_type,
                     "status": item.get("status"),
                     "id": item.get("id"),
-                })
+                }
+                action = item.get("action") if isinstance(item.get("action"), dict) else {}
+                query = item.get("query") or action.get("query")
+                if isinstance(query, str) and query:
+                    record["query"] = query[:500]
+                urls = [
+                    value
+                    for value in (item.get("url"), action.get("url"), *(item.get("urls") or []))
+                    if isinstance(value, str) and value.startswith(("http://", "https://"))
+                ]
+                if urls:
+                    record["urls"] = list(dict.fromkeys(urls))[:20]
+                events.append(record)
         return events
 
     @staticmethod
@@ -1827,7 +1845,7 @@ class AutonomousResearchLoop:
 
         manifest = self.toolbox.manifest()
         for round_index in range(1, self.max_rounds + 1):
-            turn = self.provider.next_turn(request, bundle, history, manifest)
+            turn = self.provider.next_turn(request, bundle, model_visible_history(history), manifest)
             history.append({
                 "round": round_index,
                 "type": "model_turn",
@@ -1840,18 +1858,25 @@ class AutonomousResearchLoop:
                     "type": "native_tool_activity",
                     "payload": {"events": list(native_events)},
                 })
+                history.append({
+                    "round": round_index,
+                    "type": "source_provenance",
+                    "payload": {"native_tools": native_tool_provenance(native_events)},
+                })
             if turn.mode == AutonomousTurnMode.RESEARCH:
                 if len(turn.research_requests) > self.max_requests_per_round:
                     return self._blocked(history, telemetry, round_index, "RESEARCH_REQUEST_BATCH_TOO_LARGE"
                     )
                 for research_request in turn.research_requests:
                     telemetry.observe_request(research_request)
+                    requested_at_utc = utc_now()
                     execute_with_history = getattr(self.toolbox, "execute_with_history", None)
                     result = (
-                        execute_with_history(research_request, bundle, history)
+                        execute_with_history(research_request, bundle, model_visible_history(history))
                         if callable(execute_with_history)
                         else self.toolbox.execute(research_request, bundle)
                     )
+                    received_at_utc = utc_now()
                     if (bundle.multi_sleeve_v4_active and result.success
                             and research_request.tool == ResearchTool.BROKER_FEASIBILITY
                             and "proposal" in research_request.arguments):
@@ -1875,6 +1900,15 @@ class AutonomousResearchLoop:
                         "round": round_index,
                         "type": "research_result",
                         "payload": result.model_dump(mode="json"),
+                    })
+                    history.append({
+                        "round": round_index,
+                        "type": "source_provenance",
+                        "payload": research_source_provenance(
+                            research_request, result,
+                            requested_at_utc=requested_at_utc,
+                            received_at_utc=received_at_utc,
+                        ),
                     })
                 continue
 
