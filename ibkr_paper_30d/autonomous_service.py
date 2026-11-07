@@ -1056,7 +1056,58 @@ class AutonomousExperimentService:
     ) -> dict[str, Any] | None:
         if self.stop_event.is_set() or not self._needs_observation_only_refresh(result):
             return None
-        return self._run_cycle_with_lifecycle("POSITION_EVENT", allow_execution=False)
+        return self._observation_refresh()
+
+    def _observation_refresh(self) -> dict[str, Any]:
+        """Refresh broker-derived state after a fill or order action.
+
+        The trader is not invoked: a cycle that cannot execute must not ask the
+        model for decisions it would silently discard. Rebuilding the bundle
+        imports executions, refreshes marks, reconciles sleeves and finalizes
+        reservations so the next executable cycle starts from current state.
+        """
+
+        _append_state_event(
+            self.db,
+            "AUTONOMOUS_OBSERVATION_REFRESH_STARTED",
+            {"trigger": "POSITION_EVENT", "model_invoked": False},
+        )
+        auditor = self.runtime_auditor_gate.evaluate()
+        if auditor.get("gate_status") != "PASS":
+            return {
+                "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
+                "status": "STATE_GATE_BLOCK",
+                "gate": "AUDITOR",
+                "auditor": auditor,
+                "model_invoked": False,
+            }
+        try:
+            bundle = self._builder().build(trigger="POSITION_EVENT")
+        except Exception as exc:
+            _append_state_event(
+                self.db,
+                "AUTONOMOUS_OBSERVATION_REFRESH_FAILED",
+                {"error_type": type(exc).__name__, "model_invoked": False},
+            )
+            raise
+        reconciliation = dict(bundle.reconciliation_receipt or {})
+        expired = bool((bundle.experiment_clock or {}).get("expired"))
+        refresh = {
+            "schema": "CODEX_IBKR_AUTONOMOUS_OBSERVATION_REFRESH_V1",
+            "status": "EXPERIMENT_EXPIRED" if expired else "OBSERVATION_REFRESH",
+            "model_invoked": False,
+            "reconciliation_status": str(reconciliation.get("status") or "UNKNOWN"),
+            "reason_codes": sorted(
+                str(code) for code in reconciliation.get("reason_codes") or ()
+            ),
+            "kill_switch_state": str(bundle.kill_switch_state),
+        }
+        _append_state_event(
+            self.db,
+            "AUTONOMOUS_OBSERVATION_REFRESH_COMPLETED",
+            {key: value for key, value in refresh.items() if key != "schema"},
+        )
+        return refresh
 
     def _run_cycle_with_lifecycle(
         self,

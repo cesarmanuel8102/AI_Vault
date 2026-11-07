@@ -93,8 +93,13 @@ class RecordingService(AutonomousExperimentService):
     def __init__(self, *args, stop_after=2, results=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.triggers = []
+        self.refreshes = 0
         self.stop_after = stop_after
         self.results = list(results or [])
+
+    def _observation_refresh(self):
+        self.refreshes += 1
+        return {"status": "OBSERVATION_REFRESH", "model_invoked": False}
 
     def _run_cycle(self, trigger, *, allow_execution=None):
         self.triggers.append((trigger, allow_execution))
@@ -187,8 +192,10 @@ def test_fill_causes_immediate_position_event_reassessment(tmp_path, monkeypatch
 
     assert subject.triggers == [
         ("SCHEDULED_SCAN", None),
-        ("POSITION_EVENT", False),
+        ("SCHEDULED_SCAN", None),
     ]
+    assert subject.refreshes == 1
+    assert all(allow is not False for _, allow in subject.triggers)
 
 
 def test_successful_order_management_triggers_one_observation_only_refresh(
@@ -214,8 +221,9 @@ def test_successful_order_management_triggers_one_observation_only_refresh(
 
     assert service.triggers == [
         ("SCHEDULED_SCAN", None),
-        ("POSITION_EVENT", False),
+        ("SCHEDULED_SCAN", None),
     ]
+    assert service.refreshes == 1
 
 
 def test_uncertain_order_management_triggers_one_observation_only_refresh(
@@ -242,8 +250,9 @@ def test_uncertain_order_management_triggers_one_observation_only_refresh(
 
     assert service.triggers == [
         ("SCHEDULED_SCAN", None),
-        ("POSITION_EVENT", False),
+        ("SCHEDULED_SCAN", None),
     ]
+    assert service.refreshes == 1
 
 
 def test_filled_during_cancel_triggers_one_observation_only_refresh(
@@ -271,8 +280,9 @@ def test_filled_during_cancel_triggers_one_observation_only_refresh(
 
     assert service.triggers == [
         ("SCHEDULED_SCAN", None),
-        ("POSITION_EVENT", False),
+        ("SCHEDULED_SCAN", None),
     ]
+    assert service.refreshes == 1
 
 
 @pytest.mark.parametrize(
@@ -300,24 +310,97 @@ def test_run_once_order_management_includes_observation_only_refresh(
     tmp_path, execution
 ):
     clock = Clock()
-    follow_up = {"status": "PASS", "outcome": {"decision": "NO_TRADE"}}
     results = [
         {
             "status": "PASS",
             "outcome": {"decision": execution["order"]["order_management"]},
             "execution": execution,
         },
-        follow_up,
     ]
     with Database.open(tmp_path / "service.sqlite3") as db:
         service = make_service(db, clock, stop_after=3, results=results)
         result = service.run_once()
 
-    assert service.triggers == [
-        ("SCHEDULED_SCAN", None),
-        ("POSITION_EVENT", False),
-    ]
-    assert result["observation_only_follow_up"] == follow_up
+    assert service.triggers == [("SCHEDULED_SCAN", None)]
+    assert service.refreshes == 1
+    assert result["observation_only_follow_up"] == {
+        "status": "OBSERVATION_REFRESH",
+        "model_invoked": False,
+    }
+
+
+def test_observation_refresh_rebuilds_state_without_invoking_the_model(tmp_path):
+    clock = Clock()
+    builds = []
+
+    class Builder:
+        def build(self, *, trigger, **_):
+            builds.append(trigger)
+            return SimpleNamespace(
+                reconciliation_receipt={"status": "PASS", "reason_codes": []},
+                experiment_clock={"expired": False},
+                kill_switch_state="KILL_SWITCH_CLEAR",
+            )
+
+    class ExplodingProvider:
+        def __getattr__(self, name):
+            raise AssertionError(f"provider must not be used: {name}")
+
+    with Database.open(tmp_path / "service.sqlite3") as db:
+        service = AutonomousExperimentService(
+            db,
+            experiment_start_utc=datetime.now(timezone.utc),
+            allocation=Decimal("500.00"),
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=StubExecutor(),
+            sleep=clock.sleep,
+            monotonic=clock.monotonic,
+        )
+        service.runtime_auditor_gate = SimpleNamespace(evaluate=lambda: {"gate_status": "PASS"})
+        service._builder = lambda: Builder()
+        service.provider = ExplodingProvider()
+        result = service._observation_refresh()
+        completed = latest_state_event(db, "AUTONOMOUS_OBSERVATION_REFRESH_COMPLETED")
+
+    assert builds == ["POSITION_EVENT"]
+    assert result["status"] == "OBSERVATION_REFRESH"
+    assert result["model_invoked"] is False
+    assert result["reconciliation_status"] == "PASS"
+    assert completed["model_invoked"] is False
+
+
+def test_observation_refresh_respects_auditor_gate(tmp_path):
+    clock = Clock()
+    with Database.open(tmp_path / "service.sqlite3") as db:
+        service = AutonomousExperimentService(
+            db,
+            experiment_start_utc=datetime.now(timezone.utc),
+            allocation=Decimal("500.00"),
+            execute_paper=False,
+            toolbox=StubToolbox(),
+            provider=StubProvider(),
+            executor=StubExecutor(),
+            sleep=clock.sleep,
+            monotonic=clock.monotonic,
+        )
+        service.runtime_auditor_gate = SimpleNamespace(
+            evaluate=lambda: {"gate_status": "BLOCK", "reason_codes": ["RECEIPT_STALE"]}
+        )
+        service._builder = lambda: (_ for _ in ()).throw(AssertionError("no build"))
+        result = service._observation_refresh()
+
+    assert result["status"] == "STATE_GATE_BLOCK"
+    assert result["gate"] == "AUDITOR"
+
+
+def test_service_never_invokes_the_trader_with_execution_disabled() -> None:
+    import inspect
+
+    source = inspect.getsource(service_module)
+
+    assert "allow_execution=False" not in source
 
 
 class FakeContinuityWatchdog:
