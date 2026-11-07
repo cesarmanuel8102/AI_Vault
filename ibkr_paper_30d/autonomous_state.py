@@ -38,6 +38,7 @@ from .product_capability import ProductFamilyCertificationStore
 from .runtime_integrity import RuntimeMarketDataGate
 from .sleeve_ledger import SleeveLedgerError, SleeveLedgerStore, authoritative_sleeve_equity
 from .execution_economics import execution_break_even_economics
+from .measurement_segment import measurement_segment_report
 from .sleeve_reconciliation import SleeveReconciler
 from .successor_clock import clock_for_epoch
 from .successor_epoch import (
@@ -1736,6 +1737,24 @@ class AutonomousStateBuilder:
             ),
         }
 
+    def _measurement_segment_context(
+        self, equity_valuations: Mapping[str, Any]
+    ) -> dict[str, Any] | None:
+        db = getattr(self, "db", None)
+        if db is None:
+            return None
+        return measurement_segment_report(
+            db,
+            current_equity_usd={
+                CapitalSleeve.REGULAR_SLEEVE.value: getattr(
+                    equity_valuations.get("regular"), "equity_usd", None
+                ),
+                CapitalSleeve.CONTINUOUS_SLEEVE.value: getattr(
+                    equity_valuations.get("continuous"), "equity_usd", None
+                ),
+            },
+        )
+
     def _observed_sleeve_commissions(self) -> dict[str, dict[str, Any]]:
         """Median commission per executed model order, per sleeve (non-zero reports only)."""
 
@@ -2174,6 +2193,7 @@ class AutonomousStateBuilder:
                 observed_commissions=self._observed_sleeve_commissions(),
                 as_of_utc=utc_now(),
             ),
+            "measurement_segment": self._measurement_segment_context(equity_valuations),
             "transition_phase": transition_phase,
             "transition_target_sha256": transition_target_sha256,
             "writer_binding_sha256": writer_binding_sha256,
