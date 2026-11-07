@@ -36,7 +36,7 @@ from .market_data import DecisionClass
 from .repositories import utc_now
 from .product_capability import ProductFamilyCertificationStore
 from .runtime_integrity import RuntimeMarketDataGate
-from .sleeve_ledger import SleeveLedgerError, SleeveLedgerStore
+from .sleeve_ledger import SleeveLedgerError, SleeveLedgerStore, authoritative_sleeve_equity
 from .sleeve_reconciliation import SleeveReconciler
 from .successor_clock import clock_for_epoch
 from .successor_epoch import (
@@ -58,6 +58,11 @@ class TransientBrokerStateBuildError(AutonomousStateBuildError):
 PROCESS_OBSERVATION_CYCLE_LIMIT = 20
 INSTRUMENT_COVERAGE_MIN_CYCLES = 10
 PROVIDER_STATE_CONTEXT_LIMIT = 5
+# Ledger bookkeeping fields that are not equity components: model fills settle
+# realized results and commissions in cash, so exposing these as P&L misleads.
+_NON_AUTHORITATIVE_SLEEVE_ACCOUNTING_FIELDS = frozenset(
+    {"realized_pnl_usd", "unrealized_pnl_usd", "fees_usd", "fees_deductible_usd"}
+)
 
 
 def _commission_adjusted_cash_matches(
@@ -1731,6 +1736,80 @@ class AutonomousStateBuilder:
         }
 
     @staticmethod
+    def _economic_bundle_fields(
+        account: dict[str, Any],
+        ledger_state: Any,
+        multi_sleeve_portfolio: Mapping[str, Any] | None,
+    ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+        """Return (subledger, broker account, risk) bundle fields.
+
+        With isolated sleeves active, the single legacy ledger mixes both sleeves
+        and is not an economic authority; only per-sleeve equity is exposed.
+        """
+
+        if multi_sleeve_portfolio is None:
+            return (
+                {
+                    "allocation": str(ledger_state.allocation),
+                    "cash": str(ledger_state.cash),
+                    "market_value": str(ledger_state.market_value),
+                    "equity": str(ledger_state.equity),
+                    "high_water_mark": str(ledger_state.high_water_mark),
+                    "drawdown": str(ledger_state.drawdown),
+                    "fees": str(ledger_state.fees),
+                    "valid": ledger_state.valid,
+                    "reason_codes": list(ledger_state.reason_codes),
+                },
+                AutonomousStateBuilder._broker_snapshot(account, ledger_state.equity),
+                {
+                    "policy": "AGGRESSIVE_CAPITAL_BOUNDARY_V1",
+                    "maximum_experiment_liability": str(
+                        max(ledger_state.equity, Decimal("0"))
+                    ),
+                    "fixed_percent_limits": False,
+                },
+            )
+        sleeves = multi_sleeve_portfolio.get("sleeves") or {}
+        names = {
+            CapitalSleeve.REGULAR_SLEEVE.value: "regular",
+            CapitalSleeve.CONTINUOUS_SLEEVE.value: "continuous",
+        }
+
+        def per_sleeve(field: str) -> dict[str, Any]:
+            return {
+                sleeve: (sleeves.get(name) or {}).get(field)
+                for sleeve, name in names.items()
+            }
+
+        return (
+            {
+                "authority": "LEGACY_SINGLE_LEDGER_NON_AUTHORITATIVE",
+                "authoritative_equity_source": (
+                    "multi_sleeve_portfolio.sleeves.<sleeve>.equity_usd"
+                ),
+                "allocation": str(ledger_state.allocation),
+                "valid": ledger_state.valid,
+                "reason_codes": list(ledger_state.reason_codes),
+            },
+            {
+                "paper_account": bool(account.get("paper_account")),
+                "declared_options_level": account.get("declared_options_level"),
+                "sleeve_available_capital_usd": per_sleeve("available_capital_usd"),
+                "global_broker_balances_redacted": True,
+                "note": (
+                    "Each sleeve may only use its own available capital "
+                    "(equity minus reserved liability); broker feasibility is "
+                    "enforced separately by per-order what-if validation."
+                ),
+            },
+            {
+                "policy": "AGGRESSIVE_CAPITAL_BOUNDARY_V1",
+                "maximum_liability_by_sleeve_usd": per_sleeve("equity_usd"),
+                "fixed_percent_limits": False,
+            },
+        )
+
+    @staticmethod
     def _dump(value: Any) -> dict[str, Any]:
         if hasattr(value, "model_dump"):
             return dict(value.model_dump(mode="json"))
@@ -1997,54 +2076,58 @@ class AutonomousStateBuilder:
             for key, value in account.items()
             if key.lower() not in {"account", "account_id", "account_code"}
         }
+        equity_valuations = {
+            name: authoritative_sleeve_equity(canonical_ledger.get(name) or {})
+            for name in ("regular", "continuous")
+        }
         for name, eligibility in (
             ("regular", regular_entry_eligibility),
             ("continuous", continuous_entry_eligibility),
         ):
+            valuation_reasons = list(equity_valuations[name].reason_codes)
             if (canonical_ledger.get(name) or {}).get("valuation_status") == "UNAVAILABLE":
+                valuation_reasons.append("SLEEVE_FRESH_VALUATION_REQUIRED")
+            if valuation_reasons:
                 eligibility["status"] = "BLOCK"
                 eligibility["reason_codes"] = list(dict.fromkeys(
-                    [*eligibility.get("reason_codes", []), "SLEEVE_FRESH_VALUATION_REQUIRED"]
+                    [*eligibility.get("reason_codes", []), *valuation_reasons]
                 ))
+
+        def model_facing_sleeve(name: str) -> dict[str, Any]:
+            ledger_view = {
+                key: value
+                for key, value in dict(canonical_ledger.get(name) or {}).items()
+                if key not in _NON_AUTHORITATIVE_SLEEVE_ACCOUNTING_FIELDS
+            }
+            valuation = equity_valuations[name]
+            allocation = Decimal(str(ledger_view.get("allocation_usd") or "0"))
+            return {
+                **ledger_view,
+                "equity_usd": (
+                    None if valuation.equity_usd is None else str(valuation.equity_usd)
+                ),
+                "equity_status": valuation.status,
+                "equity_reason_codes": list(valuation.reason_codes),
+                "equity_formula": valuation.formula,
+                "cash_usd": str(valuation.cash_usd),
+                "positions_market_value_usd": str(valuation.positions_market_value_usd),
+                "available_capital_usd": (
+                    None
+                    if valuation.available_capital_usd is None
+                    else str(valuation.available_capital_usd)
+                ),
+                "net_pnl_vs_allocation_usd": (
+                    None
+                    if valuation.equity_usd is None
+                    else str(valuation.equity_usd - allocation)
+                ),
+            }
+
         portfolio = {
             "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
             "sleeve_authority_sha256": {},
             "sleeves": {
-                name: {
-                    **dict(canonical_ledger.get(name) or {}),
-                    "equity_usd": str(
-                        Decimal(
-                            str(
-                                (canonical_ledger.get(name) or {}).get("allocation_usd")
-                                or "0"
-                            )
-                        )
-                        + Decimal(
-                            str(
-                                (canonical_ledger.get(name) or {}).get(
-                                    "realized_pnl_usd"
-                                )
-                                or "0"
-                            )
-                        )
-                        + Decimal(
-                            str(
-                                (canonical_ledger.get(name) or {}).get(
-                                    "unrealized_pnl_usd"
-                                )
-                                or "0"
-                            )
-                        )
-                        - Decimal(
-                            str(
-                                (canonical_ledger.get(name) or {}).get("fees_deductible_usd")
-                                if (canonical_ledger.get(name) or {}).get("fees_deductible_usd") is not None
-                                else (canonical_ledger.get(name) or {}).get("fees_usd")
-                                or "0"
-                            )
-                        )
-                    ),
-                }
+                name: model_facing_sleeve(name)
                 for name in ("regular", "continuous")
             },
             "transition_phase": transition_phase,
@@ -2270,32 +2353,19 @@ class AutonomousStateBuilder:
                     product_capability_snapshot,
                 )
             )
+        experiment_subledger_snapshot, broker_account_snapshot, risk_snapshot = (
+            self._economic_bundle_fields(account, ledger_state, multi_sleeve_portfolio)
+        )
         return TraderInputBundle(
             decision_cycle_id=f"cycle-{new_uuid7()}",
             utc_timestamp=clock["now_utc"],
             market_session_state=market_session_state,
             reconciliation_receipt=reconciliation,
-            experiment_subledger_snapshot={
-                "allocation": str(ledger_state.allocation),
-                "cash": str(ledger_state.cash),
-                "market_value": str(ledger_state.market_value),
-                "equity": str(ledger_state.equity),
-                "high_water_mark": str(ledger_state.high_water_mark),
-                "drawdown": str(ledger_state.drawdown),
-                "fees": str(ledger_state.fees),
-                "valid": ledger_state.valid,
-                "reason_codes": list(ledger_state.reason_codes),
-            },
-            broker_account_snapshot=self._broker_snapshot(account, ledger_state.equity),
+            experiment_subledger_snapshot=experiment_subledger_snapshot,
+            broker_account_snapshot=broker_account_snapshot,
             positions_snapshot=isolated_positions,
             open_orders_snapshot=isolated_orders,
-            risk_snapshot={
-                "policy": "AGGRESSIVE_CAPITAL_BOUNDARY_V1",
-                "maximum_experiment_liability": str(
-                    max(ledger_state.equity, Decimal("0"))
-                ),
-                "fixed_percent_limits": False,
-            },
+            risk_snapshot=risk_snapshot,
             kill_switch_state=kill_switch_state,
             market_data_snapshot={
                 **market_gate,

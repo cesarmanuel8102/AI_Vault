@@ -67,6 +67,7 @@ class SleeveAuthoritySnapshot(_AuthorityModel):
     unbounded_liability: bool = False
     economic_authorization_valid: bool = True
     equity_usd: Decimal
+    equity_valuation_fresh: bool = True
     reserved_liability_usd: Decimal
     proposed_maximum_loss_usd: Decimal
     continuity_required: bool
@@ -252,6 +253,8 @@ class SleeveExecutionAuthorityValidator:
         if db_snapshot.proposed_maximum_loss_usd != expected_loss:
             reasons.append("PROPOSED_MAXIMUM_LOSS_MISMATCH")
         if request.operation is ModelExecutionOperation.NEW_TRADE:
+            if not db_snapshot.equity_valuation_fresh:
+                reasons.append("SLEEVE_FRESH_VALUATION_REQUIRED")
             available = max(
                 Decimal("0"),
                 db_snapshot.equity_usd - db_snapshot.reserved_liability_usd,

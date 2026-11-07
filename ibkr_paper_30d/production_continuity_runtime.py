@@ -273,7 +273,7 @@ class _ProductionSleeveAuthoritySnapshotReader:
         from .multi_universe_authority import MultiUniverseAuthorityStore
         from .product_capability import ProductFamilyCertificationStore
         from .sleeve_execution_authority import SleeveAuthoritySnapshot
-        from .sleeve_ledger import SleeveLedgerStore
+        from .sleeve_ledger import SleeveLedgerStore, authoritative_sleeve_equity
 
         db_context = (
             nullcontext(transaction_db)
@@ -340,11 +340,11 @@ class _ProductionSleeveAuthoritySnapshotReader:
                 and economic.successor_definition_sha256
                 == target.successor_definition_sha256
             )
+            valuation = authoritative_sleeve_equity(ledger)
             equity = (
-                ledger.allocation_usd
-                + ledger.realized_pnl_usd
-                + ledger.unrealized_pnl_usd
-                - ledger.fees_usd
+                valuation.equity_usd
+                if valuation.equity_usd is not None
+                else Decimal("0")
             )
             proposed = Decimal("0")
             if request.operation.value == "NEW_TRADE":
@@ -455,6 +455,7 @@ class _ProductionSleeveAuthoritySnapshotReader:
                 ),
                 economic_authorization_valid=economic_valid,
                 equity_usd=equity,
+                equity_valuation_fresh=valuation.status == "FRESH",
                 reserved_liability_usd=ledger.reserved_liability_usd,
                 proposed_maximum_loss_usd=proposed,
                 continuity_required=bool(

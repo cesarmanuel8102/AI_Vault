@@ -647,7 +647,9 @@ def capital_equity_for_sleeve(
             sleeve_state = sleeves.get("extended") or {}
         raw = sleeve_state.get("equity_usd")
         if raw is None:
-            raise ValueError("V4_SLEEVE_EQUITY_REQUIRED")
+            raise ValueError(
+                "SLEEVE_FRESH_VALUATION_REQUIRED" if sleeve_state else "V4_SLEEVE_EQUITY_REQUIRED"
+            )
     else:
         raw = bundle.experiment_subledger_snapshot.get("equity")
         if raw is None:
@@ -1976,7 +1978,10 @@ class AutonomousResearchLoop:
                 return self._blocked(history, telemetry, round_index, "MISSING_PROPOSAL")
             if not proposal.loss_is_bounded:
                 return self._blocked(history, telemetry, round_index, "UNBOUNDED_LIABILITY")
-            equity = capital_equity_for_sleeve(bundle, proposal.capital_sleeve)
+            try:
+                equity = capital_equity_for_sleeve(bundle, proposal.capital_sleeve)
+            except ValueError as exc:
+                return self._blocked(history, telemetry, round_index, str(exc))
             if proposal.maximum_loss > equity:
                 return self._blocked(history, telemetry, round_index, "EXPERIMENT_CAPITAL_BOUNDARY")
             # capital_required is a model estimate, not an authority boundary.

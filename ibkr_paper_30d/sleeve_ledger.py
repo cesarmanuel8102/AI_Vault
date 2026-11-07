@@ -119,6 +119,66 @@ class SleeveLedgerState(_LedgerModel):
         )
 
 
+SLEEVE_EQUITY_FORMULA = "USD_CASH_PLUS_FRESH_POSITION_MARKET_VALUE_V1"
+
+
+class SleeveEquityValuation(_LedgerModel):
+    status: str
+    equity_usd: Decimal | None
+    cash_usd: Decimal
+    positions_market_value_usd: Decimal
+    reserved_liability_usd: Decimal
+    available_capital_usd: Decimal | None
+    reason_codes: tuple[str, ...]
+    formula: str = SLEEVE_EQUITY_FORMULA
+
+
+def authoritative_sleeve_equity(
+    state: "SleeveLedgerState | Mapping[str, Any]",
+) -> SleeveEquityValuation:
+    """Return the only authoritative sleeve equity: USD cash plus fresh position value.
+
+    Model fills already move commissions and realized trading results into the
+    cash balance, so neither realized P&L nor fees are added or subtracted here.
+    """
+
+    data = state.model_dump(mode="python") if hasattr(state, "model_dump") else dict(state)
+    reasons: list[str] = []
+    cash = Decimal("0")
+    for item in data.get("currency_balances") or ():
+        row = item.model_dump(mode="python") if hasattr(item, "model_dump") else dict(item)
+        amount = normalized_decimal(row.get("amount") or "0")
+        if str(row.get("currency") or "").upper() == "USD":
+            cash += amount
+        elif amount != 0:
+            reasons.append("SLEEVE_FX_VALUATION_REQUIRED")
+    positions = [
+        item.model_dump(mode="python") if hasattr(item, "model_dump") else dict(item)
+        for item in data.get("positions") or ()
+    ]
+    market_value = Decimal("0")
+    for position in positions:
+        raw_value = position.get("market_value_usd")
+        if raw_value in (None, ""):
+            reasons.append("SLEEVE_FRESH_VALUATION_REQUIRED")
+            continue
+        market_value += normalized_decimal(raw_value)
+    if positions and str(data.get("valuation_status") or "") != "FRESH":
+        reasons.append("SLEEVE_FRESH_VALUATION_REQUIRED")
+    reserved = normalized_decimal(data.get("reserved_liability_usd") or "0")
+    unique = tuple(dict.fromkeys(reasons))
+    equity = None if unique else cash + market_value
+    return SleeveEquityValuation(
+        status="UNAVAILABLE" if unique else "FRESH",
+        equity_usd=equity,
+        cash_usd=cash,
+        positions_market_value_usd=market_value,
+        reserved_liability_usd=reserved,
+        available_capital_usd=None if equity is None else equity - reserved,
+        reason_codes=unique,
+    )
+
+
 class MultiSleeveLedgerState(_LedgerModel):
     regular: SleeveLedgerState
     extended: SleeveLedgerState

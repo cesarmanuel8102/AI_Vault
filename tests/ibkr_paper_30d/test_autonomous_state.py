@@ -388,6 +388,7 @@ def test_v4_state_context_contains_both_sleeves_ownership_and_capabilities() -> 
                     "allocation_usd": "500",
                     "currency_balances": [{"currency": "USD", "amount": "450"}],
                     "positions": [{"market_value_usd": "25"}],
+                    "valuation_status": "FRESH",
                     "realized_pnl_usd": "-25",
                     "unrealized_pnl_usd": "0",
                     "fees_usd": "0",
