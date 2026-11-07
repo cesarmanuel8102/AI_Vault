@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
@@ -72,6 +73,20 @@ def _redact_accounts(value: object) -> object:
     return value
 
 
+def _nonzero_position(item: object) -> bool:
+    """Unknown or unparsable quantities count as exposure (fail closed)."""
+
+    raw = None
+    if isinstance(item, Mapping):
+        raw = item.get("position", item.get("quantity"))
+    else:
+        raw = getattr(item, "position", getattr(item, "quantity", None))
+    try:
+        return Decimal(str(raw)) != 0
+    except (InvalidOperation, TypeError, ValueError):
+        return True
+
+
 def _assert_no_active_execution_authority(
     db: Database, *, pid_alive: Callable[[int], bool]
 ) -> None:
@@ -125,6 +140,7 @@ def recover_kill_switch(
     token_elevated: Callable[[], bool],
     now_utc: Callable[[], datetime],
     pid_alive: Callable[[int], bool] = psutil.pid_exists,
+    require_flat: bool = False,
 ) -> dict[str, object]:
     root = repo_root.resolve()
     if head_reader(root).strip().lower() != approved_head.lower():
@@ -160,6 +176,10 @@ def recover_kill_switch(
     }
     if any(evidence.query_completeness.get(name) is not True for name in required_queries):
         raise KillSwitchRecoveryError("KILL_SWITCH_RECOVERY_RECONCILIATION_INCOMPLETE")
+    if require_flat and (
+        any(_nonzero_position(item) for item in evidence.positions) or evidence.open_orders
+    ):
+        raise KillSwitchRecoveryError("KILL_SWITCH_RECOVERY_EXPOSURE_PRESENT")
     quarantine_store = ContractOrderQuarantineStore(
         root / "state" / "ibkr_paper_30d" / "reports" / "contract_order_quarantine_v1.json"
     )
