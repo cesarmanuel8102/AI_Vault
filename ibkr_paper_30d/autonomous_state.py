@@ -37,6 +37,7 @@ from .repositories import utc_now
 from .product_capability import ProductFamilyCertificationStore
 from .runtime_integrity import RuntimeMarketDataGate
 from .sleeve_ledger import SleeveLedgerError, SleeveLedgerStore, authoritative_sleeve_equity
+from .execution_economics import execution_break_even_economics
 from .sleeve_reconciliation import SleeveReconciler
 from .successor_clock import clock_for_epoch
 from .successor_epoch import (
@@ -1735,6 +1736,41 @@ class AutonomousStateBuilder:
             ),
         }
 
+    def _observed_sleeve_commissions(self) -> dict[str, dict[str, Any]]:
+        """Median commission per executed model order, per sleeve (non-zero reports only)."""
+
+        events_reader = getattr(self.sleeve_ledger_store, "_events", None)
+        if not callable(events_reader):
+            return {}
+        observed: dict[str, list[tuple[Decimal, str]]] = {}
+        for event in events_reader():
+            if event.get("event_type") != "MODEL_FILL_IMPORTED":
+                continue
+            fill = event.get("fill") or {}
+            try:
+                commission = Decimal(str(fill.get("commission_usd") or "0"))
+            except Exception:
+                continue
+            if commission > 0:
+                observed.setdefault(str(event.get("sleeve")), []).append(
+                    (commission, str(event.get("created_at_utc") or ""))
+                )
+        result: dict[str, dict[str, Any]] = {}
+        for sleeve, items in observed.items():
+            values = sorted(value for value, _ in items)
+            middle = len(values) // 2
+            median = (
+                values[middle]
+                if len(values) % 2
+                else (values[middle - 1] + values[middle]) / 2
+            )
+            result[sleeve] = {
+                "median_commission_per_order_usd": str(median.quantize(Decimal("0.0001"))),
+                "fills": len(values),
+                "last_fill_utc": max(stamp for _, stamp in items) or None,
+            }
+        return result
+
     @staticmethod
     def _economic_bundle_fields(
         account: dict[str, Any],
@@ -2130,6 +2166,14 @@ class AutonomousStateBuilder:
                 name: model_facing_sleeve(name)
                 for name in ("regular", "continuous")
             },
+            "execution_economics": execution_break_even_economics(
+                {
+                    CapitalSleeve.REGULAR_SLEEVE.value: equity_valuations["regular"].available_capital_usd,
+                    CapitalSleeve.CONTINUOUS_SLEEVE.value: equity_valuations["continuous"].available_capital_usd,
+                },
+                observed_commissions=self._observed_sleeve_commissions(),
+                as_of_utc=utc_now(),
+            ),
             "transition_phase": transition_phase,
             "transition_target_sha256": transition_target_sha256,
             "writer_binding_sha256": writer_binding_sha256,

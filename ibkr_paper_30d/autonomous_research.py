@@ -389,6 +389,11 @@ class EconomicCandidateAssessment(BaseModel, frozen=True):
     estimate_basis: str = Field(min_length=1)
     reason: str = Field(min_length=1)
     evidence_refs: list[str] = Field(default_factory=list)
+    expected_move_pct: Decimal | None = None
+    expected_holding_horizon: str | None = None
+    break_even_move_pct: Decimal | None = Field(default=None, ge=0)
+    expected_move_to_break_even_ratio: Decimal | None = None
+    after_cost_rationale: str | None = None
 
 
 class SleeveEconomicAccountability(BaseModel, frozen=True):
@@ -1466,7 +1471,17 @@ class CodexAutonomousCLIProvider:
                     "economic estimates may be null when evidence is insufficient, but the "
                     "limitation, evidence freshness, staleness condition, next recheck trigger, "
                     "and methodology assessment remain explicit. This record documents judgment; "
-                    "it does not require a trade or prescribe strategy."
+                    "it does not require a trade or prescribe strategy. "
+                    "bundle.multi_sleeve_portfolio.execution_economics reports, per sleeve and "
+                    "instrument family, entry/exit/round-trip commission, assumed spread and "
+                    "slippage, fees, round-trip cost and the break-even move at full sleeve size "
+                    "(fixed minimum commissions make smaller orders need larger moves). For each "
+                    "alternative, state expected_move_pct, expected_holding_horizon, "
+                    "break_even_move_pct, expected_move_to_break_even_ratio and "
+                    "after_cost_rationale explaining why it is or is not favorable after costs; "
+                    "use null only when no entry was evaluated. Replace assumed spreads with live "
+                    "quotes and IBKR what-if for concrete orders. This is accountability "
+                    "information, not a gate, and it does not require a trade."
                 ),
                 "continuity_instruction": (
                     "When continuity authority is required, every final PROPOSE_TRADE or "
