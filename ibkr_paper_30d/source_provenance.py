@@ -6,6 +6,7 @@ time zones are reported as explicit limitations, never invented.
 
 from __future__ import annotations
 
+import math
 from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping
 
@@ -43,7 +44,28 @@ def _parse(value: Any) -> datetime | None:
         return None
 
 
+def tolerant_sha256(value: Any) -> str:
+    """sha256 of canonical JSON; non-finite floats (not JSON) are hashed as strings."""
+
+    try:
+        return sha256_json(value)
+    except ValueError:
+        return sha256_json(_finite(value))
+
+
+def _finite(value: Any) -> Any:
+    if isinstance(value, float) and not math.isfinite(value):
+        return str(value)
+    if isinstance(value, Mapping):
+        return {str(key): _finite(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_finite(item) for item in value]
+    return value
+
+
 def _bounded(value: Any) -> Any:
+    if isinstance(value, float) and not math.isfinite(value):
+        return str(value)
     if isinstance(value, Mapping):
         return {str(key): _bounded(item) for key, item in list(value.items())[:30]}
     if isinstance(value, (list, tuple)):
@@ -85,7 +107,10 @@ def research_source_provenance(
 ) -> dict[str, Any]:
     tool = str(getattr(request.tool, "value", request.tool))
     arguments = dict(request.arguments or {})
-    data = dict(result.data or {})
+    # Hash and inspect exactly what the transcript persists (non-finite floats
+    # become null in JSON mode); raw broker NaN/inf values are not JSON.
+    dumped = result.model_dump(mode="json") if hasattr(result, "model_dump") else {}
+    data = dict(dumped.get("data") or {})
     limitations: list[str] = []
     aware: list[datetime] = []
     naive: list[str] = []
@@ -136,7 +161,7 @@ def research_source_provenance(
         "tool": tool,
         "success": bool(result.success),
         "query": _bounded(arguments),
-        "query_sha256": sha256_json(arguments),
+        "query_sha256": tolerant_sha256(arguments),
         "url": None,
         "source_ids": source_ids,
         "requested_at_utc": requested_at_utc,

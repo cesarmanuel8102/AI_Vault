@@ -260,3 +260,30 @@ def test_runtime_cycle_persists_workspace_events_to_db(tmp_path):
             "SELECT COUNT(*) FROM autonomous_research_events"
         ).fetchone()[0]
     assert count >= 3
+
+def test_runtime_cycle_persists_research_with_non_finite_broker_quote(tmp_path):
+    class NaNQuoteToolbox(PassiveToolbox):
+        def execute(self, request, bundle):
+            return ResearchResult(
+                request_id=request.request_id, tool=request.tool, success=True,
+                data={"contract": {"symbol": "SPY"}, "bid": float("nan"), "ask": float("inf")},
+            )
+
+    quote_turn = AutonomousTurn(
+        mode=AutonomousTurnMode.RESEARCH,
+        research_requests=[ResearchRequest(request_id="q1", tool=ResearchTool.QUOTE,
+                                           arguments={"symbol": "SPY"}, purpose="closed market quote")],
+        decision=None, proposal=None, confidence="0.5", reasoning_summary="quote", reason_codes=[],
+    )
+    value = bundle("cycle-nan")
+    toolbox = AutonomyToolbox(NaNQuoteToolbox(), AutonomyWorkspace(tmp_path / "ws"))
+
+    with Database.open(tmp_path / "autonomous.sqlite3") as db:
+        run_autonomous_cycle(
+            value, database=db, provider=RecordingProvider([quote_turn, no_trade_turn()]), toolbox=toolbox,
+        )
+        types = [row[0] for row in db.execute(
+            "SELECT event_type FROM autonomous_research_events ORDER BY rowid")]
+
+    assert "research_result" in types
+    assert "source_provenance" in types

@@ -188,3 +188,49 @@ def test_news_search_without_article_ids_does_not_fetch_bodies() -> None:
     data = toolbox._news_search({"symbol": "ENS"})
 
     assert "articles" not in data
+
+def test_provenance_tolerates_non_finite_broker_values_like_the_persisted_transcript() -> None:
+    data = {"contract": {"symbol": "SPY"}, "bid": float("nan"), "ask": float("inf"),
+            "last": float("-inf"), "time": "2026-11-07 21:00:00+00:00"}
+
+    record = _record(ResearchTool.QUOTE, {"symbol": "SPY"}, data)
+
+    persisted = ResearchResult(request_id="r1", tool=ResearchTool.QUOTE, success=True,
+                               data=data).model_dump(mode="json")["data"]
+    assert record["payload_sha256"] == sha256_json(persisted)
+    json.dumps(record, allow_nan=False)
+
+
+def test_research_loop_survives_a_nan_quote_end_to_end() -> None:
+    from ibkr_paper_30d.canonical import canonical_bytes
+
+    request = ResearchRequest(request_id="q", tool=ResearchTool.QUOTE, arguments={"symbol": "SPY"}, purpose="p")
+    result = ResearchResult(request_id="q", tool=ResearchTool.QUOTE, success=True, data={"bid": float("nan")})
+
+    record = research_source_provenance(request, result, requested_at_utc=REQUESTED, received_at_utc=RECEIVED)
+
+    canonical_bytes({"event": record})
+
+def test_non_finite_model_arguments_never_crash_hashing() -> None:
+    record = _record(ResearchTool.QUOTE, {"symbol": "SPY", "limit": float("nan")}, {})
+
+    assert len(record["query_sha256"]) == 64
+    json.dumps(record, allow_nan=False)
+
+
+def test_toolbox_repeat_guard_tolerates_non_finite_arguments(tmp_path) -> None:
+    from ibkr_paper_30d.autonomy_toolbox import AutonomyToolbox
+    from ibkr_paper_30d.autonomy_workspace import AutonomyWorkspace
+
+    class Base:
+        def manifest(self):
+            return []
+
+    toolbox = AutonomyToolbox(Base(), AutonomyWorkspace(tmp_path / "ws", sandbox=None))
+    request = ResearchRequest(request_id="r", tool=ResearchTool.WORKSPACE,
+                              arguments={"operation": "teleport", "x": float("nan")}, purpose="p")
+
+    result = toolbox.execute(request, None)
+
+    assert result.success is False
+    assert result.data["error_type"] == "UNSUPPORTED_OPERATION"

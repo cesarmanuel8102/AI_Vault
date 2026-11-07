@@ -35,7 +35,7 @@ from .autonomous_research import (
     ResearchTool,
 )
 from .autonomy_workspace import AutonomyWorkspace
-from .canonical import sha256_json
+from .source_provenance import tolerant_sha256
 from .redaction import redact_text
 from .trader_invocation import TraderDecision, TraderInputBundle
 
@@ -552,7 +552,7 @@ class AutonomyToolbox:
         }
         if not capability:
             return self.base.execute(request, bundle)
-        fingerprint = sha256_json(
+        fingerprint = tolerant_sha256(
             {"tool": request.tool.value, "arguments": dict(request.arguments or {})}
         )
         failed_at = self._non_retryable_failures.get(fingerprint)
