@@ -183,7 +183,12 @@ class ContinuityWatchdog:
 
     @staticmethod
     def _backoff_seconds(failure_count: int, base: float = 1.0, max_seconds: float = 30.0) -> float:
-        return min(base * (2 ** (failure_count - 1)), max_seconds)
+        delay = base
+        for _ in range(max(0, failure_count - 1)):
+            if delay >= max_seconds:
+                return max_seconds
+            delay = min(delay * 2, max_seconds)
+        return min(delay, max_seconds)
 
     @staticmethod
     def _is_sqlite_contention(exc: sqlite3.OperationalError) -> bool:

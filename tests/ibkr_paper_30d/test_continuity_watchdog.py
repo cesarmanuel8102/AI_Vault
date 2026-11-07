@@ -659,6 +659,10 @@ def test_poll_once_double_timeout_triggers_disconnect_and_backoff(tmp_path):
     assert reports == ["CONTINUITY_WATCHDOG_FAILED"]
 
 
+def test_backoff_caps_without_overflow_after_extended_outage():
+    assert ContinuityWatchdog._backoff_seconds(1025) == 30.0
+
+
 def test_connection_error_uses_exponential_backoff(tmp_path):
     """ConnectionError during broker_factory must use exponential backoff
     between reconnection attempts rather than a fixed poll interval."""
