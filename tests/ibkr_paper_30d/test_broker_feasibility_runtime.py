@@ -547,6 +547,43 @@ def test_canonical_nested_leg_contract_reaches_authoritative_what_if(
     assert broker.disconnected is True
 
 
+def test_successful_bag_what_if_emits_complete_v4_continuity_identity(monkeypatch):
+    """A successful combo what-if must carry the exact qualified ownership set."""
+    broker = _ComboBroker()
+    toolbox = IBKRResearchToolbox(expected_account_hash="a" * 64)
+    monkeypatch.setattr(toolbox, "_connect", lambda: broker)
+
+    result = toolbox.execute(
+        _combo_request(_CANONICAL_NESTED_LEGS, "feasibility-v4-bag-identity"),
+        _bundle(),
+    )
+
+    assert result.success is True
+    assert [leg["conId"] for leg in result.data["contract"]["comboLegs"]] == [
+        913925915,
+        926221865,
+    ]
+    bindings = result.data["continuity_host_bindings"]
+    parent = bindings["canonical_contract_identity_v4"]
+    assert parent["security_type"] == "BAG"
+    assert parent["con_id"] == 0
+    assert [leg["con_id"] for leg in parent["bag_legs"]] == [
+        913925915,
+        926221865,
+    ]
+    ownership = bindings["ownership_contracts_v4"]
+    assert [contract["con_id"] for contract in ownership] == [
+        0,
+        913925915,
+        926221865,
+    ]
+    assert [contract["security_type"] for contract in ownership] == [
+        "BAG",
+        "OPT",
+        "OPT",
+    ]
+
+
 def test_nested_leg_contract_without_identity_fails_closed_before_broker_call(
     monkeypatch,
 ):

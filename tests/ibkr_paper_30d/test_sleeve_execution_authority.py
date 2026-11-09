@@ -344,6 +344,60 @@ def _bag_broker(request, **changes):
     return value
 
 
+def _bag_request_with_v4_plan():
+    from ibkr_paper_30d.continuity_binding import build_v4_new_proposal_bindings
+    from ibkr_paper_30d.continuity_models import CodexOrderContinuityPlan
+    from test_continuity_models import _valid_plan
+
+    request = _v4_request()
+    portfolio = dict(request.input_bundle.multi_sleeve_portfolio)
+    portfolio["sleeve_authority_sha256"] = {
+        request.capital_sleeve.value: "e" * 64
+    }
+    bundle = request.input_bundle.model_copy(
+        update={"multi_sleeve_portfolio": portfolio}
+    )
+    request = request.model_copy(
+        update={
+            "input_bundle": bundle,
+            "input_bundle_sha256": bundle.sha256,
+            "sleeve_authority_sha256": "e" * 64,
+        }
+    )
+    broker = _bag_broker(request)
+    what_if = {
+        "success": True,
+        "contract": broker["canonical_contract"],
+        "continuity_host_bindings": {
+            "account_identity_sha256": request.account_identity_sha256,
+            "canonical_contract_identity_v4": broker["canonical_contract"],
+            "ownership_contracts_v4": broker["ownership_contracts"],
+        },
+    }
+    bindings = build_v4_new_proposal_bindings(
+        bundle, request.payload, what_if, "bag-order-ref"
+    )
+    data = _valid_plan(
+        schema="CODEX_ORDER_CONTINUITY_PLAN_V4",
+        next_decision_deadline_utc="2026-10-01T15:00:00Z",
+        **bindings,
+    )
+    data["order_binding"].update(
+        binding_type="NEW_PROPOSAL",
+        order_ref="bag-order-ref",
+        ibkr_order_id=None,
+        perm_id=None,
+        original_order_state_sha256=None,
+        proposal_sha256=sha256_json(request.payload),
+        original_intent_sha256=sha256_json(request.payload),
+    )
+    plan = CodexOrderContinuityPlan.model_validate(data)
+    request = request.model_copy(
+        update={"continuity_plan": plan, "continuity_plan_sha256": plan.sha256}
+    )
+    return request, broker, bindings
+
+
 @pytest.mark.parametrize(
     ("changes", "reason"),
     [
@@ -1061,6 +1115,97 @@ def test_bag_entry_atomically_reserves_parent_and_every_leg(tmp_path) -> None:
         terminal = ContractOwnershipStore(db).projection()
         assert terminal.active_contracts == ()
         assert len(terminal.released_contracts) == 3
+    finally:
+        db.close()
+
+
+def test_bag_entry_rejects_forged_v4_ownership_group_before_reservation(tmp_path):
+    request, broker, _bindings = _bag_request_with_v4_plan()
+    forged = request.continuity_plan.model_copy(
+        update={"ownership_group_sha256": "0" * 64}
+    )
+    request = request.model_copy(
+        update={
+            "continuity_plan": forged,
+            "continuity_plan_sha256": forged.sha256,
+        }
+    )
+    db = Database.open(tmp_path / "bag-v4-forged-group.sqlite3")
+    install_successor_schema_v2(db)
+    install_continuity_schema_v3(db)
+    install_multi_universe_schema_v4(db)
+    from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+
+    SleeveLedgerStore(db).bootstrap_extended()
+    try:
+        receipt = SleeveAuthorityReservationStore(db).reserve(
+            request,
+            broker,
+            lambda: _snapshot(request),
+        )
+        assert receipt.status == "BLOCK"
+        assert receipt.reason_codes == (
+            "V4_CONTINUITY_OWNERSHIP_BINDING_MISMATCH",
+        )
+        assert (
+            db.execute("SELECT COUNT(*) FROM contract_ownership_events").fetchone()[0]
+            == 0
+        )
+    finally:
+        db.close()
+
+
+def test_bag_entry_reserves_exact_v4_continuity_group(tmp_path):
+    from ibkr_paper_30d.contract_ownership import ContractOwnershipStore
+    from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+
+    request, broker, bindings = _bag_request_with_v4_plan()
+    db = Database.open(tmp_path / "bag-v4-exact-group.sqlite3")
+    install_successor_schema_v2(db)
+    install_continuity_schema_v3(db)
+    install_multi_universe_schema_v4(db)
+    SleeveLedgerStore(db).bootstrap_extended()
+    try:
+        receipt = SleeveAuthorityReservationStore(db).reserve(
+            request,
+            broker,
+            lambda: _snapshot(request),
+        )
+        assert receipt.status == "PASS"
+        owner = ContractOwnershipStore(db).projection().owner_of(
+            bindings["canonical_contract_sha256"]
+        )
+        assert owner is not None
+        assert owner.group_id == "order:bag-order-ref"
+        assert owner.group_sha256 == bindings["ownership_group_sha256"]
+    finally:
+        db.close()
+
+
+def test_bag_entry_blocks_live_member_identity_drift(tmp_path):
+    from ibkr_paper_30d.sleeve_ledger import SleeveLedgerStore
+
+    request, broker, _bindings = _bag_request_with_v4_plan()
+    broker["ownership_contracts"][1]["local_symbol"] = "DIFFERENT CONTRACT"
+    db = Database.open(tmp_path / "bag-v4-member-drift.sqlite3")
+    install_successor_schema_v2(db)
+    install_continuity_schema_v3(db)
+    install_multi_universe_schema_v4(db)
+    SleeveLedgerStore(db).bootstrap_extended()
+    try:
+        receipt = SleeveAuthorityReservationStore(db).reserve(
+            request,
+            broker,
+            lambda: _snapshot(request),
+        )
+        assert receipt.status == "BLOCK"
+        assert receipt.reason_codes == (
+            "V4_CONTINUITY_OWNERSHIP_BINDING_MISMATCH",
+        )
+        assert (
+            db.execute("SELECT COUNT(*) FROM contract_ownership_events").fetchone()[0]
+            == 0
+        )
     finally:
         db.close()
 

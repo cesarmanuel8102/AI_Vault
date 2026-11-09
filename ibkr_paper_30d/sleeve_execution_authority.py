@@ -435,18 +435,39 @@ class SleeveAuthorityReservationStore:
                             or member_by_con_id.get(contract.con_id) != contract
                         ):
                             raise OwnershipError("BAG_OWNERSHIP_EVIDENCE_INCOMPLETE")
-                        ownership.reserve_group_in_transaction(
-                            ContractOwnershipGroup(
-                                group_id=f"execution:{request.execution_key}",
-                                sleeve=snapshot.capital_sleeve,
-                                parent_contract=contract,
-                                member_contracts=tuple(
-                                    member_by_con_id[con_id]
-                                    for con_id in sorted(required_ids)
-                                ),
-                                generation=1,
-                            )
+                        plan = request.continuity_plan
+                        ordered_members = (
+                            contract,
+                            *(
+                                member_by_con_id[leg.con_id]
+                                for leg in contract.bag_legs
+                            ),
                         )
+                        group = ContractOwnershipGroup(
+                            group_id=(
+                                f"order:{plan.order_binding.order_ref}"
+                                if plan is not None
+                                and plan.schema == "CODEX_ORDER_CONTINUITY_PLAN_V4"
+                                else f"execution:{request.execution_key}"
+                            ),
+                            sleeve=snapshot.capital_sleeve,
+                            parent_contract=contract,
+                            member_contracts=ordered_members,
+                            generation=1,
+                        )
+                        if (
+                            plan is not None
+                            and plan.schema == "CODEX_ORDER_CONTINUITY_PLAN_V4"
+                            and (
+                                group.sha256 != plan.ownership_group_sha256
+                                or contract.sha256
+                                != plan.canonical_contract_sha256
+                            )
+                        ):
+                            raise OwnershipError(
+                                "V4_CONTINUITY_OWNERSHIP_BINDING_MISMATCH"
+                            )
+                        ownership.reserve_group_in_transaction(group)
                     else:
                         plan = request.continuity_plan
                         if plan is not None and plan.schema == "CODEX_ORDER_CONTINUITY_PLAN_V4":

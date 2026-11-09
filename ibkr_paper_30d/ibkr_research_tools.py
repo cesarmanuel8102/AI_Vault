@@ -1236,7 +1236,7 @@ class IBKRResearchToolbox:
 
     @staticmethod
     def _serialize_contract(contract: Any) -> dict[str, Any]:
-        return {
+        serialized = {
             "conId": int(getattr(contract, "conId", 0) or 0),
             "symbol": str(getattr(contract, "symbol", "")),
             "localSymbol": str(getattr(contract, "localSymbol", "")),
@@ -1249,6 +1249,18 @@ class IBKRResearchToolbox:
             "right": str(getattr(contract, "right", "")),
             "multiplier": str(getattr(contract, "multiplier", "")),
         }
+        combo_legs = list(getattr(contract, "comboLegs", None) or [])
+        if str(getattr(contract, "secType", "") or "").upper() == "BAG":
+            serialized["comboLegs"] = [
+                {
+                    "conId": int(getattr(leg, "conId", 0) or 0),
+                    "ratio": int(getattr(leg, "ratio", 0) or 0),
+                    "action": str(getattr(leg, "action", "") or "").upper(),
+                    "exchange": str(getattr(leg, "exchange", "") or ""),
+                }
+                for leg in combo_legs
+            ]
+        return serialized
 
     _CONTRACT_ARGUMENT_ALIASES = (
         ("symbol",),
@@ -2339,6 +2351,7 @@ class IBKRResearchToolbox:
         from ib_insync import ComboLeg, Contract
 
         combo_legs = []
+        qualified_members = []
         for leg in args.get("legs") or []:
             spec = self._combo_leg_contract_spec(leg)
             contract_id = self._combo_leg_contract_id(leg)
@@ -2371,13 +2384,16 @@ class IBKRResearchToolbox:
                     exchange=leg_exchange,
                 )
             )
-        return Contract(
+            qualified_members.append(resolved)
+        contract = Contract(
             symbol=str(args.get("symbol") or "").upper(),
             secType="BAG",
             exchange=str(args.get("exchange") or "SMART"),
             currency=str(args.get("currency") or "USD"),
             comboLegs=combo_legs,
         )
+        contract._v4_qualified_member_contracts = tuple(qualified_members)
+        return contract
 
     def _request_what_if(self, broker: Any, contract: Any, order: Any):
         if getattr(order, "whatIf", False) is not True:
@@ -2672,10 +2688,36 @@ class IBKRResearchToolbox:
         from types import SimpleNamespace
         from .autonomous_execution import WriterOwnedModelExecutionMechanics
 
-        if contract.secType != "BAG" and int(getattr(contract, "conId", 0) or 0) > 0:
+        v4_bundle = SimpleNamespace(multi_sleeve_v4_active=True)
+        security_type = str(getattr(contract, "secType", "") or "").upper()
+        if security_type == "BAG":
+            members = tuple(
+                getattr(contract, "_v4_qualified_member_contracts", ()) or ()
+            )
+            combo_legs = tuple(getattr(contract, "comboLegs", ()) or ())
+            if len(members) != len(combo_legs) or len(members) < 2:
+                raise ValueError("V4_CONTINUITY_BAG_MEMBER_EVIDENCE_REQUIRED")
+            member_ids = [int(getattr(member, "conId", 0) or 0) for member in members]
+            leg_ids = [int(getattr(leg, "conId", 0) or 0) for leg in combo_legs]
+            if member_ids != leg_ids or len(member_ids) != len(set(member_ids)):
+                raise ValueError("V4_CONTINUITY_BAG_MEMBER_EVIDENCE_MISMATCH")
+            parent = WriterOwnedModelExecutionMechanics._authority_contract(
+                contract, v4_bundle
+            )
+            result["continuity_host_bindings"]["canonical_contract_identity_v4"] = parent
+            result["continuity_host_bindings"]["ownership_contracts_v4"] = [
+                parent,
+                *[
+                    WriterOwnedModelExecutionMechanics._authority_contract(
+                        member, v4_bundle
+                    )
+                    for member in members
+                ],
+            ]
+        elif int(getattr(contract, "conId", 0) or 0) > 0:
             result["continuity_host_bindings"]["canonical_contract_identity_v4"] = (
                 WriterOwnedModelExecutionMechanics._authority_contract(
-                    contract, SimpleNamespace(multi_sleeve_v4_active=True)
+                    contract, v4_bundle
                 )
             )
 
@@ -2684,8 +2726,10 @@ class IBKRResearchToolbox:
 
         if proposal.legs:
             combo_legs = []
+            qualified_members = []
             for leg in proposal.legs:
                 qualified = self._qualify(ib, leg.model_dump(mode="json"))
+                qualified_members.append(qualified)
                 combo_legs.append(
                     ComboLeg(
                         conId=qualified.conId,
@@ -2694,13 +2738,15 @@ class IBKRResearchToolbox:
                         exchange=leg.exchange or "SMART",
                     )
                 )
-            return Contract(
+            contract = Contract(
                 symbol=proposal.symbol,
                 secType="BAG",
                 exchange="SMART",
                 currency="USD",
                 comboLegs=combo_legs,
             )
+            contract._v4_qualified_member_contracts = tuple(qualified_members)
+            return contract
         if proposal.sec_type.upper() == "CRYPTO":
             from .multi_universe_models import ProductFamilyKey
 

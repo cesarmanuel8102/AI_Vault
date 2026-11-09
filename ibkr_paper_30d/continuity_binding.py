@@ -53,10 +53,38 @@ def build_v4_new_proposal_bindings(
     if contract.con_id != reported.con_id or contract.security_type != reported.security_type:
         raise ValueError("V4_CONTINUITY_CANONICAL_CONTRACT_MISMATCH")
     if contract.security_type == "BAG":
-        raise ValueError("V4_CONTINUITY_BAG_MEMBER_EVIDENCE_REQUIRED")
+        if contract.sha256 != reported.sha256:
+            raise ValueError("V4_CONTINUITY_CANONICAL_CONTRACT_MISMATCH")
+        raw_ownership = (what_if.get("continuity_host_bindings") or {}).get(
+            "ownership_contracts_v4"
+        )
+        if not isinstance(raw_ownership, list) or len(raw_ownership) < 3:
+            raise ValueError("V4_CONTINUITY_BAG_MEMBER_EVIDENCE_REQUIRED")
+        try:
+            ownership_contracts = tuple(
+                CanonicalContractIdentity.model_validate(item)
+                for item in raw_ownership
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "V4_CONTINUITY_BAG_MEMBER_EVIDENCE_INVALID"
+            ) from exc
+        parent, *members = ownership_contracts
+        expected_leg_ids = [leg.con_id for leg in contract.bag_legs]
+        member_ids = [member.con_id for member in members]
+        if (
+            parent.sha256 != contract.sha256
+            or member_ids != expected_leg_ids
+            or len(member_ids) != len(set(member_ids))
+            or any(member.security_type == "BAG" for member in members)
+        ):
+            raise ValueError("V4_CONTINUITY_BAG_MEMBER_EVIDENCE_MISMATCH")
+        group_members = ownership_contracts
+    else:
+        group_members = (contract,)
     group = ContractOwnershipGroup(
         group_id=f"order:{order_ref}", sleeve=sleeve, parent_contract=contract,
-        member_contracts=(contract,), generation=1,
+        member_contracts=group_members, generation=1,
     )
     return {
         "capital_sleeve": sleeve.value,
