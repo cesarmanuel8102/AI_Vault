@@ -6,7 +6,10 @@ import pytest
 
 from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
 from ibkr_paper_30d.multi_universe_models import CapitalSleeve
-from ibkr_paper_30d.contract_ownership import ContractOwnershipStore, canonical_contract_identity
+from ibkr_paper_30d.contract_ownership import (
+    ContractOwnershipStore,
+    canonical_contract_identity,
+)
 from ibkr_paper_30d.multi_universe_schema import install_multi_universe_schema_v4
 from ibkr_paper_30d.persistence import Database
 from ibkr_paper_30d.sleeve_ledger import (
@@ -100,9 +103,13 @@ def test_continuous_bootstrap_is_exactly_usd_500_and_flat(tmp_path) -> None:
 def test_bootstrap_in_transaction_variants_require_caller_transaction(tmp_path) -> None:
     db, store = _store(tmp_path)
     try:
-        with pytest.raises(SleeveLedgerError, match="ATOMIC_BOOTSTRAP_TRANSACTION_REQUIRED"):
+        with pytest.raises(
+            SleeveLedgerError, match="ATOMIC_BOOTSTRAP_TRANSACTION_REQUIRED"
+        ):
             store.bootstrap_regular_in_transaction(_carry())
-        with pytest.raises(SleeveLedgerError, match="ATOMIC_BOOTSTRAP_TRANSACTION_REQUIRED"):
+        with pytest.raises(
+            SleeveLedgerError, match="ATOMIC_BOOTSTRAP_TRANSACTION_REQUIRED"
+        ):
             store.bootstrap_continuous_in_transaction()
 
         with db.transaction():
@@ -174,8 +181,12 @@ def test_one_sleeve_cannot_spend_or_pledge_the_others_currency(tmp_path) -> None
                 },
             )
 
-        assert store.project(CapitalSleeve.REGULAR_SLEEVE).balance("EUR") == Decimal("40.00")
-        assert store.project(CapitalSleeve.EXTENDED_SLEEVE).balance("EUR") == Decimal("0.00")
+        assert store.project(CapitalSleeve.REGULAR_SLEEVE).balance("EUR") == Decimal(
+            "40.00"
+        )
+        assert store.project(CapitalSleeve.EXTENDED_SLEEVE).balance("EUR") == Decimal(
+            "0.00"
+        )
     finally:
         db.close()
 
@@ -215,15 +226,20 @@ def test_model_fill_import_posts_exact_economics_once_and_preserves_reservation(
         assert state.balance("USD") == Decimal("17.816")
         assert state.fees_usd == Decimal("1.75")
         assert state.reserved_liability_usd == Decimal("482.60")
-        assert sum(
-            event["event_type"] == "MODEL_FILL_IMPORTED"
-            for event in store._events()
-        ) == 1
+        assert (
+            sum(
+                event["event_type"] == "MODEL_FILL_IMPORTED"
+                for event in store._events()
+            )
+            == 1
+        )
     finally:
         db.close()
 
 
-def test_model_fill_import_rejects_conflicting_replay_without_mutation(tmp_path) -> None:
+def test_model_fill_import_rejects_conflicting_replay_without_mutation(
+    tmp_path,
+) -> None:
     db, store = _store(tmp_path)
     sleeve = CapitalSleeve.CONTINUOUS_SLEEVE
     try:
@@ -250,7 +266,9 @@ def test_model_fill_import_rejects_conflicting_replay_without_mutation(tmp_path)
         db.close()
 
 
-def test_missing_model_fill_commission_is_adjusted_once_with_provenance(tmp_path) -> None:
+def test_missing_model_fill_commission_is_adjusted_once_with_provenance(
+    tmp_path,
+) -> None:
     db, store = _store(tmp_path)
     sleeve = CapitalSleeve.REGULAR_SLEEVE
     try:
@@ -289,10 +307,13 @@ def test_missing_model_fill_commission_is_adjusted_once_with_provenance(tmp_path
         assert store.model_fill_commission_recorded("e" * 64) is True
         assert after.balance("USD") == before.balance("USD") - Decimal("1.0097558")
         assert after.fees_usd == before.fees_usd + Decimal("1.0097558")
-        assert sum(
-            event["event_type"] == "MODEL_FILL_COMMISSION_ADJUSTED"
-            for event in store._events()
-        ) == 1
+        assert (
+            sum(
+                event["event_type"] == "MODEL_FILL_COMMISSION_ADJUSTED"
+                for event in store._events()
+            )
+            == 1
+        )
     finally:
         db.close()
 
@@ -332,7 +353,9 @@ def test_model_fill_commission_adjustment_rejects_conflict(tmp_path) -> None:
         db.close()
 
 
-def test_broker_snapshot_projects_owned_positions_orders_fills_and_fees(tmp_path) -> None:
+def test_broker_snapshot_projects_owned_positions_orders_fills_and_fees(
+    tmp_path,
+) -> None:
     db, store = _store(tmp_path)
     contract = canonical_contract_identity(
         {
@@ -361,9 +384,7 @@ def test_broker_snapshot_projects_owned_positions_orders_fills_and_fees(tmp_path
                         "market_value_usd": "55",
                     }
                 ],
-                "open_orders": [
-                    {"contract_identity_sha256": contract.sha256}
-                ],
+                "open_orders": [{"contract_identity_sha256": contract.sha256}],
                 "executions": [
                     {
                         "contract_identity_sha256": contract.sha256,
@@ -380,6 +401,10 @@ def test_broker_snapshot_projects_owned_positions_orders_fills_and_fees(tmp_path
         assert state.open_order_count == 1
         assert state.fill_count == 1
         assert state.fees_usd == Decimal("1.25")
+        observation_version = db.execute(
+            "SELECT version FROM experiment_state WHERE experiment_id=?",
+            (store.RECONCILIATION_OBSERVATION_ID,),
+        ).fetchone()[0]
         again = store.reconcile_broker_snapshot(
             {
                 "positions": [
@@ -392,9 +417,7 @@ def test_broker_snapshot_projects_owned_positions_orders_fills_and_fees(tmp_path
                         "market_value_usd": "55",
                     }
                 ],
-                "open_orders": [
-                    {"contract_identity_sha256": contract.sha256}
-                ],
+                "open_orders": [{"contract_identity_sha256": contract.sha256}],
                 "executions": [
                     {
                         "contract_identity_sha256": contract.sha256,
@@ -406,12 +429,22 @@ def test_broker_snapshot_projects_owned_positions_orders_fills_and_fees(tmp_path
             ownership.projection(),
         )
         assert again == receipt
-        assert state.event_count + 0 == store.project(CapitalSleeve.EXTENDED_SLEEVE).event_count
+        assert (
+            state.event_count + 0
+            == store.project(CapitalSleeve.EXTENDED_SLEEVE).event_count
+        )
+        refreshed_version = db.execute(
+            "SELECT version FROM experiment_state WHERE experiment_id=?",
+            (store.RECONCILIATION_OBSERVATION_ID,),
+        ).fetchone()[0]
+        assert refreshed_version == observation_version + 1
     finally:
         db.close()
 
 
-def test_broker_snapshot_recurrence_records_transition_back_to_prior_state(tmp_path) -> None:
+def test_broker_snapshot_recurrence_records_transition_back_to_prior_state(
+    tmp_path,
+) -> None:
     db, store = _store(tmp_path)
     contract = canonical_contract_identity(
         {
@@ -436,9 +469,7 @@ def test_broker_snapshot_recurrence_records_transition_back_to_prior_state(tmp_p
         store.reconcile_broker_snapshot(
             {
                 "positions": [],
-                "open_orders": [
-                    {"contract_identity_sha256": contract.sha256}
-                ],
+                "open_orders": [{"contract_identity_sha256": contract.sha256}],
                 "executions": [],
             },
             ownership.projection(),
@@ -463,18 +494,37 @@ def test_fresh_broker_valuation_updates_pnl_without_resetting_allocation(tmp_pat
     try:
         store.bootstrap_regular(_carry())
         store.bootstrap_extended()
-        ownership = {"active_contracts": [
-            {"contract_identity_sha256": "b" * 64, "sleeve": "REGULAR_SLEEVE"}
-        ]}
-        store.append(CapitalSleeve.EXTENDED_SLEEVE, "REALIZED_PNL", {"amount_usd": "-7.389627"})
-        store.reconcile_broker_snapshot({"executions": [{
-            "contract_identity_sha256": "b" * 64,
-            "execution_id_hash": "e" * 64, "commission": "1.25",
-        }], "positions": [{
-            "contract_identity_sha256": "b" * 64, "quantity": "2",
-            "multiplier": "1", "average_cost": "36", "mark": "42",
-            "market_value_usd": "84", "mark_fresh": True,
-        }]}, ownership)
+        ownership = {
+            "active_contracts": [
+                {"contract_identity_sha256": "b" * 64, "sleeve": "REGULAR_SLEEVE"}
+            ]
+        }
+        store.append(
+            CapitalSleeve.EXTENDED_SLEEVE, "REALIZED_PNL", {"amount_usd": "-7.389627"}
+        )
+        store.reconcile_broker_snapshot(
+            {
+                "executions": [
+                    {
+                        "contract_identity_sha256": "b" * 64,
+                        "execution_id_hash": "e" * 64,
+                        "commission": "1.25",
+                    }
+                ],
+                "positions": [
+                    {
+                        "contract_identity_sha256": "b" * 64,
+                        "quantity": "2",
+                        "multiplier": "1",
+                        "average_cost": "36",
+                        "mark": "42",
+                        "market_value_usd": "84",
+                        "mark_fresh": True,
+                    }
+                ],
+            },
+            ownership,
+        )
         state = store.project(CapitalSleeve.REGULAR_SLEEVE)
         assert state.unrealized_pnl_usd == Decimal("12")
         assert state.realized_pnl_usd == Decimal("12.50")
@@ -482,15 +532,93 @@ def test_fresh_broker_valuation_updates_pnl_without_resetting_allocation(tmp_pat
         assert state.valuation_status == "FRESH"
         assert state.fees_usd == Decimal("1.25")
         assert state.fees_deductible_usd == Decimal("5.25")
-        assert store.project(CapitalSleeve.EXTENDED_SLEEVE).realized_pnl_usd == Decimal("-7.389627")
-        assert store.project(CapitalSleeve.EXTENDED_SLEEVE).allocation_usd == Decimal("500")
-        store.reconcile_broker_snapshot({"positions": [{
-            "contract_identity_sha256": "b" * 64, "quantity": "2",
-            "multiplier": "1", "average_cost": "36", "mark": "0",
-            "market_value_usd": "0", "mark_fresh": False,
-        }]}, ownership)
+        assert store.project(CapitalSleeve.EXTENDED_SLEEVE).realized_pnl_usd == Decimal(
+            "-7.389627"
+        )
+        assert store.project(CapitalSleeve.EXTENDED_SLEEVE).allocation_usd == Decimal(
+            "500"
+        )
+        store.reconcile_broker_snapshot(
+            {
+                "positions": [
+                    {
+                        "contract_identity_sha256": "b" * 64,
+                        "quantity": "2",
+                        "multiplier": "1",
+                        "average_cost": "36",
+                        "mark": "0",
+                        "market_value_usd": "0",
+                        "mark_fresh": False,
+                    }
+                ]
+            },
+            ownership,
+        )
         stale = store.project(CapitalSleeve.REGULAR_SLEEVE)
         assert stale.unrealized_pnl_usd == Decimal("12")
         assert stale.valuation_status == "UNAVAILABLE"
+    finally:
+        db.close()
+
+
+def test_capital_contribution_increases_allocation_and_cash_only(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    try:
+        store.bootstrap_regular(_carry())
+        before = store.project(CapitalSleeve.REGULAR_SLEEVE)
+
+        with db.transaction():
+            receipt = store.contribute_capital_in_transaction(
+                CapitalSleeve.REGULAR_SLEEVE,
+                amount_usd=Decimal("9500"),
+                contribution_id="owner-capital-10k-regular",
+                authorization_sha256="f" * 64,
+            )
+
+        after = store.project(CapitalSleeve.REGULAR_SLEEVE)
+        assert receipt.duplicate is False
+        assert after.allocation_usd == Decimal("10000.00")
+        assert after.balance("USD") == before.balance("USD") + Decimal("9500")
+        assert after.realized_pnl_usd == before.realized_pnl_usd
+        assert after.unrealized_pnl_usd == before.unrealized_pnl_usd
+        assert after.fees_usd == before.fees_usd
+        assert after.positions == before.positions
+    finally:
+        db.close()
+
+
+def test_capital_contribution_is_idempotent_and_conflicts_fail_closed(tmp_path) -> None:
+    db, store = _store(tmp_path)
+    try:
+        store.bootstrap_continuous()
+        with db.transaction():
+            first = store.contribute_capital_in_transaction(
+                CapitalSleeve.CONTINUOUS_SLEEVE,
+                amount_usd=Decimal("9500"),
+                contribution_id="owner-capital-10k-continuous",
+                authorization_sha256="e" * 64,
+            )
+        with db.transaction():
+            retry = store.contribute_capital_in_transaction(
+                CapitalSleeve.CONTINUOUS_SLEEVE,
+                amount_usd=Decimal("9500"),
+                contribution_id="owner-capital-10k-continuous",
+                authorization_sha256="e" * 64,
+            )
+        assert retry.duplicate is True
+        assert retry.event_sha256 == first.event_sha256
+        assert store.project(CapitalSleeve.CONTINUOUS_SLEEVE).allocation_usd == Decimal(
+            "10000"
+        )
+
+        with db.transaction(), pytest.raises(
+            SleeveLedgerError, match="CAPITAL_CONTRIBUTION_CONFLICT"
+        ):
+            store.contribute_capital_in_transaction(
+                CapitalSleeve.CONTINUOUS_SLEEVE,
+                amount_usd=Decimal("9499"),
+                contribution_id="owner-capital-10k-continuous",
+                authorization_sha256="e" * 64,
+            )
     finally:
         db.close()

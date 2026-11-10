@@ -41,6 +41,7 @@ from ibkr_paper_30d.production_continuity_runtime import (
     _verified_registry_binding,
     _collect_continuity_liability_evidence,
     _broker_evidence_collector,
+    _capital_authority_chain_valid,
     _ProductionCanaryStore,
     create_canary_pilot_orchestrator,
     create_authoritative_writer,
@@ -57,6 +58,50 @@ def test_only_regular_sleeve_uses_inherited_day1_product_capability():
     assert _uses_inherited_regular_day1_capability(
         CapitalSleeve.REGULAR_SLEEVE,
         REGULAR_DAY1_PRODUCT_FAMILY,
+    )
+
+
+def test_capital_authority_chain_accepts_10k_only_when_target_root_and_ledgers_match():
+    now = datetime(2026, 11, 10, 18, 0, tzinfo=timezone.utc)
+    target = SimpleNamespace(
+        regular_sleeve_authority_sha256="a" * 64,
+        continuous_sleeve_authority_sha256="b" * 64,
+        economic_risk_authorization_sha256="c" * 64,
+        successor_definition_sha256="d" * 64,
+    )
+    regular = SimpleNamespace(authorized_principal_usd=Decimal("10000"))
+    continuous = SimpleNamespace(authorized_principal_usd=Decimal("10000"))
+    economic = SimpleNamespace(
+        regular_allocation_usd=Decimal("10000"),
+        extended_allocation_usd=Decimal("10000"),
+        successor_definition_sha256="d" * 64,
+        issued_at_utc=now - timedelta(minutes=1),
+        expires_at_utc=now + timedelta(days=20),
+    )
+    roots = {
+        "REGULAR_SLEEVE": "a" * 64,
+        "CONTINUOUS_SLEEVE": "b" * 64,
+        "ECONOMIC": "c" * 64,
+    }
+    assert _capital_authority_chain_valid(
+        target=target,
+        roots=roots,
+        regular_authority=regular,
+        continuous_authority=continuous,
+        economic_authorization=economic,
+        regular_allocation=Decimal("10000"),
+        continuous_allocation=Decimal("10000"),
+        now_utc=now,
+    )
+    assert not _capital_authority_chain_valid(
+        target=target,
+        roots={**roots, "ECONOMIC": "e" * 64},
+        regular_authority=regular,
+        continuous_authority=continuous,
+        economic_authorization=economic,
+        regular_allocation=Decimal("10000"),
+        continuous_allocation=Decimal("10000"),
+        now_utc=now,
     )
     assert not _uses_inherited_regular_day1_capability(
         CapitalSleeve.CONTINUOUS_SLEEVE,

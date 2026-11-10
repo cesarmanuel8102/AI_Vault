@@ -174,6 +174,36 @@ def test_owner_economic_authorization_binds_exact_policy_and_limits() -> None:
             _risk_authorization(**changes)
 
 
+def test_models_support_equal_positive_usd_10000_sleeve_authority() -> None:
+    regular = SleeveAuthorityDefinition(
+        sleeve=CapitalSleeve.REGULAR_SLEEVE,
+        authorized_principal_usd=Decimal("10000"),
+        opening_equity_usd=Decimal("9993.98"),
+        opening_pnl_usd=Decimal("-6.02"),
+        source_state_sha256=SHA_A,
+    )
+    economic = _risk_authorization(
+        regular_allocation_usd=Decimal("10000"),
+        extended_allocation_usd=Decimal("10000"),
+    )
+    assert regular.authorized_principal_usd == Decimal("10000")
+    assert economic.regular_allocation_usd == economic.extended_allocation_usd
+
+    with pytest.raises(ValidationError, match="opening equity"):
+        SleeveAuthorityDefinition(
+            sleeve=CapitalSleeve.REGULAR_SLEEVE,
+            authorized_principal_usd=Decimal("10000"),
+            opening_equity_usd=Decimal("9994.00"),
+            opening_pnl_usd=Decimal("-6.02"),
+            source_state_sha256=SHA_A,
+        )
+    with pytest.raises(ValidationError, match="equal positive"):
+        _risk_authorization(
+            regular_allocation_usd=Decimal("10000"),
+            extended_allocation_usd=Decimal("9999"),
+        )
+
+
 def test_transition_target_hash_binds_all_authority() -> None:
     regular = SleeveAuthorityDefinition(
         sleeve=CapitalSleeve.REGULAR_SLEEVE,

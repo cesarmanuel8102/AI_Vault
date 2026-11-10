@@ -200,13 +200,8 @@ class SleeveAuthorityDefinition(AuthorityModel):
 
     @model_validator(mode="after")
     def _validate_opening_economics(self) -> "SleeveAuthorityDefinition":
-        if self.authorized_principal_usd != Decimal("500"):
-            raise ValueError("sleeve principal must equal USD 500")
-        if self.sleeve is CapitalSleeve.CONTINUOUS_SLEEVE and (
-            self.opening_equity_usd != Decimal("500")
-            or self.opening_pnl_usd != Decimal("0")
-        ):
-            raise ValueError("extended sleeve must open at USD 500 and zero P&L")
+        if self.opening_equity_usd - self.opening_pnl_usd != self.authorized_principal_usd:
+            raise ValueError("opening equity minus opening P&L must equal sleeve principal")
         return self
 
 
@@ -241,10 +236,12 @@ class OwnerEconomicRiskAuthorization(AuthorityModel):
         _require_utc(self.expires_at_utc, "expires_at_utc")
         if self.expires_at_utc <= self.issued_at_utc:
             raise ValueError("economic authorization must expire after issuance")
-        if self.regular_allocation_usd != Decimal(
-            "500"
-        ) or self.extended_allocation_usd != Decimal("500"):
-            raise ValueError("economic authorization must bind USD 500 per sleeve")
+        if (
+            self.regular_allocation_usd <= 0
+            or self.extended_allocation_usd <= 0
+            or self.regular_allocation_usd != self.extended_allocation_usd
+        ):
+            raise ValueError("economic authorization must bind equal positive allocations")
         if self.maximum_liability_ratio != Decimal("1.00"):
             raise ValueError("maximum liability ratio must equal 1.00")
         return self

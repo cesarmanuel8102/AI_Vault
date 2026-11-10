@@ -114,7 +114,11 @@ class SleeveLedgerState(_LedgerModel):
     def balance(self, currency: str) -> Decimal:
         normalized = currency.upper()
         return next(
-            (item.amount for item in self.currency_balances if item.currency == normalized),
+            (
+                item.amount
+                for item in self.currency_balances
+                if item.currency == normalized
+            ),
             Decimal("0.00"),
         )
 
@@ -142,11 +146,17 @@ def authoritative_sleeve_equity(
     cash balance, so neither realized P&L nor fees are added or subtracted here.
     """
 
-    data = state.model_dump(mode="python") if hasattr(state, "model_dump") else dict(state)
+    data = (
+        state.model_dump(mode="python") if hasattr(state, "model_dump") else dict(state)
+    )
     reasons: list[str] = []
     cash = Decimal("0")
     for item in data.get("currency_balances") or ():
-        row = item.model_dump(mode="python") if hasattr(item, "model_dump") else dict(item)
+        row = (
+            item.model_dump(mode="python")
+            if hasattr(item, "model_dump")
+            else dict(item)
+        )
         amount = normalized_decimal(row.get("amount") or "0")
         if str(row.get("currency") or "").upper() == "USD":
             cash += amount
@@ -202,6 +212,7 @@ class MultiSleeveLedgerState(_LedgerModel):
 
 class SleeveLedgerStore:
     SCHEMA = "SLEEVE_LEDGER_EVENT_V1"
+    RECONCILIATION_OBSERVATION_ID = "SLEEVE_RECONCILIATION_OBSERVATION_V1"
 
     def __init__(self, db: Database):
         verify_multi_universe_schema_v4(db)
@@ -282,9 +293,7 @@ class SleeveLedgerStore:
             "ORDER BY sequence DESC LIMIT 1"
         ).fetchone()
         previous = str(row[0]) if row is not None else None
-        event_sha256 = sha256_json(
-            {"previous_event_sha256": previous, "payload": body}
-        )
+        event_sha256 = sha256_json({"previous_event_sha256": previous, "payload": body})
         self.db.execute(
             "INSERT INTO sleeve_ledger_events("
             "event_id,sleeve,currency,event_type,payload_json,payload_sha256,"
@@ -418,6 +427,67 @@ class SleeveLedgerStore:
         """Compatibility delegate for callers migrating to the canonical API."""
 
         return self.bootstrap_continuous_in_transaction()
+
+    def contribute_capital_in_transaction(
+        self,
+        sleeve: CapitalSleeve,
+        *,
+        amount_usd: Decimal,
+        contribution_id: str,
+        authorization_sha256: str,
+    ) -> SleeveLedgerReceipt:
+        """Append an owner-authorized capital contribution without changing P&L."""
+
+        if not self.db.connection.in_transaction:
+            raise SleeveLedgerError("ATOMIC_CAPITAL_CONTRIBUTION_REQUIRED")
+        sleeve = CapitalSleeve(sleeve)
+        state = self.project(sleeve)
+        if not state.initialized:
+            raise SleeveLedgerError("SLEEVE_NOT_INITIALIZED")
+        amount = normalized_money(amount_usd)
+        if amount <= 0:
+            raise SleeveLedgerError("INVALID_CAPITAL_CONTRIBUTION")
+        contribution_id = str(contribution_id).strip()
+        authorization_sha256 = str(authorization_sha256).strip().lower()
+        if not contribution_id:
+            raise SleeveLedgerError("CAPITAL_CONTRIBUTION_ID_REQUIRED")
+        if len(authorization_sha256) != 64 or any(
+            char not in "0123456789abcdef" for char in authorization_sha256
+        ):
+            raise SleeveLedgerError("CAPITAL_CONTRIBUTION_AUTHORITY_INVALID")
+        prior = [
+            event
+            for event in self._events()
+            if event["event_type"] == "CAPITAL_CONTRIBUTION"
+            and event.get("contribution_id") == contribution_id
+        ]
+        if prior:
+            latest = prior[-1]
+            if (
+                len(prior) == 1
+                and latest.get("sleeve") == sleeve.value
+                and normalized_money(normalized_decimal(latest.get("amount_usd")))
+                == amount
+                and latest.get("authorization_sha256") == authorization_sha256
+            ):
+                return SleeveLedgerReceipt(
+                    event_id=latest["event_id"],
+                    event_sha256=latest["event_sha256"],
+                    sleeve=sleeve,
+                    event_type="CAPITAL_CONTRIBUTION",
+                    duplicate=True,
+                )
+            raise SleeveLedgerError("CAPITAL_CONTRIBUTION_CONFLICT")
+        return self._insert(
+            sleeve=sleeve,
+            currency="USD",
+            event_type="CAPITAL_CONTRIBUTION",
+            payload={
+                "contribution_id": contribution_id,
+                "amount_usd": str(amount),
+                "authorization_sha256": authorization_sha256,
+            },
+        )
 
     def append(
         self,
@@ -706,9 +776,7 @@ class SleeveLedgerStore:
         historical_owner_by_contract = dict(owner_by_contract)
         historical_owner_by_contract.update(
             {
-                str(item["contract_identity_sha256"]): CapitalSleeve(
-                    item["sleeve"]
-                )
+                str(item["contract_identity_sha256"]): CapitalSleeve(item["sleeve"])
                 for item in ownership_data.get("released_contracts", ())
             }
         )
@@ -744,14 +812,10 @@ class SleeveLedgerStore:
             per_sleeve[sleeve]["marks_fresh"] &= raw.get("mark_fresh") is True
             per_sleeve[sleeve]["positions"].append(
                 CarryForwardPosition(
-                    contract_identity_sha256=str(
-                        raw["contract_identity_sha256"]
-                    ),
+                    contract_identity_sha256=str(raw["contract_identity_sha256"]),
                     quantity=quantity,
                     multiplier=normalized_decimal(raw.get("multiplier") or "1"),
-                    average_cost=normalized_decimal(
-                        raw.get("average_cost") or "0"
-                    ),
+                    average_cost=normalized_decimal(raw.get("average_cost") or "0"),
                     mark=normalized_decimal(raw.get("mark") or "0"),
                     market_value_usd=normalized_decimal(
                         raw.get("market_value_usd") or "0"
@@ -767,9 +831,7 @@ class SleeveLedgerStore:
                 per_sleeve[sleeve]["execution_ids"].add(execution_id)
             commission = raw.get("commission")
             if commission not in {None, ""}:
-                per_sleeve[sleeve]["fees_usd"] += abs(
-                    normalized_decimal(commission)
-                )
+                per_sleeve[sleeve]["fees_usd"] += abs(normalized_decimal(commission))
 
         snapshot_sha256 = sha256_json(dict(snapshot))
         receipts: dict[str, str] = {}
@@ -815,14 +877,56 @@ class SleeveLedgerStore:
                         "open_order_count": data["open_order_count"],
                         "fill_count": len(data["execution_ids"]),
                         "fees_usd": str(data["fees_usd"]),
-                        "valuation_status": "FRESH" if data["marks_fresh"] else "UNAVAILABLE",
-                        "unrealized_pnl_usd": str(sum(
-                            (item.quantity * item.multiplier * (item.mark - item.average_cost)
-                             for item in data["positions"]), Decimal("0")
-                        )) if data["marks_fresh"] else None,
+                        "valuation_status": (
+                            "FRESH" if data["marks_fresh"] else "UNAVAILABLE"
+                        ),
+                        "unrealized_pnl_usd": (
+                            str(
+                                sum(
+                                    (
+                                        item.quantity
+                                        * item.multiplier
+                                        * (item.mark - item.average_cost)
+                                        for item in data["positions"]
+                                    ),
+                                    Decimal("0"),
+                                )
+                            )
+                            if data["marks_fresh"]
+                            else None
+                        ),
                     },
                 )
                 receipts[sleeve.value] = receipt.event_sha256
+            observation = {
+                "schema": self.RECONCILIATION_OBSERVATION_ID,
+                "broker_snapshot_sha256": snapshot_sha256,
+                "ownership_projection_sha256": str(
+                    ownership_data.get("projection_sha256")
+                    or sha256_json(ownership_data)
+                ),
+                "sleeve_reconciliation_event_sha256": dict(sorted(receipts.items())),
+                "observed_at_utc": utc_now(),
+            }
+            row = self.db.execute(
+                "SELECT version FROM experiment_state WHERE experiment_id=?",
+                (self.RECONCILIATION_OBSERVATION_ID,),
+            ).fetchone()
+            version = 1 if row is None else int(row[0]) + 1
+            self.db.execute(
+                "INSERT INTO experiment_state("
+                "experiment_id,version,payload_json,payload_sha256,updated_at_utc"
+                ") VALUES(?,?,?,?,?) ON CONFLICT(experiment_id) DO UPDATE SET "
+                "version=excluded.version,payload_json=excluded.payload_json,"
+                "payload_sha256=excluded.payload_sha256,updated_at_utc=excluded.updated_at_utc",
+                (
+                    self.RECONCILIATION_OBSERVATION_ID,
+                    version,
+                    canonical_bytes(observation).decode("utf-8"),
+                    sha256_json(observation),
+                    observation["observed_at_utc"],
+                ),
+            )
         return receipts
 
     def adjust_model_fill_commission(
@@ -987,7 +1091,9 @@ class SleeveLedgerStore:
                 carry = RegularCarryForward.model_validate(event["carry"])
                 initialized = True
                 allocation = carry.allocation_usd
-                balances = {item.currency: item.amount for item in carry.currency_balances}
+                balances = {
+                    item.currency: item.amount for item in carry.currency_balances
+                }
                 positions = carry.positions
                 open_orders = carry.open_order_count
                 fill_count = carry.fill_count
@@ -1001,12 +1107,20 @@ class SleeveLedgerStore:
                 initialized = True
                 allocation = Decimal("500.00")
                 balances = {"USD": Decimal("500.00")}
+            elif event_type == "CAPITAL_CONTRIBUTION":
+                amount = normalized_money(normalized_decimal(event.get("amount_usd")))
+                allocation += amount
+                balances["USD"] = balances.get("USD", Decimal("0")) + amount
             elif event_type == "CURRENCY_CREDIT":
                 currency = str(event["currency"])
-                balances[currency] = balances.get(currency, Decimal("0")) + normalized_decimal(event["amount"])
+                balances[currency] = balances.get(
+                    currency, Decimal("0")
+                ) + normalized_decimal(event["amount"])
             elif event_type == "CURRENCY_DEBIT":
                 currency = str(event["currency"])
-                balances[currency] = balances.get(currency, Decimal("0")) - normalized_decimal(event["amount"])
+                balances[currency] = balances.get(
+                    currency, Decimal("0")
+                ) - normalized_decimal(event["amount"])
             elif event_type == "LIABILITY_RESERVED":
                 reserved += normalized_decimal(event.get("amount_usd"))
             elif event_type == "LIABILITY_RELEASED":
@@ -1056,7 +1170,9 @@ class SleeveLedgerStore:
             source_ledger_sha256=source_hash,
             event_count=len(events),
             valuation_status=valuation_status,
-            fees_deductible_usd=fees_deductible if valuation_status == "FRESH" else None,
+            fees_deductible_usd=(
+                fees_deductible if valuation_status == "FRESH" else None
+            ),
         )
 
     def project_all(self) -> MultiSleeveLedgerState:

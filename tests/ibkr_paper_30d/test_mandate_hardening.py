@@ -115,6 +115,29 @@ def test_terminal_equity_stretch_benchmark_is_aspirational_not_threshold_utility
     }
 
 
+def test_terminal_equity_benchmark_uses_effective_usd_10000_allocations():
+    value = bundle().model_copy(
+        update={
+            "multi_sleeve_portfolio": {
+                "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+                "sleeves": {
+                    "regular": {"allocation_usd": "10000.00"},
+                    "continuous": {"allocation_usd": "10000.00"},
+                },
+            }
+        }
+    )
+    payload = CodexAutonomousCLIProvider._prompt_payload(
+        request(value), value, [], [{"tool": "MARKET_SCANNER"}]
+    )
+    benchmark = payload["mandate"]["terminal_equity_stretch_benchmark"]
+    assert benchmark["per_sleeve_starting_allocation_usd"] == "10000.00"
+    assert benchmark["per_sleeve_terminal_target_usd"] == "20000.00"
+    assert benchmark["aggregate_starting_allocation_usd"] == "20000.00"
+    assert benchmark["aggregate_terminal_target_usd"] == "40000.00"
+    assert "each $10,000 sleeve to $20,000" in payload["mandate"]["instruction"]
+
+
 def test_attention_policy_preserves_self_direction_while_preventing_local_stagnation():
     policy = mandate()["autonomous_attention_policy"]
 

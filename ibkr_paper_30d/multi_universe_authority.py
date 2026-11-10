@@ -48,6 +48,8 @@ class MultiUniverseAuthorityStore:
         }
     )
     ECONOMIC_SCHEMA = "OWNER_ECONOMIC_RISK_AUTHORIZATION_EVENT_V1"
+    SLEEVE_AMENDMENT_EVENT = "SLEEVE_AUTHORITY_AMENDED"
+    ECONOMIC_AMENDMENT_EVENT = "ECONOMIC_RISK_AUTHORIZATION_AMENDED"
 
     def __init__(self, db: Database):
         verify_multi_universe_schema_v4(db)
@@ -176,7 +178,10 @@ class MultiUniverseAuthorityStore:
                 and event_type in self.SLEEVE_EXECUTION_EVENT_TYPES
             ):
                 continue
-            if schema != self.SLEEVE_SCHEMA or event_type != "SLEEVE_AUTHORITY_BOUND":
+            if schema != self.SLEEVE_SCHEMA or event_type not in {
+                "SLEEVE_AUTHORITY_BOUND",
+                self.SLEEVE_AMENDMENT_EVENT,
+            }:
                 raise MultiUniverseAuthorityError("AUTHORITY_PROJECTION_AMBIGUOUS")
             try:
                 authority = SleeveAuthorityDefinition.model_validate(
@@ -186,32 +191,49 @@ class MultiUniverseAuthorityStore:
                 raise MultiUniverseAuthorityError(
                     "AUTHORITY_PROJECTION_AMBIGUOUS"
                 ) from exc
-            if (
-                event.get("authority_sha256") != authority.sha256
-                or authority.sleeve in authorities
+            if event.get("authority_sha256") != authority.sha256:
+                raise MultiUniverseAuthorityError("AUTHORITY_PROJECTION_AMBIGUOUS")
+            prior = authorities.get(authority.sleeve)
+            if event_type == "SLEEVE_AUTHORITY_BOUND":
+                if prior is not None:
+                    raise MultiUniverseAuthorityError("AUTHORITY_PROJECTION_AMBIGUOUS")
+            elif (
+                prior is None
+                or event.get("prior_authority_sha256") != prior.sha256
+                or not str(event.get("amendment_id") or "").strip()
             ):
                 raise MultiUniverseAuthorityError("AUTHORITY_PROJECTION_AMBIGUOUS")
             authorities[authority.sleeve] = authority
-        if len(economic_events) > 1:
-            raise MultiUniverseAuthorityError("AUTHORITY_PROJECTION_AMBIGUOUS")
         economic: OwnerEconomicRiskAuthorization | None = None
-        if economic_events:
-            event = economic_events[0]
+        for event in economic_events:
             if (
                 event.get("schema") != self.ECONOMIC_SCHEMA
-                or event.get("event_type") != "ECONOMIC_RISK_AUTHORIZATION_BOUND"
+                or event.get("event_type") not in {
+                    "ECONOMIC_RISK_AUTHORIZATION_BOUND",
+                    self.ECONOMIC_AMENDMENT_EVENT,
+                }
             ):
                 raise MultiUniverseAuthorityError("AUTHORITY_PROJECTION_AMBIGUOUS")
             try:
-                economic = OwnerEconomicRiskAuthorization.model_validate(
+                candidate = OwnerEconomicRiskAuthorization.model_validate(
                     event.get("authorization")
                 )
             except ValueError as exc:
                 raise MultiUniverseAuthorityError(
                     "AUTHORITY_PROJECTION_AMBIGUOUS"
                 ) from exc
-            if event.get("authorization_sha256") != economic.sha256:
+            if event.get("authorization_sha256") != candidate.sha256:
                 raise MultiUniverseAuthorityError("AUTHORITY_PROJECTION_AMBIGUOUS")
+            if event.get("event_type") == "ECONOMIC_RISK_AUTHORIZATION_BOUND":
+                if economic is not None:
+                    raise MultiUniverseAuthorityError("AUTHORITY_PROJECTION_AMBIGUOUS")
+            elif (
+                economic is None
+                or event.get("prior_authorization_sha256") != economic.sha256
+                or not str(event.get("amendment_id") or "").strip()
+            ):
+                raise MultiUniverseAuthorityError("AUTHORITY_PROJECTION_AMBIGUOUS")
+            economic = candidate
         return authorities, economic
 
     def bind(
@@ -274,6 +296,102 @@ class MultiUniverseAuthorityStore:
                 "authorization": economic_authorization.model_dump(mode="json"),
                 "authorization_sha256": economic_authorization.sha256,
                 "transition_target_sha256": target.sha256,
+            },
+        )
+        return self._receipt(regular, continuous, economic_authorization, False)
+
+    def authority_lineage_roots(self) -> dict[str, str]:
+        """Return the immutable authority hashes bound by the transition target."""
+
+        self._current()
+        roots: dict[str, str] = {}
+        for event in self._events("sleeve_authority_events"):
+            if event.get("event_type") == "SLEEVE_AUTHORITY_BOUND":
+                authority = SleeveAuthorityDefinition.model_validate(event["authority"])
+                roots[authority.sleeve.value] = authority.sha256
+        for event in self._events("owner_economic_risk_authorization_events"):
+            if event.get("event_type") == "ECONOMIC_RISK_AUTHORIZATION_BOUND":
+                roots["ECONOMIC"] = str(event.get("authorization_sha256") or "")
+                break
+        return roots
+
+    def amend_capital_in_transaction(
+        self,
+        *,
+        amendment_id: str,
+        sleeve_authorities: Sequence[SleeveAuthorityDefinition],
+        economic_authorization: OwnerEconomicRiskAuthorization,
+    ) -> AuthorityBindingReceipt:
+        """Append a same-epoch owner capital amendment with explicit lineage."""
+
+        if not self.db.connection.in_transaction:
+            raise MultiUniverseAuthorityError("ATOMIC_AUTHORITY_AMENDMENT_REQUIRED")
+        amendment_id = str(amendment_id).strip()
+        if not amendment_id:
+            raise MultiUniverseAuthorityError("AUTHORITY_AMENDMENT_ID_REQUIRED")
+        regular, continuous = self._ordered_authorities(sleeve_authorities)
+        current, current_economic = self._current()
+        if current_economic is None or set(current) != {
+            CapitalSleeve.REGULAR_SLEEVE,
+            CapitalSleeve.CONTINUOUS_SLEEVE,
+        }:
+            raise MultiUniverseAuthorityError("AUTHORITY_AMENDMENT_BASE_REQUIRED")
+        desired = {
+            CapitalSleeve.REGULAR_SLEEVE: regular,
+            CapitalSleeve.CONTINUOUS_SLEEVE: continuous,
+        }
+        if current == desired and current_economic == economic_authorization:
+            return self._receipt(regular, continuous, economic_authorization, True)
+        for sleeve, authority in desired.items():
+            prior = current[sleeve]
+            if (
+                authority.opening_pnl_usd != prior.opening_pnl_usd
+                or authority.authorized_principal_usd <= prior.authorized_principal_usd
+                or authority.opening_equity_usd - authority.opening_pnl_usd
+                != authority.authorized_principal_usd
+            ):
+                raise MultiUniverseAuthorityError(
+                    "AUTHORITY_OPENING_ECONOMICS_INVALID"
+                )
+        if (
+            economic_authorization.owner_id != current_economic.owner_id
+            or economic_authorization.policy_version != current_economic.policy_version
+            or economic_authorization.maximum_liability_ratio
+            != current_economic.maximum_liability_ratio
+            or economic_authorization.successor_definition_sha256
+            != current_economic.successor_definition_sha256
+            or economic_authorization.regular_allocation_usd
+            != regular.authorized_principal_usd
+            or economic_authorization.extended_allocation_usd
+            != continuous.authorized_principal_usd
+        ):
+            raise MultiUniverseAuthorityError("ECONOMIC_AUTHORITY_AMENDMENT_INVALID")
+        for authority in (regular, continuous):
+            prior = current[authority.sleeve]
+            self._insert(
+                table="sleeve_authority_events",
+                authority_column="sleeve",
+                authority_value=authority.sleeve.value,
+                event_type=self.SLEEVE_AMENDMENT_EVENT,
+                schema=self.SLEEVE_SCHEMA,
+                payload={
+                    "amendment_id": amendment_id,
+                    "prior_authority_sha256": prior.sha256,
+                    "authority": authority.model_dump(mode="json"),
+                    "authority_sha256": authority.sha256,
+                },
+            )
+        self._insert(
+            table="owner_economic_risk_authorization_events",
+            authority_column="authorization_id",
+            authority_value=economic_authorization.authorization_id,
+            event_type=self.ECONOMIC_AMENDMENT_EVENT,
+            schema=self.ECONOMIC_SCHEMA,
+            payload={
+                "amendment_id": amendment_id,
+                "prior_authorization_sha256": current_economic.sha256,
+                "authorization": economic_authorization.model_dump(mode="json"),
+                "authorization_sha256": economic_authorization.sha256,
             },
         )
         return self._receipt(regular, continuous, economic_authorization, False)

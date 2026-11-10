@@ -465,6 +465,9 @@ def _multi_universe_authority_bindings(
         regular_hash = target.regular_sleeve_authority_sha256
         continuous_hash = target.continuous_sleeve_authority_sha256
         economic_hash = target.economic_risk_authorization_sha256
+        expected_regular_hash = regular_hash
+        expected_continuous_hash = continuous_hash
+        expected_economic_hash = economic_hash
         continuity_gap = False
     else:
         try:
@@ -472,12 +475,45 @@ def _multi_universe_authority_bindings(
             regular = store.sleeve_authority(CapitalSleeve.REGULAR_SLEEVE)
             continuous = store.sleeve_authority(CapitalSleeve.CONTINUOUS_SLEEVE)
             economic = store.economic_authorization()
+            roots = store.authority_lineage_roots()
+            from .sleeve_ledger import SleeveLedgerStore
+
+            ledgers = SleeveLedgerStore(db).project_all()
         except Exception as exc:
             raise LaunchError("SUCCESSOR_TRANSITION_AUTHORITY_INVALID") from exc
         regular_hash = "" if regular is None else regular.sha256
         continuous_hash = "" if continuous is None else continuous.sha256
         economic_hash = "" if economic is None else economic.sha256
-        continuity_gap = not all((regular_hash, continuous_hash, economic_hash))
+        lineage_valid = bool(
+            roots.get(CapitalSleeve.REGULAR_SLEEVE.value)
+            == target.regular_sleeve_authority_sha256
+            and roots.get(CapitalSleeve.CONTINUOUS_SLEEVE.value)
+            == target.continuous_sleeve_authority_sha256
+            and roots.get("ECONOMIC") == target.economic_risk_authorization_sha256
+        )
+        effective_valid = bool(
+            regular is not None
+            and continuous is not None
+            and economic is not None
+            and regular.authorized_principal_usd == ledgers.regular.allocation_usd
+            and continuous.authorized_principal_usd
+            == ledgers.continuous.allocation_usd
+            and economic.regular_allocation_usd == ledgers.regular.allocation_usd
+            and economic.extended_allocation_usd
+            == ledgers.continuous.allocation_usd
+            and economic.successor_definition_sha256
+            == target.successor_definition_sha256
+            and economic.issued_at_utc <= datetime.now(timezone.utc)
+            < economic.expires_at_utc
+        )
+        expected_regular_hash = regular_hash if lineage_valid else ""
+        expected_continuous_hash = continuous_hash if lineage_valid else ""
+        expected_economic_hash = economic_hash if lineage_valid else ""
+        continuity_gap = not (
+            lineage_valid
+            and effective_valid
+            and all((regular_hash, continuous_hash, economic_hash))
+        )
 
     family_rows = db.execute(
         "SELECT product_family_sha256,event_type,payload_json FROM "
@@ -540,6 +576,9 @@ def _multi_universe_authority_bindings(
         "regular_sleeve_authority_sha256": regular_hash,
         "continuous_sleeve_authority_sha256": continuous_hash,
         "economic_risk_authorization_sha256": economic_hash,
+        "expected_regular_sleeve_authority_sha256": expected_regular_hash,
+        "expected_continuous_sleeve_authority_sha256": expected_continuous_hash,
+        "expected_economic_risk_authorization_sha256": expected_economic_hash,
         "certified_family_set_sha256": certified_set_sha256,
         "expected_certified_family_set_sha256": (expected_certified_set_sha256),
         "continuity_gap": continuity_gap,
@@ -639,17 +678,21 @@ def _validate_multi_universe_launch_from_db(
         regular_sleeve_authority_sha256=str(
             bindings["regular_sleeve_authority_sha256"]
         ),
-        expected_regular_sleeve_authority_sha256=target.regular_sleeve_authority_sha256,
+        expected_regular_sleeve_authority_sha256=str(
+            bindings["expected_regular_sleeve_authority_sha256"]
+        ),
         continuous_sleeve_authority_sha256=str(
             bindings["continuous_sleeve_authority_sha256"]
         ),
-        expected_continuous_sleeve_authority_sha256=(
-            target.continuous_sleeve_authority_sha256
+        expected_continuous_sleeve_authority_sha256=str(
+            bindings["expected_continuous_sleeve_authority_sha256"]
         ),
         economic_risk_authorization_sha256=str(
             bindings["economic_risk_authorization_sha256"]
         ),
-        expected_economic_risk_authorization_sha256=target.economic_risk_authorization_sha256,
+        expected_economic_risk_authorization_sha256=str(
+            bindings["expected_economic_risk_authorization_sha256"]
+        ),
         certified_family_set_sha256=str(bindings["certified_family_set_sha256"]),
         expected_certified_family_set_sha256=str(
             bindings["expected_certified_family_set_sha256"]

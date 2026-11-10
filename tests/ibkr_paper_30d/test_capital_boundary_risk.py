@@ -100,8 +100,26 @@ def _sleeve_inputs(**updates) -> SleeveCapitalBoundaryInputs:
         action_kind="NEW_RISK",
         broker_account_buying_power_usd=Decimal("1000000"),
         other_sleeve_margin_offset_usd=Decimal("0"),
+        sleeve_allocation_usd=Decimal("500"),
     )
     return inputs.model_copy(update=updates)
+
+
+def test_usd_10000_authorization_matches_usd_10000_sleeve_allocation() -> None:
+    decision = _sleeve_engine().evaluate(
+        _sleeve_inputs(
+            sleeve_equity_usd=Decimal("10014.23"),
+            sleeve_allocation_usd=Decimal("10000"),
+            reserved_liability_usd=Decimal("0"),
+            proposed_maximum_loss_usd=Decimal("10000"),
+            aggregate_reserved_after_usd=Decimal("10000"),
+        ),
+        _authorization(
+            regular_allocation_usd=Decimal("10000"),
+            extended_allocation_usd=Decimal("10000"),
+        ),
+    )
+    assert decision.result is RiskResult.PASS
 
 
 def _sleeve_engine() -> SleeveCapitalBoundaryRiskEngine:

@@ -218,6 +218,7 @@ class SleeveCapitalBoundaryInputs(BaseModel):
     action_kind: Literal["NEW_RISK", "EXACT_EXIT", "CONTINUITY_ACTION"]
     broker_account_buying_power_usd: Decimal | None = None
     other_sleeve_margin_offset_usd: Decimal = Decimal("0")
+    sleeve_allocation_usd: Decimal
 
     @field_validator("evaluated_at_utc")
     @classmethod
@@ -278,9 +279,14 @@ class SleeveCapitalBoundaryRiskEngine:
                 reasons.append("ECONOMIC_AUTHORIZATION_NOT_YET_VALID")
             if authority.owner_id != inputs.owner_id:
                 reasons.append("ECONOMIC_AUTHORIZATION_OWNER_MISMATCH")
+            expected_allocation = (
+                authority.regular_allocation_usd
+                if inputs.sleeve is CapitalSleeve.REGULAR_SLEEVE
+                else authority.extended_allocation_usd
+            )
             if (
-                authority.regular_allocation_usd != Decimal("500.00")
-                or authority.extended_allocation_usd != Decimal("500.00")
+                authority.regular_allocation_usd != authority.extended_allocation_usd
+                or expected_allocation != inputs.sleeve_allocation_usd
             ):
                 reasons.append("ECONOMIC_AUTHORIZATION_ALLOCATION_MISMATCH")
             if authority.policy_version != self.POLICY_VERSION:

@@ -229,3 +229,82 @@ def test_authority_projection_rejects_unknown_auxiliary_event(tmp_path) -> None:
             MultiUniverseAuthorityError, match="AUTHORITY_PROJECTION_AMBIGUOUS"
         ):
             store.sleeve_authority(CapitalSleeve.CONTINUOUS_SLEEVE)
+
+
+def test_capital_authority_amendment_preserves_root_and_is_idempotent(tmp_path) -> None:
+    regular, continuous, economic = _authorities()
+    target = _target(regular, continuous, economic)
+    amended_regular = regular.model_copy(
+        update={
+            "authorized_principal_usd": Decimal("10000"),
+            "opening_equity_usd": Decimal("9993.98"),
+            "source_state_sha256": "6" * 64,
+        }
+    )
+    amended_continuous = continuous.model_copy(
+        update={
+            "authorized_principal_usd": Decimal("10000"),
+            "opening_equity_usd": Decimal("10000"),
+            "source_state_sha256": "7" * 64,
+        }
+    )
+    amended_economic = economic.model_copy(
+        update={
+            "authorization_id": "owner-two-sleeve-risk-10k",
+            "regular_allocation_usd": Decimal("10000"),
+            "extended_allocation_usd": Decimal("10000"),
+            "issued_at_utc": NOW + timedelta(hours=1),
+            "expires_at_utc": NOW + timedelta(days=60),
+        }
+    )
+    with _open(tmp_path / "amend.sqlite3") as db:
+        store = MultiUniverseAuthorityStore(db)
+        store.bind(
+            target=target,
+            sleeve_authorities=(regular, continuous),
+            economic_authorization=economic,
+        )
+        with db.transaction():
+            first = store.amend_capital_in_transaction(
+                amendment_id="owner-capital-10k",
+                sleeve_authorities=(amended_regular, amended_continuous),
+                economic_authorization=amended_economic,
+            )
+        with db.transaction():
+            retry = store.amend_capital_in_transaction(
+                amendment_id="owner-capital-10k",
+                sleeve_authorities=(amended_regular, amended_continuous),
+                economic_authorization=amended_economic,
+            )
+
+        assert first.idempotent is False
+        assert retry.idempotent is True
+        assert store.sleeve_authority(CapitalSleeve.REGULAR_SLEEVE) == amended_regular
+        assert store.economic_authorization() == amended_economic
+        roots = store.authority_lineage_roots()
+        assert roots[CapitalSleeve.REGULAR_SLEEVE.value] == regular.sha256
+        assert roots[CapitalSleeve.CONTINUOUS_SLEEVE.value] == continuous.sha256
+        assert roots["ECONOMIC"] == economic.sha256
+
+
+def test_capital_authority_amendment_rejects_broken_lineage(tmp_path) -> None:
+    regular, continuous, economic = _authorities()
+    target = _target(regular, continuous, economic)
+    with _open(tmp_path / "broken-amend.sqlite3") as db:
+        store = MultiUniverseAuthorityStore(db)
+        store.bind(
+            target=target,
+            sleeve_authorities=(regular, continuous),
+            economic_authorization=economic,
+        )
+        changed = regular.model_copy(
+            update={"authorized_principal_usd": Decimal("10000")}
+        )
+        with db.transaction(), pytest.raises(
+            MultiUniverseAuthorityError, match="AUTHORITY_OPENING_ECONOMICS_INVALID"
+        ):
+            store.amend_capital_in_transaction(
+                amendment_id="broken",
+                sleeve_authorities=(changed, continuous),
+                economic_authorization=economic,
+            )

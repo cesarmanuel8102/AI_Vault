@@ -1289,6 +1289,26 @@ class CodexAutonomousCLIProvider:
                 f"{request.decision_cycle_id[-12:]}"
             ),
         }
+        portfolio_sleeves = (bundle.multi_sleeve_portfolio or {}).get("sleeves") or {}
+        try:
+            regular_allocation = Decimal(
+                str((portfolio_sleeves.get("regular") or {}).get("allocation_usd"))
+            )
+            continuous_allocation = Decimal(
+                str((portfolio_sleeves.get("continuous") or {}).get("allocation_usd"))
+            )
+        except (ArithmeticError, TypeError, ValueError):
+            regular_allocation = continuous_allocation = Decimal("500")
+        if (
+            not regular_allocation.is_finite()
+            or regular_allocation <= 0
+            or regular_allocation != continuous_allocation
+        ):
+            regular_allocation = continuous_allocation = Decimal("500")
+        per_sleeve_allocation = regular_allocation.quantize(Decimal("0.01"))
+        per_sleeve_target = (per_sleeve_allocation * 2).quantize(Decimal("0.01"))
+        aggregate_allocation = (per_sleeve_allocation * 2).quantize(Decimal("0.01"))
+        aggregate_target = (aggregate_allocation * 2).quantize(Decimal("0.01"))
         payload: dict[str, Any] = {
             "schema": "CODEX_AUTONOMOUS_RESEARCH_TURN_V1",
             "mandate": {
@@ -1313,10 +1333,10 @@ class CodexAutonomousCLIProvider:
                 "failing_to_exploit_superior_positive_expectancy_opportunity_can_reduce_expected_terminal_equity": True,
                 "terminal_equity_stretch_benchmark": {
                     "kind": "ASPIRATIONAL_NON_THRESHOLD",
-                    "per_sleeve_starting_allocation_usd": "500.00",
-                    "per_sleeve_terminal_target_usd": "1000.00",
-                    "aggregate_starting_allocation_usd": "1000.00",
-                    "aggregate_terminal_target_usd": "2000.00",
+                    "per_sleeve_starting_allocation_usd": str(per_sleeve_allocation),
+                    "per_sleeve_terminal_target_usd": str(per_sleeve_target),
+                    "aggregate_starting_allocation_usd": str(aggregate_allocation),
+                    "aggregate_terminal_target_usd": str(aggregate_target),
                     "does_not_override_expected_value": True,
                     "does_not_create_minimum_activity": True,
                 },
@@ -1382,7 +1402,9 @@ class CodexAutonomousCLIProvider:
                     "to build, what hypotheses to test, what information to retain, and how to learn from previous "
                     "observations and outcomes. There is no prescribed trading strategy, predefined universe, required "
                     "setup type, required research sequence, or required asset class.\n"
-                    "Treat doubling each $500 sleeve to $1,000 and aggregate $1,000 to $2,000 as an aspirational "
+                    f"Treat doubling each ${per_sleeve_allocation:,.0f} sleeve to "
+                    f"${per_sleeve_target:,.0f} and aggregate ${aggregate_allocation:,.0f} "
+                    f"to ${aggregate_target:,.0f} as an aspirational "
                     "benchmark, not threshold utility. You must not sacrifice expected terminal equity, accept "
                     "negative expectancy, manufacture activity, or weaken evidence to cross it. Track distance to "
                     "the benchmark and adapt your process when the current trajectory is insufficient.\n"

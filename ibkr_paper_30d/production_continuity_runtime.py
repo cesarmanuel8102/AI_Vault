@@ -245,6 +245,45 @@ def _database_sleeve_authority_sha256(db: Any, sleeve: Any) -> str:
     return authority.sha256
 
 
+def _capital_authority_chain_valid(
+    *,
+    target: Any,
+    roots: Mapping[str, str],
+    regular_authority: Any,
+    continuous_authority: Any,
+    economic_authorization: Any,
+    regular_allocation: Decimal,
+    continuous_allocation: Decimal,
+    now_utc: datetime,
+) -> bool:
+    """Verify target roots, effective authority, allocations and validity window."""
+
+    if any(
+        item is None
+        for item in (
+            regular_authority,
+            continuous_authority,
+            economic_authorization,
+        )
+    ):
+        return False
+    return bool(
+        roots.get(CapitalSleeve.REGULAR_SLEEVE.value)
+        == target.regular_sleeve_authority_sha256
+        and roots.get(CapitalSleeve.CONTINUOUS_SLEEVE.value)
+        == target.continuous_sleeve_authority_sha256
+        and roots.get("ECONOMIC") == target.economic_risk_authorization_sha256
+        and economic_authorization.successor_definition_sha256
+        == target.successor_definition_sha256
+        and economic_authorization.issued_at_utc <= now_utc
+        < economic_authorization.expires_at_utc
+        and regular_authority.authorized_principal_usd == regular_allocation
+        and continuous_authority.authorized_principal_usd == continuous_allocation
+        and economic_authorization.regular_allocation_usd == regular_allocation
+        and economic_authorization.extended_allocation_usd == continuous_allocation
+    )
+
+
 class _ProductionSleeveAuthoritySnapshotReader:
     def __init__(
         self,
@@ -333,12 +372,28 @@ class _ProductionSleeveAuthoritySnapshotReader:
                 raise ProductionRuntimeConfigurationError(
                     "SUCCESSOR_TRANSITION_BINDING_MISMATCH"
                 )
-            economic = MultiUniverseAuthorityStore(db).economic_authorization()
-            economic_valid = bool(
-                economic is not None
-                and economic.sha256 == target.economic_risk_authorization_sha256
-                and economic.successor_definition_sha256
-                == target.successor_definition_sha256
+            authority_store = MultiUniverseAuthorityStore(db)
+            economic = authority_store.economic_authorization()
+            regular_authority = authority_store.sleeve_authority(
+                CapitalSleeve.REGULAR_SLEEVE
+            )
+            continuous_authority = authority_store.sleeve_authority(
+                CapitalSleeve.CONTINUOUS_SLEEVE
+            )
+            ledger_store = SleeveLedgerStore(db)
+            economic_valid = _capital_authority_chain_valid(
+                target=target,
+                roots=authority_store.authority_lineage_roots(),
+                regular_authority=regular_authority,
+                continuous_authority=continuous_authority,
+                economic_authorization=economic,
+                regular_allocation=ledger_store.project(
+                    CapitalSleeve.REGULAR_SLEEVE
+                ).allocation_usd,
+                continuous_allocation=ledger_store.project(
+                    CapitalSleeve.CONTINUOUS_SLEEVE
+                ).allocation_usd,
+                now_utc=datetime.now(timezone.utc),
             )
             valuation = authoritative_sleeve_equity(ledger)
             equity = (
@@ -422,7 +477,7 @@ class _ProductionSleeveAuthoritySnapshotReader:
                     if inherited_regular_capability
                     else capability.family_sha256
                 ),
-                economic_authorization_sha256=target.economic_risk_authorization_sha256,
+                economic_authorization_sha256=economic.sha256,
                 transition_target_sha256=target.sha256,
                 writer_binding_sha256=target.writer_binding_sha256,
                 epoch_id=target.successor_epoch_id,
