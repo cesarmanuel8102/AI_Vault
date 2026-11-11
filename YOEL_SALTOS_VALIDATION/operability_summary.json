@@ -1,0 +1,134 @@
+{
+  "CLOSE_CONTINUATION": {
+    "completed": true,
+    "error": null,
+    "backtest_id": "50a2dfb2476ee3f5e89da9387be53a1b",
+    "net_profit": 0.08517,
+    "cagr": 0.020630000000000003,
+    "drawdown": -0.038,
+    "official_sharpe": -1.253,
+    "alpha": -0.027,
+    "information_ratio": -0.476,
+    "trades": 157,
+    "win_rate": 0.554140127388535,
+    "net_profit_factor": 1.4251855838458558,
+    "net_pnl": 8516.48,
+    "fees": 405.14,
+    "yearly_net_pnl": {
+      "2022": 1322.2800000000002,
+      "2023": 488.6299999999999,
+      "2024": 4609.4,
+      "2025": 2096.17
+    },
+    "positive_year_fraction": 1.0,
+    "positive_symbol_fraction": 0.65,
+    "profitable_month_fraction": 0.5208333333333334,
+    "annualized_monthly_pnl_bootstrap_95": [
+      -378.06043750000003,
+      4898.606874999999
+    ],
+    "bootstrap_probability_positive_annualized_pnl": 0.9498,
+    "top_symbols": {
+      "UNH": 2482.68,
+      "NFLX": 2040.08,
+      "META": 1374.81,
+      "GOOG": 1017.11,
+      "XPEV": 855.1700000000003
+    },
+    "bottom_symbols": {
+      "AMD": -2046.3899999999999,
+      "AMZN": -1063.61,
+      "USO": -971.12,
+      "LI": -716.5600000000002,
+      "CAT": -560.59
+    }
+  },
+  "OPENING_CONTINUATION": {
+    "completed": true,
+    "error": null,
+    "backtest_id": "6261ccb22a11f6f81fbffb08837f7e25",
+    "net_profit": 0.03928,
+    "cagr": 0.00967,
+    "drawdown": -0.016,
+    "official_sharpe": -2.956,
+    "alpha": -0.035,
+    "information_ratio": -0.534,
+    "trades": 116,
+    "win_rate": 0.5,
+    "net_profit_factor": 1.570326621456229,
+    "net_pnl": 3928.29,
+    "fees": 308.23,
+    "yearly_net_pnl": {
+      "2022": 1186.9,
+      "2023": -259.55,
+      "2024": 1010.2900000000001,
+      "2025": 1990.65
+    },
+    "positive_year_fraction": 0.75,
+    "positive_symbol_fraction": 0.7027027027027027,
+    "profitable_month_fraction": 0.3958333333333333,
+    "annualized_monthly_pnl_bootstrap_95": [
+      -347.61474999999996,
+      2390.8981249999983
+    ],
+    "bootstrap_probability_positive_annualized_pnl": 0.9223,
+    "top_symbols": {
+      "COIN": 1716.27,
+      "DIS": 671.7900000000001,
+      "BA": 630.97,
+      "NIO": 561.66,
+      "HD": 442.72
+    },
+    "bottom_symbols": {
+      "NFLX": -1043.05,
+      "XPEV": -819.47,
+      "GLD": -378.63,
+      "CAT": -341.08,
+      "TSLA": -304.75
+    }
+  },
+  "OPENING_FADE": {
+    "completed": true,
+    "error": null,
+    "backtest_id": "bdd1b886954c9d23bedf0885184fe63b",
+    "net_profit": 0.03177,
+    "cagr": 0.007850000000000001,
+    "drawdown": -0.02,
+    "official_sharpe": -2.48,
+    "alpha": -0.037,
+    "information_ratio": -0.544,
+    "trades": 123,
+    "win_rate": 0.44715447154471544,
+    "net_profit_factor": 1.4041230478860132,
+    "net_pnl": 3177.4699999999993,
+    "fees": 278.12,
+    "yearly_net_pnl": {
+      "2022": 3458.06,
+      "2023": -97.25999999999992,
+      "2024": -37.739999999999995,
+      "2025": -145.59000000000003
+    },
+    "positive_year_fraction": 0.25,
+    "positive_symbol_fraction": 0.5789473684210527,
+    "profitable_month_fraction": 0.4791666666666667,
+    "annualized_monthly_pnl_bootstrap_95": [
+      -745.8301250000001,
+      2609.994062499995
+    ],
+    "bootstrap_probability_positive_annualized_pnl": 0.8294,
+    "top_symbols": {
+      "NIO": 854.12,
+      "LI": 790.14,
+      "TSLA": 672.8199999999999,
+      "AAPL": 606.83,
+      "AMD": 601.06
+    },
+    "bottom_symbols": {
+      "UNH": -842.85,
+      "AVGO": -589.02,
+      "NVDA": -403.12,
+      "XLK": -320.35,
+      "WMT": -175.64
+    }
+  }
+}

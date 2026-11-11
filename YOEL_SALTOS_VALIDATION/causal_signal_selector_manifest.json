@@ -1,0 +1,112 @@
+{
+  "experiment": "capital_independent_causal_gate_v1",
+  "status": "NO_GO_DISABLED_BY_DEFAULT",
+  "intervention": {
+    "type": "pre_sizing_gate_only",
+    "ranking_changed": false,
+    "ranking": "original_rank_daily_candidates",
+    "capital_fields_used": false,
+    "rule": "range_atr <= 1.50"
+  },
+  "selection_rule": "broadest viable range_atr_max",
+  "training_years": [2022, 2023],
+  "confirmation_year": 2024,
+  "holdout_years": [2025, 2026],
+  "discovery_trace": {
+    "backtest_id": "ba6ca854fe60f2aaa016fe740c9ea45e",
+    "initial_cash": 100000,
+    "daily_entry_limit": 0,
+    "signals": 138,
+    "no_same_day_expiration_skips": 92,
+    "entries": 46,
+    "quote_skips": 0,
+    "entry_rejects": 0,
+    "economics_skips": 0,
+    "interpretation": "Every signal with a tradable same-day contract reached an entry, so feature discovery was not censored by affordability or sizing. Features were logged after fill; this remains a methodological limitation for future work."
+  },
+  "selected": {
+    "range_atr_max": 1.5,
+    "training": {"trades": 9, "wins": 8, "win_rate": 0.8889, "net_return_units": 0.442569, "profit_factor": 2.052665},
+    "confirmation": {"trades": 4, "wins": 3, "win_rate": 0.75, "net_return_units": 0.068498, "profit_factor": 1.205666},
+    "viable": true
+  },
+  "tested_profiles": [
+    {
+      "range_atr_max": 1.25,
+      "training": {"trades": 5, "wins": 5, "win_rate": 1.0, "net_return_units": 0.530627, "profit_factor": 999.0},
+      "confirmation": {"trades": 2, "wins": 2, "win_rate": 1.0, "net_return_units": 0.306987, "profit_factor": 999.0},
+      "viable": false
+    },
+    {
+      "range_atr_max": 1.5,
+      "training": {"trades": 9, "wins": 8, "win_rate": 0.8889, "net_return_units": 0.442569, "profit_factor": 2.052665},
+      "confirmation": {"trades": 4, "wins": 3, "win_rate": 0.75, "net_return_units": 0.068498, "profit_factor": 1.205666},
+      "viable": true
+    },
+    {
+      "range_atr_max": 1.75,
+      "training": {"trades": 14, "wins": 12, "win_rate": 0.8571, "net_return_units": 0.569616, "profit_factor": 1.779287},
+      "confirmation": {"trades": 6, "wins": 4, "win_rate": 0.6667, "net_return_units": -0.344876, "profit_factor": 0.584161},
+      "viable": false
+    },
+    {
+      "range_atr_max": 2.0,
+      "training": {"trades": 19, "wins": 14, "win_rate": 0.7368, "net_return_units": -0.448189, "profit_factor": 0.769317},
+      "confirmation": {"trades": 9, "wins": 4, "win_rate": 0.4444, "net_return_units": -1.510854, "profit_factor": 0.242804},
+      "viable": false
+    },
+    {
+      "range_atr_max": 2.25,
+      "training": {"trades": 23, "wins": 17, "win_rate": 0.7391, "net_return_units": -0.220532, "profit_factor": 0.890332},
+      "confirmation": {"trades": 12, "wins": 6, "win_rate": 0.5, "net_return_units": -1.622998, "profit_factor": 0.288318},
+      "viable": false
+    }
+  ],
+  "paired_backtests": {
+    "common_parameters": {
+      "initial_cash": 5000,
+      "capital_fraction": 0.10,
+      "max_entries_per_day": 2,
+      "entry_time_et": "10:31",
+      "delta": 0.70,
+      "dte": 0,
+      "take_profit": 0.10,
+      "failure_minutes": 15,
+      "failure_min_pnl": -0.25,
+      "failure_underlying_adverse": false,
+      "failure_repeat": true
+    },
+    "2022_2024_control": {"backtest_id": "cfda3142d0d5fe67c6f6a150a3f00e0e", "final_equity": 3980.78, "net_return_pct": -20.384, "trades": 40, "win_rate_pct": 62, "profit_factor": 0.637, "drawdown_pct": 24.0, "fees": 189.50},
+    "2022_2024_filtered": {"backtest_id": "a9d75f569208c5ff151a2e68732958d5", "final_equity": 5296.54, "net_return_pct": 5.931, "trades": 13, "win_rate_pct": 85, "profit_factor": 2.065, "drawdown_pct": 3.6, "fees": 64.40},
+    "2025_2026_control": {"backtest_id": "c7738ed8b4afc58b21362b77f751dbcf", "final_equity": 4486.48, "net_return_pct": -10.270, "trades": 29, "win_rate_pct": 62, "profit_factor": 0.703, "drawdown_pct": 14.7, "fees": 104.50},
+    "2025_2026_filtered": {"backtest_id": "e202115fec989c4df972911fa154e299", "final_equity": 4503.04, "net_return_pct": -9.939, "trades": 11, "win_rate_pct": 55, "profit_factor": 0.446, "drawdown_pct": 14.7, "fees": 49.60}
+  },
+  "annual_closed_trade_gross_pnl": {
+    "control": {
+      "2022": {"trades": 10, "wins": 8, "pnl": 179.67},
+      "2023": {"trades": 16, "wins": 11, "pnl": -119.30},
+      "2024": {"trades": 14, "wins": 6, "pnl": -890.07},
+      "2025": {"trades": 15, "wins": 11, "pnl": -18.24},
+      "2026": {"trades": 14, "wins": 7, "pnl": -390.78}
+    },
+    "filtered": {
+      "2022": {"trades": 1, "wins": 1, "pnl": 60.78},
+      "2023": {"trades": 8, "wins": 7, "pnl": 221.96},
+      "2024": {"trades": 4, "wins": 3, "pnl": 78.19},
+      "2025": {"trades": 7, "wins": 4, "pnl": -244.92},
+      "2026": {"trades": 4, "wins": 2, "pnl": -202.45}
+    }
+  },
+  "sha256": {
+    "qc_main_py": "22ebefc2d4a724bbae0d4b72cf05c86fbffdd82b8eae1667a4742d2dd5faf97d",
+    "qc_zero_dte_core_py": "b90ef495b7f0668c33adef3595ae2b9c80c53d7a4e90043d46c8e4ac8ca426a9",
+    "analysis_script": "688ec61e85314cd9b92fda6267d8f62ab880ae774ff7086b5803ead3c3c18b1c",
+    "discovery_trace": "9d93fdbc66f315008a2ce900d9982c8d303d4e9dc420201bacdb2a4dec3504a4",
+    "exact_control_2022_2024": "b5553761007e1d67cb86328c6c8f1bd80fec168e5f6329c68d7173122523176c",
+    "exact_filter_2022_2024": "89d4e85f9270273ebfdbd7c3074e904e363d8907cc1d7622671d7e0fc719fd16",
+    "exact_control_2025_2026": "fd4b5b15062de9e618ddf3505fe6ae2a7701a25d16a457a20326dfbcd874f0e3",
+    "exact_filter_2025_2026": "427467f0d9fde843da6bb4037cbac2fa2694c6f41fb0b5b9b34e2bca5c706e51"
+  },
+  "source": "causal_selector_feature_trace_2022_2024_trace.json",
+  "source_sha256": "9d93fdbc66f315008a2ce900d9982c8d303d4e9dc420201bacdb2a4dec3504a4"
+}

@@ -1,0 +1,11 @@
+data/
+.benchmarks/
+.pytest_cache/
+__pycache__/
+phase_a_observations.csv
+lean.json
+.idea/
+.vscode/
+*.pyc
+*.log
+**/config.json

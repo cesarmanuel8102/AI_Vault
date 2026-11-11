@@ -1,0 +1,39 @@
+{
+  "rule": {
+    "economics_gate": "estimated_roundtrip_friction <= take_profit",
+    "checkpoint_minutes": 15,
+    "failure_condition": "option_return < 0 and (level_margin <= 0 or invalidation_margin <= 0)"
+  },
+  "control": {
+    "trades": 19,
+    "wins": 12,
+    "losses": 7,
+    "cuts": 0,
+    "skipped": 0,
+    "net_pnl": -43669.28,
+    "profit_factor": 0.199,
+    "average_loss": -7785.74
+  },
+  "economics_gate_only": {
+    "trades": 15,
+    "wins": 10,
+    "losses": 5,
+    "cuts": 0,
+    "skipped": 4,
+    "net_pnl": -28833.38,
+    "profit_factor": 0.24,
+    "average_loss": -7592.55
+  },
+  "frozen_rule": {
+    "trades": 15,
+    "wins": 10,
+    "losses": 5,
+    "cuts": 0,
+    "skipped": 4,
+    "net_pnl": -28833.38,
+    "profit_factor": 0.24,
+    "average_loss": -7592.55
+  },
+  "winner_retention": 0.8333,
+  "go": false
+}

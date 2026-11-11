@@ -1,0 +1,219 @@
+{
+  "project_id": 38449639,
+  "selected_candidate": "quality",
+  "selection_period": "2025-01-01/2025-12-31",
+  "train_summaries": {
+    "control": {
+      "close_rejects": 0,
+      "closed": 23,
+      "completed": true,
+      "drawdown_pct": 24.5,
+      "end_equity": 83015.59,
+      "entries": 23,
+      "entry_rejects": 0,
+      "error": null,
+      "expectancy": -738.4526086956523,
+      "failure_exits": 0,
+      "fees": 4893.6,
+      "flat": true,
+      "net_pnl": -16984.410000000003,
+      "positive_semesters": 1,
+      "profit_factor": 0.44861987861749253,
+      "return_pct": -16.984,
+      "semester_net_pnl": {
+        "2025-H1": -18444.31,
+        "2025-H2": 1459.9000000000008
+      },
+      "sharpe": -0.792,
+      "target_exits": 19,
+      "time_exits": 4,
+      "trades": 23
+    },
+    "eight_minus_two": {
+      "close_rejects": 0,
+      "closed": 23,
+      "completed": true,
+      "drawdown_pct": 24.6,
+      "end_equity": 75391.7,
+      "entries": 23,
+      "entry_rejects": 0,
+      "error": null,
+      "expectancy": -1069.9265217391303,
+      "failure_exits": 10,
+      "fees": 4864.9,
+      "flat": true,
+      "net_pnl": -24608.309999999998,
+      "positive_semesters": 0,
+      "profit_factor": 0.2623341936528206,
+      "return_pct": -24.608,
+      "semester_net_pnl": {
+        "2025-H1": -6185.15,
+        "2025-H2": -18423.16
+      },
+      "sharpe": -1.737,
+      "target_exits": 13,
+      "time_exits": 0,
+      "trades": 23
+    },
+    "five_zero": {
+      "close_rejects": 0,
+      "closed": 23,
+      "completed": true,
+      "drawdown_pct": 20.5,
+      "end_equity": 79543.74,
+      "entries": 23,
+      "entry_rejects": 0,
+      "error": null,
+      "expectancy": -889.4030434782609,
+      "failure_exits": 11,
+      "fees": 5047.099999999999,
+      "flat": true,
+      "net_pnl": -20456.27,
+      "positive_semesters": 0,
+      "profit_factor": 0.2939947202159679,
+      "return_pct": -20.456,
+      "semester_net_pnl": {
+        "2025-H1": -2925.650000000001,
+        "2025-H2": -17530.62
+      },
+      "sharpe": -1.713,
+      "target_exits": 12,
+      "time_exits": 0,
+      "trades": 23
+    },
+    "quality": {
+      "close_rejects": 0,
+      "closed": 17,
+      "completed": true,
+      "drawdown_pct": 5.0,
+      "end_equity": 95684.08,
+      "entries": 17,
+      "entry_rejects": 0,
+      "error": null,
+      "expectancy": -253.87705882352935,
+      "failure_exits": 7,
+      "fees": 3213.6000000000004,
+      "flat": true,
+      "net_pnl": -4315.909999999999,
+      "positive_semesters": 0,
+      "profit_factor": 0.6316816693804682,
+      "return_pct": -4.316,
+      "semester_net_pnl": {
+        "2025-H1": -4133.099999999999,
+        "2025-H2": -182.80999999999875
+      },
+      "sharpe": -1.278,
+      "target_exits": 10,
+      "time_exits": 0,
+      "trades": 17
+    }
+  },
+  "validation": {
+    "candidate": {
+      "close_rejects": 0,
+      "closed": 16,
+      "completed": true,
+      "drawdown_pct": 33.6,
+      "end_equity": 66990.67,
+      "entries": 16,
+      "entry_rejects": 0,
+      "error": null,
+      "expectancy": -2063.083125,
+      "failure_exits": 12,
+      "fees": 6795.2,
+      "flat": true,
+      "net_pnl": -33009.33,
+      "positive_semesters": 0,
+      "profit_factor": 0.07140220831282086,
+      "return_pct": -33.009,
+      "semester_net_pnl": {
+        "2026-H1": -29243.829999999998,
+        "2026-H2": -3765.5
+      },
+      "sharpe": -2.386,
+      "target_exits": 4,
+      "time_exits": 0,
+      "trades": 16
+    },
+    "control": {
+      "close_rejects": 0,
+      "closed": 23,
+      "completed": true,
+      "drawdown_pct": 26.1,
+      "end_equity": 75474.66,
+      "entries": 23,
+      "entry_rejects": 0,
+      "error": null,
+      "expectancy": -1066.32,
+      "failure_exits": 0,
+      "fees": 8165.900000000001,
+      "flat": true,
+      "net_pnl": -24525.36,
+      "positive_semesters": 0,
+      "profit_factor": 0.3347046851022424,
+      "return_pct": -24.525,
+      "semester_net_pnl": {
+        "2026-H1": -14332.3,
+        "2026-H2": -10193.059999999998
+      },
+      "sharpe": -1.423,
+      "target_exits": 17,
+      "time_exits": 6,
+      "trades": 23
+    },
+    "verdict": "NO-GO"
+  },
+  "validation_period": "2026-01-01/2026-10-25",
+  "variants": {
+    "control": {
+      "parameters": {
+        "end_year": "2025",
+        "failure_min_pnl": "0",
+        "failure_minutes": "0",
+        "quality_filter": "false",
+        "start_year": "2025",
+        "strike_mode": "atm",
+        "take_profit": "0.05"
+      },
+      "train_raw": "zero_dte_opt_2025_control_raw.json",
+      "validation_raw": "zero_dte_opt_2026_control_raw.json"
+    },
+    "eight_minus_two": {
+      "parameters": {
+        "end_year": "2025",
+        "failure_min_pnl": "-0.02",
+        "failure_minutes": "8",
+        "quality_filter": "false",
+        "start_year": "2025",
+        "strike_mode": "atm",
+        "take_profit": "0.05"
+      },
+      "train_raw": "zero_dte_opt_2025_eight_minus_two_raw.json"
+    },
+    "five_zero": {
+      "parameters": {
+        "end_year": "2025",
+        "failure_min_pnl": "0",
+        "failure_minutes": "5",
+        "quality_filter": "false",
+        "start_year": "2025",
+        "strike_mode": "atm",
+        "take_profit": "0.05"
+      },
+      "train_raw": "zero_dte_opt_2025_five_zero_raw.json"
+    },
+    "quality": {
+      "parameters": {
+        "end_year": "2025",
+        "failure_min_pnl": "0",
+        "failure_minutes": "5",
+        "quality_filter": "true",
+        "start_year": "2025",
+        "strike_mode": "atm",
+        "take_profit": "0.05"
+      },
+      "train_raw": "zero_dte_opt_2025_quality_raw.json",
+      "validation_raw": "zero_dte_opt_2026_quality_raw.json"
+    }
+  }
+}

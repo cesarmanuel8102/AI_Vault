@@ -1,0 +1,84 @@
+{
+  "generated_at": "2026-10-26",
+  "project_id": 38449639,
+  "strategy": {
+    "target_delta": 0.7,
+    "target_dte": 0,
+    "take_profit": 0.1,
+    "capital_fraction": 0.1,
+    "ordinary_stop_loss": null,
+    "end_of_day_exit": "15:55 America/New_York"
+  },
+  "causal_hypothesis": {
+    "loss_tail": "At the first checkpoint 15 minutes after entry, an option loss of at least 40% together with adverse directional underlying return identifies failed immediate continuation.",
+    "transaction_economics": "Contracts whose estimated roundtrip friction exceeds the 10% gross target have structurally negative execution economics.",
+    "discovery_period": "2025-01-01/2025-12-31",
+    "locked_validation_period": "2026-01-01/2026-10-26"
+  },
+  "countermeasure": {
+    "failure_checkpoint_minutes": 15,
+    "failure_minimum_option_return": -0.4,
+    "requires_adverse_directional_underlying_return": true,
+    "checkpoint_is_one_shot": true,
+    "estimated_roundtrip_cost_per_share": 0.033,
+    "economics_gate": "estimated_roundtrip_cost / ask <= take_profit"
+  },
+  "runs": {
+    "original_combined_control": {
+      "backtest_id": "84390ce77f559f3209d5ca784ed796bd",
+      "trades": 46,
+      "net_profit_pct": -14.75,
+      "net_profit_usd": -14750.45,
+      "fees_usd": 5514.35,
+      "drawdown_pct": 20.3,
+      "win_rate_pct": 74,
+      "net_profit_factor": 0.71
+    },
+    "discovery_2025": {
+      "backtest_id": "30c65065228a91046bcbd92dad7d975b",
+      "trades": 21,
+      "economics_skips": 2,
+      "failure_exits": 4,
+      "net_profit_pct": -0.26,
+      "net_profit_usd": -259.94,
+      "fees_usd": 1569.1,
+      "drawdown_pct": 8.5,
+      "win_rate_pct": 81,
+      "net_profit_factor": 0.99
+    },
+    "locked_validation_2026": {
+      "backtest_id": "7cc2f40c7a6a166bc325ac0903f70a40",
+      "trades": 22,
+      "economics_skips": 1,
+      "failure_exits": 1,
+      "net_profit_pct": 7.952,
+      "net_profit_usd": 7951.8,
+      "fees_usd": 1483.3,
+      "drawdown_pct": 5.6,
+      "win_rate_pct": 77,
+      "net_profit_factor": 1.54
+    },
+    "combined_confirmation": {
+      "backtest_id": "e13f8e3e0e4a25643b0ebcf9f8cd1d29",
+      "trades": 43,
+      "economics_skips": 3,
+      "failure_exits": 5,
+      "net_profit_pct": 7.652,
+      "net_profit_usd": 7651.51,
+      "gross_profit_before_fees_usd": 10700.01,
+      "fees_usd": 3048.5,
+      "drawdown_pct": 8.5,
+      "win_rate_pct": 79,
+      "net_profit_factor": 1.22,
+      "expectancy": 0.054,
+      "sharpe": -0.066,
+      "probabilistic_sharpe_ratio_pct": 3.949
+    }
+  },
+  "verdict": "SUPPORTED_BUT_NOT_PRODUCTION_PROVEN",
+  "limitations": [
+    "Only 43 combined completed trades remain after filtering.",
+    "The combined Sharpe and probabilistic Sharpe ratio remain weak despite positive net profit.",
+    "The result needs broader untouched dates and walk-forward validation before live or paper deployment."
+  ]
+}

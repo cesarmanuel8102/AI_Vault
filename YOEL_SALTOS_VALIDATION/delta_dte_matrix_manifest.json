@@ -1,0 +1,19 @@
+{
+  "study": "Yoel first-rebound delta/DTE matrix",
+  "project_id": 38449639,
+  "period": "2025-01-01/2026-10-25",
+  "capital": 100000,
+  "position_budget_fraction": 0.10,
+  "stop_loss": null,
+  "forced_exit": "15:55 ET",
+  "runs": [
+    {"delta": 0.50, "dte": 0, "tp": 0.10, "backtest_id": "b4c2f310201eae15f210bbee4629e64b", "actual_delta": 0.5118, "actual_dte": 0.00, "trades": 46, "wins": 36, "target_exits": 36, "net_return_pct": -26.587, "fees": 12831.20, "drawdown_pct": 28.2, "sharpe": -0.751, "profit_factor_before_fees": 0.762},
+    {"delta": 0.50, "dte": 0, "tp": 0.15, "backtest_id": "73fadd37097ba327ba946330f64ad4f4", "actual_delta": 0.5118, "actual_dte": 0.00, "trades": 46, "wins": 33, "target_exits": 33, "net_return_pct": -37.377, "fees": 12112.50, "drawdown_pct": 39.0, "sharpe": -0.888, "profit_factor_before_fees": 0.670},
+    {"delta": 0.70, "dte": 0, "tp": 0.10, "backtest_id": "84390ce77f559f3209d5ca784ed796bd", "actual_delta": 0.7241, "actual_dte": 0.00, "trades": 46, "wins": 35, "target_exits": 35, "net_return_pct": -14.750, "fees": 5514.35, "drawdown_pct": 20.3, "sharpe": -0.551, "profit_factor_before_fees": 0.816},
+    {"delta": 0.70, "dte": 0, "tp": 0.15, "backtest_id": "e4643a6c4ea9da3c9e715ec4ecc82839", "actual_delta": 0.7241, "actual_dte": 0.00, "trades": 46, "wins": 31, "target_exits": 31, "net_return_pct": -28.670, "fees": 4835.10, "drawdown_pct": 30.3, "sharpe": -0.747, "profit_factor_before_fees": 0.650},
+    {"delta": 0.70, "dte": 7, "tp": 0.10, "backtest_id": "bf7c584f7848436896b844ea3ffbd2de", "actual_delta": 0.7057, "actual_dte": 7.28, "trades": 93, "wins": 43, "target_exits": 39, "net_return_pct": -50.314, "fees": 4430.50, "drawdown_pct": 50.8, "sharpe": -2.402, "profit_factor_before_fees": 0.376},
+    {"delta": 0.70, "dte": 7, "tp": 0.15, "backtest_id": "23bc89acd116d2d90e30cd89ea546ae2", "actual_delta": 0.7057, "actual_dte": 7.28, "trades": 93, "wins": 38, "target_exits": 27, "net_return_pct": -51.024, "fees": 4377.20, "drawdown_pct": 52.0, "sharpe": -2.256, "profit_factor_before_fees": 0.414},
+    {"delta": 0.70, "dte": 14, "tp": 0.10, "backtest_id": "fca02607b9a3e2161130f5af0c329b3e", "actual_delta": 0.6996, "actual_dte": 13.89, "trades": 93, "wins": 35, "target_exits": 28, "net_return_pct": -54.014, "fees": 2795.30, "drawdown_pct": 54.5, "sharpe": -2.781, "profit_factor_before_fees": 0.271},
+    {"delta": 0.70, "dte": 14, "tp": 0.15, "backtest_id": "e92308e6daa864d08fc3fce9bac78a93", "actual_delta": 0.6996, "actual_dte": 13.89, "trades": 93, "wins": 32, "target_exits": 17, "net_return_pct": -54.095, "fees": 2778.40, "drawdown_pct": 54.8, "sharpe": -2.736, "profit_factor_before_fees": 0.293}
+  ]
+}
