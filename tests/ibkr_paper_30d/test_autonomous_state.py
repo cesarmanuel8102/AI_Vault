@@ -378,6 +378,77 @@ def test_authenticated_broker_session_replaces_unknown_requested_session() -> No
     ) == "PREMARKET"
 
 
+def test_v4_effective_market_gate_admits_continuous_after_hours_without_opening_regular() -> None:
+    frozen_regular_gate = {
+        "gate_status": "BLOCK",
+        "reason_codes": [
+            "MARKET_SESSION_NOT_REGULAR",
+            "MARKET_SESSION_AFTER_HOURS",
+        ],
+        "snapshot_id": "regular-after-hours",
+    }
+    portfolio = {
+        "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+        "entry_eligibility": {
+            "REGULAR_SLEEVE": {
+                "status": "BLOCK",
+                "reason_codes": ["FAMILY_SESSION_CLOSED"],
+                "eligible_family_sha256": [],
+            },
+            "CONTINUOUS_SLEEVE": {
+                "status": "PASS",
+                "reason_codes": [],
+                "eligible_family_sha256": ["c" * 64],
+            },
+        },
+        "management_eligibility": {},
+    }
+
+    result = state_module._effective_market_data_snapshot(
+        frozen_regular_gate, portfolio
+    )
+
+    assert result["gate_status"] == "PASS"
+    assert result["reason_codes"] == []
+    assert result["regular_market_gate"] == frozen_regular_gate
+    assert result["sleeve_gate_status"] == {
+        "REGULAR_SLEEVE": {
+            "status": "BLOCK",
+            "reason_codes": ["FAMILY_SESSION_CLOSED"],
+            "eligible_family_sha256": [],
+        },
+        "CONTINUOUS_SLEEVE": {
+            "status": "PASS",
+            "reason_codes": [],
+            "eligible_family_sha256": ["c" * 64],
+        },
+    }
+
+
+def test_v4_effective_market_gate_keeps_block_when_no_sleeve_action_is_eligible() -> None:
+    frozen_regular_gate = {
+        "gate_status": "BLOCK",
+        "reason_codes": ["MARKET_SESSION_CLOSED"],
+        "snapshot_id": "closed",
+    }
+    portfolio = {
+        "schema": "MULTI_SLEEVE_PORTFOLIO_V4",
+        "entry_eligibility": {
+            "REGULAR_SLEEVE": {"status": "BLOCK", "reason_codes": ["FAMILY_SESSION_CLOSED"]},
+            "CONTINUOUS_SLEEVE": {"status": "BLOCK", "reason_codes": ["FAMILY_SESSION_CLOSED"]},
+        },
+        "management_eligibility": {},
+    }
+
+    result = state_module._effective_market_data_snapshot(
+        frozen_regular_gate, portfolio
+    )
+
+    assert result["gate_status"] == "BLOCK"
+    assert result["reason_codes"] == ["MARKET_SESSION_CLOSED"]
+    assert result["regular_market_gate"] == frozen_regular_gate
+
+
 def test_v4_state_context_contains_both_sleeves_ownership_and_capabilities() -> None:
     subject = object.__new__(AutonomousStateBuilder)
     subject.sleeve_ledger_store = SimpleNamespace(

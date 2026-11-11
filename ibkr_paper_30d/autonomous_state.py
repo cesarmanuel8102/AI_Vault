@@ -216,6 +216,34 @@ def _resolved_market_session_state(
     return "UNKNOWN"
 
 
+def _effective_market_data_snapshot(
+    frozen_regular_gate: Mapping[str, Any],
+    multi_sleeve_portfolio: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """Project the model-visible gate without weakening sleeve authority."""
+
+    result = dict(frozen_regular_gate)
+    if not multi_sleeve_portfolio:
+        return result
+    entry = multi_sleeve_portfolio.get("entry_eligibility") or {}
+    management = multi_sleeve_portfolio.get("management_eligibility") or {}
+    action_available = any(
+        isinstance(item, Mapping) and item.get("status") == "PASS"
+        for item in (*entry.values(), *management.values())
+    )
+    result["regular_market_gate"] = dict(frozen_regular_gate)
+    result["sleeve_gate_status"] = {
+        str(sleeve): dict(status)
+        for sleeve, status in entry.items()
+        if isinstance(status, Mapping)
+    }
+    result["effective_gate_basis"] = "V4_SLEEVE_ELIGIBILITY_OR_MANAGEMENT"
+    if action_available:
+        result["gate_status"] = "PASS"
+        result["reason_codes"] = []
+    return result
+
+
 class AutonomousStateBuilder:
     """Build a fresh decision bundle from isolated experiment state + IBKR.
 
@@ -2420,6 +2448,9 @@ class AutonomousStateBuilder:
         experiment_subledger_snapshot, broker_account_snapshot, risk_snapshot = (
             self._economic_bundle_fields(account, ledger_state, multi_sleeve_portfolio)
         )
+        effective_market_gate = _effective_market_data_snapshot(
+            market_gate, multi_sleeve_portfolio
+        )
         return TraderInputBundle(
             decision_cycle_id=f"cycle-{new_uuid7()}",
             utc_timestamp=clock["now_utc"],
@@ -2432,7 +2463,7 @@ class AutonomousStateBuilder:
             risk_snapshot=risk_snapshot,
             kill_switch_state=kill_switch_state,
             market_data_snapshot={
-                **market_gate,
+                **effective_market_gate,
                 "scope": "runtime_frozen_policy_and_fresh_ibkr_quotes",
                 "specific_contract_data_validated_on_demand": True,
             },
