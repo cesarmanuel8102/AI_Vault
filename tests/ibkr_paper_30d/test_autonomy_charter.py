@@ -238,6 +238,17 @@ def test_instrument_coverage_diagnostics_preserve_model_choice():
     assert "you must trade options" not in text
 
 
+def test_objective_salience_broadens_attention_without_prescribing_instruments():
+    text = instruction_text(charter()).lower()
+
+    assert "effective sleeve capital reported in the current bundle" in text
+    assert "liquid large-cap stocks" in text
+    assert "liquid options" in text
+    assert "you decide whether and how broadly to compare" in text
+    assert "you must research large-cap stocks" not in text
+    assert "you must research options" not in text
+
+
 def test_counterfactual_ritual_is_no_longer_prescribed():
     text = instruction_text(charter()).lower()
     assert "counterfactual challenge" not in text

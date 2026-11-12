@@ -138,6 +138,42 @@ def test_terminal_equity_benchmark_uses_effective_usd_10000_allocations():
     assert "each $10,000 sleeve to $20,000" in payload["mandate"]["instruction"]
 
 
+def test_objective_salience_uses_effective_capital_without_nominal_price_bias():
+    text = instruction().lower()
+
+    assert "effective sleeve capital reported in the current bundle" in text
+    assert "nominal share price is not evidence of opportunity quality" in text
+    assert "historical small-capital constraint" in text
+
+
+def test_autonomous_search_may_compare_broad_liquid_opportunity_families():
+    text = instruction().lower()
+
+    assert "liquid large-cap stocks" in text
+    assert "broad and sector etfs" in text
+    assert "catalyst-backed mid-caps" in text
+    assert "liquid options" in text
+    assert "when economically appropriate" in text
+
+
+def test_no_trade_exposes_search_breadth_without_candidate_quota():
+    text = instruction().lower()
+
+    assert "make visible the breadth actually examined" in text
+    assert "why the strongest available alternatives did not beat cash after costs" in text
+    assert "do not fabricate candidates to demonstrate breadth" in text
+    assert "minimum candidate count" not in text
+
+
+def test_repeated_narrow_search_redirects_method_without_forcing_action():
+    text = instruction().lower()
+
+    assert "repeated narrow or low-information search" in text
+    assert "change the search method you select" in text
+    assert "must trade" not in text
+    assert "must be aggressive" not in text
+
+
 def test_attention_policy_preserves_self_direction_while_preventing_local_stagnation():
     policy = mandate()["autonomous_attention_policy"]
 
@@ -148,6 +184,10 @@ def test_attention_policy_preserves_self_direction_while_preventing_local_stagna
         "no_opportunity_claims_require_sufficiently_recent_evidence": True,
         "track_idle_capital_opportunity_cost": True,
         "adapt_methodology_when_trajectory_is_insufficient": True,
+        "effective_capital_basis": "CURRENT_BUNDLE",
+        "nominal_price_not_opportunity_quality": True,
+        "broad_search_scope_model_selected": True,
+        "no_trade_explains_search_breadth": True,
     }
 
     text = instruction().lower()

@@ -1408,6 +1408,10 @@ class CodexAutonomousCLIProvider:
                     "no_opportunity_claims_require_sufficiently_recent_evidence": True,
                     "track_idle_capital_opportunity_cost": True,
                     "adapt_methodology_when_trajectory_is_insufficient": True,
+                    "effective_capital_basis": "CURRENT_BUNDLE",
+                    "nominal_price_not_opportunity_quality": True,
+                    "broad_search_scope_model_selected": True,
+                    "no_trade_explains_search_breadth": True,
                 },
                 "autonomous_uncertainty_closure": {
                     "repeated_unresolved_material_uncertainty_is_a_process_problem": True,
@@ -1469,6 +1473,13 @@ class CodexAutonomousCLIProvider:
                     "benchmark, not threshold utility. You must not sacrifice expected terminal equity, accept "
                     "negative expectancy, manufacture activity, or weaken evidence to cross it. Track distance to "
                     "the benchmark and adapt your process when the current trajectory is insufficient.\n"
+                    "Use the effective sleeve capital reported in the current bundle when judging affordability, "
+                    "sizing, and opportunity cost; do not continue reasoning from a historical small-capital "
+                    "constraint after the allocation changes. Nominal share price is not evidence of opportunity "
+                    "quality. You decide whether and how broadly to compare liquid large-cap stocks, broad and "
+                    "sector ETFs, catalyst-backed mid-caps, and liquid options when economically appropriate. "
+                    "These are available comparison families, not required instruments, preferred strategies, or "
+                    "a coverage obligation.\n"
                     "Allocate attention autonomously across position management, discovery, and learning for both "
                     "sleeves. Managing a position in one sleeve does not suspend responsibility for the other sleeve. "
                     "You choose the cadence based on expected information value, but a claim that no superior "
@@ -1486,6 +1497,12 @@ class CodexAutonomousCLIProvider:
                     "sleeve economics, and available regret observations as feedback about search quality, not as a "
                     "host-selected strategy. There is no minimum trade count, and these accountability expectations do "
                     "not require a trade or prescribe an instrument, strategy, cadence, or risk level.\n"
+                    "A final NO_TRADE judgment should make visible the breadth actually examined and why the "
+                    "strongest available alternatives did not beat cash after costs. Do not fabricate candidates "
+                    "to demonstrate breadth, and do not extend research whose expected information value is low. "
+                    "When repeated narrow or low-information search is not improving the trajectory, change the "
+                    "search method you select, broaden or redirect attention as you judge useful, and preserve your "
+                    "authority to conclude that cash remains preferable.\n"
                     "Persistent non-examination of an available instrument family is diagnostic evidence about your "
                     "search process. Use the instrument-family coverage observation to decide whether investigating "
                     "that family has positive expected information value or whether its continued exclusion is "
