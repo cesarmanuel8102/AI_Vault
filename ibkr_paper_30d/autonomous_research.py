@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import signal
 import shutil
 import subprocess
 import tempfile
@@ -41,6 +42,65 @@ from .trader_invocation import (
     TraderInputBundle,
     _assert_codex_actual_model,
 )
+
+
+def _run_codex_process(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
+    """Run Codex with a timeout that terminates its complete process tree."""
+
+    timeout = kwargs.pop("timeout", None)
+    input_value = kwargs.pop("input", None)
+    check = bool(kwargs.pop("check", False))
+    if kwargs.pop("capture_output", False):
+        kwargs["stdout"] = subprocess.PIPE
+        kwargs["stderr"] = subprocess.PIPE
+    if input_value is not None:
+        kwargs["stdin"] = subprocess.PIPE
+    if os.name == "nt":
+        kwargs["creationflags"] = int(kwargs.get("creationflags", 0)) | int(
+            subprocess.CREATE_NEW_PROCESS_GROUP
+        )
+    else:
+        kwargs["start_new_session"] = True
+    process = subprocess.Popen(command, **kwargs)
+    try:
+        stdout, stderr = process.communicate(
+            input=input_value, timeout=timeout
+        )
+    except subprocess.TimeoutExpired as exc:
+        if os.name == "nt":
+            subprocess.run(
+                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                capture_output=True,
+                timeout=5,
+                check=False,
+            )
+        else:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        try:
+            stdout, stderr = process.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            stdout, stderr = process.communicate()
+        raise subprocess.TimeoutExpired(
+            exc.cmd,
+            exc.timeout,
+            output=stdout,
+            stderr=stderr,
+        ) from exc
+    completed = subprocess.CompletedProcess(
+        command, process.returncode, stdout=stdout, stderr=stderr
+    )
+    if check and completed.returncode:
+        raise subprocess.CalledProcessError(
+            completed.returncode,
+            command,
+            output=stdout,
+            stderr=stderr,
+        )
+    return completed
 
 
 def _resolve_codex_executable() -> str:
@@ -749,7 +809,8 @@ class CodexAutonomousCLIProvider:
             )
         ):
             raise ValueError("MODEL_ATTESTATION_EXCEPTION_SHA256_INVALID")
-        self.runner = runner
+        self._uses_default_runner = runner is subprocess.run
+        self.runner = _run_codex_process if self._uses_default_runner else runner
         self.codex_executable = codex_executable
         self.retry_sleep = retry_sleep
         self.owner_model_attestation_exception_sha256 = (
@@ -789,7 +850,7 @@ class CodexAutonomousCLIProvider:
             if executable is None:
                 executable = (
                     _resolve_codex_executable()
-                    if self.runner is subprocess.run
+                    if self._uses_default_runner
                     else "codex"
                 )
             command = [
@@ -990,7 +1051,7 @@ class CodexAutonomousCLIProvider:
             if executable is None:
                 executable = (
                     _resolve_codex_executable()
-                    if self.runner is subprocess.run
+                    if self._uses_default_runner
                     else "codex"
                 )
             command = [

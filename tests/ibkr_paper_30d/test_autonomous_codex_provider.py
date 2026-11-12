@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
+import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -14,6 +17,7 @@ from ibkr_paper_30d.autonomous_research import (
 )
 from ibkr_paper_30d.autonomous_runtime import build_request
 from ibkr_paper_30d.trader_invocation import InvocationRequest, TraderInputBundle
+from ibkr_paper_30d import autonomous_research
 
 
 def bundle() -> TraderInputBundle:
@@ -36,6 +40,30 @@ def bundle() -> TraderInputBundle:
         benchmark_state={},
         experiment_clock={"remaining_days": 30},
     )
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows process-tree regression")
+def test_default_codex_runner_times_out_when_descendant_inherits_output_pipe():
+    runner = getattr(autonomous_research, "_run_codex_process", None)
+    assert callable(runner), "tree-safe Codex runner is required"
+    child = (
+        "import subprocess,sys,time; "
+        "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)']); "
+        "time.sleep(30)"
+    )
+
+    started = time.monotonic()
+    with pytest.raises(subprocess.TimeoutExpired):
+        runner(
+            [sys.executable, "-c", child],
+            input="",
+            text=True,
+            capture_output=True,
+            timeout=0.25,
+            check=False,
+        )
+
+    assert time.monotonic() - started < 3.0
 
 
 def request(value: TraderInputBundle) -> InvocationRequest:
