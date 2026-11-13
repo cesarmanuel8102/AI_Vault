@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import socket
+import subprocess
 import re
 from dataclasses import asdict, replace
 from datetime import datetime, timezone
@@ -60,6 +61,13 @@ from .market_observation_collector import (
 from .market_observation_ledger import MarketObservationLedger
 from .market_policy import MarketPolicyFreezer, load_verified_policy
 from .persistence import Database
+from .physical_canary import (
+    PhysicalCanaryDirective,
+    PhysicalCanaryError,
+    PhysicalCanaryState,
+    PhysicalCanaryStore,
+)
+from .multi_universe_models import CapitalSleeve
 from .redaction import redact_text
 from .readonly_acceptance import is_safe_account_summary_partial
 from .reporting import FAULT_SCENARIOS, FaultInjectionHarness, write_local_reports
@@ -86,6 +94,116 @@ MARKET_OBSERVATION_REPORT = REPORT_ROOT / "market_observation.json"
 MARKET_POLICY = REPORT_ROOT / "market_data_policy_v1.json"
 MARKET_POLICY_REPORT = REPORT_ROOT / "market_policy_freeze.json"
 MARKET_VALIDATION_REPORT = REPORT_ROOT / "market_data_validation.json"
+
+
+def _current_git_head() -> str:
+    completed = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return completed.stdout.strip()
+
+
+def request_physical_canary(
+    *,
+    database_path: str | Path,
+    sleeve: CapitalSleeve,
+    canary_id: str,
+    approved_head: str,
+    owner_authorization_sha256: str,
+    requested_at_utc: datetime | None = None,
+    current_head: str | None = None,
+) -> dict[str, object]:
+    observed_head = current_head or _current_git_head()
+    if observed_head != approved_head:
+        raise PhysicalCanaryError("PHYSICAL_CANARY_APPROVED_HEAD_MISMATCH")
+    directive = PhysicalCanaryDirective(
+        canary_id=canary_id,
+        capital_sleeve=sleeve,
+        owner_authorization_sha256=owner_authorization_sha256,
+        requested_at_utc=requested_at_utc or datetime.now(timezone.utc),
+        approved_head=approved_head,
+    )
+    with Database.open(Path(database_path)) as db:
+        store = PhysicalCanaryStore(db)
+        existing = store.projection(canary_id)
+        if existing is not None:
+            if (
+                existing.directive.canary_id != directive.canary_id
+                or existing.directive.capital_sleeve
+                is not directive.capital_sleeve
+                or existing.directive.owner_authorization_sha256
+                != directive.owner_authorization_sha256
+                or existing.directive.approved_head != directive.approved_head
+            ):
+                raise PhysicalCanaryError("PHYSICAL_CANARY_IDENTITY_CONFLICT")
+            projection = existing
+        else:
+            if sleeve is CapitalSleeve.CONTINUOUS_SLEEVE:
+                regular = [
+                    item
+                    for item in store.projections()
+                    if item.directive.capital_sleeve
+                    is CapitalSleeve.REGULAR_SLEEVE
+                ]
+                if (
+                    len(regular) != 1
+                    or regular[0].state
+                    is not PhysicalCanaryState.FLAT_RECONCILED
+                ):
+                    raise PhysicalCanaryError(
+                        "REGULAR_PHYSICAL_CANARY_NOT_FLAT"
+                    )
+            projection = store.request(directive)
+    return {
+        "schema": "PHYSICAL_CANARY_REQUEST_RESULT_V1",
+        "canary_id": projection.directive.canary_id,
+        "capital_sleeve": projection.directive.capital_sleeve.value,
+        "state": projection.state.value,
+        "approved_head": projection.directive.approved_head,
+        "broker_calls_made": 0,
+        "real_broker_writes": 0,
+    }
+
+
+def inspect_physical_canary(
+    *, database_path: str | Path, canary_id: str
+) -> dict[str, object]:
+    with Database.open(Path(database_path)) as db:
+        store = PhysicalCanaryStore(db)
+        projection = store.projection(canary_id)
+        if projection is None:
+            raise PhysicalCanaryError("PHYSICAL_CANARY_REQUEST_MISSING")
+        evidence = store.latest_evidence(canary_id)
+        order_ref = str(evidence.get("order_ref") or "")
+        registry_events = []
+        if order_ref:
+            rows = db.execute(
+                "SELECT payload_json FROM experiment_order_registry "
+                "WHERE order_ref=? ORDER BY sequence",
+                (order_ref,),
+            ).fetchall()
+            registry_events = [json.loads(str(row[0])) for row in rows]
+        fill_rows = db.execute(
+            "SELECT payload_json FROM autonomous_ledger_events "
+            "WHERE event_type='BROKER_FILL' ORDER BY sequence"
+        ).fetchall()
+        fills = []
+        for (payload_json,) in fill_rows:
+            payload = json.loads(str(payload_json))
+            if not order_ref or str(payload.get("orderRef") or "") == order_ref:
+                fills.append(payload)
+    return {
+        "schema": "PHYSICAL_CANARY_INSPECTION_V1",
+        "projection": projection.model_dump(mode="json"),
+        "latest_evidence": evidence,
+        "order_registry_events": registry_events,
+        "fills": fills,
+        "broker_calls_made": 0,
+        "real_broker_writes": 0,
+    }
 
 
 def _sanitized_account_facts(accounts: Sequence[str]) -> dict[str, object]:
@@ -1105,6 +1223,24 @@ def main(argv: Sequence[str] | None = None) -> int:
         choices=[item.value for item in DecisionClass],
         default=DecisionClass.NEW_TRADE.value,
     )
+    physical_request_parser = commands.add_parser("request-physical-canary")
+    physical_request_parser.add_argument("--database", type=Path, required=True)
+    physical_request_parser.add_argument(
+        "--sleeve",
+        choices=[
+            CapitalSleeve.REGULAR_SLEEVE.value,
+            CapitalSleeve.CONTINUOUS_SLEEVE.value,
+        ],
+        required=True,
+    )
+    physical_request_parser.add_argument("--canary-id", required=True)
+    physical_request_parser.add_argument("--approved-head", required=True)
+    physical_request_parser.add_argument(
+        "--owner-authorization-sha256", required=True
+    )
+    physical_inspect_parser = commands.add_parser("inspect-physical-canary")
+    physical_inspect_parser.add_argument("--database", type=Path, required=True)
+    physical_inspect_parser.add_argument("--canary-id", required=True)
     args = parser.parse_args(argv)
 
     if args.command == "inspect-ibkr-readonly":
@@ -1144,6 +1280,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             source=IBKRMarketDataSource(host=args.host, port=args.port),
             expected_account_hash=_configured_paper_account_hash(),
             decision_class=DecisionClass(args.decision_class),
+        )
+    elif args.command == "request-physical-canary":
+        report = request_physical_canary(
+            database_path=args.database,
+            sleeve=CapitalSleeve(args.sleeve),
+            canary_id=args.canary_id,
+            approved_head=args.approved_head,
+            owner_authorization_sha256=args.owner_authorization_sha256,
+        )
+    elif args.command == "inspect-physical-canary":
+        report = inspect_physical_canary(
+            database_path=args.database,
+            canary_id=args.canary_id,
         )
     elif args.command == "probe-auditor-isolation":
         report = write_isolation_report(

@@ -144,6 +144,9 @@ class PhysicalCanaryStore:
     def projection(self, canary_id: str) -> PhysicalCanaryProjection | None:
         return self._projections().get(canary_id)
 
+    def projections(self) -> tuple[PhysicalCanaryProjection, ...]:
+        return tuple(self._projections().values())
+
     def latest_evidence(self, canary_id: str) -> dict[str, object]:
         rows = self.db.execute(
             "SELECT payload_json FROM state_events "
