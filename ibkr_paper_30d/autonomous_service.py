@@ -37,6 +37,7 @@ from .experiment_ledger import AutonomousExperimentLedger
 from .ibkr_research_tools import IBKRResearchToolbox
 from .market_data import DecisionClass
 from .persistence import Database
+from .physical_canary import PhysicalCanaryState, PhysicalCanaryStore
 from .provider_lifecycle import BrokerTimeEvidence
 from .repositories import EventRepository, utc_now
 from .research_sandbox import WSLResearchSandbox
@@ -306,6 +307,7 @@ class AutonomousExperimentService:
         )
         self.kill_switch = KillSwitchStore(db)
         self.owner_authorization = OwnerAuthorizationStore(db)
+        self.physical_canary_store = PhysicalCanaryStore(db)
         self.provider = provider or CodexAutonomousCLIProvider()
         self.executor = executor
         self.sleep = sleep
@@ -663,6 +665,7 @@ class AutonomousExperimentService:
                 "auditor": auditor,
             }
         bundle = self._with_contract_order_quarantine_context(bundle)
+        bundle = self._with_physical_canary_directive(bundle)
         if bundle.experiment_clock.get("not_started"):
             return {
                 "schema": "CODEX_IBKR_AUTONOMOUS_SERVICE_CYCLE_V2",
@@ -889,6 +892,7 @@ class AutonomousExperimentService:
                         + (canary_result.get("reason_codes") or [])
                     )
                 )
+        self._record_physical_canary_terminal_result(result)
         return result
 
     def _reconcile_contract_order_quarantine(
@@ -983,6 +987,82 @@ class AutonomousExperimentService:
         benchmark_state = dict(bundle.benchmark_state)
         benchmark_state["contract_order_quarantine"] = context
         return bundle.model_copy(update={"benchmark_state": benchmark_state})
+
+    def _with_physical_canary_directive(
+        self, bundle: TraderInputBundle
+    ) -> TraderInputBundle:
+        projection = self.physical_canary_store.active()
+        if (
+            projection is None
+            or projection.state is not PhysicalCanaryState.REQUESTED
+        ):
+            return bundle
+        directive = projection.directive
+        return bundle.model_copy(
+            update={
+                "physical_canary_directive": {
+                    "schema": "PHYSICAL_CANARY_DIRECTIVE_V1",
+                    **directive.model_dump(mode="json"),
+                    "state": projection.state.value,
+                    "purpose": "TECHNICAL_E2E_VALIDATION",
+                }
+            }
+        )
+
+    def _record_physical_canary_terminal_result(
+        self, result: dict[str, Any]
+    ) -> None:
+        projection = self.physical_canary_store.active()
+        if (
+            projection is None
+            or projection.state is not PhysicalCanaryState.REQUESTED
+        ):
+            return
+        outcome = result.get("outcome") or {}
+        decision = str(outcome.get("decision") or "")
+        status = str(result.get("status") or "")
+        reason_codes = [
+            str(code)
+            for code in (
+                result.get("reason_codes")
+                or outcome.get("reason_codes")
+                or []
+            )
+        ]
+        evidence = {
+            "cycle_status": status,
+            "decision": decision,
+            "validation": str(outcome.get("validation") or ""),
+            "reason_codes": reason_codes,
+        }
+        if (
+            decision == "PROPOSE_TRADE"
+            and outcome.get("accepted") is True
+            and str(outcome.get("validation") or "") == "PASS"
+        ):
+            proposal = outcome.get("proposal") or {}
+            if (
+                str(proposal.get("capital_sleeve") or "")
+                != projection.directive.capital_sleeve.value
+            ):
+                next_state = PhysicalCanaryState.BLOCKED
+                evidence["reason_codes"] = ["PHYSICAL_CANARY_SLEEVE_MISMATCH"]
+            else:
+                next_state = PhysicalCanaryState.ENTRY_SELECTED
+        elif decision == "NO_TRADE" and outcome.get("accepted") is True:
+            next_state = PhysicalCanaryState.MODEL_DECLINED
+        elif status in {"BLOCK", "STATE_GATE_BLOCK", "EXECUTION_BLOCKED"} or (
+            str(outcome.get("validation") or "") == "BLOCK"
+        ):
+            next_state = PhysicalCanaryState.BLOCKED
+        else:
+            return
+        self.physical_canary_store.append_transition(
+            projection.directive.canary_id,
+            next_state,
+            capital_sleeve=projection.directive.capital_sleeve,
+            evidence=evidence,
+        )
 
     def _handle_pause(self, result: dict[str, Any]) -> bool:
         outcome = result.get("outcome") or {}

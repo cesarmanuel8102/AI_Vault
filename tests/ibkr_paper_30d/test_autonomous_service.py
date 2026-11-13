@@ -25,6 +25,10 @@ from ibkr_paper_30d.continuity_schema import install_continuity_schema_v3
 from ibkr_paper_30d.continuity_watchdog import ContinuityWatchdog
 from ibkr_paper_30d.contract_order_quarantine import ContractOrderQuarantineStore
 from ibkr_paper_30d.persistence import Database
+from ibkr_paper_30d.physical_canary import (
+    PhysicalCanaryDirective,
+    PhysicalCanaryState,
+)
 from ibkr_paper_30d.experiment_control import (
     ExperimentClockStore,
     KillSwitchStore,
@@ -37,6 +41,8 @@ from ibkr_paper_30d.successor_epoch import (
     BrokerTransitionEvidence,
     commit_successor_transition,
 )
+from ibkr_paper_30d.multi_universe_models import CapitalSleeve
+from ibkr_paper_30d.trader_invocation import TraderInputBundle
 from successor_test_support import (
     ACCOUNT_HASH,
     OWNER_SID,
@@ -627,20 +633,23 @@ class BlockGate:
         return {"gate_status": "BLOCK", "reason_codes": [self.code]}
 
 
-def _authorized_production_topology(db, *, market_gate=None, auditor_gate=None):
+def _authorized_production_topology(
+    db, *, market_gate=None, auditor_gate=None, initialize_controls=True
+):
     start = datetime(2026, 9, 28, 13, 30, tzinfo=timezone.utc)
     clock = ExperimentClockStore(db).initialize_or_load(
         requested_start_utc=start,
         duration_days=30,
         initial_allocation=Decimal("500.00"),
     )
-    KillSwitchStore(db).set("KILL_SWITCH_CLEAR", reason="test", actor="test")
-    OwnerAuthorizationStore(db).set(
-        "AUTHORIZED",
-        clock_event_sha256=clock.event_sha256,
-        reason="owner authorized test",
-        actor="owner",
-    )
+    if initialize_controls:
+        KillSwitchStore(db).set("KILL_SWITCH_CLEAR", reason="test", actor="test")
+        OwnerAuthorizationStore(db).set(
+            "AUTHORIZED",
+            clock_event_sha256=clock.event_sha256,
+            reason="owner authorized test",
+            actor="owner",
+        )
     return AutonomousExperimentService(
         db,
         experiment_start_utc=start,
@@ -651,6 +660,113 @@ def _authorized_production_topology(db, *, market_gate=None, auditor_gate=None):
         runtime_market_gate=market_gate or PassGate(),
         runtime_auditor_gate=auditor_gate or PassGate(),
     )
+
+
+def _physical_canary_bundle() -> TraderInputBundle:
+    return TraderInputBundle(
+        decision_cycle_id="physical-canary-cycle",
+        utc_timestamp="2026-11-13T18:00:00Z",
+        market_session_state="REGULAR",
+        reconciliation_receipt={"status": "PASS"},
+        experiment_subledger_snapshot={"equity": "10000"},
+        broker_account_snapshot={"buying_power": "10000"},
+        positions_snapshot=[],
+        open_orders_snapshot=[],
+        risk_snapshot={"policy": "AGGRESSIVE_CAPITAL_BOUNDARY_V1"},
+        kill_switch_state="KILL_SWITCH_CLEAR",
+        market_data_snapshot={"gate_status": "PASS"},
+        candidate_screen_results=[],
+        relevant_previous_immutable_decisions=[],
+        process_policy_version="AUTONOMOUS_RESEARCH_V1",
+        execution_realism_version="PAPER_V1",
+        benchmark_state={},
+    )
+
+
+def _request_regular_physical_canary(service) -> PhysicalCanaryDirective:
+    directive = PhysicalCanaryDirective(
+        canary_id="regular-physical-1",
+        capital_sleeve=CapitalSleeve.REGULAR_SLEEVE,
+        owner_authorization_sha256="a" * 64,
+        requested_at_utc=datetime(2026, 11, 13, 18, 0, tzinfo=timezone.utc),
+        approved_head="b" * 40,
+    )
+    service.physical_canary_store.request(directive)
+    return directive
+
+
+def test_physical_canary_directive_survives_service_restart(tmp_path):
+    with Database.open(tmp_path / "physical-canary-restart.sqlite3") as db:
+        first = _authorized_production_topology(db)
+        directive = _request_regular_physical_canary(first)
+
+        restarted = _authorized_production_topology(
+            db, initialize_controls=False
+        )
+        bundle = restarted._with_physical_canary_directive(
+            _physical_canary_bundle()
+        )
+
+    assert bundle.physical_canary_directive["canary_id"] == directive.canary_id
+    assert bundle.physical_canary_directive["capital_sleeve"] == "REGULAR_SLEEVE"
+    assert bundle.physical_canary_directive["state"] == "REQUESTED"
+
+
+@pytest.mark.parametrize(
+    ("result", "expected_state"),
+    [
+        (
+            {
+                "status": "PASS",
+                "outcome": {
+                    "accepted": True,
+                    "validation": "PASS",
+                    "decision": "PROPOSE_TRADE",
+                    "proposal": {"capital_sleeve": "REGULAR_SLEEVE"},
+                    "reason_codes": [],
+                },
+            },
+            PhysicalCanaryState.ENTRY_SELECTED,
+        ),
+        (
+            {
+                "status": "PASS",
+                "outcome": {
+                    "accepted": True,
+                    "validation": "PASS",
+                    "decision": "NO_TRADE",
+                    "reason_codes": ["NO_LIQUID_FEASIBLE_CONTRACT"],
+                },
+            },
+            PhysicalCanaryState.MODEL_DECLINED,
+        ),
+        (
+            {
+                "status": "EXECUTION_BLOCKED",
+                "reason_codes": ["BROKER_WHAT_IF_FAILED"],
+                "outcome": {
+                    "accepted": False,
+                    "validation": "BLOCK",
+                    "decision": "PROPOSE_TRADE",
+                },
+            },
+            PhysicalCanaryState.BLOCKED,
+        ),
+    ],
+)
+def test_physical_canary_terminal_model_result_is_durable(
+    tmp_path, result, expected_state
+):
+    with Database.open(tmp_path / f"physical-canary-{expected_state.value}.sqlite3") as db:
+        service = _authorized_production_topology(db)
+        directive = _request_regular_physical_canary(service)
+
+        service._record_physical_canary_terminal_result(result)
+
+        projection = service.physical_canary_store.projection(directive.canary_id)
+
+    assert projection is not None
+    assert projection.state is expected_state
 
 
 @pytest.mark.parametrize(

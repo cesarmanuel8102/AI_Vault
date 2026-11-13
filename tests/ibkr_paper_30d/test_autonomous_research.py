@@ -766,6 +766,62 @@ def test_native_prompt_mandate_preserves_unconstrained_discovery():
     assert payload["mandate"]["no_trade_remains_valid"] is True
 
 
+def test_physical_canary_prompt_requests_one_honest_agent_selected_entry():
+    directive = {
+        "schema": "PHYSICAL_CANARY_DIRECTIVE_V1",
+        "canary_id": "regular-e2e-1",
+        "capital_sleeve": "REGULAR_SLEEVE",
+        "state": "REQUESTED",
+        "purpose": "TECHNICAL_E2E_VALIDATION",
+    }
+    value = bundle().model_copy(
+        update={"physical_canary_directive": directive}
+    )
+
+    payload = CodexAutonomousCLIProvider._prompt_payload(
+        request(value), value, [], FakeToolbox().manifest()
+    )
+
+    canary = payload["technical_e2e_canary"]
+    assert canary["directive"] == directive
+    assert canary["target_sleeve"] == "REGULAR_SLEEVE"
+    assert canary["maximum_new_entries"] == 1
+    instruction = canary["instruction"].lower()
+    assert "smallest practical" in instruction
+    assert "liquid" in instruction
+    assert "fresh quote" in instruction
+    assert "ibkr what-if" in instruction
+    assert "honest" in instruction
+    assert "no_trade" in instruction
+    assert "safety or feasibility" in instruction
+    assert "autonomous management" in instruction
+    for prescribed in ("spy", "qqq", "btc", "profit target", "stop loss"):
+        assert prescribed not in instruction
+
+
+def test_physical_canary_rejects_a_proposal_for_the_other_sleeve():
+    value = _v4_bundle(
+        legacy_equity="500.00",
+        regular_equity="500.00",
+        extended_equity="500.00",
+    ).model_copy(
+        update={
+            "physical_canary_directive": {
+                "schema": "PHYSICAL_CANARY_DIRECTIVE_V1",
+                "canary_id": "regular-e2e-1",
+                "capital_sleeve": "REGULAR_SLEEVE",
+                "state": "REQUESTED",
+                "purpose": "TECHNICAL_E2E_VALIDATION",
+            }
+        }
+    )
+
+    assert (
+        validate_multi_sleeve_payload(value, _extended_proposal("100.00"))
+        == "PHYSICAL_CANARY_SLEEVE_MISMATCH"
+    )
+
+
 def test_full_experimental_equity_may_be_risked():
     value = bundle("500.00")
     final = AutonomousTurn(

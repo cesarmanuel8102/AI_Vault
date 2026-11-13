@@ -669,6 +669,10 @@ def validate_multi_sleeve_payload(
         return None
     if payload.capital_sleeve is None:
         return "V4_SLEEVE_BINDING_REQUIRED"
+    physical_canary = bundle.physical_canary_directive or {}
+    target_sleeve = physical_canary.get("capital_sleeve")
+    if target_sleeve and payload.capital_sleeve.value != str(target_sleeve):
+        return "PHYSICAL_CANARY_SLEEVE_MISMATCH"
     if payload.product_family_sha256 is None:
         return "V4_PRODUCT_FAMILY_BINDING_REQUIRED"
     portfolio = bundle.multi_sleeve_portfolio or {}
@@ -1630,6 +1634,25 @@ class CodexAutonomousCLIProvider:
             payload["workspace_context"] = workspace_context
         if first_process_bootstrap:
             payload["first_process_bootstrap"] = first_process_bootstrap
+        if bundle.physical_canary_directive is not None:
+            directive = dict(bundle.physical_canary_directive)
+            payload["technical_e2e_canary"] = {
+                "directive": directive,
+                "target_sleeve": directive.get("capital_sleeve"),
+                "maximum_new_entries": 1,
+                "instruction": (
+                    "This is a technical E2E validation, not an economic signal. "
+                    "Independently select the smallest practical liquid contract and "
+                    "quantity for the target sleeve, supported by a fresh quote and "
+                    "IBKR what-if. Report costs, probabilities, expected value, and "
+                    "uncertainty honestly; do not invent favorable economics. Submit "
+                    "at most one entry through the normal proposal path. NO_TRADE is "
+                    "valid only when exact safety or feasibility reasons prevent a "
+                    "sound entry. After a fill, ordinary autonomous management decides "
+                    "whether and when to hold, modify, reduce, or close; this directive "
+                    "does not impose an exit."
+                ),
+            }
         return _fit_provider_prompt(payload)
 
     @staticmethod

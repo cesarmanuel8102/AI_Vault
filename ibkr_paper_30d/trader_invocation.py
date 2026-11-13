@@ -53,6 +53,7 @@ class TraderInputBundle(BaseModel, frozen=True):
     multi_sleeve_portfolio: dict[str, Any] | None = None
     contract_ownership_snapshot: dict[str, Any] | None = None
     product_capability_snapshot: dict[str, Any] | None = None
+    physical_canary_directive: dict[str, Any] | None = None
 
     @property
     def multi_sleeve_v4_active(self) -> bool:

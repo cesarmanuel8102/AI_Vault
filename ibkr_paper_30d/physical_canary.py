@@ -25,6 +25,7 @@ class PhysicalCanaryState(str, Enum):
     ACTIVE_MANAGEMENT = "ACTIVE_MANAGEMENT"
     FLAT_RECONCILED = "FLAT_RECONCILED"
     TERMINAL_NO_FILL = "TERMINAL_NO_FILL"
+    MODEL_DECLINED = "MODEL_DECLINED"
     BLOCKED = "BLOCKED"
     UNCERTAIN = "UNCERTAIN"
 
@@ -51,11 +52,13 @@ class PhysicalCanaryStore:
     _TERMINAL = {
         PhysicalCanaryState.FLAT_RECONCILED,
         PhysicalCanaryState.TERMINAL_NO_FILL,
+        PhysicalCanaryState.MODEL_DECLINED,
         PhysicalCanaryState.BLOCKED,
     }
     _ALLOWED = {
         PhysicalCanaryState.REQUESTED: {
             PhysicalCanaryState.ENTRY_SELECTED,
+            PhysicalCanaryState.MODEL_DECLINED,
             PhysicalCanaryState.BLOCKED,
             PhysicalCanaryState.UNCERTAIN,
         },
