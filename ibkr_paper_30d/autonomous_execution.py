@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import copy
 import inspect
+import json
 import os
+import re
 import sqlite3
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -42,6 +44,10 @@ from .open_order_management import (
     resolve_owned_open_trade,
 )
 from .persistence import Database
+from .physical_canary import (
+    PhysicalCanaryState,
+    PhysicalCanaryStore,
+)
 from .repositories import utc_now
 from .types import new_uuid7
 from .trader_invocation import TraderDecision, TraderInputBundle
@@ -69,6 +75,53 @@ class WriterOwnedModelExecutionMechanics:
     """
 
     execution_client_id = EXECUTION_CLIENT_ID
+
+    @staticmethod
+    def _physical_canary_order_ref(directive: dict[str, Any]) -> str:
+        canary_id = str(directive.get("canary_id") or "")
+        sleeve = str(directive.get("capital_sleeve") or "")
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", canary_id):
+            raise ValueError("PHYSICAL_CANARY_ID_INVALID")
+        sleeve_token = {
+            "REGULAR_SLEEVE": "regular",
+            "CONTINUOUS_SLEEVE": "continuous",
+        }.get(sleeve)
+        if sleeve_token is None:
+            raise ValueError("PHYSICAL_CANARY_SLEEVE_INVALID")
+        return (
+            f"{EXPERIMENT_ORDER_PREFIX}-physical-{sleeve_token}-{canary_id}"
+        )
+
+    def _existing_physical_canary_result(
+        self, order_ref: str
+    ) -> PaperExecutionResult | None:
+        if self.database is None:
+            return None
+        row = self.database.execute(
+            "SELECT payload_json FROM experiment_order_registry "
+            "WHERE order_ref=? ORDER BY sequence DESC LIMIT 1",
+            (order_ref,),
+        ).fetchone()
+        if row is None:
+            return None
+        payload = json.loads(str(row[0]))
+        return PaperExecutionResult(
+            success=True,
+            status="BROKER_BOUND",
+            reason_codes=(),
+            order={
+                "orderRef": order_ref,
+                "orderId": int(payload.get("ibkr_order_id") or 0),
+                "permId": int(payload.get("perm_id") or 0),
+                "clientId": int(
+                    payload.get("execution_client_id")
+                    or self.execution_client_id
+                ),
+                "status": "EXISTING_IDENTITY",
+                "paper_only": True,
+            },
+            broker_validation={"idempotent_replay": True},
+        )
 
     @staticmethod
     def _authority_contract(
@@ -1429,6 +1482,72 @@ class WriterOwnedModelExecutionMechanics:
                 order={},
                 broker_validation={},
             )
+        physical_directive = bundle.physical_canary_directive
+        physical_store: PhysicalCanaryStore | None = None
+        physical_projection = None
+        physical_order_ref: str | None = None
+        if physical_directive is not None:
+            target_sleeve = str(
+                physical_directive.get("capital_sleeve") or ""
+            )
+            selected_sleeve = (
+                None
+                if proposal.capital_sleeve is None
+                else proposal.capital_sleeve.value
+            )
+            if selected_sleeve != target_sleeve:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("PHYSICAL_CANARY_SLEEVE_MISMATCH",),
+                    order={},
+                    broker_validation={},
+                )
+            try:
+                physical_order_ref = self._physical_canary_order_ref(
+                    physical_directive
+                )
+            except ValueError as exc:
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=(str(exc),),
+                    order={},
+                    broker_validation={},
+                )
+            physical_store = PhysicalCanaryStore(self.database)
+            physical_projection = physical_store.active()
+            if (
+                physical_projection is None
+                or physical_projection.directive.canary_id
+                != str(physical_directive.get("canary_id") or "")
+                or physical_projection.directive.capital_sleeve.value
+                != target_sleeve
+            ):
+                return PaperExecutionResult(
+                    success=False,
+                    status="BLOCKED",
+                    reason_codes=("PHYSICAL_CANARY_DIRECTIVE_NOT_ACTIVE",),
+                    order={},
+                    broker_validation={},
+                )
+            if physical_projection.state in {
+                PhysicalCanaryState.ISSUED_PRE_SEND,
+                PhysicalCanaryState.BROKER_BOUND,
+                PhysicalCanaryState.ACTIVE_MANAGEMENT,
+            }:
+                existing = self._existing_physical_canary_result(
+                    physical_order_ref
+                )
+                if existing is not None:
+                    return existing
+                return PaperExecutionResult(
+                    success=False,
+                    status="UNCERTAIN",
+                    reason_codes=("PHYSICAL_CANARY_IDENTITY_UNRESOLVED",),
+                    order={"orderRef": physical_order_ref},
+                    broker_validation={},
+                )
         continuity_required = bool(
             bundle.continuity_context.get("authority_contract_required", False)
         )
@@ -1508,7 +1627,10 @@ class WriterOwnedModelExecutionMechanics:
             order_ref = (
                 continuity_plan.order_binding.order_ref
                 if continuity_plan is not None
-                else f"{EXPERIMENT_ORDER_PREFIX}-a-{bundle.decision_cycle_id[-12:]}"
+                else (
+                    physical_order_ref
+                    or f"{EXPERIMENT_ORDER_PREFIX}-a-{bundle.decision_cycle_id[-12:]}"
+                )
             )
             if not order_ref.startswith(f"{EXPERIMENT_ORDER_PREFIX}-"):
                 return PaperExecutionResult(
@@ -1624,7 +1746,45 @@ class WriterOwnedModelExecutionMechanics:
                         "trade_contract_market_data": live_quote,
                     },
                 )
-            trade = ib.placeOrder(contract, order)
+            if physical_store is not None and physical_projection is not None:
+                if physical_projection.state is PhysicalCanaryState.REQUESTED:
+                    physical_projection = physical_store.append_transition(
+                        physical_projection.directive.canary_id,
+                        PhysicalCanaryState.ENTRY_SELECTED,
+                        capital_sleeve=physical_projection.directive.capital_sleeve,
+                        evidence={
+                            "proposal_sha256": sha256_json(proposal),
+                            "decision_cycle_id": bundle.decision_cycle_id,
+                        },
+                    )
+                if physical_projection.state is PhysicalCanaryState.ENTRY_SELECTED:
+                    physical_projection = physical_store.append_transition(
+                        physical_projection.directive.canary_id,
+                        PhysicalCanaryState.ISSUED_PRE_SEND,
+                        capital_sleeve=physical_projection.directive.capital_sleeve,
+                        evidence={
+                            "order_ref": order_ref,
+                            "client_order_id": int(order.orderId),
+                            "execution_client_id": self.execution_client_id,
+                            "contract": canonical_contract_identity(contract),
+                        },
+                    )
+            try:
+                trade = ib.placeOrder(contract, order)
+            except Exception:
+                if (
+                    physical_store is not None
+                    and physical_projection is not None
+                    and physical_projection.state
+                    is PhysicalCanaryState.ISSUED_PRE_SEND
+                ):
+                    physical_store.append_transition(
+                        physical_projection.directive.canary_id,
+                        PhysicalCanaryState.UNCERTAIN,
+                        capital_sleeve=physical_projection.directive.capital_sleeve,
+                        evidence={"reason_code": "PLACE_ORDER_RESULT_UNCERTAIN"},
+                    )
+                raise
             ib.sleep(self.fill_wait_seconds)
             trade = self._reconcile_post_send_trade(
                 ib,
@@ -1664,6 +1824,32 @@ class WriterOwnedModelExecutionMechanics:
                         action=proposal.action.upper(),
                         quantity=proposal.quantity,
                         lifecycle_event="BROKER_BOUND",
+                    )
+                if (
+                    physical_store is not None
+                    and physical_projection is not None
+                    and physical_projection.state
+                    is PhysicalCanaryState.ISSUED_PRE_SEND
+                ):
+                    physical_projection = physical_store.append_transition(
+                        physical_projection.directive.canary_id,
+                        PhysicalCanaryState.BROKER_BOUND,
+                        capital_sleeve=physical_projection.directive.capital_sleeve,
+                        evidence={
+                            "order_ref": order_ref,
+                            "order_id": int(
+                                getattr(trade.order, "orderId", 0) or 0
+                            ),
+                            "perm_id": int(
+                                getattr(trade.order, "permId", 0) or 0
+                            ),
+                            "client_id": int(
+                                getattr(trade.order, "clientId", 0) or 0
+                            ),
+                            "contract": canonical_contract_identity(
+                                trade.contract
+                            ),
+                        },
                     )
             status = getattr(trade.orderStatus, "status", "UNKNOWN") or "UNKNOWN"
             payload = {

@@ -1013,10 +1013,7 @@ class AutonomousExperimentService:
         self, result: dict[str, Any]
     ) -> None:
         projection = self.physical_canary_store.active()
-        if (
-            projection is None
-            or projection.state is not PhysicalCanaryState.REQUESTED
-        ):
+        if projection is None:
             return
         outcome = result.get("outcome") or {}
         decision = str(outcome.get("decision") or "")
@@ -1035,6 +1032,28 @@ class AutonomousExperimentService:
             "validation": str(outcome.get("validation") or ""),
             "reason_codes": reason_codes,
         }
+        if (
+            projection.state is PhysicalCanaryState.ACTIVE_MANAGEMENT
+            and outcome.get("accepted") is True
+            and str(outcome.get("validation") or "") == "PASS"
+            and decision
+            in {
+                "MONITOR_POSITION",
+                "REDUCE_POSITION",
+                "CLOSE_POSITION",
+                "MODIFY_ORDER",
+                "CANCEL_ORDER",
+            }
+        ):
+            self.physical_canary_store.append_transition(
+                projection.directive.canary_id,
+                PhysicalCanaryState.ACTIVE_MANAGEMENT,
+                capital_sleeve=projection.directive.capital_sleeve,
+                evidence={**evidence, "management_observed": True},
+            )
+            return
+        if projection.state is not PhysicalCanaryState.REQUESTED:
+            return
         if (
             decision == "PROPOSE_TRADE"
             and outcome.get("accepted") is True

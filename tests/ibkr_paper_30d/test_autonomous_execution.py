@@ -30,6 +30,12 @@ from ibkr_paper_30d.open_order_management import (
     _contract_identity_matches,
     canonical_open_order,
 )
+from ibkr_paper_30d.multi_universe_models import CapitalSleeve
+from ibkr_paper_30d.physical_canary import (
+    PhysicalCanaryDirective,
+    PhysicalCanaryState,
+    PhysicalCanaryStore,
+)
 from ibkr_paper_30d.trader_invocation import TraderDecision, TraderInputBundle
 
 
@@ -72,6 +78,35 @@ def v4_bundle(**kwargs):
             "contract_ownership_snapshot": {"contract_sleeves": {}},
             "product_capability_snapshot": {"families": []},
         }
+    )
+
+
+def physical_canary_bundle(*, sleeve="REGULAR_SLEEVE"):
+    return v4_bundle().model_copy(
+        update={
+            "physical_canary_directive": {
+                "schema": "PHYSICAL_CANARY_DIRECTIVE_V1",
+                "canary_id": "regular-e2e-1",
+                "capital_sleeve": sleeve,
+                "owner_authorization_sha256": "a" * 64,
+                "requested_at_utc": "2026-11-13T18:00:00Z",
+                "approved_head": "b" * 40,
+                "state": "REQUESTED",
+                "purpose": "TECHNICAL_E2E_VALIDATION",
+            }
+        }
+    )
+
+
+def request_physical_canary(db, *, sleeve=CapitalSleeve.REGULAR_SLEEVE):
+    return PhysicalCanaryStore(db).request(
+        PhysicalCanaryDirective(
+            canary_id="regular-e2e-1",
+            capital_sleeve=sleeve,
+            owner_authorization_sha256="a" * 64,
+            requested_at_utc=datetime(2026, 11, 13, 18, 0, tzinfo=timezone.utc),
+            approved_head="b" * 40,
+        )
     )
 
 
@@ -803,11 +838,13 @@ class _ResolvedBagIB:
     def __init__(self, resolved_contract):
         self.resolved_contract = resolved_contract
         self.client = SimpleNamespace(getReqId=lambda: 13)
+        self.place_calls = 0
 
     def managedAccounts(self):
         return ["DU1234567"]
 
     def placeOrder(self, contract, order):
+        self.place_calls += 1
         order.permId = 1401602203
         order.clientId = EXECUTION_CLIENT_ID
         return SimpleNamespace(
@@ -953,6 +990,116 @@ def test_bag_broker_bound_uses_resolved_trade_contract_and_persists_legs(tmp_pat
     ]
     assert payloads[1]["lifecycle_event"] == "BROKER_BOUND"
     assert payloads[1]["contract"]["conId"] == 28812380
+
+
+def test_physical_canary_uses_deterministic_identity_and_durable_lifecycle(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _ResolvedBagToolbox()
+    selected = bag_proposal().model_copy(
+        update={
+            "capital_sleeve": CapitalSleeve.REGULAR_SLEEVE,
+            "product_family_sha256": "f" * 64,
+        }
+    )
+    value = physical_canary_bundle()
+    with Database.open(tmp_path / "physical-canary-lifecycle.sqlite3") as db:
+        request_physical_canary(db)
+        mechanics = WriterOwnedModelExecutionMechanics(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        )
+
+        result = mechanics.execute_with_broker(
+            toolbox.ib,
+            selected,
+            value,
+            final_write_authority_check=lambda context: (),
+        )
+        projection = PhysicalCanaryStore(db).projection("regular-e2e-1")
+
+    expected_ref = (
+        "codex-ibkr-paper-30d-physical-regular-regular-e2e-1"
+    )
+    assert result.success is True
+    assert result.order["orderRef"] == expected_ref
+    assert projection is not None
+    assert projection.state is PhysicalCanaryState.BROKER_BOUND
+    assert toolbox.ib.place_calls == 1
+
+
+def test_physical_canary_repeat_returns_existing_identity_without_resubmit(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _ResolvedBagToolbox()
+    selected = bag_proposal().model_copy(
+        update={
+            "capital_sleeve": CapitalSleeve.REGULAR_SLEEVE,
+            "product_family_sha256": "f" * 64,
+        }
+    )
+    value = physical_canary_bundle()
+    with Database.open(tmp_path / "physical-canary-idempotent.sqlite3") as db:
+        request_physical_canary(db)
+        mechanics = WriterOwnedModelExecutionMechanics(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        )
+        first = mechanics.execute_with_broker(
+            toolbox.ib,
+            selected,
+            value,
+            final_write_authority_check=lambda context: (),
+        )
+        second = mechanics.execute_with_broker(
+            toolbox.ib,
+            selected,
+            value,
+            final_write_authority_check=lambda context: (),
+        )
+
+    assert first.order["orderRef"] == second.order["orderRef"]
+    assert first.order["orderId"] == second.order["orderId"]
+    assert first.order["permId"] == second.order["permId"]
+    assert second.status == "BROKER_BOUND"
+    assert toolbox.ib.place_calls == 1
+
+
+def test_physical_canary_wrong_sleeve_stops_before_place_order(tmp_path):
+    from ibkr_paper_30d.persistence import Database
+
+    toolbox = _ResolvedBagToolbox()
+    wrong = bag_proposal().model_copy(
+        update={
+            "capital_sleeve": CapitalSleeve.CONTINUOUS_SLEEVE,
+            "product_family_sha256": "f" * 64,
+        }
+    )
+    with Database.open(tmp_path / "physical-canary-wrong-sleeve.sqlite3") as db:
+        request_physical_canary(db)
+        mechanics = WriterOwnedModelExecutionMechanics(
+            toolbox,
+            armed=True,
+            database=db,
+            fresh_safety_check=lambda scope: (),
+            operator_control_check=lambda: (),
+        )
+        result = mechanics.execute_with_broker(
+            toolbox.ib,
+            wrong,
+            physical_canary_bundle(),
+            final_write_authority_check=lambda context: (),
+        )
+
+    assert result.status == "BLOCKED"
+    assert result.reason_codes == ("PHYSICAL_CANARY_SLEEVE_MISMATCH",)
+    assert toolbox.ib.place_calls == 0
 
 
 def test_bag_post_send_reconciles_delayed_broker_identity_before_result(tmp_path):

@@ -144,6 +144,24 @@ class PhysicalCanaryStore:
     def projection(self, canary_id: str) -> PhysicalCanaryProjection | None:
         return self._projections().get(canary_id)
 
+    def latest_evidence(self, canary_id: str) -> dict[str, object]:
+        rows = self.db.execute(
+            "SELECT payload_json FROM state_events "
+            "WHERE event_type LIKE 'PHYSICAL_CANARY_%' ORDER BY sequence DESC"
+        ).fetchall()
+        merged: dict[str, object] = {}
+        for (payload_json,) in rows:
+            payload = json.loads(str(payload_json))
+            if str(payload.get("canary_id") or "") == canary_id:
+                evidence = payload.get("evidence") or {}
+                if not isinstance(evidence, dict):
+                    raise PhysicalCanaryError(
+                        "PHYSICAL_CANARY_EVIDENCE_INVALID"
+                    )
+                for key, value in evidence.items():
+                    merged.setdefault(str(key), value)
+        return merged
+
     def active(self) -> PhysicalCanaryProjection | None:
         active = [
             item

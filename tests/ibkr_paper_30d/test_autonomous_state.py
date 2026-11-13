@@ -187,11 +187,17 @@ from ibkr_paper_30d.canonical import canonical_bytes, sha256_json
 from ibkr_paper_30d.continuity_store import ContinuityStore
 from ibkr_paper_30d.experiment_control import KillSwitchStore
 from ibkr_paper_30d.multi_universe_models import (
+    CapitalSleeve,
     ProductFamilyKey,
     REGULAR_DAY1_PRODUCT_FAMILY,
 )
 from ibkr_paper_30d.open_order_management import canonical_open_order
 from ibkr_paper_30d.persistence import Database
+from ibkr_paper_30d.physical_canary import (
+    PhysicalCanaryDirective,
+    PhysicalCanaryState,
+    PhysicalCanaryStore,
+)
 from ibkr_paper_30d.successor_clock import BrokerTimeObservation, clock_for_epoch
 from ibkr_paper_30d.successor_epoch import (
     BrokerTransitionEvidence,
@@ -1033,6 +1039,95 @@ def open_order_trade():
         ),
         orderStatus=SimpleNamespace(status="Submitted", filled=0, remaining=2),
     )
+
+
+def _broker_bound_physical_canary(db):
+    store = PhysicalCanaryStore(db)
+    directive = PhysicalCanaryDirective(
+        canary_id="regular-e2e-1",
+        capital_sleeve=CapitalSleeve.REGULAR_SLEEVE,
+        owner_authorization_sha256="a" * 64,
+        requested_at_utc=datetime(2026, 11, 13, 18, 0, tzinfo=timezone.utc),
+        approved_head="b" * 40,
+    )
+    store.request(directive)
+    for state in (
+        PhysicalCanaryState.ENTRY_SELECTED,
+        PhysicalCanaryState.ISSUED_PRE_SEND,
+        PhysicalCanaryState.BROKER_BOUND,
+    ):
+        store.append_transition(
+            directive.canary_id,
+            state,
+            capital_sleeve=directive.capital_sleeve,
+            evidence={
+                "order_ref": "codex-ibkr-paper-30d-physical-regular-regular-e2e-1",
+                "contract": {"conId": 756733, "secType": "STK"},
+            },
+        )
+    return store
+
+
+def test_physical_canary_position_becomes_active_management(tmp_path):
+    with Database.open(tmp_path / "physical-canary-active.sqlite3") as db:
+        store = _broker_bound_physical_canary(db)
+        subject = object.__new__(AutonomousStateBuilder)
+        subject.db = db
+        subject._latest_executions = [
+            {
+                "orderRef": "codex-ibkr-paper-30d-physical-regular-regular-e2e-1",
+                "side": "BUY",
+                "quantity": "1",
+            }
+        ]
+
+        subject._reconcile_physical_canary_lifecycle(
+            open_orders=[],
+            positions=[{"contract_id": 756733, "quantity": "1"}],
+        )
+
+        projection = store.projection("regular-e2e-1")
+
+    assert projection is not None
+    assert projection.state is PhysicalCanaryState.ACTIVE_MANAGEMENT
+
+
+def test_physical_canary_balanced_fills_and_no_exposure_becomes_flat(tmp_path):
+    order_ref = "codex-ibkr-paper-30d-physical-regular-regular-e2e-1"
+    with Database.open(tmp_path / "physical-canary-flat.sqlite3") as db:
+        store = _broker_bound_physical_canary(db)
+        subject = object.__new__(AutonomousStateBuilder)
+        subject.db = db
+        subject._latest_executions = [
+            {"orderRef": order_ref, "side": "BUY", "quantity": "1"},
+            {"orderRef": order_ref, "side": "SELL", "quantity": "1"},
+        ]
+
+        subject._reconcile_physical_canary_lifecycle(
+            open_orders=[], positions=[]
+        )
+
+        projection = store.projection("regular-e2e-1")
+
+    assert projection is not None
+    assert projection.state is PhysicalCanaryState.FLAT_RECONCILED
+
+
+def test_physical_canary_absence_without_fill_does_not_infer_flat(tmp_path):
+    with Database.open(tmp_path / "physical-canary-no-inference.sqlite3") as db:
+        store = _broker_bound_physical_canary(db)
+        subject = object.__new__(AutonomousStateBuilder)
+        subject.db = db
+        subject._latest_executions = []
+
+        subject._reconcile_physical_canary_lifecycle(
+            open_orders=[], positions=[]
+        )
+
+        projection = store.projection("regular-e2e-1")
+
+    assert projection is not None
+    assert projection.state is PhysicalCanaryState.BROKER_BOUND
 
 
 class FakeMarketGate:

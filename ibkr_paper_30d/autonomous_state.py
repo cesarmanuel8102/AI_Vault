@@ -32,6 +32,7 @@ from .open_order_management import (
     append_order_registry_event,
 )
 from .persistence import Database
+from .physical_canary import PhysicalCanaryState, PhysicalCanaryStore
 from .market_data import DecisionClass
 from .repositories import utc_now
 from .product_capability import ProductFamilyCertificationStore
@@ -2315,6 +2316,117 @@ class AutonomousStateBuilder:
             finally:
                 broker.disconnect()
 
+    def _reconcile_physical_canary_lifecycle(
+        self,
+        *,
+        open_orders: list[dict[str, Any]],
+        positions: list[dict[str, Any]],
+    ) -> None:
+        store = PhysicalCanaryStore(self.db)
+        projection = store.active()
+        if projection is None or projection.state not in {
+            PhysicalCanaryState.BROKER_BOUND,
+            PhysicalCanaryState.ACTIVE_MANAGEMENT,
+            PhysicalCanaryState.UNCERTAIN,
+        }:
+            return
+        evidence = store.latest_evidence(projection.directive.canary_id)
+        order_ref = str(evidence.get("order_ref") or "")
+        contract = evidence.get("contract") or {}
+        if not isinstance(contract, dict):
+            contract = {}
+        contract_id = int(contract.get("conId") or 0)
+        if not order_ref or contract_id <= 0:
+            if projection.state is not PhysicalCanaryState.UNCERTAIN:
+                store.append_transition(
+                    projection.directive.canary_id,
+                    PhysicalCanaryState.UNCERTAIN,
+                    capital_sleeve=projection.directive.capital_sleeve,
+                    evidence={"reason_code": "PHYSICAL_CANARY_IDENTITY_UNRESOLVED"},
+                )
+            return
+        matching_orders = [
+            item
+            for item in open_orders
+            if str(item.get("orderRef") or "") == order_ref
+        ]
+        matching_positions = []
+        for item in positions:
+            try:
+                if (
+                    int(item.get("contract_id") or 0) == contract_id
+                    and Decimal(str(item.get("quantity") or 0)) != 0
+                ):
+                    matching_positions.append(item)
+            except (ArithmeticError, TypeError, ValueError):
+                continue
+        matching_fills = [
+            item
+            for item in getattr(self, "_latest_executions", ())
+            if str(item.get("orderRef") or "") == order_ref
+        ]
+        if matching_positions:
+            if projection.state is not PhysicalCanaryState.ACTIVE_MANAGEMENT:
+                store.append_transition(
+                    projection.directive.canary_id,
+                    PhysicalCanaryState.ACTIVE_MANAGEMENT,
+                    capital_sleeve=projection.directive.capital_sleeve,
+                    evidence={
+                        "order_ref": order_ref,
+                        "contract": contract,
+                        "position": matching_positions[0],
+                        "partial_or_full_fill_observed": bool(matching_fills),
+                    },
+                )
+            return
+        if matching_orders:
+            return
+        net_quantity = Decimal("0")
+        for fill in matching_fills:
+            try:
+                quantity = Decimal(str(fill.get("quantity") or 0))
+            except (ArithmeticError, TypeError, ValueError):
+                continue
+            side = str(fill.get("side") or "").upper()
+            net_quantity += quantity if side in {"BUY", "BOT"} else -quantity
+        if matching_fills and net_quantity == 0:
+            if projection.state is PhysicalCanaryState.BROKER_BOUND:
+                projection = store.append_transition(
+                    projection.directive.canary_id,
+                    PhysicalCanaryState.ACTIVE_MANAGEMENT,
+                    capital_sleeve=projection.directive.capital_sleeve,
+                    evidence={
+                        "order_ref": order_ref,
+                        "contract": contract,
+                        "management_inferred_from_balanced_fill_history": True,
+                    },
+                )
+            store.append_transition(
+                projection.directive.canary_id,
+                PhysicalCanaryState.FLAT_RECONCILED,
+                capital_sleeve=projection.directive.capital_sleeve,
+                evidence={
+                    "order_ref": order_ref,
+                    "contract": contract,
+                    "fill_count": len(matching_fills),
+                    "net_quantity": "0",
+                    "broker_open_order_count": 0,
+                    "broker_position_quantity": "0",
+                },
+            )
+        elif matching_fills and projection.state is not PhysicalCanaryState.UNCERTAIN:
+            store.append_transition(
+                projection.directive.canary_id,
+                PhysicalCanaryState.UNCERTAIN,
+                capital_sleeve=projection.directive.capital_sleeve,
+                evidence={
+                    "reason_code": "PHYSICAL_CANARY_FILL_POSITION_MISMATCH",
+                    "order_ref": order_ref,
+                    "contract": contract,
+                    "net_fill_quantity": str(net_quantity),
+                },
+            )
+
     def build(
         self,
         *,
@@ -2371,6 +2483,10 @@ class AutonomousStateBuilder:
             }
             for item in ledger_state.positions
         ]
+        self._reconcile_physical_canary_lifecycle(
+            open_orders=isolated_orders,
+            positions=isolated_positions,
+        )
 
         kill_switch_state = self.kill_switch_store.current()
         decision_class = (
