@@ -111,6 +111,111 @@ def test_default_codex_runner_never_uses_unbounded_timeout_cleanup(
     assert all(timeout is not None for timeout in communicate_timeouts)
 
 
+def test_default_codex_runner_applies_finite_default_timeout(monkeypatch) -> None:
+    observed: list[float | None] = []
+
+    class FastProcess:
+        pid = 4243
+        returncode = 0
+
+        def communicate(self, *, input=None, timeout=None):
+            observed.append(timeout)
+            return None, None
+
+    monkeypatch.setattr(autonomous_research.subprocess, "Popen", lambda *a, **k: FastProcess())
+
+    autonomous_research._run_codex_process(["codex"])
+
+    assert observed and observed[0] is not None
+    assert observed[0] > 0
+
+
+def test_default_codex_runner_preserves_subprocess_text_semantics() -> None:
+    completed = autonomous_research._run_codex_process(
+        [
+            sys.executable,
+            "-c",
+            "import sys; sys.stdout.buffer.write(b'a\\r\\nb\\r')",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    encoded = autonomous_research._run_codex_process(
+        [sys.executable, "-c", "print('encoded')"],
+        capture_output=True,
+        encoding="utf-8",
+        timeout=5,
+    )
+    errors_only = autonomous_research._run_codex_process(
+        [sys.executable, "-c", "print('errors')"],
+        capture_output=True,
+        errors="replace",
+        timeout=5,
+    )
+    echoed = autonomous_research._run_codex_process(
+        [sys.executable, "-c", "import sys; print(sys.stdin.read())"],
+        input="request",
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+
+    assert completed.stdout == "a\nb\n"
+    assert encoded.stdout == "encoded\n"
+    assert errors_only.stdout == "errors\n"
+    assert echoed.stdout == "request\n"
+
+
+def test_default_codex_runner_preserves_check_error_output() -> None:
+    with pytest.raises(subprocess.CalledProcessError) as captured:
+        autonomous_research._run_codex_process(
+            [sys.executable, "-c", "import sys; print('bad', file=sys.stderr); sys.exit(7)"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
+        )
+
+    assert captured.value.returncode == 7
+    assert captured.value.stderr == "bad\n"
+
+
+def test_default_codex_runner_direct_kills_when_taskkill_times_out(
+    monkeypatch,
+) -> None:
+    killed: list[bool] = []
+
+    class HungProcess:
+        pid = 4244
+        returncode = None
+
+        def communicate(self, *, input=None, timeout=None):
+            raise subprocess.TimeoutExpired("codex", timeout)
+
+        def kill(self) -> None:
+            killed.append(True)
+
+        def wait(self, *, timeout=None):
+            assert timeout is not None
+            self.returncode = -9
+            return self.returncode
+
+    monkeypatch.setattr(autonomous_research.subprocess, "Popen", lambda *a, **k: HungProcess())
+
+    def taskkill_timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired("taskkill", 5)
+
+    monkeypatch.setattr(autonomous_research.subprocess, "run", taskkill_timeout)
+
+    with pytest.raises(subprocess.TimeoutExpired):
+        autonomous_research._run_codex_process(
+            ["codex"], capture_output=True, timeout=0.01
+        )
+
+    assert killed == [True]
+
+
 def request(value: TraderInputBundle) -> InvocationRequest:
     return InvocationRequest(
         decision_cycle_id=value.decision_cycle_id,

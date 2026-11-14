@@ -49,7 +49,9 @@ from .trader_invocation import (
 def _run_codex_process(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
     """Run Codex with a timeout that terminates its complete process tree."""
 
-    timeout = kwargs.pop("timeout", None)
+    timeout = kwargs.pop("timeout", 600)
+    if timeout is None:
+        timeout = 600
     input_value = kwargs.pop("input", None)
     check = bool(kwargs.pop("check", False))
     capture_output = bool(kwargs.pop("capture_output", False))
@@ -66,7 +68,12 @@ def _run_codex_process(command: list[str], **kwargs: Any) -> subprocess.Complete
         )
     else:
         kwargs["start_new_session"] = True
-    text_mode = bool(kwargs.get("text") or kwargs.get("universal_newlines"))
+    text_mode = bool(
+        kwargs.get("text")
+        or kwargs.get("universal_newlines")
+        or kwargs.get("encoding") is not None
+        or kwargs.get("errors") is not None
+    )
     encoding = kwargs.get("encoding") or locale.getencoding()
     errors = kwargs.get("errors") or "strict"
 
@@ -86,20 +93,26 @@ def _run_codex_process(command: list[str], **kwargs: Any) -> subprocess.Complete
             process.communicate(input=input_value, timeout=timeout)
         except subprocess.TimeoutExpired as exc:
             timed_out = exc
+            tree_kill_failed = False
             if os.name == "nt":
-                subprocess.run(
-                    ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                    capture_output=True,
-                    timeout=5,
-                    check=False,
-                )
+                try:
+                    subprocess.run(
+                        ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                        capture_output=True,
+                        timeout=5,
+                        check=False,
+                    )
+                except (OSError, subprocess.TimeoutExpired):
+                    tree_kill_failed = True
             else:
                 try:
                     os.killpg(process.pid, signal.SIGKILL)
                 except ProcessLookupError:
                     pass
+            if tree_kill_failed:
+                process.kill()
             try:
-                process.communicate(timeout=5)
+                process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 process.kill()
                 try:
@@ -114,7 +127,9 @@ def _run_codex_process(command: list[str], **kwargs: Any) -> subprocess.Complete
             stream.seek(0)
             value = stream.read()
             if text_mode:
-                return value.decode(encoding, errors)
+                return value.decode(encoding, errors).replace("\r\n", "\n").replace(
+                    "\r", "\n"
+                )
             return value
 
         stdout = captured_value(stdout_capture)
