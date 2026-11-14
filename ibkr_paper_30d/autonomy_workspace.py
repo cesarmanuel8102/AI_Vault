@@ -345,6 +345,12 @@ class AutonomyWorkspace:
         self, relative: str, content: str, *, cycle_id: str = ""
     ) -> dict[str, Any]:
         target = self._resolve(relative)
+        top_level = target.relative_to(self.paths.root).parts[0]
+        if top_level not in WORKSPACE_SUBDIRS:
+            raise WorkspaceViolation(
+                "workspace artifacts must be inside an approved workspace directory: "
+                + ", ".join(f"{item}/" for item in WORKSPACE_SUBDIRS)
+            )
         if target.suffix == ".py" and self.paths.tools not in target.parents:
             raise WorkspaceViolation(
                 "python artifacts may only be created inside tools/"

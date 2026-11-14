@@ -158,7 +158,12 @@ def main() -> int:
     failure_reason = None
     started = time.monotonic()
     try:
-        sys.argv = [str(script), *args.arguments]
+        script_arguments = list(args.arguments)
+        # argparse.REMAINDER retains the launcher's option terminator.  It is
+        # transport syntax, not an argument authored for the research script.
+        if script_arguments[:1] == ["--"]:
+            script_arguments = script_arguments[1:]
+        sys.argv = [str(script), *script_arguments]
         with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
             runpy.run_path(str(script), run_name="__main__")
     except SystemExit as exc:

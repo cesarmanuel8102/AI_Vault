@@ -115,6 +115,33 @@ def test_run_research_script_accepts_script_path_and_args_aliases(toolbox, sandb
     assert sandbox.calls[-1]["arguments"] == ("--self-test",)
 
 
+def test_research_tool_manifest_exposes_exact_script_argument_and_path_contract(toolbox) -> None:
+    manifest = {item["tool"]: item for item in toolbox.manifest()}
+    workspace = manifest[ResearchTool.WORKSPACE.value]
+    runner = manifest[ResearchTool.RUN_RESEARCH_SCRIPT.value]
+
+    assert workspace["writable_roots"] == [
+        "memory/",
+        "research/",
+        "tools/",
+        "datasets/",
+        "experiments/",
+    ]
+    assert runner["working_directory"] == "/workspace/experiments"
+    assert runner["argument_transport"] == (
+        "arguments are passed verbatim as sys.argv[1:] with no injected separator; "
+        "input_request_ids are appended as absolute /workspace/datasets/research_inputs/"
+        "<request_id>.json paths"
+    )
+    assert runner["sandbox_visible_roots"] == [
+        "/workspace/memory/",
+        "/workspace/research/",
+        "/workspace/tools/",
+        "/workspace/datasets/",
+        "/workspace/experiments/",
+    ]
+
+
 def test_run_research_script_rejects_unsupported_keys_instead_of_ignoring_them(toolbox, sandbox) -> None:
     toolbox.execute(
         _req(ResearchTool.WORKSPACE, {"operation": "write", "path": "tools/s.py", "content": "print(1)"}), None

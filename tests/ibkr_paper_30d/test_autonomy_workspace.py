@@ -109,6 +109,11 @@ def test_workspace_rejects_path_escape(workspace):
             workspace.write_artifact(bad, "x")
 
 
+def test_workspace_rejects_artifacts_outside_sandbox_visible_roots(workspace):
+    with pytest.raises(WorkspaceViolation, match="approved workspace directory"):
+        workspace.write_artifact("specs/hidden-from-sandbox.json", "{}")
+
+
 def test_python_artifacts_only_in_tools(workspace):
     with pytest.raises(WorkspaceViolation):
         workspace.write_artifact("memory/evil.py", "print(1)")

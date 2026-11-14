@@ -206,6 +206,30 @@ def test_real_worker_timeout_returns_a_bounded_failure_receipt(tmp_path: Path) -
 
 
 @pytest.mark.skipif(not _wsl_available(), reason="WSL2 Ubuntu unavailable")
+def test_real_worker_does_not_inject_launcher_separator_into_script_arguments(
+    tmp_path: Path,
+) -> None:
+    root = _workspace(tmp_path)
+    (root / "tools" / "probe.py").write_text(
+        "import json, sys\nprint(json.dumps(sys.argv[1:]))\n",
+        encoding="utf-8",
+    )
+
+    receipt = WSLResearchSandbox(repo_root=REPO).run(
+        workspace_root=root,
+        script_relative="tools/probe.py",
+        arguments=("--spec", "/workspace/research/spec.json"),
+        timeout_seconds=20,
+    )
+
+    assert receipt["status"] == "COMPLETED", receipt
+    assert json.loads(receipt["stdout"]) == [
+        "--spec",
+        "/workspace/research/spec.json",
+    ]
+
+
+@pytest.mark.skipif(not _wsl_available(), reason="WSL2 Ubuntu unavailable")
 def test_real_worker_denies_host_files_network_processes_and_symlink_escape(
     tmp_path: Path,
 ) -> None:

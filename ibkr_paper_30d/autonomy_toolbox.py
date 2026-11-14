@@ -506,6 +506,13 @@ class AutonomyToolbox:
                         "json_pointer relative to that result's data, e.g. '/bars') as JSON."
                     ),
                     "valid_operations": list(WORKSPACE_OPERATIONS),
+                    "writable_roots": [
+                        "memory/",
+                        "research/",
+                        "tools/",
+                        "datasets/",
+                        "experiments/",
+                    ],
                     "arguments": {
                         operation: sorted(fields)
                         for operation, fields in _WORKSPACE_FIELDS.items()
@@ -516,11 +523,28 @@ class AutonomyToolbox:
                     "purpose": (
                         "Run a python research script you created in tools/ inside an isolated "
                         "sandbox without broker access, credentials or network. The working "
-                        "directory is /workspace/experiments. input_request_ids lists earlier "
+                        "directory is /workspace/experiments. Only memory/, research/, tools/, "
+                        "datasets/, and experiments/ are mounted; do not create or reference "
+                        "other top-level workspace directories. Values in arguments are passed "
+                        "verbatim as sys.argv[1:] with no injected '--' separator. "
+                        "input_request_ids lists earlier "
                         "successful research requests of this cycle; the host stores each "
                         "result's data as /workspace/datasets/research_inputs/<request_id>.json "
                         "and appends those absolute paths after 'arguments'."
                     ),
+                    "working_directory": "/workspace/experiments",
+                    "argument_transport": (
+                        "arguments are passed verbatim as sys.argv[1:] with no injected separator; "
+                        "input_request_ids are appended as absolute /workspace/datasets/"
+                        "research_inputs/<request_id>.json paths"
+                    ),
+                    "sandbox_visible_roots": [
+                        "/workspace/memory/",
+                        "/workspace/research/",
+                        "/workspace/tools/",
+                        "/workspace/datasets/",
+                        "/workspace/experiments/",
+                    ],
                     "arguments": list(RUN_SCRIPT_ARGUMENTS),
                     "argument_aliases": dict(_RUN_SCRIPT_ALIASES),
                 },
