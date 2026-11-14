@@ -593,7 +593,9 @@ class AutonomousTurn(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
     mode: AutonomousTurnMode
-    research_requests: list[ResearchRequest] = Field(default_factory=list)
+    research_requests: list[ResearchRequest] = Field(
+        default_factory=list, max_length=16
+    )
     decision: TraderDecision | None = None
     proposal: AutonomousTradeProposal | None = None
     position_action: AutonomousPositionAction | None = None
@@ -695,7 +697,9 @@ class CanaryDiscoveryTurn(BaseModel, frozen=True):
     model_config = ConfigDict(extra="forbid")
 
     mode: AutonomousTurnMode
-    research_requests: list[ResearchRequest] = Field(default_factory=list)
+    research_requests: list[ResearchRequest] = Field(
+        default_factory=list, max_length=16
+    )
     decision: Literal["CANDIDATE", "NO_CANDIDATE"] | None = None
     proposal: CanaryCandidateProposal | None = None
     reasoning_summary: str = Field(min_length=1)
@@ -1342,6 +1346,12 @@ class CodexAutonomousCLIProvider:
             "toolbox": toolbox_manifest,
             "research_history": model_visible_history(history),
             "output_contract": {
+                "maximum_research_requests_per_turn": 16,
+                "research_batch_instruction": (
+                    "Submit no more than 16 research requests in one turn. Prioritize "
+                    "the requests with the highest expected information value and defer "
+                    "lower-priority work to a later research turn or cycle."
+                ),
                 "research_request_arguments": (
                     "Encode each research_requests[].arguments value as a JSON object string."
                 ),
@@ -1620,6 +1630,12 @@ class CodexAutonomousCLIProvider:
             "toolbox": toolbox_manifest,
             "research_history": model_visible_history(history),
             "output_contract": {
+                "maximum_research_requests_per_turn": 16,
+                "research_batch_instruction": (
+                    "Submit no more than 16 research requests in one turn. Prioritize "
+                    "the requests with the highest expected information value and defer "
+                    "lower-priority work to a later research turn or cycle."
+                ),
                 "research_request_arguments": (
                     "Encode each research_requests[].arguments value as a JSON "
                     "object string. The host decodes and validates it before use."

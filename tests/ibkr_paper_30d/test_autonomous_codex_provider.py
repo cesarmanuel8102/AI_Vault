@@ -287,6 +287,14 @@ def test_strict_schema_encodes_dynamic_research_arguments_as_json_string() -> No
     assert "JSON object" in arguments["description"]
 
 
+def test_strict_schema_limits_each_research_batch_to_sixteen_requests() -> None:
+    schema = CodexAutonomousCLIProvider.strict_output_schema()
+
+    research_requests = schema["properties"]["research_requests"]
+
+    assert research_requests["maxItems"] == 16
+
+
 def test_strict_schema_and_prompt_expose_neutral_continuity_authority() -> None:
     schema = CodexAutonomousCLIProvider.strict_output_schema()
     assert "continuity_plan" in schema["properties"]
@@ -1327,6 +1335,71 @@ def test_semantically_invalid_turn_is_returned_to_codex_for_bounded_repair():
     assert repair["invalid_output"]["decision"] is None
     assert any(
         "FINAL mode requires decision" in error["message"]
+        for error in repair["validation_errors"]
+    )
+    assert provider.last_failure_code is None
+
+
+def test_oversized_research_batch_is_returned_to_codex_for_prioritized_repair():
+    value = bundle()
+    prompts = []
+
+    def research_request(index: int) -> dict[str, str]:
+        return {
+            "request_id": f"request-{index}",
+            "tool": "MARKET_SCANNER",
+            "arguments": "{}",
+            "purpose": f"Rank candidate set {index}",
+        }
+
+    def runner(command, **kwargs):
+        prompts.append(json.loads(kwargs["input"]))
+        output_path = command[command.index("--output-last-message") + 1]
+        request_count = 17 if len(prompts) == 1 else 16
+        Path(output_path).write_text(
+            json.dumps(
+                {
+                    "mode": "RESEARCH",
+                    "research_requests": [
+                        research_request(index) for index in range(request_count)
+                    ],
+                    "decision": None,
+                    "proposal": None,
+                    "position_action": None,
+                    "open_order_action": None,
+                    "confidence": "0.75",
+                    "reasoning_summary": "Prioritized market research.",
+                    "reason_codes": ["RESEARCHING_MARKET"],
+                    "economic_accountability": None,
+                    "continuity_plan": None,
+                    "continuity_reviews": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        stdout = "\n".join(
+            [
+                json.dumps({"type": "thread.started", "thread_id": "t"}),
+                json.dumps({"type": "turn.completed"}),
+            ]
+        )
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    provider = CodexAutonomousCLIProvider(
+        runner=runner,
+        owner_model_attestation_exception_sha256="e" * 64,
+    )
+
+    turn = provider.next_turn(
+        request(value), value, [], [{"tool": "MARKET_SCANNER"}]
+    )
+
+    assert len(turn.research_requests) == 16
+    assert len(prompts) == 2
+    assert prompts[0]["output_contract"]["maximum_research_requests_per_turn"] == 16
+    repair = prompts[1]["semantic_repair"]
+    assert any(
+        "at most 16 items" in error["message"]
         for error in repair["validation_errors"]
     )
     assert provider.last_failure_code is None
