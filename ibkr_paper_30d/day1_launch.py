@@ -69,6 +69,7 @@ from .runtime_provenance import (
     verify_runtime_provenance,
 )
 from .readonly_acceptance import is_safe_account_summary_partial
+from .runtime_logging import configure_runtime_dependency_logging
 from .trader_invocation import TraderInputBundle
 from .successor_authorization import (
     SuccessorAuthorizationError,
@@ -2859,6 +2860,7 @@ def _is_owner_action_required(code: str) -> bool:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    configure_runtime_dependency_logging()
     parser = argparse.ArgumentParser(prog="python -m ibkr_paper_30d.day1_launch")
     parser.add_argument("--launch-attempt-id", required=True)
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())

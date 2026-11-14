@@ -66,6 +66,51 @@ def test_default_codex_runner_times_out_when_descendant_inherits_output_pipe():
     assert time.monotonic() - started < 3.0
 
 
+def test_default_codex_runner_never_uses_unbounded_timeout_cleanup(
+    monkeypatch,
+) -> None:
+    communicate_timeouts: list[float | None] = []
+
+    class HungProcess:
+        pid = 4242
+        returncode = None
+
+        def communicate(self, *, input=None, timeout=None):
+            communicate_timeouts.append(timeout)
+            if len(communicate_timeouts) <= 2:
+                raise subprocess.TimeoutExpired("codex", timeout)
+            assert timeout is not None, "timeout cleanup used unbounded communicate()"
+            self.returncode = -9
+            return "partial-out", "partial-err"
+
+        def kill(self) -> None:
+            return None
+
+        def wait(self, *, timeout=None):
+            assert timeout is not None, "timeout cleanup used unbounded wait()"
+            self.returncode = -9
+            return self.returncode
+
+    monkeypatch.setattr(autonomous_research.subprocess, "Popen", lambda *a, **k: HungProcess())
+    monkeypatch.setattr(
+        autonomous_research.subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess(a, 0),
+    )
+
+    with pytest.raises(subprocess.TimeoutExpired):
+        autonomous_research._run_codex_process(
+            ["codex"],
+            input="request",
+            text=True,
+            capture_output=True,
+            timeout=0.01,
+        )
+
+    assert communicate_timeouts
+    assert all(timeout is not None for timeout in communicate_timeouts)
+
+
 def request(value: TraderInputBundle) -> InvocationRequest:
     return InvocationRequest(
         decision_cycle_id=value.decision_cycle_id,

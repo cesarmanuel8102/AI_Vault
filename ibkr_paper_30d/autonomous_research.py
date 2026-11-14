@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import copy
+from contextlib import ExitStack
 import json
+import locale
 import os
 import signal
 import shutil
@@ -50,7 +52,10 @@ def _run_codex_process(command: list[str], **kwargs: Any) -> subprocess.Complete
     timeout = kwargs.pop("timeout", None)
     input_value = kwargs.pop("input", None)
     check = bool(kwargs.pop("check", False))
-    if kwargs.pop("capture_output", False):
+    capture_output = bool(kwargs.pop("capture_output", False))
+    if capture_output and ("stdout" in kwargs or "stderr" in kwargs):
+        raise ValueError("stdout and stderr arguments may not be used with capture_output")
+    if capture_output:
         kwargs["stdout"] = subprocess.PIPE
         kwargs["stderr"] = subprocess.PIPE
     if input_value is not None:
@@ -61,38 +66,70 @@ def _run_codex_process(command: list[str], **kwargs: Any) -> subprocess.Complete
         )
     else:
         kwargs["start_new_session"] = True
-    process = subprocess.Popen(command, **kwargs)
-    try:
-        stdout, stderr = process.communicate(
-            input=input_value, timeout=timeout
-        )
-    except subprocess.TimeoutExpired as exc:
-        if os.name == "nt":
-            subprocess.run(
-                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                capture_output=True,
-                timeout=5,
-                check=False,
-            )
-        else:
-            try:
-                os.killpg(process.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
+    text_mode = bool(kwargs.get("text") or kwargs.get("universal_newlines"))
+    encoding = kwargs.get("encoding") or locale.getencoding()
+    errors = kwargs.get("errors") or "strict"
+
+    with ExitStack() as stack:
+        stdout_capture = None
+        stderr_capture = None
+        if kwargs.get("stdout") is subprocess.PIPE:
+            stdout_capture = stack.enter_context(tempfile.TemporaryFile(mode="w+b"))
+            kwargs["stdout"] = stdout_capture
+        if kwargs.get("stderr") is subprocess.PIPE:
+            stderr_capture = stack.enter_context(tempfile.TemporaryFile(mode="w+b"))
+            kwargs["stderr"] = stderr_capture
+
+        process = subprocess.Popen(command, **kwargs)
+        timed_out: subprocess.TimeoutExpired | None = None
         try:
-            stdout, stderr = process.communicate(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            stdout, stderr = process.communicate()
-        raise subprocess.TimeoutExpired(
-            exc.cmd,
-            exc.timeout,
-            output=stdout,
-            stderr=stderr,
-        ) from exc
-    completed = subprocess.CompletedProcess(
-        command, process.returncode, stdout=stdout, stderr=stderr
-    )
+            process.communicate(input=input_value, timeout=timeout)
+        except subprocess.TimeoutExpired as exc:
+            timed_out = exc
+            if os.name == "nt":
+                subprocess.run(
+                    ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                    capture_output=True,
+                    timeout=5,
+                    check=False,
+                )
+            else:
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+            try:
+                process.communicate(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    pass
+
+        def captured_value(stream: Any) -> str | bytes | None:
+            if stream is None:
+                return None
+            stream.flush()
+            stream.seek(0)
+            value = stream.read()
+            if text_mode:
+                return value.decode(encoding, errors)
+            return value
+
+        stdout = captured_value(stdout_capture)
+        stderr = captured_value(stderr_capture)
+        if timed_out is not None:
+            raise subprocess.TimeoutExpired(
+                timed_out.cmd,
+                timed_out.timeout,
+                output=stdout,
+                stderr=stderr,
+            ) from timed_out
+
+        completed = subprocess.CompletedProcess(
+            command, process.returncode, stdout=stdout, stderr=stderr
+        )
     if check and completed.returncode:
         raise subprocess.CalledProcessError(
             completed.returncode,
